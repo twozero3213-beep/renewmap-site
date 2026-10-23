@@ -145,3 +145,16 @@
   #map .leaflet-interactive { transition: none; }
   .map-legend.is-new li, .map-legend.is-new .map-legend-title, .map-legend.is-new .map-legend-std, .map-panel, .map-panel.is-sheet, .map-panel.is-new .sr-fill, .map-groups button { animation: none; transition: none; }
 }
+
+/* 지도 위 큰 연도·진행 막대(전국·시도 단계). 지도 조작을 막지 않게 pointer-events 없음 */
+.map-yearbar { position: absolute; top: 10px; right: 10px; z-index: 800; pointer-events: none; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 14px; padding: 8px 14px 10px; width: min(260px, 60%); display: grid; gap: 4px; }
+.map-yearbar[hidden] { display: none; }
+.yb-y { font-size: 34px; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.yb-track { display: flex; gap: 2px; height: 8px; }
+.yb-track i { flex: 1; border-radius: 2px; background: #d9e4df; transition: background-color .3s; }
+.yb-track i.is-on { background: var(--green); } .yb-track i.is-cur { background: var(--ink); }
+.yb-track i.is-skip { background: none; border: 1px dashed #9aa6a1; }
+.yb-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.map-yearbar small { font-size: 12px; color: var(--dim); line-height: 1.4; }
+@media (max-width: 720px) { .map-yearbar { padding: 6px 10px 8px; width: 170px; } .yb-y { font-size: 26px; } }
+@media (prefers-reduced-motion: reduce) { .yb-track i { transition: none; } }

@@ -29,7 +29,8 @@
 .hl-k { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: var(--green); }
 .hl-n { font-size: 15px; color: var(--dim); } .hl-n b { font-size: 30px; font-weight: 800; color: var(--ink); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .hl-t { font-size: 14px; color: var(--ink); } .hl-auto { font-size: 12px; color: var(--dim); margin-top: 2px; }
-.hero-live > * { animation: rm-rise .45s cubic-bezier(.2, .8, .2, 1) both; } .hero-live > :nth-child(2) { animation-delay: .06s; } .hero-live > :nth-child(3) { animation-delay: .12s; }
+/* 지표가 바뀔 때만 떠오른다(연도 재생 중 숫자는 카운트업으로만 바뀐다) */
+.hero-live.is-new > * { animation: rm-rise .45s cubic-bezier(.2, .8, .2, 1) both; } .hero-live.is-new > :nth-child(2) { animation-delay: .06s; } .hero-live.is-new > :nth-child(3) { animation-delay: .12s; }
 @keyframes rm-rise { from { opacity: 0; transform: translateY(6px); } }
 
 /* 3단계 설명: 아이콘이 차례로 떠오른다 */
@@ -67,6 +68,9 @@
 .grid > [data-reveal]:nth-child(2), .verdict-grid > :nth-child(2) { transition-delay: .08s; } .grid > [data-reveal]:nth-child(3), .verdict-grid > :nth-child(3) { transition-delay: .16s; } .grid > [data-reveal]:nth-child(4) { transition-delay: .24s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .btn.glow::before, .hero-live > *, .hero-steps li { animation: none; }
+  .btn.glow::before, .hero-live.is-new > *, .hero-steps li { animation: none; }
   [data-reveal] { opacity: 1; transform: none; transition: none; }
 }
+.hl-n .hl-y { font-size: 17px; font-weight: 800; color: var(--ink); letter-spacing: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hl-n [data-ck^="hl-n-"] { font-variant-numeric: tabular-nums; }
+.hl-note { font-size: 13px; font-weight: 600; color: var(--warn); }

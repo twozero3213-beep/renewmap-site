@@ -30,14 +30,14 @@
     { code: 'DECLINE_AGING_20Y_PCT', group: 'aging', icon: 'bldg', label: '노후건축물비율', unit: '%', edges: [30, 50, 60, 70], colors: [BELOW[0], BELOW[2], ...ABOVE],
       title: '준공 20년 이상 건축물 비율', worseUp: true, domain: [0, 100], series: true, standard: lawStd(50, 'above_bad', '준공 20년 이상 건축물 50% 이상') },
     { code: 'DECLINE_MET_COUNT', group: 'aging', icon: 'check', label: '요건 충족 수(하한)', unit: '개', edges: [1, 2, 3], colors: MET, labels: ['0개', '1개', '2개', '3개'],
-      title: '시행령 제17조 요건 충족 수 · 결측으로 확정 못 한 요건은 세지 않은 하한 · 판정 아님', worseUp: true, domain: [0, 3], series: true, composite: true,
+      title: '시행령 제17조 요건 충족 수 · 결측으로 확정 못 한 요건은 세지 않은 하한 · 판정 아님', worseUp: true, domain: [0, 3], series: true, composite: true, noPlay: true, yearNote: '해마다 확정된 요건 수가 달라 연도 비교는 하지 않습니다',
       dEdges: [-1.5, -0.5, 0.5, 1.5], dLabels: ['2개 이상 줄어듦', '1개 줄어듦', '변화 없음', '1개 늘어남', '2개 이상 늘어남'], standard: lawStd(2, 'above_bad', '쇠퇴 3요건 중 2개 이상') },
     { code: 'DECLINE_POP_DROP30Y_PCT', group: 'pop', icon: 'popdown', label: '인구 감소율(30년)', unit: '%', edges: [0, 10, 20, 30], colors: [BELOW[0], BELOW[1], BELOW[2], ABOVE[1], ABOVE[2]],
       title: '주민등록 인구 30년 최대 대비 감소율 · KOSIS', worseUp: true, domain: [-20, 60], series: true, standard: lawStd(20, 'above_bad', '30년 최대 대비 20% 이상 감소') },
     { code: 'DECLINE_POP_CHANGE_PCT', group: 'pop', icon: 'people', label: '인구변화율', unit: '%', edges: [-20, -10, 0, 10], colors: [ABOVE[2], BELOW[3], BELOW[2], BELOW[1], BELOW[0]],
       title: '주민등록 인구 변화율', worseUp: false, domain: [-50, 50], series: true, standard: lawStd(-20, 'below_bad', '인구변화율 −20% 미만') },
     { code: 'DECLINE_BIZ_DROP10Y_PCT', group: 'econ', icon: 'shop', label: '사업체 감소율', unit: '%', edges: [0, 5, 10, 20], colors: [BELOW[0], BELOW[2], ...ABOVE],
-      title: '사업체 10년 최대 대비 감소율', worseUp: true, domain: [-20, 40], series: true, standard: lawStd(5, 'above_bad', '10년 최대 대비 5% 이상 감소') },
+      title: '사업체 10년 최대 대비 감소율', worseUp: true, domain: [-20, 40], series: true, breakSource: 'biz_source', standard: lawStd(5, 'above_bad', '10년 최대 대비 5% 이상 감소') },
     { code: SUM, group: 'sum', icon: 'sum', label: '기준 미달 항목 수', unit: '개', edges: [1, 2, 3, 4], colors: SUMC, labels: ['0개', '1개', '2개', '3개', '4개 이상'],
       title: '기준선보다 나쁜 쪽에 있는 항목 수 · 자료 있는 항목만 셈 · 가중치·순위 없음 · 판정 아님', worseUp: true, domain: [0, 8], computed: true, composite: true },
   ];
@@ -241,15 +241,51 @@
   }
   const sumValue = rows => { const t = tally(rows); return t.counted ? t.confirmed + t.pending : null; };
   const lawInds = inds => (inds || INDICATORS).filter(i => i.series && i.standard && !i.composite);
-  function sigunguModel(sgs, ind, mode, inds) {
-    const scale = scaleFor(ind, mode), key = keyOf(ind, mode);
+  // ── 연도 요약(index.json: sigungu[].series [연도, 중앙값, 기준선 이상 동 수, 값 있는 동 수] · national_series [연도, 기준선 이상 동 수, 값 있는 동 수] · over_std) ──
+  const natRows = (index, code) => (index && index.national_series && Array.isArray(index.national_series[code]) ? index.national_series[code].filter(r => Array.isArray(r) && isNum(r[0])) : []);
+  const hasYears = (index, ind) => natRows(index, ind.code).some(r => isNum(r[2]) && r[2] > 0);
+  const overStd = (index, ind) => (index && index.over_std && isNum(index.over_std[ind.code]) ? index.over_std[ind.code] : null);
+  // 재생할 해: 값 있는 동 수가 그 지표 최대의 50% 이상인 해만. 처음~끝 사이에서 빠진 해는 '건너뜀'으로 따로 돌려준다
+  function playYears(index, code) {
+    const rows = natRows(index, code), max = Math.max(0, ...rows.map(r => (isNum(r[2]) ? r[2] : 0)));
+    const years = max ? rows.filter(r => isNum(r[1]) && isNum(r[2]) && r[2] >= max / 2).map(r => r[0]) : [];
+    const skipped = years.length ? rows.map(r => r[0]).filter(y => y > years[0] && y < years[years.length - 1] && !years.includes(y)) : [];
+    return { years, skipped };
+  }
+  function sgRow(sg, code, year) {
+    const rows = sg && sg.series && Array.isArray(sg.series[code]) ? sg.series[code].filter(r => Array.isArray(r)) : [];
+    const r = year === null ? [...rows].reverse().find(x => isNum(x[1])) : rows.find(x => x[0] === year);
+    return r ? { year: r[0], value: isNum(r[1]) ? r[1] : null, over: isNum(r[2]) ? r[2] : null, n: isNum(r[3]) ? r[3] : 0 } : null;
+  }
+  // 동 수 세기: 전국은 national_series(일반구 중복 없음), 시도는 그 안 칸(경계 있는 시군구)의 수를 더한다. 순위 아님
+  function countOver(index, code, year, sgs) {
+    if (!sgs) { const r = natRows(index, code).find(x => x[0] === year); return { over: r && isNum(r[1]) ? r[1] : null, n: r && isNum(r[2]) ? r[2] : 0 }; }
+    let over = null, n = 0;
+    for (const sg of sgs) { const r = sgRow(sg, code, year); if (r && r.n) { n += r.n; if (r.over !== null) over = (over || 0) + r.over; } }
+    return { over, n };
+  }
+  // 첫 화면 문구: '기준선(50% 이상) 넘은 동 n곳 / 값 있는 동 m곳 · 2016년'. 연도가 없으면 자료 있는 마지막 해
+  function overCaption(index, ind, year, sgs) {
+    const py = playYears(index, ind.code), lastRow = [...natRows(index, ind.code)].reverse().find(r => isNum(r[1]) && r[2] > 0);
+    const y = isNum(year) ? year : lastRow ? lastRow[0] : null, c = countOver(index, ind.code, y, sgs), std = overStd(index, ind);
+    const reg = ind.breakSource && index && index[ind.breakSource] ? index[ind.breakSource].register_based_from : null;
+    const notes = [ind.noPlay ? ind.yearNote : null, isNum(reg) && y >= reg ? `${reg}년부터 등록기반 통계로 바뀐 뒤 — 이전 해와 직접 비교 주의` : null].filter(Boolean);
+    const f = nf(0).format, stdText = std === null ? '' : `기준선(${pm(std)}${ind.unit} 이상)`;
+    return { year: y, over: c.over, n: c.n, std, notes, skipNote: !ind.noPlay && py.skipped.length ? `자료 없는 해 건너뜀: ${py.skipped.join('·')}` : null,
+      text: c.n ? `${stdText} 넘은 동 ${c.over === null ? '–' : f(c.over)}곳 / 값 있는 동 ${f(c.n)}곳 · ${y}년` : `${y ?? ''}년은 자료가 없습니다` };
+  }
+  function sigunguModel(sgs, ind, mode, inds, year) {
+    const scale = scaleFor(ind, mode), key = keyOf(ind, mode), byYear = !!ind.series && mode !== 'trend';
     return (sgs || []).map(sg => {
       let s = summaryOf(sg, key);
+      const r = byYear ? sgRow(sg, ind.code, isNum(year) ? year : null) : null;
+      if (byYear && isNum(year)) s = { value: r ? r.value : null, year, status: null }; // 그해 시·군·구 색 = 그 안 읍·면·동 값의 중앙값(원장 값)
       if (ind.computed) {
         const parts = lawInds(inds).map(i => ({ i, s: summaryOf(sg, i.code) })), ys = parts.map(p => p.s.year).filter(isNum);
         s = { value: sumValue(parts.map(p => rowOf(p.i, p.s.value))), year: ys.length ? Math.max(...ys) : null, status: null };
       }
-      return { code: String(sg.code5), name: sg.name, kind: sg.kind || null, value: s.value, year: s.year, status: s.status, text: fmt(s.value, scale.unit) || '자료 없음', color: colorOf(s.value, scale), bbox: sg.bbox || null };
+      return { code: String(sg.code5), name: sg.name, kind: sg.kind || null, value: s.value, year: s.year, status: s.status, text: fmt(s.value, scale.unit) || '자료 없음', color: colorOf(s.value, scale), bbox: sg.bbox || null,
+        over: r ? r.over : null, n: r ? r.n : null };
     });
   }
   const seriesOf = (dong, key) => (dong && dong.series && Array.isArray(dong.series[key]) ? dong.series[key].filter(p => Array.isArray(p) && isNum(p[0])).map(p => [p[0], isNum(p[1]) ? p[1] : null]).sort((a, b) => a[0] - b[0]) : []);
@@ -358,9 +394,9 @@
   }
   function tooltipHTML(it, ind, mode, year, source) {
     const t = mode === 'trend' ? trendText(it.value, ind) : null;
-    return `<b>${esc(it.name)}</b>${it.kind ? ` <small>${esc(it.kind)}</small>` : ''}<br>${esc(ind.label)}${mode === 'trend' ? ' 5년 변화' : ''} ${esc(it.text)}${t ? ` ${t.arrow} ${t.word}` : ''}<br>${it.year ? `${esc(it.year)}년 · ` : ''}${esc(source || SOURCE_DEFAULT)}`;
+    return `<b>${esc(it.name)}</b>${it.kind ? ` <small>${esc(it.kind)}</small>` : ''}<br>${esc(ind.label)}${mode === 'trend' ? ' 5년 변화' : ''} ${esc(it.text)}${t ? ` ${t.arrow} ${t.word}` : ''}${isNum(it.n) && it.n > 0 ? `<br>그해 기준선 넘은 동 ${esc(it.over ?? '–')}곳 / ${esc(it.n)}곳` : ''}<br>${it.year ? `${esc(it.year)}년 · ` : ''}${esc(source || SOURCE_DEFAULT)}`;
   }
-  function legendHTML(ind, mode, source, year, avail) {
+  function legendHTML(ind, mode, source, year, avail, median) {
     const s = scaleFor(ind, mode), off = avail === false || ind.pending;
     const stdLine = off ? '수집 중 · 자료가 오기 전에는 숫자를 만들지 않습니다'
       : ind.standard ? `기준선 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · 기준 ${ind.standard.status}` : ''}`
@@ -368,6 +404,7 @@
     return `<div class="map-legend"><p class="map-legend-title">${esc(off ? ind.label : s.title)}</p><ul aria-label="지도 색 구간">${legendItems(ind, off ? 'now' : mode).filter(l => !off || l.hatch).map((l, i) =>
       `<li style="--i:${i}"><i class="${l.hatch ? 'is-hatch' : ''}" style="background:${l.color}"></i>${esc(off ? '수집 중' : l.label)}</li>`).join('')}</ul>` +
       `<p class="map-legend-std${off || isPending(ind.standard) || !ind.standard ? ' is-flag' : ''}">${esc(stdLine)}</p>` +
+      (median && !off ? '<p class="map-legend-note">시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : '') +
       `<p class="map-legend-note">판정 아님 · 출처 ${esc(source || SOURCE_DEFAULT)} · 기준연도 ${esc(year ?? '자료 없음')}</p></div>`;
   }
   const liveText = (v, it, ind, mode) => `${v.crumbs.map(c => c.label).join(' › ')}${it ? ` › ${it.name}. ${ind.label}${mode === 'trend' ? ' 5년 변화' : ''} ${it.text}${it.year ? `, ${it.year}년` : ''}.` : `. ${v.step ? v.step + ' 단계' : ''}`}`;
@@ -383,7 +420,7 @@
 
   const api = { INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
-    latestYear, yearsOf, dongRows, dongModel, crossedCount, sparkline, strip, barSVG, scaleTableHTML, tooltipHTML, legendHTML, liveText, fmt };
+    latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, tooltipHTML, legendHTML, liveText, fmt };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewMap = api;
@@ -409,7 +446,7 @@
     .then(([geo, json]) => { if (!geo && json && Array.isArray(json.features)) geo = json; return { geo: geo && Array.isArray(geo.features) ? geo : null, json: json && Array.isArray(json.dongs) ? json : null }; }));
   // 생활 지표 파일: living/index.json이 없으면 시군구 파일도 찾지 않는다(null = 없음)
   const livingOf = code5 => (state.living ? lazy('living:' + code5, () => fetchJson(`data/national/living/${code5}.json`).then(j => (j && Array.isArray(j.dongs) ? j : null))) : null);
-  let timer = null, auto = null, lastLegend = '', lastDong = null;
+  let timer = null, autoT = null, lastLegend = '', lastLive = '', lastDong = null;
   const shown = new Map();
 
   app.innerHTML = `<div class="map-top" data-top></div><div class="map-stage" data-stage><div class="map-canvas is-wait" data-map-slot>전국 자료를 불러오는 중입니다.</div>` +
@@ -437,8 +474,8 @@
       return { kind: 'emd', items, years, selYear: year, year: year ?? (items.find(i => i.year)?.year ?? null), geo: e.geo, json, living: lv, nodata: !e.json };
     }
     const sgs = v.level === 'nation' ? leavesOf(state.index) : v.level === 'sido' ? leavesOf(state.index, v.sido.code2) : v.children;
-    const items = sigunguModel(sgs, ind, mode, list);
-    return { kind: 'sg', items, year: items.find(i => i.year)?.year ?? null };
+    const items = sigunguModel(sgs, ind, mode, list, state.year);
+    return { kind: 'sg', items, sgs: v.level === 'nation' ? null : sgs, year: (isNum(state.year) && ind.series && mode === 'now' ? state.year : null) ?? items.find(i => i.year)?.year ?? null };
   }
   function indCtlHTML(ind) {
     const list = inds(), g = ind.group;
@@ -480,9 +517,17 @@
     if (!avail(ind)) body = `<span class="hl-t">${esc(ind.label)}은(는) 자료를 모으는 중입니다.<br>자료가 오기 전에는 지도를 회색으로 둡니다.</span>`;
     else if (!has) body = `<span class="hl-t">${esc(ind.label)}은(는) 읍·면·동 자료만 있습니다.<br>지도에서 시·군·구를 누르면 색이 보입니다.</span>`;
     else if (!ind.standard && !ind.composite) body = `<span class="hl-t">공식 기준이 없는 지표입니다.<br>색은 고정 참고 구간입니다.</span>`;
+    else if (m.kind === 'sg' && effMode(ind) === 'now' && hasYears(state.index, ind)) {
+      const c = overCaption(state.index, ind, m.year, m.sgs), k = `${ind.code}-${scope}`;
+      body = `<span class="hl-t">${esc(scope)} · ${esc(ind.standard ? ind.standard.text : ind.label)}</span>` +
+        `<span class="hl-n" title="${esc(c.text)}">${c.n ? `기준선 넘은 동 <b data-ck="hl-o-${esc(k)}" data-count="${c.over ?? 0}">0</b>곳 <small>/ 값 있는 동 <span data-ck="hl-n-${esc(k)}" data-count="${c.n}">0</span>곳</small> · <b class="hl-y">${esc(c.year)}년</b>` : `<b class="hl-y">${esc(c.year ?? '')}년</b> <small>자료 없는 해</small>`}</span>` +
+        c.notes.map(n => `<span class="hl-note">${esc(n)}</span>`).join('');
+    }
     else body = `<span class="hl-n"><b data-ck="hl-${esc(ind.code)}-${esc(scope)}" data-count="${crossedCount(m.items, ind)}">0</b>곳 <small>/ ${esc(scope)} ${nf(0).format(total)}개 ${unitWord}</small></span>` +
       `<span class="hl-t">${!ind.standard ? '기준선을 넘은 항목이 하나라도 있는 곳' : `${esc(ind.standard.text)} — 기준선을 넘은 곳`}${m.year ? ` · ${esc(m.year)}년` : ''}${isPending(ind.standard) ? ` · 기준 ${esc(ind.standard.status)}` : ''}</span>`;
-    heroLive.innerHTML = `<span class="hl-k">${icon(ind.icon)}${esc(ind.label)}</span>${body}${auto ? '<span class="hl-auto">지표가 자동으로 바뀝니다 · 지도를 만지면 멈춥니다</span>' : ''}`;
+    heroLive.setAttribute('aria-live', autoT ? 'off' : 'polite'); // 자동 재생 중에는 해마다 읽지 않는다
+    const hk = ind.code + scope; heroLive.classList.toggle('is-new', hk !== lastLive); lastLive = hk;
+    heroLive.innerHTML = `<span class="hl-k">${icon(ind.icon)}${esc(ind.label)}</span>${body}${autoT ? '<span class="hl-auto">연도·지표가 자동으로 바뀝니다 · 지도를 만지면 멈춥니다</span>' : ''}`;
     heroLive.querySelectorAll('[data-count]').forEach(countUp);
   }
   function render() {
@@ -492,9 +537,11 @@
     const ind = curInd(), mode = effMode(ind), m = model(v), src = state.index.source && state.index.source.name, ok = avail(ind);
     const it = m.kind === 'emd' && v.dong ? m.items.find(x => x.code === v.dong) : null;
     const crumbs = `<nav class="map-crumbs" aria-label="현재 위치"><ol>${v.crumbs.map((c, i) => i === v.crumbs.length - 1 && !it ? `<li aria-current="page">${esc(c.label)}</li>` : `<li><a href="${esc(c.hash)}">${esc(c.label)}</a></li>`).join('')}${it ? `<li aria-current="page">${esc(it.name)}</li>` : ''}</ol><span class="map-step">${esc(v.step)} 단계</span></nav>`;
-    const yearCtl = m.kind === 'emd' && m.years && (ind.series || ind.computed) ? `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${state.playing}" aria-label="${state.playing ? '재생 멈춤' : `${m.years.min}년부터 ${m.years.max}년까지 재생`}">${state.playing ? '❚❚' : '▶'}</button><label>연도 <b>${esc(m.year ?? '')}</b><input type="range" data-year min="${m.years.min}" max="${m.years.max}" step="1" value="${m.year ?? m.years.max}"></label></div>` : '';
+    const py = m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind) && !ind.noPlay ? playYears(state.index, ind.code) : null, sgOn = v.level === 'nation' && !reduced ? !!autoT : state.playing;
+    const yearCtl = py && py.years.length ? `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${sgOn}" aria-label="${sgOn ? '재생 멈춤' : `${py.years[0]}년부터 ${py.years[py.years.length - 1]}년까지 재생`}">${sgOn ? '❚❚' : '▶'}</button><label>연도 <b>${esc(m.year ?? '')}</b><input type="range" data-year min="${py.years[0]}" max="${py.years[py.years.length - 1]}" step="1" value="${m.year ?? py.years[py.years.length - 1]}"></label></div>`
+      : m.kind === 'emd' && m.years && (ind.series || ind.computed) ? `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${state.playing}" aria-label="${state.playing ? '재생 멈춤' : `${m.years.min}년부터 ${m.years.max}년까지 재생`}">${state.playing ? '❚❚' : '▶'}</button><label>연도 <b>${esc(m.year ?? '')}</b><input type="range" data-year min="${m.years.min}" max="${m.years.max}" step="1" value="${m.year ?? m.years.max}"></label></div>` : '';
     top.innerHTML = crumbs + indCtlHTML(ind) + `<div class="map-ctl">${ind.series ? seg('mode', MODES, state.mode, '현재 또는 5년 변화') : ''}${yearCtl}</div>`;
-    const lkey = ind.code + mode, legend = legendHTML(ind, mode, src, m.year, ok).replace('class="map-legend"', `class="map-legend${lkey !== lastLegend && !reduced ? ' is-new' : ''}"`); lastLegend = lkey;
+    const lkey = ind.code + mode, legend = legendHTML(ind, mode, src, m.year, ok, m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind)).replace('class="map-legend"', `class="map-legend${lkey !== lastLegend && !reduced ? ' is-new' : ''}"`); lastLegend = lkey;
     const opts = (list, key) => list.map(x => ({ code: x[key], name: x.name }));
     const kids = v.sido ? childrenOf(state.index, v.sido.code2) : [];
     const sidoSel = selectHTML('sido', '시·도', opts(state.index.sido || [], 'code2'), v.sido && v.sido.code2, '전국');
@@ -515,6 +562,7 @@
     if (state.mapErr) { const s = stage.querySelector('[data-map-slot]'); if (s) s.outerHTML = emptyHTML('지도를 불러오지 못했습니다', ['네트워크를 확인한 뒤 다시 열어 주세요.', '아래 목록으로는 계속 고를 수 있습니다.']); }
     else drawMap(v, m);
     heroLiveHTML(v, m, ind);
+    yearbar(v, m, ind, mode);
     app.querySelectorAll('[data-count]').forEach(countUp);
   }
   // 이전에 보인 값에서 새 값으로 센다(같은 값이면 그대로). 재생 중 매번 0부터 다시 세지 않는다
@@ -524,11 +572,22 @@
     // 백그라운드 탭에서는 rAF가 멈춰 0이 남는다 — 최종값을 먼저 쓰고, 보일 때만 애니메이션
     el.textContent = f.format(target);
     if (reduced || from === target || document.hidden) return;
-    const t0 = performance.now(), dur = 800;
+    const t0 = performance.now(), dur = 550; // 연도 재생 한 칸(750ms)보다 짧게: 숫자가 해마다 멈춰 읽힌다
     const tick = t => { const p = Math.min(1, (t - t0) / dur), e = p === 1 ? 1 : 1 - Math.pow(2, -10 * p); el.textContent = f.format(from + (target - from) * e); if (p < 1) requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
   }
 
+  // 지도 위 큰 연도와 진행 막대(전국·시도 단계, 연도 요약이 있는 지표). 칸은 처음~끝 해, 빈 칸은 건너뛴 해
+  let ybar = null;
+  function yearbar(v, m, ind, mode) {
+    if (!ybar) return;
+    const on = m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind);
+    ybar.hidden = !on; if (!on) return;
+    const py = playYears(state.index, ind.code), c = overCaption(state.index, ind, m.year, m.sgs);
+    const all = ind.noPlay || !py.years.length ? [] : Array.from({ length: py.years[py.years.length - 1] - py.years[0] + 1 }, (_, k) => py.years[0] + k);
+    ybar.innerHTML = `<b class="yb-y">${esc(c.year ?? '')}</b>` + (all.length ? `<span class="yb-track">${all.map(y => `<i class="${py.years.includes(y) ? '' : 'is-skip'}${y <= c.year ? ' is-on' : ''}${y === c.year ? ' is-cur' : ''}"></i>`).join('')}</span><span class="yb-ends"><span>${all[0]}</span><span>${all[all.length - 1]}</span></span>` : '') +
+      (c.skipNote ? `<small>${esc(c.skipNote)}</small>` : '') + (ind.noPlay ? '<small>최신 연도만 보여 줍니다</small>' : '');
+  }
   // Leaflet 지도는 한 번 만들어 무대(stage)에 두고, render()는 색·선택만 바꾼다
   let M = null;
   function drawMap(v, m) {
@@ -542,6 +601,7 @@
       const L = window.L, el = document.createElement('div'); el.className = 'map-canvas'; el.setAttribute('role', 'region');
       el.insertAdjacentHTML('beforeend', '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><pattern id="rmHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" fill="#d4dbd8"/><line x1="0" y1="0" x2="0" y2="6" stroke="#6b7a75" stroke-width="2"/></pattern></defs></svg>');
       slot.replaceWith(el);
+      ybar = document.createElement('div'); ybar.className = 'map-yearbar'; ybar.hidden = true; ybar.setAttribute('aria-hidden', 'true'); el.appendChild(ybar);
       const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, zoomSnap: 0.25, attributionControl: false });
       L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
@@ -595,6 +655,7 @@
   }
   function go(route, focusSel) {
     stopPlay(); stopAuto(true);
+    if (state.yearByAuto) { state.year = null; state.yearByAuto = false; }
     state.route = route;
     const v = resolve(state.index, route);
     if (v.level !== 'empty') history.replaceState(null, '', toHash({ sido: v.sido && v.sido.code2, sigungu: v.sigungu && v.sigungu.code5, gu: v.gu && v.gu.code5, dong: v.level === 'emd' ? route.dong : null }));
@@ -604,6 +665,15 @@
   function stopPlay() { clearInterval(timer); timer = null; state.playing = false; }
   function play() {
     const v = resolve(state.index, state.route), m = model(v);
+    if (m.kind === 'sg') {
+      if (v.level === 'nation' && !reduced) { if (autoT) { stopAuto(true); render(); } else { state.touched = false; startAuto(state.ind); } return; }
+      const ys = playYears(state.index, state.ind).years; if (!ys.length) return;
+      if (state.playing) { stopPlay(); render(); return; }
+      let i = ys.indexOf(state.year); if (i < 0 || i >= ys.length - 1) i = 0;
+      state.playing = true; state.yearByAuto = false; state.year = ys[i]; render();
+      timer = setInterval(() => { i++; if (i >= ys.length) { stopPlay(); render(); return; } state.year = ys[i]; render(); }, reduced ? 1000 : 700);
+      return;
+    }
     if (m.kind !== 'emd' || !m.years) return;
     if (state.playing) { stopPlay(); render(); return; }
     state.playing = true; state.year = m.year >= m.years.max ? m.years.min : m.year;
@@ -612,19 +682,31 @@
   }
   // 첫 화면 자동 재생: 전국 단계에서 기준이 있는 지표를 차례로 보여 준다. 사용자가 만지면 멈추고 다시 켜지 않는다
   let visible = true;
-  function autoList() { return inds().filter(i => (i.computed || (i.series && hasSummary(i, state.index))) && avail(i)); } // 전국 단계에 색이 있는 지표만
-  function startAuto() {
-    if (auto || reduced || state.touched || !visible || document.hidden || !M) return;
-    if (resolve(state.index, state.route).level !== 'nation') return;
-    auto = setInterval(() => {
-      const list = autoList(), i = list.findIndex(x => x.code === state.ind);
-      state.ind = list[(i + 1) % list.length].code; render();
-    }, 3600);
+  // 순서: 노후 → 사업체 → 인구(해마다) → 요건 충족 수(최신 연도만, 연도 비교 안 함). 연도 요약이 없는 지표는 뺀다
+  const AUTO_ORDER = ['DECLINE_AGING_20Y_PCT', 'DECLINE_BIZ_DROP10Y_PCT', 'DECLINE_POP_DROP30Y_PCT', 'DECLINE_MET_COUNT'];
+  function autoList() { return AUTO_ORDER.map(c => inds().find(i => i.code === c)).filter(i => i && hasYears(state.index, i)); }
+  function autoRun(ind, i) {
+    const ys = ind.noPlay ? [] : playYears(state.index, ind.code).years, last = !ys.length || i >= ys.length - 1;
+    autoT = setTimeout(() => (last ? autoNext() : autoRun(ind, i + 1)), last ? (ys.length ? 2400 : 4200) : 750);
+    state.ind = ind.code; state.mode = 'now'; state.year = ys.length ? ys[i] : null; state.yearByAuto = true;
     render();
   }
-  // 멈출 때 다시 그리지 않는다(누르는 도중 버튼·지도 칸이 바뀌면 click이 사라진다). 안내 줄만 지운다
-  function stopAuto(user) { if (user) state.touched = true; if (auto) { clearInterval(auto); auto = null; heroLive && heroLive.querySelector('.hl-auto')?.remove(); } }
-  const touch = () => { if (!state.touched) stopAuto(true); };
+  function autoNext() { const list = autoList(), k = list.findIndex(x => x.code === state.ind); autoRun(list[(k + 1) % list.length], 0); }
+  function startAuto(from) {
+    if (autoT || reduced || state.touched || !visible || document.hidden || !M) return;
+    if (resolve(state.index, state.route).level !== 'nation') return;
+    const list = autoList(); if (!list.length) return;
+    autoRun(list.find(x => x.code === (from || state.ind)) || list[0], 0);
+  }
+  // 멈출 때 다시 그리지 않는다(누르는 도중 버튼·지도 칸이 바뀌면 click이 사라진다). 안내 줄과 재생 버튼만 바꾼다
+  function stopAuto(user) {
+    if (user) state.touched = true;
+    if (!autoT) return;
+    clearTimeout(autoT); autoT = null;
+    if (heroLive) { heroLive.querySelector('.hl-auto')?.remove(); heroLive.setAttribute('aria-live', 'polite'); }
+    const b = app.querySelector('[data-play]'); if (b) { b.textContent = '▶'; b.setAttribute('aria-pressed', 'false'); }
+  }
+  const touch = e => { if (e && e.target && e.target.closest && e.target.closest('[data-play]')) return; if (!state.touched) stopAuto(true); };
   ['pointerdown', 'wheel', 'keydown'].forEach(t => app.addEventListener(t, touch, { passive: true }));
   document.addEventListener('visibilitychange', () => (document.hidden ? stopAuto(false) : startAuto()));
   if ('IntersectionObserver' in window) new IntersectionObserver(es => { visible = es[0].isIntersecting; visible ? startAuto() : stopAuto(false); }, { threshold: 0.25 }).observe(app);
@@ -633,14 +715,14 @@
     const a = e.target.closest('a[href^="#map"]');
     if (a) { e.preventDefault(); go(parseHash(a.getAttribute('href')) || {}); return; }
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.group) { const list = inds().filter(i => i.group === b.dataset.group), pick = list.find(avail) || list[0]; if (pick) state.ind = pick.code; render(); app.querySelector(`[data-group="${b.dataset.group}"]`)?.focus({ preventScroll: true }); }
-    else if (b.dataset.ind) { state.ind = b.dataset.ind; render(); app.querySelector(`[data-ind="${CSS.escape(b.dataset.ind)}"]`)?.focus({ preventScroll: true }); }
-    else if (b.dataset.mode) { state.mode = b.dataset.mode; render(); app.querySelector(`[data-mode="${b.dataset.mode}"]`)?.focus({ preventScroll: true }); }
+    if (b.dataset.group) { const list = inds().filter(i => i.group === b.dataset.group), pick = list.find(avail) || list[0]; if (pick) state.ind = pick.code; state.year = null; render(); app.querySelector(`[data-group="${b.dataset.group}"]`)?.focus({ preventScroll: true }); }
+    else if (b.dataset.ind) { state.ind = b.dataset.ind; state.year = null; render(); app.querySelector(`[data-ind="${CSS.escape(b.dataset.ind)}"]`)?.focus({ preventScroll: true }); }
+    else if (b.dataset.mode) { state.mode = b.dataset.mode; state.year = null; render(); app.querySelector(`[data-mode="${b.dataset.mode}"]`)?.focus({ preventScroll: true }); }
     else if (b.dataset.dong) go({ ...state.route, dong: b.dataset.dong }, `.map-list [data-dong="${b.dataset.dong}"]`);
     else if (b.hasAttribute('data-close')) go({ ...state.route, dong: null }, `.map-list [data-dong]`);
     else if (b.hasAttribute('data-play')) { play(); app.querySelector('[data-play]')?.focus({ preventScroll: true }); }
   });
-  app.addEventListener('input', e => { const r = e.target.closest('[data-year]'); if (r) { stopPlay(); state.year = +r.value; render(); app.querySelector('[data-year]')?.focus({ preventScroll: true }); } });
+  app.addEventListener('input', e => { const r = e.target.closest('[data-year]'); if (r) { stopPlay(); state.year = +r.value; state.yearByAuto = false; render(); app.querySelector('[data-year]')?.focus({ preventScroll: true }); } });
   app.addEventListener('change', e => {
     const s = e.target.closest('select'); if (!s) return;
     const val = s.value;
