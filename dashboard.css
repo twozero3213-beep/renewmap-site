@@ -15,7 +15,7 @@
 .dash-chip.is-planned[aria-pressed="true"] { background: #4f625d; color: #fff; border-style: solid; }
 .dash-dongs .dash-chip { font-size: 14px; padding: 6px 14px; }
 .dash-dongs .dash-chip[aria-pressed="true"] { background: var(--green); border-color: var(--green); }
-#dashboard button:focus-visible { outline: 3px solid #f0a020; outline-offset: 2px; }
+#dashboard button:focus-visible { outline: 3px solid #153c39; outline-offset: 2px; box-shadow: 0 0 0 5px #fff; } /* 문채원 P1: 밝은 배경 ink 링 + 흰 안쪽 링 */
 
 .dash-main { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); margin-top: 8px; }
 @media (min-width: 900px) { .dash-main { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); } }
@@ -85,12 +85,9 @@
 
 /* 빈 상태 */
 .dash-empty { text-align: center; background: var(--card); border: 1px dashed #b9cbc4; border-radius: 18px; padding: 32px 20px; margin-top: 8px; }
-.dash-empty svg { width: 120px; height: 80px; }
-.dash-empty rect { fill: #dfe9e4; animation: dash-pulse 1.6s ease-in-out infinite alternate; }
-.dash-empty rect:nth-child(2) { animation-delay: .2s; } .dash-empty rect:nth-child(3) { animation-delay: .4s; } .dash-empty rect:nth-child(4) { animation-delay: .6s; }
+.dash-empty img { width: 120px; height: auto; display: block; margin: 0 auto; }
 .dash-empty h3 { margin: 10px 0 6px; }
 .dash-empty p { margin: 0; color: var(--dim); }
-@keyframes dash-pulse { to { fill: #c4d8cf; } }
 
 /* 지도 보기(Leaflet). isolation으로 Leaflet 내부 z-index(최대 1000)가 머리글 위로 올라오지 않게 가둔다 */
 .dash-view { margin: 0 0 12px; }
@@ -111,6 +108,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .dash-fill { transition: none; transform: scaleX(1); }
-  .dash-empty rect, .dash-detail { animation: none; }
+  .dash-detail { animation: none; }
   .dash-big, .dash-chip, .dash-seg button { transition: none; }
 }

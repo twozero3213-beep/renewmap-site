@@ -1,0 +1,94 @@
+/* 전국 드릴다운 지도. 칩·세그먼트·태그는 dashboard.css·styles.css의 것을 그대로 쓴다. */
+.map-section { min-height: 70vh; padding-top: 32px; }
+.map-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .map-grid { grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); align-items: start; } .map-panel { position: sticky; top: 72px; } }
+.map-main, .map-panel { min-width: 0; }
+.map-panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px; }
+
+/* 브레드크럼 + 단계 이름 */
+.map-crumbs { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-bottom: 10px; }
+.map-crumbs ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; font-size: 16px; font-weight: 700; }
+.map-crumbs li + li::before { content: "›"; margin: 0 6px; color: var(--dim); font-weight: 400; }
+.map-crumbs a { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+.map-crumbs [aria-current] { color: var(--ink); }
+.map-step { font-size: 13px; font-weight: 700; color: var(--green); background: #e3f1ea; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+
+/* 지표·모드·연도 */
+.map-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+.map-seg button[aria-pressed="true"] { border: 1px solid var(--ink); } /* DESIGN 1.4: 활성 알약은 그림자만으로 구분하지 않는다 */
+.map-seg { max-width: 100%; overflow-x: auto; scrollbar-width: thin; }
+.map-seg button { padding: 6px 10px; white-space: nowrap; } /* 360px에서 글자가 두 줄로 꺾이지 않게, 세그먼트 안에서만 가로 스크롤 */
+.map-year { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 220px; }
+.map-year label { display: flex; align-items: center; gap: 8px; flex: 1; font-size: 14px; font-weight: 600; color: var(--dim); }
+.map-year label b { color: var(--ink); font-variant-numeric: tabular-nums; min-width: 3em; }
+.map-year input[type="range"] { flex: 1; min-width: 120px; accent-color: var(--green); height: 28px; }
+.map-play { font: inherit; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; font-size: 14px; }
+.map-play[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.map-year-note { font-size: 14px; color: var(--dim); margin: 0; }
+
+/* 지도 캔버스. isolation으로 Leaflet z-index를 가둔다 */
+.map-canvas { position: relative; isolation: isolate; z-index: 0; height: min(64vh, 640px); min-height: 320px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #e7eeea; }
+@media (max-width: 720px) { .map-canvas { height: 60vh; min-height: 300px; } }
+.map-canvas.is-wait { display: grid; place-items: center; color: var(--dim); font-size: 15px; }
+#map .leaflet-container { font: inherit; }
+#map .leaflet-interactive { transition: fill .3s, fill-opacity .3s, stroke .3s; } /* 연도·지표 전환은 300ms, 깜빡임 없이 */
+#map .leaflet-tooltip { font-size: 14px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
+#map .leaflet-tooltip small { color: var(--dim); }
+#map .leaflet-control-attribution { font-size: 12px; }
+.map-hint { font-size: 14px; color: var(--dim); margin: 10px 0 8px; }
+
+/* 범례: 지표별 고정 구간 + 빗금(자료 없음) + 상시 문구 */
+.map-legend { margin: 0 0 12px; }
+.map-legend-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+.map-legend ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.map-legend i { display: inline-block; width: 16px; height: 16px; border-radius: 3px; margin-right: 5px; vertical-align: -3px; border: 1px solid rgba(21,60,57,.25); }
+.map-legend i.is-hatch { background-image: repeating-linear-gradient(45deg, #6b7a75 0 2px, #d4dbd8 2px 6px) !important; border: 1px dashed #4f625d; }
+.map-legend-note { font-size: 13px; color: var(--dim); margin: 6px 0 0; }
+
+/* 키보드 대체 목록 */
+.map-selects { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0 0 10px; }
+.map-select { display: grid; gap: 4px; font-size: 14px; font-weight: 700; min-width: 150px; flex: 1; }
+.map-select select { font: inherit; font-size: 15px; font-weight: 400; padding: 8px 10px; border: 1px solid #7a9089; border-radius: 10px; background: #fff; color: var(--ink); }
+.map-list { flex-wrap: wrap; overflow: visible; }
+.map-live { font-size: 14px; color: var(--dim); margin: 4px 0 0; }
+#map button:focus-visible, #map select:focus-visible, #map input:focus-visible, #map summary:focus-visible { outline: 3px solid #153c39; outline-offset: 2px; box-shadow: 0 0 0 5px #fff; }
+
+/* 패널 */
+.map-guide { margin: 0; font-size: 15px; }
+.map-h3 { margin: 0 0 8px; font-size: 20px; } .map-h3 small, .map-h4 small { white-space: nowrap; font-size: 13px; font-weight: 400; color: var(--dim); font-variant-numeric: tabular-nums; }
+.map-h4 { margin: 18px 0 6px; font-size: 15px; color: var(--dim); }
+.map-bignum { display: flex; flex-direction: column; gap: 4px; margin: 0; background: var(--bg); border-radius: 14px; padding: 14px 16px; }
+.map-bignum .k { font-size: 14px; font-weight: 600; color: var(--dim); }
+.map-bignum .n { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
+.map-bignum b { font-size: clamp(30px, 5vw, 40px); font-weight: 800; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.map-bignum b.is-text { font-size: 20px; color: var(--dim); }
+.map-bignum small { font-size: 16px; font-weight: 700; }
+.map-bignum .tag { align-self: flex-start; margin-top: 2px; }
+.map-trend { font-style: normal; font-size: 14px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.map-trend.worse { color: #8f2f0c; background: #fde2d4; } .map-trend.better { color: #0b5a48; background: #dcefe7; } .map-trend.same { color: #3f524d; background: #e7eeea; }
+.map-spark-row { margin-bottom: 8px; }
+.map-spark-head { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--dim); flex-wrap: wrap; }
+.map-spark-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.map-spark, .map-strip { width: 100%; height: auto; display: block; }
+.map-spark path { fill: none; stroke: var(--green); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.map-spark-dot { fill: var(--ink); } .map-spark-gap { stroke: #c5d4ce; stroke-dasharray: 2 3; }
+.map-spark.is-empty text, .map-strip.is-empty text { font-size: 12px; fill: var(--dim); }
+.map-strip circle { stroke: #fff; stroke-width: 1; } .map-strip circle.is-sel { stroke: var(--ink); stroke-width: 2.5; }
+.map-strip-tick { stroke: #9db1aa; stroke-dasharray: 3 3; }
+.map-detail { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; background: none; border-radius: 0; }
+.map-detail summary { font-size: 14px; font-weight: 700; color: var(--green); cursor: pointer; }
+.map-detail dl { margin: 10px 0 0; display: grid; gap: 6px; }
+.map-detail dl div { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; font-size: 14px; }
+.map-detail dt { color: var(--dim); font-weight: 600; } .map-detail dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.map-note { font-size: 14px; color: var(--dim); margin: 6px 0; }
+.map-hub { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 14px; }
+.map-hub li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding: 4px 0; }
+.map-hub span { color: var(--dim); font-variant-numeric: tabular-nums; }
+.map-panel-wait { color: var(--dim); font-size: 15px; }
+
+/* 빈 상태(마스코트는 usage.md 6.2: 320×200, 240px 아래로 줄이지 않는다) */
+.map-empty { text-align: center; background: var(--card); border: 1px dashed #b9cbc4; border-radius: 18px; padding: 28px 20px; }
+.map-empty img { width: 120px; height: auto; display: block; margin: 0 auto 6px; }
+.map-empty h3 { margin: 8px 0 6px; } .map-empty p { margin: 0; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) { #map .leaflet-interactive { transition: none; } }

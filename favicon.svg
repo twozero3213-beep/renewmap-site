@@ -1,1 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#006f5b"/><path d="M16 46V18h14a9 9 0 0 1 2 17.8L41 46h-8l-8-10h-2v10z M23 30h7a3 3 0 0 0 0-6h-7z" fill="#d7f988"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="리뉴맵 태기">
+<path d="M16 2 29 13v17H3V13z" fill="#006f5b" stroke="#006f5b" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="16" cy="6.5" r="3.8" fill="none" stroke="#153c39" stroke-width="3.6"/>
+<circle cx="16" cy="6.5" r="3.8" fill="none" stroke="#d7f988" stroke-width="2"/>
+<circle cx="16" cy="12" r="2.8" fill="#fff"/>
+<rect x="6" y="16.5" width="20" height="10.5" rx="3" fill="#fff"/>
+<circle cx="11.5" cy="21.75" r="2" fill="#153c39"/>
+<circle cx="20.5" cy="21.75" r="2" fill="#153c39"/>
+</svg>

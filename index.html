@@ -20,10 +20,14 @@
 <!-- Google Analytics 측정 ID(G-로 시작). 비어 있으면 분석 스크립트를 불러오지 않는다. -->
 <meta name="ga-id" content="">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="site.webmanifest">
 <script src="pretendard.js"></script>
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="hero.css">
+<link rel="stylesheet" href="map.css">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
  {"@type":"Organization","name":"리뉴맵 RENEWMAP","email":"renewmapteam@gmail.com","areaServed":"부산·경남","description":"도시재생·정비 용역사와 기초지자체를 위한 동네 근거 원장 서비스"},
@@ -38,7 +42,9 @@
 ]}
 </script>
 <script src="app.js" defer></script>
+<script src="hero.js" defer></script>
 <script src="dashboard.js" defer></script>
+<script src="map.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -46,7 +52,8 @@
   <div class="wrap">
     <a class="logo" href="./">RENEW<span>MAP</span></a>
     <nav class="menu" aria-label="주요 메뉴">
-      <a href="#dashboard">동네 보기</a>
+      <a href="#map">전국 지도</a>
+      <a href="#dashboard">카드 보기</a>
       <a href="#how">작동 방식</a>
       <a href="#case">활용 사례</a>
       <a href="#faq">자주 묻는 질문</a>
@@ -58,37 +65,46 @@
 <main id="main">
   <section class="hero">
     <div class="wrap hero-grid">
-      <div>
-      <h1>공모 기초조사,<br><em>숫자마다 근거가 붙어서</em> 나옵니다.</h1>
+      <div class="hero-copy">
+      <h1>숫자마다 근거가 붙는 기초조사</h1>
       <p class="lead">
         리뉴맵은 도시재생·정비 기초조사를 법정 기준으로 계산합니다.<br>
         기준일을 고정하고, 현장에서 확인한 증거를 붙여 보고서로 납품합니다.
       </p>
+      <div id="heroStats" class="hero-stats" aria-label="수집 현황"></div>
       <div class="ctas">
-        <a class="btn" href="#contact" data-track="cta_hero">시범 납품 상담 신청</a>
-        <a class="btn ghost" href="#how">어떻게 작동하나요?</a>
+        <a class="btn glow" href="#contact" data-track="cta_hero">시범 납품 상담 신청</a>
+        <a class="btn ghost" href="#map">전국 지도 보기</a>
       </div>
       <p class="note">부산·경남 도시계획 용역사와 기초지자체를 먼저 만나고 있습니다.</p>
       </div>
-      <a class="hero-preview" href="#dashboard" aria-label="동네 노후도 대시보드로 이동">
-        <svg viewBox="0 0 360 400" role="img" aria-label="대시보드 미리보기: 위쪽에 구 선택 칩, 가운데에 큰 숫자 카드 세 장, 아래에 막대그래프가 있는 화면 형태. 실제 수치는 아래 대시보드에 있습니다.">
-          <rect class="hp-frame" x="8" y="8" width="344" height="384" rx="28"/>
-          <g class="hp-chips"><rect x="32" y="36" width="64" height="24" rx="12" class="on"/><rect x="104" y="36" width="56" height="24" rx="12"/><rect x="168" y="36" width="72" height="24" rx="12"/><rect x="248" y="36" width="56" height="24" rx="12" class="dash"/></g>
-          <g class="hp-cards"><rect x="32" y="80" width="92" height="96" rx="16"/><rect x="134" y="80" width="92" height="96" rx="16"/><rect x="236" y="80" width="92" height="96" rx="16"/>
-            <rect class="num" x="46" y="112" width="52" height="22" rx="6"/><rect class="num" x="148" y="112" width="44" height="22" rx="6"/><rect class="num" x="250" y="112" width="58" height="22" rx="6"/>
-            <rect class="pill ok" x="46" y="146" width="34" height="14" rx="7"/><rect class="pill check" x="148" y="146" width="44" height="14" rx="7"/><rect class="pill ok" x="250" y="146" width="34" height="14" rx="7"/></g>
-          <g class="hp-bars"><rect class="track" x="72" y="204" width="256" height="18" rx="6"/><rect class="fill a" x="72" y="204" width="150" height="18" rx="6"/>
-            <rect class="track" x="72" y="230" width="256" height="18" rx="6"/><rect class="fill b" x="72" y="230" width="96" height="18" rx="6"/>
-            <rect class="track" x="72" y="270" width="256" height="18" rx="6"/><rect class="fill a" x="72" y="270" width="190" height="18" rx="6"/>
-            <rect class="track" x="72" y="296" width="256" height="18" rx="6"/><rect class="fill b" x="72" y="296" width="128" height="18" rx="6"/>
-            <rect class="track" x="72" y="336" width="256" height="18" rx="6"/><rect class="fill a" x="72" y="336" width="120" height="18" rx="6"/>
-            <rect class="label" x="32" y="214" width="28" height="12" rx="4"/><rect class="label" x="32" y="280" width="28" height="12" rx="4"/><rect class="label" x="32" y="346" width="28" height="12" rx="4"/></g>
-        </svg>
-      </a>
+      <div class="hero-demo">
+        <div id="heroDemo" aria-label="제품 시연: 자료 수집, 법정 판정, 현장 확인, 보고서 4단계"></div>
+        <div class="hero-foot"><p class="note">제품 시연 화면입니다.<br>셀 값은 원장에서 내보낸 반여동 자료이고, 나머지는 흐름 설명입니다.</p>
+        <img id="heroTaggy" class="hero-mascot" src="mascot/taggy-default.svg" width="160" height="197" alt="리뉴맵 마스코트 태기가 돋보기를 들고 인사한다"></div>
+      </div>
     </div>
   </section>
 
-  <section class="alt" id="problem">
+  <section id="map" class="map-section" aria-labelledby="mapTitle">
+    <div class="wrap">
+      <h2 id="mapTitle">전국 동네 쇠퇴 지표 지도</h2>
+      <p class="sub">전국에서 시작해 광역, 기초, 읍·면·동으로 내려갑니다.<br>동을 누르면 2000년부터의 시계열과 출처가 열립니다.</p>
+      <div id="mapApp"></div>
+      <noscript><p>지도는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
+    </div>
+  </section>
+
+  <section class="alt" id="verdict" aria-labelledby="verdictTitle">
+    <div class="wrap">
+      <span class="label-scenario">실제 동 1곳 · 초안 규칙으로 비교</span>
+      <h2 id="verdictTitle">1분 판정 예시</h2>
+      <p class="sub">쇠퇴 3요건의 셀 값과 기준값을 나란히 둡니다.<br>자료가 없는 요건은 추정하지 않고 '추가확인'으로 남깁니다.</p>
+      <div id="verdictCards"></div>
+    </div>
+  </section>
+
+  <section id="problem">
     <div class="wrap">
       <h2>기초조사에서 시간이 새는 곳</h2>
       <p class="sub">공모 접수 전 몇 주 동안 반복되는 일입니다.</p>
@@ -100,17 +116,7 @@
     </div>
   </section>
 
-  <section id="dashboard" aria-labelledby="dashTitle">
-    <div class="wrap">
-      <h2 id="dashTitle">부산 동네 노후도 한눈에</h2>
-      <p class="sub">구를 고르고, 동을 고르면 3기준 노후율이 보입니다.<br>숫자를 누르면 출처와 계산식이 열립니다.</p>
-      <p class="dash-meta" data-meta>설명: 건축물대장 기준 노후 건축물 비율이며, 판정 결과가 아닙니다.</p>
-      <div id="dashApp"></div>
-      <noscript><p>대시보드는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
-    </div>
-  </section>
-
-  <section id="how">
+  <section class="alt" id="how">
     <div class="wrap">
       <h2>작동 방식</h2>
       <p class="sub">모든 숫자는 출처가 기록된 원장에서 나옵니다.</p>
@@ -120,6 +126,16 @@
         <div class="card"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="14" width="36" height="26" rx="5" class="f"/><path d="M17 14l3-5h8l3 5"/><circle cx="24" cy="27" r="7"/></svg><div class="step">3단계</div><h3>현장 확인</h3><p>사진·위치·정확도·시각을 함께 남깁니다.<br>필수 사진이 없으면 '확인'이 되지 않습니다.</p></div>
         <div class="card"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h18l8 8v28H12z" class="f"/><path d="M30 6v8h8M18 28l5 5 9-10"/></svg><div class="step">4단계</div><h3>보고서 납품</h3><p>HWPX·PDF·엑셀로 받습니다.<br>숫자마다 출처와 기준일을 볼 수 있습니다.</p></div>
       </div>
+    </div>
+  </section>
+
+  <section id="dashboard" aria-labelledby="dashTitle">
+    <div class="wrap">
+      <h2 id="dashTitle">카드 보기 · 건축물대장 3기준</h2>
+      <p class="sub">부산 구·군을 고르고 법정동을 고르면 동수·연면적·세대 기준 노후율이 보입니다.<br>숫자를 누르면 출처와 계산식이 열립니다.</p>
+      <p class="dash-meta" data-meta>설명: 건축물대장 기준 노후 건축물 비율이며, 판정 결과가 아닙니다.</p>
+      <div id="dashApp"></div>
+      <noscript><p>대시보드는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
     </div>
   </section>
 

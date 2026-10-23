@@ -130,7 +130,7 @@
     return `<div class="dash-detail-head"><h4>${esc(title)}</h4><button type="button" class="dash-close" data-close>닫기</button></div><dl>${rows}</dl>`;
   }
   function emptyHTML(title, lines) {
-    return `<div class="dash-empty" role="status"><svg viewBox="0 0 120 80" aria-hidden="true"><rect x="8" y="44" width="20" height="28" rx="4"/><rect x="36" y="28" width="20" height="44" rx="4"/><rect x="64" y="52" width="20" height="20" rx="4"/><rect x="92" y="36" width="20" height="36" rx="4"/></svg>` +
+    return `<div class="dash-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true">` +
       `<h3>${esc(title)}</h3>${lines.map(l => `<p>${esc(l)}</p>`).join('')}</div>`;
   }
 
@@ -204,6 +204,7 @@
       tag('script', { src: LEAFLET + 'leaflet.js', integrity: 'sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==' }).onload = ok;
     }).catch(e => { leafletP = null; throw e; }));
   }
+  api.loadLeaflet = loadLeaflet; // map.js(전국 지도)도 같은 로더를 쓴다
   let mapState = {};
   function dropMap() { if (mapState.map) mapState.map.remove(); mapState = {}; }
   function mapBodyHTML(v) {
