@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /thanks.html
+Sitemap: https://twozero3213-beep.github.io/renewmap-site/sitemap.xml

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 360" role="img" font-family="Pretendard Variable, Pretendard, sans-serif">
+<rect x="1" y="1" width="518" height="358" rx="18" fill="#fff" stroke="#d9e4df" stroke-width="2"/>
+<text x="28" y="48" font-size="16" fill="#4f625d">지표 · ○○동(예시)</text>
+<text x="28" y="88" font-size="26" font-weight="800" fill="#153c39">준공 20년 이상 건축물 비율</text>
+<text x="28" y="140" font-size="44" font-weight="800" fill="#006f5b">00.0%</text>
+<rect x="250" y="108" width="74" height="30" rx="15" fill="#dcefe7"/><text x="287" y="129" font-size="15" font-weight="700" fill="#0b5a48" text-anchor="middle">확인</text>
+<g font-size="15" fill="#153c39">
+<text x="28" y="190">출처 · 건축HUB 건축물대장 표제부</text>
+<text x="28" y="218">기준일 · 0000-00-00 · 조회시각 기록</text>
+<text x="28" y="246">계산식 · 20년 이상 동수 ÷ 전체 동수</text>
+<text x="28" y="274">규칙 버전 · DECLINE-v2026.10</text>
+<text x="28" y="302">현장확인 · 사진 3장 · GPS 정확도 기록</text>
+</g>
+<text x="28" y="336" font-size="13" fill="#4f625d">설명용 예시입니다. 실제 수치가 아닙니다.</text>
+</svg>
