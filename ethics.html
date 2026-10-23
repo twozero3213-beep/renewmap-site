@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 윤리·데이터 원칙 | 리뉴맵</title>
+<meta name="description" content="리뉴맵이 AI를 쓰는 방식 8가지. 판정은 사람이 하고, 동네에 점수나 순위를 매기지 않으며, 모든 숫자에 출처와 기준일을 붙입니다.">
+<meta name="theme-color" content="#006f5b">
+<meta name="ga-id" content="">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<script src="pretendard.js"></script>
+<link rel="stylesheet" href="styles.css">
+<style>
+/* 원칙 8개: 번호·아이콘·한 줄 제목·짧은 설명. docs/legal/ai_ethics.md 1부 문장을 그대로 쓴다 */
+.eth-lead { font-size: 18px; margin: 0 0 24px; }
+.eth-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin: 0 0 32px; }
+.eth-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; grid-template-columns: 44px 1fr; gap: 6px 14px; align-items: start; }
+.eth-card .ico { margin: 0; grid-row: span 3; }
+.eth-card .n { font-size: 13px; font-weight: 700; color: var(--green); letter-spacing: .06em; }
+.eth-card h2 { margin: 0; font-size: 18px; line-height: 1.35; }
+.eth-card p { margin: 0; font-size: 15px; color: var(--dim); }
+.eth-card.is-no { border-left: 5px solid #8f2f0c; } .eth-card.is-yes { border-left: 5px solid #0b5a48; }
+.eth-no { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 32px; padding: 0; list-style: none; }
+.eth-no li { background: #fde2d4; color: #8f2f0c; font-weight: 700; font-size: 14px; border-radius: 999px; padding: 6px 14px; }
+.eth-no li::before { content: '✕ '; }
+.eth-flow { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 0 0 32px; padding: 0; list-style: none; counter-reset: s; }
+.eth-flow li { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; text-align: center; font-size: 14px; position: relative; }
+.eth-flow li b { display: block; font-size: 16px; margin-bottom: 4px; } .eth-flow li span { font-size: 26px; display: block; }
+.eth-flow li::before { counter-increment: s; content: counter(s); position: absolute; top: -10px; left: 10px; background: var(--green); color: #fff; font-size: 12px; font-weight: 800; width: 22px; height: 22px; border-radius: 50%; line-height: 22px; }
+.eth-note { font-size: 14px; color: var(--dim); }
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+ {"@type":"ListItem","position":1,"name":"홈","item":"./"},
+ {"@type":"ListItem","position":2,"name":"AI 윤리·데이터 원칙"}]}
+</script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<header class="top"><div class="wrap"><a class="logo" href="./">RENEW<span>MAP</span></a></div></header>
+<main class="wrap page" id="main">
+<nav class="breadcrumb" aria-label="현재 위치"><ol><li><a href="./">홈</a></li><li aria-current="page">AI 윤리·데이터 원칙</li></ol></nav>
+<h1>리뉴맵이 AI를 쓰는 방식</h1>
+<p class="label-scenario">초안 · 변호사 확인 전</p>
+<p class="eth-lead">리뉴맵의 AI는 사람이 확인할 숫자와 글을 돕는 보조 도구입니다.<br>도시재생 대상인지 아닌지 판정하는 일은 AI가 하지 않습니다.</p>
+
+<h2>한눈에: 하지 않는 것</h2>
+<ul class="eth-no" aria-label="리뉴맵이 만들지 않는 것">
+  <li>치안 점수</li><li>'기피 지역' 분류</li><li>동네 종합 등급</li><li>동네 순위</li><li>투자·거래 조언</li><li>성별·결혼·직업·건강 정보</li><li>성범죄자 공개 정보</li><li>건물 소유자 개인정보</li>
+</ul>
+
+<h2>숫자가 화면에 오는 길</h2>
+<ol class="eth-flow" aria-label="숫자의 흐름 5단계">
+  <li><span>🗂</span><b>공공데이터</b>출처·기준일·이용조건 기록</li>
+  <li><span>📒</span><b>원장 셀</b>값마다 계산식·규칙 버전</li>
+  <li><span>⚖️</span><b>사람이 만든 규칙</b>법 조문을 읽고 승인</li>
+  <li><span>🗺</span><b>지도·척도표</b>판정 아님 · 순위 없음</li>
+  <li><span>✍️</span><b>AI 문장(선택)</b>숫자만 옮김 · 사람 검토</li>
+</ol>
+
+<h2>8가지 원칙</h2>
+<div class="eth-grid">
+  <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="16" r="8" class="f"/><path d="M8 42c2-9 8-14 16-14s14 5 16 14"/><path d="M30 10l4-4"/></svg><span class="n">01</span><h2>판정은 사람이 합니다.</h2><p>법정 기준을 계산하는 규칙은 사람이 법 조문을 읽고 만들고 승인합니다.<br>AI는 글을 다듬고 점검을 돕는 데만 씁니다.</p></article>
+  <article class="eth-card is-no"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="26" width="8" height="14" rx="2" class="f"/><rect x="20" y="16" width="8" height="24" rx="2" class="f"/><rect x="32" y="8" width="8" height="32" rx="2" class="f"/><path d="M6 6l36 36"/></svg><span class="n">02</span><h2>동네에 점수를 매기거나 순위를 세우지 않습니다.</h2><p>치안 점수, '기피 지역' 같은 분류, 동네 종합 등급은 만들지 않습니다.<br>CCTV, 보안등, 경찰관서까지의 거리처럼 확인된 사실만 보여 드립니다.<br>시설이 적다고 해서 그곳이 위험하다는 뜻은 아닙니다.</p></article>
+  <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h18l8 8v28H12z" class="f"/><path d="M30 6v8h8M18 24h12M18 30h12M18 36h8"/></svg><span class="n">03</span><h2>모든 숫자에 출처와 기준일이 있습니다.</h2><p>화면과 보고서의 숫자는 출처, 조회 시각, 기준일, 계산식을 따라가 확인할 수 있습니다.<br>모르는 것은 '추가확인'이라고 표시합니다.</p></article>
+  <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 36l10-12 8 6 8-10 10 2" /><path d="M32 14l10 2-2 10" /><path d="M6 36l10-12 8 6 8-10 10 2v8l-10-2-8 10-8-6-10 12z" class="f" stroke-dasharray="3 3"/></svg><span class="n">04</span><h2>전망은 과거 추세를 이어 본 것입니다.</h2><p>1~5년 뒤 전망은 과거 자료의 흐름을 연장한 계산입니다.<br>판정이 아니며 투자나 부동산 거래 조언도 아닙니다.<br>예측에는 틀릴 수 있는 범위(불확실성 구간)를 함께 보여 드립니다.</p></article>
+  <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="10" width="32" height="28" rx="4" class="f"/><path d="M14 20h12M14 28h20M30 16l4 4"/><path d="M34 6l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/></svg><span class="n">05</span><h2>AI가 쓴 문장은 숫자만 인용합니다.</h2><p>AI 보고서 문장은 원장에 있는 숫자와 출처만 옮깁니다.<br>'좋다', '나쁘다', '위험하다' 같은 평가는 쓰지 않습니다.<br>AI가 쓴 문장이라는 표시를 하며, 중요한 판단 전에는 사람이 검토해 주세요.</p></article>
+  <article class="eth-card is-no"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="16" class="f"/><path d="M13 13l22 22M16 24h16"/></svg><span class="n">06</span><h2>쓰지 않는 정보가 있습니다.</h2><p>성별, 결혼 여부, 직업, 건강 정보, 성범죄자 공개 정보는 쓰지 않습니다.<br>건물 소유자의 개인정보도 저장하지 않습니다.</p></article>
+  <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6l14 6v10c0 10-6 17-14 20-8-3-14-10-14-20V12z" class="f"/><path d="M17 24l5 5 9-10"/></svg><span class="n">07</span><h2>공공데이터의 이용 조건을 지킵니다.</h2><p>공공누리 유형 등 원천 데이터의 이용 조건을 확인하고, 허용되지 않는 자료는 재배포하지 않습니다.</p></article>
+  <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 12h32v20H20l-8 8v-8H8z" class="f"/><path d="M16 20h16M16 26h10"/></svg><span class="n">08</span><h2>이의가 있으면 알려 주세요.</h2><p>잘못된 숫자, 낙인으로 읽히는 표현, 개인정보 문제를 발견하면 <a href="mailto:renewmapteam@gmail.com?subject=%5B%EC%9D%B4%EC%9D%98%5D">renewmapteam@gmail.com</a>으로 알려 주세요.<br>영업일 기준 &lt;3일&gt; 안에 확인 결과를 답하고, 고칠 것은 고칩니다.</p></article>
+</div>
+
+<h2>무료 AI 보고서창은 이렇게 동작합니다</h2>
+<ol class="eth-flow" aria-label="AI 보고서창 동작 4단계">
+  <li><span>🗺</span><b>동 고르기</b>지도에서 읍·면·동 선택</li>
+  <li><span>📝</span><b>원장 문장</b>숫자·출처만으로 자동 작성</li>
+  <li><span>✨</span><b>AI 다듬기(선택)</b>동의한 뒤에만 외부 AI로 전송<br>동 이름·원장 문장만 · 개인정보 없음</li>
+  <li><span>🔍</span><b>숫자 대조</b>원장 값과 다르면 표시하지 않음</li>
+</ol>
+<p class="eth-note">무료 · 로그인 없음 · 입력 저장 없음.<br>AI가 리뉴맵 원장의 숫자와 출처를 문장으로 옮깁니다. 평가나 판정은 하지 않습니다.<br>AI 생성 문장입니다. 공모·계획에 쓰기 전에 원장 화면과 출처를 사람이 확인하세요.</p>
+<p class="eth-note">참고 기준: 과학기술정보통신부 「국가 인공지능 윤리기준」, 개인정보보호위원회의 인공지능 관련 개인정보 안내서. 정확한 명칭·개정판은 확인 중입니다.<br>원문: <code>docs/legal/ai_ethics.md</code> · 개인정보: <a href="privacy.html">개인정보 처리방침</a></p>
+</main>
+<footer><div class="wrap"><div class="links"><a href="./">홈</a><a href="./#faq">자주 묻는 질문</a><a href="./#contact">문의</a><a href="ethics.html">AI 윤리·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a></div>
+<p>리뉴맵 RENEWMAP · 부산 · <a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div></footer>
+</body>
+</html>

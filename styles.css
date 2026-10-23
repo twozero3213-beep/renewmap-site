@@ -75,6 +75,11 @@ form.contact label { font-weight: 700; font-size: 15px; display: grid; gap: 6px;
 form.contact input, form.contact textarea, form.contact select { font: inherit; padding: 12px 14px; border: 1px solid #7a9089; border-radius: 10px; background: #fff; color: var(--ink); width: 100%; }
 form.contact .agree { font-weight: 400; display: flex; gap: 8px; align-items: flex-start; }
 form.contact .agree input { width: auto; margin-top: 6px; }
+form.contact .form-hint { display: block; font-weight: 400; font-size: 13px; color: var(--dim); }
+form.contact .consent-full { margin: -6px 0 0; padding: 10px 16px; font-size: 14px; font-weight: 400; background: var(--bg); }
+form.contact .consent-full summary { font-size: 14px; color: var(--green); }
+form.contact .consent-full ul { margin: 8px 0 0; padding-left: 1.2em; } form.contact .consent-full li { margin-bottom: 4px; }
+form.contact .form-note { margin: 0; font-size: 14px; color: var(--dim); }
 .reply-time { background: #e8f4ef; border-left: 4px solid var(--green); padding: 12px 16px; border-radius: 6px; margin: 0 0 20px; }
 
 footer { padding: 36px 0 110px; font-size: 14px; color: var(--dim); }

@@ -58,3 +58,19 @@
 - 거리는 동 대표점(경계 내부점, 인구 가중 아님)에서의 직선거리, 시설 수는 단순화 경계 기준이라 경계선 부근 오차가 있다. 공원 면적은 공원 좌표가 속한 동에 전부 귀속한다.
 - `dong_index.json`: `[[code8, 동이름, code5, 시군구이름(일반구는 "시 구"), 시도이름], ...]` 전국 검색용.
 - 사업체(2026-10-23 밤): `DECLINE_BIZ_TOTAL`은 ~2019 쇠퇴진단지표(조사기반), 2020~ 통계청 SGIS 전국사업체조사(등록기반). `index.json.biz_source`에 출처·경계 연도, 못 이은 코드는 `biz_unmatched.json`. `DECLINE_BIZ_DROP10Y_PCT`·`DECLINE_BIZ_DECL3IN5`는 rules/decline.py business_req 결과에서 나온 파생값.
+
+## 시군구 단위 레이어 (2026-10-24) — `national/designations.json`, `national/migration.json`
+- `designations.json`: `{generated_at, snapshot_hash, source:{name,url,file_url,notice_no,notice_date,effective_date,retrieved_at,file_sha256,license_type,rule_version,secondary}, counts, note, items:[{code5(SGIS|null), mois_code5, mois_code5_2026, name, sido, status:"인구감소지역"|"관심지역"|"인구활력+", origin, since, first_designated|null, join, cells:[export_cell]}]}`. 고시(행안부 제2026-61호)에 없는 시군구는 items에 없다(= 미지정). `code5=null`은 SGIS 2024 경계에 없는 신설·개편 지역. 행정 지정의 전사이며 판정·순위가 아니다(D13).
+- `migration.json`: `{generated_at, snapshot_hash, source, sigungu:[{code5, mois_code5, name, series:{YOUTH_NET_MIGRATION:[[y,v]], YOUTH_NET_MIGRATION_PER1K:[[y,v]]}, cells}], unmatched:[...]}`. 시군구 단위만 있고 행정동 자료는 없다. 일반구는 KOSIS가 시 단위까지만 줘서 unmatched. 결측은 null. 순위·TOP 목록 없음.
+- `spatial_unit`에 `시군구` 추가(migrations/003). `DEPOP_STATUS` 값은 문자열이라 DB `cells.value`(double)에는 아직 못 넣는다(텍스트 열 추가 전).
+
+## 안전 인프라 (living 레이어, group "안전 인프라", D17)
+- `CCTV_PER_KM2`(대/㎢), `STREETLIGHT_PER_KM2`(개/㎢), `POLICE_NEAREST_M`(m). 모두 `standard:{value:null,status:"기준 없음"}`. 시설 위치의 사실 지표이며 범죄·치안 점수가 아니고 순위·등급을 매기지 않는다. 보안등은 시군구 좌표 보유율 80% 미만이면 null(추가확인), 80~95%는 값과 coverage. 경찰관서 좌표는 주소→카카오 지오코딩(약관 확인 대기).
+- `dashboard.json`(정밀 사례): 부산 16개 구·군 전부 `수집됨`, dongs는 리 포함 법정동 254개.
+
+## 추세 전망 레이어 (FORECAST-2026.10, 승인 전 초안) — `national/forecast/`
+판정·투자 조언이 아니다. 원천 셀과 섞지 않고 `FORECAST_` 접두 셀로만 둔다.
+- `index.json`: `{generated_at, snapshot_hash, method, approved:false, horizons:[2025,2026,2027,2029], backtest:{지표:{median_mape, n_areas, horizon_years, coverage_by_h, ...}}, excluded_dongs, disclaimer}`
+- `{code5}.json`: `{sigungu, sigungu_forecast, sigungu_cells, sigungu_backtest, dongs:[{code7, name, forecast:{지표:{"2025":[점,하한,상한],…}}, backtest, excluded:{지표:사유}, cells}]}`
+- 셀 코드 `FORECAST_{지표}_H{1|5}`(+`_LO`·`_HI`)만 싣고 `forecast` 배열은 4지평 모두. `derived=true`, `status=추가확인`, `rule_version=FORECAST-2026.10`. 구간은 전국 백테스트 상대오차의 10·90% 분위(동별 차이 미반영).
+- 노후건축물비율은 백테스트에서 '마지막 값 유지'보다 오차가 커 보류(`excluded`), 사업체는 등록기반 5점뿐이라 제외. 65세 이상은 시군구 단위만. 화면은 점추정 단독으로 쓰지 않고 모델명·구간·면책을 함께 표시한다.

@@ -51,8 +51,11 @@
       return;
     }
     // 수신 서버가 없을 때: 메일 앱으로 내용을 넘기고 감사 페이지로 이동
-    var body = ['이름: ' + data.get('name'), '소속: ' + data.get('org'), '이메일: ' + data.get('email'),
-      '유형: ' + data.get('type'), '', data.get('message') || ''].join('\n');
+    // 동의 기록(consent_texts.md 공통 규칙 5): 문구 버전·동의 항목·시각을 메일 끝에 남긴다. 사이트 서버에는 아무것도 저장하지 않는다
+    var agree = form.elements.agree, optin = form.elements.optin;
+    var consent = '동의: ' + (agree && agree.dataset.consent || 'C1') + ' 필수' + (optin ? ', 선택 수신 ' + (optin.checked ? '예' : '아니오') + '(' + (optin.dataset.consent || 'C5') + ')' : '') + ', ' + new Date().toISOString();
+    var body = ['소속: ' + data.get('org'), '담당자: ' + data.get('name'), '이메일: ' + data.get('email'), '전화(선택): ' + (data.get('tel') || '없음'),
+      '유형: ' + data.get('type'), '', data.get('message') || '', '', consent].join('\n');
     location.href = 'mailto:' + form.dataset.mailto + '?subject=' + encodeURIComponent('[리뉴맵 상담] ' + data.get('org')) +
       '&body=' + encodeURIComponent(body);
     setTimeout(function () { location.href = 'thanks.html'; }, 800);

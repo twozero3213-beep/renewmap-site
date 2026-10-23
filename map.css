@@ -1,5 +1,5 @@
 /* 전국 드릴다운 지도(첫 화면). 칩·세그먼트·태그는 dashboard.css·styles.css의 것을 그대로 쓴다. */
-#mapApp { display: flex; flex-direction: column; min-width: 0; }
+#mapApp { display: flex; flex-direction: column; min-width: 0; scroll-margin-top: 72px; } /* 딥링크로 올 때 묶음 탭이 고정 헤더 아래 숨지 않게 */
 .map-top, .map-bottom { min-width: 0; }
 .map-stage { position: relative; min-width: 0; }
 .map-stage > * { order: 1; } .map-bottom { order: 2; }
@@ -158,3 +158,73 @@
 .map-yearbar small { font-size: 12px; color: var(--dim); line-height: 1.4; }
 @media (max-width: 720px) { .map-yearbar { padding: 6px 10px 8px; width: 170px; } .yb-y { font-size: 26px; } }
 @media (prefers-reduced-motion: reduce) { .yb-track i { transition: none; } }
+
+/* ── 2026-10-24 저녁: 묶음 탭(이모지) · 한눈 요약 점 · 전망 구간 띠 · 동네 보고서 ── */
+.map-groups { scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.map-groups button { scroll-snap-align: start; font-size: 15px; padding: 7px 12px 8px; border-radius: 8px 8px 0 0; }
+.map-groups button:hover { color: var(--ink); background: #e7eeea; }
+.map-groups button[aria-pressed="true"] { background: #e3f1ea; }
+.map-seg[aria-label="전망 연도"] button { font-variant-numeric: tabular-nums; }
+.map-report-link { margin: 0 0 6px; font-size: 14px; font-weight: 700; }
+.sr-l small { font-size: 11px; font-weight: 700; color: var(--dim); background: #eef2f0; border-radius: 999px; padding: 1px 7px; vertical-align: 1px; white-space: nowrap; }
+.st-fore { color: #1f4f8a; background: #dbe8f7; border: 1px dashed #1f4f8a; } .st-desig { color: #7a3600; background: #fde9d3; }
+.sr-band { fill: rgba(31,79,138,.18); stroke: #1f4f8a; stroke-width: .8; stroke-dasharray: 3 2; } /* 전망 80% 구간: 실측과 다르게 점선·옅은 띠 */
+.sr.is-fore .sr-fill { stroke-dasharray: 3 2; }
+.map-trend.neutral { color: #1f4f8a; background: #dbe8f7; }
+.sr-why { background: none; border: 0; padding: 0; margin: 2px 0 0; border-radius: 0; }
+.sr-why summary { font-size: 13px; color: var(--dim); font-weight: 600; cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 4px; }
+.sr-why summary::-webkit-details-marker { display: none; }
+.sr-why summary::after { content: '▸'; font-size: 11px; color: var(--green); transition: transform .2s; }
+.sr-why[open] summary::after { transform: rotate(90deg); }
+.sr-why .sr-std { margin-top: 4px; }
+.sr-group-note { margin: 0 0 6px; font-size: 13px; color: var(--warn); background: #fff7e8; border: 1px solid #e3c79a; border-radius: 8px; padding: 6px 10px; line-height: 1.5; }
+/* 한눈 요약: 묶음별 점 배열. 점 하나 = 항목 하나. 색은 상태 칩과 같은 뜻(글자 병기) */
+.sr-glance { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 8px 0; }
+.gl-n { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; font-weight: 700; color: var(--dim); }
+.gl-n b { font-size: 22px; font-weight: 800; color: var(--ink); letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin-left: 2px; }
+.gl-dots { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.gl-grp { display: inline-flex; align-items: center; gap: 4px; }
+.gl-k { font-size: 13px; font-weight: 700; color: var(--ink); margin-right: 4px; }
+.gl-dots i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(21,60,57,.3); display: inline-block; animation: rm-pop .4s cubic-bezier(.2, .8, .2, 1) both; }
+.gl-dots i:nth-child(2) { animation-delay: .04s; } .gl-dots i:nth-child(3) { animation-delay: .08s; } .gl-dots i:nth-child(4) { animation-delay: .12s; } .gl-dots i:nth-child(5) { animation-delay: .16s; } .gl-dots i:nth-child(6) { animation-delay: .2s; } .gl-dots i:nth-child(7) { animation-delay: .24s; }
+.gl-r { background: #b3261e; } .gl-g { background: #0b7f6f; } .gl-y { background: #f0e442; } .gl-w { background: #fff; border-style: dashed; }
+.gl-note { margin: 6px 0 0; font-size: 12px; color: var(--dim); }
+@keyframes rm-pop { from { opacity: 0; transform: scale(.4); } }
+
+/* 동네 보고서 */
+#report .wrap { max-width: 860px; }
+.rp-empty { text-align: center; background: var(--card); border: 1px dashed #b9cbc4; border-radius: 18px; padding: 28px 20px; }
+.rp-empty img { width: 120px; height: auto; display: block; margin: 0 auto 6px; } .rp-empty h3 { margin: 8px 0 6px; } .rp-empty p { margin: 0; color: var(--dim); }
+.rp-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.rp-crumb { margin: 0; font-size: 14px; color: var(--dim); } .rp-title { margin: 0; font-size: clamp(22px, 3vw, 28px); }
+.rp-tools { margin: 0; display: flex; gap: 8px; flex-wrap: wrap; } .rp-tools .btn { padding: 8px 14px; font-size: 14px; }
+.rp-intro { color: var(--dim); margin: 0 0 16px; font-size: 15px; }
+.rp-g { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+.rp-g h3 { margin: 0 0 8px; font-size: 18px; }
+.rp-fixed { margin: 0 0 10px; font-size: 13px; color: var(--warn); background: #fff7e8; border: 1px solid #e3c79a; border-radius: 8px; padding: 6px 10px; }
+.rp-item { border-top: 1px solid var(--line); padding: 10px 0 8px; display: grid; gap: 6px; }
+.rp-item p { margin: 0; font-size: 16px; }
+.rp-item .sr-bar { height: 16px; } .rp-item .map-spark { width: 220px; max-width: 100%; height: 56px; }
+.rp-src { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 18px; margin-bottom: 12px; }
+.rp-src summary { font-weight: 700; } .rp-src table { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 8px; }
+.rp-src th, .rp-src td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; } .rp-src td:nth-child(2) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rp-ai { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; margin-bottom: 12px; display: grid; gap: 8px; }
+.rp-ai-head { margin: 0; font-weight: 700; font-size: 15px; }
+.rp-ai-btn { justify-self: start; padding: 9px 14px; font-size: 15px; } .rp-ai-btn[disabled] { opacity: .55; cursor: not-allowed; } .rp-ai-btn small { font-size: 12px; font-weight: 600; }
+.rp-ai-note { font-size: 13px; color: var(--dim); }
+.rp-ai-consent { background: var(--bg); border-radius: 10px; padding: 12px 14px; } .rp-ai-consent p { margin: 0 0 10px; font-size: 14px; } .rp-ai-consent code { font-size: 13px; overflow-wrap: anywhere; }
+.rp-ai-out:empty { display: none; } .rp-ai-out p { margin: 0; } .rp-ai-label { font-size: 12px; font-weight: 700; color: #1f4f8a; background: #dbe8f7; border-radius: 999px; padding: 2px 10px; display: inline-block; margin-bottom: 4px !important; }
+.rp-ai-foot { margin: 0; font-size: 13px; color: var(--warn); }
+.rp-foot { margin: 0; text-align: center; font-size: 14px; font-weight: 700; color: var(--dim); border-top: 2px solid var(--line); padding-top: 12px; }
+
+@media (prefers-reduced-motion: reduce) { .gl-dots i, .sr-why summary::after { animation: none; transition: none; } }
+/* 인쇄: 동네 보고서만 */
+@media print {
+  header.top, .hero, #verdict, #problem, #how, #ledger, #case, #dashboard, #scope, #faq, #contact, footer, .sticky-cta, .rp-tools, .rp-ai, .skip { display: none !important; }
+  body { background: #fff; color: #000; font-size: 12pt; }
+  #report { padding: 0; } #report .wrap { max-width: none; padding: 0; }
+  .rp-g, .rp-src, .rp-empty { border: 1px solid #999; break-inside: avoid; }
+  .rp-src details, .rp-src[open] { display: block; } .rp-src summary { display: none; } .rp-src .table-wrap { display: block; }
+  a { color: #000; text-decoration: none; } a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; }
+  .map-spark path { stroke: #000; }
+}
