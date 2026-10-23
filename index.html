@@ -53,7 +53,7 @@
     <a class="logo" href="./">RENEW<span>MAP</span></a>
     <nav class="menu" aria-label="주요 메뉴">
       <a href="#map">전국 지도</a>
-      <a href="#dashboard">카드 보기</a>
+      <a href="#dashboard">정밀 사례</a>
       <a href="#how">작동 방식</a>
       <a href="#case">활용 사례</a>
       <a href="#faq">자주 묻는 질문</a>
@@ -63,35 +63,34 @@
 </header>
 
 <main id="main">
-  <section class="hero">
-    <div class="wrap hero-grid">
-      <div class="hero-copy">
-      <h1>숫자마다 근거가 붙는 기초조사</h1>
-      <p class="lead">
-        리뉴맵은 도시재생·정비 기초조사를 법정 기준으로 계산합니다.<br>
-        기준일을 고정하고, 현장에서 확인한 증거를 붙여 보고서로 납품합니다.
-      </p>
-      <div id="heroStats" class="hero-stats" aria-label="수집 현황"></div>
-      <div class="ctas">
+  <section id="map" class="hero" aria-labelledby="heroTitle">
+    <div class="hero-grid">
+      <div class="hero-side">
+      <div class="hero-head">
+        <p class="eyebrow">전국 읍·면·동 노후·쇠퇴·생활 인프라 진단</p>
+        <h1 id="heroTitle">전국 <span data-emd-count></span>동네,<br><em>어디부터</em> 다시 지어야 할까</h1>
+        <p class="lead">노후도·인구·생활 인프라를 법정 기준으로 동네마다 진단합니다.<br>숫자마다 출처를 붙입니다.</p>
+      </div>
+      <form id="heroSearch" class="hero-search" role="search" autocomplete="off">
+        <label for="heroQ">우리 동네 찾기</label>
+        <div class="hero-search-row"><input id="heroQ" name="q" list="heroPlaces" placeholder="예: 해운대구, 반여1동" enterkeyhint="search"><button class="btn" type="submit">찾기</button></div>
+        <datalist id="heroPlaces"></datalist>
+        <p class="hero-search-note" data-search-note></p>
+        <p class="hero-search-msg" data-search-msg aria-live="polite"></p>
+      </form>
+      <p id="heroLive" class="hero-live" aria-live="polite"></p>
+      <ol class="hero-steps" aria-label="리뉴맵이 하는 일 3단계">
+        <li style="--i:0"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 42s13-12 13-22a13 13 0 0 0-26 0c0 10 13 22 13 22z" class="f"/><circle cx="24" cy="20" r="5"/></svg><div><b>① 진단</b><span>전국 읍·면·동을 같은 지표로 봅니다.</span></div></li>
+        <li style="--i:1"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 34h36" /><rect x="6" y="24" width="22" height="8" rx="3" class="f"/><path d="M30 18v20"/></svg><div><b>② 기준 대비 척도</b><span>항목마다 법정 기준선 위·아래를 표시합니다.</span></div></li>
+        <li style="--i:2"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h18l8 8v28H12z" class="f"/><path d="M30 6v8h8M18 28l5 5 9-10"/></svg><div><b>③ 출처 붙은 보고서</b><span>숫자마다 출처·기준일을 달아 납품합니다.</span></div></li>
+      </ol>
+      <div class="hero-cta">
         <a class="btn glow" href="#contact" data-track="cta_hero">시범 납품 상담 신청</a>
-        <a class="btn ghost" href="#map">전국 지도 보기</a>
+        <a class="btn ghost" href="#how">작동 방식</a>
+        <img class="hero-mascot" src="mascot/taggy-default.svg" width="72" height="89" alt="리뉴맵 마스코트 태기">
       </div>
-      <p class="note">부산·경남 도시계획 용역사와 기초지자체를 먼저 만나고 있습니다.</p>
       </div>
-      <div class="hero-demo">
-        <div id="heroDemo" aria-label="제품 시연: 자료 수집, 법정 판정, 현장 확인, 보고서 4단계"></div>
-        <div class="hero-foot"><p class="note">제품 시연 화면입니다.<br>셀 값은 원장에서 내보낸 반여동 자료이고, 나머지는 흐름 설명입니다.</p>
-        <img id="heroTaggy" class="hero-mascot" src="mascot/taggy-default.svg" width="160" height="197" alt="리뉴맵 마스코트 태기가 돋보기를 들고 인사한다"></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="map" class="map-section" aria-labelledby="mapTitle">
-    <div class="wrap">
-      <h2 id="mapTitle">전국 동네 쇠퇴 지표 지도</h2>
-      <p class="sub">전국에서 시작해 광역, 기초, 읍·면·동으로 내려갑니다.<br>동을 누르면 2000년부터의 시계열과 출처가 열립니다.</p>
-      <div id="mapApp"></div>
-      <noscript><p>지도는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
+      <div class="hero-map"><div id="mapApp"></div><noscript><p>지도는 자바스크립트가 켜져 있어야 보입니다.</p></noscript></div>
     </div>
   </section>
 
@@ -109,9 +108,9 @@
       <h2>기초조사에서 시간이 새는 곳</h2>
       <p class="sub">공모 접수 전 몇 주 동안 반복되는 일입니다.</p>
       <div class="grid">
-        <div class="card"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="12" width="24" height="30" rx="4"/><rect x="16" y="6" width="24" height="30" rx="4" class="f"/><path d="M28 14v12m-5-5 5 5 5-5"/></svg><h3>자료 모으기</h3><p>건축물대장·인구·사업체 자료를<br>동마다 다시 내려받습니다.</p></div>
-        <div class="card"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="22" width="10" height="20" rx="2" class="f"/><rect x="30" y="12" width="10" height="30" rx="2"/><path d="M20 20h8m-8 6h8M22 30l4-14"/></svg><h3>숫자 맞추기</h3><p>출처마다 값이 다릅니다.<br>어느 것을 쓸지 정하느라 시간이 듭니다.</p></div>
-        <div class="card"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><circle cx="21" cy="21" r="12" class="f"/><path d="M30 30l10 10M17 17a4 4 0 1 1 5 4v3m0 4v1"/></svg><h3>근거 설명</h3><p>"이 숫자 어디서 나왔나요?"<br>사전컨설팅과 감사에서 답해야 합니다.</p></div>
+        <div class="card" data-reveal><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="12" width="24" height="30" rx="4"/><rect x="16" y="6" width="24" height="30" rx="4" class="f"/><path d="M28 14v12m-5-5 5 5 5-5"/></svg><h3>자료 모으기</h3><p>건축물대장·인구·사업체 자료를<br>동마다 다시 내려받습니다.</p></div>
+        <div class="card" data-reveal><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="22" width="10" height="20" rx="2" class="f"/><rect x="30" y="12" width="10" height="30" rx="2"/><path d="M20 20h8m-8 6h8M22 30l4-14"/></svg><h3>숫자 맞추기</h3><p>출처마다 값이 다릅니다.<br>어느 것을 쓸지 정하느라 시간이 듭니다.</p></div>
+        <div class="card" data-reveal><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><circle cx="21" cy="21" r="12" class="f"/><path d="M30 30l10 10M17 17a4 4 0 1 1 5 4v3m0 4v1"/></svg><h3>근거 설명</h3><p>"이 숫자 어디서 나왔나요?"<br>사전컨설팅과 감사에서 답해야 합니다.</p></div>
       </div>
     </div>
   </section>
@@ -121,21 +120,11 @@
       <h2>작동 방식</h2>
       <p class="sub">모든 숫자는 출처가 기록된 원장에서 나옵니다.</p>
       <div class="grid">
-        <div class="card"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 42s13-12 13-22a13 13 0 0 0-26 0c0 10 13 22 13 22z" class="f"/><circle cx="24" cy="20" r="5"/></svg><div class="step">1단계</div><h3>대상지 입력</h3><p>자치구와 동을 고릅니다.<br>최대 3개 동을 같은 기준으로 봅니다.</p></div>
-        <div class="card"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 8v32M12 40h24M8 16h32"/><path d="M8 16l-5 12h10zM40 16l-5 12h10z" class="f"/></svg><div class="step">2단계</div><h3>법정 기준 판정</h3><p>쇠퇴 3요건과 노후도 3기준을 계산합니다.<br>결과마다 조문과 규칙 버전이 붙습니다.</p></div>
-        <div class="card"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="14" width="36" height="26" rx="5" class="f"/><path d="M17 14l3-5h8l3 5"/><circle cx="24" cy="27" r="7"/></svg><div class="step">3단계</div><h3>현장 확인</h3><p>사진·위치·정확도·시각을 함께 남깁니다.<br>필수 사진이 없으면 '확인'이 되지 않습니다.</p></div>
-        <div class="card"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h18l8 8v28H12z" class="f"/><path d="M30 6v8h8M18 28l5 5 9-10"/></svg><div class="step">4단계</div><h3>보고서 납품</h3><p>HWPX·PDF·엑셀로 받습니다.<br>숫자마다 출처와 기준일을 볼 수 있습니다.</p></div>
+        <div class="card" data-reveal><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 42s13-12 13-22a13 13 0 0 0-26 0c0 10 13 22 13 22z" class="f"/><circle cx="24" cy="20" r="5"/></svg><div class="step">1단계</div><h3>대상지 입력</h3><p>자치구와 동을 고릅니다.<br>최대 3개 동을 같은 기준으로 봅니다.</p></div>
+        <div class="card" data-reveal><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 8v32M12 40h24M8 16h32"/><path d="M8 16l-5 12h10zM40 16l-5 12h10z" class="f"/></svg><div class="step">2단계</div><h3>법정 기준 판정</h3><p>쇠퇴 3요건과 노후도 3기준을 계산합니다.<br>결과마다 조문과 규칙 버전이 붙습니다.</p></div>
+        <div class="card" data-reveal><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="14" width="36" height="26" rx="5" class="f"/><path d="M17 14l3-5h8l3 5"/><circle cx="24" cy="27" r="7"/></svg><div class="step">3단계</div><h3>현장 확인</h3><p>사진·위치·정확도·시각을 함께 남깁니다.<br>필수 사진이 없으면 '확인'이 되지 않습니다.</p></div>
+        <div class="card" data-reveal><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h18l8 8v28H12z" class="f"/><path d="M30 6v8h8M18 28l5 5 9-10"/></svg><div class="step">4단계</div><h3>보고서 납품</h3><p>HWPX·PDF·엑셀로 받습니다.<br>숫자마다 출처와 기준일을 볼 수 있습니다.</p></div>
       </div>
-    </div>
-  </section>
-
-  <section id="dashboard" aria-labelledby="dashTitle">
-    <div class="wrap">
-      <h2 id="dashTitle">카드 보기 · 건축물대장 3기준</h2>
-      <p class="sub">부산 구·군을 고르고 법정동을 고르면 동수·연면적·세대 기준 노후율이 보입니다.<br>숫자를 누르면 출처와 계산식이 열립니다.</p>
-      <p class="dash-meta" data-meta>설명: 건축물대장 기준 노후 건축물 비율이며, 판정 결과가 아닙니다.</p>
-      <div id="dashApp"></div>
-      <noscript><p>대시보드는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
     </div>
   </section>
 
@@ -164,11 +153,22 @@
       <h2>활용 사례: 부산 용역사 실무자의 공모 준비</h2>
       <p class="sub">한 자치구가 노후주거지정비 공모 후보 2~3개 동의 기초조사를 맡겼고, 접수까지 5주가 남은 상황입니다.</p>
       <div class="grid">
-        <div class="card"><h3>대상지 확정</h3><p>지번과 동을 입력하면 행정동으로 연결합니다.<br>경계에 걸친 필지는 '추가확인'으로 따로 모읍니다.</p></div>
-        <div class="card"><h3>요건 검토</h3><p>공모 유형에 맞는 규칙 버전으로 판정합니다.<br>노후 요건을 포함해야 하는지도 함께 보여 줍니다.</p></div>
-        <div class="card"><h3>현장 확인</h3><p>사진 번호를 따로 매기지 않아도 위치와 시각이 붙습니다.</p></div>
-        <div class="card"><h3>사전컨설팅 대응</h3><p>숫자의 출처와 기준일을 바로 보여 줄 수 있습니다.<br>접수 후 데이터가 바뀌어도 납품본은 재현됩니다.</p></div>
+        <div class="card" data-reveal><h3>대상지 확정</h3><p>지번과 동을 입력하면 행정동으로 연결합니다.<br>경계에 걸친 필지는 '추가확인'으로 따로 모읍니다.</p></div>
+        <div class="card" data-reveal><h3>요건 검토</h3><p>공모 유형에 맞는 규칙 버전으로 판정합니다.<br>노후 요건을 포함해야 하는지도 함께 보여 줍니다.</p></div>
+        <div class="card" data-reveal><h3>현장 확인</h3><p>사진 번호를 따로 매기지 않아도 위치와 시각이 붙습니다.</p></div>
+        <div class="card" data-reveal><h3>사전컨설팅 대응</h3><p>숫자의 출처와 기준일을 바로 보여 줄 수 있습니다.<br>접수 후 데이터가 바뀌어도 납품본은 재현됩니다.</p></div>
       </div>
+    </div>
+  </section>
+
+  <section id="dashboard" aria-labelledby="dashTitle">
+    <div class="wrap">
+      <span class="label-scenario">시범 수집 지역</span>
+      <h2 id="dashTitle">정밀 사례 · 부산 해운대구 건축물대장 3기준</h2>
+      <p class="sub">전국 지도는 행정동 단위 공공 통계입니다.<br>이 사례는 해운대구 건축물대장을 한 동씩 직접 모아 동수·연면적·세대 기준 노후율을 따로 계산했습니다.<br>숫자를 누르면 출처와 계산식이 열립니다.</p>
+      <p class="dash-meta" data-meta>설명: 건축물대장 기준 노후 건축물 비율이며, 판정 결과가 아닙니다.</p>
+      <div id="dashApp"></div>
+      <noscript><p>대시보드는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
     </div>
   </section>
 
@@ -177,9 +177,9 @@
       <h2>리뉴맵이 하지 않는 것</h2>
       <p class="sub">근거를 다루는 도구이기 때문에 일부러 만들지 않습니다.</p>
       <div class="grid">
-        <div class="card"><h3>동네 등급·순위</h3><p>거리와 밀도 같은 수치만 보여 주고, 동네를 줄 세우지 않습니다.</p></div>
-        <div class="card"><h3>치안 점수</h3><p>CCTV와 가로등 같은 공식 시설 현황만 다룹니다.</p></div>
-        <div class="card"><h3>사업성·분담금 계산</h3><p>해당 영역은 전문 서비스와의 제휴로 연결합니다.</p></div>
+        <div class="card" data-reveal><h3>동네 등급·순위</h3><p>거리와 밀도 같은 수치만 보여 주고, 동네를 줄 세우지 않습니다.</p></div>
+        <div class="card" data-reveal><h3>치안 점수</h3><p>CCTV와 가로등 같은 공식 시설 현황만 다룹니다.</p></div>
+        <div class="card" data-reveal><h3>사업성·분담금 계산</h3><p>해당 영역은 전문 서비스와의 제휴로 연결합니다.</p></div>
       </div>
     </div>
   </section>

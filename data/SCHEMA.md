@@ -49,3 +49,12 @@
 - 일반구(level 2.5, 자치단체 아님): 도의 큰 시 아래 구(수원시 장안구 등), 제주의 행정시(제주시·서귀포시)도 자치단체가 아니다. `index.json.sigungu[].kind ∈ {자치구, 군, 시, 일반구, 행정시}`와 `parent`(일반구·행정시는 상위 시·도 코드)를 적는다. 화면 브레드크럼: 경기도 › 수원시 › 장안구 › 정자1동.
 - 읍·면·동(level 3): 군 아래는 읍·면, 자치구 아래는 동, 도의 시 아래는 읍·면·동이 섞일 수 있다(도농복합시). `emd[].kind ∈ {읍, 면, 동}`. 행정동 코드 7자리(통계청) 기준. 법정동(건축물대장)은 별도 레이어이며 `spatial_unit`으로 구분한다.
 - 검증 케이스: 서울 종로구(특별시›자치구›동), 부산 기장군(광역시›군›읍면), 경기 수원시 장안구(도›시›일반구›동), 전남 담양군(도›군›읍면), 세종(특별자치시›읍면동 직속), 제주 서귀포시(특별자치도›행정시›읍면동).
+
+## 생활 지표 레이어 (2026-10-23 추가) — `national/living/`, `national/dong_index.json`
+- `living/{code5}.json`: `{sigungu, generated_at, snapshot_hash(앞12), dongs:[{code7(SGIS 8자리, emd와 같은 코드), name, cells:[export_cell...]}]}`
+- `living/index.json`: `{generated_at, snapshot_hash, indicators:[{code,label,unit,group,standard:{value,direction,text,source,status}}], sources:{key:{name,url,license_type,retrieved_at,base_date}}, coverage:{code:{dongs_with_value,dongs_total}}}`. 기준이 없으면 `standard.value`·`direction`=null, `status`="기준 없음". `sources.std` = 기준 해당 항목 수(파생).
+- 지표: POP_AGED65_PCT(+_DELTA5Y), POP_YOUTH_PCT(20~34세, +_DELTA5Y), HOSP_CLINIC_COUNT, HOSP_PER10K, LIB_NEAREST_M, PARK_AREA_PER_CAPITA, PARK_COUNT, ER_NEAREST_M, BUS_STOP_DENSITY, STD_SHORTFALL_COUNT. 기준값은 `rules/living_std.py`(LIVING-STD-2026.10, 승인 대기).
+- STD_SHORTFALL_COUNT는 법정·공식 정의 기준에 해당하는 항목 수의 하한이다(sample_n=확정 항목 수, note에 항목별 결과). 승인 대기 기준(도서관·응급 거리)은 세지 않는다. 가중 종합점수·순위가 아니다(D13). 화면은 항목별 기준 대비 해당 여부만 보여 주고 값 크기로 동을 줄 세우지 않는다.
+- 거리는 동 대표점(경계 내부점, 인구 가중 아님)에서의 직선거리, 시설 수는 단순화 경계 기준이라 경계선 부근 오차가 있다. 공원 면적은 공원 좌표가 속한 동에 전부 귀속한다.
+- `dong_index.json`: `[[code8, 동이름, code5, 시군구이름(일반구는 "시 구"), 시도이름], ...]` 전국 검색용.
+- 사업체(2026-10-23 밤): `DECLINE_BIZ_TOTAL`은 ~2019 쇠퇴진단지표(조사기반), 2020~ 통계청 SGIS 전국사업체조사(등록기반). `index.json.biz_source`에 출처·경계 연도, 못 이은 코드는 `biz_unmatched.json`. `DECLINE_BIZ_DROP10Y_PCT`·`DECLINE_BIZ_DECL3IN5`는 rules/decline.py business_req 결과에서 나온 파생값.

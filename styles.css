@@ -41,13 +41,7 @@ nav.menu a:hover { color: var(--green); }
 .btn.ghost { background: transparent; color: var(--green); border: 2px solid var(--green); }
 .btn:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid #153c39; outline-offset: 2px; box-shadow: 0 0 0 5px #fff; }
 
-.hero { padding: 56px 0 40px; }
-.hero h1 { font-size: clamp(30px, 5.2vw, 52px); line-height: 1.25; margin: 0 0 18px; }
 .hero h1 em { font-style: normal; background: linear-gradient(transparent 60%, var(--lime) 60%); }
-.hero p.lead { font-size: clamp(17px, 2.2vw, 20px); margin: 0 0 28px; max-width: 720px; }
-.hero .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
-.hero .note { font-size: 14px; color: var(--dim); margin-top: 14px; }
-@media (min-width: 960px) { .hero-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 40px; align-items: center; } }
 .ico { width: 44px; height: 44px; display: block; margin-bottom: 10px; fill: none; stroke: var(--green); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .ico .f { fill: #e3f1ea; }
 .num, svg text { font-variant-numeric: tabular-nums; }
@@ -102,6 +96,5 @@ footer .links { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; 
 @media (max-width: 720px) {
   nav.menu { display: none; }
   .sticky-cta { display: block; position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 25; text-align: center; box-shadow: 0 6px 20px rgba(21,60,57,.25); }
-  .hero { padding-top: 36px; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

@@ -1,49 +1,61 @@
-/* 전국 드릴다운 지도. 칩·세그먼트·태그는 dashboard.css·styles.css의 것을 그대로 쓴다. */
-.map-section { min-height: 70vh; padding-top: 32px; }
-.map-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 900px) { .map-grid { grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); align-items: start; } .map-panel { position: sticky; top: 72px; } }
-.map-main, .map-panel { min-width: 0; }
-.map-panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px; }
+/* 전국 드릴다운 지도(첫 화면). 칩·세그먼트·태그는 dashboard.css·styles.css의 것을 그대로 쓴다. */
+#mapApp { display: flex; flex-direction: column; min-width: 0; }
+.map-top, .map-bottom { min-width: 0; }
+.map-stage { position: relative; min-width: 0; }
+.map-stage > * { order: 1; } .map-bottom { order: 2; }
 
 /* 브레드크럼 + 단계 이름 */
-.map-crumbs { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-bottom: 10px; }
+.map-crumbs { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-bottom: 8px; }
 .map-crumbs ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; font-size: 16px; font-weight: 700; }
 .map-crumbs li + li::before { content: "›"; margin: 0 6px; color: var(--dim); font-weight: 400; }
 .map-crumbs a { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
 .map-crumbs [aria-current] { color: var(--ink); }
 .map-step { font-size: 13px; font-weight: 700; color: var(--green); background: #e3f1ea; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
 
-/* 지표·모드·연도 */
-.map-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+/* 지표: 묶음 탭 + 아이콘 칩(모바일은 가로 스크롤) */
+.map-groups { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.map-groups button { flex: none; font: inherit; font-size: 15px; font-weight: 700; color: var(--dim); background: none; border: 0; border-bottom: 3px solid transparent; padding: 6px 10px 7px; cursor: pointer; white-space: nowrap; transition: color .2s, border-color .2s; }
+.map-groups button[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--green); }
+.map-inds { margin-bottom: 4px; padding-bottom: 6px; }
+.map-inds .dash-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; padding: 7px 14px; }
+.map-ico { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* 모드·연도 */
+.map-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 8px; }
+.map-ctl:empty { display: none; }
 .map-seg button[aria-pressed="true"] { border: 1px solid var(--ink); } /* DESIGN 1.4: 활성 알약은 그림자만으로 구분하지 않는다 */
 .map-seg { max-width: 100%; overflow-x: auto; scrollbar-width: thin; }
-.map-seg button { padding: 6px 10px; white-space: nowrap; } /* 360px에서 글자가 두 줄로 꺾이지 않게, 세그먼트 안에서만 가로 스크롤 */
+.map-seg button { padding: 6px 10px; white-space: nowrap; }
 .map-year { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 220px; }
 .map-year label { display: flex; align-items: center; gap: 8px; flex: 1; font-size: 14px; font-weight: 600; color: var(--dim); }
 .map-year label b { color: var(--ink); font-variant-numeric: tabular-nums; min-width: 3em; }
 .map-year input[type="range"] { flex: 1; min-width: 120px; accent-color: var(--green); height: 28px; }
 .map-play { font: inherit; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; font-size: 14px; }
 .map-play[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
-.map-year-note { font-size: 14px; color: var(--dim); margin: 0; }
 
 /* 지도 캔버스. isolation으로 Leaflet z-index를 가둔다 */
-.map-canvas { position: relative; isolation: isolate; z-index: 0; height: min(64vh, 640px); min-height: 320px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #e7eeea; }
-@media (max-width: 720px) { .map-canvas { height: 60vh; min-height: 300px; } }
+.map-canvas { position: relative; isolation: isolate; z-index: 0; height: min(70vh, 680px); min-height: 360px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #e7eeea; }
+@media (max-width: 720px) { .map-canvas { height: 54vh; min-height: 300px; } }
 .map-canvas.is-wait { display: grid; place-items: center; color: var(--dim); font-size: 15px; }
-#map .leaflet-container { font: inherit; }
-#map .leaflet-interactive { transition: fill .3s, fill-opacity .3s, stroke .3s; } /* 연도·지표 전환은 300ms, 깜빡임 없이 */
+#map .leaflet-container { font: inherit; background: #e7eeea; }
+#map .leaflet-interactive { transition: fill .6s ease, fill-opacity .6s ease, stroke .3s; } /* 지표·연도 전환은 색이 번지듯 */
 #map .leaflet-tooltip { font-size: 14px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
 #map .leaflet-tooltip small { color: var(--dim); }
 #map .leaflet-control-attribution { font-size: 12px; }
-.map-hint { font-size: 14px; color: var(--dim); margin: 10px 0 8px; }
+.map-hint { font-size: 14px; color: var(--dim); margin: 6px 0 8px; }
 
-/* 범례: 지표별 고정 구간 + 빗금(자료 없음) + 상시 문구 */
-.map-legend { margin: 0 0 12px; }
+/* 범례: 지표별 고정 구간 + 빗금(자료 없음) + 기준선·상태 + 상시 문구. 지표를 바꾸면 한 칸씩 나타난다 */
+.map-legend { margin: 10px 0 4px; }
 .map-legend-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
 .map-legend ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
 .map-legend i { display: inline-block; width: 16px; height: 16px; border-radius: 3px; margin-right: 5px; vertical-align: -3px; border: 1px solid rgba(21,60,57,.25); }
 .map-legend i.is-hatch { background-image: repeating-linear-gradient(45deg, #6b7a75 0 2px, #d4dbd8 2px 6px) !important; border: 1px dashed #4f625d; }
-.map-legend-note { font-size: 13px; color: var(--dim); margin: 6px 0 0; }
+.map-legend-std { font-size: 13px; color: var(--ink); margin: 6px 0 0; }
+.map-legend-std.is-flag { display: inline-block; color: var(--warn); background: #fff7e8; border: 1px solid #e3c79a; border-radius: 6px; padding: 1px 8px; font-weight: 600; }
+.map-legend-note { font-size: 13px; color: var(--dim); margin: 4px 0 0; }
+.map-legend.is-new li { animation: rm-rise .35s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i) * 45ms); }
+.map-legend.is-new .map-legend-title, .map-legend.is-new .map-legend-std { animation: rm-rise .35s ease-out both; }
+@keyframes rm-rise { from { opacity: 0; transform: translateY(6px); } }
 
 /* 키보드 대체 목록 */
 .map-selects { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0 0 10px; }
@@ -51,44 +63,85 @@
 .map-select select { font: inherit; font-size: 15px; font-weight: 400; padding: 8px 10px; border: 1px solid #7a9089; border-radius: 10px; background: #fff; color: var(--ink); }
 .map-list { flex-wrap: wrap; overflow: visible; }
 .map-live { font-size: 14px; color: var(--dim); margin: 4px 0 0; }
-#map button:focus-visible, #map select:focus-visible, #map input:focus-visible, #map summary:focus-visible { outline: 3px solid #153c39; outline-offset: 2px; box-shadow: 0 0 0 5px #fff; }
+#map button:focus-visible, #map select:focus-visible, #map input:focus-visible, #map summary:focus-visible, #map a:focus-visible { outline: 3px solid #153c39; outline-offset: 2px; box-shadow: 0 0 0 5px #fff; }
 
-/* 패널 */
+/* 척도표 패널: 데스크톱은 지도 오른쪽 서랍, 모바일은 지도 아래(동을 고르면 아래 시트) */
+.map-panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 20px; min-width: 0; }
+.map-panel[hidden] { display: none; }
+@media (min-width: 900px) {
+  .map-panel { position: absolute; top: 10px; right: 10px; bottom: 10px; width: min(400px, 46%); overflow-y: auto; overscroll-behavior: contain; z-index: 2; box-shadow: 0 6px 20px rgba(21,60,57,.18); animation: rm-drawer .3s cubic-bezier(.2, .8, .2, 1) both; }
+}
+@media (max-width: 899px) {
+  .map-stage { display: contents; } /* 모바일 순서: 지도 → 범례·목록 → 패널 */
+  .map-panel { order: 3; margin-top: 12px; }
+  .map-panel.is-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; margin: 0; max-height: 64vh; overflow-y: auto; overscroll-behavior: contain; border-radius: 18px 18px 0 0; padding-top: 22px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 -6px 24px rgba(21,60,57,.22); animation: rm-sheet .3s cubic-bezier(.2, .8, .2, 1) both; }
+  .map-panel.is-sheet::before { content: ''; position: absolute; top: 8px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: #b9cbc4; }
+  body.sheet-open .sticky-cta { display: none; }
+}
+@keyframes rm-drawer { from { opacity: 0; transform: translateX(16px); } }
+@keyframes rm-sheet { from { transform: translateY(100%); } }
+.map-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.map-close { font: inherit; font-size: 14px; font-weight: 700; color: var(--green); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; cursor: pointer; flex: none; }
 .map-guide { margin: 0; font-size: 15px; }
-.map-h3 { margin: 0 0 8px; font-size: 20px; } .map-h3 small, .map-h4 small { white-space: nowrap; font-size: 13px; font-weight: 400; color: var(--dim); font-variant-numeric: tabular-nums; }
+.map-h3 { margin: 0 0 4px; font-size: 20px; } .map-h3 small, .map-h4 small { white-space: nowrap; font-size: 13px; font-weight: 400; color: var(--dim); font-variant-numeric: tabular-nums; }
 .map-h4 { margin: 18px 0 6px; font-size: 15px; color: var(--dim); }
-.map-bignum { display: flex; flex-direction: column; gap: 4px; margin: 0; background: var(--bg); border-radius: 14px; padding: 14px 16px; }
-.map-bignum .k { font-size: 14px; font-weight: 600; color: var(--dim); }
-.map-bignum .n { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
-.map-bignum b { font-size: clamp(30px, 5vw, 40px); font-weight: 800; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; }
-.map-bignum b.is-text { font-size: 20px; color: var(--dim); }
-.map-bignum small { font-size: 16px; font-weight: 700; }
-.map-bignum .tag { align-self: flex-start; margin-top: 2px; }
-.map-trend { font-style: normal; font-size: 14px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.map-note { font-size: 14px; color: var(--dim); margin: 4px 0 8px; }
+.map-panel-wait { color: var(--dim); font-size: 15px; }
+
+/* 기준 미달 항목 수 */
+.sr-tally { background: var(--bg); border-radius: 14px; padding: 12px 14px; margin: 8px 0 4px; }
+.sr-tally-k { margin: 0; font-size: 14px; font-weight: 700; color: var(--dim); }
+.sr-tally-n { margin: 2px 0 4px; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 15px; font-weight: 700; align-items: baseline; }
+.sr-tally-n b { font-size: 30px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin-left: 2px; }
+.sr-tally-n .is-dim { color: var(--dim); font-weight: 600; font-size: 14px; }
+.sr-tally-note { margin: 0; font-size: 13px; color: var(--dim); line-height: 1.55; }
+
+/* 세부항목별 척도표: 한 줄에 값·기준선 막대·상태 칩·5년 변화 */
+.sr-list { list-style: none; margin: 0; padding: 0; }
+.sr-group h4 { margin: 16px 0 4px; font-size: 14px; color: var(--green); letter-spacing: .02em; }
+.sr-group ul { list-style: none; margin: 0; padding: 0; }
+.sr { border-top: 1px solid var(--line); padding: 8px 0 6px; }
+.sr.is-cur { background: linear-gradient(90deg, #e3f1ea, transparent 80%); margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: 8px; }
+.sr-h { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sr-h .map-ico { color: var(--dim); }
+.sr-l { font-size: 15px; font-weight: 600; flex: 1; min-width: 7em; }
+.sr-v { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.sr-st { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+.st-over { color: #8f2f0c; background: #fde2d4; } .st-in { color: #3f524d; background: #e3e9ee; } .st-wait { color: #8a4b00; background: #fff0c2; }
+.st-nostd { color: #1f4f8a; background: #dbe8f7; } .st-none, .st-soon { color: #3f524d; background: #eef2f0; border: 1px dashed #9aa6a1; }
+.sr-m { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.sr-bar { flex: 1; min-width: 0; height: 18px; display: block; }
+.sr-track { fill: #eef3f1; } .sr-bar.is-empty .sr-track { fill: none; stroke: #9aa6a1; stroke-dasharray: 3 3; }
+.sr-fill { stroke: rgba(21,60,57,.35); stroke-width: .8; transform-box: fill-box; transform-origin: 0 50%; }
+.sr-tick { stroke: #153c39; stroke-width: 2.5; }
+.map-panel.is-new .sr-fill { animation: rm-grow .6s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes rm-grow { from { transform: scaleX(0); } }
+.sr-std { margin: 2px 0 0; font-size: 13px; color: var(--dim); }
+.sr .map-spark { max-height: 40px; margin-top: 2px; }
+.map-trend { font-style: normal; font-size: 13px; font-weight: 700; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
 .map-trend.worse { color: #8f2f0c; background: #fde2d4; } .map-trend.better { color: #0b5a48; background: #dcefe7; } .map-trend.same { color: #3f524d; background: #e7eeea; }
-.map-spark-row { margin-bottom: 8px; }
-.map-spark-head { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--dim); flex-wrap: wrap; }
-.map-spark-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .map-spark, .map-strip { width: 100%; height: auto; display: block; }
 .map-spark path { fill: none; stroke: var(--green); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .map-spark-dot { fill: var(--ink); } .map-spark-gap { stroke: #c5d4ce; stroke-dasharray: 2 3; }
 .map-spark.is-empty text, .map-strip.is-empty text { font-size: 12px; fill: var(--dim); }
 .map-strip circle { stroke: #fff; stroke-width: 1; } .map-strip circle.is-sel { stroke: var(--ink); stroke-width: 2.5; }
 .map-strip-tick { stroke: #9db1aa; stroke-dasharray: 3 3; }
-.map-detail { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; background: none; border-radius: 0; }
-.map-detail summary { font-size: 14px; font-weight: 700; color: var(--green); cursor: pointer; }
-.map-detail dl { margin: 10px 0 0; display: grid; gap: 6px; }
-.map-detail dl div { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; font-size: 14px; }
+.map-detail { margin-top: 4px; background: none; border: 0; border-radius: 0; padding: 0; }
+.map-detail summary { font-size: 13px; font-weight: 700; color: var(--green); cursor: pointer; }
+.map-detail dl { margin: 6px 0 4px; display: grid; gap: 4px; }
+.map-detail dl div { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; font-size: 13px; }
 .map-detail dt { color: var(--dim); font-weight: 600; } .map-detail dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-.map-note { font-size: 14px; color: var(--dim); margin: 6px 0; }
 .map-hub { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 14px; }
 .map-hub li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding: 4px 0; }
 .map-hub span { color: var(--dim); font-variant-numeric: tabular-nums; }
-.map-panel-wait { color: var(--dim); font-size: 15px; }
+.map-hub-more { font-size: 14px; font-weight: 700; }
 
 /* 빈 상태(마스코트는 usage.md 6.2: 320×200, 240px 아래로 줄이지 않는다) */
 .map-empty { text-align: center; background: var(--card); border: 1px dashed #b9cbc4; border-radius: 18px; padding: 28px 20px; }
 .map-empty img { width: 120px; height: auto; display: block; margin: 0 auto 6px; }
 .map-empty h3 { margin: 8px 0 6px; } .map-empty p { margin: 0; color: var(--dim); }
 
-@media (prefers-reduced-motion: reduce) { #map .leaflet-interactive { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  #map .leaflet-interactive { transition: none; }
+  .map-legend.is-new li, .map-legend.is-new .map-legend-title, .map-legend.is-new .map-legend-std, .map-panel, .map-panel.is-sheet, .map-panel.is-new .sr-fill, .map-groups button { animation: none; transition: none; }
+}
