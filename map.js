@@ -521,7 +521,9 @@
   function countUp(el) {
     const target = +el.dataset.count, k = el.dataset.ck || '', from = shown.has(k) ? shown.get(k) : 0, d = digitsOf(target), f = nf(d);
     shown.set(k, target);
-    if (reduced || from === target) { el.textContent = f.format(target); return; }
+    // 백그라운드 탭에서는 rAF가 멈춰 0이 남는다 — 최종값을 먼저 쓰고, 보일 때만 애니메이션
+    el.textContent = f.format(target);
+    if (reduced || from === target || document.hidden) return;
     const t0 = performance.now(), dur = 800;
     const tick = t => { const p = Math.min(1, (t - t0) / dur), e = p === 1 ? 1 : 1 - Math.pow(2, -10 * p); el.textContent = f.format(from + (target - from) * e); if (p < 1) requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
