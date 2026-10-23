@@ -39,6 +39,7 @@
 - `emd/{code5}.geojson`: 해당 시군구의 행정동 경계. `properties.code`(7자리), `name`.
 - `emd/{code5}.json`: `{sigungu:code5, dongs:[{code7,name,series:{indicator_code:[[year,value|null],...]},cells:[export_cell...]}]}` — 2000~2024 시계열. 결측은 null, 추정 없음.
 - 경계와 지표의 코드가 안 맞는 동(폐지·신설)은 `unmatched`에 목록으로 남기고 지도에서 회색 처리.
+- 인구(2026-10-23 밤 추가): `index.json.pop_source` = `{name, url, license_type, tables, years:[시작,끝], dongs_matched, retrieved_at, unmatched_count, unmatched_file}`. 출처는 KOSIS 주민등록인구(`DT_1B04005` 1992~2010, `DT_1B04005N` 2011~), 행안부 10자리 코드를 KIKmix 이름으로 통계청 8자리에 잇는다. 못 이은 코드는 `pop_unmatched.json`(`[{code10,name,mois_sigungu,years,reason}]`)에 두고 추정·이름 보정하지 않는다. 동 시계열에 `DECLINE_POP_TOTAL`(명), `DECLINE_POP_DROP30Y_PCT`(30년 최대 대비 감소율), `DECLINE_POP_DECL3IN5`(5년 중 3년 연속 감소)가 들어간다. `DECLINE_MET_COUNT`는 확정된 요건만 센 하한이며 `sample_n`=확정 요건 수, note에 요건별 결과를 적는다.
 - 화면 규칙: 고정 구간 색(값 순 정렬·순위 금지), 범례에 "판정 아님·출처·기준연도" 상시 표시. 건축HUB 3기준(`dashboard.json`)은 수집된 시군구에서만 별도 레이어로 겹친다.
 
 ### 행정구역 체계 (2026-10-23 사용자 지시, v2 필수)
