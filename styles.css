@@ -103,3 +103,25 @@ footer .links { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; 
   .sticky-cta { display: block; position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 25; text-align: center; box-shadow: 0 6px 20px rgba(21,60,57,.25); }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* ethics.html 전용(CSP: 인라인 <style> 대신 여기로 옮김) */
+/* 원칙 8개: 번호·아이콘·한 줄 제목·짧은 설명. docs/legal/ai_ethics.md 1부 문장을 그대로 쓴다 */
+.eth-lead { font-size: 18px; margin: 0 0 24px; }
+.eth-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin: 0 0 32px; }
+.eth-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; grid-template-columns: 44px 1fr; gap: 6px 14px; align-items: start; }
+.eth-card .ico { margin: 0; grid-row: span 3; }
+.eth-card .n { font-size: 13px; font-weight: 700; color: var(--green); letter-spacing: .06em; }
+.eth-card h2 { margin: 0; font-size: 18px; line-height: 1.35; }
+.eth-card p { margin: 0; font-size: 15px; color: var(--dim); }
+.eth-card.is-no { border-left: 5px solid #8f2f0c; } .eth-card.is-yes { border-left: 5px solid #0b5a48; }
+.eth-no { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 32px; padding: 0; list-style: none; }
+.eth-no li { background: #fde2d4; color: #8f2f0c; font-weight: 700; font-size: 14px; border-radius: 999px; padding: 6px 14px; }
+.eth-no li::before { content: '✕ '; }
+.eth-flow { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 0 0 32px; padding: 0; list-style: none; counter-reset: s; }
+.eth-flow li { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; text-align: center; font-size: 14px; position: relative; }
+.eth-flow li b { display: block; font-size: 16px; margin-bottom: 4px; } .eth-flow li span { font-size: 26px; display: block; }
+.eth-flow li::before { counter-increment: s; content: counter(s); position: absolute; top: -10px; left: 10px; background: var(--green); color: #fff; font-size: 12px; font-weight: 800; width: 22px; height: 22px; border-radius: 50%; line-height: 22px; }
+.eth-note { font-size: 14px; color: var(--dim); }
+
+/* 자주 묻는 질문 앞 이모지 */
+.faq-e { margin-right: 8px; }

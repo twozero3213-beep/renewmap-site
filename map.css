@@ -228,3 +228,57 @@
   a { color: #000; text-decoration: none; } a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; }
   .map-spark path { stroke: #000; }
 }
+
+.map-defs { position: absolute; } /* 빗금 패턴 정의용 0×0 SVG(CSP: 인라인 style 대신 클래스) */
+
+/* 지역 찾기(#find): 조건 칩(AND) → 큰 숫자 · 정적 SVG 지도 · 코드/가나다 순 목록. 순위·값 순 정렬 없음 */
+.fd-scope { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; margin-bottom: 14px; }
+.fd-grid { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { .fd-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; } .fd-right { position: sticky; top: 76px; } }
+.fd-left, .fd-right { min-width: 0; }
+.fd-grp { border: 0; margin: 0 0 14px; padding: 0; min-width: 0; }
+.fd-grp legend { font-size: 15px; font-weight: 800; margin: 0 0 6px; padding: 0; }
+.fd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.fd-chip { font: inherit; font-size: 14px; font-weight: 600; line-height: 1.35; display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; text-align: left; color: var(--ink); background: var(--card); border: 1.5px solid #b9cbc4; border-radius: 12px; padding: 8px 12px; cursor: pointer; transition: transform .15s ease; }
+.fd-chip:hover { border-color: var(--green); }
+.fd-chip:active { transform: scale(.97); }
+.fd-chip:focus-visible { outline: 3px solid #153c39; outline-offset: 2px; }
+.fd-chip.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.fd-chip small { font-size: 11px; font-weight: 700; color: var(--warn); background: #fff7e8; border: 1px solid #e3c79a; border-radius: 999px; padding: 0 6px; }
+.fd-chip.is-off { color: var(--dim); background: #eef2f0; border-style: dashed; cursor: not-allowed; }
+.fd-chip.is-off.is-on { background: #4f625d; color: #fff; cursor: pointer; }
+.fd-e { font-size: 18px; line-height: 1; }
+.fd-gnote { font-size: 12px; color: var(--dim); margin: 6px 0 0; }
+.fd-note { display: inline-block; font-size: 13px; font-weight: 700; color: var(--green); background: #e3f1ea; border-radius: 999px; padding: 2px 10px; margin: 0 0 8px; }
+.fd-count { margin: 0 0 10px; font-size: 16px; font-weight: 700; color: var(--ink); }
+.fd-count b { font-size: 48px; font-weight: 800; letter-spacing: -.03em; color: var(--green); font-variant-numeric: tabular-nums; margin: 0 2px; }
+.fd-count small { font-size: 14px; font-weight: 400; color: var(--dim); }
+.fd-count.is-idle b { color: #b9cbc4; display: block; } .fd-count.is-idle small { display: block; }
+.fd-skip { font-size: 13px; color: var(--warn); margin: 0 0 6px; }
+.fd-sort { margin-bottom: 8px; }
+.fd-map { background: #e7eeea; border: 1px solid var(--line); border-radius: 14px; padding: 10px; margin-bottom: 12px; }
+.fd-svg { display: block; width: 100%; height: auto; max-height: 440px; }
+.fd-svg path { stroke: #fff; stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }
+.fd-svg path.is-idle { fill: #b9cbc4; } .fd-svg path.is-hit { fill: var(--green); } .fd-svg path.is-miss { fill: #d4ddd9; } .fd-svg path.is-na { fill: url(#fdHatch); }
+.fd-svg path:hover { stroke: var(--ink); stroke-width: 2; }
+.fd-legend { font-size: 13px; color: var(--dim); margin: 6px 0 0; }
+.fd-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin: 0 4px 0 10px; border: 1px solid rgba(21,60,57,.25); }
+.fd-legend i:first-child { margin-left: 0; }
+.fd-legend i.is-hit { background: var(--green); } .fd-legend i.is-miss { background: #d4ddd9; } .fd-legend i.is-na { background: repeating-linear-gradient(45deg, #9aa6a1 0 1.5px, #eef2f0 1.5px 6px); }
+.fd-list { list-style: none; margin: 0; padding: 0; max-height: 440px; overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.fd-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 12px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); animation: rm-rise .3s ease-out both; }
+.fd-list li:last-child { border-bottom: 0; }
+.fd-n b { display: block; font-size: 15px; } .fd-n small { font-size: 12px; color: var(--dim); }
+.fd-b { font-size: 15px; letter-spacing: 2px; white-space: nowrap; }
+.fd-list a { font-size: 14px; font-weight: 700; white-space: nowrap; }
+.fd-wait, .fd-empty { color: var(--dim); font-size: 15px; margin: 8px 0; }
+@media (max-width: 520px) { .fd-list li { grid-template-columns: minmax(0, 1fr) auto; } .fd-b { grid-column: 1; grid-row: 2; } .fd-count b { font-size: 40px; } }
+@media (prefers-reduced-motion: reduce) { .fd-list li { animation: none; } .fd-chip { transition: none; } }
+.fd-scope .map-select { flex: 0 1 260px; }
+/* 모바일: 큰 숫자를 칩 위에 붙여 두어(스크롤해도 보임) 칩을 누를 때마다 결과 수가 바로 보이게 한다 */
+@media (max-width: 999px) {
+  .fd-grid { display: flex; flex-direction: column; } .fd-right { display: contents; }
+  #findApp [data-fd-out] { order: 1; position: sticky; top: 60px; z-index: 5; background: var(--card); padding: 6px 0 2px; border-bottom: 1px solid var(--line); }
+  .fd-left { order: 2; } .fd-map { order: 3; } #findApp [data-fd-list] { order: 4; }
+  #findApp .fd-count { margin-bottom: 4px; } #findApp .fd-note { margin-bottom: 2px; font-size: 12px; }
+}

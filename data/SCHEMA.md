@@ -74,3 +74,12 @@
 - `{code5}.json`: `{sigungu, sigungu_forecast, sigungu_cells, sigungu_backtest, dongs:[{code7, name, forecast:{지표:{"2025":[점,하한,상한],…}}, backtest, excluded:{지표:사유}, cells}]}`
 - 셀 코드 `FORECAST_{지표}_H{1|5}`(+`_LO`·`_HI`)만 싣고 `forecast` 배열은 4지평 모두. `derived=true`, `status=추가확인`, `rule_version=FORECAST-2026.10`. 구간은 전국 백테스트 상대오차의 10·90% 분위(동별 차이 미반영).
 - 노후건축물비율은 백테스트에서 '마지막 값 유지'보다 오차가 커 보류(`excluded`), 사업체는 등록기반 5점뿐이라 제외. 65세 이상은 시군구 단위만. 화면은 점추정 단독으로 쓰지 않고 모델명·구간·면책을 함께 표시한다.
+
+## 아파트 매매 실거래 (2026-10-25) — `national/realestate.json` (FACT-2026.10)
+- `{generated_at, snapshot_hash, source:{name,url,api,license_type,retrieved_at,months,latest_month,provisional_months,yoy_window_end,min_n}, note, sigungu:[{code5, mois_code5, lawd_cd[], name, pooled, series:{APT_TRADE_COUNT, APT_PRICE_M2_MEDIAN, APT_PRICE_M2_YOY_PCT: [[yyyymm,v]]}, summary:{APT_TRADE_COUNT_YOY_PCT, latest_month}, cells}], unmatched}`. 출처 국토교통부 아파트 매매 실거래(공공데이터포털 15126469).
+- 시군구·월 집계만 있고 개별 거래(단지·층·지번)는 없다. 해제 신고 건 제외. 거래 5건 미만이면 중위가·변화율 null(개별 거래 가격 노출 방지). 일반구가 있는 시·화성시는 구 합산(`pooled`). 최근 2개월은 신고기한 때문에 잠정(`provisional_months`). 화면은 `note`와 잠정 표시를 함께 보여 준다. 순위·투자 표현 없음.
+
+## 추세 전망 FORECAST-2026.11 (2026-10-25, 승인 전 초안)
+- 행정동 인구는 GradientBoosting(최근 1·3·5·10년 인구 변화율·노후율 등, 누설 없는 특징), 65세 이상(시군구)은 trend 유지, 노후·사업체 보류. 셀 `rule_version=FORECAST-2026.11`, 인구 `formula_id=F-FC-04`. `dongs[].backtest.explain`에 한 줄 설명.
+- `index.backtest[지표]`: `median_mape`는 원점(2019) 이전 자료로만 고르거나 학습한 **정직한 값**, 검증 구간으로 고른 옛 값은 `mape_in_sample_selection`(낙관), 비교용 `trend_selected_before_origin`, `interval`(원점 2014→2015~19 오차 분위, 폭 배수, 2020~24 포함률), `models`.
+- 시군구 65세 이상 실측: 각 `{code5}.json`의 `sigungu_observed:{POP_AGED65_PCT:[[y,v]]}`·`sigungu_observed_cells`, `index.sigungu_aged65_latest:{code5:{value,year,cell_id}}`(상위 시는 cell_id null). 화면 '지역 찾기'의 전국 초고령 조건이 이 값을 쓴다.

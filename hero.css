@@ -33,9 +33,10 @@
 .hero-live.is-new > * { animation: rm-rise .45s cubic-bezier(.2, .8, .2, 1) both; } .hero-live.is-new > :nth-child(2) { animation-delay: .06s; } .hero-live.is-new > :nth-child(3) { animation-delay: .12s; }
 @keyframes rm-rise { from { opacity: 0; transform: translateY(6px); } }
 
-/* 3단계 설명: 아이콘이 차례로 떠오른다 */
+/* 3단계 설명: 아이콘이 차례로 떠오른다(순번은 CSS로, 인라인 style 없음) */
+.hero-steps li:nth-child(2) { --i: 1; } .hero-steps li:nth-child(3) { --i: 2; }
 .hero-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.hero-steps li { display: flex; gap: 12px; align-items: center; animation: rm-rise .5s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(.3s + var(--i) * .15s); }
+.hero-steps li { display: flex; gap: 12px; align-items: center; animation: rm-rise .5s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(.3s + var(--i, 0) * .15s); }
 .hero-steps .ico { width: 36px; height: 36px; margin: 0; flex: none; }
 .hero-steps b { display: block; font-size: 15px; } .hero-steps span { display: block; font-size: 14px; color: var(--dim); line-height: 1.5; }
 .hero-cta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -74,3 +75,86 @@
 .hl-n .hl-y { font-size: 17px; font-weight: 800; color: var(--ink); letter-spacing: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hl-n [data-ck^="hl-n-"] { font-variant-numeric: tabular-nums; }
 .hl-note { font-size: 13px; font-weight: 600; color: var(--warn); }
+
+
+/* ── 아래 섹션: 글 대신 그림 · 큰 숫자 · 짧은 라벨(토스증권식). 움직임은 transform·opacity만, reduced-motion이면 정지 ── */
+/* #problem 큰 숫자 카드 3개. 숫자는 hero.js가 원장 파일에서 채운다 */
+.big3 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.big { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px; }
+.big-e { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 16px; background: #e3f1ea; font-size: 30px; line-height: 1; margin-bottom: 10px; }
+.big-n { margin: 0; font-size: 16px; font-weight: 700; color: var(--dim); }
+.big-n b { font-size: clamp(44px, 6vw, 60px); font-weight: 800; color: var(--green); letter-spacing: -.03em; font-variant-numeric: tabular-nums; margin-right: 4px; }
+.big h3 { margin: 2px 0 4px; }
+.big p:last-child { margin: 0; font-size: 15px; color: var(--dim); }
+.big-src { font-size: 13px; color: var(--dim); margin: 12px 0 0; }
+
+/* #how 4단계 가로 흐름도. 단계 → 화살표 순서로 나타난다 */
+.flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: 8px; align-items: center; }
+.flow-s { background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 18px 14px; text-align: center; }
+.flow-e { display: grid; place-items: center; width: 64px; height: 64px; margin: 0 auto 10px; border-radius: 50%; background: #e3f1ea; font-size: 30px; line-height: 1; }
+.flow-s b { display: block; font-size: 17px; }
+.flow-s > span:last-child { display: block; font-size: 14px; color: var(--dim); line-height: 1.5; }
+.flow-a svg { display: block; width: 40px; height: 16px; fill: none; stroke: var(--green); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transform: scaleX(0); transform-origin: left center; transition: transform .4s ease; }
+.flow > li { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .5s cubic-bezier(.2, .8, .2, 1); }
+.flow.is-in > li { opacity: 1; transform: none; } .flow.is-in .flow-a svg { transform: none; }
+.flow > :nth-child(2), .flow > :nth-child(2) svg { transition-delay: .15s; } .flow > :nth-child(3) { transition-delay: .3s; } .flow > :nth-child(4), .flow > :nth-child(4) svg { transition-delay: .45s; }
+.flow > :nth-child(5) { transition-delay: .6s; } .flow > :nth-child(6), .flow > :nth-child(6) svg { transition-delay: .75s; } .flow > :nth-child(7) { transition-delay: .9s; }
+.flow-note { font-size: 14px; color: var(--dim); margin: 14px 0 0; }
+@media (max-width: 860px) { .flow { grid-template-columns: minmax(0, 1fr); } .flow-a { justify-self: center; rotate: 90deg; } }
+
+/* #ledger 셀 해부도: 가운데 값, 둘레 근거 6개를 선으로 잇는다(모바일은 세로 줄기) */
+.anat { position: relative; display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); margin-bottom: 18px; isolation: isolate; }
+.anat-fallback { margin: 0; } .anat-fallback figcaption { font-size: 14px; color: var(--dim); }
+.anat-lines { display: none; }
+.anat-core { background: var(--ink); color: #fff; border-radius: 20px; padding: 22px; text-align: center; }
+.anat-k { font-size: 14px; margin: 0 0 4px; color: #d3e6df; }
+.anat-v { font-size: clamp(44px, 7vw, 64px); font-weight: 800; margin: 0 0 6px; letter-spacing: -.03em; line-height: 1.1; color: var(--lime); font-variant-numeric: tabular-nums; }
+.anat-cap { font-size: 12px; color: #d3e6df; margin: 8px 0 0; }
+.anat-parts { list-style: none; margin: 0; padding: 0 0 0 20px; display: grid; gap: 10px; border-left: 3px solid var(--green); }
+.anat-p { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; min-width: 0; }
+.anat-p::before { content: ''; position: absolute; left: -23px; top: 50%; width: 20px; border-top: 3px solid var(--green); }
+.anat-p b { display: block; font-size: 14px; }
+.anat-p > span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; color: var(--dim); line-height: 1.45; }
+.anat-tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; }
+@media (min-width: 900px) {
+  .anat.is-real { grid-template-columns: 1fr 1.05fr 1fr; column-gap: 7%; row-gap: 16px; align-items: center; }
+  .anat.is-real .anat-parts { display: contents; }
+  .anat.is-real .anat-core { grid-column: 2; grid-row: 1 / 4; }
+  .anat.is-real .p0 { grid-column: 1; grid-row: 1; } .anat.is-real .p1 { grid-column: 1; grid-row: 2; } .anat.is-real .p2 { grid-column: 1; grid-row: 3; }
+  .anat.is-real .p3 { grid-column: 3; grid-row: 1; } .anat.is-real .p4 { grid-column: 3; grid-row: 2; } .anat.is-real .p5 { grid-column: 3; grid-row: 3; }
+  .anat.is-real .anat-p::before { display: none; }
+  .anat.is-real .anat-lines { display: block; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
+  .anat-lines line { stroke: var(--green); stroke-width: 2; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+}
+
+/* #case 전/후 비교: 근거 숫자가 생기기 전에는 막대 없이 [측정 예정] */
+.cmp { background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; margin-bottom: 16px; max-width: 720px; }
+.cmp-k { font-weight: 800; margin: 0 0 10px; }
+.cmp-row { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: 10px; align-items: center; margin-bottom: 8px; }
+.cmp-l { font-size: 14px; font-weight: 700; }
+.cmp-tbd { font-size: 13px; font-weight: 700; color: var(--warn); background: #fff7e8; border: 1.5px dashed #e3c79a; border-radius: 8px; padding: 6px 10px; }
+.cmp-note { font-size: 13px; color: var(--dim); margin: 6px 0 0; }
+.case-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.case-steps li { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 0 10px; align-items: start; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.case-steps li > span { grid-row: span 2; font-size: 28px; line-height: 1.2; }
+.case-steps b { font-size: 16px; } .case-steps small { font-size: 14px; color: var(--dim); line-height: 1.5; }
+
+/* #scope '하지 않는 것': 금지 표시가 겹친 이모지 칩 */
+.nochips { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.nochips li { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 0 12px; align-items: center; background: var(--bg); border: 1px solid var(--line); border-radius: 18px; padding: 10px 16px 10px 10px; }
+.nochips li > span { grid-row: span 2; position: relative; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: #fde2d4; font-size: 26px; line-height: 1; }
+.nochips li > span::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 3px solid #8f2f0c; background: linear-gradient(135deg, transparent calc(50% - 1.5px), #8f2f0c calc(50% - 1.5px) calc(50% + 1.5px), transparent calc(50% + 1.5px)); }
+.nochips b { font-size: 15px; } .nochips small { font-size: 13px; color: var(--dim); line-height: 1.45; }
+
+/* 차례로 등장 */
+.big3 > :nth-child(2), .case-steps > :nth-child(2), .nochips > :nth-child(2) { transition-delay: .08s; }
+.big3 > :nth-child(3), .case-steps > :nth-child(3), .nochips > :nth-child(3) { transition-delay: .16s; }
+.case-steps > :nth-child(4), .nochips > :nth-child(4) { transition-delay: .24s; } .nochips > :nth-child(5) { transition-delay: .32s; } .nochips > :nth-child(6) { transition-delay: .4s; }
+@media (prefers-reduced-motion: reduce) { .flow > li, .flow-a svg { opacity: 1; transform: none; transition: none; } }
+.flow { align-items: stretch; } .flow-a { align-self: center; } .flow-s { display: flex; flex-direction: column; align-items: center; }
+.big-n small { font-size: 18px; font-weight: 700; }
+/* 첫 화면 → 지역 찾기 진입(모바일에서도 지도 위에 보이게 제목 묶음 안에 둔다) */
+.hero-find { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 12px; padding: 8px 14px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 15px; font-weight: 700; text-decoration: none; transition: transform .15s ease; }
+.hero-find:hover { transform: translateY(-1px); } .hero-find small { font-size: 12px; font-weight: 400; color: #d3e6df; }
+.nochips { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+@media (max-width: 860px) { .flow-s { display: grid; grid-template-columns: 48px minmax(0, 1fr); column-gap: 12px; text-align: left; align-items: center; padding: 12px 14px; } .flow-e { grid-row: span 2; width: 48px; height: 48px; font-size: 24px; margin: 0; } .flow-a svg { width: 24px; } .flow { gap: 4px; } }

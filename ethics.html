@@ -3,32 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>AI 윤리·데이터 원칙 | 리뉴맵</title>
 <meta name="description" content="리뉴맵이 AI를 쓰는 방식 8가지. 판정은 사람이 하고, 동네에 점수나 순위를 매기지 않으며, 모든 숫자에 출처와 기준일을 붙입니다.">
 <meta name="theme-color" content="#006f5b">
 <meta name="ga-id" content="">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<script src="pretendard.js"></script>
+<link rel="stylesheet" href="pretendard.css">
 <link rel="stylesheet" href="styles.css">
-<style>
-/* 원칙 8개: 번호·아이콘·한 줄 제목·짧은 설명. docs/legal/ai_ethics.md 1부 문장을 그대로 쓴다 */
-.eth-lead { font-size: 18px; margin: 0 0 24px; }
-.eth-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin: 0 0 32px; }
-.eth-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; grid-template-columns: 44px 1fr; gap: 6px 14px; align-items: start; }
-.eth-card .ico { margin: 0; grid-row: span 3; }
-.eth-card .n { font-size: 13px; font-weight: 700; color: var(--green); letter-spacing: .06em; }
-.eth-card h2 { margin: 0; font-size: 18px; line-height: 1.35; }
-.eth-card p { margin: 0; font-size: 15px; color: var(--dim); }
-.eth-card.is-no { border-left: 5px solid #8f2f0c; } .eth-card.is-yes { border-left: 5px solid #0b5a48; }
-.eth-no { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 32px; padding: 0; list-style: none; }
-.eth-no li { background: #fde2d4; color: #8f2f0c; font-weight: 700; font-size: 14px; border-radius: 999px; padding: 6px 14px; }
-.eth-no li::before { content: '✕ '; }
-.eth-flow { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 0 0 32px; padding: 0; list-style: none; counter-reset: s; }
-.eth-flow li { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; text-align: center; font-size: 14px; position: relative; }
-.eth-flow li b { display: block; font-size: 16px; margin-bottom: 4px; } .eth-flow li span { font-size: 26px; display: block; }
-.eth-flow li::before { counter-increment: s; content: counter(s); position: absolute; top: -10px; left: 10px; background: var(--green); color: #fff; font-size: 12px; font-weight: 800; width: 22px; height: 22px; border-radius: 50%; line-height: 22px; }
-.eth-note { font-size: 14px; color: var(--dim); }
-</style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
  {"@type":"ListItem","position":1,"name":"홈","item":"./"},

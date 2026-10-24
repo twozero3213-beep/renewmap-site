@@ -22,7 +22,7 @@
   const DIVERGE = ['#0b7f6f', '#8fcfc3', '#e9ecea', '#f2a07a', '#b3261e']; // 개선 청록 ↔ 악화 진홍, 가운데 중성
   const MIG = ['#e07a1f', '#f2a07a', '#e9ecea', '#8fcfc3', '#0b7f6f']; // 기준 없는 변화·청년 순이동: 줄어듦(유출) 주황 ↔ 늘어남(유입) 청록, 가운데 중성(기준선 0)
   // 지표 묶음: '정비가 필요한 신호'와 '생활 여건'을 각각 고를 수 있게 묶는다. 치안 점수·기피·순위는 만들지 않는다(D8·D13)
-  const GROUPS = [['aging', '🏚 정비 신호'], ['pop', '👥 인구 변화'], ['life', '🌿 생활 여건'], ['safe', '🛡 안전 인프라'], ['fore', '🔮 추세 전망'], ['sum', '📋 종합']];
+  const GROUPS = [['aging', '🏚 정비 신호'], ['pop', '👥 인구 변화'], ['estate', '🏠 부동산 거래'], ['life', '🌿 생활 여건'], ['safe', '🛡 안전 인프라'], ['fore', '🔮 추세 전망'], ['sum', '📋 종합']];
   const safeUrl = u => (/^https?:\/\//i.test(u || '') ? u : null);
   // 쇠퇴 요건의 기준값은 시행령 제17조 문언 그대로라 '법정'이다. 승인 대기인 것은 요건을 묶어 판정하는 규칙(decline-3req-v0.1, hero.js RULE)이다.
   // 원장의 '공식 기준 해당 항목 수'(living STD_SHORTFALL_COUNT)도 이 기준을 확정으로 센다 — 화면과 원장이 같은 수를 보이게 맞춘다
@@ -59,6 +59,9 @@
   const MIG_CODE = 'YOUTH_NET_MIGRATION_PER1K', DESIG_CODE = 'POP_DECLINE_DESIGNATION';
   const DESIG = [['인구감소지역', '#d55e00'], ['관심지역', '#e69f00'], ['인구활력+', '#0072b2']]; // 행정 지정 3상태 고정 색(Okabe-Ito 색상·밝기 모두 다름). 좋고 나쁨 축 아님
   const DESIG_NONE = '미지정';
+  // 실거래(national/realestate.json, 다른 직원이 만드는 중): 시군구 월별 series. 신고 사실만 보여 주고 가격 전망·투자 판단을 하지 않는다
+  const ESTATE_NOTE = '실거래 신고 사실 · 투자 조언 아님';
+  const ESTATE_PROV = '최근 2개월은 신고기한(계약 후 30일) 때문에 잠정입니다';
   const FORECAST_BASE = [['DECLINE_POP_TOTAL', '인구', '명'], ['DECLINE_AGING_20Y_PCT', '노후건축물비율', '%'], ['DECLINE_BIZ_TOTAL', '사업체', '개']];
   const hasList = (o, k) => !!o && Array.isArray(o[k]) && o[k].length > 0;
   const srcName = s => (s && typeof s === 'object' ? s.name : s) || null;
@@ -89,7 +92,17 @@
         edges: base && !base.pending ? base.edges : [], colors: base && !base.pending ? base.colors : [REF[2]], labels: base && !base.pending ? base.labels : ['값 있음'], domain: base ? base.domain || null : null,
         title: `${lbl} 전망${tail}` };
     });
-    return [mig, des, ...fore];
+    const reOn = hasList(e.realestate, 'sigungu'), reSrc = srcName(e.realestate && e.realestate.source), reNote = e.realestate && typeof e.realestate.note === 'string' ? e.realestate.note : null,
+      reMonth = e.realestate && e.realestate.source && isNum(e.realestate.source.latest_month) ? e.realestate.source.latest_month : null;
+    const estate = [
+      { code: 'APT_TRADE_COUNT', group: 'estate', icon: 'home', label: '거래량(월)', unit: '건', level: 'sg', src: 'realestate', source: reSrc, note: reNote, latest: reMonth, standard: null, pending: !reOn,
+        edges: [], colors: [REF[2]], labels: ['값 있음'], title: `아파트 매매 신고 건수 · 최근 달 · 시·군·구 단위 · ${ESTATE_NOTE}` },
+      { code: 'APT_TRADE_COUNT_YOY_PCT', group: 'estate', icon: 'home', label: '연간 거래 건수 변화', unit: '%', level: 'sg', src: 'realestate', source: reSrc, note: reNote, latest: reMonth, standard: null, pending: !reOn, ref: true,
+        edges: [-20, -5, 5, 20], colors: REF, labels: ['20% 이상 감소', '5~20% 감소', '±5% 안', '5~20% 증가', '20% 이상 증가'], title: `아파트 매매 신고 건수 최근 12개월 · 직전 12개월 대비 · 고정 참고 구간(공식 기준 없음) · 시·군·구 단위 · ${ESTATE_NOTE}` },
+      { code: 'APT_PRICE_M2_YOY_PCT', group: 'estate', icon: 'home', label: '㎡당 중위가 1년 변화율', unit: '%', level: 'sg', src: 'realestate', source: reSrc, note: reNote, latest: reMonth, standard: null, pending: !reOn, ref: true,
+        edges: [-10, -3, 3, 10], colors: REF, labels: ['10% 이상 감소', '3~10% 감소', '±3% 안', '3~10% 증가', '10% 이상 증가'], title: `아파트 매매 ㎡당 중위가 전년 같은 달 대비 · 고정 참고 구간(공식 기준 없음) · 시·군·구 단위 · ${ESTATE_NOTE}` },
+    ];
+    return [mig, des, ...estate, ...fore];
   }
   const FORE_NOTE = '추세 외삽 · 판정·투자 조언 아님 · 승인 전 초안';
   const foreLine = ind => `${FORE_NOTE}${ind.mape === null || ind.mape === undefined ? '' : ` · 백테스트 MAPE ${fmt(ind.mape, '%')}`}${ind.disclaimer ? ` · ${ind.disclaimer}` : ''}`;
@@ -301,6 +314,15 @@
       const st = DESIG.find(c => c[0] === row.status);
       return { value: st ? st[0] : DESIG_NONE, year: null, text: st ? st[0] : DESIG_NONE, color: st ? st[1] : BELOW[0], since: row.since ?? null, cell: (row.cells || []).find(c => c && typeof c.value === 'string') || null };
     }
+    if (ind.src === 'realestate') { // 월 단위(yyyymm). 연도 칸에 넣지 않고 글자에 '2026.09'처럼 붙인다
+      const row = sgMatch(e.realestate && e.realestate.sigungu, sg), raw = row && row.series && Array.isArray(row.series[ind.code]) ? row.series[ind.code] : [];
+      const s = seriesOf({ series: { k: raw.map(p => (Array.isArray(p) ? [Number(p[0]), p[1]] : p)) } }, 'k'), ym = latestYear(s), v = ym === null ? null : valueAt(s, ym);
+      const cell = row ? ((row.cells || []).find(c => c.indicator_code === ind.code) || null) : null, sv = row && row.summary && isNum(row.summary[ind.code]) ? row.summary[ind.code] : null;
+      // 시계열이 없는 값(거래량 1년 변화율: 최근 12개월 합 대비)은 summary에서. 화면에서 다시 계산하지 않는다
+      if (ym === null && sv !== null) return { value: sv, year: null, text: `${fmt(sv, ind.unit)} · 최근 12개월`, color: colorOf(sv, scaleFor(ind, 'now')), cell };
+      const prov = e.realestate && e.realestate.source && Array.isArray(e.realestate.source.provisional_months) && e.realestate.source.provisional_months.map(Number).includes(ym) ? ' (잠정)' : '';
+      return { value: v, year: null, text: v === null ? '자료 없음' : `${fmt(v, ind.unit)} · ${String(ym).slice(0, 4)}.${String(ym).slice(4, 6)}${prov}`, color: colorOf(v, scaleFor(ind, 'now')), cell };
+    }
     return { value: null, year: null, text: '자료 없음', color: NULL_COLOR, cell: null };
   }
   // 추세 전망 한 동·한 지표·선택한 연도: [점추정, 하한, 상한]. 구간이 없으면 점추정만 두지 않고 자료 없음(윤리 원칙 ④)
@@ -472,7 +494,7 @@
     const ind = r.ind;
     if (ind.pending) return '자료를 모으는 중입니다. 숫자를 만들지 않습니다.';
     if (ind.src === 'forecast') return `${r.held ? `보류 · ${r.held} · ` : ''}${foreLine(ind)}${isNum(r.lo) && isNum(r.hi) ? ` · 80% 구간 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}` : ''}${ind.level === 'sg' ? ' · 시·군·구 단위' : ''}`;
-    if (ind.level === 'sg') return `시·군·구 단위 자료 · 읍·면·동 값이 아닙니다${r.since ? ` · 지정 ${r.since}` : ''}${isNum(r.abs) ? ` · 순이동 ${fmt(r.abs, '명')}` : ''}`;
+    if (ind.level === 'sg') return `시·군·구 단위 자료 · 읍·면·동 값이 아닙니다${ind.group === 'estate' ? ` · ${ESTATE_NOTE}` : ''}${r.since ? ` · 지정 ${r.since}` : ''}${isNum(r.abs) ? ` · 순이동 ${fmt(r.abs, '명')}` : ''}`;
     if (ind.standard) return `기준 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · ${ind.standard.status}${r.crossed ? ' · 기준선 넘은 쪽' : r.crossed === false ? ' · 기준선 안쪽' : ''}` : ''}`;
     if (ind.group === 'safe') return SAFE_NOTE;
     return ind.ref ? '공식 기준 없음 · 참고 구간' : '공식 기준 없음';
@@ -517,15 +539,15 @@
   function legendHTML(ind, mode, source, year, avail, median) {
     const s = scaleFor(ind, mode), off = avail === false || ind.pending;
     const stdLine = off ? (ind.held ? `보류 · ${ind.held} · 숫자를 만들지 않습니다` : '수집 중 · 자료가 오기 전에는 숫자를 만들지 않습니다')
-      : ind.src === 'forecast' ? foreLine(ind) : ind.group === 'safe' ? SAFE_NOTE
+      : ind.src === 'forecast' ? foreLine(ind) : ind.group === 'safe' ? SAFE_NOTE : ind.group === 'estate' ? `공식 기준 없음 · 참고 구간 · ${ESTATE_NOTE}`
         : ind.standard ? `기준선 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · 기준 ${ind.standard.status}` : ''}`
           : ind.composite ? '자료 없는 항목·승인 대기 기준은 세지 않음(하한)' : ind.ref ? '공식 기준 없음 · 참고 구간' : ind.categorical ? '행정 지정 상태 · 좋고 나쁨 축 아님' : '공식 기준 없음 · 값 있는 곳만 한 색';
     return `<div class="map-legend"><p class="map-legend-title">${esc(off ? ind.label : s.title)}</p><ul aria-label="지도 색 구간">${legendItems(ind, off ? 'now' : mode).filter(l => !off || l.hatch).map((l, i) =>
-      `<li style="--i:${i}"><i class="${l.hatch ? 'is-hatch' : ''}" style="background:${l.color}"></i>${esc(off ? (ind.held ? '보류' : '수집 중') : l.label)}</li>`).join('')}</ul>` +
+      `<li data-i="${i}"><i class="${l.hatch ? 'is-hatch' : ''}" data-bg="${esc(l.color)}"></i>${esc(off ? (ind.held ? '보류' : '수집 중') : l.label)}</li>`).join('')}</ul>` +
       `<p class="map-legend-std${off || isPending(ind.standard) || !ind.standard ? ' is-flag' : ''}">${esc(stdLine)}</p>` +
-      (ind.src === 'forecast' ? `<p class="map-legend-note">${esc(FORE_FIXED)}</p>` : ind.group === 'safe' ? `<p class="map-legend-note">${esc(SAFE_FIXED)}</p>` : '') + // 수집 중에도 고정 문구는 상시
+      (ind.src === 'forecast' ? `<p class="map-legend-note">${esc(FORE_FIXED)}</p>` : ind.group === 'safe' ? `<p class="map-legend-note">${esc(SAFE_FIXED)}</p>` : ind.group === 'estate' ? `<p class="map-legend-note">${esc(ind.note || ESTATE_NOTE)}<br>${esc(ESTATE_PROV)}.</p>` : '') + // 수집 중에도 고정 문구는 상시
       (median && !off ? '<p class="map-legend-note">시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : '') +
-      `<p class="map-legend-note">판정 아님 · 출처 ${esc(ind.source || source || SOURCE_DEFAULT)} · 기준연도 ${esc(year ?? '자료 없음')}</p></div>`;
+      `<p class="map-legend-note">판정 아님 · 출처 ${esc(ind.source || source || SOURCE_DEFAULT)} · ${ind.latest ? `최근 달 ${String(ind.latest).slice(0, 4)}.${String(ind.latest).slice(4, 6)}` : `기준연도 ${esc(year ?? '자료 없음')}`}</p></div>`;
   }
   // ── 동네 보고서: 원장 셀 값으로만 만든 결정적 문장. 평가어 없음, 숫자는 셀 값 그대로 ──
   const josa = label => { const last = String(label).replace(/[^가-힣]+$/, '').slice(-1); return last ? ((last.charCodeAt(0) - 0xac00) % 28 ? '은' : '는') : '은(는)'; };
@@ -548,6 +570,48 @@
     const banned = ['좋', '나쁘', '나쁜', '위험', '열악', '우수', '심각', '양호', '낙후', '추천', '유망', '피해야', '기피', '등급', '순위'].filter(w => String(text || '').includes(w));
     return bad.length || banned.length || !String(text || '').trim() ? { ok: false, bad, banned } : { ok: true, text: String(text) };
   }
+  // ── 기기 안 AI(Chrome 내장 AI의 Rewriter·Summarizer 전역 API). 문장을 서버로 보내지 않는다 ──
+  // developer.chrome.com/docs/ai 확인(2026-10-24): availability()는 'unavailable'|'downloadable'|'downloading'|'available', create()는 사용자 클릭(활성화) 뒤에만,
+  // Summarizer는 Chrome 138 정식, Rewriter는 오리진 트라이얼. 공식 지원 언어 목록(en·ja·es·de·fr)에 한국어가 없어 'ko'를 요청해 거절되면 '쓸 수 없음'으로 둔다
+  const AI_LANG = { expectedInputLanguages: ['ko'], expectedContextLanguages: ['ko'], outputLanguage: 'ko' };
+  const AI_APIS = [['Rewriter', { ...AI_LANG, tone: 'as-is', format: 'plain-text', length: 'as-is' }], ['Summarizer', { ...AI_LANG, type: 'tldr', format: 'plain-text', length: 'long' }]];
+  const AI_CONTEXT = '도시재생 기초조사 원장 문장입니다. 숫자·연도·출처 이름을 바꾸거나 새로 만들지 말고, 좋다·나쁘다·위험하다 같은 평가 없이 읽기 쉬운 한국어 문단으로 옮기세요.';
+  const AI_DEV_BTN = '✨ AI 문장 다듬기 (내 기기 안에서 실행 · 서버 전송 없음)';
+  const AI_LABEL = 'AI 생성 문장 · 사람 검토 권고';
+  const AI_UNSUPPORTED = '이 브라우저는 기기 내 AI를 지원하지 않습니다(Chrome 최신 버전).';
+  // 첫 화면에서는 API가 있는지만 본다. 언어 확인(availability)은 거절되면 브라우저가 콘솔 오류를 남기므로 사용자가 누를 때 한다
+  function presentDeviceAI(g) { const a = AI_APIS.find(([n]) => g && g[n] && typeof g[n].availability === 'function'); return a ? { api: a[0], status: 'unknown' } : { api: null, status: 'unsupported' }; }
+  async function detectDeviceAI(g) {
+    let seen = false;
+    for (const [name, opts] of AI_APIS) {
+      const A = g && g[name];
+      if (!A || typeof A.availability !== 'function' || typeof A.create !== 'function') continue;
+      seen = true;
+      let st;
+      try { st = await A.availability(opts); } catch (e) { st = 'unavailable'; } // 지원하지 않는 언어 조합은 거절(예외)로 온다
+      if (['available', 'downloadable', 'downloading'].includes(st)) return { api: name, status: st };
+    }
+    return { api: null, status: seen ? 'unavailable' : 'unsupported' };
+  }
+  async function runDeviceAI(g, api, original, onProgress) {
+    const opts = (AI_APIS.find(a => a[0] === api) || [])[1];
+    if (!opts || !g[api]) return { ok: false, bad: [], banned: [] };
+    const m = await g[api].create({ ...opts, sharedContext: AI_CONTEXT, monitor(mon) { mon.addEventListener('downloadprogress', e => onProgress && onProgress(e.loaded, e.total)); } });
+    try {
+      const out = api === 'Rewriter' ? await m.rewrite(original, { context: AI_CONTEXT }) : await m.summarize(original, { context: AI_CONTEXT });
+      return verifyPolished(out, original);
+    } finally { if (typeof m.destroy === 'function') m.destroy(); }
+  }
+  // 상태별 버튼·안내. 미지원이면 버튼을 끄고 결정적 보고서는 그대로 둔다. 내려받기는 사용자가 누를 때만
+  function aiDevHTML(det) {
+    const s = det ? det.status : 'checking', on = ['available', 'downloadable', 'downloading', 'unknown'].includes(s);
+    const note = { checking: '이 브라우저의 기기 내 AI를 확인하는 중입니다.', unknown: '이 브라우저에 기기 내 AI가 있습니다.<br>누르면 한국어를 지원하는지 먼저 확인합니다. 아직 아무것도 내려받지 않습니다.', unsupported: `${AI_UNSUPPORTED}<br>아래 원장 문장은 그대로 쓸 수 있습니다.`,
+      unavailable: '이 브라우저에 기기 내 AI가 있지만 한국어를 지원하지 않거나 기기 사양이 맞지 않습니다.<br>아래 원장 문장은 그대로 쓸 수 있습니다.',
+      downloadable: '처음 한 번 Chrome이 기기 내 AI 모델을 내려받습니다.<br>Chrome 안내 기준 저장 공간이 22GB 이상 비어 있어야 합니다(모델 자체는 더 작습니다).<br>버튼을 누르기 전에는 내려받지 않습니다.',
+      downloading: 'Chrome이 기기 내 AI 모델을 내려받는 중입니다.<br>끝나면 바로 다듬을 수 있습니다.',
+      available: '문장은 이 기기 안에서만 처리되고 서버로 보내지 않습니다.<br>입력을 저장하지 않습니다.' }[s];
+    return `<button type="button" class="btn ghost rp-ai-btn" data-ai-run${on ? '' : ' disabled aria-disabled="true"'}>${esc(AI_DEV_BTN)}</button><p class="rp-ai-note is-${esc(s)}">${note}</p>`;
+  }
   const liveText = (v, it, ind, mode) => `${v.crumbs.map(c => c.label).join(' › ')}${it ? ` › ${it.name}. ${ind.label}${mode === 'trend' ? ' 5년 변화' : ''} ${it.text}${it.year ? `, ${it.year}년` : ''}.` : `. ${v.step ? v.step + ' 단계' : ''}`}`;
   const ICONS = {
     bldg: 'M3 14V4l5-2v12M8 6h5v8M1 14h14M5 6v1M5 9v1M10 9v1M10 11v1', check: 'M2 8l4 4 8-8',
@@ -557,28 +621,29 @@
     book: 'M2 3.5c2-1 4-1 6 .5 2-1.5 4-1.5 6-.5V13c-2-1-4-1-6 .5-2-1.5-4-1.5-6-.5zM8 4v9.5', tree: 'M8 2l4.5 7h-3l3 4h-9l3-4h-3zM8 13v2',
     bus: 'M3 2h10v10H3zM3 8h10M5 12v2M11 12v2', amb: 'M1 5h9v7H1zM10 7h3l2 3v2h-5M5.5 6.5v4M3.5 8.5h4', sum: 'M12 3H4l4 5-4 5h8', dot: 'M8 5a3 3 0 1 0 .1 0',
     cctv: 'M2 5l9-2 1 3-9 3zM3 9v4M3 13h4M11 4l3 2', lamp: 'M8 2v3M4 5h8l-2 4H6zM8 9v5M5 14h6', police: 'M8 2l5 2v4c0 3-2 5-5 6-3-1-5-3-5-6V4zM8 5v5M5.5 7.5h5',
-    move: 'M2 8h9M8 4l4 4-4 4M13 3v10', flag: 'M3 2v12M3 3h9l-2 3 2 3H3', fore: 'M2 12l4-5 3 3 5-7M9 3h5v5',
+    move: 'M2 8h9M8 4l4 4-4 4M13 3v10', home: 'M2 8l6-5 6 5M4 7v7h8V7M7 14v-4h2v4', flag: 'M3 2v12M3 3h9l-2 3 2 3H3', fore: 'M2 12l4-5 3 3 5-7M9 3h5v5',
   };
   const icon = k => `<svg class="map-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS[k] || ICONS.dot}"/></svg>`;
 
   const api = { INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
-    indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
+    ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
-    reportSentences, verifyPolished, stdTextOf };
+    reportSentences, verifyPolished, stdTextOf, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewMap = api;
+  api.countUp = el => countUp(el); // find.js·hero.js가 같은 카운트업을 쓴다
 
   // ── 브라우저 ──
   const app = document.getElementById('mapApp'); if (!app) return;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches, coarse = matchMedia('(pointer: coarse)').matches, wide = matchMedia('(min-width: 900px)');
   const fetchJson = url => (window.renewFetch ? window.renewFetch(url) : fetch(url, { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
-  // AI 문장 다듬기 호출 주소. 비어 있으면 버튼은 비활성('준비 중'). 보내는 것은 동 이름과 원장 문장뿐이며 개인정보·자유 입력은 보내지 않는다(docs/legal/ai_ethics.md ⑤)
+  // 외부 AI 서버 주소는 비워 둔다(서버로 문장을 보내지 않는다). 다듬기는 기기 안 AI(detectDeviceAI)로만 한다(docs/legal/ai_ethics.md ⑤)
   const AI_POLISH_ENDPOINT = '';
   const state = { route: parseHash(location.hash) || {}, ind: INDICATORS[0].code, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, sidoGeo: undefined, dash: null, mapErr: false, touched: false,
-    migration: undefined, designations: undefined, forecastIdx: undefined };
-  const inds = () => allIndicators(state.living, { migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx });
+    migration: undefined, designations: undefined, forecastIdx: undefined, realestate: undefined };
+  const inds = () => allIndicators(state.living, { migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate });
   const curInd = () => indOf(state.ind, inds());
   const effMode = ind => (hasTrend(ind) ? state.mode : 'now');
   const horizons = () => (state.forecastIdx && Array.isArray(state.forecastIdx.horizons) ? state.forecastIdx.horizons.filter(isNum) : []);
@@ -598,7 +663,7 @@
   const livingOf = code5 => (state.living ? lazy('living:' + code5, () => fetchJson(`data/national/living/${code5}.json`).then(j => (j && Array.isArray(j.dongs) ? j : null))) : null);
   // 전망 파일: forecast/index.json이 없으면 시군구 파일도 찾지 않는다
   const forecastOf = code5 => (state.forecastIdx ? lazy('fc:' + code5, () => fetchJson(`data/national/forecast/${code5}.json`).then(j => (j && Array.isArray(j.dongs) ? j : null))) : null);
-  const extOf = v => ({ migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, horizon: horizon(),
+  const extOf = v => ({ migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate, horizon: horizon(),
     forecast: v && v.level === 'emd' ? forecastOf(v.emdCode) || null : null, sg: v ? (v.gu || v.sigungu || null) : null });
   let timer = null, autoT = null, lastLegend = '', lastLive = '', lastDong = null;
   const shown = new Map();
@@ -661,11 +726,11 @@
       sents.filter(s => s.group === g).map(s => { const r = rows.find(x => x.ind.code === s.code); return `<div class="rp-item"><p>${esc(s.text)}</p>${r && !r.ind.categorical ? barSVG(r) : ''}${r && r.series && r.series.some(p => p[1] !== null) ? sparkline(r.series, r.year, r.ind.label) : ''}</div>`; }).join('') + `</section>`).join('');
     const src = `<details class="rp-src"><summary>출처표 (${sents.length}개 항목)</summary><div class="table-wrap"><table><thead><tr><th>항목</th><th>값</th><th>출처</th><th>기준일</th></tr></thead><tbody>${sents.map(s =>
       `<tr><td>${esc(s.label)}</td><td>${esc(s.value)}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source)}</a>` : esc(s.source)}</td><td>${esc(s.ref || (s.year ? `${s.year}년` : '기록 없음'))}</td></tr>`).join('')}</tbody></table></div></details>`;
-    const off = !AI_POLISH_ENDPOINT, pol = polished && polished.key === reportKey ? polished : null;
-    const ai = `<div class="rp-ai"><p class="rp-ai-head">${esc(AI_HEAD)}</p><button type="button" class="btn ghost rp-ai-btn" data-ai-open ${off ? 'disabled aria-disabled="true"' : ''}>✨ AI 문장 다듬기${off ? ' <small>준비 중</small>' : ''}</button>` +
-      `<span class="rp-ai-note">선택 기능 · 기본 꺼짐 · 무료 · 로그인 없음 · 입력 저장 없음</span>` +
-      (off ? '' : `<div class="rp-ai-consent" data-ai-consent hidden><p><b>외부 AI로 보내는 것</b>: 동 이름 "${esc(it.name)}"과 위의 원장 문장 ${sents.length}개만 보냅니다.<br>이름·이메일·입력한 글 같은 개인정보는 보내지 않습니다.<br>보내는 곳: <code>${esc(AI_POLISH_ENDPOINT)}</code><br>응답의 숫자는 원장 값과 대조해 다르면 표시하지 않습니다.</p><button type="button" class="btn" data-ai-go>동의하고 다듬기</button> <button type="button" class="btn ghost" data-ai-cancel>취소</button></div>`) +
-      `<div class="rp-ai-out" data-ai-out aria-live="polite">${pol ? `<p class="rp-ai-label">AI 생성</p><p>${esc(pol.text)}</p>` : ''}</div><p class="rp-ai-foot">${esc(AI_FOOT)}</p></div>`;
+    const pol = polished && polished.key === reportKey ? polished : null;
+    const ai = `<div class="rp-ai"><p class="rp-ai-head">${esc(AI_HEAD)}</p><div data-ai-dev>${aiDevHTML(aiDet)}</div>` +
+      `<span class="rp-ai-note">선택 기능 · 기본 꺼짐 · 무료 · 로그인 없음 · 서버 전송 없음</span>` +
+      `<div class="rp-ai-consent" data-ai-confirm hidden><p><b>기기 내 AI 모델 내려받기</b><br>Chrome이 AI 모델을 이 기기에 한 번 내려받습니다(Chrome 안내: 저장 공간 22GB 이상 여유 필요).<br>내려받은 뒤에도 문장은 이 기기 안에서만 처리합니다.</p><button type="button" class="btn" data-ai-go>내려받고 다듬기</button> <button type="button" class="btn ghost" data-ai-cancel>취소</button></div>` +
+      `<div class="rp-ai-out" data-ai-out aria-live="polite">${pol ? `<p class="rp-ai-label">${esc(AI_LABEL)}</p><p>${esc(pol.text)}</p>` : ''}</div><p class="rp-ai-foot">${esc(AI_FOOT)}</p></div>`;
     return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 보고서</h3><p class="rp-tools"><button type="button" class="btn ghost" data-print>🖨 인쇄·PDF</button><a class="btn ghost" href="#contact">HWPX 서식은 시범 납품에서</a></p></div>` +
       `<p class="rp-intro">아래 문장은 원장 셀의 숫자와 출처만 옮긴 것입니다.<br>평가나 판정은 하지 않습니다.</p>${byG}${src}${ai}<p class="rp-foot">${esc(REPORT_FOOT)}</p>`;
   }
@@ -677,22 +742,36 @@
     if (key === reportKey) return;
     reportKey = key; report.innerHTML = reportHTML(v, it, rowsFor(v, m, it));
   }
+  // 기기 안 AI: 한 번만 확인하고, 보고서가 열려 있으면 버튼 자리만 바꾼다
+  let aiDet = null;
+  const aiPaint = () => { const box = report && report.querySelector('[data-ai-dev]'); if (box) box.innerHTML = aiDevHTML(aiDet); };
+  if (report) aiDet = presentDeviceAI(window);
+  function aiRun() {
+    const v = resolve(state.index, state.route), m = model(v), it = m.kind === 'emd' ? m.items.find(x => x.code === v.dong) : null, out = report.querySelector('[data-ai-out]');
+    if (!it || !out || !aiDet || !aiDet.api) return;
+    const sents = reportSentences(it.name, rowsFor(v, m, it)), original = sents.map(s => s.text).join(' '), key = reportKey;
+    const msg = t => { if (key === reportKey) out.innerHTML = `<p class="rp-ai-label">${esc(t)}</p>`; };
+    msg('기기 안에서 문장을 만드는 중입니다.');
+    runDeviceAI(window, aiDet.api, original, (l, t) => msg(`기기 내 AI 모델을 내려받는 중입니다 · ${Math.round(100 * l / (t || 1))}%`))
+      .then(res => {
+        if (aiDet.status !== 'available') { aiDet = { ...aiDet, status: 'available' }; aiPaint(); }
+        if (key !== reportKey) return;
+        polished = res.ok ? { key, text: res.text } : null;
+        out.innerHTML = res.ok ? `<p class="rp-ai-label">${esc(AI_LABEL)}</p><p>${esc(res.text)}</p>`
+          : `<p class="rp-ai-label">AI 문장을 버리고 원장 문장을 보여 드립니다</p><p>${res.bad && res.bad.length ? `원장에 없는 숫자(${esc(res.bad.join(', '))})가 있었습니다. ` : ''}${res.banned && res.banned.length ? `평가 표현(${esc(res.banned.join(', '))})이 있었습니다. ` : ''}</p>${sents.map(s => `<p>${esc(s.text)}</p>`).join('')}`;
+      })
+      .catch(() => msg('기기 내 AI가 문장을 만들지 못했습니다. 위의 원장 문장을 그대로 보세요.'));
+  }
   if (report) report.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    const consent = report.querySelector('[data-ai-consent]'), out = report.querySelector('[data-ai-out]');
+    const confirm = report.querySelector('[data-ai-confirm]');
     if (b.hasAttribute('data-print')) { report.querySelectorAll('details').forEach(d => { d.open = true; }); window.print(); }
-    else if (b.hasAttribute('data-ai-open') && consent) { consent.hidden = false; consent.querySelector('[data-ai-go]')?.focus(); }
-    else if (b.hasAttribute('data-ai-cancel') && consent) consent.hidden = true;
-    else if (b.hasAttribute('data-ai-go') && AI_POLISH_ENDPOINT) {
-      const v = resolve(state.index, state.route), m = model(v), it = m.kind === 'emd' ? m.items.find(x => x.code === v.dong) : null; if (!it) return;
-      const sents = reportSentences(it.name, rowsFor(v, m, it)), original = sents.map(s => s.text).join('\n'), key = reportKey;
-      consent.hidden = true; out.innerHTML = '<p class="rp-ai-label">AI 문장을 받는 중입니다.</p>';
-      fetch(AI_POLISH_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: it.name, sentences: sents.map(s => s.text) }) })
-        .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status))))).then(j => verifyPolished(j && j.text, original))
-        .then(res => { if (key !== reportKey) return; polished = res.ok ? { key, text: res.text } : null;
-          out.innerHTML = res.ok ? `<p class="rp-ai-label">AI 생성</p><p>${esc(res.text)}</p>` : `<p class="rp-ai-label">AI 문장을 표시하지 않습니다</p><p>${res.bad && res.bad.length ? `원장에 없는 숫자(${esc(res.bad.join(', '))})가 있습니다.` : ''}${res.banned && res.banned.length ? ` 평가 표현(${esc(res.banned.join(', '))})이 있습니다.` : ''} 원장 문장을 그대로 보세요.</p>`; })
-        .catch(() => { if (key === reportKey) out.innerHTML = '<p class="rp-ai-label">AI 문장을 받지 못했습니다. 원장 문장을 그대로 보세요.</p>'; });
+    else if (b.hasAttribute('data-ai-run') && aiDet) {
+      const next = () => { if (aiDet.status === 'available') aiRun(); else if (confirm && (aiDet.status === 'downloadable' || aiDet.status === 'downloading')) { confirm.hidden = false; confirm.querySelector('[data-ai-go]')?.focus(); } };
+      if (aiDet.status === 'unknown') { b.disabled = true; detectDeviceAI(window).then(d => { aiDet = d; aiPaint(); next(); }); } else next();
     }
+    else if (b.hasAttribute('data-ai-cancel') && confirm) confirm.hidden = true;
+    else if (b.hasAttribute('data-ai-go')) { if (confirm) confirm.hidden = true; aiRun(); } // 이 클릭(사용자 활성화) 안에서 create()가 불려 내려받기가 시작된다
   });
   // 건축HUB 3기준(dashboard.json, 법정동)은 수집된 시군구에서만 별도 섹션으로. 행정동 값과 합치지 않는다
   function hubHTML(v) {
@@ -716,6 +795,7 @@
     else if (!has) body = `<span class="hl-t">${esc(ind.label)}은(는) 읍·면·동 자료만 있습니다.<br>지도에서 시·군·구를 누르면 색이 보입니다.</span>`;
     else if (ind.src === 'forecast') body = `<span class="hl-t">${esc(FORE_FIXED)}</span>`;
     else if (ind.group === 'safe') body = `<span class="hl-t">${esc(SAFE_FIXED)}</span>`;
+    else if (ind.group === 'estate') body = `<span class="hl-t">${esc(ESTATE_NOTE)}.<br>시·군·구 단위 신고 집계입니다.<br>${esc(ESTATE_PROV)}.</span>`;
     else if (!ind.standard && !ind.composite) body = `<span class="hl-t">공식 기준이 없는 지표입니다.<br>색은 고정 참고 구간입니다.</span>`;
     else if (m.kind === 'sg' && effMode(ind) === 'now' && hasYears(state.index, ind)) {
       const c = overCaption(state.index, ind, m.year, m.sgs), k = `${ind.code}-${scope}`;
@@ -752,6 +832,7 @@
     const chips = m.kind === 'emd' ? `<div class="dash-chips dash-dongs map-list" role="group" aria-label="읍·면·동">${m.items.map(x => `<button type="button" class="dash-chip" data-dong="${esc(x.code)}" aria-pressed="${x.code === v.dong}">${esc(x.name)}</button>`).join('')}</div>` : '';
     bottom.innerHTML = legend + `<p class="map-hint">${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, + − 버튼으로 확대합니다.'} 지도의 칸을 누르면 바로 아래 단계로 내려갑니다.<br>지도 대신 아래 목록으로도 고를 수 있습니다.</p>` +
       `<div class="map-selects">${sidoSel}${sgSel}${guSel}</div>${chips}<p class="map-live" aria-live="polite">${esc(liveText(v, it, ind, mode))}</p>`;
+    styleData(bottom);
     const inEmd = v.level === 'emd';
     panel.hidden = !inEmd;
     if (inEmd) {
@@ -767,6 +848,11 @@
     yearbar(v, m, ind, mode);
     renderReport(v, m, it);
     app.querySelectorAll('[data-count]').forEach(countUp);
+  }
+  // CSP(style-src에 'unsafe-inline' 없음): 인라인 style 속성 대신 data-*를 CSSOM으로 옮긴다
+  function styleData(el) {
+    el.querySelectorAll('[data-bg]').forEach(x => { x.style.background = x.dataset.bg; });
+    el.querySelectorAll('[data-i]').forEach(x => x.style.setProperty('--i', x.dataset.i));
   }
   // 이전에 보인 값에서 새 값으로 센다(같은 값이면 그대로). 재생 중 매번 0부터 다시 세지 않는다
   function countUp(el) {
@@ -802,7 +888,7 @@
       const D = window.RenewDashboard;
       if (!window.L) { wait('지도를 불러오는 중입니다.'); (D ? D.loadLeaflet() : Promise.reject()).then(render, () => { state.mapErr = true; render(); }); return; }
       const L = window.L, el = document.createElement('div'); el.className = 'map-canvas'; el.setAttribute('role', 'region');
-      el.insertAdjacentHTML('beforeend', '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><pattern id="rmHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" fill="#d4dbd8"/><line x1="0" y1="0" x2="0" y2="6" stroke="#6b7a75" stroke-width="2"/></pattern></defs></svg>');
+      el.insertAdjacentHTML('beforeend', '<svg class="map-defs" width="0" height="0" aria-hidden="true"><defs><pattern id="rmHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" fill="#d4dbd8"/><line x1="0" y1="0" x2="0" y2="6" stroke="#6b7a75" stroke-width="2"/></pattern></defs></svg>');
       slot.replaceWith(el);
       ybar = document.createElement('div'); ybar.className = 'map-yearbar'; ybar.hidden = true; ybar.setAttribute('aria-hidden', 'true'); el.appendChild(ybar);
       const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, zoomSnap: 0.25, attributionControl: false });
@@ -971,6 +1057,7 @@
   // 다른 직원이 만드는 중인 파일. 없으면 null → 해당 칩은 '수집 중'
   fetchJson('data/national/migration.json').then(j => { state.migration = j && Array.isArray(j.sigungu) ? j : null; if (state.index) render(); });
   fetchJson('data/national/designations.json').then(j => { state.designations = j && Array.isArray(j.items) ? j : null; if (state.index) render(); });
+  fetchJson('data/national/realestate.json').then(j => { state.realestate = j && Array.isArray(j.sigungu) ? j : null; if (state.index) render(); });
   fetchJson('data/national/forecast/index.json').then(j => { state.forecastIdx = j && Array.isArray(j.horizons) ? j : null; if (state.index) render(); });
   fetchJson('data/national/dong_index.json').then(di => { state.dongIndex = Array.isArray(di) ? di : null; if (state.index) searchSetup(); });
 })();

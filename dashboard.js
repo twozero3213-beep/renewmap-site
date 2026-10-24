@@ -94,7 +94,7 @@
       YEARS.forEach((yr, j) => {
         const v = cellView(cellOf(dong, yr, b)), by = y + 22 + j * 26, bw = (w * barRatio(v.value)).toFixed(1);
         out += `<rect class="dash-track${v.value === null ? ' is-hidden' : ''}" x="${x0}" y="${by}" width="${w}" height="20" rx="6"/>`;
-        if (v.value !== null) out += `<rect class="dash-fill y${yr}" x="${x0}" y="${by}" width="${bw}" height="20" rx="6" style="transition-delay:${(i * 2 + j) * 70}ms"/>`;
+        if (v.value !== null) out += `<rect class="dash-fill y${yr}" x="${x0}" y="${by}" width="${bw}" height="20" rx="6" data-delay="${(i * 2 + j) * 70}"/>`;
         out += `<text class="dash-yr" x="${x0 - 6}" y="${by + 15}" text-anchor="end">${yr}년</text>`;
         out += `<text class="dash-val" x="300" y="${by + 15}" text-anchor="end">${esc(v.text)}</text>`;
       });
@@ -177,7 +177,7 @@
   }
   function legendHTML() {
     return `<ul class="dash-map-legend" aria-label="지도 색 구간">${legendItems().map(l =>
-      `<li><i class="${l.hidden ? 'is-hidden' : ''}" style="background:${l.color}"></i>${esc(l.label)}</li>`).join('')}</ul>` +
+      `<li><i class="${l.hidden ? 'is-hidden' : ''}" data-bg="${esc(l.color)}"></i>${esc(l.label)}</li>`).join('')}</ul>` +
       `<p class="dash-map-note">${MAP_NOTE}</p>`;
   }
 
@@ -323,6 +323,9 @@
       `<button type="button" data-view="${k}" aria-pressed="${state.view === k}">${t}</button>`).join('')}</div>`;
     if (mapState.el) mapState.el.remove(); // 다시 그리는 동안 Leaflet 지도를 떼어 두었다가 drawMap()에서 붙인다
     app.innerHTML = `<div class="dash-chips dash-gus" role="group" aria-label="부산 구·군">${chips}</div>${viewSeg}${body}`;
+    // CSP(style-src에 'unsafe-inline' 없음): 인라인 style 대신 data-*를 CSSOM으로 옮긴다
+    app.querySelectorAll('[data-delay]').forEach(x => { x.style.transitionDelay = x.dataset.delay + 'ms'; });
+    app.querySelectorAll('[data-bg]').forEach(x => { x.style.background = x.dataset.bg; });
     if (v.kind === 'dong' && state.view === 'map') drawMap(v); else dropMap();
     // 고른 칩이 가로 스크롤 밖에 있으면 칩 줄만 옮긴다(페이지는 움직이지 않는다)
     app.querySelectorAll('.dash-chips').forEach(row => {
