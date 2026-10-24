@@ -77,9 +77,17 @@
       const b = bt && bt[c] && typeof bt[c] === 'object' ? bt[c] : null, base = INDICATORS.find(i => i.code === c) || (lv || []).find(i => i.code === c) || null;
       const fb = FORECAST_BASE.find(x => x[0] === c) || [, c, ''], lbl = base ? base.label : fb[1], mape = b && isNum(b.median_mape) ? b.median_mape : null, held = b && typeof b.withheld === 'string' && b.withheld ? b.withheld : null;
       const sgScope = !!b && typeof b.scope === 'string' && /시군구|시·군·구/.test(b.scope);
-      return { code: 'FORECAST_' + c, group: 'fore', icon: 'fore', label: lbl + ' 전망', unit: base ? base.unit : fb[2], level: sgScope ? 'sg' : 'emd', src: 'forecast', fc: c, mape, held, standard: null, worseUp: base ? base.worseUp : true, pending: !fi, empty: !!held || (!!b && isNum(b.n_areas) && b.n_areas === 0),
-        edges: base && !base.pending ? base.edges : [], colors: base && !base.pending ? base.colors : [REF[2]], labels: base && !base.pending ? base.labels : ['값 있음'], domain: base ? base.domain || null : null, disclaimer: fi && typeof fi.disclaimer === 'string' ? fi.disclaimer : null, source: fi && typeof fi.method === 'string' ? `추세 외삽(${fi.method})` : '추세 외삽',
-        title: `${lbl} 전망${sgScope ? ' · 시·군·구 단위' : ''} · 추세 외삽 · 판정·투자 조언 아님 · 승인 전 초안${mape === null ? '' : ` · 백테스트 MAPE ${fmt(mape, '%')}`}` };
+      const common = { code: 'FORECAST_' + c, group: 'fore', icon: 'fore', level: sgScope ? 'sg' : 'emd', src: 'forecast', mape, held, standard: null, pending: !fi, empty: !!held || (!!b && isNum(b.n_areas) && b.n_areas === 0),
+        disclaimer: fi && typeof fi.disclaimer === 'string' ? fi.disclaimer : null, source: fi && typeof fi.method === 'string' ? `추세 외삽(${fi.method})` : '추세 외삽' };
+      const tail = `${sgScope ? ' · 시·군·구 단위' : ''} · 추세 외삽 · 판정·투자 조언 아님 · 승인 전 초안${mape === null ? '' : ` · 백테스트 MAPE ${fmt(mape, '%')}`}`;
+      // 절대량 지표(명·개)는 자료가 주는 변화율 키(change_pct_key, 기준연도 실측 대비 %)로 칠한다 — 고정 참고 구간, 기준 없음. 화면에서 나누지 않는다
+      const ck = b && typeof b.change_pct_key === 'string' && b.change_pct_key ? b.change_pct_key : null, by = fi && isNum(fi.base_year) ? fi.base_year : null;
+      if (ck) return { ...common, label: `${lbl} 전망 · ${by === null ? '기준연도' : by + '년'} 대비`, unit: '%', fc: ck, worseUp: false, ref: true, domain: [-50, 50],
+        edges: [-20, -10, 0, 10], colors: [ABOVE[2], ABOVE[1], ABOVE[0], BELOW[1], BELOW[0]], labels: ['20% 이상 감소', '10~20% 감소', '0~10% 감소', '0~10% 증가', '10% 이상 증가'],
+        title: `${lbl} 전망 · ${by === null ? '기준연도' : by + '년'} 실측 대비 변화율 · 고정 참고 구간(공식 기준 없음)${tail}` };
+      return { ...common, label: lbl + ' 전망', unit: base ? base.unit : fb[2], fc: c, worseUp: base ? base.worseUp : true,
+        edges: base && !base.pending ? base.edges : [], colors: base && !base.pending ? base.colors : [REF[2]], labels: base && !base.pending ? base.labels : ['값 있음'], domain: base ? base.domain || null : null,
+        title: `${lbl} 전망${tail}` };
     });
     return [mig, des, ...fore];
   }
