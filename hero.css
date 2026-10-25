@@ -47,7 +47,7 @@
 /* CTA 글로우: 라임 원뿔 그라데이션이 버튼 테두리를 따라 돈다 */
 @property --rm-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 .btn.glow { position: relative; isolation: isolate; }
-.btn.glow::before { content: ''; position: absolute; inset: -3px; border-radius: 13px; z-index: -1; background: conic-gradient(from var(--rm-angle), transparent 0 55%, var(--lime) 75%, transparent 95%); animation: rm-spin 5s linear infinite; }
+.btn.glow::before { content: ''; position: absolute; inset: -3px; border-radius: 13px; z-index: -1; background: conic-gradient(from var(--rm-angle), transparent 0 55%, var(--lime) 75%, transparent 95%); animation: rm-spin 1.2s ease-out 1; }
 @keyframes rm-spin { to { --rm-angle: 360deg; } }
 
 /* 1분 판정 예시 */
@@ -63,14 +63,19 @@
 .verdict-note, .verdict-empty { font-size: 14px; color: var(--dim); margin: 0; }
 .verdict-empty { background: var(--card); border: 1px dashed #b9cbc4; border-radius: 14px; padding: 24px; text-align: center; }
 
-/* 스크롤 등장: 카드가 차례로 */
-[data-reveal] { opacity: 0; transform: translateY(20px); transition: opacity .6s ease, transform .6s cubic-bezier(.2, .8, .2, 1); }
+/* 첫 화면과 스크롤 등장: 실제 콘텐츠를 짧게 순차 노출 */
+.hero-head { animation: rm-rise .4s cubic-bezier(.2, .8, .2, 1) both; }
+.hero-search { animation: rm-rise .4s .08s cubic-bezier(.2, .8, .2, 1) both; }
+.hero-map { animation: rm-rise .45s .12s cubic-bezier(.2, .8, .2, 1) both; }
+.hero-cta { animation: rm-rise .4s .2s cubic-bezier(.2, .8, .2, 1) both; }
+[data-reveal] { opacity: 0; transform: translateY(16px); transition: opacity .4s ease, transform .4s cubic-bezier(.2, .8, .2, 1); }
 [data-reveal].is-in { opacity: 1; transform: none; }
 .grid > [data-reveal]:nth-child(2), .verdict-grid > :nth-child(2) { transition-delay: .08s; } .grid > [data-reveal]:nth-child(3), .verdict-grid > :nth-child(3) { transition-delay: .16s; } .grid > [data-reveal]:nth-child(4) { transition-delay: .24s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .btn.glow::before, .hero-live.is-new > *, .hero-steps li { animation: none; }
+  .btn.glow::before, .hero-live.is-new > *, .hero-steps li, .hero-head, .hero-search, .hero-map, .hero-cta { animation: none; }
   [data-reveal] { opacity: 1; transform: none; transition: none; }
+  .btn, .workspace-steps a { transition: none; }
 }
 .hl-n .hl-y { font-size: 17px; font-weight: 800; color: var(--ink); letter-spacing: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hl-n [data-ck^="hl-n-"] { font-variant-numeric: tabular-nums; }
@@ -158,3 +163,32 @@
 .hero-find:hover { transform: translateY(-1px); } .hero-find small { font-size: 12px; font-weight: 400; color: #d3e6df; }
 .nochips { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
 @media (max-width: 860px) { .flow-s { display: grid; grid-template-columns: 48px minmax(0, 1fr); column-gap: 12px; text-align: left; align-items: center; padding: 12px 14px; } .flow-e { grid-row: span 2; width: 48px; height: 48px; font-size: 24px; margin: 0; } .flow-a svg { width: 24px; } .flow { gap: 4px; } }
+
+/* Evidence Workspace 첫인상: 서비스 대상과 근거 흐름을 빠르게 읽게 한다. */
+.hero-audience { display: inline-flex; align-items: center; min-height: 30px; margin: 0 0 16px; padding: 5px 10px; border-left: 3px solid var(--green); background: #e3f1ea; color: var(--navy); font-size: 13px; font-weight: 800; }
+.hero h1 { font-size: clamp(32px, 6vw, 52px); line-height: 1.14; letter-spacing: -.045em; text-wrap: balance; }
+.hero h1 em { color: var(--green); font-style: normal; }
+.hero p.lead { max-width: 38em; color: var(--dim); line-height: 1.7; }
+.evidence-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; align-items: center; }
+.evidence-copy { min-width: 0; max-width: 680px; }
+.evidence-copy h2 { text-wrap: balance; }
+.evidence-links { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin-top: 24px; }
+.text-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--green); font-weight: 800; text-underline-offset: 4px; }
+.crew-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; padding: 22px 14px 14px; border: 1px solid #c7dbd3; border-radius: 24px; background: linear-gradient(145deg, #e8f3ed, #f8fbf5); box-shadow: var(--shadow); overflow: hidden; }
+.crew-strip > div { display: grid; justify-items: center; gap: 4px; min-width: 0; color: var(--navy); font-size: 14px; font-weight: 800; animation: rm-crew-in .5s cubic-bezier(.2, .8, .2, 1) both; }
+.crew-strip > div:nth-child(2) { animation-delay: .08s; }
+.crew-strip > div:nth-child(3) { animation-delay: .16s; }
+.crew-strip img { display: block; width: min(100%, 160px); height: auto; }
+@keyframes rm-crew-in { from { opacity: 0; transform: translateY(12px); } }
+@media (min-width: 860px) {
+  .hero-grid { grid-template-columns: 460px minmax(0, 1fr); }
+  .evidence-layout { grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr); gap: 64px; }
+}
+@media (max-width: 420px) {
+  .hero h1 { font-size: clamp(29px, 9vw, 38px); }
+  .crew-strip { padding-inline: 8px; border-radius: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crew-strip > div { animation: none; }
+  .hero-find, .text-link { transition: none; }
+}

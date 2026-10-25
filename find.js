@@ -137,19 +137,39 @@
       }).join('')}</div>${g === 'estate' ? `<p class="fd-gnote">${esc(ESTATE_NOTE)} · 아파트 매매 신고 건수 최근 12개월 합을 직전 12개월과 비교(원장 값) · ${esc(M.ESTATE_PROV)}</p>` : g === 'fore' ? `<p class="fd-gnote">${esc(M.FORE_FIXED)}</p>` : ''}</fieldset>`;
     }).join('');
   }
-  function resultHTML(ev, areas, ctx, unit, by) {
+  const PAGE_SIZE = 10;
+  function paginate(list, page = 1, perPage = PAGE_SIZE) {
+    const total = list.length, pages = Math.ceil(total / perPage), current = pages ? Math.min(Math.max(Number(page) || 1, 1), pages) : 1;
+    const from = total ? (current - 1) * perPage + 1 : 0;
+    return { items: list.slice(from ? from - 1 : 0, current * perPage), total, page: current, pages, from, to: total ? Math.min(current * perPage, total) : 0 };
+  }
+  function pageRange(current, pages) {
+    if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+    if (current <= 3) return [1, 2, 3, 'gap-end', pages];
+    if (current >= pages - 2) return [1, 'gap-start', pages - 2, pages - 1, pages];
+    return [1, 'gap-start', current - 1, current, current + 1, 'gap-end', pages];
+  }
+  function pagerHTML(p) {
+    if (p.pages <= 1) return '';
+    return `<nav class="fd-pager" aria-label="지역 결과 페이지"><button type="button" data-fd-page="prev" aria-label="이전 페이지"${p.page === 1 ? ' disabled' : ''}>이전</button><div>${pageRange(p.page, p.pages).map(n => typeof n === 'number' ? `<button type="button" data-fd-page="${n}"${n === p.page ? ' aria-current="page"' : ''} aria-label="${n}페이지">${n}</button>` : '<span aria-hidden="true">…</span>').join('')}</div><button type="button" data-fd-page="next" aria-label="다음 페이지"${p.page === p.pages ? ' disabled' : ''}>다음</button></nav>`;
+  }
+  function resultHTML(ev, areas, ctx, unit, by, page = 1) {
     const emo = ev.use.map(id => condOf(id).e).join(' ');
     const skip = ev.skipped.length ? `<p class="fd-skip">이 범위에서 쓸 수 없어 빠진 조건 ${ev.skipped.length}개: ${esc(ev.skipped.map(id => condOf(id).e + ' ' + chipLabel(condOf(id), ctx, condState(condOf(id), ctx, unit))).join(', '))}</p>` : '';
     const head = `<p class="fd-note">${esc(NOTE)} · ${esc(UNIT[unit])} 단위${unit === 'sg' ? ' · 시·군·구 값은 그 안 읍·면·동 값의 중앙값' : ''}</p>`;
     if (!ev.use.length) return head + skip + `<p class="fd-count is-idle"><b>–</b><small>조건 칩을 하나 이상 고르면 해당하는 곳을 모두 보여 줍니다. 여러 개를 고르면 모두 맞는 곳(AND)만 남습니다.</small></p>`;
-    const list = sortAreas(ev.hits, by);
+    const list = sortAreas(ev.hits, by), p = paginate(list, page);
     return head + skip + `<p class="fd-count" aria-live="polite">조건에 맞는 곳 <b data-ck="fd-n" data-count="${ev.hits.length}">${ev.hits.length}</b>곳 <small>/ 전체 ${esc(M.fmt(areas.length))}곳${ev.nodata ? ` · 자료가 없어 판단하지 않은 곳 ${esc(M.fmt(ev.nodata))}곳` : ''}</small></p>` +
       LIST_MARK + `<div class="dash-seg fd-sort" role="group" aria-label="목록 순서"><button type="button" data-fd-sort="code" aria-pressed="${by !== 'name'}">행정코드 순</button><button type="button" data-fd-sort="name" aria-pressed="${by === 'name'}">가나다 순</button></div>` +
-      (list.length ? `<ol class="fd-list">${list.map(a => `<li><span class="fd-n"><b>${esc(a.name)}</b><small>${esc(a.sub)} · ${esc(a.code)}</small></span><span class="fd-b" aria-label="맞는 조건">${esc(emo)}</span><a href="${esc(hashOf(a, ctx))}" data-fd-go>${a.dong ? '이 동 보기' : '이 지역 보기'}</a></li>`).join('')}</ol>`
-        : `<p class="fd-empty">조건을 모두 만족하는 곳이 없습니다.<br>조건을 하나 빼 보세요.</p>`);
+      (list.length ? `<div data-state="ready"><h3 class="fd-list-title" data-fd-list-start tabindex="-1">전체 ${p.total}곳 중 ${p.from}–${p.to}곳</h3><ol class="fd-list">${p.items.map(a => `<li><span class="fd-n"><b>${esc(a.name)}</b><small>${esc(a.sub)} · ${esc(a.code)}</small></span><span class="fd-b" aria-label="맞는 조건">${esc(emo)}</span><a href="${esc(hashOf(a, ctx))}" data-fd-go>${a.dong ? '이 동 보기' : '이 지역 보기'}</a></li>`).join('')}</ol>${pagerHTML(p)}</div>`
+        : `<div class="fd-empty" data-state="empty" role="status"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>조건을 모두 만족하는 곳이 없습니다.<br>조건을 하나 빼 보세요.</p><button type="button" class="btn ghost" data-fd-relax>마지막 조건 빼기</button></div>`);
   }
   const LIST_MARK = '<!--fd-list-->';
-  const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, shapes, chipsHTML, resultHTML, hashOf };
+  function boundaryState(scope, sgGeo, emd) {
+    if (scope.sg) return emd ? 'empty' : 'loading';
+    return sgGeo === undefined ? 'loading' : 'empty';
+  }
+  const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState };
   if (node) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewFind = api;
@@ -157,8 +177,8 @@
   // ── 브라우저 ──
   const root = document.getElementById('findApp'); if (!root) return;
   const fetchJson = url => (window.renewFetch ? window.renewFetch(url) : fetch(url, { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
-  const st = { sel: [], by: 'code', scope: { sido: '', sg: '' }, ctx: { index: null }, sgGeo: null, emd: new Map(), svgKey: '' };
-  root.innerHTML = `<div class="fd-scope" data-fd-scope></div><div class="fd-grid"><div class="fd-left" data-fd-chips></div><div class="fd-right"><div data-fd-out></div><div class="fd-map" data-fd-map><p class="fd-wait">경계를 불러오는 중입니다.</p></div><div data-fd-list></div></div></div>`;
+  const st = { sel: [], by: 'code', page: 1, scope: { sido: '', sg: '' }, ctx: { index: null }, sgGeo: null, emd: new Map(), svgKey: '' };
+  root.innerHTML = `<div class="fd-scope" data-fd-scope></div><div class="fd-grid"><div class="fd-left" data-fd-chips></div><div class="fd-right"><div data-fd-out></div><div class="fd-map" data-fd-map><div class="fd-wait" data-state="loading" role="status"><img src="mascot/crew/saeum-waiting.svg" width="104" height="104" alt="" aria-hidden="true"><p>경계 자료를 불러오는 중입니다.</p></div></div><div data-fd-list></div></div></div>`;
   const $ = s => root.querySelector(s);
   const unit = () => (st.scope.sg ? 'emd' : 'sg');
   // 시·군·구 범위의 읍·면·동 파일(지도 지연 로드와 같은 캐시). 아직이면 null
@@ -183,9 +203,9 @@
     if (st.scope.sg) { e = emdCtx(st.scope.sg); ctx = { ...c0, emd: e && e.json, lv: e && e.lv, forecast: e && e.fc }; }
     $('[data-fd-scope]').innerHTML = scopeHTML();
     $('[data-fd-chips]').innerHTML = chipsHTML(st.sel, ctx, unit());
-    if (st.scope.sg && !e) { $('[data-fd-out]').innerHTML = '<p class="fd-wait">읍·면·동 자료를 불러오는 중입니다.</p>'; $('[data-fd-list]').innerHTML = ''; return; }
+    if (st.scope.sg && !e) { $('[data-fd-out]').innerHTML = '<p class="fd-wait" data-state="loading" role="status">읍·면·동 자료를 불러오는 중입니다.</p>'; $('[data-fd-list]').innerHTML = ''; return; }
     const areas = areasOf(st.scope, ctx), ev = evaluate(areas, st.sel, ctx, unit());
-    const [head, list] = resultHTML(ev, areas, ctx, unit(), st.by).split(LIST_MARK); // 큰 숫자 → 지도 → 목록 순서로 놓는다
+    const [head, list] = resultHTML(ev, areas, ctx, unit(), st.by, st.page).split(LIST_MARK); // 큰 숫자 → 지도 → 목록 순서로 놓는다
     $('[data-fd-out]').innerHTML = head; $('[data-fd-list]').innerHTML = list || '';
     drawSvg(areas, ev, e);
     root.querySelectorAll('[data-count]').forEach(el => (M.countUp ? M.countUp(el) : null));
@@ -193,7 +213,7 @@
   function drawSvg(areas, ev, e) {
     const box = $('[data-fd-map]'), key = st.scope.sg || ('s' + st.scope.sido);
     const feats = st.scope.sg ? (e && e.geo ? e.geo.features : null) : st.sgGeo ? st.sgGeo.features.filter(f => areas.some(a => a.code === String((f.properties || {}).code))) : null;
-    if (!feats) { if (st.svgKey !== 'wait') { box.innerHTML = `<p class="fd-wait">${st.sgGeo === undefined ? '경계를 불러오는 중입니다.' : '경계 자료가 없습니다. 목록으로 보세요.'}</p>`; st.svgKey = 'wait'; } return; }
+    if (!feats) { if (st.svgKey !== 'wait') { const state = boundaryState(st.scope, st.sgGeo, e); box.innerHTML = `<p class="fd-wait" data-state="${state}" role="status">${state === 'loading' ? '경계를 불러오는 중입니다.' : '경계 자료가 없습니다. 목록으로 보세요.'}</p>`; st.svgKey = 'wait'; } return; }
     if (st.svgKey !== key) {
       const sh = shapes(feats, 600);
       box.innerHTML = `<svg class="fd-svg" viewBox="0 0 ${sh.w} ${sh.h}" role="img" aria-label="${esc(UNIT[unit()])} 경계 지도. 조건에 맞는 곳은 진하게, 나머지는 흐리게. 아래 목록과 같습니다."><defs><pattern id="fdHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" fill="#eef2f0"/><line x1="0" y1="0" x2="0" y2="6" stroke="#9aa6a1" stroke-width="1.5"/></pattern></defs>` +
@@ -203,26 +223,37 @@
     box.querySelectorAll('path[data-code]').forEach(p => { const r = ev.res.get(p.dataset.code) || 'na'; p.setAttribute('class', 'is-' + r); });
   }
   root.addEventListener('click', ev => {
+    if (ev.target.closest('[data-fd-relax]')) {
+      const removed = st.sel.pop(); st.page = 1; render();
+      root.querySelector(`[data-fd-cond="${CSS.escape(removed || '')}"]`)?.focus({ preventScroll: true }); return;
+    }
     const b = ev.target.closest('[data-fd-cond]');
-    if (b) { const id = b.dataset.fdCond, on = st.sel.includes(id); if (b.getAttribute('aria-disabled') === 'true' && !on) return; st.sel = on ? st.sel.filter(x => x !== id) : [...st.sel, id]; render(); root.querySelector(`[data-fd-cond="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }); return; }
-    const s = ev.target.closest('[data-fd-sort]'); if (s) { st.by = s.dataset.fdSort; render(); root.querySelector(`[data-fd-sort="${st.by}"]`)?.focus({ preventScroll: true }); return; }
-    const p = ev.target.closest('path[data-code]');
-    if (p && !st.scope.sg) { const sg = (st.ctx.index.sigungu || []).find(x => String(x.code5) === p.dataset.code); if (sg) { st.scope = { sido: String(sg.sido2), sg: String(sg.code5) }; render(); } return; }
-    if (p && st.scope.sg) { const r = M.leafRoute(st.ctx.index, st.scope.sg); if (r) { location.hash = M.toHash({ ...r, dong: p.dataset.code }); document.getElementById('map')?.scrollIntoView({ block: 'start' }); } return; }
-    // '이 지역/동 보기': 해시를 바꾸면 map.js가 그 단계로 그린다. 지도까지 올린다
-    if (ev.target.closest('[data-fd-go]')) setTimeout(() => document.getElementById('map')?.scrollIntoView({ block: 'start' }), 0);
+    if (b) { const id = b.dataset.fdCond, on = st.sel.includes(id); if (b.getAttribute('aria-disabled') === 'true' && !on) return; st.sel = on ? st.sel.filter(x => x !== id) : [...st.sel, id]; st.page = 1; render(); root.querySelector(`[data-fd-cond="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }); return; }
+    const s = ev.target.closest('[data-fd-sort]'); if (s) { st.by = s.dataset.fdSort; st.page = 1; render(); root.querySelector(`[data-fd-sort="${st.by}"]`)?.focus({ preventScroll: true }); return; }
+    const p = ev.target.closest('[data-fd-page]');
+    if (p && !p.disabled) {
+      const current = Number(root.querySelector('[aria-current="page"]')?.dataset.fdPage || st.page);
+      if (p.dataset.fdPage === 'prev' || p.dataset.fdPage === 'next') st.page = current + (p.dataset.fdPage === 'next' ? 1 : -1);
+      else st.page = Number(p.dataset.fdPage);
+      render(); root.querySelector('[data-fd-list-start]')?.focus({ preventScroll: true }); return;
+    }
+    const shape = ev.target.closest('path[data-code]');
+    if (shape && !st.scope.sg) { const sg = (st.ctx.index.sigungu || []).find(x => String(x.code5) === shape.dataset.code); if (sg) { st.scope = { sido: String(sg.sido2), sg: String(sg.code5) }; st.page = 1; render(); } return; }
+    if (shape && st.scope.sg) { const r = M.leafRoute(st.ctx.index, st.scope.sg); if (r) location.hash = M.toHash({ ...r, dong: shape.dataset.code }); return; }
+    // 해시를 바꾸면 map.js가 그 단계로 그리고 workspace.js가 지도 패널을 연다.
+    if (ev.target.closest('[data-fd-go]')) return;
   });
   root.addEventListener('change', ev => {
     const s = ev.target.closest('select'); if (!s) return;
-    if ('fdSido' in s.dataset) st.scope = { sido: s.value, sg: '' };
-    else if ('fdSg' in s.dataset) st.scope = { sido: st.scope.sido, sg: s.value };
+    if ('fdSido' in s.dataset) { st.scope = { sido: s.value, sg: '' }; st.page = 1; }
+    else if ('fdSg' in s.dataset) { st.scope = { sido: st.scope.sido, sg: s.value }; st.page = 1; }
     render(); root.querySelector(s.hasAttribute('data-fd-sido') ? '[data-fd-sido]' : '[data-fd-sg]')?.focus({ preventScroll: true });
   });
   const ok = (j, k) => (j && Array.isArray(j[k]) ? j : null);
   Promise.all(['index.json', 'living/index.json', 'designations.json', 'migration.json', 'forecast/index.json', 'realestate.json'].map(f => fetchJson('data/national/' + f)))
     .then(([index, li, des, mig, fi, re]) => {
       st.ctx = { index: ok(index, 'sigungu'), living: ok(li, 'indicators'), designations: ok(des, 'items'), migration: ok(mig, 'sigungu'), forecastIdx: ok(fi, 'horizons'), realestate: ok(re, 'sigungu') };
-      if (!st.ctx.index) { root.innerHTML = '<p class="fd-wait">전국 자료가 준비되면 이 자리에서 조건으로 지역을 찾을 수 있습니다.</p>'; return; }
+      if (!st.ctx.index) { root.innerHTML = '<div class="fd-empty" data-state="error" role="alert"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>전국 원장 자료를 불러오지 못했습니다.<br>네트워크를 확인한 뒤 다시 열어 주세요.</p></div>'; return; }
       st.sgGeo = undefined; render();
       fetchJson('data/national/sigungu.geojson').then(g => { st.sgGeo = g && Array.isArray(g.features) ? g : null; st.svgKey = ''; render(); });
     });

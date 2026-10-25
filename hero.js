@@ -84,8 +84,9 @@
       `<p class="verdict-note">초안 규칙 ${esc(RULE.id)}(${esc(RULE.state)}) · ${esc(RULE.law)}.<br>법정 판정이 아니라 셀 값과 기준값을 나란히 둔 화면입니다.<br>판정은 사람이 조문을 보고 승인한 규칙으로만 합니다.</p>`;
   }
   const count = el => (window.RenewMap && window.RenewMap.countUp ? window.RenewMap.countUp(el) : (el.textContent = el.dataset.count));
-  const io = new IntersectionObserver(entries => entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('is-in'); en.target.querySelectorAll('[data-count]').forEach(count); io.unobserve(en.target); } }), { threshold: 0.2 });
-  const reveal = () => document.querySelectorAll('[data-reveal]').forEach(el => (reduced ? el.classList.add('is-in') : io.observe(el)));
+  const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('is-in'); en.target.querySelectorAll('[data-count]').forEach(count); io.unobserve(en.target); } }), { threshold: 0.15 }) : null;
+  const reveal = () => document.querySelectorAll('[data-reveal]').forEach(el => (reduced || !io ? el.classList.add('is-in') : io.observe(el)));
+  reveal();
 
   function sections(dash, index, li) {
     const D = window.RenewDashboard, dong = pickDong(dash), cell = D && dong ? D.cellOf(dong, 20, 'COUNT') : null;

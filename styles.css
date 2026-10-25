@@ -8,6 +8,8 @@
   --lime: #d7f988;
   --line: #d9e4df;
   --warn: #8a4b00;
+  --navy: #102f2d;
+  --shadow: 0 18px 50px rgba(16,47,45,.10);
   --max: 1080px;
 }
 * { box-sizing: border-box; }
@@ -29,15 +31,20 @@ img { max-width: 100%; height: auto; }
 .skip:focus { left: 12px; top: 12px; background: var(--card); padding: 8px 12px; z-index: 30; }
 
 header.top { position: sticky; top: 0; z-index: 20; background: rgba(242,245,243,.94); border-bottom: 1px solid var(--line); backdrop-filter: blur(6px); }
-header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; }
+header.top .wrap { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; }
 .logo { font-weight: 800; font-size: 20px; color: var(--ink); text-decoration: none; letter-spacing: .02em; }
 .logo span { color: var(--green); }
-nav.menu { display: flex; gap: 18px; flex-wrap: wrap; }
-nav.menu a { color: var(--ink); text-decoration: none; font-size: 15px; }
-nav.menu a:hover { color: var(--green); }
+nav.menu { display: flex; gap: 4px; flex-wrap: wrap; }
+nav.menu a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 10px; border-radius: 8px; color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; }
+nav.menu a:hover { color: var(--green); background: #e3f1ea; }
+.header-cta { padding: 10px 16px; font-size: 14px; white-space: nowrap; }
+.menu-toggle { display: none; align-items: center; justify-content: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid #7a9089; border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.menu-toggle::before { content: ''; width: 16px; height: 12px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; background: linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat; }
+.menu-toggle[aria-expanded="true"] { background: var(--ink); color: #fff; }
+.menu-toggle:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 5px #fff; }
 
-.btn { display: inline-block; background: var(--green); color: #fff; font-weight: 700; text-decoration: none; border: 0; border-radius: 10px; padding: 14px 22px; font-size: 17px; cursor: pointer; font-family: inherit; }
-.btn:hover { background: #005a4a; }
+.btn { display: inline-block; background: var(--green); color: #fff; font-weight: 700; text-decoration: none; border: 0; border-radius: 10px; padding: 14px 22px; font-size: 17px; cursor: pointer; font-family: inherit; transition: transform .2s ease, background .2s ease, border-color .2s ease; }
+.btn:hover { background: #005a4a; transform: translateY(-2px); }
 .btn.ghost { background: transparent; color: var(--green); border: 2px solid var(--green); }
 .btn:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid #153c39; outline-offset: 2px; box-shadow: 0 0 0 5px #fff; }
 
@@ -98,8 +105,18 @@ footer .links { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; 
 
 /* 모바일: 스크롤해도 고정되는 행동 유도 버튼 */
 .sticky-cta { display: none; }
+@media (max-width: 980px) {
+  header.top .wrap { gap: 8px; }
+  nav.menu a { padding-inline: 7px; font-size: 13px; }
+  .header-cta { padding-inline: 12px; }
+}
 @media (max-width: 720px) {
-  nav.menu { display: none; }
+  header.top .wrap { min-height: 60px; }
+  .menu-toggle { display: inline-flex; }
+  .header-cta { display: none; }
+  nav.menu { display: none; position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; z-index: 22; padding: 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); box-shadow: 0 16px 36px rgba(21,60,57,.16); }
+  nav.menu.is-open { display: grid; }
+  nav.menu a { min-height: 48px; padding: 10px 14px; font-size: 16px; }
   .sticky-cta { display: block; position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 25; text-align: center; box-shadow: 0 6px 20px rgba(21,60,57,.25); }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

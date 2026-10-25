@@ -1,5 +1,5 @@
 /* 동네 노후도 대시보드. 색은 styles.css 토큰(V23)을 쓴다. */
-#dashboard { --y20: #006f5b; --y30: #8fc4ae; --bCOUNT: #153c39; --bAREA: #006f5b; --bHH: #5d8a1c; }
+#dashboard { --y20: #006f5b; --y30: #2e7d5e; --bCOUNT: #153c39; --bAREA: #006f5b; --bHH: #5d8a1c; }
 .dash-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--dim); margin: 0 0 20px; }
 .dash-meta b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .dash-meta .mono { font-family: ui-monospace, Consolas, monospace; }
@@ -41,7 +41,7 @@
 .dash-big .v.is-text { font-size: 20px; color: var(--dim); }
 .dash-big .u { font-size: 16px; font-weight: 700; }
 .dash-big .tag { align-self: flex-start; margin: 2px 0 0; }
-.dash-big .more { font-size: 13px; color: var(--green); font-weight: 600; }
+.dash-big .more { font-size: 14px; color: var(--green); font-weight: 600; }
 .tag.none { background: #e7eeea; color: #3f524d; }
 
 /* 셀 상세(PRD S5) */
@@ -59,7 +59,7 @@
 .dash-bars, .dash-cmp svg { width: 100%; height: auto; display: block; font-family: inherit; font-variant-numeric: tabular-nums; }
 .dash-bars { max-width: 460px; }
 .dash-grid { stroke: var(--line); stroke-dasharray: 3 3; }
-.dash-axis { font-size: 11px; fill: var(--dim); }
+.dash-axis { font-size: 12px; fill: var(--dim); }
 .dash-row { font-size: 15px; font-weight: 700; fill: var(--ink); }
 .dash-row.s { font-size: 13px; font-weight: 600; fill: var(--dim); }
 .dash-yr { font-size: 12px; fill: var(--dim); }

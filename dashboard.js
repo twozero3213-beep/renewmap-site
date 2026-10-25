@@ -187,12 +187,6 @@
   if (typeof document === 'undefined') return;
   window.RenewDashboard = api;
 
-  const root = document.getElementById('dashboard'), app = root && root.querySelector('#dashApp');
-  if (!app) return;
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const state = { data: null, route: parseHash(location.hash) || {}, year: 20, open: null, seen: reduced, view: 'card', basis: 'COUNT', geo: undefined, mapErr: false };
-  // 손가락이 주 입력인 기기: 한 손가락은 페이지 스크롤, 두 손가락(핀치)으로 지도 이동·확대
-  const coarse = matchMedia('(pointer: coarse)').matches;
   // Leaflet 1.9.4(BSD-2-Clause). 지도 보기를 처음 열 때만 싣는다. 해시는 cdnjs 원본에서 계산한 SRI다
   const LEAFLET = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/';
   let leafletP = null;
@@ -204,7 +198,14 @@
       tag('script', { src: LEAFLET + 'leaflet.js', integrity: 'sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==' }).onload = ok;
     }).catch(e => { leafletP = null; throw e; }));
   }
-  api.loadLeaflet = loadLeaflet; // map.js(전국 지도)도 같은 로더를 쓴다
+  api.loadLeaflet = loadLeaflet; // 탐색 전용 페이지의 map.js도 같은 로더를 쓴다
+
+  const root = document.getElementById('dashboard'), app = root && root.querySelector('#dashApp');
+  if (!app) return;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const state = { data: null, route: parseHash(location.hash) || {}, year: 20, open: null, seen: reduced, view: 'card', basis: 'COUNT', geo: undefined, mapErr: false };
+  // 손가락이 주 입력인 기기: 한 손가락은 페이지 스크롤, 두 손가락(핀치)으로 지도 이동·확대
+  const coarse = matchMedia('(pointer: coarse)').matches;
   let mapState = {};
   function dropMap() { if (mapState.map) mapState.map.remove(); mapState = {}; }
   function mapBodyHTML(v) {
@@ -356,7 +357,8 @@
     const r = parseHash(location.hash);
     if (r && (r.sigungu !== state.route.sigungu || r.dong !== state.route.dong)) { state.route = r; state.open = null; render(); }
   });
-  new IntersectionObserver((entries, io) => entries.forEach(en => {
+  if (reduced || typeof IntersectionObserver !== 'function') { state.seen = true; render(); }
+  else new IntersectionObserver((entries, io) => entries.forEach(en => {
     if (!en.isIntersecting) return;
     state.seen = true; play(); io.disconnect();
   }), { threshold: 0.2 }).observe(app);

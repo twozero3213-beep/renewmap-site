@@ -45,26 +45,25 @@
 ]}
 </script>
 <script src="app.js" defer></script>
+<script src="site.js" defer></script>
 <script src="hero.js" defer></script>
 <script src="dashboard.js" defer></script>
 <script src="map.js" defer></script>
-<script src="find.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="top">
   <div class="wrap">
-    <a class="logo" href="./">RENEW<span>MAP</span></a>
-    <nav class="menu" aria-label="주요 메뉴">
-      <a href="#map">전국 지도</a>
-      <a href="#find">지역 찾기</a>
-      <a href="#report">동네 보고서</a>
-      <a href="#dashboard">정밀 사례</a>
-      <a href="#how">작동 방식</a>
-      <a href="#case">활용 사례</a>
-      <a href="#faq">자주 묻는 질문</a>
-      <a href="#contact">문의</a>
+    <a class="logo" href="index.html">RENEW<span>MAP</span></a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu">메뉴</button>
+    <nav class="menu" id="site-menu" aria-label="주요 메뉴">
+      <a href="index.html">서비스 소개</a>
+      <a href="explore.html#map">지도 탐색</a>
+      <a href="index.html#how">작동 방식</a>
+      <a href="index.html#dashboard">정밀 사례</a>
+      <a href="index.html#faq">FAQ</a>
     </nav>
+    <a class="btn header-cta" href="index.html#contact">시범 납품 상담</a>
   </div>
 </header>
 
@@ -73,10 +72,10 @@
     <div class="hero-grid">
       <div class="hero-side">
       <div class="hero-head">
-        <p class="eyebrow">전국 읍·면·동 노후·쇠퇴·생활 인프라 진단</p>
-        <h1 id="heroTitle">전국 <span data-emd-count></span>동네,<br><em>어디부터</em> 다시 지어야 할까</h1>
-        <p class="lead">노후도·인구·생활 인프라를 법정 기준으로 동네마다 진단합니다.<br>숫자마다 출처를 붙입니다.</p>
-        <a class="hero-find" href="#find"><span aria-hidden="true">🔎</span> 조건으로 지역 찾기 <small>인구감소지역 · 초고령 · 청년 유출입 · 노후 …</small></a>
+        <p class="hero-audience">도시재생 용역사·기초지자체를 위한 기초조사</p>
+        <p class="eyebrow">전국 읍·면·동 공공 데이터 · 출처 연결 원장</p>
+        <h1 id="heroTitle">숫자마다 근거가 붙는<br><em>도시재생 기초조사</em></h1>
+        <p class="lead">노후도·인구·생활 인프라를 같은 기준으로 살피고,<br>숫자의 출처와 계산 근거까지 한 화면에서 확인하세요.</p>
       </div>
       <form id="heroSearch" class="hero-search" role="search" autocomplete="off">
         <label for="heroQ">우리 동네 찾기</label>
@@ -92,21 +91,29 @@
         <li><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h18l8 8v28H12z" class="f"/><path d="M30 6v8h8M18 28l5 5 9-10"/></svg><div><b>③ 출처 붙은 보고서</b><span>숫자마다 출처·기준일을 달아 납품합니다.</span></div></li>
       </ol>
       <div class="hero-cta">
-        <a class="btn glow" href="#contact" data-track="cta_hero">시범 납품 상담 신청</a>
-        <a class="btn ghost" href="#how">작동 방식</a>
-        <img class="hero-mascot" src="mascot/taggy-default.svg" width="72" height="89" alt="리뉴맵 마스코트 태기">
+        <a class="btn glow" href="explore.html#map" data-track="cta_hero">지도로 근거 살펴 보기</a>
+        <a class="btn ghost" href="#contact">시범 납품 상담</a>
+        <img class="hero-mascot" src="mascot/crew/taggy-default.svg" width="72" height="89" alt="리뉴맵 마스코트 태기">
       </div>
       </div>
       <div class="hero-map"><div id="mapApp"></div><noscript><p>지도는 자바스크립트가 켜져 있어야 보입니다.</p></noscript></div>
     </div>
   </section>
 
-  <section class="alt" id="find" aria-labelledby="findTitle">
-    <div class="wrap">
-      <span class="label-scenario">조건 필터 · 순위 아님</span>
-      <h2 id="findTitle">🔎 지역 찾기</h2>
+  <section class="alt" id="evidence-demo" aria-labelledby="evidenceTitle">
+    <div class="wrap evidence-layout">
+      <div class="evidence-copy">
+        <p class="eyebrow">조건 → 지도 → 근거 → 보고서</p>
+        <h2 id="evidenceTitle">동네 선택부터 근거 확인까지</h2>
+        <p class="sub">출처·기준일·계산식·현장확인 상태를 하나의 원장으로 연결합니다.</p>
       <p class="sub">조건 칩을 고르면 그 조건에 해당하는 곳을 모두 보여 줍니다.<br>여러 개를 고르면 모두 맞는 곳만 남습니다.<br>목록은 행정코드 또는 가나다 순이며, 값 크기로 줄 세우지 않습니다.</p>
-      <div id="findApp"><p class="fd-wait">자료를 불러오는 중입니다.</p></div>
+        <div class="evidence-links"><a class="btn" href="explore.html#find">조건으로 지역 찾기</a><a class="text-link" href="explore.html#report">동네 보고서 살펴 보기 →</a></div>
+      </div>
+      <div class="crew-strip" aria-hidden="true">
+        <div><img src="mascot/crew/taggy-default.svg" width="160" height="160" alt=""><span>근거</span></div>
+        <div><img src="mascot/crew/ieum-default.svg" width="160" height="160" alt=""><span>연결</span></div>
+        <div><img src="mascot/crew/saeum-default.svg" width="160" height="160" alt=""><span>현장</span></div>
+      </div>
       <noscript><p>지역 찾기는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
     </div>
   </section>
@@ -116,7 +123,7 @@
       <span class="label-scenario">무료 · 로그인 없음 · 입력 저장 없음</span>
       <h2 id="reportTitle">📄 동네 보고서</h2>
       <p class="sub">지도에서 고른 동의 원장 숫자와 출처를 문장으로 옮깁니다.<br>평가나 판정은 하지 않습니다.<br>브라우저 인쇄로 PDF를 만들 수 있습니다.</p>
-      <div id="reportApp"><div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 동네 보고서가 생깁니다</h3><p><a href="#map">위 지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p></div></div>
+      <div id="reportPreview"><div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 탐색 작업공간에서 동네 보고서가 생깁니다</h3><p><a class="btn" href="explore.html#report">동네 보고서 만들기</a></p></div></div>
       <noscript><p>보고서는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
     </div>
   </section>
@@ -277,6 +284,7 @@
 <footer>
   <div class="wrap">
     <div class="links">
+      <a href="explore.html#map">지도 탐색</a>
       <a href="#how">작동 방식</a>
       <a href="#case">활용 사례</a>
       <a href="#faq">자주 묻는 질문</a>
