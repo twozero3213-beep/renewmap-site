@@ -493,7 +493,7 @@
   }
   const docText = d => d.blocks.map(b => (b.kind === 'table' || b.kind === 'box' ? `${b.caption}\n${b.rows.map(r => r.join('\t')).join('\n')}` : b.text)).join('\n');
 
-  // ── 1쪽 요약: 요약 5문장 + 기준 대비 표(8행 이하) + 출처 5개 이하 + 끝. 양식은 JSON의 onepage(파이썬 build_onepage와 같다)
+  // ── 1쪽 요약: 요약 5문장 + 기준 대비 표(8행 이하) + 출처 5개 이하('끝' 표시 없음). 양식은 JSON의 onepage(파이썬 build_onepage와 같다)
   // 기준 대비 행 이름 → 지표 코드(출처 번호를 달 셀을 찾는다)
   function rowCodes(items) {
     const m = new Map(DECLINE_CRITERIA.map(([code, , , name]) => [`${DECLINE_PREFIX}${name}`, code]));
