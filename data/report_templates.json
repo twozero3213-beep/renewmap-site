@@ -1,6 +1,6 @@
 {
   "_doc": "생성 파일. 원본은 backend/scripts/export_templates.py. 직접 고치지 않는다. 사용법은 docs/gov/form_fragments.md",
-  "version": "TPL-2026-10-27.1",
+  "version": "TPL-2026-10-27.2",
   "consts": {
     "min_met": 2,
     "n_req": 3,
@@ -61,9 +61,27 @@
       "prefix": "지방자치단체·교육청(소관 문화체육관광부) "
     }
   ],
-  "overview_basis": "출처: 국토교통부·행정안전부·통계청 등 공공데이터(붙임 1 참조) · 가공·계산: 리뉴맵 원장 · 판정 아님",
+  "overview_basis": "출처: 국토교통부·행정안전부·통계청 등 공공데이터(문서 끝 출처 목록) · 가공·계산: 리뉴맵 원장 · 판정 아님",
+  "doc_style": {
+    "font": "나눔고딕",
+    "sizes": {
+      "title": 20,
+      "h1": 15,
+      "h2": 13,
+      "lead": 13,
+      "body": 11,
+      "table": 10,
+      "small": 8.5
+    }
+  },
   "summary": {
     "items": [
+      {
+        "codes": [
+          "DECLINE_MET_COUNT"
+        ],
+        "template": "쇠퇴 3요건 중 확정된 충족 수는 {v}(기준 {min_met}개 이상)이다.{ref}"
+      },
       {
         "codes": [
           "DECLINE_AGING_20Y_PCT"
@@ -83,12 +101,6 @@
           "DECLINE_BIZ_DROP10Y_PCT"
         ],
         "template": "사업체 수는 {v}이고 10년 최대 대비 감소율은 {v2}이다.{ref}"
-      },
-      {
-        "codes": [
-          "DECLINE_MET_COUNT"
-        ],
-        "template": "쇠퇴 3요건 중 확정된 충족 수는 {v}(기준 {min_met}개 이상)이다.{ref}"
       },
       {
         "codes": [
@@ -163,12 +175,13 @@
     "fallback": "확인이 필요한 사항 {n}건은 근거서 4장에 있다.",
     "pending_mark": "*",
     "sizes": {
-      "title": 15,
+      "title": 17,
       "h1": 12,
       "h2": 11,
+      "lead": 11,
       "body": 10,
       "table": 9,
-      "small": 8,
+      "small": 7.5,
       "gap": 2
     },
     "table_max_rows": 8,

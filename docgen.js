@@ -372,6 +372,21 @@
   }
   const block = (kind, text = '', extra = {}) => ({ kind, text, rows: [], widths: [], caption: '', small: false, ...extra });
   const refsIn = s => [...String(s).matchAll(/\[(\d+)\]/g)].map(m => +m[1]);
+  // 글자 모양 나누기(dong_brief.text_runs와 같은 규칙): '[1][2]' → 위 첨자 '[1,2]', 요약 문장의 '숫자+단위' → 굵게.
+  // 단위가 붙은 숫자만 굵게 하고 괄호 안(기준값)·이름 속 숫자(반여1동·3요건)·연도는 그대로 둔다
+  const RUN_RE = /(\[\d+\](?:\[\d+\])*)|(\([^)]*\))|((?<![\p{L}\p{N}_.,])\d[\d,]*(?:\.\d+)?(?:%p|%|㎡\/인|㎡|km|m|[명개곳건호배]))/gu;
+  function textRuns(text, emph) {
+    const t = String(text), out = []; let pos = 0;
+    for (const m of t.matchAll(RUN_RE)) {
+      const [, ref, , num] = m;
+      if (!ref && !(num && emph)) continue;
+      if (m.index > pos) out.push([t.slice(pos, m.index), '']);
+      out.push(ref ? [`[${ref.match(/\d+/g).join(',')}]`, 'sup'] : [num, 'b']);
+      pos = m.index + m[0].length;
+    }
+    if (pos < t.length || !out.length) out.push([t.slice(pos), '']);
+    return out;
+  }
   const finish = blocks => { for (const b of blocks) { b.text = clean(b.text); b.rows = b.rows.map(r => r.map(x => clean(String(x)))); b.caption = clean(b.caption); } return blocks; };
   const sourceLine = (n, s) => `[${n}] ${s.name}. ${s.forecast ? '전망 대상일' : '기준일'} ${govDate(s.reference_date)} 조회일 ${govDate(s.retrieved_at)} 이용조건 ${s.license}.`;
 
@@ -405,7 +420,7 @@
     blocks.push(box); parts.box = box;
 
     blocks.push(block('h1', '1. 요약'));
-    parts.summary = summaryLines(brief, byCode, facts, src, crit, todo.rows.length - 1).map(t => { const b = block('para', t, { refs: refsIn(t) }); blocks.push(b); return b; });
+    parts.summary = summaryLines(brief, byCode, facts, src, crit, todo.rows.length - 1).map((t, i) => { const b = block('para', t, { refs: refsIn(t), emph: true, strong: i === 0 }); blocks.push(b); return b; });
 
     blocks.push(block('h1', '2. 현황'));
     const sub = '가나다라마바사'; let k = 0;
@@ -428,7 +443,7 @@
         } else if (f) rows.push([it.label, f.value, govDate(f.reference_date), src.ref(f)]);
         else rows.push([it.label, noData(), '-', '-']);
       }
-      blocks.push(block('table', '', { rows, widths: [44, 24, 18, 14], caption: `표 ${k}. ${group}` }));
+      blocks.push(block('table', '', { rows, widths: [42, 22, 24, 12], caption: `표 ${k}. ${group}` }));   // 기준일이 한 줄에 들어가는 폭
     }
 
     blocks.push(block('h1', '3. 기준 대비'));
@@ -459,19 +474,19 @@
       blocks.push(block('table', '', { rows, widths: [36, 16, 16, 16, 16], caption: `표 ${k + 2}. 추세 전망` }));
     }
 
-    blocks.push(block('h1', '붙임 1. 출처 목록'));
-    src.list.forEach((s, n) => { blocks.push(block('para', sourceLine(n + 1, s))); blocks.push(block('para', s.url, { small: true })); });
-
     const years = ser.rows[0].slice(1), sRows = [['연도', ...ser.rows.slice(1).map(r => r[0])], ...years.map((y, j) => [y, ...ser.rows.slice(1).map(r => r[1 + j])])];
-    blocks.push(block('h1', '붙임 2. 최근 10년 시계열'));
-    blocks.push(block('table', '', { rows: sRows, widths: [16, ...Array(sRows[0].length - 1).fill(28)], caption: '붙임 2 표. 연도별 값' }));
+    blocks.push(block('h1', '붙임 1. 최근 10년 시계열'));
+    blocks.push(block('table', '', { rows: sRows, widths: [16, ...Array(sRows[0].length - 1).fill(28)], caption: '붙임 1 표. 연도별 값' }));
     ser.notes.forEach(s => blocks.push(block('para', s.replace('표 1의', '2장 표의'))));
 
     const fRows = [['지표', '계산식', '규칙 버전']], seenF = new Set();
     for (const it of brief.items) { const c = it.cell; if (c && !seenF.has(c.formula_id)) { seenF.add(c.formula_id); fRows.push([it.label, `${c.formula_id}: ${c.formula_text}`, c.rule_version]); } }
     brief.items.filter(i => i.fact).forEach(i => fRows.push([i.label, i.fact.formula, i.fact.rule_version]));
-    blocks.push(block('h1', '붙임 3. 계산식·규칙 버전'));
-    blocks.push(block('table', '', { rows: fRows, widths: [26, 56, 18], caption: '붙임 3 표. 지표별 계산식' }));
+    blocks.push(block('h1', '붙임 2. 계산식·규칙 버전'));
+    blocks.push(block('table', '', { rows: fRows, widths: [26, 56, 18], caption: '붙임 2 표. 지표별 계산식' }));
+    // 붙임 3. 출처 목록: 본문 [n]의 주석. 문서 맨 끝에 작은 글자로 둔다
+    blocks.push(block('h1', '붙임 3. 출처 목록'));
+    src.list.forEach((s, n) => { blocks.push(block('para', sourceLine(n + 1, s), { small: true })); blocks.push(block('para', s.url, { small: true })); });
     blocks.push(block('end', END_MARK));
 
     finish(blocks);
@@ -493,18 +508,18 @@
   const charW = c => (c.codePointAt(0) > 0x2E80 ? 1 : /\d/.test(c) ? 0.5 : ' .,:;'.includes(c) ? 0.3 : '()[]'.includes(c) ? 0.35 : 0.55);   // 전각 = 1
   const linesOf = (text, widthMm, sizePt) => { let w = 0; for (const c of String(text)) w += charW(c); return Math.max(1, Math.ceil(w / Math.max(widthMm / (sizePt * MM), 1))); };
   function estimateHeightMm(doc) {
-    const z = doc.kind === 'onepage' ? tpl().onepage.sizes : { title: 16, h1: 13, h2: 12, body: 11, table: 10, small: 9 };
-    const ln = { body: z.body * 1.6 * MM, table: z.table * 1.4 * MM, small: z.small * 1.6 * MM };
+    const z = doc.kind === 'onepage' ? tpl().onepage.sizes : docSizes();
+    const ln = { body: z.body * 1.6 * MM, lead: z.lead * 1.6 * MM, table: z.table * 1.4 * MM, small: z.small * 1.6 * MM };
     let h = 0;
     for (const b of doc.blocks) {
       if (b.kind === 'title') h += z.title * 1.6 * MM + 12 * MM;
-      else if (b.kind === 'h1' || b.kind === 'h2') h += z[b.kind] * 1.6 * MM + 12 * MM + 3 * MM;
+      else if (b.kind === 'h1' || b.kind === 'h2') h += z[b.kind] * 1.6 * MM + 3 * MM;     // 장 제목 위 간격은 앞 문단 뒤 간격이 대신한다(dong_brief.estimate_height_mm와 같다)
       else if (b.kind === 'table' || b.kind === 'box') {
         const tot = b.widths.reduce((a, x) => a + x, 0) || 100;
         if (b.caption) h += ln.table + 2 * MM;
         for (const r of b.rows) h += Math.max(...r.map((c, i) => linesOf(c, PAGE_W_MM * b.widths[i] / tot - 3.6, z.table))) * ln.table + 4 * MM;
         h += 'gap' in z ? z.gap * 1.6 * MM + 2 * MM : ln.body + 6 * MM;      // 표 뒤 빈 문단
-      } else { const k = b.small ? 'small' : 'body'; h += linesOf(b.text, PAGE_W_MM, z[k]) * ln[k] + 6 * MM; }
+      } else { const k = b.small ? 'small' : b.strong ? 'lead' : 'body'; h += linesOf(b.text, PAGE_W_MM, z[k]) * ln[k] + 6 * MM; }
     }
     return h;
   }
@@ -524,7 +539,7 @@
       else { head = head.slice(0, -1); widths = one.table_widths_no_ref; rows = rows.map(r => r.slice(0, -1)); }
       if (src.list.length > one.sources_max) throw new BriefError('요약 문장의 출처가 5개를 넘는다');
       const k = one.overview_keys.map((key, i) => [key, [brief.region, `${brief.year}년`, govDate(brief.writtenOn), TP.overview_basis][i]]);
-      const h1 = one.headings, summary = lines.map(t => block('para', t, { refs: refsIn(t) })), critBlock = block('table', '', { rows: [head, ...rows], widths, caption: '표 1. 기준 대비' });
+      const h1 = one.headings, summary = lines.map((t, i) => block('para', t, { refs: refsIn(t), emph: true, strong: i === 0 })), critBlock = block('table', '', { rows: [head, ...rows], widths, caption: '표 1. 기준 대비' });
       const blocks = [block('title', one.title.replace('{dong}', brief.dongName)), block('box', '', { rows: k, widths: [22, 78] }), block('h1', h1[0]), ...summary, block('h1', h1[1]), critBlock,
         block('para', one.note.join(' ')), block('h1', h1[2]), ...src.list.map((s, n) => block('para', sourceLine(n + 1, s), { small: true })), block('end', END_MARK)];
       finish(blocks);
@@ -544,41 +559,50 @@
   // ══════════════════════════════════════ HWPX(export/hwpx.py 구조)
   const NS = 'xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app" xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph" xmlns:hp10="http://www.hancom.co.kr/hwpml/2016/paragraph" xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" xmlns:hc="http://www.hancom.co.kr/hwpml/2011/core" xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head" xmlns:hhs="http://www.hancom.co.kr/hwpml/2011/history" xmlns:hm="http://www.hancom.co.kr/hwpml/2011/master-page" xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf/" xmlns:ooxmlchart="http://www.hancom.co.kr/hwpml/2016/ooxmlchart" xmlns:hwpunitchar="http://www.hancom.co.kr/hwpml/2016/HwpUnitChar" xmlns:epub="http://www.idpf.org/2007/ops" xmlns:config="urn:oasis:names:tc:opendocument:xmlns:config:1.0"';
   const DECL = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>';
-  const FONT_BATANG = '함초롬바탕', FONT_DOTUM = '함초롬돋움';
-  // 함초롬바탕 11pt·160%·문단 뒤 6pt, 표 10pt·140%, 출처 9pt(GOV_DOC_STYLE.md). 글자 높이 = pt × 100. 1쪽 요약도 같은 서식이다
-  const SIZES = { full: { title: 16, h1: 13, h2: 12, body: 11, table: 10, small: 9, gap: 11, ls: 160, tls: 140, after: 600, gapAfter: 600, top: 5668 } };
-  // 1쪽 요약은 글자 크기를 JSON(onepage.sizes)으로 줄인다(파이썬 hwpx.build_doc과 같다). 표 뒤 빈 줄은 gap 크기, 문단 뒤 2pt
-  const sizesFor = doc => (doc.sizes === 'onepage' ? { ...SIZES.full, ...((tpl().onepage || {}).sizes || {}), gapAfter: 200 } : SIZES.full);
-  const CHAR_ORDER = ['table', 'title', 'h1', 'h2', 'body', 'small', 'gap'], BOLD = ['title', 'h1', 'h2'];
-  const CH = Object.fromEntries(CHAR_ORDER.map((k, i) => [k, i]));
-  const PARA_ORDER = ['cell', 'title', 'para', 'h1', 'h2', 'bullet', 'small', 'end', 'gap', 'footer'], PR = Object.fromEntries(PARA_ORDER.map((k, i) => [k, i]));
+  const FONT_DOTUM = '함초롬돋움';
+  // 글꼴·글자 크기는 JSON(doc_style·onepage.sizes)이라 파이썬 hwpx.build_doc과 같다: 나눔고딕, 제목·결론 문장 크고 굵게, 출처 작게.
+  // 줄간격 160%·문단 뒤 6pt, 표 140%. 글자 높이 = pt × 100
+  const DOC_STYLE_DEFAULT = { font: '나눔고딕', sizes: { title: 20, h1: 15, h2: 13, lead: 13, body: 11, table: 10, small: 8.5 } };
+  const docStyle = () => (tpl() && tpl().doc_style) || DOC_STYLE_DEFAULT;
+  const docSizes = () => docStyle().sizes;
+  const BASE = { ls: 160, tls: 140, after: 600, gapAfter: 600, top: 5668 };
+  // 1쪽 요약은 글자 크기를 onepage.sizes로 줄인다. 표 뒤 빈 줄은 gap 크기, 문단 뒤 2pt
+  const sizesFor = doc => (doc.sizes === 'onepage' ? { ...BASE, gap: docSizes().body, ...docSizes(), ...((tpl().onepage || {}).sizes || {}), gapAfter: 200 } : { ...BASE, gap: docSizes().body, ...docSizes() });
+  // [이름, 크기 키, 굵게, 위 첨자]. 앞 7개 id는 예전과 같다
+  const CHAR_DEF = [['table', 'table', 0, 0], ['title', 'title', 1, 0], ['h1', 'h1', 1, 0], ['h2', 'h2', 1, 0], ['body', 'body', 0, 0], ['small', 'small', 0, 0], ['gap', 'gap', 0, 0],
+    ['lead', 'lead', 1, 0], ['table_b', 'table', 1, 0], ['body_b', 'body', 1, 0], ['body_sup', 'body', 0, 1], ['lead_sup', 'lead', 0, 1]];
+  const CH = Object.fromEntries(CHAR_DEF.map(([k], i) => [k, i]));
+  const charKey = (ch, look) => (!look || (look === 'b' && CHAR_DEF[CH[ch]][2]) ? ch : `${ch}_${look}`);
+  const PARA_ORDER = ['cell', 'title', 'para', 'h1', 'h2', 'bullet', 'small', 'end', 'gap', 'footer', 'cell_c', 'lead'], PR = Object.fromEntries(PARA_ORDER.map((k, i) => [k, i]));
+  const SHORT_CELL = 14;     // hwpx.SHORT_CELL과 같다: 본문 칸이 모두 짧은 열(값·기준일·출처 번호)은 가운데 정렬
   const TYP = '<hh:typeInfo familyType="FCAT_GOTHIC" weight="6" proportion="4" contrast="0" strokeVariation="1" armStyle="1" letterform="1" midline="1" xHeight="1"/>';
   const LANGS = ['HANGUL', 'LATIN', 'HANJA', 'JAPANESE', 'OTHER', 'SYMBOL', 'USER'];
   const same7 = v => ['hangul', 'latin', 'hanja', 'japanese', 'other', 'symbol', 'user'].map(k => `${k}="${v}"`).join(' ');
-  const charPr = (id, pt, bold) => `<hh:charPr id="${id}" height="${pt * 100}" textColor="#000000" shadeColor="none" useFontSpace="0" useKerning="0" symMark="NONE" borderFillIDRef="2"><hh:fontRef ${same7(1)}/><hh:ratio ${same7(100)}/><hh:spacing ${same7(0)}/><hh:relSz ${same7(100)}/><hh:offset ${same7(0)}/>${bold ? '<hh:bold/>' : ''}<hh:underline type="NONE" shape="SOLID" color="#000000"/><hh:strikeout shape="NONE" color="#000000"/><hh:outline type="NONE"/><hh:shadow type="NONE" color="#C0C0C0" offsetX="10" offsetY="10"/></hh:charPr>`;
+  const charPr = (id, pt, bold, sup) => `<hh:charPr id="${id}" height="${Math.round(pt * 100)}" textColor="#000000" shadeColor="none" useFontSpace="0" useKerning="0" symMark="NONE" borderFillIDRef="2"><hh:fontRef ${same7(1)}/><hh:ratio ${same7(100)}/><hh:spacing ${same7(0)}/><hh:relSz ${same7(100)}/><hh:offset ${same7(0)}/>${bold ? '<hh:bold/>' : ''}<hh:underline type="NONE" shape="SOLID" color="#000000"/><hh:strikeout shape="NONE" color="#000000"/><hh:outline type="NONE"/><hh:shadow type="NONE" color="#C0C0C0" offsetX="10" offsetY="10"/>${sup ? '<hh:supscript/>' : ''}</hh:charPr>`;
   const bf = (id, lines, fill) => { const t = lines ? 'SOLID' : 'NONE', w = lines ? '0.12 mm' : '0.1 mm', b = n => `<hh:${n} type="${t}" width="${w}" color="#000000"/>`;
     return `<hh:borderFill id="${id}" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0"><hh:slash type="NONE" Crooked="0" isCounter="0"/><hh:backSlash type="NONE" Crooked="0" isCounter="0"/>${b('leftBorder')}${b('rightBorder')}${b('topBorder')}${b('bottomBorder')}<hh:diagonal type="SOLID" width="0.1 mm" color="#000000"/>${fill ? `<hc:fillBrush><hc:winBrush faceColor="${fill}" hatchColor="#999999" alpha="0"/></hc:fillBrush>` : ''}</hh:borderFill>`; };
-  // 문단 종류 → [정렬, 왼쪽 들여쓰기(HWPUNIT), 문단 뒤(HWPUNIT), 다음 문단과 붙임, 줄간격 %, 어절 줄바꿈]
+  // 문단 종류 → [정렬, 왼쪽 들여쓰기(HWPUNIT), 문단 뒤(HWPUNIT), 다음 문단과 붙임, 줄간격 %, 문단 보호(쪽에서 안 나눔)].
+  // 한글은 모두 어절 단위로 줄을 바꾼다(W3C klreq): 낱말 가운데서 줄이 끊기지 않는다
   function paraSpec(S) {
     return {
-      cell: ['LEFT', 0, 0, 0, S.tls, 'BREAK_WORD'], title: ['CENTER', 0, 1200, 0, S.ls, 'KEEP_WORD'], para: ['JUSTIFY', 0, S.after, 0, S.ls, 'KEEP_WORD'], h1: ['LEFT', 0, 300, 1, S.ls, 'KEEP_WORD'],
-      h2: ['LEFT', 1134, 300, 1, S.ls, 'KEEP_WORD'], bullet: ['LEFT', 1134, S.after, 0, S.ls, 'KEEP_WORD'], small: ['LEFT', 0, S.after, 0, S.ls, 'BREAK_WORD'], end: ['LEFT', 0, S.after, 0, S.ls, 'KEEP_WORD'],
-      gap: ['JUSTIFY', 0, S.gapAfter, 0, S.ls, 'KEEP_WORD'], footer: ['CENTER', 0, 0, 0, S.ls, 'KEEP_WORD'],
+      cell: ['LEFT', 0, 0, 0, S.tls, 0], cell_c: ['CENTER', 0, 0, 0, S.tls, 0], title: ['CENTER', 0, 1200, 0, S.ls, 1], para: ['JUSTIFY', 0, S.after, 0, S.ls, 1],
+      lead: ['LEFT', 0, S.after, 0, S.ls, 1], h1: ['LEFT', 0, 300, 1, S.ls, 1], h2: ['LEFT', 1134, 300, 1, S.ls, 1], bullet: ['LEFT', 1134, S.after, 0, S.ls, 1],
+      small: ['LEFT', 0, S.after, 0, S.ls, 1], end: ['LEFT', 0, S.after, 0, S.ls, 1], gap: ['JUSTIFY', 0, S.gapAfter, 0, S.ls, 0], footer: ['CENTER', 0, 0, 0, S.ls, 0],
     };
   }
-  const paraPr = (id, [align, left, next, keep, ls, brk]) => {
+  const paraPr = (id, [align, left, next, keep, ls, keepLines]) => {
     const m = `<hh:margin><hc:intent value="0" unit="HWPUNIT"/><hc:left value="${left}" unit="HWPUNIT"/><hc:right value="0" unit="HWPUNIT"/><hc:prev value="0" unit="HWPUNIT"/><hc:next value="${next}" unit="HWPUNIT"/></hh:margin><hh:lineSpacing type="PERCENT" value="${ls}" unit="HWPUNIT"/>`;
-    return `<hh:paraPr id="${id}" tabPrIDRef="0" condense="0" fontLineHeight="0" snapToGrid="1" suppressLineNumbers="0" checked="0" textDir="LTR"><hh:align horizontal="${align}" vertical="BASELINE"/><hh:heading type="NONE" idRef="0" level="0"/><hh:breakSetting breakLatinWord="KEEP_WORD" breakNonLatinWord="${brk}" widowOrphan="0" keepWithNext="${keep}" keepLines="0" pageBreakBefore="0" lineWrap="BREAK"/><hh:autoSpacing eAsianEng="0" eAsianNum="0"/><hp:switch><hp:case hp:required-namespace="http://www.hancom.co.kr/hwpml/2016/HwpUnitChar">${m}</hp:case><hp:default>${m}</hp:default></hp:switch><hh:border borderFillIDRef="2" offsetLeft="0" offsetRight="0" offsetTop="0" offsetBottom="0" connect="0" ignoreMargin="0"/></hh:paraPr>`;
+    return `<hh:paraPr id="${id}" tabPrIDRef="0" condense="0" fontLineHeight="0" snapToGrid="1" suppressLineNumbers="0" checked="0" textDir="LTR"><hh:align horizontal="${align}" vertical="BASELINE"/><hh:heading type="NONE" idRef="0" level="0"/><hh:breakSetting breakLatinWord="KEEP_WORD" breakNonLatinWord="KEEP_WORD" widowOrphan="1" keepWithNext="${keep}" keepLines="${keepLines}" pageBreakBefore="0" lineWrap="BREAK"/><hh:autoSpacing eAsianEng="0" eAsianNum="0"/><hp:switch><hp:case hp:required-namespace="http://www.hancom.co.kr/hwpml/2016/HwpUnitChar">${m}</hp:case><hp:default>${m}</hp:default></hp:switch><hh:border borderFillIDRef="2" offsetLeft="0" offsetRight="0" offsetTop="0" offsetBottom="0" connect="0" ignoreMargin="0"/></hh:paraPr>`;
   };
   function headerXml(S) {
-    const faces = LANGS.map(l => `<hh:fontface lang="${l}" fontCnt="2"><hh:font id="0" face="${FONT_DOTUM}" type="TTF" isEmbedded="0">${TYP}</hh:font><hh:font id="1" face="${FONT_BATANG}" type="TTF" isEmbedded="0">${TYP}</hh:font></hh:fontface>`).join('');
+    const faces = LANGS.map(l => `<hh:fontface lang="${l}" fontCnt="2"><hh:font id="0" face="${FONT_DOTUM}" type="TTF" isEmbedded="0">${TYP}</hh:font><hh:font id="1" face="${xe(docStyle().font)}" type="TTF" isEmbedded="0">${TYP}</hh:font></hh:fontface>`).join('');
     const nump = [['DIGIT', '^1.', 0], ['HANGUL_SYLLABLE', '^2.', 0], ['DIGIT', '^3)', 0], ['HANGUL_SYLLABLE', '^4)', 0], ['DIGIT', '(^5)', 0], ['HANGUL_SYLLABLE', '(^6)', 0], ['CIRCLED_DIGIT', '^7', 1], ['CIRCLED_HANGUL_SYLLABLE', '^8', 1]]
       .map(([f, t, c], i) => `<hh:paraHead start="1" level="${i + 1}" align="LEFT" useInstWidth="1" autoIndent="1" widthAdjust="0" textOffsetType="PERCENT" textOffset="50" numFormat="${f}" charPrIDRef="4294967295" checkable="${c}">${t}</hh:paraHead>`).join('');
     const spec = paraSpec(S);
     return `<?xml version='1.0' encoding='UTF-8' standalone='yes'?>\n<hh:head ${NS} version="1.5" secCnt="1"><hh:beginNum page="1" footnote="1" endnote="1" pic="1" tbl="1" equation="1"/><hh:refList>` +
       `<hh:fontfaces itemCnt="7">${faces}</hh:fontfaces>` +
       `<hh:borderFills itemCnt="4">${bf(1, 0)}${bf(2, 0, 'none')}${bf(3, 1)}${bf(4, 1, '#D9D9D9')}</hh:borderFills>` +
-      `<hh:charProperties itemCnt="${CHAR_ORDER.length}">${CHAR_ORDER.map((k, i) => charPr(i, S[k], BOLD.includes(k))).join('')}</hh:charProperties>` +
+      `<hh:charProperties itemCnt="${CHAR_DEF.length}">${CHAR_DEF.map(([, size, bold, sup], i) => charPr(i, S[size], bold, sup)).join('')}</hh:charProperties>` +
       `<hh:tabProperties itemCnt="1"><hh:tabPr id="0" autoTabLeft="0" autoTabRight="0"/></hh:tabProperties>` +
       `<hh:numberings itemCnt="1"><hh:numbering id="1" start="0">${nump}</hh:numbering></hh:numberings>` +
       `<hh:paraProperties itemCnt="${PARA_ORDER.length}">${PARA_ORDER.map((k, i) => paraPr(i, spec[k])).join('')}</hh:paraProperties>` +
@@ -591,8 +615,10 @@
     const S = sizesFor(doc);
     let seq = 0;
     const nid = () => (++seq * 2654435761) & 0x7FFFFFFF;       // 순번 기반 id: 같은 입력이면 같은 파일
-    const para = (kind, text, ch) => `<hp:p id="${nid()}" paraPrIDRef="${PR[kind]}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="${CH[ch]}">${text === '' ? '<hp:t/>' : `<hp:t>${xe(text)}</hp:t>`}</hp:run></hp:p>`;
-    const cellP = text => `<hp:p paraPrIDRef="${PR.cell}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0" id="${nid()}"><hp:run charPrIDRef="${CH.table}">${text === '' ? '<hp:t/>' : `<hp:t>${xe(String(text).replace(/\s*\n\s*/g, ' '))}</hp:t>`}</hp:run></hp:p>`;
+    const runXml = (ch, t) => `<hp:run charPrIDRef="${CH[ch]}">${t === '' ? '<hp:t/>' : `<hp:t>${xe(t)}</hp:t>`}</hp:run>`;
+    // runs: textRuns 결과([글자, ''|'b'|'sup']). 없으면 text 한 덩어리
+    const para = (kind, text, ch, runs) => `<hp:p id="${nid()}" paraPrIDRef="${PR[kind]}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">${(runs || [[text, '']]).map(([t, look]) => runXml(charKey(ch, look), t)).join('')}</hp:p>`;
+    const cellP = (text, bold, center) => `<hp:p paraPrIDRef="${PR[center ? 'cell_c' : 'cell']}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0" id="${nid()}">${runXml(bold ? 'table_b' : 'table', String(text).replace(/\s*\n\s*/g, ' '))}</hp:p>`;
     const footer = `<hp:footer id="9813498" applyPageType="BOTH"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="BOTTOM" linkListIDRef="0" linkListNextIDRef="0" textWidth="${TEXT_W}" textHeight="4252" hasTextRef="0" hasNumRef="0"><hp:p paraPrIDRef="${PR.footer}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0" id="516765611"><hp:run charPrIDRef="${CH.table}"><hp:t>${xe(doc.footer)}</hp:t></hp:run><hp:run charPrIDRef="${CH.table}"><hp:ctrl><hp:autoNum num="1" numType="PAGE"><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar="" supscript="0"/></hp:autoNum></hp:ctrl></hp:run><hp:run charPrIDRef="${CH.table}"><hp:ctrl><hp:pageNum pos="BOTTOM_CENTER" formatType="DIGIT" sideChar="-"/></hp:ctrl></hp:run></hp:p></hp:subList></hp:footer>`;
     const secPr = `<hp:secPr id="" textDirection="HORIZONTAL" spaceColumns="1134" tabStop="8000" tabStopVal="4000" tabStopUnit="HWPUNIT" outlineShapeIDRef="1" memoShapeIDRef="0" textVerticalWidthHead="0" masterPageCnt="0"><hp:grid lineGrid="0" charGrid="0" wonggojiFormat="0"/><hp:startNum pageStartsOn="BOTH" page="0" pic="0" tbl="0" equation="0"/><hp:visibility hideFirstHeader="0" hideFirstFooter="0" hideFirstMasterPage="0" border="SHOW_ALL" fill="SHOW_ALL" hideFirstPageNum="0" hideFirstEmptyLine="0" showLineNumber="0"/><hp:lineNumberShape restartType="0" countBy="0" distance="0" startNumber="0"/><hp:pagePr landscape="WIDELY" width="59528" height="84186" gutterType="LEFT_ONLY"><hp:margin header="4252" footer="4252" gutter="0" left="8504" right="8504" top="${S.top}" bottom="4252"/></hp:pagePr>` +
       `<hp:footNotePr><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar=")" supscript="0"/><hp:noteLine length="-1" type="SOLID" width="0.12 mm" color="#000000"/><hp:noteSpacing betweenNotes="283" belowLine="567" aboveLine="850"/><hp:numbering type="CONTINUOUS" newNum="1"/><hp:placement place="EACH_COLUMN" beneathText="0"/></hp:footNotePr>` +
@@ -604,11 +630,13 @@
     const table = (rows, widths, caption, header) => {
       const n = rows[0].length, tot = widths.reduce((a, b) => a + b, 0) || 1, w = widths.slice(0, n).map(x => Math.round(TEXT_W * x / tot));
       w[n - 1] += TEXT_W - w.reduce((a, b) => a + b, 0);
+      // 칸 안 여백 좌우 2mm·위아래 1mm(hwpx.CELL_MARGIN). 머리글·개요 항목은 굵게, 짧은 값 열은 가운데
+      const short = rows[0].map((_, c) => header && c > 0 && rows.slice(1).every(row => String(row[c]).length <= SHORT_CELL));
       const rowH = 282, cell = (t, r, c) => {
         const head = header ? r === 0 : c === 0;
-        return `<hp:tc name="" header="${header && r === 0 ? 1 : 0}" hasMargin="0" protect="0" editable="0" dirty="1" borderFillIDRef="${head ? 4 : 3}"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0">${cellP(t)}</hp:subList><hp:cellAddr colAddr="${c}" rowAddr="${r}"/><hp:cellSpan colSpan="1" rowSpan="1"/><hp:cellSz width="${w[c]}" height="${rowH}"/><hp:cellMargin left="510" right="510" top="141" bottom="141"/></hp:tc>`;
+        return `<hp:tc name="" header="${header && r === 0 ? 1 : 0}" hasMargin="1" protect="0" editable="0" dirty="1" borderFillIDRef="${head ? 4 : 3}"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0">${cellP(t, head, (header && r === 0) || short[c])}</hp:subList><hp:cellAddr colAddr="${c}" rowAddr="${r}"/><hp:cellSpan colSpan="1" rowSpan="1"/><hp:cellSz width="${w[c]}" height="${rowH}"/><hp:cellMargin left="567" right="567" top="283" bottom="283"/></hp:tc>`;
       };
-      const cap = caption ? `<hp:caption side="TOP" fullSz="0" width="8504" gap="850" lastWidth="${TEXT_W}"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="TOP" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0"><hp:p id="${nid()}" paraPrIDRef="${PR.cell}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="${CH.table}"><hp:t>${xe(caption)}</hp:t></hp:run></hp:p></hp:subList></hp:caption>` : '';
+      const cap = caption ? `<hp:caption side="TOP" fullSz="0" width="8504" gap="850" lastWidth="${TEXT_W}"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="TOP" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0"><hp:p id="${nid()}" paraPrIDRef="${PR.cell}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="${CH.table_b}"><hp:t>${xe(caption)}</hp:t></hp:run></hp:p></hp:subList></hp:caption>` : '';
       return `<hp:p id="${nid()}" paraPrIDRef="${PR.cell}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="${CH.table}"><hp:tbl id="${nid()}" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="${header ? 1 : 0}" rowCnt="${rows.length}" colCnt="${n}" cellSpacing="0" borderFillIDRef="3" noAdjust="0"><hp:sz width="${TEXT_W}" widthRelTo="ABSOLUTE" height="${rowH * rows.length}" heightRelTo="ABSOLUTE" protect="0"/><hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="COLUMN" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/><hp:outMargin left="0" right="0" top="0" bottom="0"/>${cap}<hp:inMargin left="510" right="510" top="141" bottom="141"/>` +
         rows.map((r, ri) => `<hp:tr>${r.map((t, ci) => cell(t, ri, ci)).join('')}</hp:tr>`).join('') + `</hp:tbl></hp:run></hp:p>`;
     };
@@ -617,9 +645,11 @@
       else if (b.kind === 'table') { out += table(b.rows, b.widths, b.caption, true) + para('gap', '', 'gap'); }
       else if (b.kind === 'h1') out += para('h1', b.text, 'h1');
       else if (b.kind === 'h2') out += para('h2', b.text, 'h2');
-      else if (b.kind === 'bullet') out += para('bullet', `- ${b.text}`, 'body');
+      else if (b.kind === 'bullet') out += para('bullet', '', 'body', [['- ', ''], ...textRuns(b.text)]);
       else if (b.kind === 'end') out += para('end', `  ${b.text}`, 'body');
-      else out += b.small ? para('small', b.text, 'small') : para('para', b.text, 'body');
+      else if (b.small) out += para('small', b.text, 'small');                      // 출처 목록(주석): 작은 글자
+      else if (b.strong) out += para('lead', '', 'lead', textRuns(b.text));         // 결론 문장(두괄식): 굵고 크게
+      else out += para('para', '', 'body', textRuns(b.text, b.emph));
     }
     return `<?xml version='1.0' encoding='UTF-8' standalone='yes'?>\n<hs:sec ${NS}>${out}</hs:sec>`;
   }
@@ -837,6 +867,7 @@
 
   // ══════════════════════════════════════ 화면용 HTML(1쪽 요약·인쇄). 인라인 style 속성을 쓰지 않는다(CSP)
   const COPY_TABLE = '📋 표 복사(HWP/엑셀 붙여넣기)', COPY_SENT = '문장 복사';
+  const runsHTML = (text, emph) => textRuns(text, emph).map(([t, look]) => (look === 'b' ? `<b>${he(t)}</b>` : look === 'sup' ? `<sup class="dg-ref">${he(t)}</sup>` : he(t))).join('');
   function docHTML(doc, o) {
     const opt = o || {}, tables = [];
     let out = '', sec = '';
@@ -850,9 +881,9 @@
       }
       else if (b.kind === 'h1') out += `<h4 class="dg-h1">${he(b.text)}</h4>`;
       else if (b.kind === 'h2') out += `<h5 class="dg-h2">${he(b.text)}</h5>`;
-      else if (b.kind === 'bullet') out += `<p class="dg-bullet">- ${he(b.text)}</p>`;
+      else if (b.kind === 'bullet') out += `<p class="dg-bullet">- ${runsHTML(b.text)}</p>`;
       else if (b.kind === 'end') out += `<p class="dg-end">${he(b.text)}</p>`;
-      else out += `<p class="${b.cls === 'src' ? 'dg-src' : b.small ? 'dg-small' : 'dg-p'}">${he(b.text)}${opt.copy && doc.parts && doc.parts.summary && doc.parts.summary.includes(b) ? `<button type="button" class="dg-copy-s" data-copy-sentence="${doc.parts.summary.indexOf(b)}">${COPY_SENT}</button>` : ''}</p>`;
+      else out += `<p class="${b.cls === 'src' ? 'dg-src' : b.small ? 'dg-small' : b.strong ? 'dg-p dg-key' : 'dg-p'}">${b.small || b.cls === 'src' ? he(b.text) : runsHTML(b.text, b.emph)}${opt.copy && doc.parts && doc.parts.summary && doc.parts.summary.includes(b) ? `<button type="button" class="dg-copy-s" data-copy-sentence="${doc.parts.summary.indexOf(b)}">${COPY_SENT}</button>` : ''}</p>`;
     }
     flush();
     return { html: out, tables };
@@ -917,7 +948,7 @@
 
   return {
     crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, fmtNum, roundD, govDate, josa, valueWithUnit, fmtCell, hidden, usable, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
-    setTemplates, getTemplates, displayName, BriefError, buildBrief, buildDoc, buildOnepage, estimateHeightMm, docText, sentenceText, SIZES, headerXml, sectionXml, hwpxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
+    setTemplates, getTemplates, displayName, BriefError, buildBrief, buildDoc, buildOnepage, estimateHeightMm, docText, sentenceText, sizesFor, textRuns, headerXml, sectionXml, hwpxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
     tablePayload, sentencePayload, copyToClipboard, buildFragments, fragmentChoices, fragmentPayload, fragmentHTML, docHTML, COPY_TABLE, COPY_SENT, projectFeatures, mapSvg, safeName, saveBytes, svgToPng, xe,
   };
 });
