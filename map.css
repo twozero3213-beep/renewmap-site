@@ -324,10 +324,12 @@
   .explore-page .fd-left { padding: 14px; }
 }
 
-/* ── 2026-10-26 공무원 바로 가기(#gov) · 기준 미달·참고 구간 밖 목록 · 사업 근거서 ── */
+/* ── 2026-10-26 업무별 바로 가기(#gov) · 기준 미달·참고 구간 밖 목록 · 사업 근거서 ── */
 .gov { margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid var(--line); scroll-margin-top: 120px; }
 .gov .section-head { margin-bottom: 12px; }
 .gov-note { margin: 0 0 10px; font-size: 14px; color: var(--dim); } .gov-note b { color: var(--ink); }
+.gov-cards li { display: flex; flex-direction: column; gap: 4px; } .gov-cards .gov-card { flex: 1; }
+.gov-more { font-size: 12px; padding: 0 4px; } .gov-more summary { cursor: pointer; color: var(--dim); font-weight: 600; } .gov-more .gov-c, .gov-more .gov-law { display: block; margin-top: 4px; }
 .gov-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
 .gov-card { width: 100%; height: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--card); border: 1.5px solid #b9cbc4; border-radius: 14px; padding: 12px 14px; cursor: pointer; display: grid; gap: 4px; align-content: start; transition: border-color .15s ease, transform .15s ease; }
 .gov-card:hover { border-color: var(--green); transform: translateY(-2px); }

@@ -531,7 +531,7 @@
     }).join('')}</ul></li>`).join('');
     return glanceHTML(rows) + gapsHTML(rows) + head + `<ol class="sr-list">${groups}</ol>`;
   }
-  // 기준 미달·참고 구간 밖 항목(2026-10-26, 공무원용): 기준선을 넘은 항목(확정·승인 대기)과 자료가 없어 확인이 필요한 항목. 순서 고정, 순위·점수 없음
+  // 기준 미달·참고 구간 밖 항목(2026-10-26, 업무 실무자용): 기준선을 넘은 항목(확정·승인 대기)과 자료가 없어 확인이 필요한 항목. 순서 고정, 순위·점수 없음
   function gapRows(rows) {
     return rows.filter(r => !r.ind.composite && r.ind.group !== 'sum' && r.ind.group !== 'fore' && !r.ind.categorical && !r.ind.pending)
       .filter(r => r.crossed === true || r.value === null)
@@ -584,15 +584,15 @@
     const banned = ['좋', '나쁘', '나쁜', '위험', '열악', '우수', '심각', '양호', '낙후', '추천', '유망', '피해야', '기피', '등급', '순위'].filter(w => String(text || '').includes(w));
     return bad.length || banned.length || !String(text || '').trim() ? { ok: false, bad, banned } : { ok: true, text: String(text) };
   }
-  // ── 사업 근거서(공무원용, 2026-10-26): 동네 보고서의 변형. 현황 → 기준 대비 → 기준 미달·확인 필요 → 출처·계산식(펼친 상태). 평가·권고 문장 없음, 결정은 담당자가 ──
+  // ── 사업 근거서(업무 실무자용, 2026-10-26): 동네 보고서의 변형. 현황 → 기준 대비 → 기준 미달·확인 필요 → 출처·계산식(펼친 상태). 평가·권고 문장 없음, 결정은 담당자가 ──
   const BRIEF_HEAD = '예산 요구·사업계획·민원 회신 첨부용 근거 자료 · 리뉴맵 원장 기반 · 판정 아님 · 결정은 담당자가';
   const BRIEF_FOOT = '판정 아님 · 숫자마다 출처 · 결정은 담당자가';
   const BRIEF_MAIL = 'renewmapteam@gmail.com';
   const REPORT_MODES = [['report', '동네 보고서'], ['brief', '사업 근거서']];
   const reportModeHTML = mode => `<div class="dash-seg rp-mode" role="group" aria-label="보고서 용도">${REPORT_MODES.map(([k, l]) => `<button type="button" data-rp-mode="${k}" aria-pressed="${k === mode}">${l}</button>`).join('')}</div>`;
-  // 정적 사이트라 HWPX를 만들 수 없다. 메일로 요청하면 scripts/export_dong_brief.py(다른 직원 작업 중)로 만들어 보낸다
-  function briefMailto(it, year) {
-    const subject = `근거서 HWPX 요청 [${it.name}·${it.code}]`, body = `동: ${it.name} (${it.code})\n기준연도: 쇠퇴 지표 ${year ?? '최신 연도'} · 생활 지표는 항목별 기준연도\n무료 · 1영업일 안에 회신합니다.`;
+  // 정적 사이트라 HWPX·XLSX를 만들 수 없다. 메일 한 통으로 둘을 함께 요청하면 scripts/export_dong_brief.py(다른 직원 작업 중)로 만들어 보낸다
+  function briefMailto(it, year, what = '근거서') {
+    const subject = `${what} HWPX·XLSX 요청 [${it.name}·${it.code}]`, body = `동: ${it.name} (${it.code})\n요청 형식: HWPX·XLSX\n기준연도: 쇠퇴 지표 ${year ?? '최신 연도'} · 생활 지표는 항목별 기준연도\n무료 · 1영업일 안에 회신합니다.`;
     return `mailto:${BRIEF_MAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
   function briefHTML(v, it, rows) {
@@ -607,7 +607,7 @@
     const sec3 = `<section class="rp-g"><h3>3. 기준 미달·확인 필요 목록</h3>${gapsHTML(rows, { open: true })}</section>`;
     const sec4 = `<section class="rp-g"><h3>4. 출처·계산식 표</h3><div class="table-wrap"><table class="rp-tbl"><thead><tr><th>항목</th><th>값</th><th>출처</th><th>기준일</th><th>계산식</th><th>규칙 버전</th></tr></thead><tbody>${facts.map(r => { const s = srcOf(r);
       return `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name)}</td><td>${esc(s.ref || (r.year ? `${r.year}년` : '기록 없음'))}</td><td>${esc(s.formula || '기록 없음')}</td><td>${esc(s.rule || '기록 없음')}</td></tr>`; }).join('')}</tbody></table></div></section>`;
-    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 사업 근거서</h3><p class="rp-tools"><button type="button" class="btn ghost" data-print>🖨 인쇄·PDF</button><a class="btn ghost" href="${esc(briefMailto(it, dy))}">HWPX 파일 요청(무료 · 1영업일)</a></p></div>` +
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 사업 근거서</h3><p class="rp-tools"><button type="button" class="btn ghost" data-print>🖨 인쇄·PDF</button><a class="btn ghost" href="${esc(briefMailto(it, dy))}">HWPX·XLSX 요청(무료 · 1영업일)</a></p></div>` +
       `<p class="rp-intro rp-brief-head">${esc(BRIEF_HEAD)}</p><p class="rp-intro">${esc(here)} · ${esc(it.kind || '행정동')} ${esc(it.code)} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'} · 생활 지표는 항목별 기준연도</p>${sec1}${sec2}${sec3}${sec4}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
   // ── 기기 안 AI(Chrome 내장 AI의 Rewriter·Summarizer 전역 API). 문장을 서버로 보내지 않는다 ──
@@ -760,7 +760,7 @@
       scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist + hubHTML(v);
   }
   const rowsFor = (v, m, it) => dongRows(inds(), m.json.dongs.find(d => codeOf(d) === it.code), livingMap(m.living).get(it.code), m.selYear, m.ext);
-  // ── 동네 보고서(#report): 원장 문장 + 그래프 + 출처표. 인쇄는 브라우저 인쇄(@media print), HWPX는 시범 납품에서 ──
+  // ── 동네 보고서(#report): 원장 문장 + 그래프 + 출처표. 인쇄는 브라우저 인쇄(@media print), HWPX·XLSX는 메일 요청 ──
   const report = document.getElementById('reportApp');
   let reportKey = '', polished = null, reportMode = 'report'; // polished: { key, text } 검증을 통과한 AI 문장만. reportMode: 동네 보고서 | 사업 근거서
   api.setReportMode = m => { reportMode = REPORT_MODES.some(x => x[0] === m) ? m : 'report'; if (state.index !== undefined) render(); }; // find.js 프리셋이 쓴다
@@ -775,7 +775,7 @@
       `<span class="rp-ai-note">선택 기능 · 기본 꺼짐 · 무료 · 로그인 없음 · 서버 전송 없음</span>` +
       `<div class="rp-ai-consent" data-ai-confirm hidden><p><b>기기 내 AI 모델 내려받기</b><br>Chrome이 AI 모델을 이 기기에 한 번 내려받습니다(Chrome 안내: 저장 공간 22GB 이상 여유 필요).<br>내려받은 뒤에도 문장은 이 기기 안에서만 처리합니다.</p><button type="button" class="btn" data-ai-go>내려받고 다듬기</button> <button type="button" class="btn ghost" data-ai-cancel>취소</button></div>` +
       `<div class="rp-ai-out" data-ai-out aria-live="polite">${pol ? `<p class="rp-ai-label">${esc(AI_LABEL)}</p><p>${esc(pol.text)}</p>` : ''}</div><p class="rp-ai-foot">${esc(AI_FOOT)}</p></div>`;
-    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 보고서</h3><p class="rp-tools"><button type="button" class="btn ghost" data-print>🖨 인쇄·PDF</button><a class="btn ghost" href="#contact">HWPX 서식은 시범 납품에서</a></p></div>` +
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 보고서</h3><p class="rp-tools"><button type="button" class="btn ghost" data-print>🖨 인쇄·PDF</button><a class="btn ghost" href="${esc(briefMailto(it, rows.find(r => r.ind.series && r.year)?.year ?? null, '동네 보고서'))}">HWPX·XLSX 요청(무료 · 1영업일)</a></p></div>` +
       `<p class="rp-intro">아래 문장은 원장 셀의 숫자와 출처만 옮긴 것입니다.<br>평가나 판정은 하지 않습니다.</p>${byG}${src}${ai}<p class="rp-foot">${esc(REPORT_FOOT)}</p>`;
   }
   function renderReport(v, m, it) {

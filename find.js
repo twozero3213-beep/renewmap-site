@@ -50,7 +50,7 @@
     { id: 'migIn', n: '청년 순유입', g: 'pop', e: '↗', units: ['sg', 'emd'], src: 'migration', sgLevel: true, ref: true, th: () => REF.MIG_PER1K, get: sgVal('migration'), op: 'ge', label: t => `청년 순유입(천 명당 +${pm(t)}명 이상)` },
     { id: 'dealDown', n: '연간 거래 감소', g: 'estate', e: '🏠', units: ['sg', 'emd'], src: 'realestate', sgLevel: true, ref: true, code: 'APT_TRADE_COUNT_YOY_PCT', th: c => (hasRe(c, 'APT_TRADE_COUNT_YOY_PCT') ? -REF.DEAL_PCT : null), get: sgVal('realestate', 'APT_TRADE_COUNT_YOY_PCT'), op: 'le', label: t => `연간 거래 ${pm(Math.abs(t))}% 이상 감소` },
     { id: 'dealUp', n: '연간 거래 증가', g: 'estate', e: '🏘', units: ['sg', 'emd'], src: 'realestate', sgLevel: true, ref: true, code: 'APT_TRADE_COUNT_YOY_PCT', th: c => (hasRe(c, 'APT_TRADE_COUNT_YOY_PCT') ? REF.DEAL_PCT : null), get: sgVal('realestate', 'APT_TRADE_COUNT_YOY_PCT'), op: 'ge', label: t => `연간 거래 ${pm(t)}% 이상 증가` },
-    // 생활 여건은 기준 이상(안쪽)과 기준 미만(바깥쪽) 칩을 나란히 둔다(2026-10-26, 공무원 프리셋이 미만 쪽을 쓴다). 같은 기준값·같은 꼬리표, 하위 N곳 정렬 아님
+    // 생활 여건은 기준 이상(안쪽)과 기준 미만(바깥쪽) 칩을 나란히 둔다(2026-10-26, 업무별 프리셋이 미만 쪽을 쓴다). 같은 기준값·같은 꼬리표, 하위 N곳 정렬 아님
     { id: 'park', n: '1인당 공원 면적', g: 'life', e: '🌳', units: ['emd'], src: 'living', th: c => livStd(c, 'PARK_AREA_PER_CAPITA'), get: livingVal('PARK_AREA_PER_CAPITA'), op: 'ge', label: t => `1인당 공원 ${pm(t)}㎡ 이상` },
     { id: 'parkLow', n: '1인당 공원 면적 미만', g: 'life', e: '🌳', units: ['emd'], src: 'living', th: c => livStd(c, 'PARK_AREA_PER_CAPITA'), get: livingVal('PARK_AREA_PER_CAPITA'), op: 'lt', label: t => `1인당 공원 ${pm(t)}㎡ 미만` },
     { id: 'lib', n: '공공도서관 거리', g: 'life', e: '📚', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'LIB_NEAREST_M') ? REF.LIB_M : null), get: livingVal('LIB_NEAREST_M'), op: 'le', label: t => `공공도서관 ${pm(t / 1000)}km 안` },
@@ -178,18 +178,18 @@
     if (scope.sg) return emd ? 'empty' : 'loading';
     return sgGeo === undefined ? 'loading' : 'empty';
   }
-  // ── 공무원 바로 가기(#gov): 프리셋 = 기존 찾기 조건의 묶음(docs/gov/public_officer_usecases.md 부록 B). 결과는 조건에 해당하는 곳 전부(코드·가나다 순)이며 점수·순위·추천이 아니다(D13·D17) ──
+  // ── 업무별 바로 가기(#gov): 프리셋 = 기존 찾기 조건의 묶음(docs/gov/public_officer_usecases.md 부록 B). 결과는 조건에 해당하는 곳 전부(코드·가나다 순)이며 점수·순위·추천이 아니다(D13·D17) ──
   // 안전 인프라는 공식 기준이 없어 찾기 조건으로 만들지 않는다(값 임계치로 걸러 목록을 내면 D17이 금지한 하위 목록과 같다). 설치 현황 카드는 동 상세의 안전 인프라 묶음으로 보낸다
   // 법령·사업명은 부록 B 문구 그대로. 미확인 조문은 법무 확인 뒤 지운다
   const DECIDE = '결정은 담당자가 합니다';
   const GOV_NOTE = '3번 클릭: 바로 가기 → 시·군·구 → 동. 조건에 해당하는 동 목록과 첨부할 근거서를 받습니다. 점수·순위를 매기지 않습니다.';
   const PRESETS = [
-    { id: 'cctv', e: '🎥', n: 'CCTV·보안등 설치 현황', why: '동을 고르면 CCTV·보안등 밀도와 경찰관서까지 거리를 따로 보여 드립니다. 시설 현황이며 범죄·안전 수준을 뜻하지 않습니다.', conds: [], note: '조건 없음 · 동을 고르면 안전 인프라 카드로', action: 'safe', law: '개인정보 보호법 제25조' },
-    { id: 'yearend', e: '💰', n: '연말 소규모 정비 후보', why: '노후 건축물 비율과 쇠퇴 요건, 생활 지표 기준 대비 해당 여부를 한 번에 확인합니다. 사업 선정 순위가 아닙니다.', conds: ['aging', 'met', ['parkLow', 'libFar']], law: '지방재정법 제37조(투자심사)·제50조(이월)' },
-    { id: 'depop', e: '🏳', n: '지방소멸대응기금 준비', why: '인구감소지역·관심지역의 인구·고령 변화를 읍면동별로 모아 봅니다.', conds: [['depop', 'concern'], 'pop30'], condsEmd: ['aged'], law: '지방소멸대응기금(행안부), 인구감소지역 지원 특별법' },
-    { id: 'housing', e: '🏚', n: '노후주거지 정비 후보', why: '쇠퇴 요건과 노후 건축물 비율을 함께 충족하는 동을 보여 드립니다. 활성화지역 판정이 아닙니다.', conds: ['aging', 'met', 'pop30', 'biz10'], law: '노후주거지정비 지원사업(국토부), 도시재생 활성화 및 지원에 관한 특별법' },
-    { id: 'soc', e: '🌳', n: '생활SOC 현황', why: '공원 면적·도서관 거리·병의원 수를 기준과 견줘 봅니다. 도서관 거리·병의원 수는 참고 구간입니다.', conds: [['parkLow', 'libFar', 'hospLow']], law: '도시공원 및 녹지 등에 관한 법률 시행규칙 제4조, 생활SOC 최저기준' },
-    { id: 'brief', e: '📄', n: '의회·감사·민원 근거', why: '출처·기준일·계산식이 붙은 숫자를 사업 근거서로 인쇄합니다. 민원인 정보는 입력하지 마세요.', conds: [], note: '조건 없음 · 동을 고르면 사업 근거서로', action: 'brief', law: '지방자치법 제49조·제142조·제150조' },
+    { id: 'cctv', e: '🎥', n: 'CCTV·보안등 설치 검토', ask: 'CCTV·보안등 추가 설치 검토 자료를 요구받았을 때', give: '동별 설치 현황 사실(밀도·경찰관서까지 거리). 범죄·안전 수준이 아닙니다.', conds: [], note: '조건 없음 · 동을 고르면 안전 인프라 카드로', action: 'safe', law: '개인정보 보호법 제25조' },
+    { id: 'yearend', e: '💰', n: '연말 소규모 정비 검토', ask: '연말에 남은 예산, 근거 있는 소규모 정비 사업을 찾을 때', give: '노후·쇠퇴·생활 기준에 해당하는 동 목록과 첨부용 근거서', conds: ['aging', 'met', ['parkLow', 'libFar']], law: '지방재정법 제37조(투자심사)·제50조(이월)' },
+    { id: 'depop', e: '🏳', n: '지방소멸대응기금 현황표', ask: '지방소멸대응기금 투자계획서에 현황표가 필요할 때', give: '인구감소·고령·청년 변화 표', conds: [['depop', 'concern'], 'pop30'], condsEmd: ['aged'], law: '지방소멸대응기금(행안부), 인구감소지역 지원 특별법' },
+    { id: 'housing', e: '🏚', n: '노후주거지 후보 추리기', ask: '노후주거지 정비·도시재생 공모 전에 후보 동을 추릴 때', give: '쇠퇴 요건과 노후 건축물 기준을 함께 충족하는 동 목록', conds: ['aging', 'met', 'pop30', 'biz10'], law: '노후주거지정비 지원사업(국토부), 도시재생 활성화 및 지원에 관한 특별법' },
+    { id: 'soc', e: '🌳', n: '공원·도서관 민원 회신', ask: "'우리 동네는 왜 공원·도서관이 없나' 민원에 회신할 때", give: '기준 대비 현황과 출처', conds: [['parkLow', 'libFar', 'hospLow']], law: '도시공원 및 녹지 등에 관한 법률 시행규칙 제4조, 생활SOC 최저기준' },
+    { id: 'brief', e: '📄', n: '의회·감사 근거서', ask: "의회·감사에서 '근거가 뭐냐'고 물을 때", give: '출처·기준일·계산식이 붙은 근거서', conds: [], note: '조건 없음 · 동을 고르면 사업 근거서로', action: 'brief', law: '지방자치법 제49조·제142조·제150조' },
   ];
   const presetOf = id => PRESETS.find(p => p.id === id) || null;
   // 프리셋의 조건 목록: 읍·면·동 범위(unit emd)면 condsEmd를 덧붙인다. 묶음(배열)은 복사한다
@@ -198,7 +198,7 @@
     const unit = scopeName ? 'emd' : 'sg', lbl = id => { const c = condOf(id); return c.e + ' ' + (ctx && ctx.index ? chipLabel(c, ctx, condState(c, ctx, unit)) : c.n); };
     const condText = p => p.note || presetConds(p, unit).map(g => (Array.isArray(g) ? g.map(lbl).join(' 또는 ') : lbl(g))).join(' + ') + (unit !== 'emd' && p.condsEmd ? ` (+ 읍·면·동 범위에서 ${p.condsEmd.map(lbl).join(', ')})` : '');
     return `<p class="gov-note">${esc(GOV_NOTE)}<br>범위: ${scopeName ? `<b>${esc(scopeName)}</b> 안 읍·면·동` : '<b>시·도와 시·군·구를 먼저 고르세요</b>(지도에서 마지막으로 연 시·군·구가 있으면 그대로 씁니다)'}</p>` +
-      `<ul class="gov-cards">${PRESETS.map(p => `<li><button type="button" class="gov-card" data-gov-preset="${esc(p.id)}"><span class="gov-e" aria-hidden="true">${p.e}</span><b>${esc(p.n)}</b><span class="gov-why">${esc(p.why)}</span><span class="gov-c">${esc(condText(p))}</span><span class="gov-law">${esc(p.law)}</span><span class="gov-d">${esc(DECIDE)}</span></button></li>`).join('')}</ul>`;
+      `<ul class="gov-cards">${PRESETS.map(p => `<li><button type="button" class="gov-card" data-gov-preset="${esc(p.id)}" aria-label="${esc(p.n)}"><span class="gov-e" aria-hidden="true">${p.e}</span><b>${esc(p.ask)}</b><span class="gov-why">→ ${esc(p.give)}</span><span class="gov-d">${esc(DECIDE)}</span></button><details class="gov-more"><summary>조건·근거 법령</summary><span class="gov-c">${esc(condText(p))}</span><span class="gov-law">${esc(p.law)}</span></details></li>`).join('')}</ul>`;
   }
   const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML };
   if (node) module.exports = api;
@@ -255,7 +255,7 @@
     }
     box.querySelectorAll('path[data-code]').forEach(p => { const r = ev.res.get(p.dataset.code) || 'na'; p.setAttribute('class', 'is-' + r); });
   }
-  // 공무원 바로 가기: 카드 → 그 조건으로 찾기. 범위는 찾기에서 고른 시·군·구, 없으면 지도에서 마지막으로 연 시·군·구, 그것도 없으면 선택 안내
+  // 업무별 바로 가기: 카드 → 그 조건으로 찾기. 범위는 찾기에서 고른 시·군·구, 없으면 지도에서 마지막으로 연 시·군·구, 그것도 없으면 선택 안내
   const scopeName = () => { const s = st.scope.sg ? (st.ctx.index.sigungu || []).find(x => String(x.code5) === st.scope.sg) : null; return s ? s.name : null; };
   function renderGov(ctx) {
     if (!gov) return;
@@ -280,7 +280,7 @@
     st.hint = st.scope.sg ? '' : '시·도와 시·군·구를 고르면 그 안 읍·면·동에서 찾습니다.';
     render();
     const f = root.querySelector(st.scope.sg ? '[data-fd-out]' : '[data-fd-sido]'); if (!f) return;
-    f.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    // 작업공간 규칙: 화면을 강제로 스크롤하지 않는다(모바일 탭 전환이 표시를 바꾼다). 초점만 옮긴다
     (st.scope.sg ? root.querySelector('[data-fd-sort="code"]') : f)?.focus({ preventScroll: true });
   }
   if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) applyPreset(b.dataset.govPreset); });
