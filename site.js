@@ -1,7 +1,7 @@
 /* 공통 반응형 메뉴. 링크는 자바스크립트 없이도 그대로 동작한다. */
 (function () {
   'use strict';
-  if (/(?:\/|\/index\.html)$/.test(location.pathname) && /^#(?:find|report|map(?:\/|$))/.test(location.hash)) {
+  if (/(?:\/|\/index\.html)$/.test(location.pathname) && /^#(?:find|gov|report|map(?:\/|$))/.test(location.hash)) {
     location.replace('explore.html' + location.hash);
     return;
   }

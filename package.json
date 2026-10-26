@@ -1,9 +1,0 @@
-{
-  "name": "renewmap-site",
-  "version": "1.0.0",
-  "private": true,
-  "description": "RENEWMAP 공개 웹사이트 미리보기",
-  "scripts": {
-    "dev": "node dev-server.cjs"
-  }
-}

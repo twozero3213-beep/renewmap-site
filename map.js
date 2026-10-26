@@ -529,7 +529,21 @@
         (r.series && r.series.some(p => p[1] !== null) ? sparkline(r.series, r.year, ind.label) : '') +
         (rowsD.length ? `<details class="map-detail"><summary>출처·기준연도${r.year ? ` (${esc(r.year)}년)` : ''}</summary>${dl(r.cell)}</details>` : '') + `</li>`;
     }).join('')}</ul></li>`).join('');
-    return glanceHTML(rows) + head + `<ol class="sr-list">${groups}</ol>`;
+    return glanceHTML(rows) + gapsHTML(rows) + head + `<ol class="sr-list">${groups}</ol>`;
+  }
+  // 기준 미달·참고 구간 밖 항목(2026-10-26, 공무원용): 기준선을 넘은 항목(확정·승인 대기)과 자료가 없어 확인이 필요한 항목. 순서 고정, 순위·점수 없음
+  function gapRows(rows) {
+    return rows.filter(r => !r.ind.composite && r.ind.group !== 'sum' && r.ind.group !== 'fore' && !r.ind.categorical && !r.ind.pending)
+      .filter(r => r.crossed === true || r.value === null)
+      .map(r => ({ row: r, kind: r.value === null ? '자료 없음·확인 필요' : isPending(r.ind.standard) ? '기준 넘음(승인 대기)' : '기준 넘음' }));
+  }
+  function gapsHTML(rows, opt) {
+    const g = gapRows(rows), o = opt || {};
+    const line = x => { const r = x.row, ind = r.ind, c = r.cell || {}, src = c.source_name || ind.source || SOURCE_DEFAULT;
+      return `<li class="gp is-${r.value === null ? 'none' : 'over'}"><b>${esc(ind.label)}</b>${r.sgLevel ? '<small class="gp-sg">시·군·구</small>' : ''}<span class="gp-v">${esc(rowText(r))}</span><span class="gp-s">${esc(x.kind)}</span>` +
+        `<small class="gp-std">${esc(validStd(ind.standard) ? `기준 ${ind.standard.text}` : stdTextOf(r).split(' · ')[0])} · 출처 ${esc(src)}${r.year ? ` · ${esc(r.year)}년` : ''}</small></li>`; };
+    return `<details class="sr-gaps"${o.open ? ' open' : ''}><summary>📌 기준 미달·참고 구간 밖 항목 <b>${g.length}</b>개</summary>${g.length ? `<ul>${g.map(line).join('')}</ul>` : '<p class="gp-empty">기준선을 넘거나 자료가 없는 항목이 없습니다.</p>'}` +
+      `<p class="gp-note">기준 미달은 승인된 기준선을 넘은 항목, (승인 대기)는 기준이 아직 승인 전인 항목, 자료 없음은 확인이 필요한 항목입니다. 순위·점수가 아닙니다.</p></details>`;
   }
   function tooltipHTML(it, ind, mode, year, source) {
     const t = mode === 'trend' ? trendText(it.value, ind) : null;
@@ -569,6 +583,32 @@
     const allowed = new Set(numsIn(original)), bad = [...new Set(numsIn(text).filter(n => !allowed.has(n)))];
     const banned = ['좋', '나쁘', '나쁜', '위험', '열악', '우수', '심각', '양호', '낙후', '추천', '유망', '피해야', '기피', '등급', '순위'].filter(w => String(text || '').includes(w));
     return bad.length || banned.length || !String(text || '').trim() ? { ok: false, bad, banned } : { ok: true, text: String(text) };
+  }
+  // ── 사업 근거서(공무원용, 2026-10-26): 동네 보고서의 변형. 현황 → 기준 대비 → 기준 미달·확인 필요 → 출처·계산식(펼친 상태). 평가·권고 문장 없음, 결정은 담당자가 ──
+  const BRIEF_HEAD = '예산 요구·사업계획·민원 회신 첨부용 근거 자료 · 리뉴맵 원장 기반 · 판정 아님 · 결정은 담당자가';
+  const BRIEF_FOOT = '판정 아님 · 숫자마다 출처 · 결정은 담당자가';
+  const BRIEF_MAIL = 'renewmapteam@gmail.com';
+  const REPORT_MODES = [['report', '동네 보고서'], ['brief', '사업 근거서']];
+  const reportModeHTML = mode => `<div class="dash-seg rp-mode" role="group" aria-label="보고서 용도">${REPORT_MODES.map(([k, l]) => `<button type="button" data-rp-mode="${k}" aria-pressed="${k === mode}">${l}</button>`).join('')}</div>`;
+  // 정적 사이트라 HWPX를 만들 수 없다. 메일로 요청하면 scripts/export_dong_brief.py(다른 직원 작업 중)로 만들어 보낸다
+  function briefMailto(it, year) {
+    const subject = `근거서 HWPX 요청 [${it.name}·${it.code}]`, body = `동: ${it.name} (${it.code})\n기준연도: 쇠퇴 지표 ${year ?? '최신 연도'} · 생활 지표는 항목별 기준연도\n무료 · 1영업일 안에 회신합니다.`;
+    return `mailto:${BRIEF_MAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+  function briefHTML(v, it, rows) {
+    const here = v.crumbs.map(c => c.label).join(' › '), dy = rows.find(r => r.ind.series && r.year)?.year ?? null;
+    const facts = rows.filter(r => r.value !== null && !r.ind.composite && r.ind.group !== 'sum');
+    const srcOf = r => { const c = r.cell || {}; return { name: c.source_name || r.ind.source || SOURCE_DEFAULT, url: safeUrl(c.source_url), ref: c.reference_date ? String(c.reference_date).slice(0, 10) : null, formula: c.formula_text || null, rule: c.rule_version || null }; };
+    const fact = r => { const s = srcOf(r); return `<li>${icon(r.ind.icon)}<b>${esc(r.ind.label)}${r.sgLevel ? ' <small>시·군·구</small>' : ''}</b><span>${esc(rowText(r))}</span><small>${r.year ? `${esc(r.year)}년 · ` : ''}출처 ${esc(s.name)}${s.ref ? ` · 기준일 ${esc(s.ref)}` : ''}</small></li>`; };
+    const sec1 = `<section class="rp-g"><h3>1. 현황</h3>${GROUPS.filter(([g]) => facts.some(r => r.ind.group === g)).map(([g, gl]) => `<h4 class="map-h4">${esc(gl)}</h4>${g === 'safe' ? `<p class="rp-fixed">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="rp-fixed">${esc(FORE_FIXED)}</p>` : ''}<ul class="rp-facts">${facts.filter(r => r.ind.group === g).map(fact).join('')}</ul>`).join('')}</section>`;
+    const std = facts.filter(r => validStd(r.ind.standard));
+    const sec2 = `<section class="rp-g"><h3>2. 기준 대비</h3>${std.length ? `<div class="table-wrap"><table class="rp-tbl"><thead><tr><th>항목</th><th>값</th><th>기준</th><th>상태</th></tr></thead><tbody>${std.map(r => `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${esc(r.ind.standard.text)}${r.ind.standard.source ? ` · ${esc(r.ind.standard.source)}` : ''}</td><td>${esc(r.status)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="map-note">기준이 있는 항목의 값이 없습니다.</p>'}` +
+      `<p class="map-note">상태는 기준선과의 사실 비교입니다. 승인 대기 기준은 확정 수에 넣지 않습니다.</p></section>`;
+    const sec3 = `<section class="rp-g"><h3>3. 기준 미달·확인 필요 목록</h3>${gapsHTML(rows, { open: true })}</section>`;
+    const sec4 = `<section class="rp-g"><h3>4. 출처·계산식 표</h3><div class="table-wrap"><table class="rp-tbl"><thead><tr><th>항목</th><th>값</th><th>출처</th><th>기준일</th><th>계산식</th><th>규칙 버전</th></tr></thead><tbody>${facts.map(r => { const s = srcOf(r);
+      return `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name)}</td><td>${esc(s.ref || (r.year ? `${r.year}년` : '기록 없음'))}</td><td>${esc(s.formula || '기록 없음')}</td><td>${esc(s.rule || '기록 없음')}</td></tr>`; }).join('')}</tbody></table></div></section>`;
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 사업 근거서</h3><p class="rp-tools"><button type="button" class="btn ghost" data-print>🖨 인쇄·PDF</button><a class="btn ghost" href="${esc(briefMailto(it, dy))}">HWPX 파일 요청(무료 · 1영업일)</a></p></div>` +
+      `<p class="rp-intro rp-brief-head">${esc(BRIEF_HEAD)}</p><p class="rp-intro">${esc(here)} · ${esc(it.kind || '행정동')} ${esc(it.code)} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'} · 생활 지표는 항목별 기준연도</p>${sec1}${sec2}${sec3}${sec4}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
   // ── 기기 안 AI(Chrome 내장 AI의 Rewriter·Summarizer 전역 API). 문장을 서버로 보내지 않는다 ──
   // developer.chrome.com/docs/ai 확인(2026-10-24): availability()는 'unavailable'|'downloadable'|'downloading'|'available', create()는 사용자 클릭(활성화) 뒤에만,
@@ -629,7 +669,8 @@
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
-    reportSentences, verifyPolished, stdTextOf, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED };
+    reportSentences, verifyPolished, stdTextOf, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
+    gapRows, gapsHTML, briefHTML, briefMailto, reportModeHTML, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewMap = api;
@@ -649,6 +690,8 @@
   const horizons = () => (state.forecastIdx && Array.isArray(state.forecastIdx.horizons) ? state.forecastIdx.horizons.filter(isNum) : []);
   const horizon = () => (isNum(state.horizon) && horizons().includes(state.horizon) ? state.horizon : horizons()[0] ?? null);
   const avail = ind => { const v = state.index && resolve(state.index, state.route), e = v && v.level === 'emd' ? emdOf(v.emdCode) : null; return isAvailable(ind, state.index, state.living, e && e.json); };
+  // find.js '설치 현황' 카드가 쓴다: 그 묶음의 첫 지표를 고른다(묶음 탭을 누른 것과 같다)
+  api.showGroup = g => { const list = inds().filter(i => i.group === g), pick = list.find(avail) || list[0]; if (!pick) return; stopAuto(true); state.ind = pick.code; state.year = null; if (state.index !== undefined) render(); };
   // 시군구별 지연 로드, 한 번만. 아직이면 undefined를 주고, 도착하면 한 번만 다시 그린다
   const cache = new Map();
   function lazy(key, load) {
@@ -719,7 +762,8 @@
   const rowsFor = (v, m, it) => dongRows(inds(), m.json.dongs.find(d => codeOf(d) === it.code), livingMap(m.living).get(it.code), m.selYear, m.ext);
   // ── 동네 보고서(#report): 원장 문장 + 그래프 + 출처표. 인쇄는 브라우저 인쇄(@media print), HWPX는 시범 납품에서 ──
   const report = document.getElementById('reportApp');
-  let reportKey = '', polished = null; // polished: { key, text } 검증을 통과한 AI 문장만
+  let reportKey = '', polished = null, reportMode = 'report'; // polished: { key, text } 검증을 통과한 AI 문장만. reportMode: 동네 보고서 | 사업 근거서
+  api.setReportMode = m => { reportMode = REPORT_MODES.some(x => x[0] === m) ? m : 'report'; if (state.index !== undefined) render(); }; // find.js 프리셋이 쓴다
   function reportHTML(v, it, rows) {
     const D = window.RenewDashboard, sents = reportSentences(it.name, rows), here = v.crumbs.map(c => c.label).join(' › ');
     const byG = GROUPS.filter(([g]) => sents.some(s => s.group === g)).map(([g, gl]) => `<section class="rp-g"><h3>${esc(gl)}</h3>${g === 'safe' ? `<p class="rp-fixed">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="rp-fixed">${esc(FORE_FIXED)}</p>` : ''}` +
@@ -737,10 +781,12 @@
   function renderReport(v, m, it) {
     if (!report) return;
     // 생활·전망 파일이 늦게 도착하면 키가 바뀌어 다시 그린다
-    const key = it ? `${it.code}:${m.selYear}:${horizon()}:${m.living ? 'L' : ''}${m.ext && m.ext.forecast ? 'F' : ''}${state.migration ? 'M' : ''}${state.designations ? 'D' : ''}` : '';
-    if (!it) { if (reportKey !== '') report.innerHTML = `<div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 동네 보고서가 생깁니다</h3><p><a href="#map">위 지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p></div>`; reportKey = ''; return; }
+    const key = it ? `${reportMode}:${it.code}:${m.selYear}:${horizon()}:${m.living ? 'L' : ''}${m.ext && m.ext.forecast ? 'F' : ''}${state.migration ? 'M' : ''}${state.designations ? 'D' : ''}` : 'empty:' + reportMode;
     if (key === reportKey) return;
-    reportKey = key; report.innerHTML = reportHTML(v, it, rowsFor(v, m, it));
+    reportKey = key;
+    if (!it) { report.innerHTML = reportModeHTML(reportMode) + `<div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 ${reportMode === 'brief' ? '사업 근거서' : '동네 보고서'}가 생깁니다</h3><p><a href="#map">위 지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p></div>`; return; }
+    const rows = rowsFor(v, m, it);
+    report.innerHTML = reportModeHTML(reportMode) + (reportMode === 'brief' ? briefHTML(v, it, rows) : reportHTML(v, it, rows));
   }
   // 기기 안 AI: 한 번만 확인하고, 보고서가 열려 있으면 버튼 자리만 바꾼다
   let aiDet = null;
@@ -765,7 +811,8 @@
   if (report) report.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     const confirm = report.querySelector('[data-ai-confirm]');
-    if (b.hasAttribute('data-print')) { report.querySelectorAll('details').forEach(d => { d.open = true; }); window.print(); }
+    if (b.dataset.rpMode) { api.setReportMode(b.dataset.rpMode); report.querySelector(`[data-rp-mode="${b.dataset.rpMode}"]`)?.focus({ preventScroll: true }); }
+    else if (b.hasAttribute('data-print')) { report.querySelectorAll('details').forEach(d => { d.open = true; }); window.print(); }
     else if (b.hasAttribute('data-ai-run') && aiDet) {
       const next = () => { if (aiDet.status === 'available') aiRun(); else if (confirm && (aiDet.status === 'downloadable' || aiDet.status === 'downloading')) { confirm.hidden = false; confirm.querySelector('[data-ai-go]')?.focus(); } };
       if (aiDet.status === 'unknown') { b.disabled = true; detectDeviceAI(window).then(d => { aiDet = d; aiPaint(); next(); }); } else next();

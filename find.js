@@ -50,10 +50,15 @@
     { id: 'migIn', n: '청년 순유입', g: 'pop', e: '↗', units: ['sg', 'emd'], src: 'migration', sgLevel: true, ref: true, th: () => REF.MIG_PER1K, get: sgVal('migration'), op: 'ge', label: t => `청년 순유입(천 명당 +${pm(t)}명 이상)` },
     { id: 'dealDown', n: '연간 거래 감소', g: 'estate', e: '🏠', units: ['sg', 'emd'], src: 'realestate', sgLevel: true, ref: true, code: 'APT_TRADE_COUNT_YOY_PCT', th: c => (hasRe(c, 'APT_TRADE_COUNT_YOY_PCT') ? -REF.DEAL_PCT : null), get: sgVal('realestate', 'APT_TRADE_COUNT_YOY_PCT'), op: 'le', label: t => `연간 거래 ${pm(Math.abs(t))}% 이상 감소` },
     { id: 'dealUp', n: '연간 거래 증가', g: 'estate', e: '🏘', units: ['sg', 'emd'], src: 'realestate', sgLevel: true, ref: true, code: 'APT_TRADE_COUNT_YOY_PCT', th: c => (hasRe(c, 'APT_TRADE_COUNT_YOY_PCT') ? REF.DEAL_PCT : null), get: sgVal('realestate', 'APT_TRADE_COUNT_YOY_PCT'), op: 'ge', label: t => `연간 거래 ${pm(t)}% 이상 증가` },
+    // 생활 여건은 기준 이상(안쪽)과 기준 미만(바깥쪽) 칩을 나란히 둔다(2026-10-26, 공무원 프리셋이 미만 쪽을 쓴다). 같은 기준값·같은 꼬리표, 하위 N곳 정렬 아님
     { id: 'park', n: '1인당 공원 면적', g: 'life', e: '🌳', units: ['emd'], src: 'living', th: c => livStd(c, 'PARK_AREA_PER_CAPITA'), get: livingVal('PARK_AREA_PER_CAPITA'), op: 'ge', label: t => `1인당 공원 ${pm(t)}㎡ 이상` },
+    { id: 'parkLow', n: '1인당 공원 면적 미만', g: 'life', e: '🌳', units: ['emd'], src: 'living', th: c => livStd(c, 'PARK_AREA_PER_CAPITA'), get: livingVal('PARK_AREA_PER_CAPITA'), op: 'lt', label: t => `1인당 공원 ${pm(t)}㎡ 미만` },
     { id: 'lib', n: '공공도서관 거리', g: 'life', e: '📚', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'LIB_NEAREST_M') ? REF.LIB_M : null), get: livingVal('LIB_NEAREST_M'), op: 'le', label: t => `공공도서관 ${pm(t / 1000)}km 안` },
+    { id: 'libFar', n: '공공도서관 거리 밖', g: 'life', e: '📚', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'LIB_NEAREST_M') ? REF.LIB_M : null), get: livingVal('LIB_NEAREST_M'), op: 'gt', label: t => `공공도서관 ${pm(t / 1000)}km 밖` },
     { id: 'hosp', n: '병의원(1만 명당)', g: 'life', e: '🏥', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'HOSP_PER10K') ? REF.HOSP_PER10K : null), get: livingVal('HOSP_PER10K'), op: 'ge', label: t => `병의원 1만 명당 ${pm(t)}곳 이상` },
+    { id: 'hospLow', n: '병의원(1만 명당) 미만', g: 'life', e: '🏥', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'HOSP_PER10K') ? REF.HOSP_PER10K : null), get: livingVal('HOSP_PER10K'), op: 'lt', label: t => `병의원 1만 명당 ${pm(t)}곳 미만` },
     { id: 'bus', n: '버스정류장 밀도', g: 'life', e: '🚌', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'BUS_STOP_DENSITY') ? REF.BUS_PER_KM2 : null), get: livingVal('BUS_STOP_DENSITY'), op: 'ge', label: t => `버스정류장 ㎢당 ${pm(t)}개 이상` },
+    { id: 'busLow', n: '버스정류장 밀도 미만', g: 'life', e: '🚌', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'BUS_STOP_DENSITY') ? REF.BUS_PER_KM2 : null), get: livingVal('BUS_STOP_DENSITY'), op: 'lt', label: t => `버스정류장 ㎢당 ${pm(t)}개 미만` },
     { id: 'foreDown', n: '인구 감소 전망', g: 'fore', e: '🔮', units: ['emd'], src: 'forecast', ref: true, th: c => (foreKey(c) && foreH(c) ? -REF.FORE_PCT : null), get: foreVal, op: 'le', label: (t, c) => `${foreH(c) ?? ''}년 인구 ${pm(Math.abs(t))}% 이상 감소 전망` },
     { id: 'foreUp', n: '인구 증가 전망', g: 'fore', e: '📈', units: ['emd'], src: 'forecast', ref: true, th: c => (foreKey(c) && foreH(c) ? 0 : null), get: foreVal, op: 'gt', label: (t, c) => `${foreH(c) ?? ''}년 인구 증가 전망` },
   ];
@@ -94,16 +99,17 @@
     return M.leavesOf(idx, scope && scope.sido ? scope.sido : null).map(s => ({ code: String(s.code5), name: s.name, sub: [parentName(s), sidoName(s)].filter(Boolean).join(' · '), sg: s }));
   }
   // AND 결합: 고른 조건 중 이 범위에서 쓸 수 있는 것만 센다. 값이 없는 조건이 있으면 '자료 없음'(맞음으로 세지 않는다)
+  // ids의 원소가 배열이면 그 안은 OR 묶음(프리셋 전용. 하나라도 맞으면 맞음, 맞는 것 없이 자료 없음이 있으면 자료 없음). 묶음 사이는 AND
   function evaluate(areas, ids, ctx, unit) {
-    const conds = (ids || []).map(condOf).filter(Boolean).map(c => ({ c, s: condState(c, ctx, unit) }));
-    const use = conds.filter(x => x.s.ok), skipped = conds.filter(x => !x.s.ok).map(x => x.c.id);
+    const groups = (ids || []).map(g => (Array.isArray(g) ? g : [g]).map(condOf).filter(Boolean).map(c => ({ c, s: condState(c, ctx, unit) })));
+    const use = groups.map(g => g.filter(x => x.s.ok)).filter(g => g.length), skipped = groups.flat().filter(x => !x.s.ok).map(x => x.c.id);
     const res = new Map();
     for (const a of areas) {
-      const r = use.map(({ c, s }) => { const v = c.get(a, ctx); return v === null || v === undefined ? null : TEST[c.op](v, s.th); });
+      const r = use.map(g => { const t = g.map(({ c, s }) => { const v = c.get(a, ctx); return v === null || v === undefined ? null : TEST[c.op](v, s.th); }); return t.includes(true) ? true : t.includes(null) ? null : false; });
       res.set(a.code, !use.length ? 'idle' : r.every(v => v === true) ? 'hit' : r.includes(false) ? 'miss' : 'na');
     }
     const hits = areas.filter(a => res.get(a.code) === 'hit');
-    return { use: use.map(x => x.c.id), skipped, total: areas.length, hits, nodata: areas.filter(a => res.get(a.code) === 'na').length, res };
+    return { use: use.flat().map(x => x.c.id), groups: use.map(g => g.map(x => x.c.id)), skipped, total: areas.length, hits, nodata: areas.filter(a => res.get(a.code) === 'na').length, res };
   }
   // 목록 순서: 행정코드 순 또는 가나다 순만. 값 크기로 줄 세우지 않는다(D13)
   function sortAreas(list, by) {
@@ -129,10 +135,11 @@
     return { w, h, paths };
   }
   function chipsHTML(sel, ctx, unit) {
+    const flat = (sel || []).flat(), inOr = id => (sel || []).some(x => Array.isArray(x) && x.includes(id));
     return GROUPS.map(([g, gl]) => {
       const list = CONDS.filter(c => c.g === g);
       return `<fieldset class="fd-grp"><legend>${esc(gl)}</legend><div class="fd-chips">${list.map(c => {
-        const st = condState(c, ctx, unit), on = sel.includes(c.id), tags = st.ok ? tagsOf(c, ctx) : [st.why];
+        const st = condState(c, ctx, unit), on = flat.includes(c.id), tags = (st.ok ? tagsOf(c, ctx) : [st.why]).concat(inOr(c.id) ? ['또는'] : []);
         return `<button type="button" class="fd-chip${st.ok ? '' : ' is-off'}${on ? ' is-on' : ''}" data-fd-cond="${esc(c.id)}" aria-pressed="${on}"${st.ok || on ? '' : ' aria-disabled="true"'}><span class="fd-e" aria-hidden="true">${esc(c.e)}</span>${esc(chipLabel(c, ctx, st))}${tags.map(t => `<small>${esc(t)}</small>`).join('')}</button>`;
       }).join('')}</div>${g === 'estate' ? `<p class="fd-gnote">${esc(ESTATE_NOTE)} · 아파트 매매 신고 건수 최근 12개월 합을 직전 12개월과 비교(원장 값) · ${esc(M.ESTATE_PROV)}</p>` : g === 'fore' ? `<p class="fd-gnote">${esc(M.FORE_FIXED)}</p>` : ''}</fieldset>`;
     }).join('');
@@ -157,9 +164,11 @@
     const emo = ev.use.map(id => condOf(id).e).join(' ');
     const skip = ev.skipped.length ? `<p class="fd-skip">이 범위에서 쓸 수 없어 빠진 조건 ${ev.skipped.length}개: ${esc(ev.skipped.map(id => condOf(id).e + ' ' + chipLabel(condOf(id), ctx, condState(condOf(id), ctx, unit))).join(', '))}</p>` : '';
     const head = `<p class="fd-note">${esc(NOTE)} · ${esc(UNIT[unit])} 단위${unit === 'sg' ? ' · 시·군·구 값은 그 안 읍·면·동 값의 중앙값' : ''}</p>`;
+    const groups = ev.groups || ev.use.map(id => [id]), lbl = id => condOf(id).e + ' ' + chipLabel(condOf(id), ctx, condState(condOf(id), ctx, unit));
+    const conds = ev.use.length ? `<p class="fd-conds">쓰는 조건: ${groups.map(g => g.map(id => esc(lbl(id))).join(' <b>또는</b> ')).join(' <b>+</b> ')}</p>` : '';
     if (!ev.use.length) return head + skip + `<p class="fd-count is-idle"><b>–</b><small>조건 칩을 하나 이상 고르면 해당하는 곳을 모두 보여 줍니다. 여러 개를 고르면 모두 맞는 곳(AND)만 남습니다.</small></p>`;
     const list = sortAreas(ev.hits, by), p = paginate(list, page);
-    return head + skip + `<p class="fd-count" aria-live="polite">조건에 맞는 곳 <b data-ck="fd-n" data-count="${ev.hits.length}">${ev.hits.length}</b>곳 <small>/ 전체 ${esc(M.fmt(areas.length))}곳${ev.nodata ? ` · 자료가 없어 판단하지 않은 곳 ${esc(M.fmt(ev.nodata))}곳` : ''}</small></p>` +
+    return head + skip + conds + `<p class="fd-count" aria-live="polite">조건에 맞는 곳 <b data-ck="fd-n" data-count="${ev.hits.length}">${ev.hits.length}</b>곳 <small>/ 전체 ${esc(M.fmt(areas.length))}곳${ev.nodata ? ` · 자료가 없어 판단하지 않은 곳 ${esc(M.fmt(ev.nodata))}곳` : ''}</small></p>` +
       LIST_MARK + `<div class="dash-seg fd-sort" role="group" aria-label="목록 순서"><button type="button" data-fd-sort="code" aria-pressed="${by !== 'name'}">행정코드 순</button><button type="button" data-fd-sort="name" aria-pressed="${by === 'name'}">가나다 순</button></div>` +
       (list.length ? `<div data-state="ready"><h3 class="fd-list-title" data-fd-list-start tabindex="-1">전체 ${p.total}곳 중 ${p.from}–${p.to}곳</h3><ol class="fd-list">${p.items.map(a => `<li><span class="fd-n"><b>${esc(a.name)}</b><small>${esc(a.sub)} · ${esc(a.code)}</small></span><span class="fd-b" aria-label="맞는 조건">${esc(emo)}</span><a href="${esc(hashOf(a, ctx))}" data-fd-go>${a.dong ? '이 동 보기' : '이 지역 보기'}</a></li>`).join('')}</ol>${pagerHTML(p)}</div>`
         : `<div class="fd-empty" data-state="empty" role="status"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>조건을 모두 만족하는 곳이 없습니다.<br>조건을 하나 빼 보세요.</p><button type="button" class="btn ghost" data-fd-relax>마지막 조건 빼기</button></div>`);
@@ -169,7 +178,29 @@
     if (scope.sg) return emd ? 'empty' : 'loading';
     return sgGeo === undefined ? 'loading' : 'empty';
   }
-  const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState };
+  // ── 공무원 바로 가기(#gov): 프리셋 = 기존 찾기 조건의 묶음(docs/gov/public_officer_usecases.md 부록 B). 결과는 조건에 해당하는 곳 전부(코드·가나다 순)이며 점수·순위·추천이 아니다(D13·D17) ──
+  // 안전 인프라는 공식 기준이 없어 찾기 조건으로 만들지 않는다(값 임계치로 걸러 목록을 내면 D17이 금지한 하위 목록과 같다). 설치 현황 카드는 동 상세의 안전 인프라 묶음으로 보낸다
+  // 법령·사업명은 부록 B 문구 그대로. 미확인 조문은 법무 확인 뒤 지운다
+  const DECIDE = '결정은 담당자가 합니다';
+  const GOV_NOTE = '3번 클릭: 바로 가기 → 시·군·구 → 동. 조건에 해당하는 동 목록과 첨부할 근거서를 받습니다. 점수·순위를 매기지 않습니다.';
+  const PRESETS = [
+    { id: 'cctv', e: '🎥', n: 'CCTV·보안등 설치 현황', why: '동을 고르면 CCTV·보안등 밀도와 경찰관서까지 거리를 따로 보여 드립니다. 시설 현황이며 범죄·안전 수준을 뜻하지 않습니다.', conds: [], note: '조건 없음 · 동을 고르면 안전 인프라 카드로', action: 'safe', law: '개인정보 보호법 제25조' },
+    { id: 'yearend', e: '💰', n: '연말 소규모 정비 후보', why: '노후 건축물 비율과 쇠퇴 요건, 생활 지표 기준 대비 해당 여부를 한 번에 확인합니다. 사업 선정 순위가 아닙니다.', conds: ['aging', 'met', ['parkLow', 'libFar']], law: '지방재정법 제37조(투자심사)·제50조(이월)' },
+    { id: 'depop', e: '🏳', n: '지방소멸대응기금 준비', why: '인구감소지역·관심지역의 인구·고령 변화를 읍면동별로 모아 봅니다.', conds: [['depop', 'concern'], 'pop30'], condsEmd: ['aged'], law: '지방소멸대응기금(행안부), 인구감소지역 지원 특별법' },
+    { id: 'housing', e: '🏚', n: '노후주거지 정비 후보', why: '쇠퇴 요건과 노후 건축물 비율을 함께 충족하는 동을 보여 드립니다. 활성화지역 판정이 아닙니다.', conds: ['aging', 'met', 'pop30', 'biz10'], law: '노후주거지정비 지원사업(국토부), 도시재생 활성화 및 지원에 관한 특별법' },
+    { id: 'soc', e: '🌳', n: '생활SOC 현황', why: '공원 면적·도서관 거리·병의원 수를 기준과 견줘 봅니다. 도서관 거리·병의원 수는 참고 구간입니다.', conds: [['parkLow', 'libFar', 'hospLow']], law: '도시공원 및 녹지 등에 관한 법률 시행규칙 제4조, 생활SOC 최저기준' },
+    { id: 'brief', e: '📄', n: '의회·감사·민원 근거', why: '출처·기준일·계산식이 붙은 숫자를 사업 근거서로 인쇄합니다. 민원인 정보는 입력하지 마세요.', conds: [], note: '조건 없음 · 동을 고르면 사업 근거서로', action: 'brief', law: '지방자치법 제49조·제142조·제150조' },
+  ];
+  const presetOf = id => PRESETS.find(p => p.id === id) || null;
+  // 프리셋의 조건 목록: 읍·면·동 범위(unit emd)면 condsEmd를 덧붙인다. 묶음(배열)은 복사한다
+  const presetConds = (p, unit) => p.conds.map(g => (Array.isArray(g) ? [...g] : g)).concat(unit === 'emd' ? p.condsEmd || [] : []);
+  function govHTML(ctx, scopeName) {
+    const unit = scopeName ? 'emd' : 'sg', lbl = id => { const c = condOf(id); return c.e + ' ' + (ctx && ctx.index ? chipLabel(c, ctx, condState(c, ctx, unit)) : c.n); };
+    const condText = p => p.note || presetConds(p, unit).map(g => (Array.isArray(g) ? g.map(lbl).join(' 또는 ') : lbl(g))).join(' + ') + (unit !== 'emd' && p.condsEmd ? ` (+ 읍·면·동 범위에서 ${p.condsEmd.map(lbl).join(', ')})` : '');
+    return `<p class="gov-note">${esc(GOV_NOTE)}<br>범위: ${scopeName ? `<b>${esc(scopeName)}</b> 안 읍·면·동` : '<b>시·도와 시·군·구를 먼저 고르세요</b>(지도에서 마지막으로 연 시·군·구가 있으면 그대로 씁니다)'}</p>` +
+      `<ul class="gov-cards">${PRESETS.map(p => `<li><button type="button" class="gov-card" data-gov-preset="${esc(p.id)}"><span class="gov-e" aria-hidden="true">${p.e}</span><b>${esc(p.n)}</b><span class="gov-why">${esc(p.why)}</span><span class="gov-c">${esc(condText(p))}</span><span class="gov-law">${esc(p.law)}</span><span class="gov-d">${esc(DECIDE)}</span></button></li>`).join('')}</ul>`;
+  }
+  const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML };
   if (node) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewFind = api;
@@ -177,7 +208,8 @@
   // ── 브라우저 ──
   const root = document.getElementById('findApp'); if (!root) return;
   const fetchJson = url => (window.renewFetch ? window.renewFetch(url) : fetch(url, { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
-  const st = { sel: [], by: 'code', page: 1, scope: { sido: '', sg: '' }, ctx: { index: null }, sgGeo: null, emd: new Map(), svgKey: '' };
+  const st = { sel: [], by: 'code', page: 1, scope: { sido: '', sg: '' }, ctx: { index: null }, sgGeo: null, emd: new Map(), svgKey: '', lastSg: null, lastDong: null, hint: '', govKey: '' };
+  const gov = document.querySelector('#gov [data-gov]');
   root.innerHTML = `<div class="fd-scope" data-fd-scope></div><div class="fd-grid"><div class="fd-left" data-fd-chips></div><div class="fd-right"><div data-fd-out></div><div class="fd-map" data-fd-map><div class="fd-wait" data-state="loading" role="status"><img src="mascot/crew/saeum-waiting.svg" width="104" height="104" alt="" aria-hidden="true"><p>경계 자료를 불러오는 중입니다.</p></div></div><div data-fd-list></div></div></div>`;
   const $ = s => root.querySelector(s);
   const unit = () => (st.scope.sg ? 'emd' : 'sg');
@@ -195,7 +227,7 @@
     const pname = s => { const p = String(s.parent || ''); return p.length === 5 ? ((idx.sigungu.find(x => String(x.code5) === p) || {}).name || '') + ' ' : ''; };
     return `<label class="map-select">범위<select data-fd-sido><option value="">전국</option>${(idx.sido || []).map(s => `<option value="${esc(s.code2)}"${String(s.code2) === sido ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>` +
       (sido ? `<label class="map-select">시·군·구<select data-fd-sg><option value="">시·도 전체</option>${leaves.map(s => `<option value="${esc(s.code5)}"${String(s.code5) === st.scope.sg ? ' selected' : ''}>${esc(pname(s) + s.name)}</option>`).join('')}</select></label>` : '') +
-      `<span class="map-step">단위 ${esc(UNIT[unit()])}</span>`;
+      `<span class="map-step">단위 ${esc(UNIT[unit()])}</span>` + (st.hint ? `<p class="fd-hint" role="status">${esc(st.hint)}</p>` : '');
   }
   function render() {
     const c0 = st.ctx; if (!c0.index) return;
@@ -203,6 +235,7 @@
     if (st.scope.sg) { e = emdCtx(st.scope.sg); ctx = { ...c0, emd: e && e.json, lv: e && e.lv, forecast: e && e.fc }; }
     $('[data-fd-scope]').innerHTML = scopeHTML();
     $('[data-fd-chips]').innerHTML = chipsHTML(st.sel, ctx, unit());
+    renderGov(ctx);
     if (st.scope.sg && !e) { $('[data-fd-out]').innerHTML = '<p class="fd-wait" data-state="loading" role="status">읍·면·동 자료를 불러오는 중입니다.</p>'; $('[data-fd-list]').innerHTML = ''; return; }
     const areas = areasOf(st.scope, ctx), ev = evaluate(areas, st.sel, ctx, unit());
     const [head, list] = resultHTML(ev, areas, ctx, unit(), st.by, st.page).split(LIST_MARK); // 큰 숫자 → 지도 → 목록 순서로 놓는다
@@ -222,13 +255,45 @@
     }
     box.querySelectorAll('path[data-code]').forEach(p => { const r = ev.res.get(p.dataset.code) || 'na'; p.setAttribute('class', 'is-' + r); });
   }
+  // 공무원 바로 가기: 카드 → 그 조건으로 찾기. 범위는 찾기에서 고른 시·군·구, 없으면 지도에서 마지막으로 연 시·군·구, 그것도 없으면 선택 안내
+  const scopeName = () => { const s = st.scope.sg ? (st.ctx.index.sigungu || []).find(x => String(x.code5) === st.scope.sg) : null; return s ? s.name : null; };
+  function renderGov(ctx) {
+    if (!gov) return;
+    const key = `${st.scope.sg}:${ctx.lv ? 'L' : ''}${ctx.living ? 'I' : ''}${ctx.designations ? 'D' : ''}`; if (key === st.govKey) return; st.govKey = key;
+    gov.innerHTML = govHTML(ctx, scopeName());
+  }
+  function trackHash() {
+    const r = M.parseHash(location.hash), idx = st.ctx.index; if (!r || !idx) return;
+    const leaf = r.gu || r.sigungu, s = leaf ? M.leavesOf(idx).find(x => String(x.code5) === String(leaf)) : null;
+    if (s) st.lastSg = { sido: String(s.sido2), sg: String(s.code5) };
+    st.lastDong = r.dong || null;
+  }
+  // 지도 해시로 보낸다. 같은 해시면 hashchange를 직접 내서 workspace.js가 지도 패널을 열게 한다
+  function goMap(hash) { if (location.hash !== hash) location.hash = hash; else dispatchEvent(new HashChangeEvent('hashchange')); }
+  function applyPreset(id) {
+    const p = presetOf(id); if (!p) return;
+    const sg = st.scope.sg || (st.lastSg && st.lastSg.sg), r = sg ? M.leafRoute(st.ctx.index, sg) : null, mapHash = r ? M.toHash({ ...r, dong: st.lastDong }) : '#map';
+    if (p.action === 'safe') { if (M.showGroup) M.showGroup('safe'); goMap(mapHash); return; }
+    if (p.action === 'brief') { if (M.setReportMode) M.setReportMode('brief'); if (st.lastDong) location.hash = '#report'; else goMap(mapHash); return; } // 동이 이미 골라져 있으면 근거서로 바로
+    if (!st.scope.sg && st.lastSg) st.scope = { ...st.lastSg };
+    st.sel = presetConds(p, unit()); st.page = 1;
+    st.hint = st.scope.sg ? '' : '시·도와 시·군·구를 고르면 그 안 읍·면·동에서 찾습니다.';
+    render();
+    const f = root.querySelector(st.scope.sg ? '[data-fd-out]' : '[data-fd-sido]'); if (!f) return;
+    f.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    (st.scope.sg ? root.querySelector('[data-fd-sort="code"]') : f)?.focus({ preventScroll: true });
+  }
+  if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) applyPreset(b.dataset.govPreset); });
+  addEventListener('hashchange', trackHash);
+  // OR 묶음 안의 칩을 끄면 그 칩만 빠진다(한 개 남으면 보통 조건이 된다)
+  const dropId = (sel, id) => sel.map(g => (Array.isArray(g) ? g.filter(x => x !== id) : g)).filter(g => (Array.isArray(g) ? g.length : g !== id)).map(g => (Array.isArray(g) && g.length === 1 ? g[0] : g));
   root.addEventListener('click', ev => {
     if (ev.target.closest('[data-fd-relax]')) {
-      const removed = st.sel.pop(); st.page = 1; render();
-      root.querySelector(`[data-fd-cond="${CSS.escape(removed || '')}"]`)?.focus({ preventScroll: true }); return;
+      const removed = st.sel.pop(), rid = Array.isArray(removed) ? removed[0] : removed; st.page = 1; render();
+      root.querySelector(`[data-fd-cond="${CSS.escape(rid || '')}"]`)?.focus({ preventScroll: true }); return;
     }
     const b = ev.target.closest('[data-fd-cond]');
-    if (b) { const id = b.dataset.fdCond, on = st.sel.includes(id); if (b.getAttribute('aria-disabled') === 'true' && !on) return; st.sel = on ? st.sel.filter(x => x !== id) : [...st.sel, id]; st.page = 1; render(); root.querySelector(`[data-fd-cond="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }); return; }
+    if (b) { const id = b.dataset.fdCond, on = st.sel.flat().includes(id); if (b.getAttribute('aria-disabled') === 'true' && !on) return; st.sel = on ? dropId(st.sel, id) : [...st.sel, id]; st.page = 1; render(); root.querySelector(`[data-fd-cond="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }); return; }
     const s = ev.target.closest('[data-fd-sort]'); if (s) { st.by = s.dataset.fdSort; st.page = 1; render(); root.querySelector(`[data-fd-sort="${st.by}"]`)?.focus({ preventScroll: true }); return; }
     const p = ev.target.closest('[data-fd-page]');
     if (p && !p.disabled) {
@@ -247,6 +312,7 @@
     const s = ev.target.closest('select'); if (!s) return;
     if ('fdSido' in s.dataset) { st.scope = { sido: s.value, sg: '' }; st.page = 1; }
     else if ('fdSg' in s.dataset) { st.scope = { sido: st.scope.sido, sg: s.value }; st.page = 1; }
+    if (st.scope.sg) st.hint = '';
     render(); root.querySelector(s.hasAttribute('data-fd-sido') ? '[data-fd-sido]' : '[data-fd-sg]')?.focus({ preventScroll: true });
   });
   const ok = (j, k) => (j && Array.isArray(j[k]) ? j : null);
@@ -254,7 +320,7 @@
     .then(([index, li, des, mig, fi, re]) => {
       st.ctx = { index: ok(index, 'sigungu'), living: ok(li, 'indicators'), designations: ok(des, 'items'), migration: ok(mig, 'sigungu'), forecastIdx: ok(fi, 'horizons'), realestate: ok(re, 'sigungu') };
       if (!st.ctx.index) { root.innerHTML = '<div class="fd-empty" data-state="error" role="alert"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>전국 원장 자료를 불러오지 못했습니다.<br>네트워크를 확인한 뒤 다시 열어 주세요.</p></div>'; return; }
-      st.sgGeo = undefined; render();
+      st.sgGeo = undefined; trackHash(); render();
       fetchJson('data/national/sigungu.geojson').then(g => { st.sgGeo = g && Array.isArray(g.features) ? g : null; st.svgKey = ''; render(); });
     });
 })();

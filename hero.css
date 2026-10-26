@@ -1,7 +1,7 @@
 /* 첫 화면: 왼쪽 문구·검색·3단계, 오른쪽(모바일은 제목 바로 아래) 전국 지도. 색은 styles.css 토큰만 쓴다. */
 .hero { padding: 20px 0 36px; }
 .hero-grid { max-width: 1360px; margin: 0 auto; padding: 0 20px; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "head" "map" "live" "search" "steps" "cta"; } /* 모바일: 지도가 제목 바로 아래 */
+  grid-template-areas: "head" "map" "live" "search" "steps" "gov" "cta"; } /* 모바일: 지도가 제목 바로 아래 */
 .hero-grid > * { min-width: 0; } /* 그리드 칸이 글자 폭으로 늘어나 가로 넘침을 만들지 않게 */
 .hero-head { grid-area: head; } .hero-search { grid-area: search; } .hero-live { grid-area: live; } .hero-map { grid-area: map; } .hero-steps { grid-area: steps; } .hero-cta { grid-area: cta; }
 .hero-side { display: contents; } /* 모바일: 왼쪽 묶음을 풀어 지도 사이에 끼운다 */
@@ -39,6 +39,8 @@
 .hero-steps li { display: flex; gap: 12px; align-items: center; animation: rm-rise .5s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(.3s + var(--i, 0) * .15s); }
 .hero-steps .ico { width: 36px; height: 36px; margin: 0; flex: none; }
 .hero-steps b { display: block; font-size: 15px; } .hero-steps span { display: block; font-size: 14px; color: var(--dim); line-height: 1.5; }
+.hero-gov { grid-area: gov; margin: 0; font-size: 15px; font-weight: 700; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--ink); border-radius: 12px; padding: 10px 14px; }
+.hero-gov small { display: block; font-weight: 400; font-size: 13px; color: var(--dim); }
 .hero-cta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .hero-cta .btn { padding: 12px 18px; font-size: 16px; }
 .hero-mascot { width: 56px; height: auto; margin-left: auto; }

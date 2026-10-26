@@ -10,7 +10,7 @@
   }
   function panelFromHash(hash) {
     const value = String(hash || '').replace(/^#/, '').split('/')[0];
-    if (value === 'find') return 'filters';
+    if (value === 'find' || value === 'gov') return 'filters';
     if (value === 'report') return 'evidence';
     return 'map';
   }
@@ -44,7 +44,7 @@
     }));
     document.querySelectorAll('a[href^="#"]').forEach(link => link.addEventListener('click', () => {
       const name = link.getAttribute('href');
-      if (/^#(map(?:\/|$)|find$|report$)/.test(name)) show(panelFromHash(name));
+      if (/^#(map(?:\/|$)|find$|gov$|report$)/.test(name)) show(panelFromHash(name));
     }));
     window.addEventListener('hashchange', () => show(panelFromHash(location.hash)));
     document.addEventListener('keydown', event => {
