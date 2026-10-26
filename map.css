@@ -390,7 +390,6 @@
 .dg-ref { font-size: 65%; line-height: 0; color: var(--dim); }
 .dg-small { margin: 0 0 4px; font-size: 12px; color: var(--dim); overflow-wrap: anywhere; }
 .dg-fi { display: block; font-size: 12px; color: var(--dim); }
-.dg-end { margin: 12px 0 0; }
 .dg-lead { margin: 0 0 4px; font-size: 14px; font-weight: 700; }
 .dg-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .dg-table th, .dg-table td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
@@ -419,5 +418,4 @@
   .dg-onepage .dg-box th, .dg-onepage .dg-box td, .dg-onepage .dg-table th, .dg-onepage .dg-table td { border: 0.5pt solid #000; padding: 1.5pt 4pt; }
   .dg-onepage .dg-box th, .dg-onepage .dg-table th { background: #d9d9d9; }
   .dg-onepage .dg-tbl { margin: 0 0 4pt; break-inside: avoid; } .dg-onepage .dg-tbl-h b { font-size: 9pt; }
-  .dg-onepage .dg-end { font-size: 10pt; margin: 4pt 0 0; }
 }

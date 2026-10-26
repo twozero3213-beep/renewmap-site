@@ -132,7 +132,6 @@
   const PURPOSES = { 예산: '예산 요구 근거 자료', 공모: '공모 사전 검토 자료', 민원: '민원 회신 참고 자료' };
   const SAFETY_DISCLAIMER = '이 수치는 시설 현황이며 범죄 발생이나 안전 수준을 의미하지 않습니다.';
   const UNSETTLED = () => FMT().unsettled_status || ['추가확인', '충돌', '폐기'];
-  const END_MARK = '끝.';
   const SENTENCE_MAX = 60;
   const SRC_HEAD = ref => `출처: 국토교통부·행정안전부·통계청 등 공공데이터(${ref}) · 가공: 리뉴맵`;   // 화면용 머리말. 원본 기관명이 앞, 가공(리뉴맵)이 뒤
   const GROUPS = [
@@ -486,8 +485,7 @@
     blocks.push(block('table', '', { rows: fRows, widths: [26, 56, 18], caption: '붙임 2 표. 지표별 계산식' }));
     // 붙임 3. 출처 목록: 본문 [n]의 주석. 문서 맨 끝에 작은 글자로 둔다
     blocks.push(block('h1', '붙임 3. 출처 목록'));
-    src.list.forEach((s, n) => { blocks.push(block('para', sourceLine(n + 1, s), { small: true })); blocks.push(block('para', s.url, { small: true })); });
-    blocks.push(block('end', END_MARK));
+    src.list.forEach((s, n) => { blocks.push(block('para', sourceLine(n + 1, s), { small: true })); blocks.push(block('para', s.url, { small: true })); });   // '끝' 표시는 쓰지 않는다
 
     finish(blocks);
     return { kind: 'full', title: blocks[0].text, blocks, sources: src.list, cells: brief.cells, snapshot: brief.snapshot, templateVersion: TP.version, footer: `리뉴맵 · 원장 ${String(brief.snapshot).slice(0, 8)} · `,
@@ -541,7 +539,7 @@
       const k = one.overview_keys.map((key, i) => [key, [brief.region, `${brief.year}년`, govDate(brief.writtenOn), TP.overview_basis][i]]);
       const h1 = one.headings, summary = lines.map((t, i) => block('para', t, { refs: refsIn(t), emph: true, strong: i === 0 })), critBlock = block('table', '', { rows: [head, ...rows], widths, caption: '표 1. 기준 대비' });
       const blocks = [block('title', one.title.replace('{dong}', brief.dongName)), block('box', '', { rows: k, widths: [22, 78] }), block('h1', h1[0]), ...summary, block('h1', h1[1]), critBlock,
-        block('para', one.note.join(' ')), block('h1', h1[2]), ...src.list.map((s, n) => block('para', sourceLine(n + 1, s), { small: true })), block('end', END_MARK)];
+        block('para', one.note.join(' ')), block('h1', h1[2]), ...src.list.map((s, n) => block('para', sourceLine(n + 1, s), { small: true }))];
       finish(blocks);
       return { kind: 'onepage', title: blocks[0].text, blocks, sources: src.list, cells: brief.cells, snapshot: brief.snapshot, templateVersion: TP.version, footer: `리뉴맵 · 원장 ${String(brief.snapshot).slice(0, 8)} · `,
         parts: { box: blocks[1], summary, crit: critBlock }, src, brief, writtenOn: brief.writtenOn, sizes: 'onepage', onepage: true, byCode, facts, rows: nRows };
@@ -573,7 +571,7 @@
     ['lead', 'lead', 1, 0], ['table_b', 'table', 1, 0], ['body_b', 'body', 1, 0], ['body_sup', 'body', 0, 1], ['lead_sup', 'lead', 0, 1]];
   const CH = Object.fromEntries(CHAR_DEF.map(([k], i) => [k, i]));
   const charKey = (ch, look) => (!look || (look === 'b' && CHAR_DEF[CH[ch]][2]) ? ch : `${ch}_${look}`);
-  const PARA_ORDER = ['cell', 'title', 'para', 'h1', 'h2', 'bullet', 'small', 'end', 'gap', 'footer', 'cell_c', 'lead'], PR = Object.fromEntries(PARA_ORDER.map((k, i) => [k, i]));
+  const PARA_ORDER = ['cell', 'title', 'para', 'h1', 'h2', 'bullet', 'small', 'gap', 'footer', 'cell_c', 'lead'], PR = Object.fromEntries(PARA_ORDER.map((k, i) => [k, i]));
   const SHORT_CELL = 14;     // hwpx.SHORT_CELL과 같다: 본문 칸이 모두 짧은 열(값·기준일·출처 번호)은 가운데 정렬
   const TYP = '<hh:typeInfo familyType="FCAT_GOTHIC" weight="6" proportion="4" contrast="0" strokeVariation="1" armStyle="1" letterform="1" midline="1" xHeight="1"/>';
   const LANGS = ['HANGUL', 'LATIN', 'HANJA', 'JAPANESE', 'OTHER', 'SYMBOL', 'USER'];
@@ -587,7 +585,7 @@
     return {
       cell: ['LEFT', 0, 0, 0, S.tls, 0], cell_c: ['CENTER', 0, 0, 0, S.tls, 0], title: ['CENTER', 0, 1200, 0, S.ls, 1], para: ['JUSTIFY', 0, S.after, 0, S.ls, 1],
       lead: ['LEFT', 0, S.after, 0, S.ls, 1], h1: ['LEFT', 0, 300, 1, S.ls, 1], h2: ['LEFT', 1134, 300, 1, S.ls, 1], bullet: ['LEFT', 1134, S.after, 0, S.ls, 1],
-      small: ['LEFT', 0, S.after, 0, S.ls, 1], end: ['LEFT', 0, S.after, 0, S.ls, 1], gap: ['JUSTIFY', 0, S.gapAfter, 0, S.ls, 0], footer: ['CENTER', 0, 0, 0, S.ls, 0],
+      small: ['LEFT', 0, S.after, 0, S.ls, 1], gap: ['JUSTIFY', 0, S.gapAfter, 0, S.ls, 0], footer: ['CENTER', 0, 0, 0, S.ls, 0],
     };
   }
   const paraPr = (id, [align, left, next, keep, ls, keepLines]) => {
@@ -646,7 +644,6 @@
       else if (b.kind === 'h1') out += para('h1', b.text, 'h1');
       else if (b.kind === 'h2') out += para('h2', b.text, 'h2');
       else if (b.kind === 'bullet') out += para('bullet', '', 'body', [['- ', ''], ...textRuns(b.text)]);
-      else if (b.kind === 'end') out += para('end', `  ${b.text}`, 'body');
       else if (b.small) out += para('small', b.text, 'small');                      // 출처 목록(주석): 작은 글자
       else if (b.strong) out += para('lead', '', 'lead', textRuns(b.text));         // 결론 문장(두괄식): 굵고 크게
       else out += para('para', '', 'body', textRuns(b.text, b.emph));
@@ -882,7 +879,6 @@
       else if (b.kind === 'h1') out += `<h4 class="dg-h1">${he(b.text)}</h4>`;
       else if (b.kind === 'h2') out += `<h5 class="dg-h2">${he(b.text)}</h5>`;
       else if (b.kind === 'bullet') out += `<p class="dg-bullet">- ${runsHTML(b.text)}</p>`;
-      else if (b.kind === 'end') out += `<p class="dg-end">${he(b.text)}</p>`;
       else out += `<p class="${b.cls === 'src' ? 'dg-src' : b.small ? 'dg-small' : b.strong ? 'dg-p dg-key' : 'dg-p'}">${b.small || b.cls === 'src' ? he(b.text) : runsHTML(b.text, b.emph)}${opt.copy && doc.parts && doc.parts.summary && doc.parts.summary.includes(b) ? `<button type="button" class="dg-copy-s" data-copy-sentence="${doc.parts.summary.indexOf(b)}">${COPY_SENT}</button>` : ''}</p>`;
     }
     flush();
