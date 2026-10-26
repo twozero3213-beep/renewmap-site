@@ -294,10 +294,10 @@
   // 표 2 기준 대비. rule: 코드 → { cond, verdict, status }
   function criteriaTable(items, livingIdx, by) {
     const rows = [['항목', '값', '기준', '기준 출처·설명', '기준 상태', '해당 여부']], rule = new Map();
-    const val = code => { const c = by.get(code) || null; return [c, c && c.value !== null && c.value !== undefined && !hidden(c) ? `${fmtCell(c)} ${c.unit}` : fmtCell(c)]; };
+    const val = code => { const c = by.get(code) || null; return [c, valueWithUnit(c)]; };
     const dStatus = ruleApproved() ? '법정' : '법정(규칙 승인 대기)', dSrc = `${DECLINE_LAW} · 규칙 ${(T.decline_rule || {}).id}`;
     for (const [code, op, thr, name] of DECLINE_CRITERIA) {
-      const [c, v] = val(code), unit = c ? c.unit : '', cond = op === 'ge' ? `${fmtNum(thr)}${unit} 이상` : '1(해당 구간 있음)', ver = verdictOf(judge(c, op, thr), dStatus);
+      const [c, v] = val(code), unit = c ? c.unit : '', cond = op === 'ge' ? `${fmtNum(thr)}${unit} 이상` : '해당 구간 있음', ver = verdictOf(judge(c, op, thr), dStatus);
       rows.push([`${DECLINE_PREFIX}${name}`, v, cond, dSrc, dStatus, ver]); rule.set(code, { cond, verdict: ver, status: dStatus });
     }
     const [mc, mv] = val('DECLINE_MET_COUNT'), mcCond = `${DECLINE_N_REQ}개 중 ${DECLINE_MIN_MET}개 이상`, mcVer = verdictOf(judgeMetCount(mc), dStatus);
@@ -432,8 +432,9 @@
     }
 
     blocks.push(block('h1', '3. 기준 대비'));
-    const critRows = [['항목', '값', '기준', '해당 여부', '기준 상태'], ...crit.rows.slice(1).map(r => [r[0], tight(r[1]), r[2], r[5], r[4]])];
-    const critBlock = block('table', '', { rows: critRows, widths: [34, 16, 18, 18, 14], caption: `표 ${k + 1}. 기준 대비` });
+    const mark = ((T && T.onepage) || {}).pending_mark || '*';   // 표 안에서는 '(승인 전 참고)'를 *로 줄이고 표 아래 문장이 뜻을 적는다(1쪽 요약과 같은 표기)
+    const critRows = [['항목', '값', '기준', '해당 여부', '기준 상태'], ...crit.rows.slice(1).map(r => [r[0], tight(r[1]), r[2], r[5].replace(PENDING_SUFFIX, mark), r[4]])];
+    const critBlock = block('table', '', { rows: critRows, widths: [33, 12, 16, 17, 22], caption: `표 ${k + 1}. 기준 대비` });
     blocks.push(critBlock); parts.crit = critBlock;
     TP.criteria_notes.forEach(s => blocks.push(block('para', s)));
 
@@ -561,7 +562,7 @@
   function paraSpec(S) {
     return {
       cell: ['LEFT', 0, 0, 0, S.tls, 'BREAK_WORD'], title: ['CENTER', 0, 1200, 0, S.ls, 'KEEP_WORD'], para: ['JUSTIFY', 0, S.after, 0, S.ls, 'KEEP_WORD'], h1: ['LEFT', 0, 300, 1, S.ls, 'KEEP_WORD'],
-      h2: ['LEFT', 1134, 300, 1, S.ls, 'KEEP_WORD'], bullet: ['JUSTIFY', 1134, S.after, 0, S.ls, 'KEEP_WORD'], small: ['LEFT', 0, S.after, 0, S.ls, 'BREAK_WORD'], end: ['LEFT', 0, S.after, 0, S.ls, 'KEEP_WORD'],
+      h2: ['LEFT', 1134, 300, 1, S.ls, 'KEEP_WORD'], bullet: ['LEFT', 1134, S.after, 0, S.ls, 'KEEP_WORD'], small: ['LEFT', 0, S.after, 0, S.ls, 'BREAK_WORD'], end: ['LEFT', 0, S.after, 0, S.ls, 'KEEP_WORD'],
       gap: ['JUSTIFY', 0, S.gapAfter, 0, S.ls, 'KEEP_WORD'], footer: ['CENTER', 0, 0, 0, S.ls, 'KEEP_WORD'],
     };
   }

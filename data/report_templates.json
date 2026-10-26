@@ -119,7 +119,7 @@
   "generic_per_group": 3,
   "criteria_notes": [
     "'기준 해당'은 값이 기준 조건에 드는 경우이다. '확정 불가'는 값이 없거나 상태가 추가확인·충돌인 경우이다.",
-    "'(승인 전 참고)'는 기준 상태가 승인 대기인 비교이다. 항목별 비교만 하며 합산하지 않았다."
+    "'*'는 기준 상태가 승인 대기인 비교이며 승인 전 참고 값이다. 항목별 비교만 하며 합산하지 않았다."
   ],
   "forecast_lead": "{label}은 {v}(하한 {lo}, 상한 {hi})이다.{ref}",
   "forecast_notes": [
@@ -148,17 +148,17 @@
       "출처"
     ],
     "table_widths": [
-      34,
+      41,
       11,
       22,
-      24,
-      9
+      18,
+      8
     ],
     "table_widths_no_ref": [
-      36,
-      13,
-      25,
-      26
+      44,
+      12,
+      24,
+      20
     ],
     "fallback": "확인이 필요한 사항 {n}건은 근거서 4장에 있다.",
     "pending_mark": "*",
@@ -271,7 +271,7 @@
                 {
                   "value": "DECLINE_POP_DECL3IN5"
                 },
-                "1(해당 구간 있음)",
+                "해당 구간 있음",
                 {
                   "verdict": {
                     "code": "DECLINE_POP_DECL3IN5",
@@ -303,7 +303,7 @@
                 {
                   "value": "DECLINE_BIZ_DECL3IN5"
                 },
-                "1(해당 구간 있음)",
+                "해당 구간 있음",
                 {
                   "verdict": {
                     "code": "DECLINE_BIZ_DECL3IN5",
