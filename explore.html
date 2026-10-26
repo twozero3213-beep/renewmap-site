@@ -24,10 +24,13 @@
 <link rel="stylesheet" href="hero.css">
 <link rel="stylesheet" href="map.css">
 <link rel="stylesheet" href="workspace.css">
+<link rel="stylesheet" href="overlay.css">
 <script src="app.js" defer></script>
 <script src="site.js" defer></script>
 <script src="hero.js" defer></script>
 <script src="dashboard.js" defer></script>
+<script src="overlay.js" defer></script>
+<script src="docgen.js" defer></script>
 <script src="map.js" defer></script>
 <script src="find.js" defer></script>
 <script src="workspace.js" defer></script>
@@ -95,6 +98,7 @@
           </form>
           <p id="heroLive" class="hero-live" aria-live="polite"></p>
           <div class="hero-map"><div id="mapApp"></div><noscript><p>지도는 자바스크립트가 켜져 있어야 보입니다.</p></noscript></div>
+          <div id="overlayApp" class="ov-slot"></div><noscript><p>우리 파일 얹기는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
         </div>
       </section>
       <section id="report" class="workspace-panel" data-workspace-panel="evidence" aria-labelledby="reportTitle">
@@ -102,9 +106,11 @@
           <div class="section-head"><div><span class="label-scenario">비용 없음 · 로그인 없음 · 입력 저장 없음</span><h2 id="reportTitle">동네 보고서</h2></div><p>선택한 동의 원장 숫자와 출처를 문장으로 옮깁니다.</p></div>
           <div class="export-tools" data-export-tools aria-label="보고서 납품 형식">
             <div class="export-buttons">
+              <button type="button" class="btn" data-export-format="hwpx" disabled>HWPX 받기</button>
+              <button type="button" class="btn" data-export-format="xlsx" disabled>XLSX 받기</button>
               <button type="button" class="btn" data-export-format="pdf" disabled>PDF 인쇄</button>
             </div>
-            <div data-export-status aria-live="polite"><p class="export-state" role="status">지역을 선택한 뒤 브라우저 인쇄로 PDF를 만들 수 있습니다.</p></div>
+            <div data-export-status aria-live="polite"><p class="export-state" role="status">지역을 선택한 뒤 HWPX·XLSX는 이 브라우저에서 바로 만들고, PDF는 브라우저 인쇄로 만들 수 있습니다.</p></div>
           </div>
           <div id="reportApp"><div class="rp-empty" role="status"><img src="mascot/crew/taggy-default.svg" width="120" height="120" alt="" aria-hidden="true"><h3>동을 선택하면 근거 보고서가 생깁니다</h3><p><a href="#map">지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p></div></div>
           <noscript><p>보고서는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>

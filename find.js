@@ -7,6 +7,7 @@
   const node = typeof module !== 'undefined' && module.exports;
   const M = node ? require('./map.js') : window.RenewMap;
   if (!M) return;
+  const DG = node ? require('./docgen.js') : window.RenewDocgen || null; // XLSX 만들기
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const isNum = v => typeof v === 'number' && Number.isFinite(v);
   const pm = v => (v < 0 ? '−' + M.fmt(Math.abs(v)) : M.fmt(v));
@@ -170,10 +171,41 @@
     const list = sortAreas(ev.hits, by), p = paginate(list, page);
     return head + skip + conds + `<p class="fd-count" aria-live="polite">조건에 맞는 곳 <b data-ck="fd-n" data-count="${ev.hits.length}">${ev.hits.length}</b>곳 <small>/ 전체 ${esc(M.fmt(areas.length))}곳${ev.nodata ? ` · 자료가 없어 판단하지 않은 곳 ${esc(M.fmt(ev.nodata))}곳` : ''}</small></p>` +
       LIST_MARK + `<div class="dash-seg fd-sort" role="group" aria-label="목록 순서"><button type="button" data-fd-sort="code" aria-pressed="${by !== 'name'}">행정코드 순</button><button type="button" data-fd-sort="name" aria-pressed="${by === 'name'}">가나다 순</button></div>` +
+      (DG ? `<p class="fd-xlsx"><button type="button" class="btn ghost" data-fd-xlsx>XLSX 내려받기</button><small>조건에 맞는 곳 ${ev.hits.length}곳(행정코드 순), 범위 전체의 해당 여부, 조건·출처 시트</small><span class="map-png-msg" data-fd-xlsx-msg role="status"></span></p>` : '') +
       (list.length ? `<div data-state="ready"><h3 class="fd-list-title" data-fd-list-start tabindex="-1">전체 ${p.total}곳 중 ${p.from}–${p.to}곳</h3><ol class="fd-list">${p.items.map(a => `<li><span class="fd-n"><b>${esc(a.name)}</b><small>${esc(a.sub)} · ${esc(a.code)}</small></span><span class="fd-b" aria-label="맞는 조건">${esc(emo)}</span><a href="${esc(hashOf(a, ctx))}" data-fd-go>${a.dong ? '이 동 보기' : '이 지역 보기'}</a></li>`).join('')}</ol>${pagerHTML(p)}</div>`
         : `<div class="fd-empty" data-state="empty" role="status"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>조건을 모두 만족하는 곳이 없습니다.<br>조건을 하나 빼 보세요.</p><button type="button" class="btn ghost" data-fd-relax>마지막 조건 빼기</button></div>`);
   }
   const LIST_MARK = '<!--fd-list-->';
+  // ── XLSX 내보내기(여러 시군구 묶음): 열 = 시도·시군구·코드·동·조건별 값·해당 여부·출처 번호. 순위·값 순 정렬 없음(행정코드 순) ──
+  // 조건 → 값의 원천(파일 이름, 메타 키). 없는 메타는 빈 칸으로 둔다(이름을 지어내지 않는다)
+  const SRC_OF = { aging: ['index', 'source'], met: ['index', 'source'], pop30: ['index', 'pop_source'], biz10: ['index', 'biz_source'], depop: ['designations', 'source'], concern: ['designations', 'source'],
+    migOut: ['migration', 'source'], migIn: ['migration', 'source'], dealDown: ['realestate', 'source'], dealUp: ['realestate', 'source'],
+    aged: ['living', 'kosis_age'], youthDown: ['living', 'kosis_age'], park: ['living', 'park'], parkLow: ['living', 'park'], lib: ['living', 'library'], libFar: ['living', 'library'],
+    hosp: ['living', 'hospital'], hospLow: ['living', 'hospital'], bus: ['living', 'bus'], busLow: ['living', 'bus'] };
+  function condSource(c, ctx) {
+    if (c.src === 'forecast') { const f = ctx.forecastIdx || {}; return { name: `추세 외삽(${f.method || '방법 미표시'})`, url: '', date: isNum(f.base_year) ? `${f.base_year}년 기준` : '', license: '' }; }
+    const [file, key] = SRC_OF[c.id] || [], root = file ? ctx[file] : null, m = root ? (file === 'living' ? (root.sources || {})[key] : root[key]) : null;
+    if (!m) return { name: '', url: '', date: '', license: '' };
+    return { name: m.name || '', url: m.url || '', date: m.base_date || m.effective_date || (isNum(m.base_year) ? `${m.base_year}년` : '') || (isNum(m.latest_month) ? `${String(m.latest_month).slice(0, 4)}.${String(m.latest_month).slice(4)}` : ''), license: m.license_type || '' };
+  }
+  const JUDGE = { hit: '해당', miss: '해당 안 함', na: '자료 없음' };
+  function exportSheets(areas, ev, ctx, unit) {
+    const idx = ctx.index, conds = ev.use.map(condOf), sts = conds.map(c => condState(c, ctx, unit)), srcs = conds.map(c => condSource(c, ctx)), keys = [], nums = srcs.map(x => {
+      const k = JSON.stringify([x.name, x.url, x.date]); if (!keys.includes(k)) keys.push(k); return keys.indexOf(k) + 1; });
+    const sido = a => ((idx.sido || []).find(x => String(x.code2) === String(a.sg.sido2)) || {}).name || '';
+    const sgName = a => { const p = String(a.sg.parent || ''), pn = p.length === 5 ? ((idx.sigungu || []).find(x => String(x.code5) === p) || {}).name : ''; return [pn, a.sg.name].filter(Boolean).join(' '); };
+    const head = ['시도', '시군구', '코드', '동', ...conds.flatMap(c => [`${c.n} 값`, `${c.n} 해당`]), '전체 해당 여부', '출처 번호'];
+    const row = a => [sido(a), sgName(a), a.code, a.dong ? a.name : '', ...conds.flatMap((c, i) => {
+      const v = sts[i].ok ? c.get(a, ctx) : null, has = v !== null && v !== undefined;
+      return [has ? v : '', !sts[i].ok || !has ? '자료 없음' : TEST[c.op](v, sts[i].th) ? '해당' : '해당 안 함']; }), JUDGE[ev.res.get(a.code)] || '', [...new Set(nums)].sort((x, y) => x - y).join(', ')];
+    const byCode = list => sortAreas(list, 'code').map(row);
+    const cond = [['출처 번호', '조건', '조건 문구(기준)', '값의 단위', '출처', 'URL', '기준일', '이용조건', '비고']];
+    conds.forEach((c, i) => cond.push([nums[i], c.n, chipLabel(c, ctx, sts[i]), UNIT[unit], srcs[i].name, srcs[i].url, srcs[i].date, srcs[i].license, [c.ref ? '참고 구간(공식 기준 아님)' : '', c.sgLevel ? '시·군·구 단위 값' : '', c.src === 'forecast' ? '추세 외삽(판정 아님)' : ''].filter(Boolean).join(' · ')]));
+    cond.push([]); cond.push(['', NOTE, '결과는 조건에 해당하는 곳을 행정코드 순으로 적은 것이며 순위·점수가 아닙니다. 결정은 담당자가 합니다.']);
+    return [{ name: '해당 지역', rows: [head, ...byCode(ev.hits)], widths: [14, 18, 12, 14, ...conds.flatMap(() => [14, 12]), 14, 10] },
+      { name: '범위 전체', rows: [head, ...byCode(areas)], widths: [14, 18, 12, 14, ...conds.flatMap(() => [14, 12]), 14, 10] },
+      { name: '조건·출처', rows: cond, widths: [8, 22, 40, 12, 44, 44, 12, 18, 30] }];
+  }
   function boundaryState(scope, sgGeo, emd) {
     if (scope.sg) return emd ? 'empty' : 'loading';
     return sgGeo === undefined ? 'loading' : 'empty';
@@ -200,7 +232,7 @@
     return `<p class="gov-note">${esc(GOV_NOTE)}<br>범위: ${scopeName ? `<b>${esc(scopeName)}</b> 안 읍·면·동` : '<b>시·도와 시·군·구를 먼저 고르세요</b>(지도에서 마지막으로 연 시·군·구가 있으면 그대로 씁니다)'}</p>` +
       `<ul class="gov-cards">${PRESETS.map(p => `<li><button type="button" class="gov-card" data-gov-preset="${esc(p.id)}" aria-label="${esc(p.n)}"><span class="gov-e" aria-hidden="true">${p.e}</span><b>${esc(p.ask)}</b><span class="gov-why">→ ${esc(p.give)}</span><span class="gov-d">${esc(DECIDE)}</span></button><details class="gov-more"><summary>조건·근거 법령</summary><span class="gov-c">${esc(condText(p))}</span><span class="gov-law">${esc(p.law)}</span></details></li>`).join('')}</ul>`;
   }
-  const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML };
+  const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
   if (node) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewFind = api;
@@ -285,6 +317,18 @@
   }
   if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) applyPreset(b.dataset.govPreset); });
   addEventListener('hashchange', trackHash);
+  // 지금 화면의 조건·범위 그대로 XLSX를 만든다(이 브라우저 안에서만)
+  function exportXlsx() {
+    const msg = root.querySelector('[data-fd-xlsx-msg]'), say = t => { if (msg) msg.textContent = t; };
+    let ctx = st.ctx; if (st.scope.sg) { const e = emdCtx(st.scope.sg); if (!e) { say('읍·면·동 자료를 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요.'); return; } ctx = { ...st.ctx, emd: e.json, lv: e.lv, forecast: e.fc }; }
+    const areas = areasOf(st.scope, ctx), ev = evaluate(areas, st.sel, ctx, unit());
+    if (!ev.use.length) { say('조건을 하나 이상 고른 뒤 눌러 주세요.'); return; }
+    const d = new Date(), p = n => String(n).padStart(2, '0'), day = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    const sg = st.scope.sg ? (st.ctx.index.sigungu || []).find(x => String(x.code5) === st.scope.sg) : null, sd = st.scope.sido ? (st.ctx.index.sido || []).find(x => String(x.code2) === st.scope.sido) : null;
+    const name = `지역찾기_${DG.safeName(sg ? sg.name : sd ? sd.name : '전국')}_${day}.xlsx`;
+    try { say(`${name} (${Math.max(1, Math.round(DG.saveBytes(name, DG.xlsxBytes(exportSheets(areas, ev, ctx, unit()), day), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') / 1024))}KB)를 내려받았습니다. 이 브라우저에서 만들었고 서버로 보내지 않았습니다.`); }
+    catch (err) { say(`XLSX를 만들지 못했습니다: ${err.message}`); }
+  }
   // OR 묶음 안의 칩을 끄면 그 칩만 빠진다(한 개 남으면 보통 조건이 된다)
   const dropId = (sel, id) => sel.map(g => (Array.isArray(g) ? g.filter(x => x !== id) : g)).filter(g => (Array.isArray(g) ? g.length : g !== id)).map(g => (Array.isArray(g) && g.length === 1 ? g[0] : g));
   root.addEventListener('click', ev => {
@@ -294,6 +338,7 @@
     }
     const b = ev.target.closest('[data-fd-cond]');
     if (b) { const id = b.dataset.fdCond, on = st.sel.flat().includes(id); if (b.getAttribute('aria-disabled') === 'true' && !on) return; st.sel = on ? dropId(st.sel, id) : [...st.sel, id]; st.page = 1; render(); root.querySelector(`[data-fd-cond="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }); return; }
+    if (ev.target.closest('[data-fd-xlsx]')) { exportXlsx(); return; }
     const s = ev.target.closest('[data-fd-sort]'); if (s) { st.by = s.dataset.fdSort; st.page = 1; render(); root.querySelector(`[data-fd-sort="${st.by}"]`)?.focus({ preventScroll: true }); return; }
     const p = ev.target.closest('[data-fd-page]');
     if (p && !p.disabled) {

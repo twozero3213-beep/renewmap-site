@@ -365,3 +365,55 @@
 .rp-tbl td:nth-child(2) { font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .gov-card { transition: none; } }
 @media print { .rp-mode, .fd-hint, .gov { display: none !important; } .sr-gaps { border: 1px solid #999; } .rp-tbl th, .rp-tbl td { border-color: #999; } }
+
+/* 파일 만들기·복사용 표 조각·1쪽 요약(docgen.js). 인라인 style 속성 없이 클래스만 쓴다(CSP) */
+.rp-src-line { color: var(--ink); font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+.rp-tools .rp-mail { font-size: 13px; padding: 6px 12px; border-width: 1px; opacity: .85; }
+.dg-tbl { margin: 0 0 14px; }
+.dg-tbl-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 0 0 4px; }
+.dg-tbl-h b { font-size: 15px; }
+.dg-copy { padding: 6px 12px; font-size: 13px; border-width: 1.5px; min-height: 36px; }
+.dg-copy-s { font: inherit; font-size: 12px; font-weight: 700; margin-left: 8px; padding: 3px 10px; min-height: 30px; border: 1.5px solid var(--green); color: var(--green); background: #fff; border-radius: 999px; cursor: pointer; white-space: nowrap; vertical-align: baseline; }
+.dg-copy-s:hover, .dg-copy:hover { background: #e3f1ea; color: var(--ink); }
+.dg-doc { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+.dg-title { margin: 0 0 10px; font-size: clamp(19px, 2.6vw, 24px); text-align: center; }
+.dg-box { width: 100%; border-collapse: collapse; margin: 0 0 8px; font-size: 14px; }
+.dg-box th, .dg-box td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+.dg-box th { background: #eef2f0; width: 22%; font-weight: 700; white-space: nowrap; }
+.dg-src { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--ink); }
+.dg-h1 { margin: 14px 0 6px; font-size: 17px; }
+.dg-h2 { margin: 10px 0 4px 1.2em; font-size: 15px; }
+.dg-p, .dg-bullet { margin: 0 0 6px; font-size: 15px; }
+.dg-small { margin: 0 0 4px; font-size: 12px; color: var(--dim); overflow-wrap: anywhere; }
+.dg-fi { display: block; font-size: 12px; color: var(--dim); }
+.dg-end { margin: 12px 0 0; }
+.dg-lead { margin: 0 0 4px; font-size: 14px; font-weight: 700; }
+.dg-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.dg-table th, .dg-table td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+.dg-table th { background: #eef2f0; }
+.dg-table td:nth-child(2) { font-variant-numeric: tabular-nums; }
+.rp-frag-ctl { display: flex; flex-wrap: wrap; gap: 10px 14px; margin: 0 0 8px; }
+.rp-frag .dg-frag { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; }
+.map-png { margin: 8px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.map-png .btn { padding: 8px 14px; font-size: 14px; min-height: 40px; }
+.map-png-msg { font-size: 13px; color: var(--dim); }
+/* 인쇄: 파일 만들기·복사 도구는 종이에 나오지 않는다. 1쪽 요약은 A4 한 쪽(실측은 docs/design/review_2026-10-27) */
+@page { size: A4; margin: 14mm 18mm; }
+@media print {
+  .export-tools, .dg-copy, .dg-copy-s, .rp-frag, .map-png, .rp-mail, .rp-tools { display: none !important; }
+  body.print-onepage .workspace-intro, body.print-onepage .workspace-steps, body.print-onepage header.top, body.print-onepage footer, body.print-onepage .skip, body.print-onepage .rp-mode, body.print-onepage .workspace-panel[data-workspace-panel="evidence"] .section-head, body.print-onepage .rp-crumb, body.print-onepage .rp-foot { display: none !important; }
+  .workspace-panel { animation: none !important; opacity: 1 !important; transform: none !important; }
+  body.print-onepage .evidence-workspace, body.print-onepage .workspace-panel, body.print-onepage .workspace-panel-inner { background: #fff !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+  .dg-doc { border: 0; padding: 0; margin: 0; background: #fff; }
+  .dg-onepage { font-family: "함초롬바탕", "HCR Batang", "맑은 고딕", "Malgun Gothic", serif; color: #000; }
+  .dg-onepage .dg-title { font-size: 15pt; margin: 0 0 6pt; }
+  .dg-onepage .dg-h1 { font-size: 11.5pt; margin: 8pt 0 3pt; break-after: avoid; }
+  .dg-onepage .dg-p { font-size: 10pt; line-height: 1.5; margin: 0 0 3pt; }
+  .dg-onepage .dg-small { font-size: 8.5pt; line-height: 1.4; color: #000; margin: 0 0 2pt; }
+  .dg-onepage .dg-src { font-size: 9.5pt; margin: 0 0 4pt; }
+  .dg-onepage .dg-box, .dg-onepage .dg-table { font-size: 9pt; line-height: 1.35; }
+  .dg-onepage .dg-box th, .dg-onepage .dg-box td, .dg-onepage .dg-table th, .dg-onepage .dg-table td { border: 0.5pt solid #000; padding: 1.5pt 4pt; }
+  .dg-onepage .dg-box th, .dg-onepage .dg-table th { background: #d9d9d9; }
+  .dg-onepage .dg-tbl { margin: 0 0 4pt; break-inside: avoid; } .dg-onepage .dg-tbl-h b { font-size: 9pt; }
+  .dg-onepage .dg-end { font-size: 10pt; margin: 4pt 0 0; }
+}

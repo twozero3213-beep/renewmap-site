@@ -83,3 +83,18 @@
 - 행정동 인구는 GradientBoosting(최근 1·3·5·10년 인구 변화율·노후율 등, 누설 없는 특징), 65세 이상(시군구)은 trend 유지, 노후·사업체 보류. 셀 `rule_version=FORECAST-2026.11`, 인구 `formula_id=F-FC-04`. `dongs[].backtest.explain`에 한 줄 설명.
 - `index.backtest[지표]`: `median_mape`는 원점(2019) 이전 자료로만 고르거나 학습한 **정직한 값**, 검증 구간으로 고른 옛 값은 `mape_in_sample_selection`(낙관), 비교용 `trend_selected_before_origin`, `interval`(원점 2014→2015~19 오차 분위, 폭 배수, 2020~24 포함률), `models`.
 - 시군구 65세 이상 실측: 각 `{code5}.json`의 `sigungu_observed:{POP_AGED65_PCT:[[y,v]]}`·`sigungu_observed_cells`, `index.sigungu_aged65_latest:{code5:{value,year,cell_id}}`(상위 시는 cell_id null). 화면 '지역 찾기'의 전국 초고령 조건이 이 값을 쓴다.
+
+## 최신 월 주민등록 인구 (2026-10-26) — `national/latest/`
+- 출처 행안부 주민등록인구통계(KOSIS DT_1B04005N 월 시점, 공공누리 1유형). 연 지표(2024 연말)는 그대로 두고 공표된 최근 월(현재 2026-09, 기준일 2026-09-30)을 따로 싣는다.
+- `latest/index.json`: `{month, generated_at, snapshot_hash, source, sigungu:{code5:{POP_TOTAL_LATEST,POP_AGED65_PCT_LATEST,POP_YOUTH_PCT_LATEST:{value,status,cell_id}}}, coverage, unplaced_current}`; `latest/{code5}.json`: `{month, source, sigungu, sigungu_cells, dongs:[{code7,name,cells}], current_only:[{code10,name,reason,cells}], snapshot_hash}`.
+- 2025~26 개편으로 2024 경계에 없는 현재 동은 `current_only`로만 두고 지도 색에 쓰지 않는다. 인천 중·동·서구는 분구로 시군구 값 null(추가확인).
+- 이름 결합 규칙(연 인구도 동일): 같은 시군구 안에서 양쪽 이름이 하나뿐일 때만 결합, 셀 note에 `join: 이름 결합(행안부 코드 ↔ SGIS 코드, 2025~26 개편)`. 목록 `pop_name_joined.json`, 못 이은 코드·사유 `pop_unmatched.json`(join_method).
+
+## 건물 단위 (2026-10-26) — `buildings/{bjd10}.json`
+- `{source, source_url, license, retrieved_at, hub_reference_date, age_reference_date, bjd10, name, count, excluded_attached, pnu_rule, age_rule, personal_data, fields, buildings:[{pnu|null, jibun|null, mgm_bld_pk, name|null, main_use, structure, use_apr_day|null, floors|null, tot_area|null, age_years|null, over30|null}]}`. 건축물대장 표제부 주건축물 원천 행(원장 셀 아님), 지번 순, 소유자·거주자 항목 없음. 사용승인일이 비정상이면 age·over30 null. 부산 해운대구 8개 법정동 시범. 30년 이상 목록 XLSX는 `scripts/export_old_buildings.py`(좌표는 지적도 전까지 법정동 대표점).
+
+## 건축·정비·복지·안전비상벨 (2026-10-26, living 확장)
+- `indicators[].group`: "건축·정비"(PERMIT_COUNT_3Y, DEMOLITION_COUNT_3Y, OLD_PUBLIC_FACILITY_COUNT, REDEV_PROJECTS → 화면 '정비 신호'), "안전 인프라"(+EMERGENCY_BELL_PER_KM2, ELDERLY_PED_ACCIDENT_ZONES), "복지"(ELDERLY_LIVING_ALONE → 화면 '인구 변화'). 모두 standard null·기준 없음.
+- `indicators[].hidden_until_decision`(+hidden_reason): true면 셀은 있으나 화면에 내지 않는다. 현재 EMERGENCY_BELL_PER_KM2만(대표 결정 대기, D17).
+- 부산만 있는 지표(허가·철거·노후시설·독거노인·정비)는 부산 행정동에만 셀. value 있고 status 추가확인이면 하한(위치를 다 못 가림). DEMOLITION_COUNT_3Y는 원천 철거멸실대장이 2021-12-31 이후 미갱신이라 전부 null. 허가·철거는 법정동 단위라 관할 법정동이 한 행정동에만 속할 때만 행정동 값, `living/{code5}.json`에 `sigungu_cells[]`·`bjdong_cells[{code10,name,cells}]` 추가.
+- 보고서 템플릿 `report_templates.json`(TPL-2026-10-27.1): 파이썬(`report_quality/templates.py`)과 JS(`docgen.js`)가 같은 파일을 읽는다. 양식 조각 정의는 `docs/gov/form_fragments.md`.
