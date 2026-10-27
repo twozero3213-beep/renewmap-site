@@ -154,6 +154,8 @@
     const box = [
       // 동 이름·경계 근처·관찰 내용은 머리 요약에 있어 여기서는 코드·좌표·지번만 둔다(1쪽 분량)
       ["위치", loc],
+      // 확인자(소속·직위). 이름·서명은 결재 문서에서 한다
+      ...(rec.checker ? [["확인자", `${rec.checker} · ${when} 현장 확인`]] : []),
       ["행정동·지번", `${d ? `행정동 코드 ${d.code}` : "행정동 확인 못 함"} · ${rec.jibun ? `지번 ${rec.jibun}` : rec.pnu ? `필지 번호 ${rec.pnu}` : R.NO_PARCEL}`],
       ...(rec.item ? [["자료와 비교", `${rec.item}: ${rec.observed || "-"} (${R.STATUS_LABEL[rec.status]})`]] : []),
       // 같은 자리 이전 기록(A4): 작성자가 묶은 것만. 반경은 묶을 때 쓴 설정값

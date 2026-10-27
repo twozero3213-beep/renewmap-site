@@ -421,7 +421,8 @@
   }
   const picked = (name) => (document.querySelector(`input[name="${name}"]:checked`) || {}).value || "";
   // 대상 유형은 마지막에 고른 값을 미리 고른다. 상태는 미리 고르지 않는다(늘 '모름'에서 시작. 앞 기록의 '같음'이 따라붙지 않게)
-  const TARGET_KEY = "renewmap-field-last-target", PHRASE_KEY = "renewmap-field-phrases-v1";
+  const TARGET_KEY = "renewmap-field-last-target", PHRASE_KEY = "renewmap-field-phrases-v1", CHECKER_KEY = "renewmap-field-checker";
+  $("checker").value = store(CHECKER_KEY) || "";   // 같은 담당자가 계속 쓰므로 지난 값을 채워 둔다
   chips($("targets"), "target", R.TARGETS, null, R.TARGETS.includes(store(TARGET_KEY)) ? store(TARGET_KEY) : undefined);
   chips($("statuses"), "status", ["추가확인", "확인", "충돌"], R.STATUS_LABEL, "추가확인");
   // ── 현장 확인 항목: 대상 유형이 건물 외관·주거지 골목 등일 때만 보인다. 항목마다 한 줄 메모와 붙인 사진 하나를 잇는다. 판정어·점수는 없다
@@ -494,7 +495,7 @@
       // 붙인 사진은 '가림 확인' 칸을 거쳐야 pending에 들어오므로 photoSafe는 그 확인을 뜻한다
       const dong = place && place.code ? { code: place.code, name: place.name, sgName: place.sgName, sido: place.sido, nearby: place.nearby.map((x) => x.name), boundary: place.boundary } : null;
       const rec = R.makeRecord({ pnu: $("pnu").value, jibun: $("jibun").value, target: picked("target"), item: $("item").value, observed: $("observed").value,
-        status: picked("status"), memo: $("memo").value, photos: pending.map((p) => p.id), photoSafe: true, checks: readChecks(), building: chosen,
+        status: picked("status"), memo: $("memo").value, checker: $("checker").value, photos: pending.map((p) => p.id), photoSafe: true, checks: readChecks(), building: chosen,
         ...(pos ? { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy, corrected, gps } : {}), dong, indicators: dong ? place.rows : [], snapshot: dong ? place.snapshot : null,
         ...(site ? { site_id: site.id, site_radius_m: radius(), prev_photos: [...site.photos],
           site_prev: (await S.records()).filter((r) => E.siteOf(r) === site.id).map((r) => r.recorded_at) } : {}) }, new Date());
@@ -506,6 +507,7 @@
       for (const id of ["observed", "memo"]) $(id).value = "";
       if (keep) { const all = phrases(); all[rec.target] = keep; storeJson(PHRASE_KEY, all); drawPhrases(); }
       store(TARGET_KEY, rec.target);
+      store(CHECKER_KEY, rec.checker || "");
       // 다음 기록은 '모름'에서 시작한다
       document.querySelector('input[name="status"][value="추가확인"]').checked = true; $("item").value = ""; $("keepPhrase").checked = false; clearChecks();
       site = null; siteText(); drawNear();

@@ -69,6 +69,10 @@
     // 길이 상한: 가져온 파일의 아주 긴 글이 개인정보 검사(정규식)를 오래 붙잡지 않게 한다
     if (memo.length > 500 || observed.length > 200) throw new Error("메모는 500자, 본 값은 200자까지 적을 수 있습니다.");
     rejectPersonal(memo, observed);
+    // 확인자(93팀 흡수: 아키플랜 '자격 기반 신뢰'). 소속·직위만 받는다. 이름·서명은 결재 문서에서 한다
+    const checker = clean(input.checker);
+    if (checker.length > 40) throw new Error("확인자는 소속·직위만 40자까지 적어 주세요.");
+    rejectPersonal(checker);
     // 사진은 기록과 따로 저장하고 기록에는 id만 둔다. 얼굴·차량번호·소유자 정보가 없거나 가렸다는 확인 없이는 붙이지 않는다
     const photos = Array.isArray(input.photos) ? input.photos.map(clean).filter(Boolean) : [];
     // 같은 자리 묶음(A4). site_id는 묶음 첫 기록의 id라 이전 기록을 고치지 않는다. 이전 기록 사진은 고른 것만 1쪽에 넣는다
@@ -107,7 +111,7 @@
       accuracy_m: Number.isFinite(accuracy) ? accuracy : null, corrected,
       gps_original: corrected && Number.isFinite(num(g.lat)) && Number.isFinite(num(g.lng)) ? { lat: num(g.lat), lng: num(g.lng), accuracy_m: num(g.accuracy) } : null,
       dong, indicators: lat !== null && dong && Array.isArray(input.indicators) ? input.indicators.slice(0, 8).map(cleanInd) : [],
-      checks, building,
+      checks, building, checker: checker || null,
       site_id: site || null, site_prev: site && Array.isArray(input.site_prev) ? input.site_prev.map(clean).filter(isDay).sort() : [],
       site_radius_m: site && Number.isFinite(num(input.site_radius_m)) ? num(input.site_radius_m) : null, prev_photos: prevPhotos,
       // 기록할 때 쓴 자료 묶음(A3). 새 묶음을 받아도 이 기록의 숫자는 그대로다
@@ -183,7 +187,7 @@
         const rec = makeRecord({ pnu: r.pnu, jibun: r.jibun, target: r.target, item: r.item, observed: r.observed, status: r.status, memo: r.memo,
           photos: own, photoSafe: true, lat: r.lat, lng: r.lng, accuracy: r.accuracy_m, corrected: r.corrected === true, gps: { lat: g.lat, lng: g.lng, accuracy: g.accuracy_m },
           dong: r.dong, indicators: r.indicators, site_id: r.site_id, site_prev: r.site_prev, site_radius_m: r.site_radius_m,
-          prev_photos: Array.isArray(r.prev_photos) ? r.prev_photos.filter((id) => isJpeg(got(id))) : [], snapshot: r.data_snapshot, checks: r.checks, building: r.building }, new Date(r.recorded_at), String(r.id));
+          prev_photos: Array.isArray(r.prev_photos) ? r.prev_photos.filter((id) => isJpeg(got(id))) : [], snapshot: r.data_snapshot, checks: r.checks, building: r.building, checker: r.checker }, new Date(r.recorded_at), String(r.id));
         rec.imported = true; rec.imported_at = now.toISOString();
         for (const id of [...rec.photos, ...rec.prev_photos]) photos.set(id, got(id));
         records.push(rec);
@@ -219,6 +223,7 @@
     ["bld_src", "건축물대장 출처", (r) => r.building && r.building.src.source_name],
     ["bld_lic", "건축물대장 이용조건", (r) => r.building && r.building.src.license_type],
     ["checks", "현장 확인 항목(판정 아님). '항목: 메모 [사진 파일]'을 ' | '로 구분", (r) => (r.checks || []).map((c) => `${checkLabel(c.id)}: ${c.memo || "메모 없음"}${c.photo ? ` [${photoFile(c.photo)}]` : ""}`).join(" | ")],
+    ["checker", "확인자(소속·직위)", (r) => r.checker],
     ["photos", "사진 파일 이름(함께 내보낸 ZIP 안). ' | '로 구분", (r) => (r.photos || []).map(photoFile).join(" | ")],
     ["site_id", "같은 지점 묶음 번호", (r) => r.site_id],
   ];
