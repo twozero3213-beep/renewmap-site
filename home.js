@@ -32,19 +32,39 @@
     fail: '동네 목록을 불러오지 못했습니다.\n인터넷 연결을 확인하고 다시 시도해 주세요.',
   };
 
-  // 순서 그림: 화면에 보일 때만 돌고, 세 바퀴 돈 뒤 멈춘다. 감속 설정이면 돌리지 않는다(home.css)
-  function story(win) {
-    const fig = win.document.getElementById('story');
-    if (!fig || typeof win.IntersectionObserver !== 'function' || win.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    new win.IntersectionObserver(([en]) => fig.classList.toggle('is-on', en.isIntersecting)).observe(fig);
-    const last = fig.querySelector('li:last-child');
-    fig.addEventListener('animationend', ev => { if (ev.target === last && ev.animationName === 'story-on') fig.classList.add('done'); });
-    fig.classList.add('run');
+  // 숫자 올리기: 진행률 p(0~1)에서 보일 값(ease-out). 끝은 항상 최종값
+  const countAt = (n, p) => Math.round(n * (1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 3)));
+
+  // 움직임 3곳(문서 쌓기·3단계 켜기·숫자 올리기). 화면에 들어올 때 한 번만. 감속 설정·IO 없음이면 완성 상태 그대로 둔다(home.css)
+  function motion(win) {
+    const doc = win.document;
+    if (typeof win.IntersectionObserver !== 'function' || win.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const once = (el, threshold, fn) => {
+      if (!el) return;
+      const io = new win.IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); fn(); } }, { threshold });
+      io.observe(el);
+    };
+    const hero = doc.getElementById('heroDoc'), steps = doc.getElementById('steps'), stats = doc.getElementById('stats');
+    if (hero) hero.classList.add('is-anim');
+    if (steps) steps.classList.add('is-anim');
+    once(hero, 0.3, () => hero.classList.add('is-play'));
+    once(steps, 0.4, () => steps.classList.add('is-on'));
+    const nums = stats ? [...stats.querySelectorAll('[data-count]')] : [];
+    nums.forEach(el => { el.textContent = '0'; });
+    once(stats, 0.5, () => {
+      const t0 = win.performance.now();
+      const tick = now => {
+        const p = (now - t0) / 800;
+        nums.forEach(el => { el.textContent = countAt(+el.dataset.count, p).toLocaleString('ko-KR'); });
+        if (p < 1) win.requestAnimationFrame(tick);
+      };
+      win.requestAnimationFrame(tick);
+    });
   }
 
   function init(win) {
     const doc = win.document, form = doc.getElementById('homeSearch');
-    story(win);
+    motion(win);
     if (!form) return;
     const input = doc.getElementById('homeQ'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg');
     let index = null, loading = null;
@@ -78,5 +98,5 @@
       show(rows); msg.textContent = MSG.many(rows.length);
     });
   }
-  return { find, route, norm, init, MSG };
+  return { find, route, norm, init, MSG, countAt };
 });

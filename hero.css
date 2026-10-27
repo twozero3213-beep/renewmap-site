@@ -194,3 +194,28 @@
   .crew-strip > div { animation: none; }
   .hero-find, .text-link { transition: none; }
 }
+
+/* 소개 맨 위: 정의 문장 + 가치관 4(docs/design/site_v3_copy_2026-10-28.md 4장). 움직임 없음 */
+.about-top { padding: 72px 0; }
+.about-top h1 { margin: 0 0 16px; font-size: clamp(30px, 4.6vw, 48px); line-height: 1.25; }
+.about-def { max-width: 760px; margin: 0 0 24px; font-size: 20px; line-height: 1.6; color: var(--dim); }
+.about-cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 56px; }
+.about-cta .btn { min-height: 48px; text-align: center; }
+.about-top h2 { font-size: clamp(24px, 3vw, 28px); margin: 0 0 20px; }
+.about-values { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(2, 1fr); }
+.about-values li { display: grid; align-content: start; gap: 8px; padding: 28px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.about-values h3 { margin: 0; font-size: 22px; line-height: 1.35; }
+.about-values p { margin: 0; color: var(--dim); }
+.about-vn { font-size: 15px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+.about-values .about-vl { color: var(--ink); font-weight: 700; }
+.about-how { justify-self: start; padding: 4px 10px; border-radius: 8px; background: var(--soft); font-size: 14px; font-weight: 700; }
+.about-values .about-how { color: var(--soft-ink); }
+@media (max-width: 720px) {
+  .about-top { padding: 32px 0 40px; }
+  .about-def { font-size: 17px; }
+  .about-cta { display: grid; margin-bottom: 40px; }
+  .about-values { grid-template-columns: 1fr; gap: 12px; }
+  .about-values li { padding: 20px; }
+  .about-values h3 { font-size: 20px; }
+  .about-values p { font-size: 16px; }
+}

@@ -70,36 +70,20 @@
 </header>
 
 <main id="main">
-  <section id="map" class="hero" aria-labelledby="heroTitle">
-    <div class="hero-grid">
-      <div class="hero-side">
-      <div class="hero-head">
-        <p class="hero-audience">도시재생 용역사·기초지자체를 위한 기초조사</p>
-        <p class="eyebrow">전국 읍·면·동 공공 데이터 · 출처 연결 원장</p>
-        <h1 id="heroTitle">숫자마다 근거가 붙는<br><em>도시재생 기초조사</em></h1>
-        <p class="lead">노후도·인구·생활 인프라를 같은 기준으로 살피고,<br>숫자의 출처와 계산 근거까지 한 화면에서 확인하세요.</p>
-      </div>
-      <form id="heroSearch" class="hero-search" role="search" autocomplete="off">
-        <label for="heroQ">우리 동네 찾기</label>
-        <div class="hero-search-row"><input id="heroQ" name="q" list="heroPlaces" placeholder="예: 해운대구, 반여1동" enterkeyhint="search"><button class="btn" type="submit">찾기</button></div>
-        <datalist id="heroPlaces"></datalist>
-        <p class="hero-search-note" data-search-note></p>
-        <p class="hero-search-msg" data-search-msg aria-live="polite"></p>
-      </form>
-      <p id="heroLive" class="hero-live" aria-live="polite"></p>
-      <ol class="hero-steps" aria-label="리뉴맵이 하는 일 3단계">
-        <li><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 42s13-12 13-22a13 13 0 0 0-26 0c0 10 13 22 13 22z" class="f"/><circle cx="24" cy="20" r="5"/></svg><div><b>① 진단</b><span>전국 읍·면·동을 같은 지표로 봅니다.</span></div></li>
-        <li><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 34h36" /><rect x="6" y="24" width="22" height="8" rx="3" class="f"/><path d="M30 18v20"/></svg><div><b>② 기준 대비 척도</b><span>항목마다 법정 기준선 위·아래를 표시합니다.</span></div></li>
-        <li><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h18l8 8v28H12z" class="f"/><path d="M30 6v8h8M18 28l5 5 9-10"/></svg><div><b>③ 출처 붙은 보고서</b><span>숫자마다 출처·기준일을 달아 납품합니다.</span></div></li>
+  <!-- 정의·가치관 4: docs/design/site_v3_copy_2026-10-28.md 1·2·4장. 시안: Figma 'v3 웹사이트 2026-10-28' About top -->
+  <section id="intro" class="about-top" aria-labelledby="heroTitle">
+    <div class="wrap">
+      <p class="eyebrow">서비스 소개</p>
+      <h1 id="heroTitle">리뉴맵은 동네를 바꾸는 일의<br>근거를 만듭니다</h1>
+      <p class="about-def">리뉴맵은 재개발·도시재생 담당자가 현장 사진, 공식 통계, 조례 조문을 묶어 결재에 바로 붙일 수 있는 동네 근거 문서를 만드는 서비스입니다.</p>
+      <div class="about-cta"><a class="btn" href="explore.html#map" data-track="cta_hero">지도로 근거 살펴보기</a><a class="btn ghost" href="#contact">시범 납품 상담</a></div>
+      <h2 id="valuesTitle">리뉴맵이 지키는 네 가지</h2>
+      <ol class="about-values">
+        <li><span class="about-vn" aria-hidden="true">01</span><h3>숫자에는 출처를</h3><p class="about-vl">모든 숫자에 출처·기준일·계산식을 붙입니다.</p><p>근거는 따라갈 수 있어야 근거입니다.<br>같은 자료로 다시 만들면 같은 문서가 나와야 합니다.</p><p class="about-how">지키는 방식 · 숫자마다 원천·기준일, 기준일 고정</p></li>
+        <li><span class="about-vn" aria-hidden="true">02</span><h3>모르면 모른다고</h3><p class="about-vl">자료로 정할 수 없는 것은 '현장 확인'으로 남깁니다.</p><p>빈칸을 추정으로 채우지 않습니다.<br>확인하지 못한 것을 숨기지 않습니다.</p><p class="about-how">지키는 방식 · 충족·미충족·현장 확인, 승인 전 표시</p></li>
+        <li><span class="about-vn" aria-hidden="true">03</span><h3>판단은 사람이</h3><p class="about-vl">판정·순위·점수·사업성은 내지 않습니다.</p><p>리뉴맵은 근거를 정리하고, 결정은 담당자와 주민이 합니다.<br>동네에 등급을 매기지 않습니다.</p><p class="about-how">지키는 방식 · 순위·치안 점수·시세 없음</p></li>
+        <li><span class="about-vn" aria-hidden="true">04</span><h3>사람을 먼저</h3><p class="about-vl">위치와 사진은 기기 밖으로 보내지 않습니다.</p><p>얼굴과 번호판, 건물명 속 이름은 가립니다.<br>꼭 필요한 정보만 다룹니다.</p><p class="about-how">지키는 방식 · 기기 안 처리, 자동 가림</p></li>
       </ol>
-      <p class="hero-gov">🏛 예산·민원·의회 답변 근거가 필요하다면 → <a href="explore.html#gov" data-track="cta_gov">업무별 바로 가기</a><small>3번 클릭으로 근거 있는 사업 후보 동과 첨부용 근거서를 받습니다.</small></p>
-      <div class="hero-cta">
-        <a class="btn glow" href="explore.html#map" data-track="cta_hero">지도로 근거 살펴보기</a>
-        <a class="btn ghost" href="#contact">시범 납품 상담</a>
-        <img class="hero-mascot" src="mascot/crew/taggy-default.svg" width="72" height="89" alt="리뉴맵 마스코트 태기">
-      </div>
-      </div>
-      <div class="hero-map"><div id="mapApp"></div><noscript><p>지도는 자바스크립트가 켜져 있어야 보입니다.</p></noscript></div>
     </div>
   </section>
 
@@ -133,8 +117,8 @@
 
   <section class="alt" id="verdict" aria-labelledby="verdictTitle">
     <div class="wrap">
-      <span class="label-scenario">실제 동 1곳 · 초안 규칙으로 비교</span>
-      <h2 id="verdictTitle" data-reveal>1분 판정 예시</h2>
+      <span class="label-scenario">예시 · 실제 동 1곳 · 초안 규칙으로 비교</span>
+      <h2 id="verdictTitle" data-reveal>1분 요건 대조 예시</h2>
       <p class="sub" data-reveal>쇠퇴 3요건의 셀 값과 기준값을 나란히 둡니다.<br>자료가 없는 요건은 추정하지 않고 '추가확인'으로 남깁니다.</p>
       <div id="verdictCards"></div>
     </div>
@@ -155,18 +139,16 @@
 
   <section class="alt" id="how" aria-labelledby="howTitle">
     <div class="wrap">
-      <h2 id="howTitle" data-reveal>작동 방식</h2>
+      <h2 id="howTitle" data-reveal>작동 방식: 찍고, 붙이고, 받습니다</h2>
       <p class="sub" data-reveal>모든 숫자는 출처가 기록된 원장에서 나옵니다.</p>
       <ol class="flow" data-reveal>
-        <li class="flow-s"><span class="flow-e" aria-hidden="true">📍</span><b>대상지 입력</b><span>자치구와 동을 고릅니다.</span></li>
+        <li class="flow-s"><span class="flow-e" aria-hidden="true">📷</span><b>① 찍는다</b><span>현장 사진을 찍으면 위치와 오차(±m)가 함께 남습니다.<br>얼굴과 번호판은 자동으로 가립니다.</span></li>
         <li class="flow-a" aria-hidden="true"><svg viewBox="0 0 40 16"><path d="M2 8h32M28 3l6 5-6 5"/></svg></li>
-        <li class="flow-s"><span class="flow-e" aria-hidden="true">⚖️</span><b>법정 기준 판정</b><span>쇠퇴 3요건·노후 3기준을 계산합니다.</span></li>
+        <li class="flow-s"><span class="flow-e" aria-hidden="true">📍</span><b>② 붙인다</b><span>그 자리의 행정동과 필지를 찾고, 공식 통계와 조례 조문을 출처와 함께 붙입니다.</span></li>
         <li class="flow-a" aria-hidden="true"><svg viewBox="0 0 40 16"><path d="M2 8h32M28 3l6 5-6 5"/></svg></li>
-        <li class="flow-s"><span class="flow-e" aria-hidden="true">📷</span><b>현장 확인</b><span>사진·위치·정확도·시각을 남깁니다.</span></li>
-        <li class="flow-a" aria-hidden="true"><svg viewBox="0 0 40 16"><path d="M2 8h32M28 3l6 5-6 5"/></svg></li>
-        <li class="flow-s"><span class="flow-e" aria-hidden="true">📄</span><b>보고서 납품</b><span>HWPX·PDF·엑셀로 받습니다.</span></li>
+        <li class="flow-s"><span class="flow-e" aria-hidden="true">📄</span><b>③ 받는다</b><span>결재용 한글 1쪽과 PDF, 근거 표를 바로 받습니다.</span></li>
       </ol>
-      <p class="flow-note">판정 결과마다 조문과 규칙 버전이 붙습니다.<br>필수 사진이 없으면 '확인'이 되지 않습니다.</p>
+      <p class="flow-note">결과마다 조문과 규칙 버전이 붙습니다.<br>필수 사진이 없으면 '확인'이 되지 않습니다.</p>
     </div>
   </section>
 
@@ -185,7 +167,7 @@
 
   <section class="alt" id="case" aria-labelledby="caseTitle">
     <div class="wrap">
-      <span class="label-scenario">가상 시나리오 · 고객 인터뷰로 검증 중</span>
+      <span class="label-scenario">예시 · 가상 시나리오 · 고객 인터뷰로 검증 중</span>
       <h2 id="caseTitle" data-reveal>활용 사례: 부산 용역사 실무자의 공모 준비</h2>
       <p class="sub" data-reveal>자치구가 공모 후보 2~3개 동의 기초조사를 맡겼습니다.<br>접수까지 5주가 남은 상황입니다.</p>
       <div class="cmp" data-reveal>
@@ -216,15 +198,16 @@
 
   <section class="alt" id="scope" aria-labelledby="scopeTitle">
     <div class="wrap">
-      <h2 id="scopeTitle" data-reveal>리뉴맵이 하지 않는 것</h2>
-      <p class="sub" data-reveal>근거를 다루는 도구이기 때문에 일부러 만들지 않습니다.</p>
+      <h2 id="scopeTitle" data-reveal>하지 않는 일도 분명히 합니다</h2>
+      <p class="sub" data-reveal>근거를 만드는 사람이 거래 이익을 갖지 않아야 근거를 믿을 수 있습니다.</p>
       <ul class="nochips">
-        <li data-reveal><span aria-hidden="true">🏅</span><b>동네 등급·순위</b><small>수치만 보여 주고 줄 세우지 않습니다.</small></li>
+        <li data-reveal><span aria-hidden="true">🏅</span><b>동네 순위·점수</b><small>동네에 등급을 매기지 않습니다.</small></li>
         <li data-reveal><span aria-hidden="true">🚓</span><b>치안 점수·기피 분류</b><small>CCTV·보안등 같은 시설 현황만 다룹니다.</small></li>
         <li data-reveal><span aria-hidden="true">🤖</span><b>AI 판정</b><small>판정 규칙은 사람이 조문을 보고 승인합니다.</small></li>
         <li data-reveal><span aria-hidden="true">📈</span><b>투자·거래 조언</b><small>전망은 과거 추세를 이어 본 계산입니다.</small></li>
         <li data-reveal><span aria-hidden="true">🙅</span><b>성별·결혼·직업 정보</b><small>입력·계산·출력 어디에도 쓰지 않습니다.</small></li>
-        <li data-reveal><span aria-hidden="true">💰</span><b>사업성·분담금 계산</b><small>전문 서비스와의 제휴로 연결합니다.</small></li>
+        <li data-reveal><span aria-hidden="true">💰</span><b>사업성·시세 계산</b><small>판정·순위·점수·사업성은 내지 않습니다.</small></li>
+        <li data-reveal><span aria-hidden="true">🔒</span><b>소유자 정보 수집</b><small>꼭 필요한 정보만 다룹니다.</small></li>
       </ul>
     </div>
   </section>

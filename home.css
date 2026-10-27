@@ -1,9 +1,8 @@
-/* 찾기(홈)·보관함: 한 화면에 할 일만. 문구·크기·색은 docs/design/redesign_2026-10-27.md 5.1·5.6·6장 */
+/* 찾기(홈)·보관함·문서 화면 공통. 홈 v3 문장: docs/design/site_v3_copy_2026-10-28.md, 시안: Figma 'v3 웹사이트 2026-10-28' */
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .app-home header.top .wrap { min-height: 56px; }
 .home { max-width: 640px; margin: 0 auto; padding: 16px 16px 24px; word-break: keep-all; overflow-wrap: break-word; }
 .home > section { padding: 0; }
-.home-hero { padding: 8px 0 0; }
 .home h1 { margin: 0 0 8px; font-size: 28px; line-height: 36px; font-weight: 700; }
 .home-sub { margin: 0 0 16px; font-size: 15px; line-height: 22px; color: var(--dim); }
 .home-search-row { position: relative; }
@@ -16,61 +15,12 @@
 .home-hits a:hover, .home-hits a:active { background: var(--soft); }
 .home-hits a small { color: var(--dim); font-weight: 400; font-size: 14px; }
 .home-msg { min-height: 20px; margin: 4px 0 0; font-size: 14px; line-height: 20px; color: var(--dim); white-space: pre-line; }
-.home-example { margin: 4px 0 16px; font-size: 14px; line-height: 20px; color: var(--dim); }
-.home-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 24px; }
-.tile { position: relative; display: grid; grid-template-columns: 28px 1fr; grid-template-rows: auto auto; column-gap: 8px; align-content: center; min-height: 88px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); text-decoration: none; transition: transform .16s var(--ease), background-color .12s var(--ease), border-color .12s var(--ease); }
-.tile:hover, .tile:active { background: var(--soft); border-color: var(--green); }
-@media (hover: hover) { .tile:hover { transform: translateY(-2px); } }
-.tile:active { transform: scale(.98); }
-.tile:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-.tile svg { grid-row: 1 / 3; width: 28px; height: 28px; fill: none; stroke: var(--green); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; margin-top: 2px; }
-.tile b { font-size: 15px; line-height: 22px; }
-.tile span { font-size: 14px; line-height: 20px; color: var(--dim); }
 .home-note { margin: 0; font-size: 14px; line-height: 20px; color: var(--dim); }
-/* 첫 화면: 제목 → 설명 → 검색 → 순서 그림 → 업무 카드가 차례로 떠오른다(모두 400ms 안에 끝난다).
-   backwards: 끝난 뒤에는 카드의 hover·누름 transform을 막지 않는다 */
-.home-hero > *, .home-tiles > .tile { animation: home-rise .2s var(--ease) backwards; }
-.home-hero > :nth-child(2) { animation-delay: 30ms; } .home-hero > :nth-child(3) { animation-delay: 60ms; }
-.home-hero > :nth-child(4) { animation-delay: 90ms; } .home-hero > :nth-child(5) { animation-delay: 120ms; }
-.home-tiles > :nth-child(1) { animation-delay: 150ms; } .home-tiles > :nth-child(2) { animation-delay: 165ms; }
-.home-tiles > :nth-child(3) { animation-delay: 180ms; } .home-tiles > :nth-child(4) { animation-delay: 195ms; }
-@keyframes home-rise { from { opacity: 0; transform: translateY(8px); } }
 /* 검색 후보: 목록이 처음 나타날 때만 차례로(타자 칠 때마다 깜빡이지 않게 home.js가 .fresh를 붙인다) */
 .home-hits.fresh li { animation: home-rise .16s var(--ease) backwards; }
 .home-hits.fresh li:nth-child(2) { animation-delay: 20ms; } .home-hits.fresh li:nth-child(3) { animation-delay: 40ms; }
 .home-hits.fresh li:nth-child(4) { animation-delay: 60ms; } .home-hits.fresh li:nth-child(5) { animation-delay: 80ms; } .home-hits.fresh li:nth-child(n+6) { animation-delay: 100ms; }
-
-/* 순서 그림: 사진 찍기 → 위치·동 찾기 → 1쪽 문서. 한 바퀴 4.5초, 세 바퀴 뒤 멈춘다(home.js .done).
-   자바스크립트가 없거나 감속 설정이면 움직이지 않고 세 단계가 모두 보인다. 화면 밖에서는 멈춘다 */
-.story { margin: 0 0 16px; }
-.story ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.story li { position: relative; isolation: isolate; display: grid; justify-items: center; gap: 4px; padding: 12px 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); text-align: center; }
-.story li + li::before { content: ''; position: absolute; left: -7px; top: 50%; width: 6px; height: 6px; border-top: 2px solid var(--dim); border-right: 2px solid var(--dim); transform: translateY(-50%) rotate(45deg); }
-.story li::after { content: ''; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; border: 2px solid var(--green); background: var(--soft); opacity: 0; }
-.story svg { width: 40px; height: 40px; fill: none; stroke: var(--green); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
-.story svg * { transform-box: fill-box; transform-origin: center; }
-.story .st-area { stroke: var(--dim); stroke-width: 2; stroke-dasharray: 3 3; }
-.story .st-line { transform-origin: left center; }
-.story b { font-size: 14px; line-height: 20px; font-weight: 600; }
-.story.run li::after { animation: story-on 4.5s var(--ease) 3 backwards; }
-.story.run li:nth-child(2)::after { animation-delay: 1.5s; } .story.run li:nth-child(3)::after { animation-delay: 3s; }
-.story.run .st-lens { animation: story-shot 4.5s var(--ease) 3; }
-.story.run .st-pin { animation: story-pin 4.5s var(--ease) 3; }
-.story.run .st-line { animation: story-line 4.5s var(--ease) 3; }
-.story.run .st-line:nth-of-type(3) { animation-delay: 80ms; } .story.run .st-line:nth-of-type(4) { animation-delay: 160ms; }
-.story.run:not(.is-on) li::after, .story.run:not(.is-on) svg * { animation-play-state: paused; }
-.story.done li::after, .story.done svg * { animation: none; }
-@keyframes story-on { 0% { opacity: 0; } 6%, 30% { opacity: 1; } 36%, 100% { opacity: 0; } }
-@keyframes story-shot { 0%, 4% { transform: none; } 10% { transform: scale(.6); } 18%, 100% { transform: none; } }
-@keyframes story-pin { 0%, 33% { opacity: 0; transform: translateY(-10px); } 43%, 94% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
-@keyframes story-line { 0%, 66% { transform: scaleX(0); } 78%, 94% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
-@media (min-width: 721px) {
-  .home { padding-top: 48px; }
-  .home h1 { font-size: 36px; line-height: 46px; }
-  .home-tiles { grid-template-columns: repeat(4, 1fr); }
-  .tile { grid-template-columns: 1fr; min-height: 132px; align-content: start; padding: 16px; }
-  .tile svg { grid-row: auto; margin-bottom: 8px; }
-}
+@keyframes home-rise { from { opacity: 0; transform: translateY(8px); } }
 
 /* 보관함 */
 .box-list { list-style: none; margin: 8px 0 24px; padding: 0; display: grid; gap: 8px; }
@@ -85,8 +35,144 @@
 .box-links { list-style: none; margin: 8px 0 24px; padding: 0; border-top: 1px solid var(--line); }
 .box-links a { display: flex; align-items: center; min-height: 56px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 600; }
 .home h2 { font-size: 18px; line-height: 26px; margin: 24px 0 0; }
+
+/* ── 홈 v3: 8개 섹션 ── */
+.v3 { --src: #1f4f8a; --src-bg: #dbe8f7; --ex: #8a4b00; --ex-bg: #fff7e8; word-break: keep-all; overflow-wrap: break-word; }
+.v3 section { padding: 0; }
+.v3 .h-sec { padding: 72px 0; }
+.v3 .h-alt { background: var(--card); border-block: 1px solid var(--line); }
+.v3 h2 { font-size: clamp(26px, 3.4vw, 34px); line-height: 1.3; font-weight: 700; margin: 0 0 24px; }
+.v3 h3 { font-size: 20px; line-height: 1.35; font-weight: 700; margin: 0 0 8px; }
+.v3 p { margin: 0; }
+.v3 .btn { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.v3 .btn.ghost:hover { background: var(--soft); }
+
+/* 1 첫 화면 */
+.v3 .h-hero { padding: 72px 0; }
+.h-hero-grid { display: grid; gap: 56px; grid-template-columns: minmax(0, 1fr) 444px; align-items: center; }
+.h-hero-copy { display: grid; gap: 20px; }
+.h-eyebrow { font-size: 15px; font-weight: 700; color: var(--green); letter-spacing: .04em; }
+.h-hero h1 { margin: 0; font-size: clamp(34px, 5.2vw, 52px); line-height: 1.25; font-weight: 700; }
+.h-sub { font-size: 19px; line-height: 1.6; color: var(--dim); }
+.h-label { display: block; margin: 8px 0 8px; font-size: 15px; font-weight: 700; }
+
+/* 1쪽 문서 미리보기(나눔고딕). 뒤 종이 두 장은 12px씩 어긋나게 쌓는다 */
+.h-doc { position: relative; margin: 0; padding: 0 24px 24px 0; font-family: NanumGothic, "Nanum Gothic", var(--font); }
+.h-sheet { position: absolute; top: 0; left: 0; right: 24px; bottom: 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.h-sheet-1 { top: 12px; left: 12px; right: 12px; bottom: 12px; }
+.h-sheet-2 { top: 24px; left: 24px; right: 0; bottom: 0; }
+.h-page { position: relative; display: grid; gap: 12px; padding: 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.h-page-t { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 18px; line-height: 1.4; }
+.h-page-t b { font-weight: 800; }
+.h-ex { flex: none; padding: 2px 8px; border-radius: 6px; background: var(--ex-bg); color: var(--ex); font: 700 13px/1.6 var(--font); }
+.h-page-s { font-size: 14px; color: var(--dim); }
+.h-photo { position: relative; height: 150px; border-radius: 10px; background: var(--soft); overflow: hidden; }
+.h-photo i { position: absolute; bottom: 0; border-radius: 4px 4px 0 0; background: var(--green); opacity: .28; }
+.h-photo i:nth-child(1) { left: 6%; width: 16%; height: 60%; } .h-photo i:nth-child(2) { left: 26%; width: 19%; height: 76%; }
+.h-photo i:nth-child(3) { left: 50%; width: 15%; height: 49%; } .h-photo i:nth-child(4) { left: 70%; width: 11%; height: 67%; }
+.h-mask { position: absolute; left: 31%; top: 36%; padding: 2px 8px; border-radius: 6px; background: var(--dim); color: var(--card); font: 700 13px/1.6 var(--font); }
+.h-loc { position: absolute; left: 12px; bottom: 12px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); font: 700 13px/1.6 var(--font); }
+.h-nums { display: grid; gap: 10px; margin: 0; }
+.h-nums > div { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 15px; }
+.h-nums dt { color: var(--ink); }
+.h-nums dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.h-nums .h-src { grid-column: 1 / -1; justify-self: start; padding: 2px 10px; border-radius: 999px; background: var(--src-bg); color: var(--src); font: 700 13px/1.6 var(--font); }
+
+/* 2 누가 쓰나 · 4 지금 쓸 수 있는 것 */
+.h-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+.h-card { display: grid; align-content: start; gap: 0; padding: 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.h-card p { color: var(--dim); }
+.h-product { grid-template-rows: auto 1fr auto; gap: 4px; }
+.h-product .btn { justify-self: start; margin-top: 16px; }
+
+/* 3 찍고, 붙이고, 받습니다 */
+.h-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 24px; grid-template-columns: repeat(3, 1fr); }
+.h-steps li { position: relative; display: grid; gap: 12px; align-content: start; }
+.h-step-n { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--green); color: var(--on-green); font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.h-steps li:not(:last-child)::after { content: ''; position: absolute; top: 23px; left: 60px; right: -12px; height: 2px; background: var(--green); }
+.h-step-t h3 { font-size: 22px; }
+.h-step-t p { color: var(--dim); }
+
+/* 5 가치관: 누르면 풀어 쓴 문장이 펼쳐진다(details) */
+.h-values { display: grid; gap: 16px; grid-template-columns: repeat(2, 1fr); align-items: start; }
+.h-val { margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.h-val summary { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; min-height: 48px; padding: 24px; cursor: pointer; list-style: none; font-weight: 400; border-radius: 14px; }
+.h-val summary::-webkit-details-marker { display: none; }
+.h-val summary::after { content: '+'; grid-column: 3; grid-row: 1; font-size: 24px; line-height: 1; font-weight: 700; color: var(--green); }
+.h-val[open] summary::after { content: '−'; }
+.h-val summary:hover h3 { color: var(--green); }
+.h-val summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 5px var(--bg); }
+.h-val-n { grid-column: 1; grid-row: 1; font-size: 15px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+.h-val h3 { grid-column: 2; grid-row: 1; margin: 0; }
+.h-val-l { grid-column: 1 / -1; grid-row: 2; }
+.h-val p { margin: 0 24px 24px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--dim); }
+
+/* 6 하지 않는 일: 글자(×)와 문장으로 뜻을 전하고 색에 기대지 않는다 */
+.h-nots { list-style: none; margin: 0 0 24px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.h-nots li { padding: 8px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--dim); font-size: 16px; font-weight: 700; }
+.h-nots li::before { content: '× '; }
+.h-not-end { font-size: 20px; font-weight: 700; }
+
+/* 7 확인된 숫자 */
+.h-stats { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 24px; grid-template-columns: repeat(3, 1fr); }
+.h-stats li { padding-top: 16px; border-top: 3px solid var(--green); color: var(--dim); }
+.h-stat-n { display: flex; align-items: baseline; gap: 4px; color: var(--ink); font-size: clamp(40px, 5vw, 56px); line-height: 1.15; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.h-stat-n small { font-size: .43em; font-weight: 700; letter-spacing: 0; }
+.h-stat-src { font-size: 16px; color: var(--dim); }
+
+/* 8 마무리 */
+.v3 .h-end { padding-top: 0; }
+.h-cta-box { display: grid; gap: 16px; justify-items: start; padding: 48px; border-radius: 18px; background: var(--soft); }
+.h-cta-box h2 { margin: 0; }
+
+@media (max-width: 959px) {
+  .h-hero-grid { grid-template-columns: 1fr; gap: 40px; }
+  .h-doc { max-width: 444px; }
+}
+@media (max-width: 720px) {
+  .v3 .wrap { padding: 0 16px; }
+  .v3 .h-sec { padding: 40px 0; }
+  .v3 .h-hero { padding: 24px 0 40px; }
+  .v3 .h-end { padding-top: 0; }
+  .h-hero-copy { gap: 16px; }
+  .h-sub, .v3 .h-card p, .h-step-t p, .h-val p, .h-val-l, .h-stats li p:last-child { font-size: 16px; }
+  .v3 h3, .h-step-t h3 { font-size: 19px; }
+  .h-cta .btn, .h-product .btn, .h-cta-box .btn { width: 100%; }
+  .h-product .btn { justify-self: stretch; }
+  .h-cards, .h-stats, .h-values { grid-template-columns: 1fr; gap: 12px; }
+  .h-card, .h-val summary { padding: 20px; }
+  .h-val p { margin: 0 20px 20px; }
+  .h-steps { grid-template-columns: 1fr; gap: 20px; }
+  .h-steps li { grid-template-columns: 44px 1fr; gap: 16px; }
+  .h-step-n { width: 44px; height: 44px; font-size: 19px; }
+  .h-steps li:not(:last-child)::after { top: 52px; bottom: -16px; left: 21px; right: auto; width: 2px; height: auto; }
+  .h-step-t h3 { margin-bottom: 4px; }
+  .h-not-end { font-size: 18px; }
+  .h-cta-box { padding: 28px 20px; justify-items: stretch; }
+  .h-page { padding: 20px; }
+  .h-photo { height: 130px; }
+}
+
+/* 움직임 3곳(시안 'Motion notes'). home.js가 감속 설정이 아닐 때만 .is-anim을 붙인다. 없으면 완성 상태 그대로 */
+.h-doc .layer, .h-page { transition: opacity .32s var(--ease), transform .32s var(--ease), background-color .32s var(--ease), border-color .32s var(--ease); }
+.h-doc.is-anim .layer { opacity: 0; transform: translateY(12px); }
+.h-doc.is-anim .h-sheet { transform: none; }
+.h-doc.is-anim .h-page { background-color: transparent; border-color: transparent; }
+.h-doc.is-play .layer { opacity: 1; transform: none; }
+.h-doc.is-play .h-page { background-color: var(--card); border-color: var(--line); }
+.h-doc.is-play [data-step="2"] { transition-delay: .7s; }
+.h-doc.is-play .h-nums > :nth-child(1) { transition-delay: 1.4s; } .h-doc.is-play .h-nums > :nth-child(2) { transition-delay: 1.55s; } .h-doc.is-play .h-nums > :nth-child(3) { transition-delay: 1.7s; }
+.h-doc.is-play [data-step="4"], .h-doc.is-play .h-page { transition-delay: 2.3s; }
+
+.h-step-n, .h-step-t, .h-steps li::after { transition: background-color .28s var(--ease), color .28s var(--ease), box-shadow .28s var(--ease), opacity .28s var(--ease); }
+.h-steps.is-anim .h-step-n { background: transparent; color: var(--dim); box-shadow: inset 0 0 0 2px var(--dim); }
+.h-steps.is-anim .h-step-t, .h-steps.is-anim li::after { opacity: .45; }
+.h-steps.is-on .h-step-n { background: var(--green); color: var(--on-green); box-shadow: none; }
+.h-steps.is-on .h-step-t, .h-steps.is-on li::after { opacity: 1; }
+.h-steps.is-on li:nth-child(2) .h-step-n, .h-steps.is-on li:nth-child(2) .h-step-t, .h-steps.is-on li:nth-child(1)::after { transition-delay: .52s; }
+.h-steps.is-on li:nth-child(3) .h-step-n, .h-steps.is-on li:nth-child(3) .h-step-t, .h-steps.is-on li:nth-child(2)::after { transition-delay: 1.04s; }
+
 @media (prefers-reduced-motion: reduce) {
-  .home-hero > *, .home-tiles > .tile, .home-hits.fresh li, .story li::after, .story svg * { animation: none !important; }
-  .tile, .home-hits a, .home-search-row input, .box-list button { transition: none; }
-  .tile:hover, .tile:active { transform: none; }
+  .home-hits.fresh li { animation: none !important; }
+  .home-hits a, .home-search-row input, .box-list button, .h-doc .layer, .h-page, .h-step-n, .h-step-t, .h-steps li::after { transition: none !important; }
 }
