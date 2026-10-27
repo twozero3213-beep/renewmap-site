@@ -569,7 +569,7 @@
   const sizesFor = doc => (doc.sizes === 'onepage' ? { ...BASE, gap: docSizes().body, ...docSizes(), ...((tpl().onepage || {}).sizes || {}), gapAfter: 200 } : { ...BASE, gap: docSizes().body, ...docSizes() });
   // [이름, 크기 키, 굵게, 위 첨자]. 앞 7개 id는 예전과 같다
   const CHAR_DEF = [['table', 'table', 0, 0], ['title', 'title', 1, 0], ['h1', 'h1', 1, 0], ['h2', 'h2', 1, 0], ['body', 'body', 0, 0], ['small', 'small', 0, 0], ['gap', 'gap', 0, 0],
-    ['lead', 'lead', 1, 0], ['table_b', 'table', 1, 0], ['body_b', 'body', 1, 0], ['body_sup', 'body', 0, 1], ['lead_sup', 'lead', 0, 1]];
+    ['lead', 'lead', 1, 0], ['table_b', 'table', 1, 0], ['body_b', 'body', 1, 0], ['body_sup', 'body', 0, 1], ['lead_sup', 'lead', 0, 1], ['table_sup', 'table', 0, 1]];
   const CH = Object.fromEntries(CHAR_DEF.map(([k], i) => [k, i]));
   const charKey = (ch, look) => (!look || (look === 'b' && CHAR_DEF[CH[ch]][2]) ? ch : `${ch}_${look}`);
   const PARA_ORDER = ['cell', 'title', 'para', 'h1', 'h2', 'bullet', 'small', 'gap', 'footer', 'cell_c', 'lead'], PR = Object.fromEntries(PARA_ORDER.map((k, i) => [k, i]));
@@ -628,7 +628,11 @@
     const runXml = (ch, t) => `<hp:run charPrIDRef="${CH[ch]}">${t === '' ? '<hp:t/>' : `<hp:t>${xe(t)}</hp:t>`}</hp:run>`;
     // runs: textRuns 결과([글자, ''|'b'|'sup']). 없으면 text 한 덩어리
     const para = (kind, text, ch, runs) => `<hp:p id="${nid()}" paraPrIDRef="${PR[kind]}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">${(runs || [[text, '']]).map(([t, look]) => runXml(charKey(ch, look), t)).join('')}</hp:p>`;
-    const cellP = (text, bold, center) => `<hp:p paraPrIDRef="${PR[center ? 'cell_c' : 'cell']}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0" id="${nid()}">${runXml(bold ? 'table_b' : 'table', String(text).replace(/\s*\n\s*/g, ' '))}</hp:p>`;
+    // refs: 칸 안 '[1]'을 위 첨자로 쓴다(현장 1쪽 머리 요약 상자)
+    const cellP = (text, bold, center, refs) => {
+      const t = String(text).replace(/\s*\n\s*/g, ' ');
+      return `<hp:p paraPrIDRef="${PR[center ? 'cell_c' : 'cell']}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0" id="${nid()}">${refs ? textRuns(t).map(([x, look]) => runXml(charKey('table', look), x)).join('') : runXml(bold ? 'table_b' : 'table', t)}</hp:p>`;
+    };
     const footer = `<hp:footer id="9813498" applyPageType="BOTH"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="BOTTOM" linkListIDRef="0" linkListNextIDRef="0" textWidth="${TEXT_W}" textHeight="4252" hasTextRef="0" hasNumRef="0"><hp:p paraPrIDRef="${PR.footer}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0" id="516765611"><hp:run charPrIDRef="${CH.table}"><hp:t>${xe(doc.footer)}</hp:t></hp:run><hp:run charPrIDRef="${CH.table}"><hp:ctrl><hp:autoNum num="1" numType="PAGE"><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar="" supscript="0"/></hp:autoNum></hp:ctrl></hp:run><hp:run charPrIDRef="${CH.table}"><hp:ctrl><hp:pageNum pos="BOTTOM_CENTER" formatType="DIGIT" sideChar="-"/></hp:ctrl></hp:run></hp:p></hp:subList></hp:footer>`;
     const secPr = `<hp:secPr id="" textDirection="HORIZONTAL" spaceColumns="1134" tabStop="8000" tabStopVal="4000" tabStopUnit="HWPUNIT" outlineShapeIDRef="1" memoShapeIDRef="0" textVerticalWidthHead="0" masterPageCnt="0"><hp:grid lineGrid="0" charGrid="0" wonggojiFormat="0"/><hp:startNum pageStartsOn="BOTH" page="0" pic="0" tbl="0" equation="0"/><hp:visibility hideFirstHeader="0" hideFirstFooter="0" hideFirstMasterPage="0" border="SHOW_ALL" fill="SHOW_ALL" hideFirstPageNum="0" hideFirstEmptyLine="0" showLineNumber="0"/><hp:lineNumberShape restartType="0" countBy="0" distance="0" startNumber="0"/><hp:pagePr landscape="WIDELY" width="59528" height="84186" gutterType="LEFT_ONLY"><hp:margin header="4252" footer="4252" gutter="0" left="8504" right="8504" top="${S.top}" bottom="4252"/></hp:pagePr>` +
       `<hp:footNotePr><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar=")" supscript="0"/><hp:noteLine length="-1" type="SOLID" width="0.12 mm" color="#000000"/><hp:noteSpacing betweenNotes="283" belowLine="567" aboveLine="850"/><hp:numbering type="CONTINUOUS" newNum="1"/><hp:placement place="EACH_COLUMN" beneathText="0"/></hp:footNotePr>` +
@@ -637,14 +641,14 @@
       `${footer}<hp:footerApply applyPageType="BOTH" idRef="9813498"/></hp:secPr>`;
     const title = doc.blocks[0];
     let out = `<hp:p id="0" paraPrIDRef="${PR.title}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="${CH.title}">${secPr}<hp:ctrl><hp:colPr id="" type="NEWSPAPER" layout="LEFT" colCount="1" sameSz="1" sameGap="0"/></hp:ctrl><hp:t>${xe(title.text)}</hp:t><hp:ctrl>${footer}</hp:ctrl></hp:run></hp:p>`;
-    const table = (rows, widths, caption, header) => {
+    const table = (rows, widths, caption, header, refs) => {
       const n = rows[0].length, tot = widths.reduce((a, b) => a + b, 0) || 1, w = widths.slice(0, n).map(x => Math.round(TEXT_W * x / tot));
       w[n - 1] += TEXT_W - w.reduce((a, b) => a + b, 0);
       // 칸 안 여백 좌우 2mm·위아래 1mm(hwpx.CELL_MARGIN). 머리글·개요 항목은 굵게, 짧은 값 열은 가운데
       const short = rows[0].map((_, c) => header && c > 0 && rows.slice(1).every(row => String(row[c]).length <= SHORT_CELL));
       const rowH = 282, cell = (t, r, c) => {
         const head = header ? r === 0 : c === 0;
-        return `<hp:tc name="" header="${header && r === 0 ? 1 : 0}" hasMargin="1" protect="0" editable="0" dirty="1" borderFillIDRef="${head ? 4 : 3}"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0">${cellP(t, head, (header && r === 0) || short[c])}</hp:subList><hp:cellAddr colAddr="${c}" rowAddr="${r}"/><hp:cellSpan colSpan="1" rowSpan="1"/><hp:cellSz width="${w[c]}" height="${rowH}"/><hp:cellMargin left="567" right="567" top="283" bottom="283"/></hp:tc>`;
+        return `<hp:tc name="" header="${header && r === 0 ? 1 : 0}" hasMargin="1" protect="0" editable="0" dirty="1" borderFillIDRef="${head ? 4 : 3}"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0">${cellP(t, head, (header && r === 0) || short[c], refs && !head)}</hp:subList><hp:cellAddr colAddr="${c}" rowAddr="${r}"/><hp:cellSpan colSpan="1" rowSpan="1"/><hp:cellSz width="${w[c]}" height="${rowH}"/><hp:cellMargin left="567" right="567" top="283" bottom="283"/></hp:tc>`;
       };
       const cap = caption ? `<hp:caption side="TOP" fullSz="0" width="8504" gap="850" lastWidth="${TEXT_W}"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="TOP" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0"><hp:p id="${nid()}" paraPrIDRef="${PR.cell}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="${CH.table_b}"><hp:t>${xe(caption)}</hp:t></hp:run></hp:p></hp:subList></hp:caption>` : '';
       return `<hp:p id="${nid()}" paraPrIDRef="${PR.cell}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="${CH.table}"><hp:tbl id="${nid()}" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="${header ? 1 : 0}" rowCnt="${rows.length}" colCnt="${n}" cellSpacing="0" borderFillIDRef="3" noAdjust="0"><hp:sz width="${TEXT_W}" widthRelTo="ABSOLUTE" height="${rowH * rows.length}" heightRelTo="ABSOLUTE" protect="0"/><hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="COLUMN" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/><hp:outMargin left="0" right="0" top="0" bottom="0"/>${cap}<hp:inMargin left="510" right="510" top="141" bottom="141"/>` +
@@ -656,7 +660,7 @@
         out += `<hp:p id="${nid()}" paraPrIDRef="${PR.cell}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">${b.images.map(img => `<hp:run charPrIDRef="${CH.body}">${picXml(++picN, nid(), img, b.perRow)}<hp:t/></hp:run>`).join('')}</hp:p>`;
         if (b.text) out += para('small', b.text, 'small');
       }
-      else if (b.kind === 'box') { out += table(b.rows, b.widths, '', false) + para('gap', '', 'gap'); }
+      else if (b.kind === 'box') { out += table(b.rows, b.widths, '', false, b.refs) + para('gap', '', 'gap'); }
       else if (b.kind === 'table') { out += table(b.rows, b.widths, b.caption, true) + para('gap', '', 'gap'); }
       else if (b.kind === 'h1') out += para('h1', b.text, 'h1');
       else if (b.kind === 'h2') out += para('h2', b.text, 'h2');
@@ -891,7 +895,7 @@
     for (const b of doc.blocks) {
       if (b.kind === 'title') out += `<h3 class="dg-title">${he(b.text)}</h3>`;
       else if (b.kind === 'images') out += `<div class="dg-photos">${b.images.map(i => `<figure><img src="${he(i.src || '')}" alt="${he(i.caption)}"><figcaption>${he(i.caption)}</figcaption></figure>`).join('')}</div><p class="dg-small">${he(b.text)}</p>`;
-      else if (b.kind === 'box') out += `<table class="dg-box"><tbody>${b.rows.map(r => `<tr><th scope="row">${he(r[0])}</th><td>${he(r[1])}</td></tr>`).join('')}</tbody></table>`;
+      else if (b.kind === 'box') out += `<table class="dg-box"><tbody>${b.rows.map(r => `<tr><th scope="row">${he(r[0])}</th><td>${b.refs ? runsHTML(r[1]) : he(r[1])}</td></tr>`).join('')}</tbody></table>`;
       else if (b.kind === 'table') {
         const n = tables.push(b) - 1;
         out += `<div class="dg-tbl"><div class="dg-tbl-h" aria-live="polite"><b>${he(b.caption)}</b>${opt.copy ? `<button type="button" class="btn ghost dg-copy" data-copy-table="${n}">${COPY_TABLE}</button>` : ''}</div><div class="table-wrap"><table class="dg-table"><thead><tr>${b.rows[0].map(c => `<th scope="col">${he(c)}</th>`).join('')}</tr></thead><tbody>${b.rows.slice(1).map(r => `<tr>${r.map(c => `<td>${he(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;

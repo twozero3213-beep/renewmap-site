@@ -37,7 +37,7 @@
 .dash-big[aria-expanded="true"] { background: #e3f1ea; border-color: var(--green); }
 .dash-big .k { font-size: 14px; font-weight: 600; color: var(--dim); }
 .dash-big .n { display: flex; align-items: baseline; gap: 2px; }
-.dash-big .v { font-size: clamp(26px, 6.4vw, 40px); font-weight: 800; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.dash-big .v { font-size: clamp(26px, 6.4vw, 40px); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .dash-big .v.is-text { font-size: 20px; color: var(--dim); }
 .dash-big .u { font-size: 16px; font-weight: 700; }
 .dash-big .tag { align-self: flex-start; margin: 2px 0 0; }

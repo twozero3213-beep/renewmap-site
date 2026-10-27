@@ -30,6 +30,10 @@
 <header class="top"><div class="wrap"><h1>현장 기록</h1><span id="today" class="today"></span></div></header>
 <p id="recBadge" class="rec-badge" role="status" hidden>업무 촬영 중입니다 · 리뉴맵 현장 확인</p>
 <main id="main">
+  <div id="newData" class="note" role="status" hidden>
+    <p>새 자료가 있습니다.<br>저장한 기록의 숫자는 바뀌지 않습니다.</p>
+    <button type="button" class="ghost" id="newDataGet">새 자료 받기</button>
+  </div>
   <p id="intro" class="note" hidden>기록과 사진은 이 휴대폰에만 저장됩니다.<br>내보내기 전에는 어디로도 보내지 않습니다.</p>
 
   <div class="pick">
@@ -51,8 +55,14 @@
 
   <section class="card" aria-labelledby="locTitle">
     <h2 id="locTitle">위치</h2>
-    <p id="locLine" class="loc" aria-live="polite">위치를 아직 받지 않았습니다.</p>
+    <p class="loc"><span id="locLine" aria-live="polite">위치를 아직 받지 않았습니다.</span> <span id="accChip" class="acc-chip" hidden></span></p>
     <p id="dongLine" class="dong" aria-live="polite"></p>
+    <details id="near" class="near" hidden>
+      <summary id="nearSum"></summary>
+      <p class="hint">거리가 가까운 순서입니다.<br>같은 자리면 '같은 지점으로 묶기'를 누르세요.</p>
+      <ul id="nearList" class="near-list"></ul>
+    </details>
+    <p id="siteLine" class="site-line" hidden></p>
     <div class="row">
       <button type="button" class="ghost" id="gps">현재 위치 받기</button>
       <button type="button" class="ghost" id="fix" disabled>위치 고치기</button>
@@ -70,8 +80,19 @@
     </div>
     <div id="facts" class="facts" hidden>
       <h3>이 동의 공식 현황</h3>
+      <p id="factsBase" class="hint"></p>
       <ul id="factList"></ul>
       <p class="hint">판정이 아닙니다.<br>공공데이터 값과 출처를 그대로 옮겼습니다.</p>
+    </div>
+    <div id="bld" class="facts" hidden>
+      <h3>가까운 건물</h3>
+      <p id="bldNote" class="hint"></p>
+      <div id="bldFind">
+        <label for="bldQ">지번으로 찾기</label>
+        <input id="bldQ" autocomplete="off" placeholder="예: 113-2">
+        <ul id="bldList" class="bld-list" aria-live="polite"></ul>
+      </div>
+      <p id="bldPicked" class="site-line" hidden></p>
     </div>
   </section>
 
@@ -80,9 +101,19 @@
       <legend>무엇을 봤나요</legend>
       <div id="targets"></div>
     </fieldset>
+    <details id="checkBox" class="checks" hidden>
+      <summary>현장 확인 항목 (공공데이터로 못 보는 것)</summary>
+      <p class="hint">본 항목만 고르세요.<br>판정이 아니라 본 것을 적습니다.<br>점수는 매기지 않습니다.</p>
+      <ul id="checkList" class="check-list"></ul>
+    </details>
     <label for="memo">한 줄 메모 (선택)</label>
-    <textarea id="memo" rows="2" placeholder="이름·전화번호는 적지 마세요" aria-describedby="memoWarn"></textarea>
+    <div id="phraseBox" class="phrases" hidden>
+      <div id="phrases" class="phrase-list" role="group" aria-label="자주 쓰는 한 줄"></div>
+      <p class="hint">누르면 메모 끝에 붙습니다.<br>길게 누르면 지웁니다.</p>
+    </div>
+    <textarea id="memo" rows="2" maxlength="500" placeholder="이름·전화번호는 적지 마세요" aria-describedby="memoWarn"></textarea>
     <p id="memoWarn" class="warn">이름·전화번호·주소 같은 개인정보는 적지 마세요.<br>보안시설은 찍거나 적지 마세요.</p>
+    <label id="keepBox" class="check" for="keepPhrase" hidden><input id="keepPhrase" type="checkbox"><span>이 메모를 자주 쓰는 한 줄로 저장</span></label>
     <details>
       <summary>자세히 (지번·자료와 비교)</summary>
       <label for="jibun">지번 (위치를 못 받을 때)</label>
@@ -108,7 +139,22 @@
       <button class="ghost" id="exp" type="button">모두 내보내기(ZIP)</button>
       <button class="ghost" id="share" type="button" hidden>공유하기</button>
     </div>
+    <div class="row">
+      <button class="ghost" id="geojson" type="button">GeoJSON 받기</button>
+      <button class="ghost" id="csv" type="button">CSV 받기</button>
+    </div>
+    <p class="hint">QGIS 같은 GIS 프로그램에서 바로 열립니다.<br>고른 기록만 받습니다.<br>고르지 않으면 모두 받습니다.<br>사진은 빠지고 사진 파일 이름만 들어갑니다.</p>
+    <label class="check" for="bySite"><input id="bySite" type="checkbox"><span>같은 지점끼리 모아 보기</span></label>
     <ul id="list" class="list"></ul>
+    <details class="settings">
+      <summary>설정 · 가져오기</summary>
+      <label for="radius">같은 자리로 볼 거리</label>
+      <select id="radius"><option value="20">20m</option><option value="30">30m</option><option value="50">50m (임시값)</option><option value="100">100m</option></select>
+      <p class="hint">50m는 임시값입니다.<br>반여동 30지점 시연 뒤에 정합니다.</p>
+      <label for="importZip">다른 사람이 내보낸 ZIP 가져오기</label>
+      <input id="importZip" type="file" accept=".zip,application/zip">
+      <p class="hint">리뉴맵 현장 기록에서 내보낸 ZIP만 받습니다.<br>가져온 기록에는 '가져옴'이 붙습니다.<br>이 기기에 있던 기록은 바뀌지 않습니다.</p>
+    </details>
   </section>
   <div id="upBox" class="card" hidden>
     <h2>팀에 올리기</h2>
@@ -118,7 +164,7 @@
     <button type="button" id="up">ZIP 올리기</button>
   </div>
 </main>
-<div id="toast" class="toast" role="status" hidden><span id="toastText"></span><button type="button" id="toastAct" hidden></button></div>
+<div id="toast" class="toast" role="status" hidden><svg class="toast-ok" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11"/><path d="M7 12.5l3.2 3.2L17 9"/></svg><span id="toastText"></span><button type="button" id="toastAct" hidden></button></div>
 <dialog id="notice" aria-labelledby="noticeTitle">
   <h2 id="noticeTitle">촬영 사실 표시</h2>
   <p>업무용 휴대폰으로 공개된 장소를 찍으면 개인정보 보호법 제25조의2의 이동형 영상정보처리기기 촬영에 해당할 수 있습니다.</p>

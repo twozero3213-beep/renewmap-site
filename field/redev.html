@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>재개발 입안요건 사전검토 | 리뉴맵</title>
+<meta name="description" content="지번 목록을 붙여 넣으면 건축물대장으로 노후·불량 건축물 수와 연면적 비율을 부산 정비조례 조문과 함께 계산해 1쪽 문서와 건물별 근거 CSV로 만듭니다. 목록은 이 기기 밖으로 보내지 않습니다.">
+<link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/field/redev.html">
+<meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/field/redev.html">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="리뉴맵 RENEWMAP">
+<meta property="og:title" content="재개발 입안요건 사전검토 | 리뉴맵">
+<meta property="og:description" content="지번 목록 → 노후·불량 비율과 조문 → 결재용 1쪽·건물별 근거 CSV.">
+<meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
+<meta name="theme-color" content="#006f5b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1715" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../pretendard.css">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="field.css">
+</head>
+<body class="field theme-auto">
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top"><div class="wrap"><h1>입안요건 사전검토</h1></div></header>
+<main id="main">
+  <p class="note">지번 목록을 붙여 넣으면 노후·불량 비율을 조문과 함께 계산합니다.<br>목록은 이 기기 안에서만 계산하고 어디로도 보내지 않습니다.</p>
+  <p class="warn">승인 전 참고입니다.<br>규칙(부산 정비조례 제3조②·제5조②2)이 담당자 승인 전이라 납품용으로 쓰지 마세요.</p>
+
+  <form id="f" class="card" novalidate>
+    <label for="dong">법정동(부산 해운대구)</label>
+    <select id="dong">
+      <option value="2635010100">반송동</option><option value="2635010200">석대동</option><option value="2635010300" selected>반여동</option><option value="2635010400">재송동</option>
+      <option value="2635010500">우동</option><option value="2635010600">중동</option><option value="2635010700">좌동</option><option value="2635010800">송정동</option>
+    </select>
+    <p class="hint">지금은 부산 조례 기준만 있습니다.<br>다른 시·도는 그 조례를 확인한 뒤 엽니다.</p>
+    <label for="list">지번 또는 PNU 목록</label>
+    <textarea id="list" rows="8" placeholder="1291-5&#10;산 12-3&#10;엑셀에서 '지번' 열을 머리와 함께 복사해도 됩니다"></textarea>
+    <label for="area">구역 면적(㎡, 아는 경우만)</label>
+    <input id="area" type="number" inputmode="decimal" min="0" step="any">
+    <p class="hint">비워 두면 추정하지 않고 '현장 확인'으로 남깁니다.</p>
+    <label class="check" for="district"><input id="district" type="checkbox"><span>재정비촉진지구 안입니다(기준 50%)</span></label>
+    <button type="submit" class="save">계산하기</button>
+    <p id="msg" class="msg" role="status" aria-live="polite"></p>
+  </form>
+
+  <section id="out" class="card" aria-labelledby="outTitle" hidden>
+    <h2 id="outTitle">줄마다 따로 본 결과</h2>
+    <p id="outBase" class="hint"></p>
+    <div class="facts"><ul id="lines" class="req-list"></ul></div>
+    <p class="hint">종합 판정이 아닙니다.<br>'현장 확인'은 자료로 정하지 못한 요건입니다.<br>주민 동의와 재건축진단은 다루지 않습니다.</p>
+    <div class="row">
+      <button type="button" id="hwpx">한글 1쪽 받기</button>
+      <button type="button" class="ghost" id="pdf">PDF로 저장</button>
+    </div>
+    <button type="button" class="ghost" id="csv">건물별 근거 CSV 받기</button>
+  </section>
+</main>
+<section id="printDoc" class="print-doc" aria-hidden="true"></section>
+<script src="../site.js"></script>
+<script src="../docgen.js"></script>
+<script src="redev.js"></script>
+<script src="redev-app.js"></script>
+</body>
+</html>

@@ -79,10 +79,31 @@ dialog h2 { margin-top: 0; }
 dialog p { font-size: 15px; line-height: 24px; margin: 0 0 12px; }
 dialog[open] { animation: toast-in .24s var(--ease); }
 .print-doc { display: none; }
+/* 누름: 살짝 눌리는 느낌만(120ms). 크기가 바뀌지 않아 주변이 밀리지 않는다 */
+.field button, .pick label { transition: background-color .12s var(--ease), transform .12s var(--ease); }
+.field button:not(:disabled):active, .pick label:active { transform: scale(.98); }
+/* 위치를 받는 동안 '사진 찍기' 둘레가 천천히 퍼진다(받는 중이라는 표시). 끝나면 바로 멈춘다 */
+.pick label.big { position: relative; }
+.gps-wait .pick label.big::after { content: ''; position: absolute; inset: -2px; border-radius: inherit; border: 3px solid var(--green); opacity: 0; animation: gps-pulse 1.2s ease-out infinite; pointer-events: none; }
+@keyframes gps-pulse { 0% { opacity: .7; transform: none; } 100% { opacity: 0; transform: scale(1.05, 1.15); } }
+/* 오차 칩: 20m 이하 / 50m 이하 / 넓음. 숫자가 본 정보이고 색은 보조다(대비 4.5:1 이상 토큰만) */
+.acc-chip { display: inline-block; padding: 0 10px; border-radius: 99px; font-size: 14px; line-height: 24px; font-weight: 600; border: 1px solid var(--line); background: var(--bg); color: var(--dim); transition: background-color .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease); }
+.acc-chip[data-q="good"] { background: var(--soft); color: var(--soft-ink); border-color: var(--green); }
+.acc-chip[data-q="wide"] { background: var(--notice-bg); color: var(--notice); border-color: var(--notice); }
+/* 저장 성공: 체크가 한 번 톡 나타난다 */
+.toast-ok { display: none; flex: none; width: 24px; height: 24px; fill: none; stroke: var(--bg); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.toast.ok .toast-ok { display: block; animation: ok-pop .28s cubic-bezier(.2, 0, 0, 1.4) backwards; }
+.toast.ok .toast-ok path { transform-box: fill-box; transform-origin: left center; animation: ok-tick .2s .12s var(--ease) backwards; }
+.toast.ok #toastText { margin-right: auto; }
+@keyframes ok-pop { from { opacity: 0; transform: scale(.5); } }
+@keyframes ok-tick { from { opacity: 0; transform: scale(.3); } }
 @media (min-width: 1100px) { .field header.top .wrap { max-width: 560px; } }
 @media (prefers-reduced-motion: reduce) {
   .toast, dialog[open] { animation: none; }
-  .field button, .pick label, .chips label { transition: none; }
+  .field button, .pick label, .chips label, .acc-chip { transition: none; }
+  .field button:active, .pick label:active { transform: none; }
+  .gps-wait .pick label.big::after, .toast.ok .toast-ok, .toast.ok .toast-ok path { animation: none; }
+  .gps-wait .pick label.big::after { opacity: 1; }
 }
 /* PDF(인쇄): 1쪽 문서만 찍는다. 나눔고딕, 결론 먼저, 출처는 작은 글자 */
 @media print {
@@ -104,3 +125,30 @@ dialog[open] { animation: toast-in .24s var(--ease); }
   .print-doc sup { font-size: 70%; }
   .print-doc button { display: none; }
 }
+/* A2 자주 쓰는 한 줄 · A4 같은 자리 이전 기록 · 설정 */
+.phrase-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
+.field .phrase-list button { width: auto; margin: 0; min-height: 44px; padding: 0 14px; border-radius: 99px; background: var(--soft); color: var(--soft-ink); border-color: var(--line); font-weight: 600; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.near { margin-top: 8px; border-top: 0; }
+.near-list { list-style: none; margin: 0; padding: 0; }
+.near-list li { display: grid; grid-template-columns: 64px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; line-height: 20px; }
+.near-list img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.near-list .blank { width: 64px; height: 64px; border-radius: 8px; background: var(--soft); }
+.near-list .meta { color: var(--dim); }
+.near-list li > div { min-width: 0; }
+.near-list .check { margin: 6px 0 0; font-weight: 400; font-size: 14px; }
+.site-line { margin: 8px 0 0; font-size: 14px; font-weight: 600; color: var(--soft-ink); white-space: pre-line; }
+.field #newData p { margin: 0; }
+.settings label:first-of-type { margin-top: 4px; }
+.near-list .meta { white-space: pre-line; overflow-wrap: anywhere; }
+/* N1 가까운 건물 · 현장 확인 항목 · N2 GIS 내보내기 고르기 */
+#bldNote, .bld-list li, .site-line { white-space: pre-line; }
+.bld-list, .check-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.bld-list li { margin-top: 8px; font-size: 14px; line-height: 20px; }
+.field .bld-list button { margin: 0; text-align: left; white-space: pre-line; font-weight: 600; line-height: 22px; }
+.check-list li { border-top: 1px solid var(--line); padding: 4px 0 8px; }
+.check-list .check { font-weight: 600; }
+.ck-more { padding-left: 34px; }
+.list .check { margin: 8px 0 0; font-weight: 400; font-size: 14px; }
+/* 입안요건 사전검토: 상태 낱말이 본 정보이고 색은 보조다 */
+.req-list li[data-status="현장 확인"] b { color: var(--notice); }
+.req-list li[data-status="미충족"] b { color: var(--dim); }

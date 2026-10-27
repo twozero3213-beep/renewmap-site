@@ -1,4 +1,21 @@
+# 주의: 이 파일은 /renewmap-site/ 아래라 효력이 없다. robots.txt는 호스트 루트에서만 읽힌다(RFC 9309, Google·네이버 문서).
+# 루트(twozero3213-beep.github.io/robots.txt)는 404라 지금은 전부 허용으로 처리된다. 루트에 둘 방법(커스텀 도메인 또는
+# 사용자 사이트 저장소)은 대표가 정한다: docs/strategy/seo_aeo_moat_2026-10-28.md 1-4 #3. 루트로 옮기면 경로 앞에 /renewmap-site를 붙인다.
 User-agent: *
 Allow: /
 Disallow: /thanks.html
+
+# 검색·답변 노출용(학습 아님): 허용. 이름이 있는 그룹은 * 그룹을 물려받지 않아 thanks.html 줄을 다시 적는다(RFC 9309)
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: Yeti
+User-agent: Daumoa
+User-agent: OAI-SearchBot
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+Allow: /
+Disallow: /thanks.html
+
+# 학습용 봇(GPTBot·ClaudeBot·Google-Extended)은 따로 적지 않아 위 * 규칙(허용)을 따른다. 막을지는 대표가 정한다(seo_aeo_moat 1-4 #8).
+
 Sitemap: https://twozero3213-beep.github.io/renewmap-site/sitemap.xml

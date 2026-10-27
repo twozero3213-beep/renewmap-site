@@ -14,11 +14,16 @@
   let edit = null;            // 편집 중 사진 {canvas(원본), boxes:[], drag, start}
   let draft = null;           // 손 보정 중 핀 {lat,lng}
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } return null; };
+  // localStorage가 막힌 브라우저(사생활 모드 등)에서는 기억 기능만 끄고 기록 저장은 그대로 된다
+  const canStore = (() => { try { localStorage.setItem("renewmap-probe", "1"); localStorage.removeItem("renewmap-probe"); return true; } catch (e) { return false; } })();
+  const storeJson = (k, v) => { if (v !== undefined) return store(k, JSON.stringify(v)); try { return JSON.parse(store(k)) || null; } catch (e) { return null; } };
 
   function say(text, err) { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; }
   let toastTimer = 0;
-  function toast(text, actLabel, act) {
+  function toast(text, actLabel, act, ok) {
     const t = $("toast"), b = $("toastAct");
+    t.classList.toggle("ok", !!ok);
+    if (ok) { t.hidden = true; void t.offsetWidth; }   // 이미 떠 있어도 체크 표시를 다시 그린다
     $("toastText").textContent = text; b.hidden = !actLabel; b.textContent = actLabel || "";
     b.onclick = act ? () => { t.hidden = true; act(); } : null;
     t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 4000);
@@ -33,7 +38,10 @@
   function locLine() {
     if (!pos) return;
     const fix = corrected ? " · 보정됨" : "";
-    $("locLine").textContent = `현재 위치로 기록합니다 · 오차 약 ${Math.round(pos.accuracy || 0)}m${fix}`;
+    const m = Math.round(pos.accuracy || 0), chip = $("accChip");
+    $("locLine").textContent = `현재 위치로 기록합니다${fix}`;
+    // 오차 칩: 20m 이하·50m 이하·그보다 넓음. 색은 보조이고 숫자가 본 정보다
+    chip.textContent = `오차 약 ${m}m`; chip.dataset.q = m <= 20 ? "good" : m <= 50 ? "ok" : "wide"; chip.hidden = false;
     $("fix").disabled = false;
   }
   async function lookup() {
@@ -42,32 +50,158 @@
     try {
       const r = await L.locate(at.lat, at.lng, at.accuracy);
       if (at !== pos) return;                                   // 그 사이 위치가 바뀌었으면 버린다
-      if (!r || !r.code) { place = r ? { ...r, rows: [] } : null; $("dongLine").textContent = "이 위치의 행정동을 찾지 못했습니다.\n지번을 적어 두면 문서에 함께 남습니다."; $("facts").hidden = true; return; }
+      if (!r || !r.code) { place = r ? { ...r, rows: [] } : null; drawBld(null); $("dongLine").textContent = "이 위치의 행정동을 찾지 못했습니다.\n지번을 적어 두면 문서에 함께 남습니다."; $("facts").hidden = true; return; }
       const [emd, living, livingIdx, idx] = await Promise.all([L.get(`emd/${r.code5}.json`), L.get(`living/${r.code5}.json`).catch(() => null), L.get("living/index.json").catch(() => null), L.get("index.json").catch(() => null)]);
       if (at !== pos) return;
       const sg = idx && (idx.sigungu || []).find((s) => s.code5 === r.code5), sido = sg && (idx.sido || []).find((s) => s.code2 === sg.sido2);
       const b = idx && idx.boundary_source;
-      place = { ...r, sido: sido ? sido.name : "", rows: E.pickIndicators(r.code, emd, living, livingIdx), boundary: b ? { name: b.name, year: b.year, license: b.license_type } : null };
+      place = { ...r, sido: sido ? sido.name : "", rows: E.pickIndicators(r.code, emd, living, livingIdx), boundary: b ? { name: b.name, year: b.year, license: b.license_type } : null,
+        snapshot: idx && idx.snapshot_hash ? { hash: idx.snapshot_hash, generated_at: idx.generated_at } : null };
+      drawBld(E.bjdongCandidates(r.code, r.name, living));
       $("dongLine").textContent = `${place.sido} ${r.sgName} ${r.name}${r.nearby.length ? `\n경계 근처입니다. ${r.nearby.map((x) => x.name).join("·")}일 수도 있습니다.` : ""}`.trim();
       drawFacts();
-    } catch (e) { $("dongLine").textContent = "행정동 자료를 불러오지 못했습니다.\n인터넷에 한 번 연결되면 다음부터는 오프라인에서도 찾습니다."; }
+    } catch (e) { drawBld(null); $("dongLine").textContent = "행정동 자료를 불러오지 못했습니다.\n인터넷에 한 번 연결되면 다음부터는 오프라인에서도 찾습니다."; }
   }
   function drawFacts() {
     const ul = $("factList"); ul.textContent = "";
     for (const r of place.rows) {
       const li = document.createElement("li"), b = document.createElement("b"), s = document.createElement("small");
-      li.append(`${r.label} `); b.textContent = r.value; s.textContent = `출처 ${D.displayName(r.src.source_name)} · 기준일 ${D.govDate(r.reference_date)}`;
+      li.append(`${r.label} `); b.textContent = r.value; s.textContent = `출처 ${D.displayName(r.src.source_name)} · 기준일 ${D.govDate(r.reference_date)} · 이용조건 ${E.lic(r.src.license_type)}`;
       li.append(b, s); ul.append(li);
     }
+    // 자료 기준일(A3): 오프라인에서도 기기에 받아 둔 파일로 보인다
+    const old = E.oldestDate(place.rows), snap = place.snapshot;
+    $("factsBase").textContent = [old ? `가장 오래된 자료 기준일 ${D.govDate(old)}` : "", snap && snap.generated_at ? `받은 자료 묶음 ${D.govDate(snap.generated_at.slice(0, 10))}` : ""].filter(Boolean).join("\n");
     $("facts").hidden = !place.rows.length;
+  }
+
+  // ── 가까운 건물(N1): 행정동에서 근사한 법정동의 건물 자료(buildings/{법정동}.json)를 지번으로 찾는다. 사람이 고르기 전에는 채우지 않는다.
+  // 건물 자료는 처음 찾을 때 받고(서비스 워커가 오프라인용으로 저장), 위치는 기기 밖으로 보내지 않는다(받는 파일 이름은 법정동 코드뿐)
+  let bjds = [], chosen = null;
+  const bldFiles = new Map();
+  const bldGet = (code) => { if (!bldFiles.has(code)) bldFiles.set(code, getJson(`buildings/${code}.json`).catch(() => { bldFiles.delete(code); return null; })); return bldFiles.get(code); };
+  const line = (text, cls) => { const li = document.createElement("li"); li.textContent = text; if (cls) li.className = cls; return li; };
+  function drawBld(cands) {
+    bjds = cands || []; chosen = null; $("bldQ").value = ""; $("bldList").textContent = ""; $("bldPicked").hidden = true;
+    $("bld").hidden = !place;
+    $("bldFind").hidden = !bjds.length;
+    $("bldNote").textContent = bjds.length
+      ? `법정동 ${bjds.map((b) => b.name).join("·")}의 건축물대장에서 찾습니다.\n법정동은 행정동에서 근사해 골랐습니다.\n건물 자료에 좌표가 없어 사진 위치로 거리를 재지 못합니다.\n지번을 적으면 3동까지 보여 줍니다.`
+      : "이 지역은 건물 자료가 아직 없습니다.\n지번은 아래 '자세히'에 직접 적어 주세요.";
+  }
+  function pickedText() {
+    $("bldPicked").hidden = !chosen;
+    if (chosen) $("bldPicked").textContent = `자동 채움 · 건축물대장 기준일 ${D.govDate(chosen.reference_date)}\n${chosen.bjd_name} ${chosen.jibun || ""} · 사용승인 ${chosen.use_apr_day ? D.govDate(chosen.use_apr_day) : "자료 없음"} · ${chosen.main_use || "-"} · ${chosen.structure || "-"} · ${chosen.floors === null ? "층수 자료 없음" : `지상 ${chosen.floors}층`}\n지번이나 필지 번호를 고치면 자동 채움을 지웁니다.`;
+  }
+  const same = (b, f) => !!chosen && chosen.bjd10 === f.bjd10 && chosen.jibun === b.jibun && chosen.main_use === b.main_use && chosen.use_apr_day === b.use_apr_day && chosen.floors === b.floors;
+  async function searchBld() {
+    const q = $("bldQ").value, files = (await Promise.all(bjds.map((b) => bldGet(b.code10)))).filter(Boolean);
+    if (q !== $("bldQ").value) return;                                  // 그 사이 더 적었으면 버린다
+    const ul = $("bldList"), { hits, total } = E.findBuildings(files, q);
+    ul.textContent = "";
+    if (!q.trim()) return;
+    if (!files.length) { ul.append(line("건물 자료를 불러오지 못했습니다.\n인터넷에 한 번 연결되면 다음부터는 오프라인에서도 찾습니다.", "hint")); return; }
+    if (!hits.length) { ul.append(line("그 지번의 건물을 찾지 못했습니다.\n지번만 적어 두어도 문서에 남습니다.", "hint")); return; }
+    for (const { b, f } of hits) {
+      const li = document.createElement("li"), btn = document.createElement("button"), on = same(b, f);
+      btn.type = "button"; btn.className = on ? "" : "ghost"; btn.setAttribute("aria-pressed", String(on));
+      btn.textContent = `${f.name} ${b.jibun}${b.name ? ` ${b.name}` : ""}\n${b.main_use || "-"} · ${b.structure || "-"} · ${b.floors === null ? "층수 자료 없음" : `지상 ${b.floors}층`} · 사용승인 ${b.use_apr_day ? D.govDate(b.use_apr_day) : "자료 없음"}`;
+      btn.addEventListener("click", () => {
+        chosen = on ? null : E.buildingFill(b, f);
+        $("jibun").value = chosen ? chosen.jibun || "" : ""; $("pnu").value = chosen ? chosen.pnu || "" : "";
+        pickedText(); searchBld();
+      });
+      li.append(btn); ul.append(li);
+    }
+    if (total > hits.length) ul.append(line(`같은 본번 건물이 ${total}동 있습니다.\n지번 뒤에 건물 이름을 더 적으면 좁혀집니다.`, "hint"));
+  }
+  $("bldQ").addEventListener("input", searchBld);
+  // 사람이 지번·필지 번호를 고치면 자동 채움을 지운다(고친 값이 이긴다)
+  for (const id of ["jibun", "pnu"]) $(id).addEventListener("input", () => {
+    if (!chosen || ($("jibun").value === (chosen.jibun || "") && $("pnu").value === (chosen.pnu || ""))) return;
+    chosen = null; pickedText(); searchBld(); say("직접 고쳐서 건물 자동 채움을 지웠습니다.");
+  });
+
+  // ── 새 공식 자료 점검(A3): 인터넷이 될 때 index.json의 묶음 해시를 기기에 받아 둔 것과 비교한다. 다르면 세션에 한 번만 알린다
+  async function checkData() {
+    try {
+      if (!navigator.onLine || sessionStorage.getItem("renewmap-data-checked")) return;
+      sessionStorage.setItem("renewmap-data-checked", "1");
+    } catch (e) { return; }
+    try {
+      // no-cache: 서비스 워커 캐시를 건너뛰고 서버에 바뀌었는지만 묻는다(안 바뀌었으면 304)
+      const [cur, latest] = await Promise.all([L.get("index.json"), fetch(DATA + "national/index.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null))]);
+      $("newData").hidden = !E.isNewData(cur, latest);
+    } catch (e) { /* 오프라인·일시 오류면 다음 세션에 다시 본다 */ }
+  }
+  // 받기: 기기에 받아 둔 행정동 경계·현황 파일만 지우고 다시 연다. 저장한 기록은 숫자를 기록 안에 갖고 있어 바뀌지 않는다
+  $("newDataGet").addEventListener("click", async () => {
+    $("newDataGet").disabled = true;
+    try {
+      for (const k of await caches.keys()) {
+        const c = await caches.open(k);
+        for (const q of await c.keys()) if (/\/data\/national\//.test(q.url)) await c.delete(q);
+      }
+      location.reload();
+    } catch (e) { $("newDataGet").disabled = false; toast("새 자료를 받지 못했습니다.\n잠시 뒤 다시 해 보세요."); }
+  });
+
+  // ── 같은 자리 이전 기록(A4): 위치가 정해지면 반경 안 기록을 거리·날짜 순으로 보여 준다. 묶기는 새 기록에만 site_id를 붙인다
+  let site = null;            // 이번 기록을 묶을 지점 {id, from(이전 기록), photos:Set(1쪽에 넣을 이전 사진)}
+  let nearUrls = [];
+  const RADIUS_KEY = "renewmap-field-radius";
+  const radius = () => Number($("radius").value) || 50;
+  $("radius").value = ["20", "30", "50", "100"].includes(store(RADIUS_KEY)) ? store(RADIUS_KEY) : "50";
+  $("radius").addEventListener("change", () => { store(RADIUS_KEY, $("radius").value); drawNear(); });
+  function siteText() {
+    $("siteLine").hidden = !site;
+    if (site) $("siteLine").textContent = `같은 지점으로 묶었습니다.\n이전 기록 ${E.localTime(site.from.recorded_at)}${site.photos.size ? ` · 이전 사진 ${site.photos.size}장을 1쪽에 넣습니다` : ""}`;
+  }
+  async function drawNear() {
+    nearUrls.forEach((u) => URL.revokeObjectURL(u)); nearUrls = [];
+    const ul = $("nearList"); ul.textContent = "";
+    if (!pos) { $("near").hidden = true; return; }
+    const at = pos, near = E.nearbyRecords(await S.records(), at.lat, at.lng, radius());
+    if (at !== pos) return;
+    if (site && !near.some((x) => E.siteOf(x.rec) === site.id)) { site = null; siteText(); }
+    $("near").hidden = !near.length;
+    $("nearSum").textContent = `이 근처 이전 기록 ${near.length}건 (반경 ${radius()}m)`;
+    for (const { rec, dist } of near) {
+      const li = document.createElement("li"), body = document.createElement("div"), head = document.createElement("b"), meta = document.createElement("div"), btn = document.createElement("button");
+      const first = rec.photos && rec.photos[0] && await S.photo(rec.photos[0]);
+      if (first) { const img = document.createElement("img"), u = URL.createObjectURL(first); nearUrls.push(u); img.src = u; img.alt = `${E.localTime(rec.recorded_at)} 기록 사진`; li.append(img); }
+      else { const blank = document.createElement("span"); blank.className = "blank"; li.append(blank); }
+      head.textContent = `${E.localTime(rec.recorded_at)} · ${rec.target}${rec.imported ? " · 가져옴" : ""}`;
+      meta.className = "meta";
+      meta.textContent = `${dist}m 떨어짐 · 그때 오차 ${rec.accuracy_m === null ? "자료 없음" : `±${Math.round(rec.accuracy_m)}m`} · 지금 오차 ±${Math.round(at.accuracy || 0)}m${rec.memo ? `\n${rec.memo}` : ""}`;
+      const bound = site && site.from.id === rec.id;
+      btn.type = "button"; btn.className = "ghost"; btn.textContent = bound ? "묶기 풀기" : "같은 지점으로 묶기";
+      btn.addEventListener("click", () => { site = bound ? null : { id: E.siteOf(rec), from: rec, photos: new Set() }; siteText(); drawNear(); });
+      body.append(head, meta, btn);
+      // 묶은 기록의 사진 중 1쪽에 넣을 것만 고른다(기본은 넣지 않음)
+      if (bound) (rec.photos || []).forEach((id, i) => {
+        const l = document.createElement("label"), c = document.createElement("input"), t = document.createElement("span");
+        l.className = "check"; c.type = "checkbox"; c.checked = site.photos.has(id); t.textContent = `이전 사진 ${i + 1}을 1쪽에 넣기`;
+        c.addEventListener("change", () => {
+          if (c.checked && pending.length + site.photos.size >= R.MAX_PHOTOS) { c.checked = false; say(`사진은 한 기록에 ${R.MAX_PHOTOS}장까지 붙일 수 있습니다.`, true); return; }
+          if (c.checked) site.photos.add(id); else site.photos.delete(id);
+          siteText();
+        });
+        l.append(c, t); body.append(l);
+      });
+      li.append(body); ul.append(li);
+    }
   }
   function locate() {
     if (!navigator.geolocation) { $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '자세히'에 지번을 적어 주세요."; return; }
     $("locLine").textContent = "위치를 받는 중입니다.";
+    const wait = (on) => { document.body.classList.toggle("gps-wait", on); $("gps").setAttribute("aria-busy", String(on)); };
+    wait(true);
     navigator.geolocation.getCurrentPosition((p) => {
-      gps = { lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy };
-      pos = { ...gps }; corrected = false; locLine(); lookup();
-    }, () => { if (!pos) $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '자세히'에 지번을 적어 주세요."; }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
+      wait(false);
+      gps ={ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy };
+      pos = { ...gps }; corrected = false; locLine(); lookup(); drawNear();
+    }, () => { wait(false); if (!pos) $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '자세히'에 지번을 적어 주세요."; }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
   }
   $("gps").addEventListener("click", locate);
 
@@ -103,7 +237,7 @@
   }));
   $("pinOk").addEventListener("click", () => {
     pos = { lat: draft.lat, lng: draft.lng, accuracy: gps.accuracy }; corrected = true;
-    $("pinBox").hidden = true; locLine(); lookup();
+    $("pinBox").hidden = true; locLine(); lookup(); drawNear();
   });
   $("pinCancel").addEventListener("click", () => { $("pinBox").hidden = true; });
 
@@ -184,19 +318,21 @@
     $("auto").disabled = false;
   });
   $("undo").addEventListener("click", () => { if (edit) { edit.boxes.pop(); paint(false); } });
-  $("cancel").addEventListener("click", closeEdit);
+  $("cancel").addEventListener("click", () => { linkNext = null; closeEdit(); });
   $("safe").addEventListener("change", () => { $("attach").disabled = !$("safe").checked; });
   $("shot").addEventListener("change", (e) => startEdit(e.target.files[0]));
   $("album").addEventListener("change", (e) => startEdit(e.target.files[0]));
   $("attach").addEventListener("click", () => {
     if (!edit) return;
     if (!$("safe").checked) { say("사진을 붙이기 전에 '가릴 곳을 모두 확인했습니다'를 눌러 주세요.", true); return; }
-    if (pending.length >= R.MAX_PHOTOS) { say(`사진은 한 기록에 ${R.MAX_PHOTOS}장까지 붙일 수 있습니다.`, true); return; }
+    if (pending.length + (site ? site.photos.size : 0) >= R.MAX_PHOTOS) { say(`사진은 한 기록에 ${R.MAX_PHOTOS}장까지 붙일 수 있습니다.`, true); return; }
     paint(false);
     $("cv").toBlob((blob) => {   // 캔버스에서 새로 만든 JPEG라 원본의 위치·기기 정보(EXIF)가 없다
       const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
       pending.push({ id, blob, url: URL.createObjectURL(blob) });
+      const link = linkNext; linkNext = null;
       closeEdit(); drawThumbs(); say("");
+      if (link) { $(`ck-${link}`).checked = true; $(`ck-${link}`).dispatchEvent(new Event("change")); $(`ckp-${link}`).value = id; }
     }, "image/jpeg", 0.82);
   });
   function drawThumbs() {
@@ -208,7 +344,7 @@
       x.addEventListener("click", () => { URL.revokeObjectURL(p.url); pending.splice(i, 1); drawThumbs(); });
       f.append(img, x); box.append(f);
     });
-    badge();
+    drawCheckPhotos(); badge();
   }
 
   // ── 고르기(칩): 대상 유형·자료와 비교. 저장값은 원장 상태 그대로, 화면은 쉬운 말
@@ -220,10 +356,72 @@
     }
   }
   const picked = (name) => (document.querySelector(`input[name="${name}"]:checked`) || {}).value || "";
-  chips($("targets"), "target", R.TARGETS);
+  // 대상 유형은 마지막에 고른 값을 미리 고른다. 상태는 미리 고르지 않는다(늘 '모름'에서 시작. 앞 기록의 '같음'이 따라붙지 않게)
+  const TARGET_KEY = "renewmap-field-last-target", PHRASE_KEY = "renewmap-field-phrases-v1";
+  chips($("targets"), "target", R.TARGETS, null, R.TARGETS.includes(store(TARGET_KEY)) ? store(TARGET_KEY) : undefined);
   chips($("statuses"), "status", ["추가확인", "확인", "충돌"], R.STATUS_LABEL, "추가확인");
+  // ── 현장 확인 항목: 대상 유형이 건물 외관·주거지 골목 등일 때만 보인다. 항목마다 한 줄 메모와 붙인 사진 하나를 잇는다. 판정어·점수는 없다
+  let linkNext = null;          // '이 항목 사진 찍기'로 들어간 경우, 다음에 붙이는 사진을 그 항목에 잇는다
+  for (const c of R.CHECKS) {
+    const li = document.createElement("li"), l = document.createElement("label"), cb = document.createElement("input"), t = document.createElement("span"), more = document.createElement("div");
+    l.className = "check"; l.htmlFor = cb.id = `ck-${c.id}`; cb.type = "checkbox"; t.textContent = `${c.label} (${c.hint})`;
+    more.className = "ck-more"; more.hidden = true;
+    const ml = document.createElement("label"), m = document.createElement("input"), pl = document.createElement("label"), sel = document.createElement("select"), shot = document.createElement("button");
+    ml.htmlFor = m.id = `ckm-${c.id}`; ml.textContent = "본 것 한 줄 (선택)"; m.maxLength = R.CHECK_MEMO_MAX; m.autocomplete = "off"; m.placeholder = "이름·전화번호는 적지 마세요";
+    pl.htmlFor = sel.id = `ckp-${c.id}`; pl.textContent = "이 항목의 사진";
+    shot.type = "button"; shot.className = "ghost"; shot.textContent = "이 항목 사진 찍기";
+    shot.addEventListener("click", () => { linkNext = c.id; document.querySelector('label[for="shot"]').click(); });
+    cb.addEventListener("change", () => { more.hidden = !cb.checked; });
+    l.append(cb, t); more.append(ml, m, pl, sel, shot); li.append(l, more); $("checkList").append(li);
+  }
+  function drawCheckPhotos() {
+    for (const c of R.CHECKS) {
+      const sel = $(`ckp-${c.id}`), v = sel.value;
+      sel.textContent = ""; sel.append(new Option("사진 없음", ""));
+      pending.forEach((p, i) => sel.append(new Option(`사진 ${i + 1}`, p.id)));
+      sel.value = pending.some((p) => p.id === v) ? v : "";
+    }
+  }
+  const checkTarget = () => { $("checkBox").hidden = !R.CHECK_TARGETS.includes(picked("target")); };
+  $("targets").addEventListener("change", checkTarget);
+  checkTarget(); drawCheckPhotos();
+  const readChecks = () => R.CHECKS.filter((c) => $(`ck-${c.id}`).checked).map((c) => ({ id: c.id, memo: $(`ckm-${c.id}`).value, photo: $(`ckp-${c.id}`).value }));
+  function clearChecks() {
+    for (const c of R.CHECKS) { $(`ck-${c.id}`).checked = false; $(`ckm-${c.id}`).value = ""; $(`ckp-${c.id}`).value = ""; $(`ck-${c.id}`).closest("li").querySelector(".ck-more").hidden = true; }
+  }
   $("item").append(new Option("고르지 않음", ""));
   for (const v of R.ITEMS) $("item").append(new Option(v, v));
+
+  // ── 자주 쓰는 한 줄(A2): 대상 유형별로 이 기기(localStorage)에만 둔다. ZIP 내보내기에 넣지 않는다(개인 습관 정보)
+  const phrases = () => storeJson(PHRASE_KEY) || {};
+  const tKey = () => picked("target") || "기타";
+  function drawPhrases() {
+    const box = $("phrases"), list = phrases()[tKey()] || [];
+    box.textContent = "";
+    for (const text of list) {
+      const b = document.createElement("button");
+      let timer = 0, long = false;
+      b.type = "button"; b.textContent = text; b.setAttribute("aria-label", `메모에 붙이기: ${text}`);
+      const stop = () => clearTimeout(timer);
+      b.addEventListener("pointerdown", () => { long = false; timer = setTimeout(() => {
+        long = true; const all = phrases(); all[tKey()] = (all[tKey()] || []).filter((x) => x !== text); storeJson(PHRASE_KEY, all); drawPhrases(); toast("자주 쓰는 한 줄을 지웠습니다.");
+      }, 650); });
+      for (const ev of ["pointerup", "pointerleave", "pointercancel"]) b.addEventListener(ev, stop);
+      b.addEventListener("contextmenu", (e) => e.preventDefault());
+      b.addEventListener("click", () => {
+        if (long) return;
+        const m = $("memo"); m.value = m.value.trim() ? `${m.value.trim()} ${text}` : text;
+        const all = phrases(); all[tKey()] = R.rememberPhrase(all[tKey()], text); storeJson(PHRASE_KEY, all);   // 쓴 것을 맨 앞으로
+      });
+      box.append(b);
+    }
+    $("phraseBox").hidden = !list.length;
+  }
+  if (canStore) {
+    $("keepBox").hidden = false;
+    $("targets").addEventListener("change", () => { store(TARGET_KEY, picked("target")); drawPhrases(); });
+    drawPhrases();
+  }
 
   // ── 저장
   $("f").addEventListener("submit", async (e) => {
@@ -232,14 +430,23 @@
       // 붙인 사진은 '가림 확인' 칸을 거쳐야 pending에 들어오므로 photoSafe는 그 확인을 뜻한다
       const dong = place && place.code ? { code: place.code, name: place.name, sgName: place.sgName, sido: place.sido, nearby: place.nearby.map((x) => x.name), boundary: place.boundary } : null;
       const rec = R.makeRecord({ pnu: $("pnu").value, jibun: $("jibun").value, target: picked("target"), item: $("item").value, observed: $("observed").value,
-        status: picked("status"), memo: $("memo").value, photos: pending.map((p) => p.id), photoSafe: true,
-        ...(pos ? { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy, corrected, gps } : {}), dong, indicators: dong ? place.rows : [] }, new Date());
+        status: picked("status"), memo: $("memo").value, photos: pending.map((p) => p.id), photoSafe: true, checks: readChecks(), building: chosen,
+        ...(pos ? { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy, corrected, gps } : {}), dong, indicators: dong ? place.rows : [], snapshot: dong ? place.snapshot : null,
+        ...(site ? { site_id: site.id, site_radius_m: radius(), prev_photos: [...site.photos],
+          site_prev: (await S.records()).filter((r) => E.siteOf(r) === site.id).map((r) => r.recorded_at) } : {}) }, new Date());
+      // 자주 쓰는 한 줄 저장은 기록 저장보다 먼저 검사한다(개인정보 꼴이면 둘 다 저장하지 않는다)
+      const keep = canStore && $("keepPhrase").checked && rec.memo ? R.rememberPhrase(phrases()[rec.target], rec.memo) : null;
       await S.tx(["records", "photos"], "readwrite", (rs, ps) => { for (const p of pending) ps.add({ id: p.id, blob: p.blob }); return rs.add(rec); });
       for (const p of pending) URL.revokeObjectURL(p.url);
       pending = []; drawThumbs();
       for (const id of ["observed", "memo"]) $(id).value = "";
+      if (keep) { const all = phrases(); all[rec.target] = keep; storeJson(PHRASE_KEY, all); drawPhrases(); }
+      store(TARGET_KEY, rec.target);
+      // 다음 기록은 '모름'에서 시작한다
+      document.querySelector('input[name="status"][value="추가확인"]').checked = true; $("item").value = ""; $("keepPhrase").checked = false; clearChecks();
+      site = null; siteText(); drawNear();
       say("");
-      toast("저장했습니다.", "되돌리기", async () => { await S.deleteRecord(rec); toast("저장을 되돌렸습니다."); render(); });
+      toast("저장했습니다.", "되돌리기", async () => { await S.deleteRecord(rec); toast("저장을 되돌렸습니다."); render(); }, true);
       await render();
     } catch (err) { say(err.message, true); }
   });
@@ -247,11 +454,14 @@
   // ── 1쪽 문서: 한글(HWPX)은 바로 받고 보관함에도 남긴다. PDF는 인쇄 창에서 'PDF로 저장'
   async function docOf(rec) {
     await templates;
-    const images = [];
-    for (const id of rec.photos || []) {
+    const images = [], all = (rec.prev_photos || []).length ? await S.records() : [];
+    // 이 기록 사진 다음에, 묶을 때 고른 같은 자리 이전 기록 사진(그 기록이 지워졌으면 뺀다)
+    const ids = [...(rec.photos || []).map((id) => [id, null]), ...(rec.prev_photos || []).map((id) => [id, (all.find((r) => (r.photos || []).includes(id)) || {}).recorded_at])];
+    for (const [id, prev] of ids) {
+      if (prev === undefined) continue;
       const blob = await S.photo(id); if (!blob) continue;
       const bmp = await createImageBitmap(blob);
-      images.push({ bytes: new Uint8Array(await blob.arrayBuffer()), w: bmp.width, h: bmp.height, src: URL.createObjectURL(blob) });
+      images.push({ bytes: new Uint8Array(await blob.arrayBuffer()), w: bmp.width, h: bmp.height, src: URL.createObjectURL(blob), ...(prev ? { prev } : {}) });
       bmp.close();
     }
     return { doc: E.buildFieldDoc(rec, images), images };
@@ -280,22 +490,37 @@
 
   const isToday = (iso) => new Date(iso).toDateString() === new Date().toDateString();
   async function render() {
-    const rows = await S.records();
+    let rows = await S.records();
+    // 같은 지점끼리 모아 보기: 지점은 최근 기록 순, 지점 안은 날짜 순(전·후 비교의 바탕). 순위·점수는 없다
+    const group = new Map();
+    for (const r of rows) { const k = E.siteOf(r); if (!group.has(k)) group.set(k, []); group.get(k).push(r); }
+    if ($("bySite").checked) rows = [...group.values()].flatMap((g) => g.slice().reverse());
     $("today").textContent = `오늘 ${rows.filter((r) => isToday(r.recorded_at)).length}건`;
     const ul = $("list"); ul.textContent = "";
     for (const r of rows) {
       const li = document.createElement("li"), b = document.createElement("b"), m = document.createElement("div"), acts = document.createElement("div");
       b.textContent = `${r.dong ? `${r.dong.sgName} ${r.dong.name}` : r.jibun || r.pnu || R.NO_PARCEL} · ${r.target || r.item || "기록"}`;
       m.className = "meta";
-      m.textContent = `${E.localTime(r.recorded_at)}${r.accuracy_m !== null && r.accuracy_m !== undefined ? ` · ±${Math.round(r.accuracy_m)}m` : ""}${r.corrected ? " · 보정됨" : ""}${r.parcel ? ` · ${r.parcel}` : ""}${r.photos && r.photos.length ? ` · 사진 ${r.photos.length}장` : ""}`;
+      m.textContent = `${E.localTime(r.recorded_at)}${r.accuracy_m !== null && r.accuracy_m !== undefined ? ` · ±${Math.round(r.accuracy_m)}m` : ""}${r.corrected ? " · 보정됨" : ""}${r.parcel ? ` · ${r.parcel}` : ""}${r.photos && r.photos.length ? ` · 사진 ${r.photos.length}장` : ""}${group.get(E.siteOf(r)).length > 1 ? ` · 같은 지점 ${group.get(E.siteOf(r)).length}건` : ""}${r.imported ? " · 가져옴" : ""}`;
       acts.className = "row";
       for (const [label, fn] of [["한글 1쪽 받기", hwpx], ["PDF로 저장", pdf]]) {
         const btn = document.createElement("button"); btn.type = "button"; btn.className = "ghost"; btn.textContent = label;
         btn.addEventListener("click", () => fn(r)); acts.append(btn);
       }
-      li.append(b, m, acts); ul.append(li);
+      const pick = document.createElement("label"), pc = document.createElement("input"), pt = document.createElement("span");
+      pick.className = "check"; pc.type = "checkbox"; pc.checked = gisPick.has(r.id); pt.textContent = "GIS로 받을 기록으로 고르기";
+      pc.addEventListener("change", () => { if (pc.checked) gisPick.add(r.id); else gisPick.delete(r.id); });
+      pick.append(pc, pt);
+      li.append(b, m, acts, pick); ul.append(li);
     }
   }
+  // ── GIS 내보내기(N2): 고른 기록(없으면 모두)을 GeoJSON·CSV로. 사진은 빼고 사진 파일 이름만 적는다
+  const gisPick = new Set();
+  async function gisRows() { const all = await S.records(), some = all.filter((r) => gisPick.has(r.id)); return some.length ? some : all; }
+  const stamp = () => { const t = new Date(); return `${t.getFullYear()}-${pad2(t.getMonth() + 1)}-${pad2(t.getDate())}_${pad2(t.getHours())}${pad2(t.getMinutes())}`; };
+  const pad2 = (n) => String(n).padStart(2, "0");
+  $("geojson").addEventListener("click", async () => { const rows = await gisRows(); D.saveBytes(`renewmap-field-${stamp()}.geojson`, JSON.stringify(R.toGeoJSON(rows, new Date()), null, 2), "application/geo+json"); toast(`${rows.length}건을 GeoJSON으로 받았습니다.`); });
+  $("csv").addEventListener("click", async () => { const rows = await gisRows(); D.saveBytes(`renewmap-field-${stamp()}.csv`, R.toCSV(rows), "text/csv;charset=utf-8"); toast(`${rows.length}건을 CSV로 받았습니다.`); });
 
   // ── 내보내기: records.json + photos/<id>.jpg 를 ZIP 하나로. 공유는 같은 ZIP을 기기의 공유 창으로 넘긴다
   async function buildZip() {
@@ -328,9 +553,36 @@
     });
   }
 
+  $("bySite").addEventListener("change", () => render());
+
+  // ── ZIP 가져오기(A4): 같은 id는 건너뛰고, 이미 있는 사진도 덮어쓰지 않는다. 가져온 기록에는 '가져옴'이 붙는다
+  $("importZip").addEventListener("change", async (e) => {
+    const f = e.target.files[0]; e.target.value = "";
+    if (!f) return;
+    try {
+      if (f.size > R.LIMITS.zip) throw new Error("파일이 너무 큽니다.\n100MB 이하만 가져올 수 있습니다.");
+      const got = R.parseImport(new Uint8Array(await f.arrayBuffer()), new Date()), have = new Set((await S.records()).map((r) => r.id));
+      let added = 0, same = 0;
+      for (const rec of got.records) {
+        if (have.has(rec.id)) { same++; continue; }
+        try {
+          await S.tx(["records", "photos"], "readwrite", (rs, ps) => {
+            for (const id of [...rec.photos, ...rec.prev_photos]) { const q = ps.count(id); q.onsuccess = () => { if (!q.result) ps.add({ id, blob: new Blob([got.photos.get(id)], { type: "image/jpeg" }) }); }; }
+            return rs.add(rec);
+          });
+          added++;
+        } catch (err) { same++; }
+      }
+      toast(`${added}건을 가져왔습니다.${same ? `\n이미 있는 ${same}건은 건너뛰었습니다.` : ""}${got.skipped ? `\n형식이 맞지 않는 ${got.skipped}건은 받지 않았습니다.` : ""}`);
+      await render(); drawNear();
+    } catch (err) { toast(err.message); }
+  });
+
   if (!store("renewmap-field-intro")) { $("intro").hidden = false; store("renewmap-field-intro", "1"); }
   // 위치 권한이 이미 있으면 바로 받는다. 처음이면 사진 찍기·'현재 위치 받기'를 누를 때 한 번 묻는다
   if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: "geolocation" }).then((s) => { if (s.state === "granted") locate(); }).catch(() => {});
   render().catch(() => say("이 브라우저에서는 기기 저장소를 쓸 수 없습니다.", true));
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  checkData();
+  window.addEventListener("online", checkData);
 })();

@@ -3,7 +3,7 @@
 .app-home header.top .wrap { min-height: 56px; }
 .home { max-width: 640px; margin: 0 auto; padding: 16px 16px 24px; word-break: keep-all; overflow-wrap: break-word; }
 .home > section { padding: 0; }
-.home-hero { padding: 8px 0 0; animation: home-in .2s ease-out both; }
+.home-hero { padding: 8px 0 0; }
 .home h1 { margin: 0 0 8px; font-size: 28px; line-height: 36px; font-weight: 700; }
 .home-sub { margin: 0 0 16px; font-size: 15px; line-height: 22px; color: var(--dim); }
 .home-search-row { position: relative; }
@@ -18,14 +18,52 @@
 .home-msg { min-height: 20px; margin: 4px 0 0; font-size: 14px; line-height: 20px; color: var(--dim); white-space: pre-line; }
 .home-example { margin: 4px 0 16px; font-size: 14px; line-height: 20px; color: var(--dim); }
 .home-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 24px; }
-.tile { display: grid; grid-template-columns: 28px 1fr; grid-template-rows: auto auto; column-gap: 8px; align-content: center; min-height: 88px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); text-decoration: none; transition: background-color .12s var(--ease), border-color .12s var(--ease); }
+.tile { position: relative; display: grid; grid-template-columns: 28px 1fr; grid-template-rows: auto auto; column-gap: 8px; align-content: center; min-height: 88px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); text-decoration: none; transition: transform .16s var(--ease), background-color .12s var(--ease), border-color .12s var(--ease); }
 .tile:hover, .tile:active { background: var(--soft); border-color: var(--green); }
+@media (hover: hover) { .tile:hover { transform: translateY(-2px); } }
+.tile:active { transform: scale(.98); }
 .tile:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .tile svg { grid-row: 1 / 3; width: 28px; height: 28px; fill: none; stroke: var(--green); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; margin-top: 2px; }
 .tile b { font-size: 15px; line-height: 22px; }
 .tile span { font-size: 14px; line-height: 20px; color: var(--dim); }
 .home-note { margin: 0; font-size: 14px; line-height: 20px; color: var(--dim); }
-@keyframes home-in { from { opacity: 0; } }
+/* 첫 화면: 제목 → 설명 → 검색 → 순서 그림 → 업무 카드가 차례로 떠오른다(모두 400ms 안에 끝난다).
+   backwards: 끝난 뒤에는 카드의 hover·누름 transform을 막지 않는다 */
+.home-hero > *, .home-tiles > .tile { animation: home-rise .2s var(--ease) backwards; }
+.home-hero > :nth-child(2) { animation-delay: 30ms; } .home-hero > :nth-child(3) { animation-delay: 60ms; }
+.home-hero > :nth-child(4) { animation-delay: 90ms; } .home-hero > :nth-child(5) { animation-delay: 120ms; }
+.home-tiles > :nth-child(1) { animation-delay: 150ms; } .home-tiles > :nth-child(2) { animation-delay: 165ms; }
+.home-tiles > :nth-child(3) { animation-delay: 180ms; } .home-tiles > :nth-child(4) { animation-delay: 195ms; }
+@keyframes home-rise { from { opacity: 0; transform: translateY(8px); } }
+/* 검색 후보: 목록이 처음 나타날 때만 차례로(타자 칠 때마다 깜빡이지 않게 home.js가 .fresh를 붙인다) */
+.home-hits.fresh li { animation: home-rise .16s var(--ease) backwards; }
+.home-hits.fresh li:nth-child(2) { animation-delay: 20ms; } .home-hits.fresh li:nth-child(3) { animation-delay: 40ms; }
+.home-hits.fresh li:nth-child(4) { animation-delay: 60ms; } .home-hits.fresh li:nth-child(5) { animation-delay: 80ms; } .home-hits.fresh li:nth-child(n+6) { animation-delay: 100ms; }
+
+/* 순서 그림: 사진 찍기 → 위치·동 찾기 → 1쪽 문서. 한 바퀴 4.5초, 세 바퀴 뒤 멈춘다(home.js .done).
+   자바스크립트가 없거나 감속 설정이면 움직이지 않고 세 단계가 모두 보인다. 화면 밖에서는 멈춘다 */
+.story { margin: 0 0 16px; }
+.story ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.story li { position: relative; isolation: isolate; display: grid; justify-items: center; gap: 4px; padding: 12px 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); text-align: center; }
+.story li + li::before { content: ''; position: absolute; left: -7px; top: 50%; width: 6px; height: 6px; border-top: 2px solid var(--dim); border-right: 2px solid var(--dim); transform: translateY(-50%) rotate(45deg); }
+.story li::after { content: ''; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; border: 2px solid var(--green); background: var(--soft); opacity: 0; }
+.story svg { width: 40px; height: 40px; fill: none; stroke: var(--green); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.story svg * { transform-box: fill-box; transform-origin: center; }
+.story .st-area { stroke: var(--dim); stroke-width: 2; stroke-dasharray: 3 3; }
+.story .st-line { transform-origin: left center; }
+.story b { font-size: 14px; line-height: 20px; font-weight: 600; }
+.story.run li::after { animation: story-on 4.5s var(--ease) 3 backwards; }
+.story.run li:nth-child(2)::after { animation-delay: 1.5s; } .story.run li:nth-child(3)::after { animation-delay: 3s; }
+.story.run .st-lens { animation: story-shot 4.5s var(--ease) 3; }
+.story.run .st-pin { animation: story-pin 4.5s var(--ease) 3; }
+.story.run .st-line { animation: story-line 4.5s var(--ease) 3; }
+.story.run .st-line:nth-of-type(3) { animation-delay: 80ms; } .story.run .st-line:nth-of-type(4) { animation-delay: 160ms; }
+.story.run:not(.is-on) li::after, .story.run:not(.is-on) svg * { animation-play-state: paused; }
+.story.done li::after, .story.done svg * { animation: none; }
+@keyframes story-on { 0% { opacity: 0; } 6%, 30% { opacity: 1; } 36%, 100% { opacity: 0; } }
+@keyframes story-shot { 0%, 4% { transform: none; } 10% { transform: scale(.6); } 18%, 100% { transform: none; } }
+@keyframes story-pin { 0%, 33% { opacity: 0; transform: translateY(-10px); } 43%, 94% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+@keyframes story-line { 0%, 66% { transform: scaleX(0); } 78%, 94% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
 @media (min-width: 721px) {
   .home { padding-top: 48px; }
   .home h1 { font-size: 36px; line-height: 46px; }
@@ -42,11 +80,13 @@
 .box-list button { min-height: 48px; padding: 0 16px; font: inherit; font-size: 15px; font-weight: 600; border-radius: 10px; border: 1px solid var(--green); background: transparent; color: var(--green); cursor: pointer; transition: background-color .12s var(--ease); }
 .box-list button:hover { background: var(--soft); }
 .box-list button.del { border-color: var(--dim); color: var(--dim); }
+.box-list li.skel { min-height: 88px; border-color: var(--line); background: var(--soft); }
 .box-empty { margin: 8px 0 24px; color: var(--dim); white-space: pre-line; }
 .box-links { list-style: none; margin: 8px 0 24px; padding: 0; border-top: 1px solid var(--line); }
 .box-links a { display: flex; align-items: center; min-height: 56px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 600; }
 .home h2 { font-size: 18px; line-height: 26px; margin: 24px 0 0; }
 @media (prefers-reduced-motion: reduce) {
-  .home-hero { animation: none; }
+  .home-hero > *, .home-tiles > .tile, .home-hits.fresh li, .story li::after, .story svg * { animation: none !important; }
   .tile, .home-hits a, .home-search-row input, .box-list button { transition: none; }
+  .tile:hover, .tile:active { transform: none; }
 }

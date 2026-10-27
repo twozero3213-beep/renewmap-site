@@ -46,7 +46,7 @@
 @media (max-width: 1099px) {
   .evidence-workspace { padding-inline: 14px; }
   .workspace-tabs { position: sticky; top: 60px; z-index: 20; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 0 0 12px; padding: 5px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.96); box-shadow: 0 8px 24px rgba(16,47,45,.08); }
-  .workspace-tabs button { min-width: 0; min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--dim); font: inherit; font-weight: 800; cursor: pointer; }
+  .workspace-tabs button { min-width: 0; min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--dim); font: inherit; font-weight: 700; cursor: pointer; }
   .workspace-tabs button[aria-pressed="true"] { background: var(--navy); color: #fff; }
   .workspace-panel { display: none; scroll-margin-top: 120px; }
   .evidence-workspace[data-active-panel="filters"] [data-workspace-panel="filters"], .evidence-workspace[data-active-panel="map"] [data-workspace-panel="map"], .evidence-workspace[data-active-panel="evidence"] [data-workspace-panel="evidence"] { display: block; animation: workspace-panel-in .24s ease-out both; }

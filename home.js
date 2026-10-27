@@ -32,8 +32,19 @@
     fail: '동네 목록을 불러오지 못했습니다.\n인터넷 연결을 확인하고 다시 시도해 주세요.',
   };
 
+  // 순서 그림: 화면에 보일 때만 돌고, 세 바퀴 돈 뒤 멈춘다. 감속 설정이면 돌리지 않는다(home.css)
+  function story(win) {
+    const fig = win.document.getElementById('story');
+    if (!fig || typeof win.IntersectionObserver !== 'function' || win.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    new win.IntersectionObserver(([en]) => fig.classList.toggle('is-on', en.isIntersecting)).observe(fig);
+    const last = fig.querySelector('li:last-child');
+    fig.addEventListener('animationend', ev => { if (ev.target === last && ev.animationName === 'story-on') fig.classList.add('done'); });
+    fig.classList.add('run');
+  }
+
   function init(win) {
     const doc = win.document, form = doc.getElementById('homeSearch');
+    story(win);
     if (!form) return;
     const input = doc.getElementById('homeQ'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg');
     let index = null, loading = null;
@@ -42,6 +53,7 @@
       .then(d => { index = Array.isArray(d) ? d : null; return index; }).catch(() => { loading = null; return null; }));
     load();
     const show = rows => {
+      hits.classList.toggle('fresh', !hits.childElementCount);   // 처음 나타날 때만 움직이고, 고쳐 칠 때는 바로 바꾼다
       hits.textContent = '';
       for (const r of rows) {
         const li = doc.createElement('li'), a = doc.createElement('a'), s = doc.createElement('small');

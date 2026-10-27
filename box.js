@@ -45,5 +45,5 @@
       ]));
     }
   }
-  render().catch(() => say("이 브라우저에서는 기기 저장소를 쓸 수 없습니다."));
+  render().catch(() => { $("docs").textContent = ""; $("recs").textContent = ""; say("이 브라우저에서는 기기 저장소를 쓸 수 없습니다."); });   // 뼈대를 지운다
 })();
