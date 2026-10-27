@@ -931,29 +931,31 @@
 
   function docxBytes(doc) {
     const FONT = '나눔고딕';
+    // 1쪽 요약은 글자·간격·여백을 줄여 Word에서도 1쪽에 담는다(HWPX는 sizesFor로 같은 일을 한다)
+    const OP = !!doc.onepage, PT = OP ? { body: 9.5, tbl: 8.5, h1: 11, h2: 10, title: 16, small: 7.5, strong: 10.5, line: 270, gap: 70, margin: 850 } : { body: 11, tbl: 9.5, h1: 14, h2: 12, title: 20, small: 8.5, strong: 12.5, line: 340, gap: 120, margin: 1134 };
     const run = (t, look, pt, bold, color) => `<w:r><w:rPr>${bold || look === 'b' ? '<w:b/>' : ''}${color ? `<w:color w:val="${color}"/>` : ''}${pt ? `<w:sz w:val="${Math.round(pt * 2)}"/>` : ''}${look === 'sup' ? '<w:vertAlign w:val="superscript"/>' : ''}</w:rPr><w:t xml:space="preserve">${xe(t)}</w:t></w:r>`;
-    const p = (runs, o = {}) => `<w:p><w:pPr>${o.style ? `<w:pStyle w:val="${o.style}"/>` : ''}${o.keep ? '<w:keepNext/>' : ''}<w:spacing w:before="${o.before || 0}" w:after="${o.after == null ? 120 : o.after}" w:line="${o.line || 340}" w:lineRule="auto"/>${o.ind ? `<w:ind w:left="${o.ind}" w:hanging="200"/>` : ''}${o.center ? '<w:jc w:val="center"/>' : ''}</w:pPr>${runs}</w:p>`;
-    const W = 9638;   // A4 본문 폭(여백 2cm), 1/20pt
+    const p = (runs, o = {}) => `<w:p><w:pPr>${o.style ? `<w:pStyle w:val="${o.style}"/>` : ''}${o.keep ? '<w:keepNext/>' : ''}<w:spacing w:before="${o.before || 0}" w:after="${o.after == null ? PT.gap : o.after}" w:line="${o.line || PT.line}" w:lineRule="auto"/>${o.ind ? `<w:ind w:left="${o.ind}" w:hanging="200"/>` : ''}${o.center ? '<w:jc w:val="center"/>' : ''}</w:pPr>${runs}</w:p>`;
+    const W = 11906 - 2 * PT.margin;   // A4 본문 폭(여백 2cm), 1/20pt
     const table = (rows, widths, header) => {
       const n = rows[0].length, tot = widths.reduce((a, b) => a + b, 0) || 1, w = widths.slice(0, n).map(x => Math.round(W * x / tot)); w[n - 1] += W - w.reduce((a, b) => a + b, 0);
       const bd = ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(s => `<w:${s} w:val="single" w:sz="4" w:space="0" w:color="808080"/>`).join('');
-      const cell = (t, r, c) => { const head = header ? r === 0 : c === 0; return `<w:tc><w:tcPr><w:tcW w:w="${w[c]}" w:type="dxa"/>${head ? '<w:shd w:val="clear" w:color="auto" w:fill="E7ECEA"/>' : ''}<w:vAlign w:val="center"/></w:tcPr>${p(run(String(t).replace(/\s*\n\s*/g, ' '), '', 9.5, head), { after: 0, line: 280 })}</w:tc>`; };
+      const cell = (t, r, c) => { const head = header ? r === 0 : c === 0; return `<w:tc><w:tcPr><w:tcW w:w="${w[c]}" w:type="dxa"/>${head ? '<w:shd w:val="clear" w:color="auto" w:fill="E7ECEA"/>' : ''}<w:vAlign w:val="center"/></w:tcPr>${p(run(String(t).replace(/\s*\n\s*/g, ' '), '', PT.tbl, head), { after: 0, line: PT.line - 60 })}</w:tc>`; };
       return `<w:tbl><w:tblPr><w:tblW w:w="${W}" w:type="dxa"/><w:tblBorders>${bd}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${w.map(x => `<w:gridCol w:w="${x}"/>`).join('')}</w:tblGrid>${rows.map((r, ri) => `<w:tr>${header && ri === 0 ? '<w:trPr><w:tblHeader/></w:trPr>' : '<w:trPr><w:cantSplit/></w:trPr>'}${r.map((t, ci) => cell(t, ri, ci)).join('')}</w:tr>`).join('')}</w:tbl>`;
     };
     const runsOf = (text, emph, pt, bold) => textRuns(text, emph).map(([t, look]) => run(t, look, pt, bold)).join('');
     let body = '';
     for (const b of doc.blocks) {
-      if (b.kind === 'title') body += p(run(b.text, '', 20, true), { style: 'Title', center: true, after: 240 });
-      else if (b.kind === 'box') body += table(b.rows, b.widths, false) + p('', { after: 120 });
-      else if (b.kind === 'table') body += (b.caption ? p(run(b.caption, '', 10, true), { keep: true, after: 60 }) : '') + table(b.rows, b.widths, true) + p('', { after: 120 });
-      else if (b.kind === 'h1') body += p(run(b.text, '', 14, true), { style: 'Heading1', keep: true, before: 240, after: 100 });
-      else if (b.kind === 'h2') body += p(run(b.text, '', 12, true), { style: 'Heading2', keep: true, before: 160, after: 80 });
-      else if (b.kind === 'bullet') body += p(run('- ', '', 11) + runsOf(b.text, false, 11), { ind: 340 });
-      else if (b.small) body += p(run(b.text, '', 8.5), { after: 40, line: 260 });
-      else if (b.strong) body += p(runsOf(b.text, true, 12.5, true), { after: 160 });
-      else body += p(runsOf(b.text, b.emph, 11));
+      if (b.kind === 'title') body += p(run(b.text, '', PT.title, true), { style: 'Title', center: true, after: PT.gap * 2 });
+      else if (b.kind === 'box') body += table(b.rows, b.widths, false) + p('', { after: PT.gap });
+      else if (b.kind === 'table') body += (b.caption ? p(run(b.caption, '', PT.tbl + 0.5, true), { keep: true, after: 40 }) : '') + table(b.rows, b.widths, true) + p('', { after: PT.gap });
+      else if (b.kind === 'h1') body += p(run(b.text, '', PT.h1, true), { style: 'Heading1', keep: true, before: PT.gap * 2, after: PT.gap });
+      else if (b.kind === 'h2') body += p(run(b.text, '', PT.h2, true), { style: 'Heading2', keep: true, before: PT.gap, after: 60 });
+      else if (b.kind === 'bullet') body += p(run('- ', '', PT.body) + runsOf(b.text, false, PT.body), { ind: 340 });
+      else if (b.small) body += p(run(b.text, '', PT.small), { after: 30, line: PT.line - 60 });
+      else if (b.strong) body += p(runsOf(b.text, true, PT.strong, true), { after: PT.gap });
+      else body += p(runsOf(b.text, b.emph, PT.body));
     }
-    const sect = '<w:sectPr><w:footerReference w:type="default" r:id="rId2"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>';
+    const sect = `<w:sectPr><w:footerReference w:type="default" r:id="rId2"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="${PT.margin}" w:right="${PT.margin}" w:bottom="${PT.margin}" w:left="${PT.margin}" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>`;
     const styles = `${OX}<w:styles ${NS_W}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}" w:eastAsia="${FONT}" w:cs="${FONT}"/><w:sz w:val="22"/><w:lang w:val="ko-KR" w:eastAsia="ko-KR"/></w:rPr></w:rPrDefault></w:docDefaults>`
       + ['Normal|Normal|', 'Title|Title|<w:keepNext/>', 'Heading1|heading 1|<w:keepNext/><w:outlineLvl w:val="0"/>', 'Heading2|heading 2|<w:keepNext/><w:outlineLvl w:val="1"/>'].map(s => { const [id, name, ppr] = s.split('|'); return `<w:style w:type="paragraph" w:styleId="${id}"${id === 'Normal' ? ' w:default="1"' : ''}><w:name w:val="${name}"/>${id === 'Normal' ? '' : '<w:basedOn w:val="Normal"/><w:next w:val="Normal"/>'}${ppr ? `<w:pPr>${ppr}</w:pPr>` : ''}</w:style>`; }).join('') + '</w:styles>';
     const ftr = `${OX}<w:ftr ${NS_W}>${p(run(doc.footer || '', '', 8, false, '595959'), { center: true, after: 0 })}</w:ftr>`;

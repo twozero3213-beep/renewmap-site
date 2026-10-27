@@ -15,3 +15,12 @@
 - 이음오피스(Apache-2.0, https://github.com/pblsketch/openoffice)는 같은 한글 열기 엔진 rhwp 위에 만든 데스크톱 프로그램이다. 이 사이트는 그 앱의 코드를 가져다 쓰지 않고, 같은 오픈소스 부품을 브라우저용으로 쓴다. 형식 변환·편집·저장은 이음오피스 앱에서 한다.
 - 본 제품은 한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다(rhwp 고지).
 - rhwp의 라이선스 전문은 `rhwp/LICENSE`에 있다. 나머지 도구의 라이선스 전문은 각 저장소에 있다.
+
+## 현장 사진 자동 가림 (`vision/`, 현장 확인 앱에서만 불러옴)
+
+| 도구 | 버전 | 라이선스 | 쓰임 | 출처 |
+|---|---|---|---|---|
+| MediaPipe Tasks Vision (`vision/mediapipe/`) | 1.1.1 | Apache-2.0 | 얼굴 찾기(BlazeFace 짧은 거리 모델 `models/blaze_face_short_range.tflite`) | https://github.com/google-ai-edge/mediapipe |
+| Tesseract.js·tesseract.js-core (`vision/tesseract/`) | 7.0.0 | Apache-2.0 | 번호판 숫자 읽기(`models/eng.traineddata.gz`, tessdata_fast) | https://github.com/naptha/tesseract.js |
+
+- 전부 이 기기 안에서 돌고, 처음 쓸 때만 약 20MB를 받는다. 자동 결과는 보조이며 사람의 가림 확인을 대신하지 않는다.

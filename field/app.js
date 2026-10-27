@@ -102,6 +102,18 @@
   });
   cv.addEventListener("pointerup", () => { if (!edit || !edit.drag) return; if (edit.drag.w > 12 && edit.drag.h > 12) edit.boxes.push(edit.drag); edit.drag = null; paint(false); });
   cv.addEventListener("pointercancel", () => { if (edit) { edit.drag = null; paint(false); } });
+  $("auto").addEventListener("click", async () => {
+    const cur = edit; if (!cur) return;
+    $("auto").disabled = true; say("얼굴·번호판을 찾는 중입니다. 처음에는 도구를 받느라 시간이 걸립니다.");
+    try {
+      const r = await window.FieldDetect.findAll(cur.canvas);
+      if (edit !== cur) return;                       // 그 사이 사진을 닫았거나 바꿨으면 버린다
+      cur.boxes.push(...r.faces, ...r.plates); paint(false);
+      const none = !r.faces.length && !r.plates.length;
+      say(`얼굴 ${r.faces.length}곳, 번호판 후보 ${r.plates.length}곳을 가렸습니다. 놓친 곳은 직접 끌어 가리세요.${r.errors.length ? " (" + r.errors.join(" / ") + ")" : ""}`, none && r.errors.length > 0);
+    } catch (e) { say("자동 찾기를 쓰지 못했습니다. 직접 가려 주세요.", true); }
+    $("auto").disabled = false;
+  });
   $("undo").addEventListener("click", () => { if (edit) { edit.boxes.pop(); paint(false); } });
   $("cancel").addEventListener("click", closeEdit);
   $("safe").addEventListener("change", () => { $("attach").disabled = !$("safe").checked; });
@@ -171,6 +183,23 @@
     try { await navigator.share({ files: [file], title: "리뉴맵 현장 확인 기록" }); } catch (e) { if (e.name !== "AbortError") say("공유하지 못했습니다. ZIP 내보내기를 쓰세요.", true); }
   });
   if (navigator.canShare && navigator.canShare({ files: [new File([""], "a.zip", { type: "application/zip" })] })) $("share").hidden = false;
+
+  // 서버로 올리기: upload-config.js가 채워진 경우에만 보인다. 팀 코드는 이 기기에만 기억한다
+  const CFG = window.FIELD_UPLOAD;
+  if (window.FieldUpload.isConfigured(CFG)) {
+    $("upBox").hidden = false;
+    try { $("teamCode").value = localStorage.getItem("renewmap-team-code") || ""; } catch (e) { /* 저장 못 해도 입력은 된다 */ }
+    $("up").addEventListener("click", async () => {
+      $("up").disabled = true;
+      try {
+        let dev = null; try { dev = localStorage.getItem("renewmap-device"); if (!dev) { dev = crypto.randomUUID(); localStorage.setItem("renewmap-device", dev); } } catch (e) { dev = crypto.randomUUID(); }
+        const z = await buildZip(), path = await window.FieldUpload.send(CFG, $("teamCode").value, dev, z.bytes, new Date());
+        try { localStorage.setItem("renewmap-team-code", $("teamCode").value.trim()); } catch (e) { /* 무시 */ }
+        say(`올렸습니다(${path.split("/").pop()}). 올린 뒤에도 기기의 기록은 그대로 남습니다.`);
+      } catch (e) { say(e.message, true); }
+      $("up").disabled = false;
+    });
+  }
 
   fill($("item"), R.ITEMS);
   fill($("status"), ["추가확인", "확인", "충돌"]);

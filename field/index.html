@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'self'; manifest-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'self' blob:; manifest-src 'self'">
 <meta name="theme-color" content="#006f5b">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
@@ -89,13 +89,15 @@
 
     <div class="card">
       <h2>3. 사진 (선택)</h2>
-      <p class="sub">찍은 뒤 얼굴·차량번호·소유자 정보가 있으면 손가락으로 끌어 가립니다(모자이크). 사진 속 위치·시각 정보는 저장할 때 지웁니다.</p>
+      <p class="sub">찍은 뒤 '자동으로 가리기'를 누르면 얼굴과 번호판 후보를 찾아 가립니다. 놓친 곳은 손가락으로 끌어 직접 가리세요(모자이크). 사진 속 위치·시각 정보는 저장할 때 지웁니다.</p>
       <div class="row pick">
         <label for="shot">📷 사진 찍기<input id="shot" type="file" accept="image/*" capture="environment"></label>
         <label class="ghost" for="album">앨범에서 고르기<input id="album" type="file" accept="image/*"></label>
       </div>
       <div id="editor">
         <canvas id="cv" aria-label="사진 편집: 끌어서 가릴 곳을 지정"></canvas>
+        <button type="button" id="auto">🔍 얼굴·번호판 자동으로 가리기</button>
+        <p class="sub">처음 한 번은 약 20MB를 받습니다(Wi-Fi 권장). 그 뒤에는 이 기기에서 바로 돌아갑니다.</p>
         <div class="row"><button type="button" class="ghost" id="undo">되돌리기</button><button type="button" class="ghost" id="cancel">취소</button></div>
         <label class="check" for="safe"><input id="safe" type="checkbox"><span>얼굴·차량번호·소유자 정보가 없거나 모두 가렸습니다</span></label>
         <button type="button" id="attach" disabled>이 사진 붙이기</button>
@@ -112,10 +114,20 @@
     <button class="ghost" id="exp" type="button">ZIP 내보내기</button>
     <button class="ghost" id="share" type="button" hidden>공유하기</button>
   </div>
+  <div id="upBox" class="card" hidden>
+    <h2>서버로 올리기</h2>
+    <p class="sub">팀 코드를 아는 사람만 올릴 수 있고, 올린 파일은 이 화면에서 다시 볼 수 없습니다(쓰기 전용).</p>
+    <label for="teamCode">팀 코드</label>
+    <input id="teamCode" type="password" autocomplete="off">
+    <button type="button" id="up">ZIP 올리기</button>
+  </div>
   <ul id="list"></ul>
 </main>
 <script src="../docgen.js"></script>
+<script src="upload-config.js"></script>
+<script src="upload.js"></script>
 <script src="record.js"></script>
+<script src="detect.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
