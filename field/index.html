@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob: https://api.vworld.kr; font-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'self' blob:; manifest-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob: https://api.vworld.kr; font-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'self'; worker-src 'self' blob:; manifest-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>현장 기록 | 리뉴맵</title>
 <meta name="description" content="현장 사진을 찍으면 위치와 정확도, 그 행정동의 공식 현황 숫자(출처·기준일)를 붙여 결재용 1쪽 문서(한글·PDF)로 만듭니다. 기록과 사진은 이 휴대폰에만 저장됩니다.">
@@ -88,6 +88,11 @@
     </div>
     <div id="bld" class="facts" hidden>
       <h3>가까운 건물</h3>
+      <div id="parcelBox" hidden>
+        <button type="button" class="ghost" id="parcelFind">이 위치의 필지 찾기(브이월드)</button>
+        <p class="hint">누르면 지금 위치 좌표 1개가 브이월드로 갑니다.<br>기록과 사진은 보내지 않습니다.</p>
+        <p id="parcelLine" class="site-line" aria-live="polite" hidden></p>
+      </div>
       <p id="bldNote" class="hint"></p>
       <div id="bldFind">
         <label for="bldQ">지번으로 찾기</label>

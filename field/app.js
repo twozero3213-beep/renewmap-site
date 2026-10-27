@@ -45,6 +45,7 @@
     $("fix").disabled = false;
   }
   async function lookup() {
+    clearParcel();
     const at = pos;
     $("dongLine").textContent = "행정동을 찾는 중입니다.";
     try {
@@ -116,6 +117,46 @@
     if (total > hits.length) ul.append(line(`같은 본번 건물이 ${total}동 있습니다.\n지번 뒤에 건물 이름을 더 적으면 좁혀집니다.`, "hint"));
   }
   $("bldQ").addEventListener("input", searchBld);
+
+  // ── 필지 찾기(선택): 격리된 창(vw-frame.html, sandbox allow-scripts)이 브이월드 연속지적도에 좌표 1개를 묻는다.
+  // 받은 지번·PNU는 사람이 보는 칸에 채우고(고칠 수 있음), 경계는 핀 지도에만 그리고 저장하지 않는다(브이월드 약관 제19조)
+  const VW_KEY = window.RENEWMAP_VWORLD_KEY || "";   // 배포 때 사이트 저장소에만 넣는 vworld-key.js(등록 주소에서만 동작)
+  let vwFrame = null, vwSeq = 0, parcel = null;
+  const vwWait = new Map();
+  window.addEventListener("message", (e) => {
+    if (!vwFrame || e.source !== vwFrame.contentWindow) return;
+    const done = vwWait.get(e.data && e.data.id);
+    if (done) { vwWait.delete(e.data.id); done(e.data); }
+  });
+  function vwAsk(lng, lat) {
+    return new Promise((ok) => {
+      const send = () => {
+        const id = ++vwSeq; vwWait.set(id, ok);
+        vwFrame.contentWindow.postMessage({ id, lng, lat }, "*");   // 받는 쪽이 같은 출처가 아니라(sandbox) '*'만 된다. 보내는 것은 좌표뿐
+        setTimeout(() => { if (vwWait.delete(id)) ok({ error: "시간 초과" }); }, 12000);
+      };
+      if (vwFrame) return send();
+      vwFrame = document.createElement("iframe");
+      vwFrame.hidden = true; vwFrame.title = "브이월드 필지 조회"; vwFrame.setAttribute("sandbox", "allow-scripts"); vwFrame.src = "vw-frame.html";
+      vwFrame.addEventListener("load", send, { once: true });
+      document.body.append(vwFrame);
+    });
+  }
+  function clearParcel() { parcel = null; $("parcelLine").hidden = true; }
+  $("parcelBox").hidden = !VW_KEY;
+  $("parcelFind").addEventListener("click", async () => {
+    if (!pos) return;
+    const btn = $("parcelFind"), out = $("parcelLine");
+    btn.disabled = true; out.hidden = false; out.textContent = "브이월드에 묻는 중입니다.";
+    const r = await vwAsk(pos.lng, pos.lat), p = r.props ? E.parcelFrom(r.props) : null;
+    btn.disabled = false;
+    if (!p) { parcel = null; out.textContent = r.error === "필지 없음" ? "이 위치에서 필지를 찾지 못했습니다.\n지번을 직접 적어 주세요." : "필지를 찾지 못했습니다.\n인터넷 연결을 확인하거나 지번을 직접 적어 주세요."; return; }
+    parcel = { ...p, rings: E.ringsFrom(r.geometry) };
+    out.textContent = `${p.addr || p.jibun} · PNU ${p.pnu}\n브이월드 연속지적도에서 찾았습니다.\n위치 오차만큼 옆 필지일 수 있으니 확인해 주세요.`;
+    $("jibun").value = p.jibun; $("pnu").value = p.pnu; chosen = null; pickedText();
+    $("bldQ").value = p.jibun; searchBld();
+    if (!$("pinBox").hidden) plane = drawPin();
+  });
   // 사람이 지번·필지 번호를 고치면 자동 채움을 지운다(고친 값이 이긴다)
   for (const id of ["jibun", "pnu"]) $(id).addEventListener("input", () => {
     if (!chosen || ($("jibun").value === (chosen.jibun || "") && $("pnu").value === (chosen.pnu || ""))) return;
@@ -209,7 +250,7 @@
   const NS = "http://www.w3.org/2000/svg";
   // 배경지도(브이월드 WMTS, 웹 메르카토르 256px 조각). 키는 배포 때 사이트 저장소에만 넣는 vworld-key.js에 있다(등록 주소에만 동작).
   // 조각 요청은 대략 위치를 브이월드에 보내므로 사용자가 켤 때만 받는다. 조각 모서리를 m 평면에 대어 놓는다(수백 m 안에서는 오차가 작다)
-  const VW_KEY = window.RENEWMAP_VWORLD_KEY || "", BASEMAP = "renewmap-field-basemap";
+  const BASEMAP = "renewmap-field-basemap";
   const tileLng = (x, n) => (x / n) * 360 - 180, tileLat = (y, n) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))) * 180) / Math.PI;
   function drawTiles(el, P, R0) {
     const z = Math.min(18, Math.max(7, Math.floor(Math.log2((40075016 * Math.cos((gps.lat * Math.PI) / 180)) / R0)))), n = 2 ** z;
@@ -241,6 +282,7 @@
       const c = D.repPoint(f);
       if (c) { const [x, y] = P.toXY(c.lon, c.lat); if (Math.abs(x) < R0 && Math.abs(y) < R0) el("text", { x: x.toFixed(1), y: y.toFixed(1), "font-size": (R0 / 11).toFixed(1) }).textContent = f.properties.name; }
     }
+    for (const ring of (parcel && parcel.rings) || []) el("path", { d: "M" + ring.map(([lng, lat]) => P.toXY(lng, lat).map((v) => v.toFixed(1)).join(" ")).join("L") + "Z", class: "parcel" });
     el("circle", { cx: 0, cy: 0, r: Math.max(1, gps.accuracy || 0), class: "acc" });
     const [x, y] = P.toXY(draft.lng, draft.lat);
     el("circle", { cx: x.toFixed(1), cy: y.toFixed(1), r: (R0 / 30).toFixed(1), class: "dot" });

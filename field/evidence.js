@@ -213,5 +213,18 @@
   // 같은 날 여러 건이어도 이름이 겹치지 않게 기기 시각(시분)을 붙인다
   const fileName = (rec) => { const t = new Date(rec.recorded_at); return D.safeName(`${rec.dong ? rec.dong.name : "현장"}_현장확인_${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}_${pad(t.getHours())}${pad(t.getMinutes())}`); };
 
-  return { bjdongCandidates, findBuildings, buildingFill, lic, PAGE_LIMIT_MM, inRing, contains, findFeature, plane, distanceM, nearby, makeLocator, PICK, pickIndicators, localTime, localDay, shortSrc, oldestDate, summaryRows, buildFieldDoc, fileName, siteOf, nearbyRecords, isNewData };
+  // 브이월드 필지 조회 응답(외부, 믿지 않음) → {pnu, jibun, addr}. 지번은 PNU에서 만든다(11번째 자리 2 = 산). 형식이 어긋나면 null
+  function parcelFrom(p) {
+    const pnu = String((p && p.pnu) || "");
+    if (!/^\d{19}$/.test(pnu)) return null;
+    const bon = Number(pnu.slice(11, 15)), bu = Number(pnu.slice(15, 19));
+    return { pnu, jibun: `${pnu[10] === "2" ? "산" : ""}${bon}${bu ? `-${bu}` : ""}`, addr: String(p.addr || "").slice(0, 80) };
+  }
+  // 필지 경계(MultiPolygon·Polygon) → 숫자 좌표 고리 목록. 화면에만 그린다. 고리 20개·점 2,000개까지
+  function ringsFrom(g) {
+    const polys = !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+    const ok = (pt) => Array.isArray(pt) && Number.isFinite(pt[0]) && Number.isFinite(pt[1]);
+    return (Array.isArray(polys) ? polys : []).flat().filter((r) => Array.isArray(r) && r.length <= 2000 && r.every(ok)).slice(0, 20).map((r) => r.map(([x, y]) => [x, y]));
+  }
+  return { parcelFrom, ringsFrom, bjdongCandidates, findBuildings, buildingFill, lic, PAGE_LIMIT_MM, inRing, contains, findFeature, plane, distanceM, nearby, makeLocator, PICK, pickIndicators, localTime, localDay, shortSrc, oldestDate, summaryRows, buildFieldDoc, fileName, siteOf, nearbyRecords, isNewData };
 });

@@ -49,6 +49,7 @@ body.field { font-size: 17px; }
 #pinMap.tiles .area.here { fill-opacity: .35; }
 #pinMap .area { fill: none; stroke: var(--dim); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 #pinMap .area.here { fill: var(--soft); stroke: var(--green); stroke-width: 2.5; }
+#pinMap .parcel { fill: none; stroke: var(--notice); stroke-width: 2.5; vector-effect: non-scaling-stroke; }
 #pinMap .acc { fill: none; stroke: var(--green); stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
 #pinMap .dot { fill: var(--error); stroke: var(--card); stroke-width: 2; vector-effect: non-scaling-stroke; }
 #pinMap text { fill: var(--ink); font-weight: 600; text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
