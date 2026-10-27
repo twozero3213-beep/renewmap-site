@@ -2,24 +2,26 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- CSP(docs/legal/security_baseline.md 2-1). 인라인 스크립트·스타일 없음. 이 페이지는 외부 주소를 부르지 않는다 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- CSP(docs/legal/security_baseline.md 2-1). 인라인 스크립트·스타일 없음(JSON-LD는 실행되지 않는 데이터). 이 페이지는 외부 주소를 부르지 않는다 -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; form-action 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>리뉴맵 | 숫자마다 근거가 붙는 도시재생 기초조사</title>
-<meta name="description" content="동네를 찾고, 근거가 붙은 보고서를 한글·워드·엑셀·파워포인트·PDF로 받습니다. 가진 문서도 열어 보고, 현장 확인은 휴대폰으로 기록합니다.">
+<title>리뉴맵 | 동네 이름 넣고, 근거 문서 받기</title>
+<meta name="description" content="동네 이름을 넣으면 쇠퇴 3요건과 생활 지표를 공공데이터 출처·기준일과 함께 보여 주고 한글 문서로 받습니다. 현장 사진은 휴대폰에서 1쪽 근거 문서로 만듭니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/">
 <meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/">
 <meta property="og:type" content="website">
+<meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="리뉴맵 RENEWMAP">
-<meta property="og:title" content="리뉴맵 | 숫자마다 근거가 붙는 도시재생 기초조사">
-<meta property="og:description" content="법정 기준으로 계산하고, 기준일을 고정하고, 현장에서 확인한 기초조사 근거 패키지.">
+<meta property="og:title" content="리뉴맵 | 동네 이름 넣고, 근거 문서 받기">
+<meta property="og:description" content="쇠퇴 3요건과 생활 지표를 출처와 함께 보여 주고, 한 번 누르면 한글 문서로 받습니다.">
 <meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="리뉴맵 로고와 '숫자마다 근거가 붙는 도시재생 기초조사' 문구">
+<meta property="og:image:alt" content="리뉴맵 로고와 서비스 문구">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#006f5b">
+<meta name="theme-color" content="#006f5b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1715" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -27,51 +29,46 @@
 <link rel="stylesheet" href="pretendard.css">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="home.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"WebApplication","@id":"https://twozero3213-beep.github.io/renewmap-site/#app","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","inLanguage":"ko","applicationCategory":"BusinessApplication","operatingSystem":"웹 브라우저","isAccessibleForFree":true,"description":"동네 이름을 넣으면 쇠퇴 3요건과 생활 지표를 공공데이터 출처·기준일과 함께 보여 주고 한글 문서로 받는 도시재생 기초조사 도구입니다.","offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"publisher":{"@id":"https://twozero3213-beep.github.io/renewmap-site/#org"}},
+{"@type":"Organization","@id":"https://twozero3213-beep.github.io/renewmap-site/#org","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","logo":"https://twozero3213-beep.github.io/renewmap-site/icon-512.png","email":"renewmapteam@gmail.com","areaServed":"KR"}]}
+</script>
 <script src="site.js" defer></script>
 <script src="home.js" defer></script>
 </head>
-<body class="app-home">
+<body class="app-home theme-auto">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="top">
-  <div class="wrap">
-    <a class="logo" href="index.html">RENEW<span>MAP</span></a>
-    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu">메뉴</button>
-    <nav class="menu" id="site-menu" aria-label="주요 메뉴">
-      <a href="about.html">서비스 소개</a>
-      <a href="explore.html#map">지도 탐색</a>
-      <a href="docs.html">문서</a>
-      <a href="field/">현장 확인</a>
-      <a href="explore.html#gov">업무 바로 가기</a>
-      <a href="about.html#faq">FAQ</a>
-    </nav>
-    <a class="btn header-cta" href="about.html#contact">시범 납품 상담</a>
-  </div>
+  <div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a></div>
 </header>
 
 <main id="main" class="home">
   <section class="home-hero" aria-labelledby="heroTitle">
-    <p class="home-kicker">도시재생 용역사·기초지자체를 위한 기초조사</p>
-    <h1 id="heroTitle">숫자마다 근거가 붙는<br><em>도시재생 기초조사</em></h1>
+    <h1 id="heroTitle">동네 이름 넣고,<br>근거 문서 받기</h1>
+    <p class="home-sub">쇠퇴 3요건과 생활 지표를 출처와 함께 보여 줍니다.<br>한 번 누르면 한글 문서로 받습니다.</p>
     <form id="homeSearch" class="home-search" role="search" autocomplete="off">
-      <label for="homeQ">동네 찾기</label>
-      <div class="home-search-row"><input id="homeQ" name="q" list="homePlaces" placeholder="예: 해운대구, 반여1동" enterkeyhint="search"><button class="btn" type="submit">찾기</button></div>
-      <datalist id="homePlaces"></datalist>
-      <ul id="homeHits" class="home-hits" aria-live="polite"></ul>
+      <label for="homeQ" class="sr">동네 찾기</label>
+      <div class="home-search-row">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5L21 21"/></svg>
+        <input id="homeQ" name="q" type="search" placeholder="동 이름이나 구 이름 (예: 반여1동)" enterkeyhint="search" aria-describedby="homeMsg">
+      </div>
+      <ul id="homeHits" class="home-hits"></ul>
       <p id="homeMsg" class="home-msg" aria-live="polite"></p>
     </form>
+    <p class="home-example">처음이면 예시로 보기: <a href="explore.html#map/21/21090/21090700">부산 해운대구 반여1동</a></p>
   </section>
 
-  <section class="home-tiles" aria-label="할 일 고르기">
-    <a class="tile" href="explore.html#map"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 42s13-12 13-22a13 13 0 0 0-26 0c0 10 13 22 13 22z"/><circle cx="24" cy="20" r="5"/></svg><b>지도 탐색</b><span>전국 읍·면·동 지표와 출처</span></a>
-    <a class="tile" href="explore.html#report"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h18l8 8v28H12z"/><path d="M30 6v8h8M18 28l5 5 9-10"/></svg><b>보고서 받기</b><span>한글·워드·엑셀·파워포인트·PDF</span></a>
-    <a class="tile" href="docs.html"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 14h14l4 5h18v20H6z"/><path d="M6 14v-4h14l4 5"/></svg><b>문서 열기</b><span>가진 파일을 이 화면에서 바로 확인</span></a>
-    <a class="tile" href="field/"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 16h8l3-4h10l3 4h8v24H8z"/><circle cx="24" cy="27" r="7"/></svg><b>현장 확인</b><span>휴대폰으로 사진·기록 남기기</span></a>
+  <section class="home-tiles" aria-label="업무 바로 가기">
+    <a class="tile" href="explore.html#gov" data-track="cta_gov"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 40h32M10 20h28M24 8l16 8H8zM14 20v16M24 20v16M34 20v16"/></svg><b>의회·감사 답변</b><span>출처·기준일 붙은 근거서</span></a>
+    <a class="tile" href="explore.html#gov"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 10h32v22H20l-8 6v-6H8z"/><path d="M16 19h16M16 25h10"/></svg><b>민원 회신</b><span>공원·도서관 기준 대비 현황</span></a>
+    <a class="tile" href="explore.html#gov"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 22l16-12 16 12M12 19v21h24V19"/><path d="M20 40V28h8v12"/></svg><b>공모 후보 추리기</b><span>노후주거지·쇠퇴 요건</span></a>
+    <a class="tile" href="field/"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 16h8l3-4h10l3 4h8v24H8z"/><circle cx="24" cy="27" r="7"/></svg><b>현장 사진 기록</b><span>얼굴·번호판 자동 가리기</span></a>
   </section>
 
-  <p class="home-gov">🏛 예산·민원·의회 답변 근거가 필요하다면 → <a href="explore.html#gov" data-track="cta_gov">업무별 바로 가기</a></p>
-  <p class="home-note">무료 · 로그인 없음 · 입력은 이 기기에만 남습니다</p>
+  <p class="home-note">무료입니다.<br>로그인 없이 씁니다.<br>숫자마다 공공데이터 출처와 기준일을 붙입니다.</p>
 </main>
 
-<footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 납품 상담</a><a href="ethics.html">AI 윤리·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
+<footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="about.html#contact">도입 문의</a><a href="ethics.html">데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
 </body>
 </html>

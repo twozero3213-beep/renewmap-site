@@ -1,7 +1,8 @@
 /* 공통 반응형 메뉴. 링크는 자바스크립트 없이도 그대로 동작한다. */
 (function () {
   'use strict';
-  const atHome = /(?:\/|\/index\.html)$/.test(location.pathname);
+  const inField = /\/field\/(?:index\.html)?$/.test(location.pathname);
+  const atHome = !inField && /(?:\/|\/index\.html)$/.test(location.pathname);
   if (atHome && /^#(?:find|gov|report|map(?:\/|$))/.test(location.hash)) {
     location.replace('explore.html' + location.hash);
     return;
@@ -11,15 +12,20 @@
     location.replace('about.html' + location.hash);
     return;
   }
-  // 앱처럼 쓰는 하단 탭(모바일). 링크는 자바스크립트 없이도 위 머리글 메뉴로 모두 열린다
+  // 주 메뉴 4개(redesign 4장): 찾기·업무별·현장·보관함. 모든 화면에서 같은 이름·순서. 현장 화면은 한 단계 아래 폴더라 앞에 ../를 붙인다
   if (typeof document.createElement === 'function' && document.body && !document.querySelector('.tabbar')) {
+    const base = inField ? '../' : '';
     const ico = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
-    const tabs = [['index.html', '홈', 'M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10', /\/(?:index\.html)?$/], ['explore.html', '탐색', 'M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4', /explore\.html$/],
-      ['docs.html', '문서', 'M4 6h7l2 2h7v11H4z', /docs\.html$/], ['field/', '현장', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/]];
+    const here = location.pathname + location.hash;
+    const tabs = [['index.html', '찾기', 'M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5L21 21', /\/(?:index\.html)?$|explore\.html(?!#(?:gov|find))/],
+      ['explore.html#gov', '업무별', 'M4 7h16v12H4zM9 7V5h6v2M4 12h16', /explore\.html#(?:gov|find)/],
+      ['field/', '현장', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],
+      ['box.html', '보관함', 'M4 5h16v4H4zM5 9v10h14V9M10 13h4', /box\.html$/]];
+    const current = tabs.findIndex(t => t[3].test(here) && (t[0] !== 'index.html' || !inField));
     const nav = document.createElement('nav');
     nav.className = 'tabbar';
-    nav.setAttribute('aria-label', '앱 메뉴');
-    nav.innerHTML = tabs.map(([href, label, d, re]) => `<a href="${href}"${re.test(location.pathname) ? ' aria-current="page"' : ''}>${ico(d)}<span>${label}</span></a>`).join('');
+    nav.setAttribute('aria-label', '주 메뉴');
+    nav.innerHTML = tabs.map(([href, label, d], i) => `<a href="${base}${href}"${i === current ? ' aria-current="page"' : ''}>${ico(d)}<span>${label}</span></a>`).join('');
     document.body.appendChild(nav);
   }
   const toggle = document.querySelector('.menu-toggle');

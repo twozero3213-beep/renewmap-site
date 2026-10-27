@@ -11,7 +11,7 @@
 .workspace-panel .hero-grid { display: block; padding: 0; }
 .workspace-panel .hero-side { display: block; position: static; }
 .workspace-panel .hero-head { margin-bottom: 18px; }
-.workspace-panel .hero-head h2 { font-size: clamp(26px, 3vw, 38px); }
+.workspace-panel .hero-head h1 { margin: 0 0 8px; font-size: 28px; line-height: 36px; }
 .workspace-panel .hero-map { animation: none; }
 .workspace-panel .hero-live { margin-top: 12px; }
 .workspace-panel .hero-cta { margin-top: 14px; }
@@ -55,7 +55,6 @@
 @keyframes workspace-panel-in { from { opacity: 0; transform: translateY(8px); } }
 @media (max-width: 520px) {
   .workspace-panel > .workspace-panel-inner { padding: 14px; }
-  .workspace-panel .hero-head h2 { font-size: 27px; }
   .workspace-panel .map-canvas { min-height: 320px; }
 }
 .fd-chip { transition: transform .18s ease, border-color .18s ease, background-color .18s ease; }

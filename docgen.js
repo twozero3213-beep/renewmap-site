@@ -491,7 +491,7 @@
     return { kind: 'full', title: blocks[0].text, blocks, sources: src.list, cells: brief.cells, snapshot: brief.snapshot, templateVersion: TP.version, footer: `리뉴맵 · 원장 ${String(brief.snapshot).slice(0, 8)} · `,
       parts, src, brief, writtenOn: brief.writtenOn, sizes: 'full', byCode, facts };
   }
-  const docText = d => d.blocks.map(b => (b.kind === 'table' || b.kind === 'box' ? `${b.caption}\n${b.rows.map(r => r.join('\t')).join('\n')}` : b.text)).join('\n');
+  const docText = d => d.blocks.map(b => (b.kind === 'images' ? b.text : b.kind === 'table' || b.kind === 'box' ? `${b.caption}\n${b.rows.map(r => r.join('\t')).join('\n')}` : b.text)).join('\n');
 
   // ── 1쪽 요약: 요약 5문장 + 기준 대비 표(8행 이하) + 출처 5개 이하('끝' 표시 없음). 양식은 JSON의 onepage(파이썬 build_onepage와 같다)
   // 기준 대비 행 이름 → 지표 코드(출처 번호를 달 셀을 찾는다)
@@ -511,6 +511,7 @@
     let h = 0;
     for (const b of doc.blocks) {
       if (b.kind === 'title') h += z.title * 1.6 * MM + 12 * MM;
+      else if (b.kind === 'images') { const per = b.perRow || 2, w = (PAGE_W_MM - per * 2) / per; h += Math.ceil(b.images.length / per) * (Math.min(40, w * 0.75) + 2) + (b.text ? linesOf(b.text, PAGE_W_MM, z.small) * z.small * 1.6 * MM + 6 * MM : 0); }
       else if (b.kind === 'h1' || b.kind === 'h2') h += z[b.kind] * 1.6 * MM + 3 * MM;     // 장 제목 위 간격은 앞 문단 뒤 간격이 대신한다(dong_brief.estimate_height_mm와 같다)
       else if (b.kind === 'table' || b.kind === 'box') {
         const tot = b.widths.reduce((a, x) => a + x, 0) || 100;
@@ -609,6 +610,17 @@
   }
 
   const TEXT_W = 42520;      // A4 59528 - 좌우 여백 8504×2
+  // 사진: 한 줄에 2장(글자처럼 취급), 높이 40mm 이하. 1mm = 283.46 HWPUNIT, 화면 1px = 75 HWPUNIT
+  const HU_MM = 283.46, PIC_GAP = 566, PIC_MAX_H = Math.round(40 * HU_MM);
+  // 한 줄 장수(perRow: 2 또는 4)로 너비를 나누고, 높이는 40mm를 넘지 않게 비율을 지킨다
+  function picSize(px, py, perRow) { const k = Math.min(Math.floor((TEXT_W - perRow * PIC_GAP) / perRow) / px, PIC_MAX_H / py); return [Math.round(px * k), Math.round(py * k)]; }
+  const picXml = (n, id, img, perRow) => {
+    const [w, h] = picSize(img.w, img.h, perRow || 2), dw = img.w * 75, dh = img.h * 75, m = '<hc:transMatrix e1="1" e2="0" e3="0" e4="0" e5="1" e6="0"/><hc:scaMatrix e1="1" e2="0" e3="0" e4="0" e5="1" e6="0"/><hc:rotMatrix e1="1" e2="0" e3="0" e4="0" e5="1" e6="0"/>';
+    return `<hp:pic id="${id}" zOrder="${n}" numberingType="PICTURE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" href="" groupLevel="0" instid="${id + 1}" reverse="0"><hp:offset x="0" y="0"/><hp:orgSz width="${w}" height="${h}"/><hp:curSz width="${w}" height="${h}"/><hp:flip horizontal="0" vertical="0"/><hp:rotationInfo angle="0" centerX="${w >> 1}" centerY="${h >> 1}" rotateimage="1"/><hp:renderingInfo>${m}</hp:renderingInfo>` +
+      `<hc:img binaryItemIDRef="image${n}" bright="0" contrast="0" effect="REAL_PIC" alpha="0"/><hp:imgRect><hc:pt0 x="0" y="0"/><hc:pt1 x="${w}" y="0"/><hc:pt2 x="${w}" y="${h}"/><hc:pt3 x="0" y="${h}"/></hp:imgRect><hp:imgClip left="0" right="${dw}" top="0" bottom="${dh}"/><hp:inMargin left="0" right="0" top="0" bottom="0"/><hp:imgDim dimwidth="${dw}" dimheight="${dh}"/><hp:effects/>` +
+      `<hp:sz width="${w}" widthRelTo="ABSOLUTE" height="${h}" heightRelTo="ABSOLUTE" protect="0"/><hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="COLUMN" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/><hp:outMargin left="0" right="${PIC_GAP}" top="0" bottom="${PIC_GAP}"/><hp:shapeComment>${xe(img.caption || '')}</hp:shapeComment></hp:pic>`;
+  };
+  const docImages = doc => doc.blocks.filter(b => b.kind === 'images').flatMap(b => b.images);
   function sectionXml(doc) {
     const S = sizesFor(doc);
     let seq = 0;
@@ -638,8 +650,13 @@
       return `<hp:p id="${nid()}" paraPrIDRef="${PR.cell}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="${CH.table}"><hp:tbl id="${nid()}" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="${header ? 1 : 0}" rowCnt="${rows.length}" colCnt="${n}" cellSpacing="0" borderFillIDRef="3" noAdjust="0"><hp:sz width="${TEXT_W}" widthRelTo="ABSOLUTE" height="${rowH * rows.length}" heightRelTo="ABSOLUTE" protect="0"/><hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="COLUMN" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/><hp:outMargin left="0" right="0" top="0" bottom="0"/>${cap}<hp:inMargin left="510" right="510" top="141" bottom="141"/>` +
         rows.map((r, ri) => `<hp:tr>${r.map((t, ci) => cell(t, ri, ci)).join('')}</hp:tr>`).join('') + `</hp:tbl></hp:run></hp:p>`;
     };
+    let picN = 0;
     for (const b of doc.blocks.slice(1)) {
-      if (b.kind === 'box') { out += table(b.rows, b.widths, '', false) + para('gap', '', 'gap'); }
+      if (b.kind === 'images') {
+        out += `<hp:p id="${nid()}" paraPrIDRef="${PR.cell}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">${b.images.map(img => `<hp:run charPrIDRef="${CH.body}">${picXml(++picN, nid(), img, b.perRow)}<hp:t/></hp:run>`).join('')}</hp:p>`;
+        if (b.text) out += para('small', b.text, 'small');
+      }
+      else if (b.kind === 'box') { out += table(b.rows, b.widths, '', false) + para('gap', '', 'gap'); }
       else if (b.kind === 'table') { out += table(b.rows, b.widths, b.caption, true) + para('gap', '', 'gap'); }
       else if (b.kind === 'h1') out += para('h1', b.text, 'h1');
       else if (b.kind === 'h2') out += para('h2', b.text, 'h2');
@@ -652,8 +669,9 @@
   }
   function hwpxBytes(doc) {
     const S = sizesFor(doc), when = doc.writtenOn || '', iso = /^\d{4}-\d{2}-\d{2}/.test(when) ? `${when.slice(0, 10)}T00:00:00Z` : '1980-01-01T00:00:00Z';
-    const prv = docText(doc).replace(/\t/g, ' ').slice(0, 1000);
-    const hpf = `${DECL}<opf:package ${NS} version="" unique-identifier="" id=""><opf:metadata><opf:title>${xe(doc.title)}</opf:title><opf:language>ko</opf:language><opf:meta name="creator" content="text">RENEWMAP</opf:meta><opf:meta name="subject" content="text"/><opf:meta name="description" content="text"/><opf:meta name="lastsaveby" content="text">RENEWMAP</opf:meta><opf:meta name="CreatedDate" content="text">${iso}</opf:meta><opf:meta name="ModifiedDate" content="text">${iso}</opf:meta><opf:meta name="keyword" content="text"/></opf:metadata><opf:manifest><opf:item id="header" href="Contents/header.xml" media-type="application/xml"/><opf:item id="section0" href="Contents/section0.xml" media-type="application/xml"/><opf:item id="settings" href="settings.xml" media-type="application/xml"/></opf:manifest><opf:spine><opf:itemref idref="header" linear="yes"/><opf:itemref idref="section0" linear="yes"/></opf:spine></opf:package>`;
+    const prv = docText(doc).replace(/\t/g, ' ').slice(0, 1000), imgs = docImages(doc);
+    const imgItems = imgs.map((_, i) => `<opf:item id="image${i + 1}" href="BinData/image${i + 1}.jpg" media-type="image/jpg" isEmbeded="1"/>`).join('');
+    const hpf = `${DECL}<opf:package ${NS} version="" unique-identifier="" id=""><opf:metadata><opf:title>${xe(doc.title)}</opf:title><opf:language>ko</opf:language><opf:meta name="creator" content="text">RENEWMAP</opf:meta><opf:meta name="subject" content="text"/><opf:meta name="description" content="text"/><opf:meta name="lastsaveby" content="text">RENEWMAP</opf:meta><opf:meta name="CreatedDate" content="text">${iso}</opf:meta><opf:meta name="ModifiedDate" content="text">${iso}</opf:meta><opf:meta name="keyword" content="text"/></opf:metadata><opf:manifest><opf:item id="header" href="Contents/header.xml" media-type="application/xml"/><opf:item id="section0" href="Contents/section0.xml" media-type="application/xml"/><opf:item id="settings" href="settings.xml" media-type="application/xml"/>${imgItems}</opf:manifest><opf:spine><opf:itemref idref="header" linear="yes"/><opf:itemref idref="section0" linear="yes"/></opf:spine></opf:package>`;
     const rdf = (about, type) => `<rdf:Description rdf:about="${about}"><rdf:type rdf:resource="http://www.hancom.co.kr/hwpml/2016/meta/pkg#${type}"/></rdf:Description>`;
     const part = f => `<rdf:Description rdf:about=""><ns0:hasPart xmlns:ns0="http://www.hancom.co.kr/hwpml/2016/meta/pkg#" rdf:resource="${f}"/></rdf:Description>`;
     return zipStore([
@@ -667,6 +685,7 @@
       { name: 'Contents/content.hpf', data: hpf },
       { name: 'META-INF/container.xml', data: `${DECL}<ocf:container xmlns:ocf="urn:oasis:names:tc:opendocument:xmlns:container" xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf"><ocf:rootfiles><ocf:rootfile full-path="Contents/content.hpf" media-type="application/hwpml-package+xml"/><ocf:rootfile full-path="Preview/PrvText.txt" media-type="text/plain"/><ocf:rootfile full-path="META-INF/container.rdf" media-type="application/rdf+xml"/></ocf:rootfiles></ocf:container>` },
       { name: 'META-INF/manifest.xml', data: `${DECL}<odf:manifest xmlns:odf="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"/>` },
+      ...imgs.map((img, i) => ({ name: `BinData/image${i + 1}.jpg`, data: img.bytes })),
     ], when);
   }
 
@@ -871,6 +890,7 @@
     const flush = () => { if (sec) { out += sec; sec = ''; } };
     for (const b of doc.blocks) {
       if (b.kind === 'title') out += `<h3 class="dg-title">${he(b.text)}</h3>`;
+      else if (b.kind === 'images') out += `<div class="dg-photos">${b.images.map(i => `<figure><img src="${he(i.src || '')}" alt="${he(i.caption)}"><figcaption>${he(i.caption)}</figcaption></figure>`).join('')}</div><p class="dg-small">${he(b.text)}</p>`;
       else if (b.kind === 'box') out += `<table class="dg-box"><tbody>${b.rows.map(r => `<tr><th scope="row">${he(r[0])}</th><td>${he(r[1])}</td></tr>`).join('')}</tbody></table>`;
       else if (b.kind === 'table') {
         const n = tables.push(b) - 1;
@@ -1063,7 +1083,7 @@
 
   return {
     crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, fmtNum, roundD, govDate, josa, valueWithUnit, fmtCell, hidden, usable, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
-    setTemplates, getTemplates, displayName, BriefError, buildBrief, buildDoc, buildOnepage, estimateHeightMm, docText, sentenceText, sizesFor, textRuns, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
+    setTemplates, getTemplates, displayName, BriefError, Sources, sourceLine, buildBrief, buildDoc, buildOnepage, estimateHeightMm, docText, sentenceText, sizesFor, textRuns, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
     tablePayload, sentencePayload, copyToClipboard, buildFragments, fragmentChoices, fragmentPayload, fragmentHTML, docHTML, COPY_TABLE, COPY_SENT, projectFeatures, mapSvg, safeName, saveBytes, svgToPng, xe,
   };
 });

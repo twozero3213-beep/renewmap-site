@@ -24,12 +24,23 @@
     return (exact.length ? exact : fuzzy).slice(0, max);
   }
 
+  // 문구: docs/design/redesign_2026-10-27.md 5.1. 한 문장씩 줄을 바꾼다(.home-msg white-space: pre-line)
+  const MSG = {
+    empty: '동 이름이나 구 이름을 적어 주세요.',
+    none: '찾지 못했습니다.\n동 이름이나 구 이름으로 다시 찾아 보세요.',
+    many: n => `같은 이름이 ${n}곳 있습니다.\n하나를 고르세요.`,
+    fail: '동네 목록을 불러오지 못했습니다.\n인터넷 연결을 확인하고 다시 시도해 주세요.',
+  };
+
   function init(win) {
     const doc = win.document, form = doc.getElementById('homeSearch');
     if (!form) return;
-    const input = doc.getElementById('homeQ'), list = doc.getElementById('homePlaces'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg');
-    let index = null;
-    const load = fetch('data/national/dong_index.json').then(r => r.json()).then(d => { index = Array.isArray(d) ? d : null; return index; }).catch(() => null);
+    const input = doc.getElementById('homeQ'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg');
+    let index = null, loading = null;
+    // 실패하면 다음 입력·검색 때 다시 받는다
+    const load = () => loading || (loading = fetch('data/national/dong_index.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(d => { index = Array.isArray(d) ? d : null; return index; }).catch(() => { loading = null; return null; }));
+    load();
     const show = rows => {
       hits.textContent = '';
       for (const r of rows) {
@@ -37,23 +48,23 @@
         a.href = route(r); a.textContent = r.label; s.textContent = r.sub; a.append(s); li.append(a); hits.append(li);
       }
     };
-    input.addEventListener('input', () => {
+    input.addEventListener('input', async () => {
       msg.textContent = '';
+      if (!index) await load();
       if (!index) return;
-      const rows = find(index, input.value, MAX);
-      list.textContent = '';
-      for (const r of rows) list.append(new Option(`${r.sub} ${r.label}`.trim(), r.label));
-      show(input.value.trim().length >= 2 ? rows : []);
+      const rows = input.value.trim().length >= 2 ? find(index, input.value, 6) : [];
+      show(rows);
+      if (rows.length) msg.textContent = `후보 ${rows.length}곳`;
     });
     form.addEventListener('submit', async ev => {
       ev.preventDefault();
-      await load;
-      const rows = index ? find(index, input.value) : [];
-      if (!input.value.trim()) { msg.textContent = '동 이름이나 시군구 이름을 적어 주세요.'; return; }
-      if (!rows.length) { show([]); msg.textContent = '찾는 이름이 없습니다. 예: 반여1동, 해운대구'; return; }
+      if (!input.value.trim()) { msg.textContent = MSG.empty; input.focus(); return; }
+      if (!(await load())) { msg.textContent = MSG.fail; return; }
+      const rows = find(index, input.value);
+      if (!rows.length) { show([]); msg.textContent = MSG.none; return; }
       if (rows.length === 1) { win.location.href = route(rows[0]); return; }
-      show(rows); msg.textContent = `${rows.length}곳이 있습니다. 하나를 고르세요.`;
+      show(rows); msg.textContent = MSG.many(rows.length);
     });
   }
-  return { find, route, norm, init };
+  return { find, route, norm, init, MSG };
 });

@@ -1,29 +1,52 @@
-/* 앱 홈(index.html): 한 화면에 검색과 할 일 4개만 둔다. 긴 소개는 about.html */
-.home { max-width: 640px; margin: 0 auto; padding: 20px 20px 32px; }
+/* 찾기(홈)·보관함: 한 화면에 할 일만. 문구·크기·색은 docs/design/redesign_2026-10-27.md 5.1·5.6·6장 */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.app-home header.top .wrap { min-height: 56px; }
+.home { max-width: 640px; margin: 0 auto; padding: 16px 16px 24px; word-break: keep-all; overflow-wrap: break-word; }
 .home > section { padding: 0; }
-.home-hero { padding: 12px 0 8px; }
-.home-kicker { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--green); }
-.home h1 { margin: 0 0 16px; font-size: clamp(26px, 7vw, 36px); line-height: 1.3; word-break: keep-all; }
-.home h1 em { font-style: normal; background: linear-gradient(transparent 60%, var(--lime) 60%); }
-.home-search label { display: block; margin: 0 0 6px; font-weight: 700; }
-.home-search-row { display: flex; gap: 8px; }
-.home-search-row input { flex: 1; min-width: 0; min-height: 52px; padding: 0 14px; font: inherit; font-size: 17px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); }
-.home-search-row input:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-.home-search-row .btn { min-height: 52px; padding: 0 22px; font-size: 17px; cursor: pointer; }
-.home-hits { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
-.home-hits a { display: block; padding: 12px 14px; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); text-decoration: none; }
-.home-hits a small { color: var(--dim); margin-left: 6px; }
-.home-msg { min-height: 1.6em; margin: 6px 0 0; color: var(--warn); font-size: 15px; }
-.home-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0 20px; }
-.tile { display: flex; flex-direction: column; gap: 4px; min-height: 148px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: var(--ink); text-decoration: none; box-shadow: var(--shadow); }
-.tile:active { transform: scale(.98); }
+.home-hero { padding: 8px 0 0; animation: home-in .2s ease-out both; }
+.home h1 { margin: 0 0 8px; font-size: 28px; line-height: 36px; font-weight: 700; }
+.home-sub { margin: 0 0 16px; font-size: 15px; line-height: 22px; color: var(--dim); }
+.home-search-row { position: relative; }
+.home-search-row svg { position: absolute; left: 16px; top: 16px; width: 24px; height: 24px; fill: none; stroke: var(--dim); stroke-width: 2; stroke-linecap: round; pointer-events: none; }
+.home-search-row input { width: 100%; min-height: 56px; padding: 0 16px 0 52px; font: inherit; font-size: 17px; border: 2px solid var(--dim); border-radius: 12px; background: var(--card); color: var(--ink); transition: border-color .12s var(--ease); }
+.home-search-row input::placeholder { color: var(--dim); opacity: 1; }
+.home-search-row input:focus-visible { border-color: var(--green); }
+.home-hits { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.home-hits a { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font-weight: 600; text-decoration: none; transition: background-color .12s var(--ease); }
+.home-hits a:hover, .home-hits a:active { background: var(--soft); }
+.home-hits a small { color: var(--dim); font-weight: 400; font-size: 14px; }
+.home-msg { min-height: 20px; margin: 4px 0 0; font-size: 14px; line-height: 20px; color: var(--dim); white-space: pre-line; }
+.home-example { margin: 4px 0 16px; font-size: 14px; line-height: 20px; color: var(--dim); }
+.home-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 24px; }
+.tile { display: grid; grid-template-columns: 28px 1fr; grid-template-rows: auto auto; column-gap: 8px; align-content: center; min-height: 88px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); text-decoration: none; transition: background-color .12s var(--ease), border-color .12s var(--ease); }
+.tile:hover, .tile:active { background: var(--soft); border-color: var(--green); }
 .tile:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-.tile svg { width: 40px; height: 40px; fill: none; stroke: var(--green); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 6px; }
-.tile b { font-size: 18px; }
-.tile span { font-size: 14px; color: var(--dim); word-break: keep-all; }
-.home-gov, .home-note { margin: 0 0 8px; font-size: 15px; color: var(--dim); word-break: keep-all; }
-.home-note { font-size: 14px; }
+.tile svg { grid-row: 1 / 3; width: 28px; height: 28px; fill: none; stroke: var(--green); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; margin-top: 2px; }
+.tile b { font-size: 15px; line-height: 22px; }
+.tile span { font-size: 14px; line-height: 20px; color: var(--dim); }
+.home-note { margin: 0; font-size: 14px; line-height: 20px; color: var(--dim); }
+@keyframes home-in { from { opacity: 0; } }
 @media (min-width: 721px) {
   .home { padding-top: 48px; }
+  .home h1 { font-size: 36px; line-height: 46px; }
   .home-tiles { grid-template-columns: repeat(4, 1fr); }
+  .tile { grid-template-columns: 1fr; min-height: 132px; align-content: start; padding: 16px; }
+  .tile svg { grid-row: auto; margin-bottom: 8px; }
+}
+
+/* 보관함 */
+.box-list { list-style: none; margin: 8px 0 24px; padding: 0; display: grid; gap: 8px; }
+.box-list li { display: grid; gap: 8px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.box-list .meta { font-size: 14px; line-height: 20px; color: var(--dim); }
+.box-list .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.box-list button { min-height: 48px; padding: 0 16px; font: inherit; font-size: 15px; font-weight: 600; border-radius: 10px; border: 1px solid var(--green); background: transparent; color: var(--green); cursor: pointer; transition: background-color .12s var(--ease); }
+.box-list button:hover { background: var(--soft); }
+.box-list button.del { border-color: var(--dim); color: var(--dim); }
+.box-empty { margin: 8px 0 24px; color: var(--dim); white-space: pre-line; }
+.box-links { list-style: none; margin: 8px 0 24px; padding: 0; border-top: 1px solid var(--line); }
+.box-links a { display: flex; align-items: center; min-height: 56px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 600; }
+.home h2 { font-size: 18px; line-height: 26px; margin: 24px 0 0; }
+@media (prefers-reduced-motion: reduce) {
+  .home-hero { animation: none; }
+  .tile, .home-hits a, .home-search-row input, .box-list button { transition: none; }
 }

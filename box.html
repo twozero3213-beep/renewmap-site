@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex">
+<title>보관함 | 리뉴맵</title>
+<meta name="description" content="이 기기에 저장한 현장 기록과 받은 문서를 다시 받거나 지웁니다.">
+<meta name="theme-color" content="#006f5b">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="pretendard.css">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="home.css">
+<script src="site.js" defer></script>
+<script src="docgen.js" defer></script>
+<script src="field/record.js" defer></script>
+<script src="field/store.js" defer></script>
+<script src="box.js" defer></script>
+</head>
+<body class="app-home theme-auto">
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a></div></header>
+<main id="main" class="home">
+  <h1>보관함</h1>
+  <p class="home-sub">이 휴대폰에만 저장됩니다.<br>서버로 보내지 않습니다.</p>
+  <h2>받은 문서</h2>
+  <ul id="docs" class="box-list" aria-live="polite"></ul>
+  <h2>현장 기록</h2>
+  <ul id="recs" class="box-list" aria-live="polite"></ul>
+  <p id="boxMsg" class="home-msg" role="status"></p>
+  <h2>더 보기</h2>
+  <ul class="box-links">
+    <li><a href="docs.html">가진 파일 열기</a></li>
+    <li><a href="about.html">리뉴맵 소개</a></li>
+    <li><a href="ethics.html">데이터 원칙</a></li>
+    <li><a href="privacy.html">개인정보 처리방침</a></li>
+    <li><a href="about.html#contact">도입 문의</a></li>
+  </ul>
+</main>
+</body>
+</html>

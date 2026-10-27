@@ -1,0 +1,106 @@
+/* 현장 기록(field/). 토큰은 ../styles.css, 문구·크기는 docs/design/redesign_2026-10-27.md 5.5·6장. CSP: 인라인 style 없음 */
+body.field { font-size: 17px; }
+.field section:not(.card) { padding: 0; }
+.field [hidden] { display: none !important; }
+.field header.top .wrap { max-width: 560px; min-height: 56px; display: flex; align-items: center; justify-content: space-between; }
+.field header.top h1 { margin: 0; font-size: 22px; line-height: 30px; }
+.today { font-size: 15px; color: var(--dim); font-weight: 600; }
+.field main { max-width: 560px; margin: 0 auto; padding: 12px 16px 32px; }
+.field h2 { font-size: 18px; line-height: 26px; margin: 0 0 8px; }
+.field h3 { font-size: 15px; line-height: 22px; margin: 0 0 4px; }
+.note, .hint, .warn, .msg { margin: 8px 0; font-size: 14px; line-height: 20px; color: var(--dim); }
+.note { padding: 12px 16px; border-radius: 12px; background: var(--soft); color: var(--soft-ink); }
+.warn { color: var(--notice); }
+.msg { min-height: 20px; font-weight: 600; color: var(--ink); white-space: pre-line; }
+.msg.err { color: var(--error); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; }
+.field label { display: block; margin: 12px 0 4px; font-weight: 600; font-size: 15px; }
+.field input, .field select, .field textarea, .field button { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--dim); border-radius: 10px; background: var(--card); color: var(--ink); min-height: 48px; }
+.field textarea { min-height: 56px; resize: vertical; }
+.field button { background: var(--green); color: var(--on-green); border-color: var(--green); font-weight: 700; margin-top: 8px; cursor: pointer; transition: background-color .12s var(--ease); }
+.field button:hover { background: var(--green-press); }
+.field button.ghost { background: transparent; color: var(--green); }
+.field button.ghost:hover { background: var(--soft); }
+.field button:disabled { opacity: .5; cursor: default; }
+.field button.save { min-height: 56px; font-size: 17px; margin-top: 16px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.check { display: flex !important; gap: 10px; align-items: center; }
+.field input[type=checkbox] { width: 24px; height: 24px; min-height: 24px; padding: 0; flex: none; accent-color: var(--green); }
+.pick { display: grid; gap: 8px; }
+.pick input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.pick label { margin: 0; display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 12px; border: 1px solid var(--green); color: var(--green); font-weight: 700; cursor: pointer; text-align: center; transition: background-color .12s var(--ease); }
+.pick label.big { min-height: 72px; font-size: 19px; background: var(--green); color: var(--on-green); }
+.pick label:active { background: var(--green-press); color: var(--on-green); }
+.pick label:focus-within { outline: 3px solid var(--ink); outline-offset: 2px; }
+#cv { width: 100%; height: auto; touch-action: none; border-radius: 8px; background: #222; display: block; }
+.thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.thumbs figure { margin: 0; position: relative; }
+.thumbs img { width: 88px; height: 88px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
+.thumbs button { position: absolute; top: -6px; right: -6px; width: 44px; min-height: 44px; height: 44px; padding: 0; margin: 0; border-radius: 50%; background: var(--card); color: var(--error); border-color: var(--line); }
+/* 촬영 사실 표시: 촬영하는 동안 계속 보이는 작은 표시(개인정보 보호법 제25조의2) */
+.rec-badge { position: sticky; top: 56px; z-index: 19; margin: 0; padding: 6px 16px; text-align: center; font-size: 14px; line-height: 20px; font-weight: 700; color: var(--notice); background: var(--notice-bg); border-bottom: 1px solid var(--line); }
+.rec-badge::before { content: '●'; margin-right: 6px; }
+.loc { margin: 0; font-weight: 600; white-space: pre-line; }
+.dong { margin: 4px 0 0; color: var(--dim); font-size: 15px; white-space: pre-line; }
+.tag { display: inline-block; padding: 0 8px; margin-left: 6px; border-radius: 99px; font-size: 14px; line-height: 22px; background: var(--soft); color: var(--soft-ink); font-weight: 600; }
+.pin { margin-top: 12px; }
+#pinMap { display: block; width: 100%; aspect-ratio: 1; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); touch-action: manipulation; cursor: crosshair; }
+#pinMap .area { fill: none; stroke: var(--dim); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+#pinMap .area.here { fill: var(--soft); stroke: var(--green); stroke-width: 2.5; }
+#pinMap .acc { fill: none; stroke: var(--green); stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+#pinMap .dot { fill: var(--error); stroke: var(--card); stroke-width: 2; vector-effect: non-scaling-stroke; }
+#pinMap text { fill: var(--ink); font-weight: 600; text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.nudge { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.facts { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.facts ul { list-style: none; margin: 0; padding: 0; }
+.facts li { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.facts li b { font-variant-numeric: tabular-nums; }
+.facts small { display: block; font-size: 14px; line-height: 20px; color: var(--dim); }
+fieldset.chips { border: 0; padding: 0; margin: 0 0 4px; }
+fieldset.chips legend { font-weight: 600; font-size: 15px; margin: 12px 0 8px; padding: 0; }
+.chips div { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips label { margin: 0; display: inline-flex; align-items: center; min-height: 48px; padding: 0 16px; border: 1px solid var(--dim); border-radius: 99px; font-weight: 600; cursor: pointer; transition: background-color .12s var(--ease); }
+.chips input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chips label:has(input:checked) { background: var(--soft); border-color: var(--green); color: var(--soft-ink); }
+.chips label:has(input:checked)::before { content: '✓'; margin-right: 6px; }
+.chips label:has(input:focus-visible) { outline: 3px solid var(--ink); outline-offset: 2px; }
+details { margin-top: 12px; border-top: 1px solid var(--line); }
+details summary { min-height: 48px; display: flex; align-items: center; font-weight: 600; cursor: pointer; color: var(--green); }
+.field section[aria-labelledby="listTitle"] { margin-top: 24px; }
+.list { list-style: none; padding: 0; margin: 8px 0 0; }
+.list li { border-top: 1px solid var(--line); padding: 12px 0; overflow-wrap: anywhere; }
+.list .meta { font-size: 14px; color: var(--dim); }
+.toast { position: fixed; left: 16px; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 40; max-width: 528px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 12px; background: var(--ink); color: var(--bg); font-weight: 600; animation: toast-in .16s ease-out; white-space: pre-line; }
+.toast button { width: auto !important; margin: 0 !important; min-height: 44px !important; background: transparent !important; border: 0 !important; color: var(--bg) !important; text-decoration: underline; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+dialog { max-width: 480px; width: calc(100% - 32px); border: 0; border-radius: 16px; padding: 20px; background: var(--card); color: var(--ink); }
+dialog::backdrop { background: rgba(0,0,0,.5); }
+dialog h2 { margin-top: 0; }
+dialog p { font-size: 15px; line-height: 24px; margin: 0 0 12px; }
+dialog[open] { animation: toast-in .24s var(--ease); }
+.print-doc { display: none; }
+@media (min-width: 1100px) { .field header.top .wrap { max-width: 560px; } }
+@media (prefers-reduced-motion: reduce) {
+  .toast, dialog[open] { animation: none; }
+  .field button, .pick label, .chips label { transition: none; }
+}
+/* PDF(인쇄): 1쪽 문서만 찍는다. 나눔고딕, 결론 먼저, 출처는 작은 글자 */
+@media print {
+  @page { size: A4; margin: 18mm 20mm; }
+  body.printing > *:not(#printDoc) { display: none !important; }
+  body.printing { padding: 0; background: #fff; color: #000; }
+  body.printing .print-doc { display: block; font-family: "NanumGothic", "나눔고딕", Pretendard, sans-serif; font-size: 10pt; line-height: 1.6; color: #000; }
+  .print-doc .dg-title { text-align: center; font-size: 17pt; margin: 0 0 6mm; }
+  .print-doc .dg-key { font-size: 11pt; font-weight: 700; }
+  .print-doc .dg-h1 { font-size: 12pt; margin: 4mm 0 2mm; }
+  .print-doc table { width: 100%; border-collapse: collapse; font-size: 9pt; margin: 0 0 3mm; }
+  .print-doc th, .print-doc td { border: 1px solid #000; padding: 1mm 2mm; text-align: left; vertical-align: top; }
+  .print-doc th { background: #d9d9d9; }
+  .print-doc .dg-box th { width: 22%; }
+  .print-doc .dg-photos { display: grid; grid-template-columns: repeat(auto-fit, minmax(34mm, 1fr)); gap: 3mm; }
+  .print-doc figure { margin: 0; break-inside: avoid; }
+  .print-doc img { width: 100%; max-height: 40mm; object-fit: contain; }
+  .print-doc figcaption, .print-doc .dg-small { font-size: 7.5pt; color: #333; }
+  .print-doc sup { font-size: 70%; }
+  .print-doc button { display: none; }
+}
