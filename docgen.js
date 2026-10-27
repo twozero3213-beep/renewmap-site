@@ -922,6 +922,123 @@
 
   // ══════════════════════════════════════ 브라우저 전용: 저장·PNG
   const safeName = s => String(s).replace(/[\\/:*?"<>|\s]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'renewmap';
+  // ══════════════════════════════════════ DOCX·PPTX (같은 doc 블록에서 만든다. HWPX·XLSX와 숫자·문장이 같다)
+  const OX = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+  const NS_W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const CT_OPEN = 'application/vnd.openxmlformats-officedocument.';
+  const rels = list => `${OX}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${list.map(([id, type, target]) => `<Relationship Id="${id}" Type="${REL}/${type}" Target="${target}"/>`).join('')}</Relationships>`;
+
+  function docxBytes(doc) {
+    const FONT = '나눔고딕';
+    const run = (t, look, pt, bold, color) => `<w:r><w:rPr>${bold || look === 'b' ? '<w:b/>' : ''}${color ? `<w:color w:val="${color}"/>` : ''}${pt ? `<w:sz w:val="${Math.round(pt * 2)}"/>` : ''}${look === 'sup' ? '<w:vertAlign w:val="superscript"/>' : ''}</w:rPr><w:t xml:space="preserve">${xe(t)}</w:t></w:r>`;
+    const p = (runs, o = {}) => `<w:p><w:pPr>${o.style ? `<w:pStyle w:val="${o.style}"/>` : ''}${o.keep ? '<w:keepNext/>' : ''}<w:spacing w:before="${o.before || 0}" w:after="${o.after == null ? 120 : o.after}" w:line="${o.line || 340}" w:lineRule="auto"/>${o.ind ? `<w:ind w:left="${o.ind}" w:hanging="200"/>` : ''}${o.center ? '<w:jc w:val="center"/>' : ''}</w:pPr>${runs}</w:p>`;
+    const W = 9638;   // A4 본문 폭(여백 2cm), 1/20pt
+    const table = (rows, widths, header) => {
+      const n = rows[0].length, tot = widths.reduce((a, b) => a + b, 0) || 1, w = widths.slice(0, n).map(x => Math.round(W * x / tot)); w[n - 1] += W - w.reduce((a, b) => a + b, 0);
+      const bd = ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(s => `<w:${s} w:val="single" w:sz="4" w:space="0" w:color="808080"/>`).join('');
+      const cell = (t, r, c) => { const head = header ? r === 0 : c === 0; return `<w:tc><w:tcPr><w:tcW w:w="${w[c]}" w:type="dxa"/>${head ? '<w:shd w:val="clear" w:color="auto" w:fill="E7ECEA"/>' : ''}<w:vAlign w:val="center"/></w:tcPr>${p(run(String(t).replace(/\s*\n\s*/g, ' '), '', 9.5, head), { after: 0, line: 280 })}</w:tc>`; };
+      return `<w:tbl><w:tblPr><w:tblW w:w="${W}" w:type="dxa"/><w:tblBorders>${bd}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${w.map(x => `<w:gridCol w:w="${x}"/>`).join('')}</w:tblGrid>${rows.map((r, ri) => `<w:tr>${header && ri === 0 ? '<w:trPr><w:tblHeader/></w:trPr>' : '<w:trPr><w:cantSplit/></w:trPr>'}${r.map((t, ci) => cell(t, ri, ci)).join('')}</w:tr>`).join('')}</w:tbl>`;
+    };
+    const runsOf = (text, emph, pt, bold) => textRuns(text, emph).map(([t, look]) => run(t, look, pt, bold)).join('');
+    let body = '';
+    for (const b of doc.blocks) {
+      if (b.kind === 'title') body += p(run(b.text, '', 20, true), { style: 'Title', center: true, after: 240 });
+      else if (b.kind === 'box') body += table(b.rows, b.widths, false) + p('', { after: 120 });
+      else if (b.kind === 'table') body += (b.caption ? p(run(b.caption, '', 10, true), { keep: true, after: 60 }) : '') + table(b.rows, b.widths, true) + p('', { after: 120 });
+      else if (b.kind === 'h1') body += p(run(b.text, '', 14, true), { style: 'Heading1', keep: true, before: 240, after: 100 });
+      else if (b.kind === 'h2') body += p(run(b.text, '', 12, true), { style: 'Heading2', keep: true, before: 160, after: 80 });
+      else if (b.kind === 'bullet') body += p(run('- ', '', 11) + runsOf(b.text, false, 11), { ind: 340 });
+      else if (b.small) body += p(run(b.text, '', 8.5), { after: 40, line: 260 });
+      else if (b.strong) body += p(runsOf(b.text, true, 12.5, true), { after: 160 });
+      else body += p(runsOf(b.text, b.emph, 11));
+    }
+    const sect = '<w:sectPr><w:footerReference w:type="default" r:id="rId2"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>';
+    const styles = `${OX}<w:styles ${NS_W}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}" w:eastAsia="${FONT}" w:cs="${FONT}"/><w:sz w:val="22"/><w:lang w:val="ko-KR" w:eastAsia="ko-KR"/></w:rPr></w:rPrDefault></w:docDefaults>`
+      + ['Normal|Normal|', 'Title|Title|<w:keepNext/>', 'Heading1|heading 1|<w:keepNext/><w:outlineLvl w:val="0"/>', 'Heading2|heading 2|<w:keepNext/><w:outlineLvl w:val="1"/>'].map(s => { const [id, name, ppr] = s.split('|'); return `<w:style w:type="paragraph" w:styleId="${id}"${id === 'Normal' ? ' w:default="1"' : ''}><w:name w:val="${name}"/>${id === 'Normal' ? '' : '<w:basedOn w:val="Normal"/><w:next w:val="Normal"/>'}${ppr ? `<w:pPr>${ppr}</w:pPr>` : ''}</w:style>`; }).join('') + '</w:styles>';
+    const ftr = `${OX}<w:ftr ${NS_W}>${p(run(doc.footer || '', '', 8, false, '595959'), { center: true, after: 0 })}</w:ftr>`;
+    const iso = /^\d{4}-\d{2}-\d{2}/.test(doc.writtenOn || '') ? `${doc.writtenOn.slice(0, 10)}T00:00:00Z` : '1980-01-01T00:00:00Z';
+    return zipStore([
+      { name: '[Content_Types].xml', data: `${OX}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="${CT_OPEN}wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="${CT_OPEN}wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="${CT_OPEN}wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>` },
+      { name: '_rels/.rels', data: `${OX}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL}/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>` },
+      { name: 'docProps/core.xml', data: `${OX}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${xe(doc.title)}</dc:title><dc:creator>RENEWMAP</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${iso}</dcterms:created></cp:coreProperties>` },
+      { name: 'word/document.xml', data: `${OX}<w:document ${NS_W}><w:body>${body}${sect}</w:body></w:document>` },
+      { name: 'word/styles.xml', data: styles },
+      { name: 'word/footer1.xml', data: ftr },
+      { name: 'word/_rels/document.xml.rels', data: rels([['rId1', 'styles', 'styles.xml'], ['rId2', 'footer', 'footer1.xml']]) },
+    ], doc.writtenOn || '');
+  }
+
+  // PPTX: 장(h1)마다 슬라이드를 만들고, 줄·표가 많으면 이어서 다음 슬라이드로 넘긴다. 출처 목록도 슬라이드로 넣어 숫자의 출처가 빠지지 않게 한다.
+  function pptxBytes(doc) {
+    const SW = 12192000, SH = 6858000, M = 457200, FONT = '나눔고딕', MAX_LINES = 7, MAX_ROWS = 8;
+    const ns = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"';
+    const rp = (pt, bold, color, sup) => `<a:rPr lang="ko-KR" sz="${Math.round(pt * 100)}"${bold ? ' b="1"' : ''}${sup ? ' baseline="30000"' : ''} dirty="0"><a:solidFill><a:srgbClr val="${color || '153C39'}"/></a:solidFill><a:latin typeface="${FONT}"/><a:ea typeface="${FONT}"/></a:rPr>`;
+    const para = (runs, o = {}) => `<a:p><a:pPr${o.bullet ? ' marL="285750" indent="-285750"' : ''}><a:spcBef><a:spcPts val="${o.before || 0}"/></a:spcBef>${o.bullet ? '<a:buFont typeface="Arial"/><a:buChar char="-"/>' : '<a:buNone/>'}</a:pPr>${runs}</a:p>`;
+    const runsOf = (text, pt, bold, color) => textRuns(text, false).map(([t, look]) => `<a:r>${rp(pt, bold || look === 'b', color, look === 'sup')}<a:t>${xe(t)}</a:t></a:r>`).join('');
+    let sid = 1;
+    const box = (name, x, y, w, h, paras) => `<p:sp><p:nvSpPr><p:cNvPr id="${++sid}" name="${name}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${w}" cy="${h}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr wrap="square" rtlCol="0"><a:normAutofit/></a:bodyPr><a:lstStyle/>${paras}</p:txBody></p:sp>`;
+    const ROW_H = 400000;
+    const tableFrame = (rows, widths) => {
+      const n = rows[0].length, tot = widths.reduce((a, b) => a + b, 0) || 1, W = SW - 2 * M, w = widths.slice(0, n).map(x => Math.round(W * x / tot)); w[n - 1] += W - w.reduce((a, b) => a + b, 0);
+      const cell = (t, r) => `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/>${para(`<a:r>${rp(r === 0 ? 11 : 10.5, r === 0)}<a:t>${xe(String(t).replace(/\s*\n\s*/g, ' '))}</a:t></a:r>`)}</a:txBody><a:tcPr marL="72000" marR="72000" marT="36000" marB="36000" anchor="ctr">${['L', 'R', 'T', 'B'].map(s => `<a:ln${s} w="6350"><a:solidFill><a:srgbClr val="808080"/></a:solidFill></a:ln${s}>`).join('')}${r === 0 ? '<a:solidFill><a:srgbClr val="E7ECEA"/></a:solidFill>' : ''}</a:tcPr></a:tc>`;
+      return `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="${++sid}" name="표"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="${M}" y="1150000"/><a:ext cx="${W}" cy="${ROW_H * rows.length}"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr firstRow="1"/><a:tblGrid>${w.map(x => `<a:gridCol w="${x}"/>`).join('')}</a:tblGrid>${rows.map((r, ri) => `<a:tr h="${ROW_H}">${r.map(t => cell(t, ri)).join('')}</a:tr>`).join('')}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>`;
+    };
+    const slides = [];   // {title, lines:[{text,bullet,bold,size,color,before}], table}
+    let cur = null;
+    const open = title => { cur = { title, lines: [], table: null }; slides.push(cur); };
+    const flush = () => { if (cur && !cur.lines.length && !cur.table) slides.pop(); cur = null; };
+    const again = () => { const t = cur.title; flush(); open(t); };
+    open(doc.title);
+    for (const b of doc.blocks.slice(1)) {
+      if (b.kind === 'h1') { flush(); open(b.text); }
+      else if (b.kind === 'h2') { if (cur.table || cur.lines.length >= MAX_LINES) again(); cur.lines.push({ text: b.text, bold: true, size: 17, before: 600 }); }
+      else if (b.kind === 'table' || b.kind === 'box') {
+        const head = b.kind === 'table' ? [b.rows[0]] : [], body = b.kind === 'table' ? b.rows.slice(1) : b.rows;
+        for (let i = 0; i < Math.max(body.length, 1); i += MAX_ROWS) {
+          if (cur.lines.length || cur.table) again();
+          cur.table = { rows: [...head, ...body.slice(i, i + MAX_ROWS)], widths: b.widths };
+          if (b.caption) cur.lines.push({ text: b.caption, size: 12, bold: true });
+        }
+        again();
+      } else {
+        if (cur.table || cur.lines.length >= MAX_LINES) again();
+        cur.lines.push({ text: b.text, bullet: b.kind === 'bullet', size: b.small ? 10 : b.strong ? 19 : 16, bold: !!b.strong, color: b.small ? '595959' : null });
+      }
+    }
+    flush();
+    const total = slides.length;
+    const grpXml = '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>';
+    const slideXml = (s, i) => {
+      sid = 1;
+      const title = box('제목', M, 300000, SW - 2 * M, 700000, para(`<a:r>${rp(i === 0 ? 30 : 26, true, '006F5B')}<a:t>${xe(s.title)}</a:t></a:r>`));
+      const table = s.table ? tableFrame(s.table.rows, s.table.widths) : '';
+      const y = s.table ? 1150000 + ROW_H * s.table.rows.length + 150000 : 1200000;
+      const lines = s.lines.length ? box('본문', M, y, SW - 2 * M, SH - y - 600000, s.lines.map(l => para(runsOf(l.text, l.size || 16, l.bold, l.color), { bullet: l.bullet, before: l.before || 400 })).join('')) : '';
+      const foot = box('쪽·출처', M, SH - 480000, SW - 2 * M, 380000, para(`<a:r>${rp(9, false, '595959')}<a:t>${xe(`${doc.footer || ''} · ${i + 1}/${total}`)}</a:t></a:r>`));
+      return `${OX}<p:sld ${ns}><p:cSld><p:spTree>${grpXml}${title}${table}${lines}${foot}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
+    };
+    const clr = ['dk1 000000', 'lt1 FFFFFF', 'dk2 153C39', 'lt2 F2F5F3', 'accent1 006F5B', 'accent2 D7F988', 'accent3 8A4B00', 'accent4 2E7D5E', 'accent5 4F625D', 'accent6 102F2D', 'hlink 006F5B', 'folHlink 4F625D'].map(s => { const [n, v] = s.split(' '); return `<a:${n}><a:srgbClr val="${v}"/></a:${n}>`; }).join('');
+    const fills = '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>'.repeat(3), lns = '<a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln>'.repeat(3);
+    const theme = `${OX}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="리뉴맵"><a:themeElements><a:clrScheme name="리뉴맵">${clr}</a:clrScheme><a:fontScheme name="리뉴맵"><a:majorFont><a:latin typeface="${FONT}"/><a:ea typeface="${FONT}"/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="${FONT}"/><a:ea typeface="${FONT}"/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="리뉴맵"><a:fillStyleLst>${fills}</a:fillStyleLst><a:lnStyleLst>${lns}</a:lnStyleLst><a:effectStyleLst>${'<a:effectStyle><a:effectLst/></a:effectStyle>'.repeat(3)}</a:effectStyleLst><a:bgFillStyleLst>${fills}</a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`;
+    const master = `${OX}<p:sldMaster ${ns}><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree>${grpXml}</p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst></p:sldMaster>`;
+    const layout = `${OX}<p:sldLayout ${ns} type="blank" preserve="1"><p:cSld name="빈 화면"><p:spTree>${grpXml}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`;
+    const pres = `${OX}<p:presentation ${ns} saveSubsetFonts="1"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${slides.map((_, i) => `<p:sldId id="${256 + i}" r:id="rId${i + 3}"/>`).join('')}</p:sldIdLst><p:sldSz cx="${SW}" cy="${SH}"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`;
+    const ov = (part, ct) => `<Override PartName="${part}" ContentType="${CT_OPEN}${ct}+xml"/>`;
+    return zipStore([
+      { name: '[Content_Types].xml', data: `${OX}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${ov('/ppt/presentation.xml', 'presentationml.presentation.main')}${ov('/ppt/slideMasters/slideMaster1.xml', 'presentationml.slideMaster')}${ov('/ppt/slideLayouts/slideLayout1.xml', 'presentationml.slideLayout')}${ov('/ppt/theme/theme1.xml', 'theme')}${slides.map((_, i) => ov(`/ppt/slides/slide${i + 1}.xml`, 'presentationml.slide')).join('')}</Types>` },
+      { name: '_rels/.rels', data: rels([['rId1', 'officeDocument', 'ppt/presentation.xml']]) },
+      { name: 'ppt/presentation.xml', data: pres },
+      { name: 'ppt/_rels/presentation.xml.rels', data: rels([['rId1', 'slideMaster', 'slideMasters/slideMaster1.xml'], ['rId2', 'theme', 'theme/theme1.xml'], ...slides.map((_, i) => [`rId${i + 3}`, 'slide', `slides/slide${i + 1}.xml`])]) },
+      { name: 'ppt/slideMasters/slideMaster1.xml', data: master },
+      { name: 'ppt/slideMasters/_rels/slideMaster1.xml.rels', data: rels([['rId1', 'slideLayout', '../slideLayouts/slideLayout1.xml'], ['rId2', 'theme', '../theme/theme1.xml']]) },
+      { name: 'ppt/slideLayouts/slideLayout1.xml', data: layout },
+      { name: 'ppt/slideLayouts/_rels/slideLayout1.xml.rels', data: rels([['rId1', 'slideMaster', '../slideMasters/slideMaster1.xml']]) },
+      { name: 'ppt/theme/theme1.xml', data: theme },
+      ...slides.flatMap((s, i) => [{ name: `ppt/slides/slide${i + 1}.xml`, data: slideXml(s, i) }, { name: `ppt/slides/_rels/slide${i + 1}.xml.rels`, data: rels([['rId1', 'slideLayout', '../slideLayouts/slideLayout1.xml']]) }]),
+    ], doc.writtenOn || '');
+  }
+
   function saveBytes(name, data, mime) {
     const blob = new Blob([data], { type: mime }), url = URL.createObjectURL(blob), a = document.createElement('a');
     a.href = url; a.download = name; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
@@ -944,7 +1061,7 @@
 
   return {
     crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, fmtNum, roundD, govDate, josa, valueWithUnit, fmtCell, hidden, usable, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
-    setTemplates, getTemplates, displayName, BriefError, buildBrief, buildDoc, buildOnepage, estimateHeightMm, docText, sentenceText, sizesFor, textRuns, headerXml, sectionXml, hwpxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
+    setTemplates, getTemplates, displayName, BriefError, buildBrief, buildDoc, buildOnepage, estimateHeightMm, docText, sentenceText, sizesFor, textRuns, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
     tablePayload, sentencePayload, copyToClipboard, buildFragments, fragmentChoices, fragmentPayload, fragmentHTML, docHTML, COPY_TABLE, COPY_SENT, projectFeatures, mapSvg, safeName, saveBytes, svgToPng, xe,
   };
 });

@@ -604,7 +604,7 @@
   const srcHead = where => (DG ? DG.SRC_HEAD(where) : '');
   const copyHead = caption => `<div class="dg-tbl-h" aria-live="polite"><b>${esc(caption)}</b>${DG ? `<button type="button" class="btn ghost dg-copy" data-copy-table>${esc(DG.COPY_TABLE)}</button>` : ''}</div>`;
   // 내려받기·인쇄·보조 메일 요청. 1쪽 요약에서는 HWPX가 1쪽 문서다
-  const fileTools = (it, year, what, one) => `<button type="button" class="btn ghost" data-print>🖨 인쇄·PDF</button>` + (DG ? `<button type="button" class="btn" data-dl="hwpx">HWPX 받기${one ? '(1쪽)' : ''}</button><button type="button" class="btn" data-dl="xlsx">XLSX 받기</button>` : '') +
+  const fileTools = (it, year, what, one) => `<button type="button" class="btn ghost" data-print>🖨 인쇄·PDF</button>` + (DG ? `<button type="button" class="btn" data-dl="hwpx">HWPX 받기${one ? '(1쪽)' : ''}</button><button type="button" class="btn" data-dl="xlsx">XLSX 받기</button><button type="button" class="btn" data-dl="docx">DOCX 받기</button><button type="button" class="btn" data-dl="pptx">PPTX 받기</button>` : '') +
     `<a class="btn ghost rp-mail" href="${esc(briefMailto(it, year, what))}">HWPX·XLSX 요청(무료 · 1영업일)</a>`;
   // 양식에 붙일 조각(문장 5개 이하 + 표 1개 + 출처 줄): 양식을 고르면 그 양식 항목 순서대로 만든다(data-frag-out). 양식 정의는 data/report_templates.json
   function fragPanelHTML(sel) {
@@ -848,7 +848,11 @@
     const built = docFor(cur.v, cur.m, cur.it); if (built.error) { notify({ format: kind, status: 'error', message: built.error }); return; }
     const one = reportMode === 'onepage', stem = `${cur.it.code}_${DG.safeName(cur.it.name)}_${one ? '요약' : '근거서'}`;
     try {
-      const file = kind === 'hwpx' ? [`${stem}.hwpx`, DG.hwpxBytes(one ? built.one : built.doc), 'application/hwp+zip'] : [`${stem}.xlsx`, DG.workbookBytes(built.doc), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+      const OOXML = 'application/vnd.openxmlformats-officedocument.', pick = one ? built.one : built.doc;
+      const file = kind === 'hwpx' ? [`${stem}.hwpx`, DG.hwpxBytes(pick), 'application/hwp+zip']
+        : kind === 'docx' ? [`${stem}.docx`, DG.docxBytes(pick), OOXML + 'wordprocessingml.document']
+        : kind === 'pptx' ? [`${stem}.pptx`, DG.pptxBytes(pick), OOXML + 'presentationml.presentation']
+        : [`${stem}.xlsx`, DG.workbookBytes(built.doc), OOXML + 'spreadsheetml.sheet'];
       notify({ format: kind, status: 'done', file: file[0], size: DG.saveBytes(...file), year: built.doc.brief.year, one });
     } catch (err) { notify({ format: kind, status: 'error', message: err.message }); }
   }

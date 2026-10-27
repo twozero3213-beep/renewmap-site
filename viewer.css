@@ -1,0 +1,33 @@
+/* 문서 열기 화면 */
+.docs h1 { font-size: 26px; margin: 8px 0 16px; }
+.docs h2 { font-size: 19px; margin: 0 0 6px; }
+.docs-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
+.docs-card p { margin: 0 0 12px; word-break: keep-all; }
+.docs-formats { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0 0 12px; }
+.docs-formats li { padding: 4px 10px; border: 1px solid var(--line); border-radius: 99px; font-size: 14px; color: var(--ink); background: var(--bg); }
+.doc-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 120px; border: 2px dashed var(--green); border-radius: 14px; background: var(--bg); cursor: pointer; text-align: center; }
+.doc-drop b { font-size: 18px; color: var(--green); }
+.doc-drop span { font-size: 14px; color: var(--dim); }
+.doc-drop.is-over { background: #e3f1ea; }
+.doc-drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.doc-drop:focus-within { outline: 3px solid var(--ink); outline-offset: 2px; }
+.doc-status { min-height: 1.6em; margin: 12px 0 0; font-weight: 600; word-break: keep-all; }
+.doc-status.err { color: #a32020; }
+.doc-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.doc-bar .btn { min-height: 44px; padding: 10px 14px; cursor: pointer; }
+.doc-stage { display: grid; gap: 12px; margin-top: 8px; }
+.doc-page { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: #fff; }
+.doc-docx { overflow-x: auto; background: #e9edeb; padding: 8px; }
+.doc-text { white-space: pre-wrap; word-break: break-word; max-height: 70vh; overflow: auto; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: 14px/1.6 Pretendard, sans-serif; }
+.doc-tabs { display: flex; gap: 6px; overflow-x: auto; }
+.doc-tab { min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; cursor: pointer; white-space: nowrap; }
+.doc-tab[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.doc-scroll { overflow: auto; max-height: 70vh; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.doc-sheet table { border-collapse: collapse; font-size: 14px; }
+.doc-sheet td { border: 1px solid var(--line); padding: 4px 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.doc-slide { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.doc-slide h3 { margin: 0 0 6px; font-size: 15px; color: var(--green); }
+.doc-slide p { margin: 0 0 4px; }
+.doc-note { color: var(--dim); font-size: 14px; margin: 0; }
+.vendor-note { font-size: 13px; }
+@media print { header.top, .tabbar, .docs-card:first-of-type, .doc-drop, .doc-bar, .docs-formats, footer, .home-note { display: none !important; } .doc-page { border: 0; break-inside: avoid; } }

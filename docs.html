@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 열기 도구(vendor/)는 같은 출처에서만 불러온다. 문서 보기용 스타일(docx-preview)과 한글 WASM 때문에 style 인라인·wasm-unsafe-eval을 이 페이지에만 허용한다. 스크립트 인라인은 막는다 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; manifest-src 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>문서 열기 | 리뉴맵 RENEWMAP</title>
+<meta name="description" content="한글·워드·엑셀·파워포인트·PDF·그림 파일을 이 기기 안에서 열어 보고 받을 수 있습니다. 서버로 보내지 않습니다.">
+<link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/docs.html">
+<meta name="theme-color" content="#006f5b">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="stylesheet" href="pretendard.css">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="viewer.css">
+<script src="site.js" defer></script>
+<script src="viewer.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="index.html">RENEW<span>MAP</span></a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu">메뉴</button>
+    <nav class="menu" id="site-menu" aria-label="주요 메뉴">
+      <a href="about.html">서비스 소개</a>
+      <a href="explore.html#map">지도 탐색</a>
+      <a href="docs.html">문서</a>
+      <a href="field/">현장 확인</a>
+      <a href="explore.html#gov">업무 바로 가기</a>
+      <a href="about.html#faq">FAQ</a>
+    </nav>
+    <a class="btn header-cta" href="about.html#contact">시범 납품 상담</a>
+  </div>
+</header>
+
+<main id="main" class="home docs">
+  <h1>문서 열기·받기</h1>
+
+  <section aria-labelledby="getTitle" class="docs-card">
+    <h2 id="getTitle">보고서 받기</h2>
+    <p>동네를 고르면 근거가 붙은 보고서를 이 형식들로 받습니다.</p>
+    <ul class="docs-formats"><li>한글(HWPX)</li><li>워드(DOCX)</li><li>엑셀(XLSX)</li><li>파워포인트(PPTX)</li><li>PDF</li></ul>
+    <a class="btn" href="explore.html#report">보고서 만들러 가기</a>
+  </section>
+
+  <section aria-labelledby="openTitle" class="docs-card">
+    <h2 id="openTitle">가진 문서 열기</h2>
+    <p>파일은 이 기기 안에서만 열립니다. 서버로 보내지 않습니다.</p>
+    <label id="docDrop" class="doc-drop" for="docFile"><b>파일 고르기</b><span>또는 여기에 끌어다 놓기</span>
+      <input id="docFile" type="file" accept=".hwp,.hwpx,.docx,.xlsx,.xls,.xlsb,.ods,.csv,.pptx,.pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.md,.json,.odt"></label>
+    <ul class="docs-formats"><li>한글 hwp·hwpx</li><li>워드 docx·odt</li><li>엑셀 xlsx·xls·csv</li><li>파워포인트 pptx</li><li>PDF</li><li>그림</li><li>글 txt·md</li></ul>
+    <p id="docStatus" class="doc-status" role="status" aria-live="polite"></p>
+    <div id="docBar" class="doc-bar" hidden>
+      <button id="docOrig" class="btn ghost" type="button">원본 받기</button>
+      <button id="docText" class="btn ghost" type="button">글자만 받기(.txt)</button>
+      <button id="docPrint" class="btn ghost" type="button">인쇄·PDF</button>
+    </div>
+    <div id="docStage" class="doc-stage"></div>
+    <noscript><p>문서 열기는 자바스크립트가 켜져 있어야 합니다.</p></noscript>
+  </section>
+
+  <p class="home-note">형식을 바꾸거나 고쳐 저장하려면 무료 오픈소스 <a href="https://ieumoffice.com/" rel="noopener">이음오피스</a>에서 여세요.</p>
+  <p class="home-note vendor-note">열기 도구: rhwp(MIT), pdf.js·SheetJS·docx-preview(Apache-2.0), JSZip(MIT). 전체 고지는 <a href="vendor/NOTICE.md">vendor/NOTICE.md</a>.</p>
+</main>
+
+<footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 납품 상담</a><a href="ethics.html">AI 윤리·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
+</body>
+</html>

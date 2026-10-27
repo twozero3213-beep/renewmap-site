@@ -1,4 +1,4 @@
-/* 납품 도구: PDF는 브라우저 인쇄, HWPX·XLSX는 docgen.js가 이 브라우저에서 바로 만든다(map.js의 download). 상태 문구는 사실만 적는다. */
+/* 납품 도구: PDF는 브라우저 인쇄, HWPX·DOCX·XLSX·PPTX는 docgen.js가 이 브라우저에서 바로 만든다(map.js의 download). 상태 문구는 사실만 적는다. */
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -6,7 +6,7 @@
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
   const esc = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-  const FORMATS = ['hwpx', 'pdf', 'xlsx'];
+  const FORMATS = ['hwpx', 'pdf', 'xlsx', 'docx', 'pptx'];
   // detail: { file, size, message } (done·error일 때)
   function exportStateHTML(format, status, detail) {
     const supported = FORMATS.includes(format), d = detail || {};
@@ -27,18 +27,18 @@
     if (!report || !tools) return;
     const status = tools.querySelector('[data-export-status]');
     const button = f => tools.querySelector(`[data-export-format="${f}"]`);
-    const pdf = button('pdf'), hwpx = button('hwpx'), xlsx = button('xlsx');
+    const pdf = button('pdf'), hwpx = button('hwpx'), xlsx = button('xlsx'), docx = button('docx'), pptx = button('pptx');
     let anchor = null, shown = false;
     function paint(ready) { status.innerHTML = FORMATS.map(f => exportStateHTML(f, ready ? 'ready' : 'unavailable')).join(''); }
     function sync() {
       const ready = Boolean(report.querySelector('[data-print]')), dl = report.querySelector('[data-dl]');
       pdf.disabled = !ready;
-      [hwpx, xlsx].forEach(b => { if (b) b.disabled = !dl; });
+      [hwpx, xlsx, docx, pptx].forEach(b => { if (b) b.disabled = !dl; });
       // 보고서가 다시 그려질 때만 안내를 처음 문구로 돌린다(복사 버튼 글자가 바뀔 때마다 지우지 않는다)
       if (dl !== anchor || !shown) { anchor = dl; shown = true; paint(ready); }
     }
     pdf.addEventListener('click', () => report.querySelector('[data-print]')?.click());
-    [hwpx, xlsx].forEach(b => b && b.addEventListener('click', () => {
+    [hwpx, xlsx, docx, pptx].forEach(b => b && b.addEventListener('click', () => {
       const fn = window.RenewMap && window.RenewMap.download;
       if (fn) fn(b.dataset.exportFormat); else status.innerHTML = exportStateHTML(b.dataset.exportFormat, 'error', { message: '문서 생성기를 불러오지 못했습니다. 페이지를 새로 고쳐 주세요.' });
     }));
