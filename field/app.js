@@ -207,11 +207,33 @@
 
   // ── 손 보정: 그 시군구의 행정동 경계를 m 평면에 그리고, 누른 곳으로 핀을 옮긴다(배경 지도 없이 오프라인에서 된다)
   const NS = "http://www.w3.org/2000/svg";
+  // 배경지도(브이월드 WMTS, 웹 메르카토르 256px 조각). 키는 배포 때 사이트 저장소에만 넣는 vworld-key.js에 있다(등록 주소에만 동작).
+  // 조각 요청은 대략 위치를 브이월드에 보내므로 사용자가 켤 때만 받는다. 조각 모서리를 m 평면에 대어 놓는다(수백 m 안에서는 오차가 작다)
+  const VW_KEY = window.RENEWMAP_VWORLD_KEY || "", BASEMAP = "renewmap-field-basemap";
+  const tileLng = (x, n) => (x / n) * 360 - 180, tileLat = (y, n) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))) * 180) / Math.PI;
+  function drawTiles(el, P, R0) {
+    const z = Math.min(18, Math.max(7, Math.floor(Math.log2((40075016 * Math.cos((gps.lat * Math.PI) / 180)) / R0)))), n = 2 ** z;
+    const [w, nLat] = P.toLngLat(-R0, -R0), [e, sLat] = P.toLngLat(R0, R0);
+    const tx = (lng) => Math.floor(((lng + 180) / 360) * n), ty = (lat) => { const r = (lat * Math.PI) / 180; return Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n); };
+    for (let x = tx(w); x <= tx(e); x++) for (let y = ty(nLat); y <= ty(sLat); y++) {
+      const [x0, y0] = P.toXY(tileLng(x, n), tileLat(y, n)), [x1, y1] = P.toXY(tileLng(x + 1, n), tileLat(y + 1, n));
+      el("image", { href: `https://api.vworld.kr/req/wmts/1.0.0/${VW_KEY}/Base/${z}/${y}/${x}.png`, x: x0.toFixed(1), y: y0.toFixed(1), width: (x1 - x0).toFixed(1), height: (y1 - y0).toFixed(1), preserveAspectRatio: "none", class: "tile" });
+    }
+  }
+  if (VW_KEY) {
+    $("basemapBox").hidden = false;
+    $("basemap").checked = store(BASEMAP) === "1";
+    $("basemapNote").hidden = !$("basemap").checked;
+    $("basemap").addEventListener("change", () => { store(BASEMAP, $("basemap").checked ? "1" : "0"); $("basemapNote").hidden = !$("basemap").checked; if (draft) drawPin(); });
+  }
   function drawPin() {
     const svg = $("pinMap"), P = E.plane(gps.lat, gps.lng), R0 = Math.max(400, Math.round((gps.accuracy || 30) * 4));
     svg.setAttribute("viewBox", `${-R0} ${-R0} ${2 * R0} ${2 * R0}`);
     svg.textContent = "";
     const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); svg.append(e); return e; };
+    const tiles = !!VW_KEY && $("basemap").checked;
+    svg.classList.toggle("tiles", tiles);
+    if (tiles) drawTiles(el, P, R0);
     for (const f of (place && place.emd && place.emd.features) || []) {
       const g = f.geometry, polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
       const d = polys.flat().map((ring) => "M" + ring.map(([x, y]) => P.toXY(x, y).map((v) => v.toFixed(1)).join(" ")).join("L") + "Z").join("");

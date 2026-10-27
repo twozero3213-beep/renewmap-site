@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'self' blob:; manifest-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob: https://api.vworld.kr; font-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'self' blob:; manifest-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>현장 기록 | 리뉴맵</title>
 <meta name="description" content="현장 사진을 찍으면 위치와 정확도, 그 행정동의 공식 현황 숫자(출처·기준일)를 붙여 결재용 1쪽 문서(한글·PDF)로 만듭니다. 기록과 사진은 이 휴대폰에만 저장됩니다.">
@@ -69,6 +69,8 @@
     </div>
     <div id="pinBox" class="pin" hidden>
       <p class="hint">지도를 눌러 실제 위치로 옮기세요.<br>옮긴 위치는 '보정됨'으로 남습니다.</p>
+      <label id="basemapBox" class="check" for="basemap" hidden><input id="basemap" type="checkbox"><span>배경지도 보기(브이월드)</span></label>
+      <p id="basemapNote" class="hint" hidden>켜면 지도 조각을 받으려고 이 근처의 대략 위치가 브이월드로 갑니다.<br>기록과 사진은 보내지 않습니다.<br>배경지도 © 국토교통부 브이월드</p>
       <svg id="pinMap" role="img" aria-label="행정동 경계와 현재 위치"></svg>
       <div class="nudge" role="group" aria-label="핀 옮기기">
         <button type="button" class="ghost" data-nudge="0,-10" aria-label="북쪽으로 10m">북</button>
@@ -182,6 +184,7 @@
 <script src="store.js"></script>
 <script src="evidence.js"></script>
 <script src="detect.js"></script>
+<script src="vworld-key.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
