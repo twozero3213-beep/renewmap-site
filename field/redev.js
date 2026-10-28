@@ -19,6 +19,8 @@
   const structClass = (s) => (RC_STEEL.includes(s) ? "RC_STEEL" : OTHER.includes(s) ? "OTHER" : null);
   const useClass = (u) => (u === "공동주택" ? "APT" : u === "단독주택" ? "DETACHED" : u ? "OTHER" : null);
   // 제3조② 연한표. backend/renewmap/rules/busan_age.py의 YEARS와 같아야 한다(교차 테스트 test_redev_js.py)
+  // 값은 data/params/busan_redev.json과 같아야 한다(redev.test.cjs가 대조, 서버는 그 파일을 직접 읽는다)
+  const THR = { default: 60, district: 50 };
   const YEARS = { "RC_STEEL/APT": 30, "OTHER/APT": 20, "RC_STEEL/OTHER": 30, "RC_STEEL/DETACHED": 20, "OTHER/OTHER": 20, "OTHER/DETACHED": 20 };
   function yearsRange(b) {
     const s = structClass(b.structure), u = useClass(b.main_use);
@@ -88,7 +90,7 @@
   // blds: match().buildings, ref: 'YYYY-MM-DD'(파일 age_reference_date), district: 재정비촉진지구, areaM2: 사용자가 넣은 구역 면적(없으면 null)
   function review(blds, { ref, district = false, areaM2 = null }) {
     if (!blds.length) throw new Error("목록에서 찾은 건물이 없습니다.");
-    const thr = district ? 50 : 60, rows = blds.map((b) => ({ b, ...oldState(b, ref) }));
+    const thr = district ? THR.district : THR.default, rows = blds.map((b) => ({ b, ...oldState(b, ref) }));
     const sum = (f) => rows.reduce((s, r) => s + (f(r) ? Number(r.b.tot_area) || 0 : 0), 0);
     const n = rows.length, nOld = rows.filter((r) => r.old).length, nUnk = rows.filter((r) => r.old === null).length;
     const area = sum(() => true), aOld = sum((r) => r.old), aUnk = sum((r) => r.old === null);
@@ -165,5 +167,5 @@
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · ` };
   }
 
-  return { RULES, NOT_APPROVED, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, oldState, parseList, match, review, summaryHTML, toCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { THR, RULES, NOT_APPROVED, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, oldState, parseList, match, review, summaryHTML, toCSV, buildDoc, MET, NOT_MET, CHECK };
 });

@@ -30,14 +30,38 @@
     const lg = document.createElement("legend"); lg.textContent = "사유(해당하는 것 모두)"; why.append(lg);
     for (const [v, l] of R.REASON_CODES) { const lb = document.createElement("label"), c = document.createElement("input"); c.type = "checkbox"; c.value = v; c.checked = (o.reasons || []).includes(v); lb.append(c, document.createTextNode(l)); why.append(lb); }
     cb.type = "checkbox"; cb.checked = !!o.consent; ok.className = "consent"; ok.append(cb, document.createTextNode("리뉴맵 개선에 이 결과를 쓰는 데 동의(문서 내용·위치는 보내지 않음)"));
-    const sync = () => { why.hidden = !R.NEEDS_REASON.includes(sel.value); ok.hidden = !sel.value; };
+    const sync = () => { why.hidden = !R.NEEDS_REASON.includes(sel.value); ok.hidden = !sel.value; const e = box.querySelector(".exemplar"); if (e) e.hidden = sel.value !== "approved"; };
     const save = async () => {
       sync();
       const next = R.setOutcome(d, sel.value, [...why.querySelectorAll("input:checked")].map((c) => c.value), cb.checked, new Date());
-      await S.addDoc(next); d.outcome = next.outcome; say(next.outcome ? "결재 결과를 이 기기에 저장했습니다." : "결재 결과를 지웠습니다."); tally();
+      await S.addDoc(next); d.outcome = next.outcome; sync(); say(next.outcome ? "결재 결과를 이 기기에 저장했습니다." : "결재 결과를 지웠습니다."); tally();
     };
     sel.addEventListener("change", save); why.addEventListener("change", save); cb.addEventListener("change", save);
     sync(); box.append(sel, why, ok);
+    if (Array.isArray(d.blocks) && d.blocks.length) {   // 4단계: 고친 한글 파일을 올리면 블록마다 고친 비율만 남긴다
+      const up = document.createElement("label"), f = document.createElement("input"), info = document.createElement("span");
+      f.type = "file"; f.accept = ".hwpx"; up.className = "edit-up"; info.className = "meta";
+      info.textContent = d.block_edits ? `고친 부분 ${d.block_edits.filter((b) => b.edit_ratio >= 0.05).length}곳 / ${d.block_edits.length}곳` : "결재에 올린 최종 한글 파일을 올리면 고친 부분을 셉니다(이 기기 안에서만).";
+      up.append(document.createTextNode("고친 한글 파일 올리기 "), f);
+      f.addEventListener("change", async () => {
+        try {
+          const text = await R.hwpxText(new Uint8Array(await f.files[0].arrayBuffer())), edits = R.blockEdits(d.blocks, text);
+          const next = { ...d, block_edits: edits, edited_text: text }; await S.addDoc(next); Object.assign(d, next);
+          info.textContent = `고친 부분 ${edits.filter((b) => b.edit_ratio >= 0.05).length}곳 / ${edits.length}곳`; say("고친 부분을 셌습니다.\n파일 내용은 이 기기에만 남습니다.");
+        } catch (e) { say(e.message || "파일을 읽지 못했습니다."); }
+      });
+      box.append(up, info);
+    }
+    const ex = document.createElement("button"); ex.type = "button"; ex.className = "ghost exemplar"; ex.textContent = "승인 사례로 내보내기";
+    ex.addEventListener("click", () => {   // 6단계: 본문이 들어가므로 매번 묻는다
+      if (!confirm("이 문서의 본문을 승인 사례 파일로 받습니다.\n리뉴맵 문장 개선에 쓰입니다.\n개인정보가 없는지 확인했나요?")) return;
+      try {
+        const rec = lastRecs.find((r) => r.id === d.record_id), x = R.exemplarOf(d, rec, rec && rec.checker, new Date());
+        D.saveBytes(`exemplar_${x.emd || "nodong"}_${x.approved_on.replace(/-/g, "")}_${String(d.id).slice(0, 6)}.json`, JSON.stringify(x, null, 1), "application/json");
+        say("승인 사례 파일을 받았습니다.");
+      } catch (e) { say(e.message); }
+    });
+    box.append(ex);
     return box;
   }
   const withOutcome = (d, li) => { li.append(outcomeBox(d)); return li; };

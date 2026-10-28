@@ -542,7 +542,7 @@
       const { doc, images } = await docOf(rec), bytes = D.hwpxBytes(doc), name = `${E.fileName(rec)}.hwpx`;
       images.forEach((i) => URL.revokeObjectURL(i.src));
       D.saveBytes(name, bytes, "application/hwp+zip");
-      await S.addDoc({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), name, kind: "hwpx", created_at: new Date().toISOString(), record_id: rec.id, blob: new Blob([bytes], { type: "application/hwp+zip" }) });
+      await S.addDoc({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), name, kind: "hwpx", created_at: new Date().toISOString(), record_id: rec.id, blocks: R.blockSnapshot(doc), blob: new Blob([bytes], { type: "application/hwp+zip" }) });
       toast(`${name} 파일을 받았습니다.\n보관함에서 다시 받을 수 있습니다.`);
     } catch (e) { toast("문서를 만들지 못했습니다.\nPDF로 저장해 보세요."); }
   }
@@ -566,7 +566,7 @@
       const refs = await fetch("../data/national/ref_lines.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
       const doc = E.buildExplainer(rec, new Date(), refs), bytes = D.hwpxBytes(doc), name = `${E.fileName(rec)}_해명서부록.hwpx`;
       D.saveBytes(name, bytes, "application/hwp+zip");
-      await S.addDoc({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), name, kind: "hwpx", created_at: new Date().toISOString(), record_id: rec.id, blob: new Blob([bytes], { type: "application/hwp+zip" }) });
+      await S.addDoc({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), name, kind: "hwpx", created_at: new Date().toISOString(), record_id: rec.id, blocks: R.blockSnapshot(doc), blob: new Blob([bytes], { type: "application/hwp+zip" }) });
       toast(`${name} 파일을 받았습니다.
 보관함에서 다시 받을 수 있습니다.`);
     } catch (e) { toast("해명서 부록을 만들지 못했습니다."); }
@@ -617,7 +617,7 @@
       if (!doc.photos) { toast("사진이 있는 기록이 없습니다."); return; }
       const name = `현장사진대지_${stamp()}.hwpx`, bytes = D.hwpxBytes(doc);
       D.saveBytes(name, bytes, "application/hwp+zip");
-      await S.addDoc({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), name, kind: "hwpx", created_at: new Date().toISOString(), blob: new Blob([bytes], { type: "application/hwp+zip" }) });
+      await S.addDoc({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), name, kind: "hwpx", created_at: new Date().toISOString(), blocks: R.blockSnapshot(doc), blob: new Blob([bytes], { type: "application/hwp+zip" }) });
       toast(`사진 ${doc.photos}장으로 사진대지를 받았습니다.\n보관함에서 다시 받을 수 있습니다.`);
     } catch (e) { toast("사진대지를 만들지 못했습니다."); }
   });

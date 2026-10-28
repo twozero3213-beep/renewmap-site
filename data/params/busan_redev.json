@@ -1,0 +1,9 @@
+{
+  "rule_versions": ["BSN-AGE-2025.10", "BSN-ORD-2025.10"],
+  "source": "부산광역시 도시 및 주거환경정비 조례 제3조제2항·제5조제2항제2호(부산광역시조례 제7751호, 2025.10.1). 초안·승인 대기",
+  "years": {"RC_STEEL/APT": 30, "OTHER/APT": 20, "RC_STEEL/OTHER": 30, "RC_STEEL/DETACHED": 20, "OTHER/OTHER": 20, "OTHER/DETACHED": 20},
+  "count_threshold": {"default": 60, "district": 50},
+  "floor_threshold": 60,
+  "density_threshold": 50,
+  "area_min_m2": 10000
+}

@@ -301,7 +301,53 @@
       rule_versions: [...new Set(((rec && rec.indicators) || []).map((i) => i.rule_version).filter(Boolean))].sort(),
       template_version: doc.template_version || null, variant_id: "default", pscore: 1,
       sgg_code: rec && rec.dong && /^\d{8}$/.test(rec.dong.code) ? rec.dong.code.slice(0, 5) : null,
-      made_hour: String(doc.created_at || "").slice(0, 13) || null, consent_learning: true };
+      made_hour: String(doc.created_at || "").slice(0, 13) || null, consent_learning: true,
+      ...(Array.isArray(doc.block_edits) && doc.block_edits.length ? { blocks: doc.block_edits.map((b) => ({ block_id: b.block_id, auto: b.auto, edit_ratio: b.edit_ratio })) } : {}) };
+  }
+  // ── 학습 고리 4단계: 1쪽 블록 표식과 고친 한글 파일 비교. 원문은 기기에만, 내보내는 것은 블록 ID·고친 비율뿐 ──
+  const blockText = (b) => [b.text || "", ...((b.rows || []).map((r) => r.join(" ")))].join(" ").replace(/\[\d+\]/g, "").replace(/\s+/g, " ").trim();
+  // 블록 ID는 순서와 종류로 정한다(같은 문서를 다시 만들면 같은 ID). 모든 블록은 자동 산출(auto)이다
+  const blockSnapshot = (doc) => ((doc && doc.blocks) || []).map((b, i) => ({ block_id: `${i}:${b.kind}`, auto: true, text: blockText(b) })).filter((b) => b.text);
+  const bigrams = (s) => { const t = String(s).replace(/\s+/g, ""), m = new Map(); for (let i = 0; i < t.length - 1; i++) { const g = t.slice(i, i + 2); m.set(g, (m.get(g) || 0) + 1); } return m; };
+  function dice(a, b) {
+    const A = bigrams(a), B = bigrams(b); let both = 0, na = 0, nb = 0;
+    for (const v of A.values()) na += v; for (const v of B.values()) nb += v;
+    for (const [g, v] of A) both += Math.min(v, B.get(g) || 0);
+    return na + nb ? (2 * both) / (na + nb) : 1;
+  }
+  // 고친 본문(줄 단위)에서 블록마다 가장 닮은 구간(1~3줄)을 찾아 고친 비율 = 1 − 닮음. 0이면 그대로, 1이면 완전히 바뀜·삭제
+  function blockEdits(blocks, editedText) {
+    const lines = String(editedText || "").split(/\n+/).map((l) => l.replace(/\[\d+\]/g, "").trim()).filter(Boolean), wins = [];
+    for (let i = 0; i < lines.length; i++) for (let k = 1; k <= 3 && i + k <= lines.length; k++) wins.push(lines.slice(i, i + k).join(" "));
+    return (blocks || []).map((b) => ({ block_id: b.block_id, auto: b.auto !== false, edit_ratio: Math.round((1 - Math.max(0, ...wins.map((w) => dice(b.text, w)))) * 1000) / 1000 }));
+  }
+  // 한글(HWPX) 파일의 본문 글자. ZIP 중앙 목록에서 Contents/section*.xml만 읽는다(저장·deflate). 문단마다 줄바꿈
+  async function hwpxText(bytes) {
+    const u = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes), dv = new DataView(u.buffer, u.byteOffset, u.byteLength), dec = new TextDecoder();
+    let e = u.length - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+    if (e < 0) throw new Error("한글(HWPX) 파일이 아닙니다.");
+    let p = dv.getUint32(e + 16, true); const out = [];
+    for (let n = dv.getUint16(e + 10, true); n > 0 && dv.getUint32(p, true) === 0x02014b50; n--) {
+      const method = dv.getUint16(p + 10, true), size = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), lho = dv.getUint32(p + 42, true);
+      const name = dec.decode(u.subarray(p + 46, p + 46 + nl));
+      if (/^Contents\/section\d+\.xml$/.test(name)) {
+        const start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true), data = u.subarray(start, start + size);
+        const xml = method === 0 ? dec.decode(data) : await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
+        out.push(xml.replace(/<hp:(footer|header)\b[\s\S]*?<\/hp:\1>/g, "").replace(/<\/hp:p>/g, "\n").replace(/<hp:tab[^>]*\/>/g, " ").replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&"));
+      }
+      p += 46 + nl + xl + cl;
+    }
+    return out.join("\n");
+  }
+  // ── 학습 고리 6단계: 채택된 1쪽을 승인 사례(report_quality/distill.py 형식)로. 본문이 들어가므로 따로 동의하고, 개인정보 꼴이 있으면 만들지 않는다 ──
+  function exemplarOf(doc, rec, approvedBy, now) {
+    if (!doc || !doc.outcome || doc.outcome.status !== "approved") throw new Error("'채택'으로 기록한 문서만 승인 사례가 됩니다.");
+    const text = doc.edited_text || (doc.blocks || []).map((b) => b.text).join("\n");
+    if (!text) throw new Error("문서 본문 기록이 없어 승인 사례를 만들 수 없습니다.");
+    const pii = personalKinds(`${text}\n${approvedBy || ""}`);
+    if (pii.length) throw new Error(`개인정보로 보이는 글(${pii.join(", ")})이 있어 만들지 않았습니다.`);
+    return { emd: rec && rec.dong && /^\d{8}$/.test(rec.dong.code) ? rec.dong.code : null, approved_by: String(approvedBy || "담당자(소속·직위 미기재)").slice(0, 40),
+      approved_on: now.toISOString().slice(0, 10), note: "보관함에서 담당자 동의로 내보냄", kind: docKind(doc.name), text };
   }
   // 동의한 결과만 JSONL로. 반환 {text, n}
   function outcomesJSONL(docs, recs) {
@@ -310,6 +356,6 @@
     return { text: lines.length ? lines.join("\n") + "\n" : "", n: lines.length };
   }
 
-  const api = { OUTCOME_STATUS, REASON_CODES, NEEDS_REASON, docKind, setOutcome, outcomeRecord, outcomesJSONL, stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
+  const api = { blockSnapshot, blockEdits, hwpxText, exemplarOf, dice, OUTCOME_STATUS, REASON_CODES, NEEDS_REASON, docKind, setOutcome, outcomeRecord, outcomesJSONL, stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.FieldRecord = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
