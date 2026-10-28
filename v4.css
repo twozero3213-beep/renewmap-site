@@ -66,7 +66,8 @@
   .explore-page #heroLive { display: none; }
   .explore-page .map-inds { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
   /* 지도와 동 요약을 나란히, 남은 화면 높이를 채운다 */
-  .explore-page .workspace-panel .map-stage { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 12px; height: max(460px, calc(100vh - 300px)); }
+  /* 높이 640px 이상: 네이버 바탕은 줌이 정수라 전국(위도 33.1~38.6°)이 줌 7(618px)에 들어가야 한국이 화면을 채운다. 600px면 줌 6으로 절반 크기 */
+  .explore-page .workspace-panel .map-stage { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 12px; height: max(640px, calc(100vh - 240px)); }
   .explore-page .workspace-panel .map-stage:has(> .map-panel[hidden]) { grid-template-columns: minmax(0, 1fr); }
   .explore-page .workspace-panel .map-canvas { height: 100%; min-height: 0; }
   .explore-page .workspace-panel .map-panel { position: static; width: auto; height: 100%; margin: 0; overflow-y: auto; overscroll-behavior: contain; box-shadow: none; animation: none; }
