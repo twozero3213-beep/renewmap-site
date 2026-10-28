@@ -7,17 +7,17 @@
 .gl-top { display: flex; align-items: center; gap: 16px; }
 .dn { width: 108px; height: 108px; flex: none; }
 .dn circle { fill: none; stroke-width: 16; }
-.dn .dn-r { stroke: var(--over); } .dn .dn-g { stroke: var(--within); } .dn .dn-y { stroke: var(--pending); } .dn .dn-w { stroke: var(--nodata); }
+.dn .dn-r { stroke: var(--over); } .dn .dn-g { stroke: var(--within); } .dn .dn-y { stroke: var(--pending); } .dn .dn-w { stroke: var(--nodata); } .dn .dn-b { stroke: #cdd7d3; }
 .dn-n { font-size: 26px; font-weight: 800; fill: var(--ink); text-anchor: middle; }
 .dn-k { font-size: 12px; font-weight: 600; fill: var(--dim); text-anchor: middle; }
 .sr-glance .gl-n { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
 .sr-glance .gl-n li { display: flex; align-items: center; gap: 8px; }
 .sr-glance .gl-n li > b:last-child { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .gl-sw { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-.sw-r { background: var(--over); } .sw-g { background: var(--within); } .sw-y { background: var(--pending); } .sw-w { background: var(--nodata); }
+.sw-r { background: var(--over); } .sw-g { background: var(--within); } .sw-y { background: var(--pending); } .sw-w { background: var(--nodata); } .sw-b { background: #cdd7d3; }
 .sr-glance .gl-dots { margin: 10px 0 0; font-size: 12px; }
 .sr-glance .gl-dots i.gl-r { background: var(--over); } .sr-glance .gl-dots i.gl-g { background: var(--within); }
-.sr-glance .gl-dots i.gl-y { background: var(--pending); } .sr-glance .gl-dots i.gl-w { background: var(--nodata); }
+.sr-glance .gl-dots i.gl-y { background: var(--pending); } .sr-glance .gl-dots i.gl-w { background: var(--nodata); } .sr-glance .gl-dots i.gl-b { background: #cdd7d3; } .sr-glance .gl-dots i.gl-p { background: #fff; border: 1px dashed var(--nodata); }
 .sr-glance .gl-note { margin: 4px 0 0; font-size: 12px; color: var(--dim); }
 
 /* ── 기준 미달 수: 숫자만 보이고 설명은 접는다 ── */
@@ -147,7 +147,7 @@ body.field .card { border-radius: 14px; }
 .sr-group > details[open] > summary::after { content: "▴"; }
 .sr-gsum { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
 .sr-gsum span { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--bg); }
-.sr-gsum .gs-r { color: var(--over); } .sr-gsum .gs-g { color: var(--within); } .sr-gsum .gs-y { color: var(--pending); } .sr-gsum .gs-w { color: var(--dim); }
+.sr-gsum .gs-r { color: var(--over); } .sr-gsum .gs-g { color: var(--within); } .sr-gsum .gs-y { color: var(--pending); } .sr-gsum .gs-w { color: var(--dim); } .sr-gsum .gs-b { color: var(--dim); }
 .sr-glance .gl-dots, .sr-glance .gl-note { display: none; } /* 묶음별 개수는 접힌 줄에 있다 */
 /* 일부 지역만 모은 지표 표시 */
 .dash-chip small.is-part { margin-left: 4px; padding: 1px 6px; border-radius: 999px; background: #fff0c2; color: var(--warn); font-size: 11px; font-weight: 700; }
@@ -190,6 +190,19 @@ body.field .card { border-radius: 14px; }
 .box-list .outcome legend { font-size: 13px; font-weight: 700; color: var(--dim); padding: 0 4px; }
 .box-list .outcome label { display: inline-flex; align-items: center; gap: 6px; }
 .box-list .outcome .consent { font-size: 13px; color: var(--dim); }
-.outcome-sum { margin: 8px 0 20px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.home > .outcome-sum, .outcome-sum { margin: 8px 0 20px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
 .outcome-sum h2 { margin: 0 0 4px; }
 .outcome-sum button { min-height: 44px; padding: 0 16px; font: inherit; font-weight: 600; border-radius: 10px; border: 1px solid var(--green); background: transparent; color: var(--green); cursor: pointer; }
+
+/* 휴대폰 지도 칸: 지도가 첫 화면에 들어오게 — 제목은 탭과 겹쳐 숨기고(화면 낭독기에는 남김), 지표 고르기 → 지도 → 연도·요약 순 */
+@media (max-width: 767px) {
+  .explore-page #map .hero-head { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .explore-page #heroSearch { margin: 0 0 8px; }
+  .explore-page #heroSearch label, .explore-page #heroSearch .hero-search-note { display: none; }
+  .explore-page #map .workspace-panel-inner { display: flex; flex-direction: column; }
+  .explore-page #map .hero-map { order: 1; }
+  .explore-page #heroLive { order: 2; margin-top: 12px; }
+  .explore-page #map .ov-slot { order: 3; }
+  .explore-page .map-top { display: contents; }
+  .explore-page .map-ctl { order: 2; }
+}

@@ -112,7 +112,7 @@
   // 공식 기준이 없는 생활 지표의 고정 참고 구간(화면 표시용 눈금, 분위 아님). 자료가 ref_edges를 주면 그것을 쓴다
   const REF_EDGES = { POP_YOUTH_PCT: [10, 15, 20, 25], HOSP_CLINIC_COUNT: [1, 5, 10, 30], HOSP_PER10K: [2, 5, 10, 20], PARK_COUNT: [1, 3, 5, 10], BUS_STOP_DENSITY: [5, 10, 20, 40] };
   // living/index.json의 group은 키(life) 또는 이름(생활 인프라)이다. '교통'은 대표 결정대로 생활 인프라에 둔다
-  const GROUP_ALIAS = { 노후: 'aging', 정비: 'aging', '노후·정비': 'aging', '정비 신호': 'aging', 경제: 'aging', 인구: 'pop', '인구 변화': 'pop', '생활 인프라': 'life', '생활 여건': 'life', 생활: 'life', 교통: 'life', '안전 인프라': 'safe', 안전: 'safe', '건축·정비': 'aging', 복지: 'pop', 전망: 'fore', '추세 전망': 'fore', 종합: 'sum' };
+  const GROUP_ALIAS = { 노후: 'aging', '부동산 거래': 'estate', 부동산: 'estate', 정비: 'aging', '노후·정비': 'aging', '정비 신호': 'aging', 경제: 'aging', 인구: 'pop', '인구 변화': 'pop', '생활 인프라': 'life', '생활 여건': 'life', 생활: 'life', 교통: 'life', '안전 인프라': 'safe', 안전: 'safe', '건축·정비': 'aging', 복지: 'pop', 전망: 'fore', '추세 전망': 'fore', 종합: 'sum' };
   const groupKey = g => (GROUPS.some(x => x[0] === g) ? g : GROUP_ALIAS[String(g || '').trim()] || 'life');
   const r3 = x => Number(x.toPrecision(3));
   // 기준값에 고정한 구간. 양수 기준은 0.25~2배 눈금, 0 이하 기준은 기준선 한 곳에서만 나눈다
@@ -492,8 +492,9 @@
     return `<figure class="tr"><svg class="tr-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)} ${esc(cap)}, ${cur[0]}년 ${esc(fmt(cur[1]))}">${stdLine}${trend}<path class="tr-line" d="${d}"/><circle class="tr-dot" cx="${X(cur[0]).toFixed(1)}" cy="${Y(cur[1]).toFixed(1)}" r="4"/></svg><figcaption>${esc(cap)}</figcaption></figure>`;
   }
   // 상태 개수 도넛(비율 그림). 개수를 글자로 함께 쓴다. 순위·점수 아님
-  const DONUT = [['r', '기준선 넘음·지정'], ['g', '기준 안'], ['y', '승인 대기'], ['w', '자료·기준 없음']];
-  const GS_SHORT = { r: '넘음', g: '기준 안', y: '승인 대기', w: '자료 없음' };
+  // 한 동 패널의 세 요약(도넛·기준 미달 항목 수·확인할 항목)은 같은 항목 범위·같은 낱말을 쓴다. '공식 기준 없음'(값만)과 '자료 없음'을 섞지 않는다
+  const DONUT = [['r', '기준 미달·지정'], ['g', '기준 안'], ['y', '승인 대기'], ['b', '공식 기준 없음'], ['w', '자료 없음']];
+  const GS_SHORT = { r: '미달', g: '기준 안', y: '승인 대기', b: '기준 없음', w: '자료 없음' };
   function donutSVG(n) {
     const tot = DONUT.reduce((a, [k]) => a + (n[k] || 0), 0), R = 42, C = 2 * Math.PI * R;
     let off = 0;
@@ -547,12 +548,12 @@
   }
   const rowText = r => r.text || fmt(r.value, r.ind.unit) || '–';
   // 한눈 요약: 항목마다 점 하나를 묶음별로 늘어놓는다. 도넛(비율)이 아니라 개수만 — 순위·점수 아님
-  const dotOf = r => (r.status === '기준 넘음' || r.status === '행정 지정' ? 'r' : r.status === '기준 안' || r.status === '미지정' ? 'g' : r.status === '기준 승인 대기' ? 'y' : 'w');
+  const dotOf = r => (r.ind.pending ? 'p' : r.status === '기준 넘음' || r.status === '행정 지정' ? 'r' : r.status === '기준 안' || r.status === '미지정' ? 'g' : r.status === '기준 승인 대기' ? 'y' : r.value === null ? 'w' : 'b');
   function glanceHTML(rows) {
-    const list = rows.filter(r => !r.ind.composite && r.ind.group !== 'sum' && r.ind.group !== 'fore'), n = k => list.filter(r => dotOf(r) === k).length;
+    const list = rows.filter(r => !r.ind.composite && r.ind.group !== 'sum' && r.ind.group !== 'fore'), n = k => list.filter(r => dotOf(r) === k).length; // 수집 중(p)은 점만 찍고 도넛 개수에는 넣지 않는다
     const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<span class="gl-grp"><span class="gl-k">${esc(gl)}</span>${list.filter(r => r.ind.group === g).map(r => `<i class="gl-${dotOf(r)}" title="${esc(r.ind.label)} · ${esc(r.status)}"></i>`).join('')}</span>`).join('');
     const counts = Object.fromEntries(DONUT.map(([k]) => [k, n(k)]));
-    return `<div class="sr-glance" role="img" aria-label="한눈 요약. 기준선 넘음 또는 행정 지정 ${n('r')}개, 기준 안 ${n('g')}개, 기준 승인 대기 ${n('y')}개, 자료·기준 없음 ${n('w')}개. 항목마다 점 하나이며 순위·점수가 아닙니다.">` +
+    return `<div class="sr-glance" role="img" aria-label="한눈 요약. 기준 미달 또는 행정 지정 ${n('r')}개, 기준 안 ${n('g')}개, 기준 승인 대기 ${n('y')}개, 공식 기준 없음 ${n('b')}개, 자료 없음 ${n('w')}개. 항목마다 점 하나이며 순위·점수가 아닙니다.">` +
       `<div class="gl-top">${donutSVG(counts)}<ul class="gl-n">${DONUT.map(([k, l]) => `<li><b class="gl-sw sw-${k}" aria-hidden="true"></b>${l} <b>${counts[k]}</b></li>`).join('')}</ul></div><p class="gl-dots">${groups}</p><p class="gl-note">묶음별 점 하나가 항목 하나 · 순위·점수 아님</p></div>`;
   }
   // 세부항목별 척도표. detail(cell) → [[라벨, 값, 링크]] (dashboard.js detailRows). 그룹·항목 순서 고정
@@ -562,7 +563,7 @@
     const led = rows.find(r => r.ind.living && r.ind.group === 'sum' && r.value !== null), confirmed = led ? led.value : t.confirmed;
     const waiting = rows.filter(r => isPending(r.ind.standard)).map(r => r.ind.label);
     const head = `<div class="sr-tally" role="group" aria-label="기준 미달 항목 수"><p class="sr-tally-k">기준 미달 항목 수</p>` +
-      `<p class="sr-tally-n"><span>확정 <b data-ck="t-c" data-count="${confirmed}">${confirmed}</b></span><span>추가확인 <b data-ck="t-p" data-count="${t.pending}">${t.pending}</b></span><span class="is-dim">자료 없음 ${t.nodata}</span></p>` +
+      `<p class="sr-tally-n"><span>확정 <b data-ck="t-c" data-count="${confirmed}">${confirmed}</b></span><span>추가확인 <b data-ck="t-p" data-count="${t.pending}">${t.pending}</b></span>${led ? '<span class="is-dim">최신 원장 기준</span>' : ''}</p>` +
       `<details class="sr-tally-more"><summary>ⓘ 이 수를 세는 법</summary><p class="sr-tally-note">${led ? `확정은 원장 셀 '${esc(led.ind.label)}' 값이며 하한입니다.<br>쇠퇴 요건은 법정 요건 단위(인구 요건 = 30년 감소 또는 3년 연속 감소)로 셉니다.` : '확정은 법정·공식 기준선을 넘은 항목 수입니다.'}` +
       `<br>추가확인은 기준선을 넘었지만 그 기준이 아직 승인 대기인 항목입니다${waiting.length ? `(${esc(waiting.join('·'))}). 확정 수에는 넣지 않습니다` : ''}.<br>가중치·순위 없이 개수만 셉니다.</p>` +
       (led && led.cell && detail(led.cell).length ? `<div class="map-detail">${dl(led.cell)}</div>` : '') + `</details></div>`;
@@ -583,14 +584,15 @@
   function gapRows(rows) {
     return rows.filter(r => !r.ind.composite && r.ind.group !== 'sum' && r.ind.group !== 'fore' && !r.ind.categorical && !r.ind.pending)
       .filter(r => r.crossed === true || r.value === null)
-      .map(r => ({ row: r, kind: r.value === null ? '자료 없음·확인 필요' : isPending(r.ind.standard) ? '기준 넘음(승인 대기)' : '기준 넘음' }));
+      .map(r => ({ row: r, kind: r.value === null ? '자료 없음' : isPending(r.ind.standard) ? '기준 미달(승인 대기)' : '기준 미달' }));
   }
   function gapsHTML(rows, opt) {
     const g = gapRows(rows), o = opt || {};
     const line = x => { const r = x.row, ind = r.ind, c = r.cell || {}, src = c.source_name || ind.source || SOURCE_DEFAULT;
       return `<li class="gp is-${r.value === null ? 'none' : 'over'}"><b>${esc(ind.label)}</b>${r.sgLevel ? '<small class="gp-sg">시·군·구</small>' : ''}<span class="gp-v">${esc(rowText(r))}</span><span class="gp-s">${esc(x.kind)}</span>` +
         `<small class="gp-std">${esc(validStd(ind.standard) ? `기준 ${ind.standard.text}` : stdTextOf(r).split(' · ')[0])} · 출처 ${esc(src)}${r.year ? ` · ${esc(r.year)}년` : ''}</small></li>`; };
-    return `<details class="sr-gaps"${o.open ? ' open' : ''}><summary>📌 기준 미달·참고 구간 밖 항목 <b>${g.length}</b>개</summary>${g.length ? `<ul>${g.map(line).join('')}</ul>` : '<p class="gp-empty">기준선을 넘거나 자료가 없는 항목이 없습니다.</p>'}` +
+    const nNull = g.filter(x => x.row.value === null).length;
+    return `<details class="sr-gaps"${o.open ? ' open' : ''}><summary>📌 확인할 항목 <b>${g.length}</b>개 <small>기준 미달 ${g.length - nNull} · 자료 없음 ${nNull}</small></summary>${g.length ? `<ul>${g.map(line).join('')}</ul>` : '<p class="gp-empty">기준선을 넘거나 자료가 없는 항목이 없습니다.</p>'}` +
       `<p class="gp-note">기준 미달은 승인된 기준선을 넘은 항목, (승인 대기)는 기준이 아직 승인 전인 항목, 자료 없음은 확인이 필요한 항목입니다. 순위·점수가 아닙니다.</p></details>`;
   }
   function tooltipHTML(it, ind, mode, year, source) {
@@ -1278,7 +1280,7 @@
     else if ('gu' in s.dataset) go({ sido: state.route.sido, sigungu: state.route.sigungu, gu: val || null }, '[data-gu]');
   });
   addEventListener('keydown', e => { if (e.key === 'Escape' && panel.classList.contains('is-sheet')) go({ ...state.route, dong: null }); });
-  addEventListener('hashchange', () => { const r = parseHash(location.hash); if (r) { stopAuto(true); state.route = r; render(); } });
+  addEventListener('hashchange', () => { const r = parseHash(location.hash); if (r) { stopPlay(); stopAuto(true); if (state.yearByAuto) { state.year = null; state.yearByAuto = false; } state.route = r; render(); } }); // 검색으로 동에 오면 자동 재생 중이던 해가 아니라 최신 해
   wide.addEventListener('change', render);
 
   // 우리 동네 찾기: dong_index.json이 있으면 동까지, 없으면 시·도·시군구 이름으로
