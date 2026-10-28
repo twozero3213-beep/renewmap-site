@@ -456,6 +456,39 @@
     const gaps = series.filter(p => p[1] === null).map(p => `<line class="map-spark-gap" x1="${X(p[0]).toFixed(1)}" x2="${X(p[0]).toFixed(1)}" y1="${pad}" y2="${H - pad}"/>`).join('');
     return `<svg class="map-spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)} ${y0}~${y1}년 시계열, 최소 ${esc(fmt(lo))} 최대 ${esc(fmt(hi))}${cur ? `, ${year}년 ${esc(fmt(cur[1]))}` : ''}">${gaps}<path d="${d}"/>${dot}</svg>`;
   }
+  // 최소제곱 직선(설명용 추세, 전망 아님). pts: [[연도, 값]] 결측 제외. 점 3개 미만이면 null
+  function olsFit(pts) {
+    const p = (pts || []).filter(q => isNum(q[0]) && isNum(q[1])), n = p.length;
+    if (n < 3) return null;
+    const mx = p.reduce((a, q) => a + q[0], 0) / n, my = p.reduce((a, q) => a + q[1], 0) / n;
+    const sxx = p.reduce((a, q) => a + (q[0] - mx) ** 2, 0); if (!sxx) return null;
+    const slope = p.reduce((a, q) => a + (q[0] - mx) * (q[1] - my), 0) / sxx;
+    return { slope, at: x => my + slope * (x - mx), n };
+  }
+  // 시계열 + 선형 추세(점선) + 기준선. 결측은 선을 끊는다. 순위·전망 아님
+  function trendSVG(series, year, label, std, unit) {
+    const W = 300, H = 72, pad = 8, vals = (series || []).filter(p => p[1] !== null);
+    if (vals.length < 2) return sparkline(series || [], year, label);
+    const ys = series.map(p => p[0]), y0 = Math.min(...ys), y1 = Math.max(...ys), fit = olsFit(vals);
+    const pool = [...vals.map(p => p[1]), ...(isNum(std) ? [std] : []), ...(fit ? [fit.at(y0), fit.at(y1)] : [])], lo = Math.min(...pool), hi = Math.max(...pool), span = hi - lo || 1;
+    const X = y => pad + (y1 === y0 ? W / 2 - pad : (y - y0) / (y1 - y0) * (W - 2 * pad)), Y = v => H - pad - (v - lo) / span * (H - 2 * pad);
+    let d = '', pen = false;
+    series.forEach(p => { if (p[1] === null) { pen = false; return; } d += `${pen ? 'L' : 'M'}${X(p[0]).toFixed(1)} ${Y(p[1]).toFixed(1)}`; pen = true; });
+    const stdLine = isNum(std) ? `<line class="tr-std" x1="${pad}" x2="${W - pad}" y1="${Y(std).toFixed(1)}" y2="${Y(std).toFixed(1)}"/>` : '';
+    const trend = fit ? `<line class="tr-fit" x1="${X(y0).toFixed(1)}" x2="${X(y1).toFixed(1)}" y1="${Y(fit.at(y0)).toFixed(1)}" y2="${Y(fit.at(y1)).toFixed(1)}"/>` : '';
+    const cur = series.find(p => p[0] === year && p[1] !== null) || vals[vals.length - 1];
+    const u = unit === '%' ? '%p' : unit || '', slope = fit ? `${fit.slope >= 0 ? '+' : ''}${fmt(Math.round(fit.slope * 100) / 100)}${u}` : '';
+    const cap = `${y0}~${y1}년${fit ? ` · 추세 연 ${slope}(선형회귀, 설명용)` : ''}${isNum(std) ? ` · 가로 점선 기준 ${fmt(std)}${unit || ''}` : ''}`;
+    return `<figure class="tr"><svg class="tr-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)} ${esc(cap)}, ${cur[0]}년 ${esc(fmt(cur[1]))}">${stdLine}${trend}<path class="tr-line" d="${d}"/><circle class="tr-dot" cx="${X(cur[0]).toFixed(1)}" cy="${Y(cur[1]).toFixed(1)}" r="4"/></svg><figcaption>${esc(cap)}</figcaption></figure>`;
+  }
+  // 상태 개수 도넛(비율 그림). 개수를 글자로 함께 쓴다. 순위·점수 아님
+  const DONUT = [['r', '기준선 넘음·지정'], ['g', '기준 안'], ['y', '승인 대기'], ['w', '자료·기준 없음']];
+  function donutSVG(n) {
+    const tot = DONUT.reduce((a, [k]) => a + (n[k] || 0), 0), R = 42, C = 2 * Math.PI * R;
+    let off = 0;
+    const arcs = tot ? DONUT.filter(([k]) => n[k]).map(([k]) => { const len = n[k] / tot * C, a = `<circle class="dn-${k}" r="${R}" cx="60" cy="60" stroke-dasharray="${Math.max(0, len - 1.5).toFixed(2)} ${(C - len + 1.5).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}"/>`; off += len; return a; }).join('') : `<circle class="dn-w" r="${R}" cx="60" cy="60"/>`;
+    return `<svg class="dn" viewBox="0 0 120 120" aria-hidden="true"><g transform="rotate(-90 60 60)">${arcs}</g><text x="60" y="62" class="dn-n">${tot}</text><text x="60" y="80" class="dn-k">항목</text></svg>`;
+  }
   // 같은 시군구 동들의 분포: 값 축 위의 점 띠. 줄 세우기(순위) 없이 선택 동만 강조한다
   function strip(items, selected, ind, scale) {
     const W = 220, H = 36, pad = 8, vals = items.filter(it => isNum(it.value));
@@ -507,8 +540,9 @@
   function glanceHTML(rows) {
     const list = rows.filter(r => !r.ind.composite && r.ind.group !== 'sum' && r.ind.group !== 'fore'), n = k => list.filter(r => dotOf(r) === k).length;
     const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<span class="gl-grp"><span class="gl-k">${esc(gl)}</span>${list.filter(r => r.ind.group === g).map(r => `<i class="gl-${dotOf(r)}" title="${esc(r.ind.label)} · ${esc(r.status)}"></i>`).join('')}</span>`).join('');
+    const counts = Object.fromEntries(DONUT.map(([k]) => [k, n(k)]));
     return `<div class="sr-glance" role="img" aria-label="한눈 요약. 기준선 넘음 또는 행정 지정 ${n('r')}개, 기준 안 ${n('g')}개, 기준 승인 대기 ${n('y')}개, 자료·기준 없음 ${n('w')}개. 항목마다 점 하나이며 순위·점수가 아닙니다.">` +
-      `<p class="gl-n"><span>🔴 기준선 넘음·지정 <b>${n('r')}</b></span><span>🟢 기준 안 <b>${n('g')}</b></span><span>🟡 승인 대기 <b>${n('y')}</b></span><span>⚪ 자료·기준 없음 <b>${n('w')}</b></span></p><p class="gl-dots">${groups}</p><p class="gl-note">항목마다 점 하나 · 순위·점수 아님</p></div>`;
+      `<div class="gl-top">${donutSVG(counts)}<ul class="gl-n">${DONUT.map(([k, l]) => `<li><b class="gl-sw sw-${k}" aria-hidden="true"></b>${l} <b>${counts[k]}</b></li>`).join('')}</ul></div><p class="gl-dots">${groups}</p><p class="gl-note">묶음별 점 하나가 항목 하나 · 순위·점수 아님</p></div>`;
   }
   // 세부항목별 척도표. detail(cell) → [[라벨, 값, 링크]] (dashboard.js detailRows). 그룹·항목 순서 고정
   function scaleTableHTML(rows, opt) {
@@ -518,18 +552,17 @@
     const waiting = rows.filter(r => isPending(r.ind.standard)).map(r => r.ind.label);
     const head = `<div class="sr-tally" role="group" aria-label="기준 미달 항목 수"><p class="sr-tally-k">기준 미달 항목 수</p>` +
       `<p class="sr-tally-n"><span>확정 <b data-ck="t-c" data-count="${confirmed}">${confirmed}</b></span><span>추가확인 <b data-ck="t-p" data-count="${t.pending}">${t.pending}</b></span><span class="is-dim">자료 없음 ${t.nodata}</span></p>` +
-      `<p class="sr-tally-note">${led ? `확정은 원장 셀 '${esc(led.ind.label)}' 값이며 하한입니다.<br>쇠퇴 요건은 법정 요건 단위(인구 요건 = 30년 감소 또는 3년 연속 감소)로 셉니다.` : '확정은 법정·공식 기준선을 넘은 항목 수입니다.'}` +
+      `<details class="sr-tally-more"><summary>ⓘ 이 수를 세는 법</summary><p class="sr-tally-note">${led ? `확정은 원장 셀 '${esc(led.ind.label)}' 값이며 하한입니다.<br>쇠퇴 요건은 법정 요건 단위(인구 요건 = 30년 감소 또는 3년 연속 감소)로 셉니다.` : '확정은 법정·공식 기준선을 넘은 항목 수입니다.'}` +
       `<br>추가확인은 기준선을 넘었지만 그 기준이 아직 승인 대기인 항목입니다${waiting.length ? `(${esc(waiting.join('·'))}). 확정 수에는 넣지 않습니다` : ''}.<br>가중치·순위 없이 개수만 셉니다.</p>` +
-      (led && led.cell && detail(led.cell).length ? `<details class="map-detail"><summary>이 수의 출처·계산식</summary>${dl(led.cell)}</details>` : '') + `</div>`;
+      (led && led.cell && detail(led.cell).length ? `<div class="map-detail">${dl(led.cell)}</div>` : '') + `</details></div>`;
     const list = rows.filter(r => r.ind.group !== 'sum');
     const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<li class="sr-group"><h4>${esc(gl)}</h4>${g === 'safe' ? `<p class="sr-group-note">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="sr-group-note">${esc(FORE_FIXED)}</p>` : ''}<ul>${list.filter(r => r.ind.group === g).map(r => {
       const ind = r.ind, tt = trendText(r.delta, ind), cls = ROW_CLASS[r.status];
       const rowsD = r.cell ? detail(r.cell) : [];
       return `<li class="sr is-${cls}${ind.code === o.cur ? ' is-cur' : ''}"><div class="sr-h">${icon(ind.icon)}<span class="sr-l">${esc(ind.label)}${r.sgLevel ? ' <small>시·군·구</small>' : ''}</span><b class="sr-v">${esc(rowText(r))}</b><span class="sr-st st-${cls}">${esc(r.status)}</span></div>` +
         (ind.categorical ? '' : `<div class="sr-m">${barSVG(r)}${tt ? `<em class="map-trend ${tt.cls}">${tt.arrow} 5년 ${esc(fmt(r.delta, ind.dEdges ? '' : '%p'))} ${esc(tt.word)}</em>` : ''}</div>`) +
-        `<details class="sr-why"><summary>${esc(stdTextOf(r).split(' · ')[0])}</summary><p class="sr-std">${esc(stdTextOf(r))}</p></details>` +
-        (r.series && r.series.some(p => p[1] !== null) ? sparkline(r.series, r.year, ind.label) : '') +
-        (rowsD.length ? `<details class="map-detail"><summary>출처·기준연도${r.year ? ` (${esc(r.year)}년)` : ''}</summary>${dl(r.cell)}</details>` : '') + `</li>`;
+        (r.series && r.series.some(p => p[1] !== null) ? trendSVG(r.series, r.year, ind.label, validStd(ind.standard) ? ind.standard.value : null, ind.unit) : '') +
+        `<details class="map-detail sr-why"><summary>ⓘ 기준·출처${r.year ? ` (${esc(r.year)}년)` : ''}</summary><p class="sr-std">${esc(stdTextOf(r))}</p>${rowsD.length ? dl(r.cell) : ''}</details></li>`;
     }).join('')}</ul></li>`).join('');
     return glanceHTML(rows) + gapsHTML(rows) + head + `<ol class="sr-list">${groups}</ol>`;
   }
@@ -695,7 +728,7 @@
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
-    reportSentences, verifyPolished, stdTextOf, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
+    reportSentences, verifyPolished, stdTextOf, olsFit, trendSVG, donutSVG, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
     gapRows, gapsHTML, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
@@ -769,7 +802,7 @@
     const list = inds(), g = ind.group;
     const tabs = `<div class="map-groups" role="group" aria-label="지표 묶음">${GROUPS.map(([k, l]) => `<button type="button" data-group="${k}" aria-pressed="${k === g}">${esc(l)}</button>`).join('')}</div>`;
     const chips = `<div class="dash-chips map-inds" role="group" aria-label="${esc(GROUPS.find(x => x[0] === g)[1])} 지표">${list.filter(i => i.group === g).map(i => { const ok = avail(i);
-      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}">${icon(i.icon)}${esc(i.label)}${ok ? '' : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; }).join('')}</div>`;
+      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(i.label)}${ok ? '' : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; }).join('')}</div>`;
     return tabs + chips;
   }
   function panelHTML(v, m) {
@@ -812,7 +845,7 @@
     if (key === reportKey) return;
     reportKey = key;
     document.body.classList.toggle('print-onepage', reportMode === 'onepage' && !!it); // 인쇄 때 1쪽 요약만 A4 한 쪽에 맞춘다
-    if (!it) { report.innerHTML = reportModeHTML(reportMode) + `<div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 ${esc(REPORT_MODES.find(x => x[0] === reportMode)[1])}가 생깁니다</h3><p><a href="#map">위 지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p></div>`; return; }
+    if (!it) { report.innerHTML = reportModeHTML(reportMode) + `<div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 ${esc(REPORT_MODES.find(x => x[0] === reportMode)[1])}가 생깁니다</h3><p><a href="${esc(toHash({ sido: v.sido && v.sido.code2, sigungu: v.sigungu && v.sigungu.code5, gu: v.gu && v.gu.code5 }))}">지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p></div>`; return; }
     const rows = rowsFor(v, m, it);
     if (reportMode === 'onepage') {
       const built = docFor(v, m, it);
@@ -993,7 +1026,10 @@
       : m.kind === 'emd' && m.years && (ind.series || ind.computed) ? `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${state.playing}" aria-label="${state.playing ? '재생 멈춤' : `${m.years.min}년부터 ${m.years.max}년까지 재생`}">${state.playing ? '❚❚' : '▶'}</button><label>연도 <b>${esc(m.year ?? '')}</b><input type="range" data-year min="${m.years.min}" max="${m.years.max}" step="1" value="${m.year ?? m.years.max}"></label></div>` : '';
     const base = state.index.source && isNum(state.index.source.base_year) ? state.index.source.base_year : null;
     const hzCtl = ind.src === 'forecast' && horizons().length ? seg('horizon', horizons().map(h => [h, `${h}년${base !== null ? ` (+${h - base}년)` : ''}`]), horizon(), '전망 연도') : '';
-    top.innerHTML = crumbs + indCtlHTML(ind) + `<div class="map-ctl">${hasTrend(ind) ? seg('mode', MODES, state.mode, '현재 또는 5년 변화') : ''}${hzCtl}${yearCtl}</div>`;
+    // 연도 막대를 끄는 중이면 막대를 다시 만들지 않는다(다시 만들면 끌기가 한 칸에서 끊긴다)
+    const sliding = top.contains(document.activeElement) && document.activeElement.matches('[data-year]');
+    if (sliding) { const yb = top.querySelector('.map-year b'); if (yb) yb.textContent = m.year ?? ''; }
+    else top.innerHTML = crumbs + indCtlHTML(ind) + `<div class="map-ctl">${hasTrend(ind) ? seg('mode', MODES, state.mode, '현재 또는 5년 변화') : ''}${hzCtl}${yearCtl}</div>`;
     const lkey = ind.code + mode, legend = legendHTML(ind, mode, src, m.year, ok, m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind)).replace('class="map-legend"', `class="map-legend${lkey !== lastLegend && !reduced ? ' is-new' : ''}"`); lastLegend = lkey;
     const opts = (list, key) => list.map(x => ({ code: x[key], name: x.name }));
     const kids = v.sido ? childrenOf(state.index, v.sido.code2) : [];
@@ -1108,7 +1144,7 @@
       let b = null;
       if (m.kind === 'emd' && M.emd) b = M.emd.getBounds();
       else { const fg = L.featureGroup(); M.sg.eachLayer(l => { if (active.has(String((l.feature.properties || {}).code))) fg.addLayer(l); }); b = fg.getLayers().length ? fg.getBounds() : M.sg.getBounds(); }
-      const right = inEmd && wide.matches && !panel.hidden ? panel.offsetWidth + 28 : 12;
+      const right = inEmd && wide.matches && !panel.hidden && getComputedStyle(panel).position !== 'static' ? panel.offsetWidth + 28 : 12; // 지도 위에 겹친 패널일 때만 비운다
       const opt = { paddingTopLeft: [12, 12], paddingBottomRight: [right, 12], maxZoom: 14 };
       if (b && b.isValid()) { if (reduced || !M.ready) M.map.fitBounds(b, opt); else M.map.flyToBounds(b, { ...opt, duration: 0.9 }); M.ready = true; } // 첫 맞춤은 시점이 없어 flyTo를 못 쓴다
     }
@@ -1175,6 +1211,8 @@
     const a = e.target.closest('a[href^="#map"]');
     if (a) { e.preventDefault(); go(parseHash(a.getAttribute('href')) || {}); return; }
     const b = e.target.closest('button'); if (!b) return;
+    if (b.classList.contains('is-planned')) return; // 수집 중·보류: 지도를 회색으로 바꾸지 않는다
+    if (b.dataset.group || b.dataset.ind || b.dataset.mode) stopPlay();
     if (b.dataset.group) { const list = inds().filter(i => i.group === b.dataset.group), pick = list.find(avail) || list[0]; if (pick) state.ind = pick.code; state.year = null; render(); app.querySelector(`[data-group="${b.dataset.group}"]`)?.focus({ preventScroll: true }); }
     else if (b.dataset.ind) { state.ind = b.dataset.ind; state.year = null; render(); app.querySelector(`[data-ind="${CSS.escape(b.dataset.ind)}"]`)?.focus({ preventScroll: true }); }
     else if (b.dataset.mode) { state.mode = b.dataset.mode; state.year = null; render(); app.querySelector(`[data-mode="${b.dataset.mode}"]`)?.focus({ preventScroll: true }); }
@@ -1214,11 +1252,13 @@
     q.addEventListener('change', () => { if (entries.some(e => e.label === q.value.trim())) pick(); });
   }
 
-  Promise.all([fetchJson('data/national/index.json'), fetchJson('data/dashboard.json')]).then(([index, dash]) => {
-    state.index = index && Array.isArray(index.sigungu) ? index : null; state.dash = dash;
+  // dashboard.json(2.5MB)은 정밀 사례 묶음에만 쓴다. 첫 화면은 기다리지 않는다
+  fetchJson('data/dashboard.json').then(dash => { state.dash = dash; if (state.index) render(); });
+  fetchJson('data/national/index.json').then(index => {
+    state.index = index && Array.isArray(index.sigungu) ? index : null;
     if (heroCount && index && isNum(index.emd_count)) { heroCount.innerHTML = `<b data-ck="emd" data-count="${index.emd_count}">0</b>개 `; countUp(heroCount.firstChild); }
     if (!state.index) { render(); return; }
-    if (state.route.sido) app.scrollIntoView({ block: 'start' });
+    if (state.route.sido && !matchMedia('(min-width: 1100px)').matches) app.scrollIntoView({ block: 'start' }); // 넓은 화면은 한 화면 배치라 옮기지 않는다
     searchSetup();
     render();
     Promise.all([fetchJson('data/national/sigungu.geojson'), fetchJson('data/national/sido.geojson')]).then(([sg, sido]) => {

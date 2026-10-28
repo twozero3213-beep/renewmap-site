@@ -19,7 +19,6 @@
     if (!workspace) return;
     const tabs = [...workspace.querySelectorAll('[data-workspace-tab]')];
     let active = normalizePanel(workspace.dataset.activePanel);
-    let closed = false;
     function syncStates() {
       workspace.querySelectorAll('.map-empty, .map-panel-wait, .map-canvas').forEach(element => {
         const failed = element.classList.contains('map-empty') && /못했습니다/.test(element.textContent);
@@ -31,7 +30,6 @@
     syncStates();
     function show(name, focusTab) {
       active = normalizePanel(name);
-      closed = false;
       workspace.dataset.activePanel = active;
       tabs.forEach(tab => tab.setAttribute('aria-pressed', String(tab.dataset.workspaceTab === active)));
       if (focusTab) tabs.find(tab => tab.dataset.workspaceTab === active)?.focus();
@@ -48,10 +46,8 @@
     }));
     window.addEventListener('hashchange', () => show(panelFromHash(location.hash)));
     document.addEventListener('keydown', event => {
-      if (event.key !== 'Escape' || closed || !window.matchMedia('(max-width: 1099px)').matches) return;
-      closed = true;
-      workspace.dataset.activePanel = '';
-      tabs.forEach(tab => tab.setAttribute('aria-pressed', 'false'));
+      // Escape는 패널을 숨기지 않고 지금 탭으로 초점만 돌린다(지도 시트 닫기는 map.js가 한다)
+      if (event.key !== 'Escape' || !window.matchMedia('(max-width: 1099px)').matches) return;
       tabs.find(tab => tab.dataset.workspaceTab === active)?.focus();
     });
     show(panelFromHash(location.hash));

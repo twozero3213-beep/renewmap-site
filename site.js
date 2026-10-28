@@ -27,6 +27,11 @@
     nav.setAttribute('aria-label', '주 메뉴');
     nav.innerHTML = tabs.map(([href, label, d], i) => `<a href="${base}${href}"${i === current ? ' aria-current="page"' : ''}>${i === current ? '<i class="tab-ind" aria-hidden="true"></i>' : ''}${ico(d)}<span>${label}</span></a>`).join('');
     document.body.appendChild(nav);
+    // 같은 화면 안에서 #gov ↔ #map으로 옮겨도 현재 탭 표시를 맞춘다
+    if (typeof window !== 'undefined') window.addEventListener('hashchange', () => {
+      const now = tabs.findIndex(t => t[3].test(location.pathname + location.hash) && (t[0] !== 'index.html' || !inField));
+      nav.querySelectorAll('a').forEach((a, i) => { a.toggleAttribute('aria-current', i === now); if (i === now) a.setAttribute('aria-current', 'page'); a.querySelector('.tab-ind')?.remove(); if (i === now) a.insertAdjacentHTML('afterbegin', '<i class="tab-ind" aria-hidden="true"></i>'); });
+    });
   }
   const toggle = document.querySelector('.menu-toggle');
   const menu = document.getElementById('site-menu');

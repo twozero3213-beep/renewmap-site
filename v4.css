@@ -1,0 +1,75 @@
+/* 찾기 v4(2026-10-28, Figma '07 찾기 v4'): 데스크톱은 한 화면에 조건 | 지도 | 동 요약. 동 요약은 글보다 그래프.
+   색은 상태 4가지만 쓰고 글자를 함께 둔다(색만으로 뜻을 전하지 않는다). 판정·순위·점수 없음 */
+:root { --over: #c0492b; --within: #2e7d5e; --pending: #a8650a; --nodata: #7a8a85; --ref: #8fa39c; --soft2: #e7f1ec; }
+
+/* ── 상태 도넛 + 개수 ── */
+.sr-glance { padding: 12px 14px; border-radius: 14px; background: var(--bg); }
+.gl-top { display: flex; align-items: center; gap: 16px; }
+.dn { width: 108px; height: 108px; flex: none; }
+.dn circle { fill: none; stroke-width: 16; }
+.dn .dn-r { stroke: var(--over); } .dn .dn-g { stroke: var(--within); } .dn .dn-y { stroke: var(--pending); } .dn .dn-w { stroke: var(--nodata); }
+.dn-n { font-size: 26px; font-weight: 800; fill: var(--ink); text-anchor: middle; }
+.dn-k { font-size: 12px; font-weight: 600; fill: var(--dim); text-anchor: middle; }
+.sr-glance .gl-n { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
+.sr-glance .gl-n li { display: flex; align-items: center; gap: 8px; }
+.sr-glance .gl-n li > b:last-child { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.gl-sw { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.sw-r { background: var(--over); } .sw-g { background: var(--within); } .sw-y { background: var(--pending); } .sw-w { background: var(--nodata); }
+.sr-glance .gl-dots { margin: 10px 0 0; font-size: 12px; }
+.sr-glance .gl-dots i.gl-r { background: var(--over); } .sr-glance .gl-dots i.gl-g { background: var(--within); }
+.sr-glance .gl-dots i.gl-y { background: var(--pending); } .sr-glance .gl-dots i.gl-w { background: var(--nodata); }
+.sr-glance .gl-note { margin: 4px 0 0; font-size: 12px; color: var(--dim); }
+
+/* ── 기준 미달 수: 숫자만 보이고 설명은 접는다 ── */
+.sr-tally-more { margin-top: 2px; }
+.sr-tally-more > summary, .sr .map-detail > summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--green); list-style: none; }
+.sr-tally-more > summary::-webkit-details-marker, .sr .map-detail > summary::-webkit-details-marker { display: none; }
+.sr-tally-more[open] > summary, .sr .map-detail[open] > summary { margin-bottom: 6px; }
+
+/* ── 지표 줄: 값 한 줄 + 척도 막대 + 시계열(실선)·선형 추세(점선)·기준선 ── */
+.sr { padding: 10px 0; }
+.sr .sr-std { margin: 0 0 6px; font-size: 13px; color: var(--dim); }
+.tr { margin: 6px 0 2px; }
+.tr-svg { display: block; width: 100%; height: 72px; overflow: visible; }
+.tr-line { fill: none; stroke: var(--green); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.tr-fit { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.tr-std { stroke: var(--ref); stroke-width: 1.5; stroke-dasharray: 2 3; }
+.tr-dot { fill: var(--green); stroke: #fff; stroke-width: 2; }
+.tr figcaption { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+/* ── 업무로 시작: 카드 7장을 한 줄 단추 목록으로 ── */
+.gov .section-head > p { display: none; }
+.gov-note { font-size: 13px; color: var(--dim); margin: 0 0 8px; }
+.gov-cards { display: grid; gap: 6px; }
+.gov-card { display: flex !important; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px !important; text-align: left; }
+.gov-card b { font-size: 14px; line-height: 1.4; }
+.gov-card .gov-why, .gov-card .gov-d { display: none; }
+.gov-more > summary { font-size: 12px; }
+
+@media (min-width: 1100px) {
+  .explore-page .evidence-workspace { max-width: none; padding: 12px 16px 40px; }
+  .explore-page .workspace-panels { grid-template-columns: 300px minmax(0, 1fr); gap: 14px; align-items: start; }
+  .explore-page .workspace-panel[data-workspace-panel="evidence"] { grid-column: 1 / -1; }
+  /* 조건 칸: 화면 높이 안에서 따로 스크롤 */
+  .explore-page #find { position: sticky; top: 72px; max-height: calc(100vh - 88px); overflow-y: auto; overscroll-behavior: contain; }
+  .explore-page #find .workspace-panel-inner { padding: 16px; }
+  .explore-page .workspace-panel .section-head { margin-bottom: 10px; }
+  .explore-page .workspace-panel .section-head h2 { font-size: 18px; }
+  .explore-page #find .section-head > p { display: none; }
+  .explore-page .workspace-panel .fd-map { display: none; } /* 큰 지도와 겹치는 작은 지도는 좁은 화면에서만. 맞는 동 목록은 그대로 */
+  /* 지도 칸: 제목 문단을 줄이고 검색을 한 줄로 */
+  .explore-page #map .workspace-panel-inner { padding: 14px 16px 16px; }
+  .explore-page #map .hero-head { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .explore-page #heroSearch { margin: 0 0 8px; }
+  .explore-page #heroSearch label, .explore-page #heroSearch .hero-search-note { display: none; }
+  .explore-page #heroSearch .hero-search-msg:empty { display: none; }
+  .explore-page #heroLive { display: none; }
+  .explore-page .map-inds { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+  /* 지도와 동 요약을 나란히, 남은 화면 높이를 채운다 */
+  .explore-page .workspace-panel .map-stage { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 12px; height: max(460px, calc(100vh - 300px)); }
+  .explore-page .workspace-panel .map-stage:has(> .map-panel[hidden]) { grid-template-columns: minmax(0, 1fr); }
+  .explore-page .workspace-panel .map-canvas { height: 100%; min-height: 0; }
+  .explore-page .workspace-panel .map-panel { position: static; width: auto; height: 100%; margin: 0; overflow-y: auto; overscroll-behavior: contain; box-shadow: none; animation: none; }
+  .explore-page .map-bottom .map-list { max-height: 88px; overflow-y: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .tr-line, .dn circle { transition: none; } }

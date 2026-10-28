@@ -174,14 +174,6 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
   .tab-ind { top: 20%; bottom: 20%; left: 0; right: auto; width: 3px; height: auto; border-radius: 0 3px 3px 0; }
   body { padding: 0 0 0 88px; }
 }
-/* 어두운 화면: 토큰을 모두 맞춘 화면(body.theme-auto)만 자동 전환한다. 지도·대시보드 화면은 밝은 화면 그대로 */
-@media (prefers-color-scheme: dark) {
-  body.theme-auto { color-scheme: dark; --bg: #0f1715; --card: #17211f; --ink: #e6eeeb; --dim: #a9b8b3; --green: #4cc5a8; --green-press: #3ba98f; --on-green: #06201a;
-    --soft: #1c2d29; --soft-ink: #a7d7cc; --notice: #fdba8c; --notice-bg: #3a2418; --error: #f97066; --line: #2b3a36; --skel-hi: rgba(255,255,255,.06); }
-  body.theme-auto header.top { background: rgba(15,23,21,.94); }
-  body.theme-auto .btn:focus-visible, body.theme-auto a:focus-visible, body.theme-auto input:focus-visible, body.theme-auto select:focus-visible, body.theme-auto textarea:focus-visible { outline-color: #e6eeeb; box-shadow: 0 0 0 5px #0f1715; }
-}
-
 /* 화면 이동: 같은 사이트 안 이동은 200ms 페이드, 탭 막대는 제자리, 표시 막대만 미끄러진다(redesign 6.4). 지원 안 하는 브라우저는 그냥 바뀐다 */
 @media (prefers-reduced-motion: no-preference) {
   @view-transition { navigation: auto; }
