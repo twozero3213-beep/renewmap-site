@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data: https://tile.openstreetmap.org https://api.vworld.kr; font-src 'self' data:; connect-src 'self'; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com oapi.map.naver.com nrbe.map.naver.net; style-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data: https://tile.openstreetmap.org https://api.vworld.kr map.pstatic.net nrbe.map.naver.net static.naver.net ssl.pstatic.net oapi.map.naver.com; font-src 'self' data:; connect-src 'self' oapi.map.naver.com nrbe.map.naver.net map.pstatic.net kr-col-ext.nelo.navercorp.com; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>동네 찾기 | 리뉴맵</title>
 <meta name="description" content="전국 읍·면·동을 지도와 조건으로 찾고, 공공데이터 값과 출처·기준일이 붙은 문서를 한글·워드·엑셀·PDF로 받습니다.">
@@ -33,6 +33,7 @@
 <script src="overlay.js" defer></script>
 <script src="docgen.js" defer></script>
 <script src="field/vworld-key.js" defer></script>
+<script src="field/naver-map-key.js" defer></script>
 <script src="map.js" defer></script>
 <script src="find.js" defer></script>
 <script src="workspace.js" defer></script>

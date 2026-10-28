@@ -162,3 +162,8 @@ body.field .card { border-radius: 14px; }
   .explore-page .gov .section-head h2 { font-size: 16px; }
   .explore-page .map-step, .explore-page .map-selects { display: none; } /* 이동은 검색·위치 줄·지도 누르기로 */
 }
+
+/* 네이버 배경지도: Leaflet 경계 층 아래, 누르기·끌기는 Leaflet이 받는다 */
+.map-canvas .map-naver { position: absolute !important; top: 0; left: 0; width: 100% !important; height: 100% !important; z-index: 0; pointer-events: none; } /* 네이버가 컨테이너 style을 다시 써서 inset이 풀린다 */
+#map .map-canvas.has-naver.leaflet-container { background: transparent; }
+.map-canvas.has-naver .leaflet-control-container { position: relative; z-index: 2; }

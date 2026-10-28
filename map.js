@@ -1103,6 +1103,20 @@
   }
   // Leaflet 지도는 한 번 만들어 무대(stage)에 두고, render()는 색·선택만 바꾼다
   let M = null;
+  // 네이버 지도(배경만). 키(field/naver-map-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작. 실패·5초 초과면 브이월드로
+  function loadNaver() {
+    const key = window.RENEWMAP_NAVER_KEY;
+    if (!/^[A-Za-z0-9]{6,40}$/.test(key || '')) return Promise.resolve(false);
+    return new Promise(res => {
+      const done = ok => { clearTimeout(t); res(ok); }, t = setTimeout(() => done(false), 5000);
+      window.navermap_authFailure = () => done(false);   // 네이버가 인증 실패 때 부르는 전역 함수
+      const s = document.createElement('script');
+      s.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${key}`;
+      s.onload = () => done(!!(window.naver && window.naver.maps && window.naver.maps.Map));
+      s.onerror = () => done(false);
+      document.head.appendChild(s);
+    });
+  }
   function drawMap(v, m) {
     const slot = stage.querySelector('[data-map-slot]');
     const wait = msg => { if (slot) { slot.className = 'map-canvas is-wait'; slot.textContent = msg; } };
@@ -1111,15 +1125,28 @@
       if (!state.sgGeo) { if (slot) slot.outerHTML = emptyHTML('경계 자료 준비 중', ['시군구 경계가 아직 없습니다.', '아래 목록으로 숫자는 볼 수 있습니다.']); return; }
       const D = window.RenewDashboard;
       if (!window.L) { wait('지도를 불러오는 중입니다.'); (D ? D.loadLeaflet() : Promise.reject()).then(render, () => { state.mapErr = true; render(); }); return; }
+      if (state.naver === undefined) { state.naver = null; wait('지도를 불러오는 중입니다.'); loadNaver().then(ok => { state.naver = ok; render(); }); return; }
+      if (state.naver === null) return;
       const L = window.L, el = document.createElement('div'); el.className = 'map-canvas'; el.setAttribute('role', 'region');
       el.insertAdjacentHTML('beforeend', '<svg class="map-defs" width="0" height="0" aria-hidden="true"><defs><pattern id="rmHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" fill="#d4dbd8"/><line x1="0" y1="0" x2="0" y2="6" stroke="#6b7a75" stroke-width="2"/></pattern></defs></svg>');
       slot.replaceWith(el);
       ybar = document.createElement('div'); ybar.className = 'map-yearbar'; ybar.hidden = true; ybar.setAttribute('aria-hidden', 'true'); el.appendChild(ybar);
-      const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, zoomSnap: 0.25, attributionControl: false });
+      // 네이버 배경: Leaflet(경계·누르기·확대) 아래에 움직이지 않는 네이버 지도를 깔고 같은 중심·확대로 맞춘다. 네이버는 정수 확대라 Leaflet도 정수로
+      const nv = state.naver ? document.createElement('div') : null;
+      if (nv) { nv.className = 'map-naver'; nv.setAttribute('aria-hidden', 'true'); el.appendChild(nv); el.classList.add('has-naver'); }
+      const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, zoomSnap: nv ? 1 : 0.25, attributionControl: false });
       L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
+      if (nv) {
+        const N = window.naver.maps, nmap = new N.Map(nv, { center: new N.LatLng(36.3, 127.8), zoom: 7, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
+          disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
+        const sync = () => { const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); };
+        map.on('move zoom moveend zoomend viewreset resize', sync);
+        if ('ResizeObserver' in window) new ResizeObserver(() => { nmap.autoResize && nmap.autoResize(); sync(); }).observe(el);
+      }
       // 배경지도: 브이월드(국토교통부 공식 지도, 한국 지명·도로). 키(field/vworld-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작 → 없으면 OSM
       const vw = /^[A-Za-z0-9-]+$/.test(window.RENEWMAP_VWORLD_KEY || '') ? window.RENEWMAP_VWORLD_KEY : '';
-      if (vw) L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${vw}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: '&copy; <a href="https://www.vworld.kr">국토교통부 브이월드</a>' }).addTo(map);
+      if (nv) { /* 배경은 네이버 */ }
+      else if (vw) L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${vw}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: '&copy; <a href="https://www.vworld.kr">국토교통부 브이월드</a>' }).addTo(map);
       else L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
       const src = () => state.index.source && state.index.source.name;
       const sg = L.geoJSON(state.sgGeo, { style: { weight: 1, color: '#fff' }, onEachFeature: (f, layer) => {
