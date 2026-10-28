@@ -226,6 +226,15 @@
   const sgOf = (index, code5) => ((index && index.sigungu) || []).find(s => String(s.code5) === String(code5)) || null;
   const sidoOf = (index, code2) => ((index && index.sido) || []).find(s => String(s.code2) === String(code2)) || null;
   // 지도에 그려지는 칸(경계가 있는 단위): 아래에 일반구를 둔 시(수원시 등)는 빼고 그 일반구를 넣는다
+  // 시·군·구 대표값이 절반 미만 지역에만 있으면 그 시·도 이름(2곳까지)을 돌려준다. 예: '부산만'. 순위 아님
+  function coverLabel(ind, index) {
+    if (ind.src === 'forecast' && ind.level !== 'sg' && !ind.pending) return '동 단위'; // 전망은 읍·면·동 파일에만 있어 전국·시·도 지도는 빈칸
+    if (!index || ind.src || ind.computed || ind.level === 'sg' || ind.pending) return '';
+    const all = leavesOf(index), has = all.filter(sg => isNum(summaryOf(sg, ind.code).value));
+    if (!has.length || has.length >= all.length / 2) return '';
+    const names = [...new Set(has.map(sg => String(sg.sido2)))].map(c => ((index.sido || []).find(x => String(x.code2) === c) || {}).name).filter(Boolean);
+    return names.length && names.length <= 2 ? `${names.map(n => n.replace(/(특별시|광역시|특별자치시|특별자치도|도)$/, '')).join('·')}만` : '일부 지역';
+  }
   function leavesOf(index, sido2) {
     const all = (index && index.sigungu) || [], parents = new Set(all.map(s => String(s.parent || '')));
     return all.filter(s => !parents.has(String(s.code5)) && (!sido2 || String(s.sido2) === String(sido2)));
@@ -484,6 +493,7 @@
   }
   // 상태 개수 도넛(비율 그림). 개수를 글자로 함께 쓴다. 순위·점수 아님
   const DONUT = [['r', '기준선 넘음·지정'], ['g', '기준 안'], ['y', '승인 대기'], ['w', '자료·기준 없음']];
+  const GS_SHORT = { r: '넘음', g: '기준 안', y: '승인 대기', w: '자료 없음' };
   function donutSVG(n) {
     const tot = DONUT.reduce((a, [k]) => a + (n[k] || 0), 0), R = 42, C = 2 * Math.PI * R;
     let off = 0;
@@ -557,14 +567,16 @@
       `<br>추가확인은 기준선을 넘었지만 그 기준이 아직 승인 대기인 항목입니다${waiting.length ? `(${esc(waiting.join('·'))}). 확정 수에는 넣지 않습니다` : ''}.<br>가중치·순위 없이 개수만 셉니다.</p>` +
       (led && led.cell && detail(led.cell).length ? `<div class="map-detail">${dl(led.cell)}</div>` : '') + `</details></div>`;
     const list = rows.filter(r => r.ind.group !== 'sum');
-    const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<li class="sr-group"><h4>${esc(gl)}</h4>${g === 'safe' ? `<p class="sr-group-note">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="sr-group-note">${esc(FORE_FIXED)}</p>` : ''}<ul>${list.filter(r => r.ind.group === g).map(r => {
+    const curG = (list.find(r => r.ind.code === o.cur) || list[0] || { ind: {} }).ind.group;
+    const gsum = g => { const rs = list.filter(r => r.ind.group === g), n = k => rs.filter(r => dotOf(r) === k).length; return DONUT.filter(([k]) => n(k)).map(([k]) => `<span class="gs-${k}">${GS_SHORT[k]} ${n(k)}</span>`).join(''); };
+    const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<li class="sr-group"><details${g === curG ? ' open' : ''}><summary><h4>${esc(gl)}</h4><span class="sr-gsum">${gsum(g)}</span></summary>${g === 'safe' ? `<p class="sr-group-note">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="sr-group-note">${esc(FORE_FIXED)}</p>` : ''}<ul>${list.filter(r => r.ind.group === g).map(r => {
       const ind = r.ind, tt = trendText(r.delta, ind), cls = ROW_CLASS[r.status];
       const rowsD = r.cell ? detail(r.cell) : [];
       return `<li class="sr is-${cls}${ind.code === o.cur ? ' is-cur' : ''}"><div class="sr-h">${icon(ind.icon)}<span class="sr-l">${esc(ind.label)}${r.sgLevel ? ' <small>시·군·구</small>' : ''}</span><b class="sr-v">${esc(rowText(r))}</b><span class="sr-st st-${cls}">${esc(r.status)}</span></div>` +
         (ind.categorical ? '' : `<div class="sr-m">${barSVG(r)}${tt ? `<em class="map-trend ${tt.cls}">${tt.arrow} 5년 ${esc(fmt(r.delta, ind.dEdges ? '' : '%p'))} ${esc(tt.word)}</em>` : ''}</div>`) +
         (r.series && r.series.some(p => p[1] !== null) ? trendSVG(r.series, r.year, ind.label, validStd(ind.standard) ? ind.standard.value : null, ind.unit) : '') +
         `<details class="map-detail sr-why"><summary>ⓘ 기준·출처${r.year ? ` (${esc(r.year)}년)` : ''}</summary><p class="sr-std">${esc(stdTextOf(r))}</p>${rowsD.length ? dl(r.cell) : ''}</details></li>`;
-    }).join('')}</ul></li>`).join('');
+    }).join('')}</ul></details></li>`).join('');
     return glanceHTML(rows) + gapsHTML(rows) + head + `<ol class="sr-list">${groups}</ol>`;
   }
   // 기준 미달·참고 구간 밖 항목(2026-10-26, 업무 실무자용): 기준선을 넘은 항목(확정·승인 대기)과 자료가 없어 확인이 필요한 항목. 순서 고정, 순위·점수 없음
@@ -729,7 +741,7 @@
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
-    reportSentences, verifyPolished, stdTextOf, olsFit, trendSVG, donutSVG, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
+    reportSentences, verifyPolished, stdTextOf, olsFit, trendSVG, donutSVG, coverLabel, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
     gapRows, gapsHTML, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
@@ -791,7 +803,9 @@
       if (!e.json && !e.geo) return { kind: 'noemd' };
       const lv = livingOf(v.emdCode) || null, json = e.json || { dongs: [] }, years = yearsOf(json), ext = extOf(v);
       const year = state.year !== null && years && state.year >= years.min && state.year <= years.max ? state.year : null;
-      const items = dongModel(json, ind, mode, year, lv, list, ext);
+      let items = dongModel(json, ind, mode, year, lv, list, ext);
+      const node = v.gu || v.sigungu;
+      if (ind.level === 'sg' && node) { const x = sgExtra(ind, node, ext); items = items.map(it => ({ ...it, value: x.value, year: x.year, text: `${x.text} · 시·군·구 값`, color: x.color })); }
       // selYear: 사용자가 고른 연도(없으면 null → 쇠퇴 지표는 동마다 최신 연도). 생활 지표의 기준연도를 쇠퇴 시계열에 쓰지 않는다
       return { kind: 'emd', items, years, selYear: year, year: year ?? (items.find(i => i.year)?.year ?? null), geo: e.geo, json, living: lv, nodata: !e.json, ext };
     }
@@ -799,11 +813,13 @@
     const items = sigunguModel(sgs, ind, mode, list, state.year, extOf(v));
     return { kind: 'sg', items, sgs: v.level === 'nation' ? null : sgs, year: (isNum(state.year) && ind.series && mode === 'now' ? state.year : null) ?? items.find(i => i.year)?.year ?? null };
   }
+  const coverMemo = new Map();
+  const cover = i => { const k = i.code + ':' + !!state.index; if (!coverMemo.has(k)) coverMemo.set(k, coverLabel(i, state.index)); return coverMemo.get(k); };
   function indCtlHTML(ind) {
     const list = inds(), g = ind.group;
     const tabs = `<div class="map-groups" role="group" aria-label="지표 묶음">${GROUPS.map(([k, l]) => `<button type="button" data-group="${k}" aria-pressed="${k === g}">${esc(l)}</button>`).join('')}</div>`;
     const chips = `<div class="dash-chips map-inds" role="group" aria-label="${esc(GROUPS.find(x => x[0] === g)[1])} 지표">${list.filter(i => i.group === g).map(i => { const ok = avail(i);
-      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(i.label)}${ok ? '' : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; }).join('')}</div>`;
+      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(i.label)}${ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; }).join('')}</div>`;
     return tabs + chips;
   }
   function panelHTML(v, m) {
@@ -1101,7 +1117,10 @@
       ybar = document.createElement('div'); ybar.className = 'map-yearbar'; ybar.hidden = true; ybar.setAttribute('aria-hidden', 'true'); el.appendChild(ybar);
       const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, zoomSnap: 0.25, attributionControl: false });
       L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
+      // 배경지도: 브이월드(국토교통부 공식 지도, 한국 지명·도로). 키(field/vworld-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작 → 없으면 OSM
+      const vw = /^[A-Za-z0-9-]+$/.test(window.RENEWMAP_VWORLD_KEY || '') ? window.RENEWMAP_VWORLD_KEY : '';
+      if (vw) L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${vw}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: '&copy; <a href="https://www.vworld.kr">국토교통부 브이월드</a>' }).addTo(map);
+      else L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
       const src = () => state.index.source && state.index.source.name;
       const sg = L.geoJSON(state.sgGeo, { style: { weight: 1, color: '#fff' }, onEachFeature: (f, layer) => {
         layer.bindTooltip(() => { const it = M.sgItems.get(String(f.properties.code)); return it ? tooltipHTML(it, curInd(), effMode(curInd()), null, src()) : `<b>${esc(f.properties.name)}</b>`; }, { sticky: true });

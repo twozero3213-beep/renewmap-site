@@ -208,3 +208,6 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
   .page table.kv td:nth-child(3), .page table.kv td:nth-child(4) { grid-column: 1 / -1; font-size: 14px; color: var(--dim); }
   .page table.kv td:nth-child(3)::before { content: "기준일 "; }
 }
+
+/* 넓은 화면은 왼쪽 주 메뉴가 있어 머리글 메뉴를 겹쳐 보이지 않는다(로고·상담 단추만). 좁은 화면 메뉴 단추는 그대로 */
+@media (min-width: 1100px) { header.top #site-menu { display: none; } }

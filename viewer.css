@@ -1,7 +1,7 @@
 /* 문서 열기 화면 */
 .docs h1 { font-size: 26px; margin: 8px 0 16px; }
 .docs h2 { font-size: 19px; margin: 0 0 6px; }
-.docs-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
+.home > section.docs-card, .docs-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
 .docs-card p { margin: 0 0 12px; word-break: keep-all; }
 .docs-formats { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0 0 12px; }
 .docs-formats li { padding: 4px 10px; border: 1px solid var(--line); border-radius: 99px; font-size: 14px; color: var(--ink); background: var(--bg); }

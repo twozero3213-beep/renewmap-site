@@ -49,7 +49,7 @@
 @media (min-width: 1100px) {
   .explore-page .evidence-workspace { max-width: none; padding: 12px 16px 40px; }
   .explore-page .workspace-panels { grid-template-columns: 300px minmax(0, 1fr); gap: 14px; align-items: start; }
-  .explore-page .workspace-panel[data-workspace-panel="evidence"] { grid-column: 1 / -1; }
+  .explore-page .workspace-panel[data-workspace-panel="evidence"] { grid-column: 2; } /* 왼쪽 조건 칸(따라 붙음) 아래로 겹치지 않게 지도 칸 아래에 */
   /* 조건 칸: 화면 높이 안에서 따로 스크롤 */
   .explore-page #find { position: sticky; top: 72px; max-height: calc(100vh - 88px); overflow-y: auto; overscroll-behavior: contain; }
   .explore-page #find .workspace-panel-inner { padding: 16px; }
@@ -136,4 +136,29 @@ body.field .card { border-radius: 14px; }
   body.redev-v4 main > .note, body.redev-v4 main > .warn { grid-column: 1 / -1; }
   body.redev-v4 main > #f { grid-column: 1; }
   body.redev-v4 main > #out { grid-column: 2; grid-row: 3; margin-top: 16px; }
+}
+
+/* ── v5 단순화(2026-10-28) ── */
+/* 동 요약 묶음: 지금 보는 묶음만 펼침, 나머지는 이름 + 상태 개수 한 줄 */
+.sr-group > details > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 0; cursor: pointer; list-style: none; border-top: 1px solid var(--line); }
+.sr-group > details > summary::-webkit-details-marker { display: none; }
+.sr-group > details > summary h4 { margin: 0; font-size: 15px; }
+.sr-group > details > summary::after { content: "▾"; color: var(--dim); font-size: 12px; }
+.sr-group > details[open] > summary::after { content: "▴"; }
+.sr-gsum { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.sr-gsum span { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--bg); }
+.sr-gsum .gs-r { color: var(--over); } .sr-gsum .gs-g { color: var(--within); } .sr-gsum .gs-y { color: var(--pending); } .sr-gsum .gs-w { color: var(--dim); }
+.sr-glance .gl-dots, .sr-glance .gl-note { display: none; } /* 묶음별 개수는 접힌 줄에 있다 */
+/* 일부 지역만 모은 지표 표시 */
+.dash-chip small.is-part { margin-left: 4px; padding: 1px 6px; border-radius: 999px; background: #fff0c2; color: var(--warn); font-size: 11px; font-weight: 700; }
+/* 업무: 짧은 이름 타일 두 줄 */
+.gov-n { display: none; font-size: 14px; font-weight: 700; line-height: 1.35; }
+@media (min-width: 1100px) {
+  .explore-page .gov-cards { grid-template-columns: 1fr 1fr; }
+  .explore-page .gov-card { flex-direction: column; align-items: flex-start !important; gap: 4px; min-height: 72px; }
+  .explore-page .gov-card b { display: none; }
+  .explore-page .gov-n { display: block; }
+  .explore-page .gov-more { display: none; }
+  .explore-page .gov .section-head h2 { font-size: 16px; }
+  .explore-page .map-step, .explore-page .map-selects { display: none; } /* 이동은 검색·위치 줄·지도 누르기로 */
 }
