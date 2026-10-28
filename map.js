@@ -607,7 +607,7 @@
   // 범례 아래 기준선 한 줄. 지도 이미지(PNG)도 같은 글을 쓴다
   function stdLineOf(ind, off) {
     return off ? (ind.held ? `보류 · ${ind.held} · 숫자를 만들지 않습니다` : '수집 중 · 자료가 오기 전에는 숫자를 만들지 않습니다')
-      : ind.src === 'forecast' ? foreLine(ind) : ind.group === 'safe' ? SAFE_NOTE : ind.group === 'estate' ? `공식 기준 없음 · 참고 구간 · ${ESTATE_NOTE}`
+      : ind.src === 'forecast' ? foreLine(ind) : ind.group === 'safe' ? SAFE_NOTE : ind.group === 'estate' ? '공식 기준 없음 · 참고 구간' /* 실거래 고정 문구는 바로 아래 줄에 상시 */
         : ind.standard ? `기준선 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · 기준 ${ind.standard.status}` : ''}`
           : ind.composite ? '자료 없는 항목·승인 대기 기준은 세지 않음(하한)' : ind.ref ? '공식 기준 없음 · 참고 구간' : ind.categorical ? '행정 지정 상태 · 좋고 나쁨 축 아님' : '공식 기준 없음 · 값 있는 곳만 한 색';
   }
