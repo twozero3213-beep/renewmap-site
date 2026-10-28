@@ -187,7 +187,7 @@
 .gl-k { font-size: 13px; font-weight: 700; color: var(--ink); margin-right: 4px; }
 .gl-dots i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(21,60,57,.3); display: inline-block; animation: rm-pop .4s cubic-bezier(.2, .8, .2, 1) both; }
 .gl-dots i:nth-child(2) { animation-delay: .04s; } .gl-dots i:nth-child(3) { animation-delay: .08s; } .gl-dots i:nth-child(4) { animation-delay: .12s; } .gl-dots i:nth-child(5) { animation-delay: .16s; } .gl-dots i:nth-child(6) { animation-delay: .2s; } .gl-dots i:nth-child(7) { animation-delay: .24s; }
-.gl-r { background: #b3261e; } .gl-g { background: #0b7f6f; } .gl-y { background: #f0e442; } .gl-w { background: #fff; border-style: dashed; }
+.gl-r { background: #c0492b; } .gl-g { background: #2e7d5e; } .gl-y { background: #a8650a; } .gl-w { background: #fff; border-style: dashed; } /* v4 상태 색 */
 .gl-note { margin: 6px 0 0; font-size: 12px; color: var(--dim); }
 @keyframes rm-pop { from { opacity: 0; transform: scale(.4); } }
 
