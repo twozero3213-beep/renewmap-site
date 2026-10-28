@@ -31,6 +31,7 @@
     function show(name, focusTab) {
       active = normalizePanel(name);
       workspace.dataset.activePanel = active;
+      if (active === 'filters') workspace.dataset.filtersOpen = ''; // 데스크톱은 '업무별'을 한 번 연 뒤부터 업무 패널을 지도 옆에 둔다
       tabs.forEach(tab => tab.setAttribute('aria-pressed', String(tab.dataset.workspaceTab === active)));
       if (focusTab) tabs.find(tab => tab.dataset.workspaceTab === active)?.focus();
     }

@@ -29,13 +29,12 @@
     const button = f => tools.querySelector(`[data-export-format="${f}"]`);
     const pdf = button('pdf'), hwpx = button('hwpx'), xlsx = button('xlsx'), docx = button('docx'), pptx = button('pptx');
     let anchor = null, shown = false;
-    function paint(ready) { status.innerHTML = FORMATS.map(f => exportStateHTML(f, ready ? 'ready' : 'unavailable')).join(''); }
     function sync() {
       const ready = Boolean(report.querySelector('[data-print]')), dl = report.querySelector('[data-dl]');
       pdf.disabled = !ready;
       [hwpx, xlsx, docx, pptx].forEach(b => { if (b) b.disabled = !dl; });
-      // 보고서가 다시 그려질 때만 안내를 처음 문구로 돌린다(복사 버튼 글자가 바뀔 때마다 지우지 않는다)
-      if (dl !== anchor || !shown) { anchor = dl; shown = true; paint(ready); }
+      // 보고서가 다시 그려질 때만 알림을 지운다(복사 버튼 글자가 바뀔 때마다 지우지 않는다). 형식별 안내 줄은 보고서 머리 단추와 겹쳐 쓰지 않는다
+      if (dl !== anchor || !shown) { anchor = dl; shown = true; status.innerHTML = ''; }
     }
     pdf.addEventListener('click', () => report.querySelector('[data-print]')?.click());
     [hwpx, xlsx, docx, pptx].forEach(b => b && b.addEventListener('click', () => {

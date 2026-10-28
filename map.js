@@ -607,13 +607,12 @@
         : ind.standard ? `기준선 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · 기준 ${ind.standard.status}` : ''}`
           : ind.composite ? '자료 없는 항목·승인 대기 기준은 세지 않음(하한)' : ind.ref ? '공식 기준 없음 · 참고 구간' : ind.categorical ? '행정 지정 상태 · 좋고 나쁨 축 아님' : '공식 기준 없음 · 값 있는 곳만 한 색';
   }
-  function legendHTML(ind, mode, source, year, avail, median) {
+  function legendHTML(ind, mode, source, year, avail) {
     const s = scaleFor(ind, mode), off = avail === false || ind.pending, stdLine = stdLineOf(ind, off);
     return `<div class="map-legend"><p class="map-legend-title">${esc(off ? ind.label : s.title)}</p><ul aria-label="지도 색 구간">${legendItems(ind, off ? 'now' : mode).filter(l => !off || l.hatch).map((l, i) =>
       `<li data-i="${i}"><i class="${l.hatch ? 'is-hatch' : ''}" data-bg="${esc(l.color)}"></i>${esc(off ? (ind.held ? '보류' : '수집 중') : l.label)}</li>`).join('')}</ul>` +
       `<p class="map-legend-std${off || isPending(ind.standard) || !ind.standard ? ' is-flag' : ''}">${esc(stdLine)}</p>` +
       (ind.src === 'forecast' ? `<p class="map-legend-note">${esc(FORE_FIXED)}</p>` : ind.group === 'safe' ? `<p class="map-legend-note">${esc(SAFE_FIXED)}</p>` : ind.group === 'estate' ? `<p class="map-legend-note">${esc(ind.note || ESTATE_NOTE)}<br>${esc(ESTATE_PROV)}.</p>` : '') + // 수집 중에도 고정 문구는 상시
-      (median && !off ? '<p class="map-legend-note">시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : '') +
       `<p class="map-legend-note">판정 아님 · 출처 ${esc(ind.source || source || SOURCE_DEFAULT)} · ${ind.latest ? `최근 달 ${String(ind.latest).slice(0, 4)}.${String(ind.latest).slice(4, 6)}` : `기준연도 ${esc(year ?? '자료 없음')}`}</p></div>`;
   }
   // ── 동네 보고서: 원장 셀 값으로만 만든 결정적 문장. 평가어 없음, 숫자는 셀 값 그대로 ──
@@ -817,9 +816,12 @@
   }
   const coverMemo = new Map();
   const cover = i => { const k = i.code + ':' + !!state.index; if (!coverMemo.has(k)) coverMemo.set(k, coverLabel(i, state.index)); return coverMemo.get(k); };
+  // 일부 시·도에만 값이 있는 지표(부산만 등)는 그 시·도 밖(전국 포함)에서 칩을 숨기고, 수집 중·보류 칩도 숨긴다. 지금 고른 지표는 남긴다
+  const coverSidos = i => { const k = `S:${i.code}:${!!state.index}`; if (!coverMemo.has(k)) coverMemo.set(k, cover(i) && cover(i) !== '동 단위' ? new Set(leavesOf(state.index).filter(sg => isNum(summaryOf(sg, i.code).value)).map(sg => String(sg.sido2))) : null); return coverMemo.get(k); };
+  const chipShown = (i, cur, v) => i.code === cur || (avail(i) && !(coverSidos(i) && !(v && v.sido && coverSidos(i).has(String(v.sido.code2)))));
   function indCtlHTML(ind) {
-    const list = inds(), g = ind.group;
-    const tabs = `<div class="map-groups" role="group" aria-label="지표 묶음">${GROUPS.map(([k, l]) => `<button type="button" data-group="${k}" aria-pressed="${k === g}">${esc(l)}</button>`).join('')}</div>`;
+    const v = state.index && resolve(state.index, state.route), list = inds().filter(i => chipShown(i, ind.code, v)), g = ind.group;
+    const tabs = `<div class="map-groups" role="group" aria-label="지표 묶음">${GROUPS.filter(([k]) => k === g || list.some(i => i.group === k)).map(([k, l]) => `<button type="button" data-group="${k}" aria-pressed="${k === g}">${esc(l)}</button>`).join('')}</div>`;
     const chips = `<div class="dash-chips map-inds" role="group" aria-label="${esc(GROUPS.find(x => x[0] === g)[1])} 지표">${list.filter(i => i.group === g).map(i => { const ok = avail(i);
       return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(i.label)}${ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; }).join('')}</div>`;
     return tabs + chips;
@@ -1049,14 +1051,14 @@
     const sliding = top.contains(document.activeElement) && document.activeElement.matches('[data-year]');
     if (sliding) { const yb = top.querySelector('.map-year b'); if (yb) yb.textContent = m.year ?? ''; }
     else top.innerHTML = crumbs + indCtlHTML(ind) + `<div class="map-ctl">${hasTrend(ind) ? seg('mode', MODES, state.mode, '현재 또는 5년 변화') : ''}${hzCtl}${yearCtl}</div>`;
-    const lkey = ind.code + mode, legend = legendHTML(ind, mode, src, m.year, ok, m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind)).replace('class="map-legend"', `class="map-legend${lkey !== lastLegend && !reduced ? ' is-new' : ''}"`); lastLegend = lkey;
+    const lkey = ind.code + mode, median = ok && !ind.pending && m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind), legend = legendHTML(ind, mode, src, m.year, ok).replace('class="map-legend"', `class="map-legend${lkey !== lastLegend && !reduced ? ' is-new' : ''}"`); lastLegend = lkey;
     const opts = (list, key) => list.map(x => ({ code: x[key], name: x.name }));
     const kids = v.sido ? childrenOf(state.index, v.sido.code2) : [];
     const sidoSel = selectHTML('sido', '시·도', opts(state.index.sido || [], 'code2'), v.sido && v.sido.code2, '전국');
     const sgSel = kids.length && !(v.sido.kind === '특별자치시' && kids.length === 1) ? selectHTML('sg', '시·군·구', opts(kids, 'code5'), v.sigungu && v.sigungu.code5, '고르기') : '';
     const guSel = v.sigungu && childrenOf(state.index, v.sigungu.code5).length ? selectHTML('gu', '일반구·행정시', opts(childrenOf(state.index, v.sigungu.code5), 'code5'), v.gu && v.gu.code5, '고르기') : '';
     const chips = m.kind === 'emd' ? `<div class="dash-chips dash-dongs map-list" role="group" aria-label="읍·면·동">${m.items.map(x => `<button type="button" class="dash-chip" data-dong="${esc(x.code)}" aria-pressed="${x.code === v.dong}">${esc(x.name)}</button>`).join('')}</div>` : '';
-    bottom.innerHTML = legend + (DG ? `<p class="map-png"><button type="button" class="btn ghost" data-map-png>🖼 지도 이미지(PNG)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + `<p class="map-hint">${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, + − 버튼으로 확대합니다.'} 지도의 칸을 누르면 바로 아래 단계로 내려갑니다.<br>지도 대신 아래 목록으로도 고를 수 있습니다.</p>` +
+    bottom.innerHTML = legend + (DG ? `<p class="map-png"><button type="button" class="btn ghost" data-map-png>🖼 지도 이미지(PNG)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, + − 버튼으로 확대합니다.'} 지도의 칸을 누르면 바로 아래 단계로 내려갑니다.<br>지도 대신 아래 목록으로도 고를 수 있습니다.</p></details>` +
       `<div class="map-selects">${sidoSel}${sgSel}${guSel}</div>${chips}<p class="map-live" aria-live="polite">${esc(liveText(v, it, ind, mode))}</p>`;
     styleData(bottom);
     const inEmd = v.level === 'emd';
@@ -1096,7 +1098,7 @@
   let ybar = null;
   function yearbar(v, m, ind, mode) {
     if (!ybar) return;
-    const on = m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind);
+    const on = (state.playing || !!autoT) && m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind); // 재생할 때만. 멈춰 있으면 연도는 위 막대에 있다
     ybar.hidden = !on; if (!on) return;
     const py = playYears(state.index, ind.code), c = overCaption(state.index, ind, m.year, m.sgs);
     const all = ind.noPlay || !py.years.length ? [] : Array.from({ length: py.years[py.years.length - 1] - py.years[0] + 1 }, (_, k) => py.years[0] + k);
@@ -1143,8 +1145,10 @@
           disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
         const sync = () => { const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); };
         map.on('move zoom moveend zoomend viewreset resize', sync);
-        if ('ResizeObserver' in window) new ResizeObserver(() => { map.invalidateSize({ pan: false }); nmap.autoResize && nmap.autoResize(); sync(); }).observe(el); // 칸 크기가 바뀌면 경계층도 다시 재야 네이버 바탕과 어긋나지 않는다
+        if ('ResizeObserver' in window) new ResizeObserver(() => { nmap.autoResize && nmap.autoResize(); sync(); }).observe(el);
       }
+      // 칸 크기가 바뀌면(업무 패널 열기·휴대폰 순서) 경계층도 다시 재야 바탕과 어긋나지 않는다. 네이버 동기화는 위 resize 이벤트로 따라간다
+      if ('ResizeObserver' in window) new ResizeObserver(() => map.invalidateSize({ pan: false })).observe(el);
       // 배경지도: 브이월드(국토교통부 공식 지도, 한국 지명·도로). 키(field/vworld-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작 → 없으면 OSM
       const vw = /^[A-Za-z0-9-]+$/.test(window.RENEWMAP_VWORLD_KEY || '') ? window.RENEWMAP_VWORLD_KEY : '';
       if (nv) { /* 배경은 네이버 */ }
@@ -1211,7 +1215,7 @@
   function play() {
     const v = resolve(state.index, state.route), m = model(v);
     if (m.kind === 'sg') {
-      if (v.level === 'nation' && !reduced) { if (autoT) { stopAuto(true); render(); } else { state.touched = false; startAuto(state.ind); } return; }
+      if (v.level === 'nation' && !reduced) { if (autoT) { stopAuto(true); render(); } else { state.touched = false; autoAsked = true; startAuto(state.ind); } return; }
       const ys = playYears(state.index, state.ind).years; if (!ys.length) return;
       if (state.playing) { stopPlay(); render(); return; }
       let i = ys.indexOf(state.year); if (i < 0 || i >= ys.length - 1) i = 0;
@@ -1225,8 +1229,9 @@
     render();
     timer = setInterval(() => { if (state.year >= m.years.max) { stopPlay(); render(); return; } state.year += 1; render(); }, reduced ? 1000 : 320);
   }
-  // 첫 화면 자동 재생: 전국 단계에서 기준이 있는 지표를 차례로 보여 준다. 사용자가 만지면 멈추고 다시 켜지 않는다
-  let visible = true;
+  // 전국 단계 재생: 기준이 있는 지표를 차례로 보여 준다. 첫 화면에서 저절로 시작하지 않고(UI 검수 2026-10-28: 만지기 전에 화면이 바뀌면 읽기 어렵다)
+  // ▶를 누른 뒤에만 돈다. 사용자가 지도를 만지면 멈추고 다시 켜지 않는다
+  let visible = true, autoAsked = false;
   // 순서: 노후 → 사업체 → 인구(해마다) → 요건 충족 수(최신 연도만, 연도 비교 안 함). 연도 요약이 없는 지표는 뺀다
   const AUTO_ORDER = ['DECLINE_AGING_20Y_PCT', 'DECLINE_BIZ_DROP10Y_PCT', 'DECLINE_POP_DROP30Y_PCT', 'DECLINE_MET_COUNT'];
   function autoList() { return AUTO_ORDER.map(c => inds().find(i => i.code === c)).filter(i => i && hasYears(state.index, i)); }
@@ -1238,7 +1243,7 @@
   }
   function autoNext() { const list = autoList(), k = list.findIndex(x => x.code === state.ind); autoRun(list[(k + 1) % list.length], 0); }
   function startAuto(from) {
-    if (autoT || reduced || state.touched || !visible || document.hidden || !M) return;
+    if (!autoAsked || autoT || reduced || state.touched || !visible || document.hidden || !M) return;
     if (resolve(state.index, state.route).level !== 'nation') return;
     const list = autoList(); if (!list.length) return;
     autoRun(list.find(x => x.code === (from || state.ind)) || list[0], 0);
@@ -1247,7 +1252,7 @@
   function stopAuto(user) {
     if (user) state.touched = true;
     if (!autoT) return;
-    clearTimeout(autoT); autoT = null;
+    clearTimeout(autoT); autoT = null; if (ybar) ybar.hidden = true;
     if (heroLive) { heroLive.querySelector('.hl-auto')?.remove(); heroLive.setAttribute('aria-live', 'polite'); }
     const b = app.querySelector('[data-play]'); if (b) { b.textContent = '▶'; b.setAttribute('aria-pressed', 'false'); }
   }
@@ -1262,7 +1267,7 @@
     const b = e.target.closest('button'); if (!b) return;
     if (b.classList.contains('is-planned')) return; // 수집 중·보류: 지도를 회색으로 바꾸지 않는다
     if (b.dataset.group || b.dataset.ind || b.dataset.mode) { stopPlay(); stopAuto(true); } // 화면 낭독기 등은 click만 보내 pointerdown 멈춤이 안 걸린다
-    if (b.dataset.group) { const list = inds().filter(i => i.group === b.dataset.group), pick = list.find(avail) || list[0]; if (pick) state.ind = pick.code; state.year = null; render(); app.querySelector(`[data-group="${b.dataset.group}"]`)?.focus({ preventScroll: true }); }
+    if (b.dataset.group) { const v = resolve(state.index, state.route), list = inds().filter(i => i.group === b.dataset.group), pick = list.find(i => chipShown(i, null, v)) || list.find(avail) || list[0]; if (pick) state.ind = pick.code; state.year = null; render(); app.querySelector(`[data-group="${b.dataset.group}"]`)?.focus({ preventScroll: true }); }
     else if (b.dataset.ind) { state.ind = b.dataset.ind; state.year = null; render(); app.querySelector(`[data-ind="${CSS.escape(b.dataset.ind)}"]`)?.focus({ preventScroll: true }); }
     else if (b.dataset.mode) { state.mode = b.dataset.mode; state.year = null; render(); app.querySelector(`[data-mode="${b.dataset.mode}"]`)?.focus({ preventScroll: true }); }
     else if (b.dataset.horizon) { state.horizon = +b.dataset.horizon; render(); app.querySelector(`[data-horizon="${b.dataset.horizon}"]`)?.focus({ preventScroll: true }); }
