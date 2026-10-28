@@ -559,6 +559,18 @@
     } catch (e) { toast("문서를 만들지 못했습니다."); }
   }
 
+  // 해명서 부록: 지표별 출처·기준일·판본·참고선·가림 기록. 1쪽과 같은 기록의 숫자만 쓴다
+  async function explainer(rec) {
+    try {
+      await templates;
+      const doc = E.buildExplainer(rec, new Date()), bytes = D.hwpxBytes(doc), name = `${E.fileName(rec)}_해명서부록.hwpx`;
+      D.saveBytes(name, bytes, "application/hwp+zip");
+      await S.addDoc({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), name, kind: "hwpx", created_at: new Date().toISOString(), record_id: rec.id, blob: new Blob([bytes], { type: "application/hwp+zip" }) });
+      toast(`${name} 파일을 받았습니다.
+보관함에서 다시 받을 수 있습니다.`);
+    } catch (e) { toast("해명서 부록을 만들지 못했습니다."); }
+  }
+
   const isToday = (iso) => new Date(iso).toDateString() === new Date().toDateString();
   async function render() {
     let rows = await S.records();
@@ -574,7 +586,7 @@
       m.className = "meta";
       m.textContent = `${E.localTime(r.recorded_at)}${r.accuracy_m !== null && r.accuracy_m !== undefined ? ` · ±${Math.round(r.accuracy_m)}m` : ""}${r.corrected ? " · 보정됨" : ""}${r.parcel ? ` · ${r.parcel}` : ""}${r.photos && r.photos.length ? ` · 사진 ${r.photos.length}장` : ""}${group.get(E.siteOf(r)).length > 1 ? ` · 같은 지점 ${group.get(E.siteOf(r)).length}건` : ""}${r.imported ? " · 가져옴" : ""}`;
       acts.className = "row";
-      for (const [label, fn] of [["한글 1쪽 받기", hwpx], ["PDF로 저장", pdf]]) {
+      for (const [label, fn] of [["한글 1쪽 받기", hwpx], ["PDF로 저장", pdf], ["해명서 부록 받기", explainer]]) {
         const btn = document.createElement("button"); btn.type = "button"; btn.className = "ghost"; btn.textContent = label;
         btn.addEventListener("click", () => fn(r)); acts.append(btn);
       }

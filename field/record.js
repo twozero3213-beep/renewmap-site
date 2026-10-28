@@ -46,6 +46,8 @@
   const cleanInd = (i) => {
     const s = (i && i.src) || {};
     return { code: clean(i && i.code), label: clean(i && i.label), value: clean(i && i.value), reference_date: clean(i && i.reference_date), status: clean(i && i.status) || null,
+      // 해명서 부록용. 이전 기록·가져온 파일에는 없을 수 있다
+      num: Number.isFinite(num(i && i.num)) ? num(i.num) : null, unit: clean(i && i.unit), formula: clean(i && i.formula), rule_version: clean(i && i.rule_version), spatial_unit: clean(i && i.spatial_unit), cell_id: clean(i && i.cell_id),
       src: { source_name: clean(s.source_name), source_url: clean(s.source_url), reference_date: clean(s.reference_date), retrieved_at: clean(s.retrieved_at), license_type: clean(s.license_type) || "미표시" } };
   };
 

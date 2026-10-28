@@ -80,7 +80,9 @@
       const key = srcKey(c);
       if (!keys.has(key) && keys.size >= SOURCES_MAX) continue;      // 출처가 5개를 넘기면 그 행은 싣지 않는다
       keys.add(key);
+      // num·unit·formula·rule_version·spatial_unit·cell_id는 해명서 부록용(값은 1쪽과 같은 셀)
       rows.push({ code: k, label: labels[k] || D.LABEL[k] || k, value: D.valueWithUnit(c), reference_date: c.reference_date, status: c.status,
+        num: typeof c.value === "number" ? c.value : null, unit: c.unit || "", formula: c.formula_text || "", rule_version: c.rule_version || "", spatial_unit: c.spatial_unit || "", cell_id: c.cell_id || "",
         src: { source_name: c.source_name, source_url: c.source_url, reference_date: c.reference_date, retrieved_at: c.retrieved_at, license_type: c.license_type || c.license || "미표시" } });
     }
     return rows;
@@ -248,6 +250,61 @@
     return { kind: "field", title: "현장 사진대지", blocks, sources: [], writtenOn: day, footer: "리뉴맵 사진대지 · ", photos: pics.length };
   }
 
+  // ── 해명서 부록(외부 제안 #5, D19): "이 숫자 어디서 왔나, 기준을 바꾸면 결과가 바뀌나"에 답하는 부록. 순위·점수·추천·지정 판단 없음
+  // 법정·공식 기준선. backend/renewmap/rules/decline.py·living_std.py의 RULE_VERSION·STANDARDS와 같게 둔다(approved_by가 채워지면
+  // backend/tests/test_explainer_rules.py가 실패해 여기 '승인 대기'를 고치게 한다)
+  const LEGAL = {
+    DECLINE_POP_DROP30Y_PCT: { line: 20, above: true, text: "최근 30년 최대 대비 20% 이상 감소(또는 5년 중 3년 연속 감소)", law: "도시재생 활성화 및 지원에 관한 특별법 시행령 제17조", rule: "decline-3req-v0.1" },
+    DECLINE_AGING_20Y_PCT: { line: 50, above: true, text: "준공 20년 이상 건축물 비율 50% 이상", law: "도시재생 활성화 및 지원에 관한 특별법 시행령 제17조", rule: "decline-3req-v0.1" },
+    PARK_AREA_PER_CAPITA: { line: 6, above: false, text: "도시공원 확보기준 주민 1인당 6㎡ 이상(법은 도시지역 단위라 행정동 적용은 참고 비교)", law: "도시공원 및 녹지 등에 관한 법률 시행규칙 제4조", rule: "LIVING-STD-2026.10" },
+  };
+  // 법정 기준이 아닌 비율 지표에만 쓰는 참고선. 어느 지표에 몇 %를 쓸지는 사람 결정 전 초안(absorb_six_proposals §4-1)
+  const REF_LINES = [15, 20, 25];
+  const REF_CODES = ["POP_AGED65_PCT", "POP_YOUTH_PCT"];
+  // 가림(SGIS 인구부문: 5 미만 N/A). 출처가 N/A로 준 값은 pickIndicators에서 이미 빠진다. 원래 값은 기록하지 않는다
+  const maskRule = (r) => (r.unit === "명" && Number.isFinite(r.num) && r.num < 5 ? "SGIS-5" : null);
+  const side = (v, line) => (v >= line ? `기준선 ${line} 이상` : `기준선 ${line} 미만`);
+  function basisText(r) {
+    const L = LEGAL[r.code];
+    if (L) return `법정: ${L.text} · ${L.law} · 판본 ${L.rule}(승인 대기 초안)${Number.isFinite(r.num) ? ` · 이 값은 ${side(r.num, L.line)}` : ""}`;
+    if (REF_CODES.includes(r.code) && Number.isFinite(r.num)) return `참고선(법정 기준 아님): ${REF_LINES.map((x) => `${x}% ${r.num >= x ? "이상" : "미만"}`).join(" · ")}`;
+    return "기준선 없음(사실 값)";
+  }
+
+  // rec: makeRecord 결과. now: 작성 시각. 반환: hwpxBytes·docHTML이 받는 doc + masking_log(원래 값 없음)
+  function buildExplainer(rec, now) {
+    const d = rec.dong, title = `${d ? d.name : "현장"} 숫자 해명서(부록)`, src = new D.Sources(), at = now.toISOString(), log = [];
+    const rows = (rec.indicators || []).map((r) => {
+      const rule = maskRule(r);
+      if (rule) log.push({ cell_id: r.cell_id || `${d ? d.code : ""}:${r.code}`, indicator: r.label, area_code: d ? d.code : "", rule, reference_date: r.reference_date, created_at: at });
+      const unit = [r.spatial_unit || (d ? "행정동" : ""), r.rule_version ? `값 판본 ${r.rule_version}` : ""].filter(Boolean).join(" · ");
+      return [r.label, `${rule ? "N/A(통계비밀보호, 5 미만)" : r.value}${unit ? ` · ${unit}` : ""}`, `${srcKind(r.src.source_name)}${src.ref(r.src)} · ${lic(r.src.license_type)}`,
+        `${D.govDate(r.reference_date)} 기준 / ${D.govDate(String(r.src.retrieved_at || "").slice(0, 10))} 조회`, rule ? "가림" : basisText(r)].map(D.clean);
+    });
+    const blocks = [block("title", title),
+      block("para", "이 부록은 숫자의 출처와 기준을 설명합니다. 지정·예산·순위 결정이 아닙니다. 기준값을 바꾼 결과는 참고이며 어느 기준이 맞다고 판단하지 않습니다.", { small: true }),
+      block("para", [`대상 기록 ${localTime(rec.recorded_at)}`, d ? `${d.sgName} ${d.name}(행정동 코드 ${d.code})` : "행정동 미확인", `${D.govDate(at.slice(0, 10))} 작성`].join(" · "), { small: true })];
+    if (!rows.length) blocks.push(block("para", "이 기록에는 공식 숫자가 없어 설명할 지표가 없다."));
+    else {
+      blocks.push(block("table", "", { rows: [["지표", "값·공간 단위", "출처(종류)·이용조건", "기준일·조회일", "기준"], ...rows], widths: [17, 17, 20, 16, 30], caption: "표 1. 지표별 출처와 기준" }));
+      // 계산식: 원장 셀의 formula_text 그대로. 없으면(이전 기록) 그렇다고 적는다
+      blocks.push(block("h1", "계산식"));
+      (rec.indicators || []).forEach((r) => blocks.push(block("bullet", `${r.label}: ${r.formula || "계산식 자료 없음(이 기능 전에 저장한 기록)"}`)));
+      // 생활SOC 대안 문장: 법정 기준선의 반대쪽(공원 6㎡ 미만)에 있을 때만 사실 한 줄. 무엇을 지으라는 권고가 아니다
+      const soc = (rec.indicators || []).filter((r) => r.code === "PARK_AREA_PER_CAPITA" && Number.isFinite(r.num) && r.num < LEGAL.PARK_AREA_PER_CAPITA.line);
+      if (soc.length) {
+        blocks.push(block("h1", "생활SOC 기준 대비 사실"));
+        soc.forEach((r) => blocks.push(block("bullet", `도시공원 확보기준 1인당 6㎡ 대비: 이 동 ${r.value}(${D.govDate(r.reference_date)} 기준). 공원 조성 권고가 아니다.`)));
+      }
+    }
+    blocks.push(block("h1", "가림 기록"));
+    if (log.length) blocks.push(block("table", "", { rows: [["셀", "지표", "공간 단위 코드", "규칙", "기준일"], ...log.map((x) => [x.cell_id, x.indicator, x.area_code, x.rule, D.govDate(x.reference_date)].map(D.clean))], widths: [26, 26, 18, 12, 18], caption: "표 2. 가린 값(원래 값은 남기지 않음)" }));
+    else blocks.push(block("para", "가린 값 없음. 인구 5 미만(SGIS-5)에 해당하는 값이 없다."));
+    blocks.push(block("para", "출처가 N/A로 준 값은 처음부터 싣지 않는다. 사업체 종사자 수와 비율의 분자·분모는 이 부록에 싣지 않아 SGIS 사업체 규칙과 비율 가림을 쓸 일이 없다. 2차 가림(역산 방지)은 사람 결정 전이라 적용하지 않았다.", { small: true }));
+    if (src.list.length) { blocks.push(block("h1", "출처")); src.list.forEach((s, n) => blocks.push(block("para", D.sourceLine(n + 1, { ...s, license: lic(s.license) }), { small: true }))); }
+    return { kind: "field", title, blocks, sources: src.list, writtenOn: at.slice(0, 10), footer: "리뉴맵 해명서 부록 · ", masking_log: log };
+  }
+
   // 새 자료 묶음 알림(A3): 두 해시가 모두 있고 다를 때만
   const isNewData = (cur, latest) => !!(cur && latest && cur.snapshot_hash && latest.snapshot_hash && cur.snapshot_hash !== latest.snapshot_hash);
 
@@ -267,5 +324,5 @@
     const ok = (pt) => Array.isArray(pt) && Number.isFinite(pt[0]) && Number.isFinite(pt[1]);
     return (Array.isArray(polys) ? polys : []).flat().filter((r) => Array.isArray(r) && r.length <= 2000 && r.every(ok)).slice(0, 20).map((r) => r.map(([x, y]) => [x, y]));
   }
-  return { srcKind, prevAtSite, compareRows, buildPhotoSheet, parcelFrom, ringsFrom, bjdongCandidates, findBuildings, buildingFill, lic, PAGE_LIMIT_MM, inRing, contains, findFeature, plane, distanceM, nearby, makeLocator, PICK, pickIndicators, localTime, localDay, shortSrc, oldestDate, summaryRows, buildFieldDoc, fileName, siteOf, nearbyRecords, isNewData };
+  return { LEGAL, buildExplainer, srcKind, prevAtSite, compareRows, buildPhotoSheet, parcelFrom, ringsFrom, bjdongCandidates, findBuildings, buildingFill, lic, PAGE_LIMIT_MM, inRing, contains, findFeature, plane, distanceM, nearby, makeLocator, PICK, pickIndicators, localTime, localDay, shortSrc, oldestDate, summaryRows, buildFieldDoc, fileName, siteOf, nearbyRecords, isNewData };
 });
