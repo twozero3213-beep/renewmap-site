@@ -107,7 +107,7 @@
 .sr-l { font-size: 15px; font-weight: 600; flex: 1; min-width: 7em; }
 .sr-v { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .sr-st { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
-.st-over { color: #8f2f0c; background: #fde2d4; } .st-in { color: #3f524d; background: #e3e9ee; } .st-wait { color: #8a4b00; background: #fff0c2; }
+.st-over { color: #8f2f0c; background: #fde2d4; } .st-in { color: #3f524d; background: #e3e9ee; } .st-wait { color: #34478a; background: #e3e8f6; }
 .st-nostd { color: #1f4f8a; background: #dbe8f7; } .st-none, .st-soon { color: #3f524d; background: #eef2f0; border: 1px dashed #9aa6a1; }
 .sr-m { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .sr-bar { flex: 1; min-width: 0; height: 18px; display: block; }
@@ -187,7 +187,7 @@
 .gl-k { font-size: 13px; font-weight: 700; color: var(--ink); margin-right: 4px; }
 .gl-dots i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(21,60,57,.3); display: inline-block; animation: rm-pop .4s cubic-bezier(.2, .8, .2, 1) both; }
 .gl-dots i:nth-child(2) { animation-delay: .04s; } .gl-dots i:nth-child(3) { animation-delay: .08s; } .gl-dots i:nth-child(4) { animation-delay: .12s; } .gl-dots i:nth-child(5) { animation-delay: .16s; } .gl-dots i:nth-child(6) { animation-delay: .2s; } .gl-dots i:nth-child(7) { animation-delay: .24s; }
-.gl-r { background: #c0492b; } .gl-g { background: #2e7d5e; } .gl-y { background: #a8650a; } .gl-w { background: #fff; border-style: dashed; } /* v4 상태 색 */
+.gl-r { background: #b4521d; } .gl-g { background: #2e7d5e; } .gl-y { background: #4f63a8; } .gl-w { background: #fff; border-style: dashed; } /* v4 상태 색 */
 .gl-note { margin: 6px 0 0; font-size: 12px; color: var(--dim); }
 @keyframes rm-pop { from { opacity: 0; transform: scale(.4); } }
 

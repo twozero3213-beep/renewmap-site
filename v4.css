@@ -1,6 +1,6 @@
 /* 찾기 v4(2026-10-28, Figma '07 찾기 v4'): 데스크톱은 한 화면에 조건 | 지도 | 동 요약. 동 요약은 글보다 그래프.
    색은 상태 4가지만 쓰고 글자를 함께 둔다(색만으로 뜻을 전하지 않는다). 판정·순위·점수 없음 */
-:root { --over: #c0492b; --within: #2e7d5e; --pending: #a8650a; --nodata: #7a8a85; --ref: #8fa39c; --soft2: #e7f1ec; }
+:root { --over: #b4521d; --within: #2e7d5e; --pending: #4f63a8; --nodata: #7a8a85; --ref: #8fa39c; --soft2: #e7f1ec; }
 
 /* ── 상태 도넛 + 개수 ── */
 .sr-glance { padding: 12px 14px; border-radius: 14px; background: var(--bg); }
@@ -217,13 +217,14 @@ body.field .card { border-radius: 14px; }
   .explore-page .evidence-workspace:not([data-filters-open]) .workspace-panels { grid-template-columns: minmax(0, 1fr); }
   .explore-page .evidence-workspace:not([data-filters-open]) .workspace-panel[data-workspace-panel="evidence"] { grid-column: 1; }
 }
-/* 데스크톱 지도 위 조작을 두 줄로: [위치 | 현재·연도] / [묶음 탭 | 지표 칩]. 1440×900에서 전국 지도(높이 640px+)가 첫 화면에 들어오게 */
+/* 데스크톱 지도 위 조작을 두 줄로: [위치 | 현재·연도] / [묶음 탭 | 지표 칩]. 1440×900에서 전국 지도(높이 640px+)가 첫 화면에 들어오게.
+   업무 패널이 열려 지도 칸이 좁으면 원래처럼 줄을 쌓는다 */
 @media (min-width: 1100px) {
-  .explore-page .map-top { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "crumbs ctl" "groups inds"; align-items: center; gap: 6px 16px; margin-bottom: 8px; }
-  .explore-page .map-top > .map-crumbs { grid-area: crumbs; margin: 0; }
-  .explore-page .map-top > .map-ctl { grid-area: ctl; margin: 0; }
-  .explore-page .map-top > .map-groups { grid-area: groups; margin: 0; }
-  .explore-page .map-top > .map-inds { grid-area: inds; margin: 0; }
+  .explore-page .evidence-workspace:not([data-filters-open]) .map-top { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "crumbs ctl" "groups inds"; align-items: center; gap: 6px 16px; margin-bottom: 8px; }
+  .explore-page .evidence-workspace:not([data-filters-open]) .map-top > .map-crumbs { grid-area: crumbs; margin: 0; }
+  .explore-page .evidence-workspace:not([data-filters-open]) .map-top > .map-ctl { grid-area: ctl; margin: 0; }
+  .explore-page .evidence-workspace:not([data-filters-open]) .map-top > .map-groups { grid-area: groups; margin: 0; }
+  .explore-page .evidence-workspace:not([data-filters-open]) .map-top > .map-inds { grid-area: inds; margin: 0; }
 }
 /* 동 보고서 카드형(UI 검수 P1-7): 숫자를 문장 밖으로. 카드 왼쪽 띠 색은 상태 색과 같다 */
 .rp-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin: 8px 0 4px; }
@@ -236,3 +237,6 @@ body.field .card { border-radius: 14px; }
 .rp-item.rp-card .rc-more p { margin-top: 4px; font-size: 14px; line-height: 1.55; }
 @media print { .rp-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rp-card { break-inside: avoid; } }
 .rp-card details.rc-more { border: 0; padding: 0; margin: 2px 0 0; background: none; box-shadow: none; }
+/* 묶음 탭·제목·요약에 붙는 선 아이콘 간격 */
+.map-groups button .map-ico, h3 > .map-ico, h4 > .map-ico, .gl-k > .map-ico, .sr-gaps summary .map-ico, .map-report-link .map-ico { margin-right: 5px; vertical-align: -2px; }
+.gov-e .map-ico { width: 20px; height: 20px; }

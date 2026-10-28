@@ -13,7 +13,9 @@
   const pm = v => (v < 0 ? '−' + M.fmt(Math.abs(v)) : M.fmt(v));
   // 공식 기준이 없는 조건의 참고 구간(화면 눈금, 판정 기준 아님). 대표 지시(2026-10-25) 값
   const REF = { LIB_M: 1000, HOSP_PER10K: 10, BUS_PER_KM2: 20, MIG_PER1K: 5, FORE_PCT: 10, DEAL_PCT: 20 };
-  const GROUPS = [['aging', '🏚 정비 신호'], ['pop', '👥 인구 변화'], ['estate', '🏠 부동산 거래'], ['life', '🌿 생활 여건'], ['fore', '🔮 전망']];
+  const GROUPS = [['aging', '정비 신호'], ['pop', '인구 변화'], ['estate', '부동산 거래'], ['life', '생활 여건'], ['fore', '전망']];
+  // 조건·업무 카드의 e는 아이콘 이름(map.js ICONS). 지도와 같은 선 아이콘을 쓰고, map.js가 없으면(노드 시험) 아이콘 없이 글자만
+  const ico = k => (typeof window !== 'undefined' && window.RenewMap && window.RenewMap.icon ? window.RenewMap.icon(k) : '');
   const NOTE = '조건 필터 · 순위 아님';
   const ESTATE_NOTE = '실거래 신고 사실 · 투자 조언 아님';
   const UNIT = { sg: '시·군·구', emd: '읍·면·동' };
@@ -36,32 +38,32 @@
 
   // 조건 정의. units: 이 조건을 셀 수 있는 단위. sgLevel: 읍·면·동 범위에서도 그 동이 속한 시·군·구 값(모든 동 같음)
   const CONDS = [
-    { id: 'aging', n: '노후 건축물 비율', g: 'aging', e: '🏚', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_AGING_20Y_PCT'), get: seriesVal('DECLINE_AGING_20Y_PCT'), op: 'ge', label: t => `노후 건축물 ${pm(t)}% 이상` },
-    { id: 'met', n: '쇠퇴 요건 충족 수', g: 'aging', e: '📋', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_MET_COUNT'), get: seriesVal('DECLINE_MET_COUNT'), op: 'ge', label: t => `쇠퇴 요건 ${pm(t)}개 이상(하한)` },
-    { id: 'pop30', n: '인구 30년 감소', g: 'aging', e: '👥', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_POP_DROP30Y_PCT'), get: seriesVal('DECLINE_POP_DROP30Y_PCT'), op: 'ge', label: t => `인구 30년 ${pm(t)}% 이상 감소` },
-    { id: 'biz10', n: '사업체 10년 감소', g: 'aging', e: '🏪', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_BIZ_DROP10Y_PCT'), get: seriesVal('DECLINE_BIZ_DROP10Y_PCT'), op: 'ge', label: t => `사업체 10년 ${pm(t)}% 이상 감소` },
-    { id: 'depop', n: '인구감소지역 지정', g: 'pop', e: '🏳️', units: ['sg', 'emd'], src: 'designations', sgLevel: true, th: () => '인구감소지역', get: sgVal('designations'), op: 'eq', label: () => '인구감소지역 지정' },
-    { id: 'concern', n: '인구감소 관심지역 지정', g: 'pop', e: '🟠', units: ['sg', 'emd'], src: 'designations', sgLevel: true, th: () => '관심지역', get: sgVal('designations'), op: 'eq', label: () => '인구감소 관심지역 지정' },
+    { id: 'aging', n: '노후 건축물 비율', g: 'aging', e: 'bldg', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_AGING_20Y_PCT'), get: seriesVal('DECLINE_AGING_20Y_PCT'), op: 'ge', label: t => `노후 건축물 ${pm(t)}% 이상` },
+    { id: 'met', n: '쇠퇴 요건 충족 수', g: 'aging', e: 'sum', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_MET_COUNT'), get: seriesVal('DECLINE_MET_COUNT'), op: 'ge', label: t => `쇠퇴 요건 ${pm(t)}개 이상(하한)` },
+    { id: 'pop30', n: '인구 30년 감소', g: 'aging', e: 'people', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_POP_DROP30Y_PCT'), get: seriesVal('DECLINE_POP_DROP30Y_PCT'), op: 'ge', label: t => `인구 30년 ${pm(t)}% 이상 감소` },
+    { id: 'biz10', n: '사업체 10년 감소', g: 'aging', e: 'shop', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_BIZ_DROP10Y_PCT'), get: seriesVal('DECLINE_BIZ_DROP10Y_PCT'), op: 'ge', label: t => `사업체 10년 ${pm(t)}% 이상 감소` },
+    { id: 'depop', n: '인구감소지역 지정', g: 'pop', e: 'flag', units: ['sg', 'emd'], src: 'designations', sgLevel: true, th: () => '인구감소지역', get: sgVal('designations'), op: 'eq', label: () => '인구감소지역 지정' },
+    { id: 'concern', n: '인구감소 관심지역 지정', g: 'pop', e: 'flag', units: ['sg', 'emd'], src: 'designations', sgLevel: true, th: () => '관심지역', get: sgVal('designations'), op: 'eq', label: () => '인구감소 관심지역 지정' },
     // 시·군·구는 forecast/index.json의 KOSIS 시군구 실측(sigungu_aged65_latest, 원장 셀), 읍·면·동은 living 셀
-    { id: 'aged', n: '초고령(65세 이상)', g: 'pop', e: '👴', units: ['sg', 'emd'], src: 'living', th: c => livStd(c, 'POP_AGED65_PCT'), op: 'ge',
+    { id: 'aged', n: '초고령(65세 이상)', g: 'pop', e: 'elder', units: ['sg', 'emd'], src: 'living', th: c => livStd(c, 'POP_AGED65_PCT'), op: 'ge',
       get: (a, c) => { if (a.dong) return livingVal('POP_AGED65_PCT')(a);
         const m = c.forecastIdx && c.forecastIdx.sigungu_aged65_latest, x = m && a.sg ? m[a.sg.code5] : null; return x && isNum(x.value) ? x.value : null; }, label: t => `초고령(65세 이상 ${pm(t)}% 이상)`, tag: c => (livInd(c, 'POP_AGED65_PCT') || { standard: {} }).standard.status || null },
-    { id: 'youthDown', n: '청년 비율 5년 감소', g: 'pop', e: '📉', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'POP_YOUTH_PCT_DELTA5Y') ? 0 : null), get: livingVal('POP_YOUTH_PCT_DELTA5Y'), op: 'lt', label: () => '청년 비율 5년 감소' },
-    { id: 'migOut', n: '청년 순유출', g: 'pop', e: '↘', units: ['sg', 'emd'], src: 'migration', sgLevel: true, ref: true, th: () => -REF.MIG_PER1K, get: sgVal('migration'), op: 'le', label: t => `청년 순유출(천 명당 ${pm(t)}명 이하)` },
-    { id: 'migIn', n: '청년 순유입', g: 'pop', e: '↗', units: ['sg', 'emd'], src: 'migration', sgLevel: true, ref: true, th: () => REF.MIG_PER1K, get: sgVal('migration'), op: 'ge', label: t => `청년 순유입(천 명당 +${pm(t)}명 이상)` },
-    { id: 'dealDown', n: '연간 거래 감소', g: 'estate', e: '🏠', units: ['sg', 'emd'], src: 'realestate', sgLevel: true, ref: true, code: 'APT_TRADE_COUNT_YOY_PCT', th: c => (hasRe(c, 'APT_TRADE_COUNT_YOY_PCT') ? -REF.DEAL_PCT : null), get: sgVal('realestate', 'APT_TRADE_COUNT_YOY_PCT'), op: 'le', label: t => `연간 거래 ${pm(Math.abs(t))}% 이상 감소` },
-    { id: 'dealUp', n: '연간 거래 증가', g: 'estate', e: '🏘', units: ['sg', 'emd'], src: 'realestate', sgLevel: true, ref: true, code: 'APT_TRADE_COUNT_YOY_PCT', th: c => (hasRe(c, 'APT_TRADE_COUNT_YOY_PCT') ? REF.DEAL_PCT : null), get: sgVal('realestate', 'APT_TRADE_COUNT_YOY_PCT'), op: 'ge', label: t => `연간 거래 ${pm(t)}% 이상 증가` },
+    { id: 'youthDown', n: '청년 비율 5년 감소', g: 'pop', e: 'popdown', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'POP_YOUTH_PCT_DELTA5Y') ? 0 : null), get: livingVal('POP_YOUTH_PCT_DELTA5Y'), op: 'lt', label: () => '청년 비율 5년 감소' },
+    { id: 'migOut', n: '청년 순유출', g: 'pop', e: 'move', units: ['sg', 'emd'], src: 'migration', sgLevel: true, ref: true, th: () => -REF.MIG_PER1K, get: sgVal('migration'), op: 'le', label: t => `청년 순유출(천 명당 ${pm(t)}명 이하)` },
+    { id: 'migIn', n: '청년 순유입', g: 'pop', e: 'move', units: ['sg', 'emd'], src: 'migration', sgLevel: true, ref: true, th: () => REF.MIG_PER1K, get: sgVal('migration'), op: 'ge', label: t => `청년 순유입(천 명당 +${pm(t)}명 이상)` },
+    { id: 'dealDown', n: '연간 거래 감소', g: 'estate', e: 'home', units: ['sg', 'emd'], src: 'realestate', sgLevel: true, ref: true, code: 'APT_TRADE_COUNT_YOY_PCT', th: c => (hasRe(c, 'APT_TRADE_COUNT_YOY_PCT') ? -REF.DEAL_PCT : null), get: sgVal('realestate', 'APT_TRADE_COUNT_YOY_PCT'), op: 'le', label: t => `연간 거래 ${pm(Math.abs(t))}% 이상 감소` },
+    { id: 'dealUp', n: '연간 거래 증가', g: 'estate', e: 'home', units: ['sg', 'emd'], src: 'realestate', sgLevel: true, ref: true, code: 'APT_TRADE_COUNT_YOY_PCT', th: c => (hasRe(c, 'APT_TRADE_COUNT_YOY_PCT') ? REF.DEAL_PCT : null), get: sgVal('realestate', 'APT_TRADE_COUNT_YOY_PCT'), op: 'ge', label: t => `연간 거래 ${pm(t)}% 이상 증가` },
     // 생활 여건은 기준 이상(안쪽)과 기준 미만(바깥쪽) 칩을 나란히 둔다(2026-10-26, 업무별 프리셋이 미만 쪽을 쓴다). 같은 기준값·같은 꼬리표, 하위 N곳 정렬 아님
-    { id: 'park', n: '1인당 공원 면적', g: 'life', e: '🌳', units: ['emd'], src: 'living', th: c => livStd(c, 'PARK_AREA_PER_CAPITA'), get: livingVal('PARK_AREA_PER_CAPITA'), op: 'ge', label: t => `1인당 공원 ${pm(t)}㎡ 이상` },
-    { id: 'parkLow', n: '1인당 공원 면적 미만', g: 'life', e: '🌳', units: ['emd'], src: 'living', th: c => livStd(c, 'PARK_AREA_PER_CAPITA'), get: livingVal('PARK_AREA_PER_CAPITA'), op: 'lt', label: t => `1인당 공원 ${pm(t)}㎡ 미만` },
-    { id: 'lib', n: '공공도서관 거리', g: 'life', e: '📚', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'LIB_NEAREST_M') ? REF.LIB_M : null), get: livingVal('LIB_NEAREST_M'), op: 'le', label: t => `공공도서관 ${pm(t / 1000)}km 안` },
-    { id: 'libFar', n: '공공도서관 거리 밖', g: 'life', e: '📚', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'LIB_NEAREST_M') ? REF.LIB_M : null), get: livingVal('LIB_NEAREST_M'), op: 'gt', label: t => `공공도서관 ${pm(t / 1000)}km 밖` },
-    { id: 'hosp', n: '병의원(1만 명당)', g: 'life', e: '🏥', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'HOSP_PER10K') ? REF.HOSP_PER10K : null), get: livingVal('HOSP_PER10K'), op: 'ge', label: t => `병의원 1만 명당 ${pm(t)}곳 이상` },
-    { id: 'hospLow', n: '병의원(1만 명당) 미만', g: 'life', e: '🏥', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'HOSP_PER10K') ? REF.HOSP_PER10K : null), get: livingVal('HOSP_PER10K'), op: 'lt', label: t => `병의원 1만 명당 ${pm(t)}곳 미만` },
-    { id: 'bus', n: '버스정류장 밀도', g: 'life', e: '🚌', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'BUS_STOP_DENSITY') ? REF.BUS_PER_KM2 : null), get: livingVal('BUS_STOP_DENSITY'), op: 'ge', label: t => `버스정류장 ㎢당 ${pm(t)}개 이상` },
-    { id: 'busLow', n: '버스정류장 밀도 미만', g: 'life', e: '🚌', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'BUS_STOP_DENSITY') ? REF.BUS_PER_KM2 : null), get: livingVal('BUS_STOP_DENSITY'), op: 'lt', label: t => `버스정류장 ㎢당 ${pm(t)}개 미만` },
-    { id: 'foreDown', n: '인구 감소 전망', g: 'fore', e: '🔮', units: ['emd'], src: 'forecast', ref: true, th: c => (foreKey(c) && foreH(c) ? -REF.FORE_PCT : null), get: foreVal, op: 'le', label: (t, c) => `${foreH(c) ?? ''}년 인구 ${pm(Math.abs(t))}% 이상 감소 전망` },
-    { id: 'foreUp', n: '인구 증가 전망', g: 'fore', e: '📈', units: ['emd'], src: 'forecast', ref: true, th: c => (foreKey(c) && foreH(c) ? 0 : null), get: foreVal, op: 'gt', label: (t, c) => `${foreH(c) ?? ''}년 인구 증가 전망` },
+    { id: 'park', n: '1인당 공원 면적', g: 'life', e: 'tree', units: ['emd'], src: 'living', th: c => livStd(c, 'PARK_AREA_PER_CAPITA'), get: livingVal('PARK_AREA_PER_CAPITA'), op: 'ge', label: t => `1인당 공원 ${pm(t)}㎡ 이상` },
+    { id: 'parkLow', n: '1인당 공원 면적 미만', g: 'life', e: 'tree', units: ['emd'], src: 'living', th: c => livStd(c, 'PARK_AREA_PER_CAPITA'), get: livingVal('PARK_AREA_PER_CAPITA'), op: 'lt', label: t => `1인당 공원 ${pm(t)}㎡ 미만` },
+    { id: 'lib', n: '공공도서관 거리', g: 'life', e: 'book', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'LIB_NEAREST_M') ? REF.LIB_M : null), get: livingVal('LIB_NEAREST_M'), op: 'le', label: t => `공공도서관 ${pm(t / 1000)}km 안` },
+    { id: 'libFar', n: '공공도서관 거리 밖', g: 'life', e: 'book', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'LIB_NEAREST_M') ? REF.LIB_M : null), get: livingVal('LIB_NEAREST_M'), op: 'gt', label: t => `공공도서관 ${pm(t / 1000)}km 밖` },
+    { id: 'hosp', n: '병의원(1만 명당)', g: 'life', e: 'hosp', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'HOSP_PER10K') ? REF.HOSP_PER10K : null), get: livingVal('HOSP_PER10K'), op: 'ge', label: t => `병의원 1만 명당 ${pm(t)}곳 이상` },
+    { id: 'hospLow', n: '병의원(1만 명당) 미만', g: 'life', e: 'hosp', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'HOSP_PER10K') ? REF.HOSP_PER10K : null), get: livingVal('HOSP_PER10K'), op: 'lt', label: t => `병의원 1만 명당 ${pm(t)}곳 미만` },
+    { id: 'bus', n: '버스정류장 밀도', g: 'life', e: 'bus', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'BUS_STOP_DENSITY') ? REF.BUS_PER_KM2 : null), get: livingVal('BUS_STOP_DENSITY'), op: 'ge', label: t => `버스정류장 ㎢당 ${pm(t)}개 이상` },
+    { id: 'busLow', n: '버스정류장 밀도 미만', g: 'life', e: 'bus', units: ['emd'], src: 'living', ref: true, th: c => (livInd(c, 'BUS_STOP_DENSITY') ? REF.BUS_PER_KM2 : null), get: livingVal('BUS_STOP_DENSITY'), op: 'lt', label: t => `버스정류장 ㎢당 ${pm(t)}개 미만` },
+    { id: 'foreDown', n: '인구 감소 전망', g: 'fore', e: 'fore', units: ['emd'], src: 'forecast', ref: true, th: c => (foreKey(c) && foreH(c) ? -REF.FORE_PCT : null), get: foreVal, op: 'le', label: (t, c) => `${foreH(c) ?? ''}년 인구 ${pm(Math.abs(t))}% 이상 감소 전망` },
+    { id: 'foreUp', n: '인구 증가 전망', g: 'fore', e: 'fore', units: ['emd'], src: 'forecast', ref: true, th: c => (foreKey(c) && foreH(c) ? 0 : null), get: foreVal, op: 'gt', label: (t, c) => `${foreH(c) ?? ''}년 인구 증가 전망` },
   ];
   const condOf = id => CONDS.find(c => c.id === id) || null;
   const SRC_READY = {
@@ -141,7 +143,7 @@
       const list = CONDS.filter(c => c.g === g);
       return `<fieldset class="fd-grp"><legend>${esc(gl)}</legend><div class="fd-chips">${list.map(c => {
         const st = condState(c, ctx, unit), on = flat.includes(c.id), tags = (st.ok ? tagsOf(c, ctx) : [st.why]).concat(inOr(c.id) ? ['또는'] : []);
-        return `<button type="button" class="fd-chip${st.ok ? '' : ' is-off'}${on ? ' is-on' : ''}" data-fd-cond="${esc(c.id)}" aria-pressed="${on}"${st.ok || on ? '' : ' aria-disabled="true"'}><span class="fd-e" aria-hidden="true">${esc(c.e)}</span>${esc(chipLabel(c, ctx, st))}${tags.map(t => `<small>${esc(t)}</small>`).join('')}</button>`;
+        return `<button type="button" class="fd-chip${st.ok ? '' : ' is-off'}${on ? ' is-on' : ''}" data-fd-cond="${esc(c.id)}" aria-pressed="${on}"${st.ok || on ? '' : ' aria-disabled="true"'}><span class="fd-e" aria-hidden="true">${ico(c.e)}</span>${esc(chipLabel(c, ctx, st))}${tags.map(t => `<small>${esc(t)}</small>`).join('')}</button>`;
       }).join('')}</div>${g === 'estate' ? `<p class="fd-gnote">${esc(ESTATE_NOTE)} · 아파트 매매 신고 건수 최근 12개월 합을 직전 12개월과 비교(원장 값) · ${esc(M.ESTATE_PROV)}</p>` : g === 'fore' ? `<p class="fd-gnote">${esc(M.FORE_FIXED)}</p>` : ''}</fieldset>`;
     }).join('');
   }
@@ -163,9 +165,9 @@
   }
   function resultHTML(ev, areas, ctx, unit, by, page = 1) {
     const emo = ev.use.map(id => condOf(id).e).join(' ');
-    const skip = ev.skipped.length ? `<p class="fd-skip">이 범위에서 쓸 수 없어 빠진 조건 ${ev.skipped.length}개: ${esc(ev.skipped.map(id => condOf(id).e + ' ' + chipLabel(condOf(id), ctx, condState(condOf(id), ctx, unit))).join(', '))}</p>` : '';
+    const skip = ev.skipped.length ? `<p class="fd-skip">이 범위에서 쓸 수 없어 빠진 조건 ${ev.skipped.length}개: ${esc(ev.skipped.map(id => chipLabel(condOf(id), ctx, condState(condOf(id), ctx, unit))).join(', '))}</p>` : '';
     const head = `<p class="fd-note">${esc(NOTE)} · ${esc(UNIT[unit])} 단위${unit === 'sg' ? ' · 시·군·구 값은 그 안 읍·면·동 값의 중앙값' : ''}</p>`;
-    const groups = ev.groups || ev.use.map(id => [id]), lbl = id => condOf(id).e + ' ' + chipLabel(condOf(id), ctx, condState(condOf(id), ctx, unit));
+    const groups = ev.groups || ev.use.map(id => [id]), lbl = id => chipLabel(condOf(id), ctx, condState(condOf(id), ctx, unit));
     const conds = ev.use.length ? `<p class="fd-conds">쓰는 조건: ${groups.map(g => g.map(id => esc(lbl(id))).join(' <b>또는</b> ')).join(' <b>+</b> ')}</p>` : '';
     if (!ev.use.length) return head + skip + `<p class="fd-count is-idle"><b>–</b><small>조건 칩을 하나 이상 고르면 해당하는 곳을 모두 보여 줍니다. 여러 개를 고르면 모두 맞는 곳(AND)만 남습니다.</small></p>`;
     const list = sortAreas(ev.hits, by), p = paginate(list, page);
@@ -216,21 +218,21 @@
   const DECIDE = '결정은 담당자가 합니다';
   const GOV_NOTE = '업무를 고르면 조건이 켜지고 맞는 동과 근거서가 나옵니다. 점수·순위를 매기지 않습니다.';
   const PRESETS = [
-    { id: 'cctv', e: '🎥', n: 'CCTV·보안등 설치 검토', ask: 'CCTV·보안등 추가 설치 검토 자료를 요구받았을 때', give: '동별 설치 현황 사실(밀도·경찰관서까지 거리). 범죄·안전 수준이 아닙니다.', conds: [], note: '조건 없음 · 동을 고르면 안전 인프라 카드로', action: 'safe', law: '개인정보 보호법 제25조' },
-    { id: 'yearend', e: '💰', n: '연말 소규모 정비 검토', ask: '연말에 남은 예산, 근거 있는 소규모 정비 사업을 찾을 때', give: '노후·쇠퇴·생활 기준에 해당하는 동 목록과 첨부용 근거서', conds: ['aging', 'met', ['parkLow', 'libFar']], law: '지방재정법 제37조(투자심사)·제50조(이월)' },
-    { id: 'depop', e: '🏳', n: '지방소멸대응기금 현황표', ask: '지방소멸대응기금 투자계획서에 현황표가 필요할 때', give: '인구감소·고령·청년 변화 표', conds: [['depop', 'concern'], 'pop30'], condsEmd: ['aged'], law: '지방소멸대응기금(행안부), 인구감소지역 지원 특별법' },
-    { id: 'housing', e: '🏚', n: '노후주거지 후보 추리기', ask: '노후주거지 정비·도시재생 공모 전에 후보 동을 추릴 때', give: '쇠퇴 요건과 노후 건축물 기준을 함께 충족하는 동 목록', conds: ['aging', 'met', 'pop30', 'biz10'], law: '노후주거지정비 지원사업(국토부), 도시재생 활성화 및 지원에 관한 특별법' },
-    { id: 'soc', e: '🌳', n: '공원·도서관 민원 회신', ask: "'우리 동네는 왜 공원·도서관이 없나' 민원에 회신할 때", give: '기준 대비 현황과 출처', conds: [['parkLow', 'libFar', 'hospLow']], law: '도시공원 및 녹지 등에 관한 법률 시행규칙 제4조, 생활SOC 최저기준' },
-    { id: 'brief', e: '📄', n: '의회·감사 근거서', ask: "의회·감사에서 '근거가 뭐냐'고 물을 때", give: '출처·기준일·계산식이 붙은 근거서', conds: [], note: '조건 없음 · 동을 고르면 사업 근거서로', action: 'brief', law: '지방자치법 제49조·제142조·제150조' },
+    { id: 'cctv', e: 'cctv', n: 'CCTV·보안등 설치 검토', ask: 'CCTV·보안등 추가 설치 검토 자료를 요구받았을 때', give: '동별 설치 현황 사실(밀도·경찰관서까지 거리). 범죄·안전 수준이 아닙니다.', conds: [], note: '조건 없음 · 동을 고르면 안전 인프라 카드로', action: 'safe', law: '개인정보 보호법 제25조' },
+    { id: 'yearend', e: 'bldg', n: '연말 소규모 정비 검토', ask: '연말에 남은 예산, 근거 있는 소규모 정비 사업을 찾을 때', give: '노후·쇠퇴·생활 기준에 해당하는 동 목록과 첨부용 근거서', conds: ['aging', 'met', ['parkLow', 'libFar']], law: '지방재정법 제37조(투자심사)·제50조(이월)' },
+    { id: 'depop', e: 'flag', n: '지방소멸대응기금 현황표', ask: '지방소멸대응기금 투자계획서에 현황표가 필요할 때', give: '인구감소·고령·청년 변화 표', conds: [['depop', 'concern'], 'pop30'], condsEmd: ['aged'], law: '지방소멸대응기금(행안부), 인구감소지역 지원 특별법' },
+    { id: 'housing', e: 'bldg', n: '노후주거지 후보 추리기', ask: '노후주거지 정비·도시재생 공모 전에 후보 동을 추릴 때', give: '쇠퇴 요건과 노후 건축물 기준을 함께 충족하는 동 목록', conds: ['aging', 'met', 'pop30', 'biz10'], law: '노후주거지정비 지원사업(국토부), 도시재생 활성화 및 지원에 관한 특별법' },
+    { id: 'soc', e: 'tree', n: '공원·도서관 민원 회신', ask: "'우리 동네는 왜 공원·도서관이 없나' 민원에 회신할 때", give: '기준 대비 현황과 출처', conds: [['parkLow', 'libFar', 'hospLow']], law: '도시공원 및 녹지 등에 관한 법률 시행규칙 제4조, 생활SOC 최저기준' },
+    { id: 'brief', e: 'book', n: '의회·감사 근거서', ask: "의회·감사에서 '근거가 뭐냐'고 물을 때", give: '출처·기준일·계산식이 붙은 근거서', conds: [], note: '조건 없음 · 동을 고르면 사업 근거서로', action: 'brief', law: '지방자치법 제49조·제142조·제150조' },
   ];
   const presetOf = id => PRESETS.find(p => p.id === id) || null;
   // 프리셋의 조건 목록: 읍·면·동 범위(unit emd)면 condsEmd를 덧붙인다. 묶음(배열)은 복사한다
   const presetConds = (p, unit) => p.conds.map(g => (Array.isArray(g) ? [...g] : g)).concat(unit === 'emd' ? p.condsEmd || [] : []);
   function govHTML(ctx, scopeName) {
-    const unit = scopeName ? 'emd' : 'sg', lbl = id => { const c = condOf(id); return c.e + ' ' + (ctx && ctx.index ? chipLabel(c, ctx, condState(c, ctx, unit)) : c.n); };
+    const unit = scopeName ? 'emd' : 'sg', lbl = id => { const c = condOf(id); return ctx && ctx.index ? chipLabel(c, ctx, condState(c, ctx, unit)) : c.n; };
     const condText = p => p.note || presetConds(p, unit).map(g => (Array.isArray(g) ? g.map(lbl).join(' 또는 ') : lbl(g))).join(' + ') + (unit !== 'emd' && p.condsEmd ? ` (+ 읍·면·동 범위에서 ${p.condsEmd.map(lbl).join(', ')})` : '');
     return `<p class="gov-note">${esc(GOV_NOTE)}<br>범위: ${scopeName ? `<b>${esc(scopeName)}</b> 안 읍·면·동` : '<b>시·도와 시·군·구를 먼저 고르세요</b>'}</p>` +
-      `<ul class="gov-cards">${PRESETS.map(p => `<li><button type="button" class="gov-card" data-gov-preset="${esc(p.id)}" aria-label="${esc(p.n)}"><span class="gov-e" aria-hidden="true">${p.e}</span><span class="gov-n">${esc(p.n)}</span><b>${esc(p.ask)}</b><span class="gov-why">→ ${esc(p.give)}</span><span class="gov-d">${esc(DECIDE)}</span></button><details class="gov-more"><summary>조건·근거 법령</summary><span class="gov-c">${esc(condText(p))}</span><span class="gov-law">${esc(p.law)}</span></details></li>`).join('')}</ul>`;
+      `<ul class="gov-cards">${PRESETS.map(p => `<li><button type="button" class="gov-card" data-gov-preset="${esc(p.id)}" aria-label="${esc(p.n)}"><span class="gov-e" aria-hidden="true">${ico(p.e)}</span><span class="gov-n">${esc(p.n)}</span><b>${esc(p.ask)}</b><span class="gov-why">→ ${esc(p.give)}</span><span class="gov-d">${esc(DECIDE)}</span></button><details class="gov-more"><summary>조건·근거 법령</summary><span class="gov-c">${esc(condText(p))}</span><span class="gov-law">${esc(p.law)}</span></details></li>`).join('')}</ul>`;
   }
   const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
   if (node) module.exports = api;
