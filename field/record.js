@@ -281,6 +281,35 @@
     return tilesH + `<div class="v4-charts">${donut}${cols}</div>${bars}`;
   }
 
-  const api = { stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
+  // ── 학습 고리 1단계(docs/research/learning_loop_audit_2026-10-28.md): 1쪽 결과 기록. 닫힌 목록만, 자유 서술 없음 ──
+  // 결재 결과 5단계(ODK Central 상태와 같은 뜻). 값은 내보내기·서버 검사(learning/outcomes.py)와 같다
+  const OUTCOME_STATUS = [["received", "접수"], ["hasIssues", "문제 있음"], ["edited", "고쳐서 씀"], ["approved", "채택"], ["rejected", "반려"]];
+  const REASON_CODES = [["기준값_다름", "기준값이 다름"], ["대상_누락", "빠진 대상이 있음"], ["출처_불충분", "출처가 부족함"], ["서식", "서식이 안 맞음"], ["판단_범위_밖", "리뉴맵이 다룰 일이 아님"], ["기타", "기타"]];
+  const NEEDS_REASON = ["hasIssues", "edited", "rejected"];
+  const docKind = (name) => (/사진대지/.test(name || "") ? "photo_sheet" : /해명서/.test(name || "") ? "explainer" : /입안요건/.test(name || "") ? "redev_review" : "field_evidence");
+  // 보관함 문서 하나의 결과(문서에 붙여 기기에만 저장). 모르는 값은 버린다
+  function setOutcome(doc, status, reasons, consent, now) {
+    const st = OUTCOME_STATUS.some(([k]) => k === status) ? status : null;
+    const rs = NEEDS_REASON.includes(st) ? [...new Set((reasons || []).filter((r) => REASON_CODES.some(([k]) => k === r)))] : [];
+    return { ...doc, outcome: st ? { status: st, reasons: rs, consent: consent === true, updated_at: now.toISOString() } : null };
+  }
+  // 내보내기 한 줄(doc_outcome). 문서 본문·좌표·기록 ID·기기 ID는 넣지 않는다. 시·군·구(5자리)와 시 단위 시각까지만
+  function outcomeRecord(doc, rec) {
+    const o = doc && doc.outcome;
+    if (!o || !o.consent || !o.status) return null;
+    return { doc_id: String(doc.id), kind: docKind(doc.name), status: o.status, reason_codes: o.reasons || [],
+      rule_versions: [...new Set(((rec && rec.indicators) || []).map((i) => i.rule_version).filter(Boolean))].sort(),
+      template_version: doc.template_version || null, variant_id: "default", pscore: 1,
+      sgg_code: rec && rec.dong && /^\d{8}$/.test(rec.dong.code) ? rec.dong.code.slice(0, 5) : null,
+      made_hour: String(doc.created_at || "").slice(0, 13) || null, consent_learning: true };
+  }
+  // 동의한 결과만 JSONL로. 반환 {text, n}
+  function outcomesJSONL(docs, recs) {
+    const byId = new Map((recs || []).map((r) => [r.id, r]));
+    const lines = (docs || []).map((d) => outcomeRecord(d, byId.get(d.record_id))).filter(Boolean).map((x) => JSON.stringify(x));
+    return { text: lines.length ? lines.join("\n") + "\n" : "", n: lines.length };
+  }
+
+  const api = { OUTCOME_STATUS, REASON_CODES, NEEDS_REASON, docKind, setOutcome, outcomeRecord, outcomesJSONL, stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.FieldRecord = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

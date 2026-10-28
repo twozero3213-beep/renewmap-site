@@ -1,5 +1,5 @@
 // 앱 셸을 캐시해 오프라인에서 연다. 기록은 IndexedDB에만 있고 네트워크로 나가지 않는다.
-const CACHE = "renewmap-field-v18";
+const CACHE = "renewmap-field-v19";
 const SHELL = ["./", "index.html", "field.css", "record.js", "store.js", "evidence.js", "app.js", "manifest.webmanifest", "../pretendard.css", "../styles.css", "../v4.css", "../site.js", "../docgen.js",
   "../data/report_templates.json", "upload.js", "upload-config.js", "detect.js", "redev.html", "redev.js", "redev-app.js", "../favicon.svg", "../icon-192.png"];
 // 설치 때는 브라우저 HTTP 캐시(Pages max-age=600)를 건너뛴다. 안 그러면 갱신 직전에 열어 둔 옛 파일이 새 캐시에 들어간다

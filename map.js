@@ -133,7 +133,7 @@
     const list = li.indicators.filter(x => x && x.code && x.label && !/_DELTA5Y$/.test(x.code) && x.hidden_until_decision !== true).map(x => {
       const code = String(x.code), group = groupKey(x.group), c = cov[code], ref = ascending(x.ref_edges) ? x.ref_edges : REF_EDGES[code];
       const base = { code, group, label: String(x.label), unit: x.unit || '', icon: iconFor(x.label), living: true, title: String(x.label), empty: !!c && c.dongs_with_value === 0,
-        delta: li.indicators.some(y => y && y.code === code + '_DELTA5Y'), worseUp: true };
+        delta: li.indicators.some(y => y && y.code === code + '_DELTA5Y'), worseUp: true, ...(x.source ? { source: String(x.source) } : {}) }; // 범례 출처는 이 지표의 출처
       if (group === 'sum') return { ...base, icon: 'sum', composite: true, edges: [1, 2, 3, 4], colors: SUMC, labels: ['0개', '1개', '2개', '3개', '4개 이상'], standard: null,
         title: `${x.label} · 원장 값 · 가중치·순위 없음 · 판정 아님` };
       if (validStd(x.standard)) return { ...base, ...stdScale(x.standard), worseUp: x.standard.direction === 'above_bad', standard: { ...x.standard, status: x.standard.status || '' } };
@@ -1134,7 +1134,7 @@
       // 네이버 배경: Leaflet(경계·누르기·확대) 아래에 움직이지 않는 네이버 지도를 깔고 같은 중심·확대로 맞춘다. 네이버는 정수 확대라 Leaflet도 정수로
       const nv = state.naver ? document.createElement('div') : null;
       if (nv) { nv.className = 'map-naver'; nv.setAttribute('aria-hidden', 'true'); el.appendChild(nv); el.classList.add('has-naver'); }
-      const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, zoomSnap: nv ? 1 : 0.25, attributionControl: false });
+      const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false }); // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
       L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
       if (nv) {
         const N = window.naver.maps, nmap = new N.Map(nv, { center: new N.LatLng(36.3, 127.8), zoom: 7, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
@@ -1165,7 +1165,7 @@
     // 앞으로 올리기(bringToFront)는 DOM에서 path를 다시 붙인다. 누르는 도중에 하면 click이 사라지므로 칸 구성이 바뀔 때만 한다
     const order = [...active].join() + '|' + v.emdCode + '|' + v.dong, reorder = M.order !== order; M.order = order;
     M.sg.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.sgItems.get(code), on = active.has(code);
-      l.setStyle(on ? { fillColor: it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: 0.82, color: '#fff', weight: 0.8, dashArray: it.value === null ? '4 3' : null }
+      l.setStyle(on ? { fillColor: it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: 0.7, color: '#fff', weight: 0.8, dashArray: it.value === null ? '4 3' : null }
         : { fillColor: '#c9d3cf', fillOpacity: inEmd ? 0.08 : 0.15, color: '#fff', weight: 0.5, dashArray: null });
       if (on && reorder) l.bringToFront(); });
     if (M.sido && reorder) M.sido.bringToFront();
@@ -1181,7 +1181,7 @@
       }
       M.emdItems = new Map(m.items.map(it => [it.code, it]));
       M.emd.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.emdItems.get(code), sel = code === v.dong;
-        l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: 0.85, color: sel ? '#153c39' : '#fff', weight: sel ? 3.5 : 1.5, dashArray: !it || it.value === null ? '4 3' : null });
+        l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: sel ? 0.25 : 0.6, color: sel ? '#153c39' : '#fff', weight: sel ? 4 : 1.5, dashArray: !it || it.value === null ? '4 3' : null });
         if (sel && reorder) l.bringToFront(); });
     } else if (M.emd && !inEmd) { M.emd.remove(); M.emd = null; M.emdCode = null; }
     // 단계가 바뀔 때만 화면을 옮긴다(연도 재생·지표 자동 전환 중에는 움직이지 않는다)
@@ -1193,7 +1193,7 @@
       else { const fg = L.featureGroup(); M.sg.eachLayer(l => { if (active.has(String((l.feature.properties || {}).code))) fg.addLayer(l); }); b = fg.getLayers().length ? fg.getBounds() : M.sg.getBounds(); }
       const right = inEmd && wide.matches && !panel.hidden && getComputedStyle(panel).position !== 'static' ? panel.offsetWidth + 28 : 12; // 지도 위에 겹친 패널일 때만 비운다
       const opt = { paddingTopLeft: [12, 12], paddingBottomRight: [right, 12], maxZoom: 14 };
-      if (b && b.isValid()) { if (reduced || !M.ready) M.map.fitBounds(b, opt); else M.map.flyToBounds(b, { ...opt, duration: 0.9 }); M.ready = true; } // 첫 맞춤은 시점이 없어 flyTo를 못 쓴다
+      if (b && b.isValid()) { if (reduced || !M.ready || state.naver) M.map.fitBounds(b, opt); else M.map.flyToBounds(b, { ...opt, duration: 0.9 }); M.ready = true; } // 첫 맞춤은 시점이 없어 flyTo를 못 쓴다
     }
   }
   function go(route, focusSel) {

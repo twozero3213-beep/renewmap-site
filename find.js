@@ -315,7 +315,9 @@
     // 작업공간 규칙: 화면을 강제로 스크롤하지 않는다(모바일 탭 전환이 표시를 바꾼다). 초점만 옮긴다
     (st.scope.sg ? root.querySelector('[data-fd-sort="code"]') : f)?.focus({ preventScroll: true });
   }
-  if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) applyPreset(b.dataset.govPreset); });
+  const openMore = () => document.getElementById('findMore')?.setAttribute('open', ''); // 업무를 고르거나 #find로 오면 접힌 조건 칸을 연다
+  if (/^#find/.test(location.hash)) openMore();
+  if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) { openMore(); applyPreset(b.dataset.govPreset); } });
   addEventListener('hashchange', trackHash);
   // 지금 화면의 조건·범위 그대로 XLSX를 만든다(이 브라우저 안에서만)
   function exportXlsx() {

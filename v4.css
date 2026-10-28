@@ -167,3 +167,29 @@ body.field .card { border-radius: 14px; }
 .map-canvas .map-naver { position: absolute !important; top: 0; left: 0; width: 100% !important; height: 100% !important; z-index: 0; pointer-events: none; } /* 네이버가 컨테이너 style을 다시 써서 inset이 풀린다 */
 #map .map-canvas.has-naver.leaflet-container { background: transparent; }
 .map-canvas.has-naver .leaflet-control-container { position: relative; z-index: 2; }
+
+/* v5.1 더 단순하게: 조건 칸은 접어 두고(업무를 고르면 열림), 준비 중 단추는 감추고, 연도 줄은 한 줄로 */
+.find-more { border-top: 1px solid var(--line); padding-top: 12px; }
+.find-more > summary { cursor: pointer; list-style: none; }
+.find-more > summary::-webkit-details-marker { display: none; }
+.find-more > summary h2::after { content: " ▾"; font-size: 14px; color: var(--dim); }
+.find-more[open] > summary h2::after { content: " ▴"; }
+.find-more:not([open]) > summary > p { display: none; }
+.map-inds .dash-chip.is-planned { display: none; } /* 고를 수 없는 '수집 중·보류' 단추는 보이지 않게(원장·데이터 출처 페이지에 그대로 있다) */
+@media (min-width: 1100px) {
+  .explore-page .map-ctl { margin-bottom: 6px; }
+  .explore-page .map-ctl .map-year label { font-size: 13px; }
+  .explore-page .map-groups button { font-size: 14px; padding: 6px 8px 7px; }
+}
+
+/* 보관함 결재 결과(학습 고리 1단계) */
+.box-list .outcome { display: grid; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.box-list .outcome select { min-height: 44px; padding: 8px 10px; border: 1px solid var(--ref); border-radius: 10px; font: inherit; background: var(--card); color: var(--ink); }
+.box-list .outcome fieldset { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; }
+.box-list .outcome fieldset[hidden], .box-list .outcome .consent[hidden] { display: none; }
+.box-list .outcome legend { font-size: 13px; font-weight: 700; color: var(--dim); padding: 0 4px; }
+.box-list .outcome label { display: inline-flex; align-items: center; gap: 6px; }
+.box-list .outcome .consent { font-size: 13px; color: var(--dim); }
+.outcome-sum { margin: 8px 0 20px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.outcome-sum h2 { margin: 0 0 4px; }
+.outcome-sum button { min-height: 44px; padding: 0 16px; font: inherit; font-weight: 600; border-radius: 10px; border: 1px solid var(--green); background: transparent; color: var(--green); cursor: pointer; }
