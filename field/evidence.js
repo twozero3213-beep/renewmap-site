@@ -258,28 +258,38 @@
     DECLINE_AGING_20Y_PCT: { line: 50, above: true, text: "준공 20년 이상 건축물 비율 50% 이상", law: "도시재생 활성화 및 지원에 관한 특별법 시행령 제17조", rule: "decline-3req-v0.1" },
     PARK_AREA_PER_CAPITA: { line: 6, above: false, text: "도시공원 확보기준 주민 1인당 6㎡ 이상(법은 도시지역 단위라 행정동 적용은 참고 비교)", law: "도시공원 및 녹지 등에 관한 법률 시행규칙 제4조", rule: "LIVING-STD-2026.10" },
   };
-  // 법정 기준이 아닌 비율 지표에만 쓰는 참고선. 어느 지표에 몇 %를 쓸지는 사람 결정 전 초안(absorb_six_proposals §4-1)
-  const REF_LINES = [15, 20, 25];
-  const REF_CODES = ["POP_AGED65_PCT", "POP_YOUTH_PCT"];
+  // 법정 기준이 아닌 비율 지표의 참고선(2026-10-28 대표 결정: 지표별로 다르게, D20).
+  // 고령: 국가 단위 고령화 단계 수치. 청년: 공식 기준선이 없어 같은 자료의 전국·시도·시군구 값(ref_lines.json, export_ref_lines.py)
+  const REF_FIXED = { POP_AGED65_PCT: { lines: [7, 14, 20], note: "국가 단위 고령화 단계 수치(고령화·고령·초고령사회), 행안부 보도자료 2024-12-24 인용, UN 원문 미확인" } };
+  const REF_SAME_DATA = ["POP_YOUTH_PCT"];
+  const above = (v, x) => (v >= x ? "이상" : "미만");
   // 가림(SGIS 인구부문: 5 미만 N/A). 출처가 N/A로 준 값은 pickIndicators에서 이미 빠진다. 원래 값은 기록하지 않는다
   const maskRule = (r) => (r.unit === "명" && Number.isFinite(r.num) && r.num < 5 ? "SGIS-5" : null);
   const side = (v, line) => (v >= line ? `기준선 ${line} 이상` : `기준선 ${line} 미만`);
-  function basisText(r) {
-    const L = LEGAL[r.code];
-    if (L) return `법정: ${L.text} · ${L.law} · 판본 ${L.rule}(승인 대기 초안)${Number.isFinite(r.num) ? ` · 이 값은 ${side(r.num, L.line)}` : ""}`;
-    if (REF_CODES.includes(r.code) && Number.isFinite(r.num)) return `참고선(법정 기준 아님): ${REF_LINES.map((x) => `${x}% ${r.num >= x ? "이상" : "미만"}`).join(" · ")}`;
+  // refs: ref_lines.json(없으면 null). code: 행정동 8자리(앞 2자리 시도, 앞 5자리 시군구)
+  function basisText(r, refs, code) {
+    const L = LEGAL[r.code], F = REF_FIXED[r.code], v = r.num;
+    if (L) return `법정: ${L.text} · ${L.law} · 판본 ${L.rule}(승인 대기 초안)${Number.isFinite(v) ? ` · 이 값은 ${side(v, L.line)}` : ""}`;
+    if (F && Number.isFinite(v)) return `참고선(법정 기준 아님): ${F.lines.map((x) => `${x}% ${above(v, x)}`).join(" · ")} · ${F.note}`;
+    if (REF_SAME_DATA.includes(r.code) && Number.isFinite(v)) {
+      const R = refs && refs.indicators && refs.indicators[r.code], c = String(code || "");
+      if (!R || R.reference_date !== r.reference_date) return "같은 자료 비교값 없음(기준일이 다르거나 비교 자료를 받지 못함)";
+      const parts = [["전국", R.national], [refs.names.sido[c.slice(0, 2)], R.sido[c.slice(0, 2)]], [refs.names.sigungu[c.slice(0, 5)], R.sigungu[c.slice(0, 5)]]]
+        .filter(([n, x]) => n && Number.isFinite(x)).map(([n, x]) => `${n} ${x}% ${above(v, x)}`);
+      return `같은 자료 비교값(기준선·순위 아님, 인구 가중, ${D.govDate(R.reference_date)}): ${parts.join(" · ")}`;
+    }
     return "기준선 없음(사실 값)";
   }
 
-  // rec: makeRecord 결과. now: 작성 시각. 반환: hwpxBytes·docHTML이 받는 doc + masking_log(원래 값 없음)
-  function buildExplainer(rec, now) {
+  // rec: makeRecord 결과. now: 작성 시각. refs: ref_lines.json(없으면 null). 반환: hwpxBytes·docHTML이 받는 doc + masking_log(원래 값 없음)
+  function buildExplainer(rec, now, refs) {
     const d = rec.dong, title = `${d ? d.name : "현장"} 숫자 해명서(부록)`, src = new D.Sources(), at = now.toISOString(), log = [];
     const rows = (rec.indicators || []).map((r) => {
       const rule = maskRule(r);
       if (rule) log.push({ cell_id: r.cell_id || `${d ? d.code : ""}:${r.code}`, indicator: r.label, area_code: d ? d.code : "", rule, reference_date: r.reference_date, created_at: at });
       const unit = [r.spatial_unit || (d ? "행정동" : ""), r.rule_version ? `값 판본 ${r.rule_version}` : ""].filter(Boolean).join(" · ");
       return [r.label, `${rule ? "N/A(통계비밀보호, 5 미만)" : r.value}${unit ? ` · ${unit}` : ""}`, `${srcKind(r.src.source_name)}${src.ref(r.src)} · ${lic(r.src.license_type)}`,
-        `${D.govDate(r.reference_date)} 기준 / ${D.govDate(String(r.src.retrieved_at || "").slice(0, 10))} 조회`, rule ? "가림" : basisText(r)].map(D.clean);
+        `${D.govDate(r.reference_date)} 기준 / ${D.govDate(String(r.src.retrieved_at || "").slice(0, 10))} 조회`, rule ? "가림" : basisText(r, refs, d && d.code)].map(D.clean);
     });
     const blocks = [block("title", title),
       block("para", "이 부록은 숫자의 출처와 기준을 설명합니다. 지정·예산·순위 결정이 아닙니다. 기준값을 바꾼 결과는 참고이며 어느 기준이 맞다고 판단하지 않습니다.", { small: true }),

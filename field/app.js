@@ -563,7 +563,8 @@
   async function explainer(rec) {
     try {
       await templates;
-      const doc = E.buildExplainer(rec, new Date()), bytes = D.hwpxBytes(doc), name = `${E.fileName(rec)}_해명서부록.hwpx`;
+      const refs = await fetch("../data/national/ref_lines.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      const doc = E.buildExplainer(rec, new Date(), refs), bytes = D.hwpxBytes(doc), name = `${E.fileName(rec)}_해명서부록.hwpx`;
       D.saveBytes(name, bytes, "application/hwp+zip");
       await S.addDoc({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), name, kind: "hwpx", created_at: new Date().toISOString(), record_id: rec.id, blob: new Blob([bytes], { type: "application/hwp+zip" }) });
       toast(`${name} 파일을 받았습니다.
