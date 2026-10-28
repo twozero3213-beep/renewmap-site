@@ -529,6 +529,7 @@
     const label = `${ind.label} ${row.value === null ? '자료 없음' : fmt(row.value, ind.unit)}${band ? `, 80% 구간 ${fmt(row.lo, ind.unit)}~${fmt(row.hi, ind.unit)}` : ''}${sv === null ? ', 공식 기준 없음' : `, 기준 ${pm(sv)}${ind.unit}`}`;
     return `<svg class="sr-bar${row.value === null ? ' is-empty' : ''}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(label)}"><rect class="sr-track" x="0" y="4" width="${W}" height="10" rx="3"/>${band}${fill}${tick}</svg>`;
   }
+  const stLabel = st => (st === '기준 넘음' ? '기준 미달' : st); // 화면 낱말은 '기준 미달 항목 수'와 같게. 원장 상태 값은 그대로
   const ROW_CLASS = { '기준 넘음': 'over', '기준 안': 'in', '자료 없음': 'none', '기준 승인 대기': 'wait', '공식 기준 없음': 'nostd', '수집 중': 'soon', '추세 전망': 'fore', '행정 지정': 'desig', '미지정': 'in', '보류': 'none' };
   // 고정 문구(docs/legal/ai_ethics.md 1부 · 총괄 지시 2026-10-24). 화면마다 상시 표시
   const FORE_FIXED = '과거 추세를 이어 본 계산입니다. 판정이나 투자·거래 조언이 아니며, 정책·경기 변화로 달라질 수 있습니다. 표시된 범위는 불확실성 구간입니다.';
@@ -551,7 +552,7 @@
   const dotOf = r => (r.ind.pending ? 'p' : r.status === '기준 넘음' || r.status === '행정 지정' ? 'r' : r.status === '기준 안' || r.status === '미지정' ? 'g' : r.status === '기준 승인 대기' ? 'y' : r.value === null ? 'w' : 'b');
   function glanceHTML(rows) {
     const list = rows.filter(r => !r.ind.composite && r.ind.group !== 'sum' && r.ind.group !== 'fore'), n = k => list.filter(r => dotOf(r) === k).length; // 수집 중(p)은 점만 찍고 도넛 개수에는 넣지 않는다
-    const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<span class="gl-grp"><span class="gl-k">${esc(gl)}</span>${list.filter(r => r.ind.group === g).map(r => `<i class="gl-${dotOf(r)}" title="${esc(r.ind.label)} · ${esc(r.status)}"></i>`).join('')}</span>`).join('');
+    const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<span class="gl-grp"><span class="gl-k">${esc(gl)}</span>${list.filter(r => r.ind.group === g).map(r => `<i class="gl-${dotOf(r)}" title="${esc(r.ind.label)} · ${esc(stLabel(r.status))}"></i>`).join('')}</span>`).join('');
     const counts = Object.fromEntries(DONUT.map(([k]) => [k, n(k)]));
     return `<div class="sr-glance" role="img" aria-label="한눈 요약. 기준 미달 또는 행정 지정 ${n('r')}개, 기준 안 ${n('g')}개, 기준 승인 대기 ${n('y')}개, 공식 기준 없음 ${n('b')}개, 자료 없음 ${n('w')}개. 항목마다 점 하나이며 순위·점수가 아닙니다.">` +
       `<div class="gl-top">${donutSVG(counts)}<ul class="gl-n">${DONUT.map(([k, l]) => `<li><b class="gl-sw sw-${k}" aria-hidden="true"></b>${l} <b>${counts[k]}</b></li>`).join('')}</ul></div><p class="gl-dots">${groups}</p><p class="gl-note">묶음별 점 하나가 항목 하나 · 순위·점수 아님</p></div>`;
@@ -573,7 +574,7 @@
     const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<li class="sr-group"><details${g === curG ? ' open' : ''}><summary><h4>${esc(gl)}</h4><span class="sr-gsum">${gsum(g)}</span></summary>${g === 'safe' ? `<p class="sr-group-note">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="sr-group-note">${esc(FORE_FIXED)}</p>` : ''}<ul>${list.filter(r => r.ind.group === g).map(r => {
       const ind = r.ind, tt = trendText(r.delta, ind), cls = ROW_CLASS[r.status];
       const rowsD = r.cell ? detail(r.cell) : [];
-      return `<li class="sr is-${cls}${ind.code === o.cur ? ' is-cur' : ''}"><div class="sr-h">${icon(ind.icon)}<span class="sr-l">${esc(ind.label)}${r.sgLevel ? ' <small>시·군·구</small>' : ''}</span><b class="sr-v">${esc(rowText(r))}</b><span class="sr-st st-${cls}">${esc(r.status)}</span></div>` +
+      return `<li class="sr is-${cls}${ind.code === o.cur ? ' is-cur' : ''}"><div class="sr-h">${icon(ind.icon)}<span class="sr-l">${esc(ind.label)}${r.sgLevel ? ' <small>시·군·구</small>' : ''}</span><b class="sr-v">${esc(rowText(r))}</b><span class="sr-st st-${cls}">${esc(stLabel(r.status))}</span></div>` +
         (ind.categorical ? '' : `<div class="sr-m">${barSVG(r)}${tt ? `<em class="map-trend ${tt.cls}">${tt.arrow} 5년 ${esc(fmt(r.delta, ind.dEdges ? '' : '%p'))} ${esc(tt.word)}</em>` : ''}</div>`) +
         (r.series && r.series.some(p => p[1] !== null) ? trendSVG(r.series, r.year, ind.label, validStd(ind.standard) ? ind.standard.value : null, ind.unit) : '') +
         `<details class="map-detail sr-why"><summary>ⓘ 기준·출처${r.year ? ` (${esc(r.year)}년)` : ''}</summary><p class="sr-std">${esc(stdTextOf(r))}</p>${rowsD.length ? dl(r.cell) : ''}</details></li>`;
@@ -669,7 +670,7 @@
     const sec1 = `<section class="rp-g"><h3>1. 현황</h3>${GROUPS.filter(([g]) => facts.some(r => r.ind.group === g)).map(([g, gl]) => `<h4 class="map-h4">${esc(gl)}</h4>${g === 'safe' ? `<p class="rp-fixed">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="rp-fixed">${esc(FORE_FIXED)}</p>` : ''}` +
       `<div class="dg-tbl">${copyHead(gl.replace(/^\S+\s+/, ''))}<div class="table-wrap"><table class="rp-tbl rp-facts"><thead><tr><th>항목</th><th>값</th><th>기준연도</th><th>출처</th></tr></thead><tbody>${facts.filter(r => r.ind.group === g).map(fact).join('')}</tbody></table></div></div>`).join('')}</section>`;
     const std = facts.filter(r => validStd(r.ind.standard));
-    const sec2 = `<section class="rp-g"><h3>2. 기준 대비</h3>${std.length ? `<div class="dg-tbl">${copyHead('기준 대비')}<div class="table-wrap"><table class="rp-tbl"><thead><tr><th>항목</th><th>값</th><th>기준</th><th>상태</th></tr></thead><tbody>${std.map(r => `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${esc(r.ind.standard.text)}${r.ind.standard.source ? ` · ${esc(r.ind.standard.source)}` : ''}</td><td>${esc(r.status)}</td></tr>`).join('')}</tbody></table></div></div>` : '<p class="map-note">기준이 있는 항목의 값이 없습니다.</p>'}` +
+    const sec2 = `<section class="rp-g"><h3>2. 기준 대비</h3>${std.length ? `<div class="dg-tbl">${copyHead('기준 대비')}<div class="table-wrap"><table class="rp-tbl"><thead><tr><th>항목</th><th>값</th><th>기준</th><th>상태</th></tr></thead><tbody>${std.map(r => `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${esc(r.ind.standard.text)}${r.ind.standard.source ? ` · ${esc(r.ind.standard.source)}` : ''}</td><td>${esc(stLabel(r.status))}</td></tr>`).join('')}</tbody></table></div></div>` : '<p class="map-note">기준이 있는 항목의 값이 없습니다.</p>'}` +
       `<p class="map-note">상태는 기준선과의 사실 비교입니다. 승인 대기 기준은 확정 수에 넣지 않습니다.</p></section>`;
     const sec3 = `<section class="rp-g"><h3>3. 기준 미달·확인 필요 목록</h3>${gapsHTML(rows, { open: true })}</section>`;
     const sec4 = `<section class="rp-g"><h3>4. 출처·계산식 표</h3><div class="dg-tbl">${copyHead('출처·계산식')}<div class="table-wrap"><table class="rp-tbl"><thead><tr><th>항목</th><th>값</th><th>출처</th><th>기준일</th><th>계산식</th><th>규칙 버전</th></tr></thead><tbody>${facts.map(r => { const s = srcOf(r);
@@ -848,7 +849,11 @@
   function reportHTML(v, it, rows) {
     const D = window.RenewDashboard, sents = reportSentences(it.name, rows), here = v.crumbs.map(c => c.label).join(' › ');
     const byG = GROUPS.filter(([g]) => sents.some(s => s.group === g)).map(([g, gl]) => `<section class="rp-g"><h3>${esc(gl)}</h3>${g === 'safe' ? `<p class="rp-fixed">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="rp-fixed">${esc(FORE_FIXED)}</p>` : ''}` +
-      sents.filter(s => s.group === g).map(s => { const r = rows.find(x => x.ind.code === s.code); return `<div class="rp-item"><p>${esc(s.text)}</p>${r && !r.ind.categorical ? barSVG(r) : ''}${r && r.series && r.series.some(p => p[1] !== null) ? sparkline(r.series, r.year, r.ind.label) : ''}</div>`; }).join('') + `</section>`).join('');
+      // 항목 카드: 이름·상태 → 큰 값 → 기준 막대·추세 → 원장 문장(접힘, 인쇄 때는 펼침). 숫자가 문장 속에 묻히지 않게
+      `<div class="rp-cards">${sents.filter(s => s.group === g).map(s => { const r = rows.find(x => x.ind.code === s.code), cls = r ? ROW_CLASS[r.status] : 'none';
+        return `<div class="rp-item rp-card is-${cls}"><div class="rc-h"><span class="rc-l">${esc(s.label)}</span>${r ? `<span class="sr-st st-${cls}">${esc(stLabel(r.status))}</span>` : ''}</div>` +
+          `<p class="rc-v">${esc(r ? rowText(r) : s.value)}</p>${r && !r.ind.categorical ? barSVG(r) : ''}${r && r.series && r.series.some(p => p[1] !== null) ? sparkline(r.series, r.year, r.ind.label) : ''}` +
+          `<details class="rc-more"><summary>문장·출처</summary><p>${esc(s.text)}</p></details></div>`; }).join('')}</div></section>`).join('');
     const src = `<details class="rp-src"><summary>출처표 (${sents.length}개 항목)</summary><div class="table-wrap"><table><thead><tr><th>항목</th><th>값</th><th>출처</th><th>기준일</th></tr></thead><tbody>${sents.map(s =>
       `<tr><td>${esc(s.label)}</td><td>${esc(s.value)}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source)}</a>` : esc(s.source)}</td><td>${esc(s.ref || (s.year ? `${s.year}년` : '기록 없음'))}</td></tr>`).join('')}</tbody></table></div></details>`;
     const pol = polished && polished.key === reportKey ? polished : null;
@@ -857,7 +862,7 @@
       `<div class="rp-ai-consent" data-ai-confirm hidden><p><b>기기 내 AI 모델 내려받기</b><br>Chrome이 AI 모델을 이 기기에 한 번 내려받습니다(Chrome 안내: 저장 공간 22GB 이상 여유 필요).<br>내려받은 뒤에도 문장은 이 기기 안에서만 처리합니다.</p><button type="button" class="btn" data-ai-go>내려받고 다듬기</button> <button type="button" class="btn ghost" data-ai-cancel>취소</button></div>` +
       `<div class="rp-ai-out" data-ai-out aria-live="polite">${pol ? `<p class="rp-ai-label">${esc(AI_LABEL)}</p><p>${esc(pol.text)}</p>` : ''}</div><p class="rp-ai-foot">${esc(AI_FOOT)}</p></div>`;
     return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 보고서</h3><p class="rp-tools">${fileTools(it, rows.find(r => r.ind.series && r.year)?.year ?? null, '동네 보고서', false)}</p></div>` +
-      `<p class="rp-intro rp-src-line">${esc(srcHead('출처표'))}</p><p class="rp-intro">아래 문장은 원장 셀의 숫자와 출처만 옮긴 것입니다.<br>평가나 판정은 하지 않습니다.</p>${byG}${src}${ai}<p class="rp-foot">${esc(REPORT_FOOT)}</p>`;
+      `<p class="rp-intro rp-src-line">${esc(srcHead('출처표'))}</p><p class="rp-intro">카드의 숫자와 문장은 원장 셀의 값과 출처만 옮긴 것입니다.<br>평가나 판정은 하지 않습니다.</p>${byG}${src}${ai}<p class="rp-foot">${esc(REPORT_FOOT)}</p>`;
   }
   function renderReport(v, m, it) {
     if (!report) return;

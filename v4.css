@@ -225,3 +225,14 @@ body.field .card { border-radius: 14px; }
   .explore-page .map-top > .map-groups { grid-area: groups; margin: 0; }
   .explore-page .map-top > .map-inds { grid-area: inds; margin: 0; }
 }
+/* 동 보고서 카드형(UI 검수 P1-7): 숫자를 문장 밖으로. 카드 왼쪽 띠 색은 상태 색과 같다 */
+.rp-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin: 8px 0 4px; }
+.rp-item.rp-card { border: 1px solid var(--line); border-left: 4px solid var(--nodata); border-radius: 12px; padding: 12px 14px; background: var(--card); gap: 6px; align-content: start; }
+.rp-card.is-over { border-left-color: var(--over); } .rp-card.is-in { border-left-color: var(--within); } .rp-card.is-wait { border-left-color: var(--pending); } .rp-card.is-nostd { border-left-color: #cdd7d3; }
+.rp-card .rc-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.rp-card .rc-l { font-size: 14px; font-weight: 700; color: var(--dim); line-height: 1.35; }
+.rp-item.rp-card p.rc-v { font-size: 24px; font-weight: 800; line-height: 1.15; color: var(--ink); font-variant-numeric: tabular-nums; }
+.rp-card .rc-more summary { cursor: pointer; font-size: 13px; color: var(--dim); }
+.rp-item.rp-card .rc-more p { margin-top: 4px; font-size: 14px; line-height: 1.55; }
+@media print { .rp-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rp-card { break-inside: avoid; } }
+.rp-card details.rc-more { border: 0; padding: 0; margin: 2px 0 0; background: none; box-shadow: none; }
