@@ -1141,7 +1141,7 @@
           disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
         const sync = () => { const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); };
         map.on('move zoom moveend zoomend viewreset resize', sync);
-        if ('ResizeObserver' in window) new ResizeObserver(() => { nmap.autoResize && nmap.autoResize(); sync(); }).observe(el);
+        if ('ResizeObserver' in window) new ResizeObserver(() => { map.invalidateSize({ pan: false }); nmap.autoResize && nmap.autoResize(); sync(); }).observe(el); // 칸 크기가 바뀌면 경계층도 다시 재야 네이버 바탕과 어긋나지 않는다
       }
       // 배경지도: 브이월드(국토교통부 공식 지도, 한국 지명·도로). 키(field/vworld-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작 → 없으면 OSM
       const vw = /^[A-Za-z0-9-]+$/.test(window.RENEWMAP_VWORLD_KEY || '') ? window.RENEWMAP_VWORLD_KEY : '';
