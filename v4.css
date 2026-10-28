@@ -73,3 +73,46 @@
   .explore-page .map-bottom .map-list { max-height: 88px; overflow-y: auto; }
 }
 @media (prefers-reduced-motion: reduce) { .tr-line, .dn circle { transition: none; } }
+
+/* ── 현장·보관함 v4(2026-10-28): 같은 카드·요약 그래프. 개수만, 순위 아님 ── */
+.v4-stats { display: grid; gap: 12px; margin: 8px 0 16px; }
+.v4-stats:empty { display: none; }
+.v4-tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.v4-tiles li { display: grid; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--soft2); }
+.v4-tiles span { font-size: 13px; font-weight: 600; color: var(--dim); }
+.v4-tiles b { font-size: 24px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.v4-charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+@media (max-width: 520px) { .v4-charts { grid-template-columns: minmax(0, 1fr); } }
+.v4-donut { display: flex; align-items: center; gap: 12px; }
+.v4-donut .gl-n { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
+.v4-donut .gl-n li { display: flex; align-items: center; gap: 8px; }
+.v4-donut .gl-n li > b:last-child { font-weight: 800; font-variant-numeric: tabular-nums; }
+.v4-days { margin: 0; }
+.v4-days svg { display: block; width: 100%; height: 96px; } /* 넓은 칸에서 막대가 커지지 않게 높이 고정(가로는 viewBox 비율대로 가운데) */
+.v4-days text { font-size: 7px; fill: var(--dim); text-anchor: middle; }
+.v4-col { fill: var(--ref); } .v4-col.is-today { fill: var(--green); }
+.v4-days figcaption { font-size: 12px; color: var(--dim); }
+.v4-bars { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.v4-bars > div { display: grid; grid-template-columns: 6.5em minmax(0, 1fr) 2.5em; align-items: center; gap: 8px; font-size: 13px; }
+.v4-bars svg { width: 100%; height: 10px; display: block; }
+.v4-bars b { text-align: right; font-variant-numeric: tabular-nums; }
+.v4-track { fill: var(--bg); } .v4-fill { fill: var(--green); }
+
+/* 현장: 카드 모양을 찾기와 같게, 넓은 화면은 기록하기 | 저장된 기록 두 칸 */
+body.field .card { border-radius: 14px; }
+@media (min-width: 1100px) {
+  body.field header.top .wrap { max-width: 1180px; }
+  body.field main { max-width: 1180px; display: grid; grid-template-columns: minmax(0, 560px) minmax(0, 1fr); column-gap: 24px; align-items: start; }
+  body.field main > * { grid-column: 1; }
+  body.field main > section[aria-labelledby="listTitle"], body.field main > #upBox { grid-column: 2; }
+  body.field main > section[aria-labelledby="listTitle"] { grid-row: 1 / span 40; position: sticky; top: 72px; max-height: calc(100vh - 88px); overflow-y: auto; overscroll-behavior: contain; margin-top: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+}
+
+/* 보관함: 요약 위, 받은 문서 | 현장 기록 두 칸 */
+.box-v4 .box-cols section { padding: 0; }
+.box-v4 .box-list li { border-radius: 14px; }
+@media (min-width: 1100px) {
+  .home.box-v4 { max-width: 1180px; }
+  .box-v4 .box-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .box-v4 .box-links { display: flex; flex-wrap: wrap; gap: 8px 20px; border-top: 0; }
+}

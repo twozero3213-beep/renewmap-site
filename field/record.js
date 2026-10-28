@@ -252,6 +252,35 @@
     return "﻿" + [head.join(","), ...rows].join("\r\n") + "\r\n";
   }
 
-  const api = { CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
+  // ── 기록 요약(현장·보관함 v4 공통): 개수만 센다. 대상 막대는 고정 목록 순서(많은 순 아님), 순위·점수 없음
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const dayKey = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  function stats(records, now) {
+    const list = (records || []).filter((r) => r && r.recorded_at), today = dayKey(now);
+    const byStatus = Object.fromEntries(STATUSES.map((k) => [k, list.filter((r) => r.status === k).length]));
+    const known = TARGETS.map((t) => [t, list.filter((r) => r.target === t).length]), other = list.filter((r) => !TARGETS.includes(r.target)).length;
+    const byTarget = [...known.filter(([, n]) => n), ...(other ? [["그 밖", other]] : [])];
+    const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(now); d.setDate(d.getDate() - (6 - i)); const k = dayKey(d); return { day: `${d.getMonth() + 1}.${d.getDate()}`, n: list.filter((r) => dayKey(new Date(r.recorded_at)) === k).length }; });
+    return { total: list.length, today: list.filter((r) => dayKey(new Date(r.recorded_at)) === today).length, photos: list.reduce((a, r) => a + (r.photos || []).length, 0), byStatus, byTarget, days };
+  }
+  const escH = (v) => String(v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const ST_CLS = { 확인: "g", 충돌: "r", 추가확인: "y" };
+  // tiles: [[라벨, 숫자]]를 앞에 더 붙인다(보관함의 받은 문서 수)
+  function statsHTML(st, tiles) {
+    const tl = [...(tiles || []), ["오늘", st.today], ["전체 기록", st.total], ["사진", st.photos]];
+    const tilesH = `<ul class="v4-tiles">${tl.map(([k, n]) => `<li><span>${escH(k)}</span><b>${n}</b></li>`).join("")}</ul>`;
+    if (!st.total) return tilesH;
+    const R = 42, C = 2 * Math.PI * R; let off = 0;
+    const arcs = STATUSES.filter((k) => st.byStatus[k]).map((k) => { const len = st.byStatus[k] / st.total * C, a = `<circle class="dn-${ST_CLS[k]}" r="${R}" cx="60" cy="60" stroke-dasharray="${Math.max(0, len - 1.5).toFixed(2)} ${(C - len + 1.5).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}"/>`; off += len; return a; }).join("");
+    const donut = `<div class="v4-donut"><svg class="dn" viewBox="0 0 120 120" aria-hidden="true"><g transform="rotate(-90 60 60)">${arcs}</g><text x="60" y="62" class="dn-n">${st.total}</text><text x="60" y="80" class="dn-k">기록</text></svg>` +
+      `<ul class="gl-n">${STATUSES.map((k) => `<li><b class="gl-sw sw-${ST_CLS[k]}" aria-hidden="true"></b>${escH(STATUS_LABEL[k])} <b>${st.byStatus[k]}</b></li>`).join("")}</ul></div>`;
+    const max = Math.max(1, ...st.byTarget.map(([, n]) => n));
+    const bars = `<div class="v4-bars" role="img" aria-label="대상별 기록 수(목록 순서, 순위 아님): ${escH(st.byTarget.map(([t, n]) => `${t} ${n}건`).join(", "))}">${st.byTarget.map(([t, n]) => `<div><span>${escH(t)}</span><svg viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true"><rect class="v4-track" width="100" height="10" rx="3"/><rect class="v4-fill" width="${(n / max * 100).toFixed(1)}" height="10" rx="3"/></svg><b>${n}</b></div>`).join("")}</div>`;
+    const dmax = Math.max(1, ...st.days.map((d) => d.n));
+    const cols = `<figure class="v4-days"><svg viewBox="0 0 140 52" role="img" aria-label="최근 7일 기록 수: ${escH(st.days.map((d) => `${d.day} ${d.n}건`).join(", "))}">${st.days.map((d, i) => { const h = d.n ? Math.max(3, d.n / dmax * 36) : 1; return `<rect class="${i === 6 ? "v4-col is-today" : "v4-col"}" x="${4 + i * 19.5}" y="${(40 - h).toFixed(1)}" width="13" height="${h.toFixed(1)}" rx="2"/><text x="${10.5 + i * 19.5}" y="50">${escH(d.day.split(".")[1])}</text>`; }).join("")}</svg><figcaption>최근 7일 기록 수(${escH(st.days[0].day)}~${escH(st.days[6].day)})</figcaption></figure>`;
+    return tilesH + `<div class="v4-charts">${donut}${cols}</div>${bars}`;
+  }
+
+  const api = { stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.FieldRecord = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

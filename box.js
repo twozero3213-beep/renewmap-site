@@ -30,6 +30,7 @@
   async function render() {
     const [docs, recs] = await Promise.all([S.docs(), S.records()]);
     const du = $("docs"), ru = $("recs");
+    $("boxStats").innerHTML = R.statsHTML(R.stats(recs, new Date()), [["받은 문서", docs.length]]);   // 개수 요약(순위 아님)
     du.textContent = ""; ru.textContent = "";
     if (!docs.length) empty(du, "아직 받은 문서가 없습니다.\n현장 기록을 저장하고 1쪽 문서를 받아 보세요.", "field/", "현장 기록하기");
     for (const d of docs) du.append(row(d.name, `${day(d.created_at)} 받음`, [

@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="pretendard.css">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="v4.css">
 <script src="site.js" defer></script>
 <script src="docgen.js" defer></script>
 <script src="field/record.js" defer></script>
@@ -22,13 +23,16 @@
 <body class="app-home">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a></div></header>
-<main id="main" class="home">
+<main id="main" class="home box-v4">
   <h1>보관함</h1>
   <p class="home-sub">이 휴대폰에만 저장됩니다.<br>서버로 보내지 않습니다.</p>
-  <h2>받은 문서</h2>
-  <ul id="docs" class="box-list" aria-live="polite"><li class="skel" aria-hidden="true"></li></ul>
-  <h2>현장 기록</h2>
-  <ul id="recs" class="box-list" aria-live="polite"><li class="skel" aria-hidden="true"></li></ul>
+  <div id="boxStats" class="v4-stats" aria-live="polite"></div>
+  <div class="box-cols">
+    <section aria-labelledby="docsTitle"><h2 id="docsTitle">받은 문서</h2>
+    <ul id="docs" class="box-list" aria-live="polite"><li class="skel" aria-hidden="true"></li></ul></section>
+    <section aria-labelledby="recsTitle"><h2 id="recsTitle">현장 기록</h2>
+    <ul id="recs" class="box-list" aria-live="polite"><li class="skel" aria-hidden="true"></li></ul></section>
+  </div>
   <p id="boxMsg" class="home-msg" role="status"></p>
   <h2>더 보기</h2>
   <ul class="box-links">
