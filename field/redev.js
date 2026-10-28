@@ -109,7 +109,30 @@
       { label: "가~바목 중 하나", rule: "하나 이상", value: ga === MET ? "가목 충족" : "가목 외 확인 필요", status: ga === MET ? MET : CHECK, basis: art("제5조②2") },
     ];
     const perBuilding = rows.map((r) => ({ ...r, mark: r.old === true ? "노후·불량" : r.old === false ? "아님" : CHECK }));
-    return { thr, district, n, nOld, nUnk, lines, perBuilding, ref };
+    return { thr, district, n, nOld, nUnk, area, aOld, aUnk, lines, perBuilding, ref };
+  }
+
+  // 화면 요약(v4): 숫자 칸, 줄 상태 도넛, 건물 수·연면적 쌓은 막대(노후·불량 | 못 정함 | 아님)와 기준선. 종합 판정·순위 아님
+  const escH = (v) => String(v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  function stackHTML(label, old, unk, tot, thr) {
+    if (!tot) return `<div class="rv-stack is-empty"><div class="rv-h"><b>${escH(label)}</b><span>자료 없음</span></div></div>`;
+    const a = (old / tot) * 100, b = (unk / tot) * 100, c = Math.max(0, 100 - a - b), r = range(a, a + b);
+    return `<div class="rv-stack"><div class="rv-h"><b>${escH(label)}</b><span>${r} · 기준 ${thr}%</span></div>` +
+      `<svg viewBox="0 0 100 16" preserveAspectRatio="none" role="img" aria-label="${escH(label)} 노후·불량 ${fmt(a)}%, 못 정함 ${fmt(b)}%, 아님 ${fmt(c)}%, 기준선 ${thr}%">` +
+      `<rect class="rv-old" width="${a.toFixed(2)}" height="16"/><rect class="rv-unk" x="${a.toFixed(2)}" width="${b.toFixed(2)}" height="16"/><rect class="rv-no" x="${(a + b).toFixed(2)}" width="${c.toFixed(2)}" height="16"/>` +
+      `<line class="rv-thr" x1="${thr}" x2="${thr}" y1="0" y2="16" vector-effect="non-scaling-stroke"/></svg></div>`;
+  }
+  const ST_CLS = { [MET]: "g", [NOT_MET]: "r", [CHECK]: "y" };
+  function summaryHTML(res) {
+    const cnt = Object.fromEntries([MET, NOT_MET, CHECK].map((k) => [k, res.lines.filter((l) => l.status === k).length])), tot = res.lines.length, C = 2 * Math.PI * 42;
+    let off = 0;
+    const arcs = [MET, NOT_MET, CHECK].filter((k) => cnt[k]).map((k) => { const len = (cnt[k] / tot) * C, s = `<circle class="dn-${ST_CLS[k]}" r="42" cx="60" cy="60" stroke-dasharray="${Math.max(0, len - 1.5).toFixed(2)} ${(C - len + 1.5).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}"/>`; off += len; return s; }).join("");
+    const tiles = [["건물", `${res.n}동`], ["노후·불량", `${res.nOld}동`], ["못 정함", `${res.nUnk}동`], ["기준", `${res.thr}%`]];
+    return `<ul class="v4-tiles">${tiles.map(([k, v]) => `<li><span>${k}</span><b>${v}</b></li>`).join("")}</ul>` +
+      `<div class="v4-charts"><div class="v4-donut"><svg class="dn" viewBox="0 0 120 120" aria-hidden="true"><g transform="rotate(-90 60 60)">${arcs}</g><text x="60" y="62" class="dn-n">${tot}</text><text x="60" y="80" class="dn-k">요건 줄</text></svg>` +
+      `<ul class="gl-n">${[MET, NOT_MET, CHECK].map((k) => `<li><b class="gl-sw sw-${ST_CLS[k]}" aria-hidden="true"></b>${k} <b>${cnt[k]}</b></li>`).join("")}</ul></div>` +
+      `<div class="rv-stacks">${stackHTML("건물 수", res.nOld, res.nUnk, res.n, res.thr)}${stackHTML("연면적", res.aOld, res.aUnk, res.area, res.thr)}` +
+      `<p class="rv-key"><i class="rv-old"></i>노후·불량 <i class="rv-unk"></i>못 정함 <i class="rv-no"></i>아님 <i class="rv-thr"></i>기준선</p></div></div>`;
   }
 
   // 엑셀이 수식으로 읽지 않게 =·+·-·@로 시작하는 칸 앞에 '를 붙인다
@@ -142,5 +165,5 @@
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · ` };
   }
 
-  return { RULES, NOT_APPROVED, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, oldState, parseList, match, review, toCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { RULES, NOT_APPROVED, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, oldState, parseList, match, review, summaryHTML, toCSV, buildDoc, MET, NOT_MET, CHECK };
 });

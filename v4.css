@@ -116,3 +116,24 @@ body.field .card { border-radius: 14px; }
   .box-v4 .box-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
   .box-v4 .box-links { display: flex; flex-wrap: wrap; gap: 8px 20px; border-top: 0; }
 }
+
+/* 입안요건 v4: 입력 | 결과 두 칸, 결과는 숫자 칸·요건 줄 도넛·쌓은 막대(노후·불량 | 못 정함 | 아님)와 기준선 */
+.rv-stacks { display: grid; gap: 10px; }
+.rv-stack .rv-h { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; margin-bottom: 4px; }
+.rv-stack .rv-h span { color: var(--dim); font-variant-numeric: tabular-nums; }
+.rv-stack svg { display: block; width: 100%; height: 16px; border-radius: 4px; overflow: hidden; }
+.rv-old { fill: var(--over); background: var(--over); } .rv-unk { fill: var(--nodata); background: var(--nodata); } .rv-no { fill: var(--within); background: var(--within); }
+.rv-thr { stroke: var(--ink); stroke-width: 2.5; }
+.rv-key { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; font-size: 12px; color: var(--dim); }
+.rv-key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 2px; vertical-align: -1px; }
+.rv-key i.rv-thr { width: 3px; height: 12px; background: var(--ink); border-radius: 0; }
+.redev-v4 .req-list li { border-left: 4px solid var(--nodata); padding-left: 10px; }
+.redev-v4 .req-list li[data-status="충족"] { border-left-color: var(--within); }
+.redev-v4 .req-list li[data-status="미충족"] { border-left-color: var(--over); }
+.redev-v4 .req-list li[data-status="현장 확인"] { border-left-color: var(--pending); }
+@media (min-width: 1100px) {
+  body.redev-v4 main { max-width: 1180px; display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); column-gap: 24px; align-items: start; }
+  body.redev-v4 main > .note, body.redev-v4 main > .warn { grid-column: 1 / -1; }
+  body.redev-v4 main > #f { grid-column: 1; }
+  body.redev-v4 main > #out { grid-column: 2; grid-row: 3; margin-top: 16px; }
+}

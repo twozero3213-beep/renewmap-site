@@ -29,6 +29,7 @@
       ...(m.otherDong.length ? [`다른 법정동 ${m.otherDong.length}개`] : [])];
     say(skipped.length ? `제외: ${skipped.join(" · ")}` : "");
     $("outBase").textContent = `${file.name} 건물 ${res.n}동 · 기준 ${res.thr}% · 경과 기준일 ${D.govDate(res.ref)} · 건축물대장 기준일 ${D.govDate(file.hub_reference_date)}`;
+    $("viz").innerHTML = R.summaryHTML(res);   // 그림 요약(종합 판정 아님)
     $("lines").replaceChildren(...res.lines.map((l) => {
       const li = document.createElement("li"), b = document.createElement("b"), s = document.createElement("small");
       li.dataset.status = l.status;
