@@ -139,13 +139,34 @@
     return [["위치", where.join(" · ")], ["관찰", seen.join(" · ")], ["공식 숫자", nums.length ? nums.join(" · ") : "선택한 공식 숫자 없음"]];
   }
 
-  // rec: makeRecord 결과. images: [{bytes, w, h, src}] (가린 사진. 이 기록 사진 다음에 고른 이전 기록 사진 {prev: 날짜 ISO}). 반환: docgen의 hwpxBytes·docHTML이 받는 doc
-  function buildFieldDoc(rec, images) {
+  // 출처 종류(제우스벤처스 출처 등급·SGIS 지표 설명 표에서 배움): 신뢰 점수가 아니라 어떤 종류의 근거인지만 적는다. '리뉴맵 기준 비교(쇠퇴진단지표…)'가 먼저 걸리게 순서 고정
+  const SRC_KINDS = [[/^리뉴맵/, "리뉴맵 계산"], [/주민등록인구통계|사업체조사|쇠퇴진단지표|KOSIS|통계청/, "공식 통계"]];
+  const srcKind = (name) => (SRC_KINDS.find(([re]) => re.test(String(name || ""))) || [null, "행정 자료"])[1];
+
+  // 같은 자리 바로 전 기록(기준일 비교의 상대). 지운 기록·뒤 기록은 쓰지 않는다
+  const prevAtSite = (records, rec) => (!rec.site_id ? null : (records || [])
+    .filter((r) => r.id !== rec.id && siteOf(r) === rec.site_id && String(r.recorded_at) < String(rec.recorded_at))
+    .sort((a, b) => String(b.recorded_at).localeCompare(String(a.recorded_at)))[0] || null);
+  // 기준일 비교(AFCC 원문 대조·Gridics 판본에서 배움): 지표 코드가 같은 행만 맞대고 값이나 기준일이 바뀐 것만 남긴다. 해석·판정은 붙이지 않는다
+  function compareRows(cur, prev) {
+    const before = new Map(((prev && prev.indicators) || []).map((r) => [r.code, r]));
+    const both = ((cur && cur.indicators) || []).filter((r) => r.code && before.has(r.code));
+    const changed = both.filter((r) => before.get(r.code).value !== r.value || before.get(r.code).reference_date !== r.reference_date)
+      .map((r) => ({ label: r.label, before: before.get(r.code).value, after: r.value, beforeDate: before.get(r.code).reference_date, afterDate: r.reference_date }));
+    return { compared: both.length, changed };
+  }
+  const compareLine = (prev, cmp) => (cmp.changed.length
+    ? `${localDay(prev.recorded_at)} 기록 대비 바뀐 숫자 ${cmp.changed.length}개: ${cmp.changed.map((c) => `${c.label} ${c.before}(${D.govDate(c.beforeDate)})에서 ${c.after}(${D.govDate(c.afterDate)})로`).join(" · ")}${cmp.compared > cmp.changed.length ? ` · 나머지 ${cmp.compared - cmp.changed.length}개 같음` : ""}`
+    : `${localDay(prev.recorded_at)} 기록과 공식 숫자 ${cmp.compared}개 모두 같음`);
+
+  // rec: makeRecord 결과. images: [{bytes, w, h, src}] (가린 사진. 이 기록 사진 다음에 고른 이전 기록 사진 {prev: 날짜 ISO}).
+  // before: 같은 자리 바로 전 기록(prevAtSite, 없으면 생략). 반환: docgen의 hwpxBytes·docHTML이 받는 doc
+  function buildFieldDoc(rec, images, before) {
     const d = rec.dong, pics = images || [], when = localTime(rec.recorded_at);
     const title = `${d ? d.name : "현장"} 현장 확인 결과`;
     // 위치 한 줄: 좌표·정확도(±m)·보정 여부. 1쪽에 들어가도록 칸을 묶는다
     const loc = rec.lat === null ? "위치 없음" : `위도 ${rec.lat.toFixed(6)}, 경도 ${rec.lng.toFixed(6)}(WGS84) · 정확도 ${rec.accuracy_m === null ? "자료 없음" : `±${Math.round(rec.accuracy_m)}m`} · ${rec.corrected ? "보정됨(작성자가 옮김)" : "보정 안 함"}`;
-    const prevDays = (rec.site_prev || []).map(localDay), bd = rec.building, checks = rec.checks || [];
+    const prevDays = (rec.site_prev || []).map(localDay), bd = rec.building, checks = rec.checks || [], cmp = compareRows(rec, before);
     const picNo = (id) => { const i = (rec.photos || []).indexOf(id); return i < 0 ? "" : `(사진 ${i + 1})`; };
     // 현장 확인 결과(판정 아님): 본 항목만 '항목: 메모(사진 n)'. memos=false면 메모를 빼고 항목 이름·사진 번호만(1쪽이 넘칠 때)
     const checkText = (memos) => [...checks.map((c) => `${R.CHECKS.find((x) => x.id === c.id).label}${memos && c.memo ? `: ${c.memo}` : ""}${picNo(c.photo)}`),
@@ -160,6 +181,7 @@
       ...(rec.item ? [["자료와 비교", `${rec.item}: ${rec.observed || "-"} (${R.STATUS_LABEL[rec.status]})`]] : []),
       // 같은 자리 이전 기록(A4): 작성자가 묶은 것만. 반경은 묶을 때 쓴 설정값
       ...(prevDays.length ? [["같은 자리", `이전 기록 ${prevDays.length}건(${prevDays.join(", ")})${rec.site_radius_m ? ` · 반경 ${rec.site_radius_m}m 안에서 작성자가 묶음` : ""}`]] : []),
+      ...(before && cmp.compared ? [["지난 기록과 비교", compareLine(before, cmp)]] : []),
     ];
     // 사진은 한 줄에 3장(4장이면 4장), 설명은 한 줄로 묶는다. 사진 설명(alt)은 장마다 둔다
     const own = pics.filter((p) => !p.prev).length, prev = pics.filter((p) => p.prev);
@@ -178,7 +200,7 @@
         ].map((r) => r.map(D.clean)), widths: [22, 78], refs: true })];
       if (pics.length) blocks.push(block("images", `${picText} · 얼굴·번호판 가림 확인`, { perRow: oneRow ? pics.length : pics.length > 3 ? 4 : 3, images: pics.map((p, i) => ({ ...p, caption: `사진 ${i + 1}` })) }));
       blocks.push(block("h1", "이 동의 공식 현황"));
-      if (rows.length) blocks.push(block("table", "", { rows: [["지표", "값", "기준일", "출처"], ...rows.map((r) => [r.label, r.value, D.govDate(r.reference_date), src.ref(r.src)].map(D.clean))], widths: [44, 22, 22, 12], caption: `표 1. ${d ? d.name : ""} 현황` }));
+      if (rows.length) blocks.push(block("table", "", { rows: [["지표", "값", "기준일", "출처(종류)"], ...rows.map((r) => [r.label, r.value, D.govDate(r.reference_date), `${srcKind(r.src.source_name)}${src.ref(r.src)}`].map(D.clean))], widths: [40, 18, 20, 22], caption: `표 1. ${d ? d.name : ""} 현황` }));
       else blocks.push(block("para", "이 위치의 행정동 자료를 찾지 못해 현황 숫자를 싣지 않았다."));
       blocks.push(block("para", `이 문서는 판정이 아니며 순위나 점수를 매기지 않았다.${b ? ` 행정동은 좌표를 ${b.name}(${b.year}년, 이용조건 ${lic(b.license)}) 경계에 대어 찾았다.` : ""}`));
       if (src.list.length) {
@@ -209,6 +231,23 @@
       .filter((x) => x.dist <= radius)
       .sort((a, b) => a.dist - b.dist || String(b.rec.recorded_at).localeCompare(String(a.rec.recorded_at)));
   }
+  // 사진대지(공무달인·ReportShot 같은 사진대지 앱을 대신): 고른 기록들의 가린 사진을 한 줄 2장으로 싣고, 사진마다 대상·위치·촬영 시각 표를 붙인다.
+  // items: [{rec, images}] (images는 그 기록 자신의 가린 사진만). 쪽 수는 사진 수만큼 늘어난다
+  function buildPhotoSheet(items, now) {
+    const pics = [], rows = [["사진", "대상·메모", "위치", "촬영"]];
+    for (const { rec, images } of items || []) for (const img of images || []) {
+      const n = pics.length + 1, d = rec.dong;
+      pics.push({ ...img, caption: `사진 ${n}` });
+      rows.push([`사진 ${n}`, [rec.target, rec.memo].filter(Boolean).join(" · "),
+        [d ? `${d.sgName} ${d.name}` : "행정동 미확인", rec.jibun ? `지번 ${rec.jibun}` : "", rec.accuracy_m === null || rec.accuracy_m === undefined ? "" : `±${Math.round(rec.accuracy_m)}m`].filter(Boolean).join(" · "),
+        localTime(rec.recorded_at)].map(D.clean));
+    }
+    const recs = (items || []).filter((x) => (x.images || []).length).length, day = now.toISOString().slice(0, 10);
+    const blocks = [block("title", "현장 사진대지"), block("para", `판정 아님 · 기록 ${recs}건 · 사진 ${pics.length}장 · 얼굴·번호판 가림 확인 · ${D.govDate(day)} 작성`, { small: true })];
+    if (pics.length) blocks.push(block("images", "", { perRow: 2, images: pics }), block("table", "", { rows, widths: [12, 38, 32, 18], caption: "표 1. 사진 설명" }));
+    return { kind: "field", title: "현장 사진대지", blocks, sources: [], writtenOn: day, footer: "리뉴맵 사진대지 · ", photos: pics.length };
+  }
+
   // 새 자료 묶음 알림(A3): 두 해시가 모두 있고 다를 때만
   const isNewData = (cur, latest) => !!(cur && latest && cur.snapshot_hash && latest.snapshot_hash && cur.snapshot_hash !== latest.snapshot_hash);
 
@@ -228,5 +267,5 @@
     const ok = (pt) => Array.isArray(pt) && Number.isFinite(pt[0]) && Number.isFinite(pt[1]);
     return (Array.isArray(polys) ? polys : []).flat().filter((r) => Array.isArray(r) && r.length <= 2000 && r.every(ok)).slice(0, 20).map((r) => r.map(([x, y]) => [x, y]));
   }
-  return { parcelFrom, ringsFrom, bjdongCandidates, findBuildings, buildingFill, lic, PAGE_LIMIT_MM, inRing, contains, findFeature, plane, distanceM, nearby, makeLocator, PICK, pickIndicators, localTime, localDay, shortSrc, oldestDate, summaryRows, buildFieldDoc, fileName, siteOf, nearbyRecords, isNewData };
+  return { srcKind, prevAtSite, compareRows, buildPhotoSheet, parcelFrom, ringsFrom, bjdongCandidates, findBuildings, buildingFill, lic, PAGE_LIMIT_MM, inRing, contains, findFeature, plane, distanceM, nearby, makeLocator, PICK, pickIndicators, localTime, localDay, shortSrc, oldestDate, summaryRows, buildFieldDoc, fileName, siteOf, nearbyRecords, isNewData };
 });

@@ -518,11 +518,9 @@
   });
 
   // ── 1쪽 문서: 한글(HWPX)은 바로 받고 보관함에도 남긴다. PDF는 인쇄 창에서 'PDF로 저장'
-  async function docOf(rec) {
-    await templates;
-    const images = [], all = (rec.prev_photos || []).length ? await S.records() : [];
-    // 이 기록 사진 다음에, 묶을 때 고른 같은 자리 이전 기록 사진(그 기록이 지워졌으면 뺀다)
-    const ids = [...(rec.photos || []).map((id) => [id, null]), ...(rec.prev_photos || []).map((id) => [id, (all.find((r) => (r.photos || []).includes(id)) || {}).recorded_at])];
+  // ids: [[사진 id, 이전 기록 날짜 또는 null]]. 날짜가 undefined면(그 기록이 지워짐) 뺀다
+  async function loadImages(ids) {
+    const images = [];
     for (const [id, prev] of ids) {
       if (prev === undefined) continue;
       const blob = await S.photo(id); if (!blob) continue;
@@ -530,7 +528,14 @@
       images.push({ bytes: new Uint8Array(await blob.arrayBuffer()), w: bmp.width, h: bmp.height, src: URL.createObjectURL(blob), ...(prev ? { prev } : {}) });
       bmp.close();
     }
-    return { doc: E.buildFieldDoc(rec, images), images };
+    return images;
+  }
+  async function docOf(rec) {
+    await templates;
+    const all = (rec.prev_photos || []).length || rec.site_id ? await S.records() : [];
+    // 이 기록 사진 다음에, 묶을 때 고른 같은 자리 이전 기록 사진(그 기록이 지워졌으면 뺀다)
+    const images = await loadImages([...(rec.photos || []).map((id) => [id, null]), ...(rec.prev_photos || []).map((id) => [id, (all.find((r) => (r.photos || []).includes(id)) || {}).recorded_at])]);
+    return { doc: E.buildFieldDoc(rec, images, E.prevAtSite(all, rec)), images };
   }
   async function hwpx(rec) {
     try {
@@ -587,6 +592,21 @@
   const pad2 = (n) => String(n).padStart(2, "0");
   $("geojson").addEventListener("click", async () => { const rows = await gisRows(); D.saveBytes(`renewmap-field-${stamp()}.geojson`, JSON.stringify(R.toGeoJSON(rows, new Date()), null, 2), "application/geo+json"); toast(`${rows.length}건을 GeoJSON으로 받았습니다.`); });
   $("csv").addEventListener("click", async () => { const rows = await gisRows(); D.saveBytes(`renewmap-field-${stamp()}.csv`, R.toCSV(rows), "text/csv;charset=utf-8"); toast(`${rows.length}건을 CSV로 받았습니다.`); });
+  // 사진대지: GIS와 같은 고르기(없으면 모두). 오래된 기록부터
+  $("sheet").addEventListener("click", async () => {
+    try {
+      await templates;
+      const rows = (await gisRows()).slice().sort((a, b) => String(a.recorded_at).localeCompare(String(b.recorded_at))), items = [];
+      for (const rec of rows) items.push({ rec, images: await loadImages((rec.photos || []).map((id) => [id, null])) });
+      const doc = E.buildPhotoSheet(items, new Date());
+      items.forEach((x) => x.images.forEach((i) => URL.revokeObjectURL(i.src)));
+      if (!doc.photos) { toast("사진이 있는 기록이 없습니다."); return; }
+      const name = `현장사진대지_${stamp()}.hwpx`, bytes = D.hwpxBytes(doc);
+      D.saveBytes(name, bytes, "application/hwp+zip");
+      await S.addDoc({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), name, kind: "hwpx", created_at: new Date().toISOString(), blob: new Blob([bytes], { type: "application/hwp+zip" }) });
+      toast(`사진 ${doc.photos}장으로 사진대지를 받았습니다.\n보관함에서 다시 받을 수 있습니다.`);
+    } catch (e) { toast("사진대지를 만들지 못했습니다."); }
+  });
 
   // ── 내보내기: records.json + photos/<id>.jpg 를 ZIP 하나로. 공유는 같은 ZIP을 기기의 공유 창으로 넘긴다
   async function buildZip() {
