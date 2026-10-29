@@ -240,3 +240,6 @@ body.field .card { border-radius: 14px; }
 /* 묶음 탭·제목·요약에 붙는 선 아이콘 간격 */
 .map-groups button .map-ico, h3 > .map-ico, h4 > .map-ico, .gl-k > .map-ico, .sr-gaps summary .map-ico, .map-report-link .map-ico { margin-right: 5px; vertical-align: -2px; }
 .gov-e .map-ico { width: 20px; height: 20px; }
+/* 기준일 스냅샷 비교: 판정이 바뀐 줄을 눈에 띄게 */
+.rp-snap-sum { margin: 4px 0 8px; font-size: 15px; } .rp-snap-tbl small { color: var(--dim); }
+.rp-snap-tbl tr.is-flip td { background: #fdf1e6; } .rp-snap .rp-tools .btn + .btn { margin-left: 8px; }

@@ -742,7 +742,41 @@
   };
   const icon = k => `<svg class="map-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS[k] || ICONS.dot}"/></svg>`;
 
-  const api = { icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
+  // ── 기준일 스냅샷 비교(경쟁·시장 보고서 학습 2026-10-29): 1차 초안 때 값을 이 기기에 저장해 두고, 보완 때 바뀐 항목만 표로 ──
+  // 용역은 착수~납품 12개월 안팎이라 그사이 통계가 갱신된다. 값·기준일·판정을 함께 남겨 '무엇이 바뀌어 판정이 달라졌는지'를 보인다. 전망은 넣지 않는다
+  const SNAP_KEY = 'renewmap.snap.v1.';
+  const refOf = r => (r.cell && r.cell.reference_date) || (r.year ? `${r.year}년` : null);
+  function snapshotOf(it, rows, now) {
+    return { v: 1, code: it.code, name: it.name, saved_at: now.toISOString(),
+      items: rows.filter(r => r.ind.group !== 'fore' && !r.ind.pending).map(r => ({ c: r.ind.code, l: r.ind.label, u: r.ind.unit || '', v: r.value ?? null, t: rowText(r), s: stLabel(r.status), d: refOf(r) })) };
+  }
+  // 반환 { rows: [{ kind: 'new'|'changed'|'gone', flip, prev, cur }], same }. flip = 판정(기준 미달·기준 안 등)이 바뀜
+  function diffSnap(prev, cur) {
+    const before = new Map((prev.items || []).map(x => [x.c, x])), now = new Set(cur.items.map(x => x.c)), out = [];
+    let same = 0;
+    for (const x of cur.items) {
+      const p = before.get(x.c), flip = !!p && p.s !== x.s;
+      if (!p) out.push({ kind: 'new', flip: false, prev: null, cur: x });
+      else if (p.v !== x.v || p.d !== x.d || flip) out.push({ kind: 'changed', flip, prev: p, cur: x });
+      else same++;
+    }
+    for (const p of prev.items || []) if (!now.has(p.c)) out.push({ kind: 'gone', flip: false, prev: p, cur: null });
+    return { rows: out, same };
+  }
+  const deltaText = d => (d.prev && d.cur && isNum(d.prev.v) && isNum(d.cur.v) ? `${d.cur.v - d.prev.v >= 0 ? '+' : ''}${fmt(Math.round((d.cur.v - d.prev.v) * 100) / 100, d.cur.u === '%' ? '%p' : d.cur.u)}` : d.kind === 'new' ? '새 항목' : d.kind === 'gone' ? '빠짐' : '');
+  function snapHTML(prev, cur) {
+    const head = `<section class="rp-g rp-snap"><h3>${icon('fore')}기준일 비교</h3>`;
+    if (!prev) return head + '<p class="rp-intro">지금 값을 이 기기에 저장해 두면, 사전컨설팅·보완 때 다시 열어 바뀐 항목만 표로 볼 수 있습니다.<br>서버로 보내지 않습니다.</p><p class="rp-tools"><button type="button" class="btn ghost" data-snap-save>지금 값 저장</button></p></section>';
+    const d = diffSnap(prev, cur), flips = d.rows.filter(x => x.flip).length, when = String(prev.saved_at).slice(0, 10);
+    const cell = x => (x ? `${esc(x.t)}<br><small>${esc(x.d || '기준일 기록 없음')}</small>` : '–');
+    const table = d.rows.length ? `<div class="dg-tbl">${copyHead('기준일 비교')}<div class="table-wrap"><table class="rp-tbl rp-snap-tbl"><thead><tr><th>항목</th><th>저장 때(${esc(when)})</th><th>지금</th><th>변동</th><th>판정</th></tr></thead><tbody>` +
+      d.rows.map(x => `<tr class="${x.flip ? 'is-flip' : ''}"><td>${esc((x.cur || x.prev).l)}</td><td>${cell(x.prev)}</td><td>${cell(x.cur)}</td><td>${esc(deltaText(x))}</td><td>${x.flip ? `<b>${esc(x.prev.s)} → ${esc(x.cur.s)}</b>` : esc((x.cur || x.prev).s)}</td></tr>`).join('') + '</tbody></table></div></div>'
+      : '<p>저장한 뒤 바뀐 값이 없습니다.</p>';
+    return head + `<p class="rp-snap-sum">${esc(when)} 저장분 대비 바뀐 항목 <b>${d.rows.length}</b>개 · 판정 바뀜 <b>${flips}</b>개 · 그대로 ${d.same}개</p>${table}` +
+      '<p class="rp-tools"><button type="button" class="btn ghost" data-snap-save>지금 값으로 다시 저장</button><button type="button" class="btn ghost" data-snap-clear>저장 지우기</button></p></section>';
+  }
+  const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
+  const api = { snapshotOf, diffSnap, snapHTML, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
@@ -865,7 +899,7 @@
       `<div class="rp-ai-consent" data-ai-confirm hidden><p><b>기기 내 AI 모델 내려받기</b><br>Chrome이 AI 모델을 이 기기에 한 번 내려받습니다(Chrome 안내: 저장 공간 22GB 이상 여유 필요).<br>내려받은 뒤에도 문장은 이 기기 안에서만 처리합니다.</p><button type="button" class="btn" data-ai-go>내려받고 다듬기</button> <button type="button" class="btn ghost" data-ai-cancel>취소</button></div>` +
       `<div class="rp-ai-out" data-ai-out aria-live="polite">${pol ? `<p class="rp-ai-label">${esc(AI_LABEL)}</p><p>${esc(pol.text)}</p>` : ''}</div><p class="rp-ai-foot">${esc(AI_FOOT)}</p></div>`;
     return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 보고서</h3><p class="rp-tools">${fileTools(it, rows.find(r => r.ind.series && r.year)?.year ?? null, '동네 보고서', false)}</p></div>` +
-      `<p class="rp-intro rp-src-line">${esc(srcHead('출처표'))}</p><p class="rp-intro">카드의 숫자와 문장은 원장 셀의 값과 출처만 옮긴 것입니다.<br>평가나 판정은 하지 않습니다.</p>${byG}${src}${ai}<p class="rp-foot">${esc(REPORT_FOOT)}</p>`;
+      `<p class="rp-intro rp-src-line">${esc(srcHead('출처표'))}</p><p class="rp-intro">카드의 숫자와 문장은 원장 셀의 값과 출처만 옮긴 것입니다.<br>평가나 판정은 하지 않습니다.</p>${typeof localStorage !== 'undefined' ? snapHTML(snapGet(it.code), snapshotOf(it, rows, new Date())) : ''}${byG}${src}${ai}<p class="rp-foot">${esc(REPORT_FOOT)}</p>`;
   }
   function renderReport(v, m, it) {
     if (!report) return;
@@ -997,6 +1031,14 @@
     else if (b.hasAttribute('data-print')) { report.querySelectorAll('details').forEach(d => { d.open = true; }); window.print(); }
     else if (b.dataset.dl) download(b.dataset.dl);
     else if (b.hasAttribute('data-copy-table')) copyTable(b);
+    else if (b.hasAttribute('data-snap-save') || b.hasAttribute('data-snap-clear')) {
+      const c = currentDong(); if (!c) return;
+      try {
+        if (b.hasAttribute('data-snap-save')) localStorage.setItem(SNAP_KEY + c.it.code, JSON.stringify(snapshotOf(c.it, rowsFor(c.v, c.m, c.it), new Date())));
+        else localStorage.removeItem(SNAP_KEY + c.it.code);
+      } catch (err) { b.textContent = '이 브라우저는 저장을 막아 두었습니다'; return; }
+      reportKey = null; renderReport(c.v, c.m, c.it); report.querySelector('.rp-snap button')?.focus({ preventScroll: true });
+    }
     else if (b.dataset.fragSentence !== undefined || b.hasAttribute('data-frag-all')) copyFrag(b);
     else if (b.dataset.copySentence !== undefined) copySentence(b);
     else if (b.hasAttribute('data-ai-run') && aiDet) {
