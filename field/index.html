@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob: https://api.vworld.kr; font-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'self'; worker-src 'self' blob:; manifest-src 'self'">
+<script src="../frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>현장 기록 | 리뉴맵</title>
 <meta name="description" content="현장 사진을 찍으면 위치와 정확도, 그 행정동의 공식 현황 숫자(출처·기준일)를 붙여 결재용 1쪽 문서(한글·PDF)로 만듭니다. 기록과 사진은 이 휴대폰에만 저장됩니다.">
@@ -35,6 +36,11 @@
     <button type="button" class="ghost" id="newDataGet">새 자료 받기</button>
   </div>
   <p id="intro" class="note" hidden>기록과 사진은 이 휴대폰에만 저장됩니다.<br>내보내기 전에는 어디로도 보내지 않습니다.</p>
+  <p id="ready" class="hint" role="status" hidden>오프라인 준비됨.<br>인터넷이 끊겨도 이 화면이 열립니다.</p>
+  <div id="install" class="note" hidden>
+    <p id="installMsg">홈 화면에 추가하면 앱처럼 바로 열립니다.</p>
+    <button type="button" class="ghost" id="installGo">홈 화면에 추가</button>
+  </div>
 
   <div class="pick">
     <label class="big" for="shot">사진 찍기<input id="shot" type="file" accept="image/*" capture="environment"></label>

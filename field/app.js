@@ -682,7 +682,22 @@
   // 위치 권한이 이미 있으면 바로 받는다. 처음이면 사진 찍기·'현재 위치 받기'를 누를 때 한 번 묻는다
   if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: "geolocation" }).then((s) => { if (s.state === "granted") locate(); }).catch(() => {});
   render().catch(() => say("이 브라우저에서는 기기 저장소를 쓸 수 없습니다.", true));
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+    // ready는 앱 셸을 다 저장한 서비스 워커가 켜져야 풀린다. 현장에 나가기 전에 오프라인으로 열리는지 보이게 한다(감사 이수진2)
+    navigator.serviceWorker.ready.then(() => { $("ready").hidden = false; });
+  }
+  // 홈 화면 추가(감사 이수진3). 크롬·삼성 인터넷은 beforeinstallprompt를 주고, iOS 사파리는 주지 않아 공유 메뉴를 한 번 안내한다
+  let installAsk = null;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installAsk = e; $("install").hidden = false; });
+  window.addEventListener("appinstalled", () => { $("install").hidden = true; });
+  $("installGo").addEventListener("click", () => { $("install").hidden = true; if (installAsk) installAsk.prompt(); installAsk = null; });
+  if (navigator.standalone === false && !store("renewmap-field-install")) {
+    $("installMsg").textContent = "사파리 아래의 공유 버튼 → '홈 화면에 추가'를 누르면 앱처럼 바로 열립니다.";
+    $("installGo").textContent = "알겠습니다";
+    $("install").hidden = false;
+    store("renewmap-field-install", "1");
+  }
   checkData();
   window.addEventListener("online", checkData);
 })();

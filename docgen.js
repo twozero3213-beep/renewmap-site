@@ -897,7 +897,7 @@
   }
 
   // ══════════════════════════════════════ 화면용 HTML(1쪽 요약·인쇄). 인라인 style 속성을 쓰지 않는다(CSP)
-  const COPY_TABLE = '📋 표 복사(HWP/엑셀 붙여넣기)', COPY_SENT = '문장 복사';
+  const COPY_TABLE = '표 복사(HWP/엑셀 붙여넣기)', COPY_SENT = '문장 복사';
   const runsHTML = (text, emph) => textRuns(text, emph).map(([t, look]) => (look === 'b' ? `<b>${he(t)}</b>` : look === 'sup' ? `<sup class="dg-ref">${he(t)}</sup>` : he(t))).join('');
   function docHTML(doc, o) {
     const opt = o || {}, tables = [];

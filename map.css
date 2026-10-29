@@ -337,8 +337,8 @@
 .gov-e { font-size: 24px; line-height: 1; }
 .gov-card b { font-size: 16px; line-height: 1.35; }
 .gov-why { font-size: 13px; color: var(--dim); line-height: 1.5; }
-.gov-c { font-size: 13px; font-weight: 600; line-height: 1.5; } .gov-c::before { content: '🔎 '; }
-.gov-law { font-size: 12px; color: var(--dim); line-height: 1.45; } .gov-law::before { content: '📜 '; }
+.gov-c { font-size: 13px; font-weight: 600; line-height: 1.5; }
+.gov-law { font-size: 12px; color: var(--dim); line-height: 1.45; }
 .gov-d { font-size: 12px; font-weight: 700; color: var(--warn); }
 .fd-hint { flex-basis: 100%; margin: 0; font-size: 13px; font-weight: 700; color: var(--warn); background: #fff7e8; border: 1px solid #e3c79a; border-radius: 8px; padding: 4px 10px; }
 .fd-conds { margin: 0 0 8px; font-size: 13px; color: var(--dim); } .fd-conds b { color: var(--green); }

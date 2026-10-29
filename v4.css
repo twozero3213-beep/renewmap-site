@@ -212,7 +212,9 @@ body.field .card { border-radius: 14px; }
 .map-hint { margin: 6px 0 8px; } .map-hint summary { cursor: pointer; font-size: 14px; color: var(--dim); } .map-hint p { margin: 4px 0 0; font-size: 14px; color: var(--dim); }
 .explore-page .map-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } /* 화면 낭독기용 현재 위치 알림 */
 .explore-page [data-export-tools] .export-buttons { display: none; } /* 같은 단추가 보고서 머리에 있다. 위 줄은 받기 결과 알림만 */
+.ws-close { display: none; }
 @media (min-width: 1100px) {
+  .explore-page .ws-close { display: inline-flex; float: right; min-height: 44px; margin: 0 0 8px 8px; }
   .explore-page .evidence-workspace:not([data-filters-open]) #find { display: none; }
   .explore-page .evidence-workspace:not([data-filters-open]) .workspace-panels { grid-template-columns: minmax(0, 1fr); }
   .explore-page .evidence-workspace:not([data-filters-open]) .workspace-panel[data-workspace-panel="evidence"] { grid-column: 1; }

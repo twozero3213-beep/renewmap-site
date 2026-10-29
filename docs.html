@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- 열기 도구(vendor/)는 같은 출처에서만 불러온다. 문서 보기용 스타일(docx-preview)과 한글 WASM 때문에 style 인라인·wasm-unsafe-eval을 이 페이지에만 허용한다. 스크립트 인라인은 막는다 -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; manifest-src 'self'">
+<script src="frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>문서 열기 | 리뉴맵 RENEWMAP</title>
 <meta name="description" content="한글·워드·엑셀·파워포인트·PDF·그림 파일을 이 기기 안에서 열어 보고 받을 수 있습니다. 서버로 보내지 않습니다.">
@@ -52,7 +53,7 @@
   <section aria-labelledby="openTitle" class="docs-card">
     <h2 id="openTitle">가진 문서 열기</h2>
     <p>파일은 이 기기 안에서만 열립니다. 서버로 보내지 않습니다.</p>
-    <label id="docDrop" class="doc-drop" for="docFile"><b>파일 고르기</b><span>또는 여기에 끌어다 놓기</span>
+    <label id="docDrop" class="doc-drop" for="docFile"><b>파일 고르기</b><span>또는 여기에 끌어다 놓기</span><span>60MB까지 엽니다</span>
       <input id="docFile" type="file" accept=".hwp,.hwpx,.docx,.xlsx,.xls,.xlsb,.ods,.csv,.pptx,.pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.md,.json,.odt"></label>
     <ul class="docs-formats"><li>한글 hwp·hwpx</li><li>워드 docx·odt</li><li>엑셀 xlsx·xls·csv</li><li>파워포인트 pptx</li><li>PDF</li><li>그림</li><li>글 txt·md</li></ul>
     <p id="docStatus" class="doc-status" role="status" aria-live="polite"></p>

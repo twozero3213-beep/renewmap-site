@@ -35,6 +35,12 @@
       tabs.forEach(tab => tab.setAttribute('aria-pressed', String(tab.dataset.workspaceTab === active)));
       if (focusTab) tabs.find(tab => tab.dataset.workspaceTab === active)?.focus();
     }
+    // 데스크톱에서 한 번 연 업무 패널을 다시 접는다(감사 김봉진4). 휴대폰은 하단 탭으로 바꾸므로 단추를 숨긴다(v4.css)
+    workspace.querySelector('[data-filters-close]')?.addEventListener('click', () => {
+      delete workspace.dataset.filtersOpen;
+      show('map', true);
+      history.replaceState(null, '', '#map');
+    });
     tabs.forEach(tab => tab.addEventListener('click', () => {
       const name = normalizePanel(tab.dataset.workspaceTab);
       show(name);

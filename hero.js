@@ -48,12 +48,12 @@
     const fields = cell && D ? D.detailRows(cell).length : null;
     return { sources: names.size || null, emd: index && isNum(index.emd_count) ? index.emd_count : null, fields };
   }
-  const PARTS = [['출처', '📚'], ['기준일', '📅'], ['계산식', '🧮'], ['규칙 버전', '🏷'], ['표본수', '🔢'], ['이용조건', '📜']];
+  const PARTS = ['출처', '기준일', '계산식', '규칙 버전', '표본수', '이용조건'];   // 업무 화면은 이모지 없이 글자만(D22)
   // 원장 셀 해부도: 가운데 값, 둘레에 근거 항목 6개를 선으로 잇는다. 값·항목은 detailRows(cell) 그대로
   function anatomyHTML(dong, cell, D) {
     if (!dong || !cell || !D) return null;
     const v = D.cellView(cell), rows = D.detailRows(cell), get = k => (rows.find(r => r[0] === k) || [])[1];
-    const parts = PARTS.filter(([k]) => get(k)).map(([k, e], i) => `<li class="anat-p p${i}"><b><span aria-hidden="true">${e}</span> ${esc(k)}</b><span>${esc(get(k))}</span></li>`).join('');
+    const parts = PARTS.filter((k) => get(k)).map((k, i) => `<li class="anat-p p${i}"><b>${esc(k)}</b><span>${esc(get(k))}</span></li>`).join('');
     const ys = [16.7, 50, 83.3], lines = ys.map(y => `<line x1="31" y1="${y}" x2="38" y2="50"/><line x1="69" y1="${y}" x2="62" y2="50"/>`).join('');
     return `<svg class="anat-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${lines}</svg>` +
       `<div class="anat-core"><p class="anat-k">${esc(dong.name)} · 준공 20년 이상 건축물 비율(동수 기준)</p><p class="anat-v">${esc(v.text)}</p><span class="tag ${esc(v.cls === 'none' ? 'check' : v.cls)}">${esc(v.status)}</span><p class="anat-cap">실제 원장 셀 1개 · ${esc(dong.unit || '')} ${esc(dong.code)}</p></div>` +

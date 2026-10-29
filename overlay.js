@@ -346,7 +346,7 @@
     const S = { sheets: null, table: null, pii: [], det: null, method: null, pts: null, codes: null, loc: null, agg: null, valueLabel: '' };
     let group = null, timer = 0;
 
-    app.innerHTML = `<details class="ov" id="overlay"><summary><span aria-hidden="true">📂</span> 우리 파일 얹기<small>부서 엑셀·CSV 대장을 같은 지도에</small></summary>
+    app.innerHTML = `<details class="ov" id="overlay"><summary>우리 파일 얹기<small>부서 엑셀·CSV 대장을 같은 지도에</small></summary>
 <div class="ov-body">
 <div class="ov-privacy"><p><strong>파일은 이 브라우저 안에서만 처리합니다.</strong></p><p>서버로 보내지 않고, 저장하지 않습니다.</p><p>새로고침하거나 ‘지우기’를 누르면 사라집니다.</p></div>
 <div class="ov-pick"><label for="ovFile">엑셀(.xlsx) 또는 CSV 파일</label><input id="ovFile" type="file" accept=".xlsx,.csv,.txt"><p class="ov-hint">글자 깨짐은 UTF-8·CP949를 자동으로 가립니다.<br>예전 .xls는 엑셀에서 .xlsx로 저장해 올려 주세요.</p></div>

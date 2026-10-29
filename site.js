@@ -58,3 +58,23 @@
   if (desktop.addEventListener) desktop.addEventListener('change', onDesktop);
   else desktop.addListener(onDesktop);
 })();
+
+// 우리 스크립트가 멈추면 사용자에게 알리고 신고 메일을 연다(감사 김범석2). 오류 수집 서버는 두지 않는다(기록은 서버로 보내지 않는다는 원칙)
+(function () {
+  if (typeof window === 'undefined') return;   // 메뉴 시험(vm)은 window 없이 이 파일을 돌린다
+  let shown = false;
+  window.addEventListener('error', e => {
+    // 다른 사이트 스크립트(지도 SDK 등)와 파일 못 받음(e.error 없음)은 빼고, 이 사이트 파일에서 난 예외만 알린다
+    if (shown || !e.error || !String(e.filename || '').startsWith(location.origin) || !document.body) return;
+    shown = true;
+    const body = `화면: ${location.pathname}\n오류: ${String(e.message || '').slice(0, 200)}\n무엇을 누르다 났는지 적어 주세요.`;
+    const a = document.createElement('a');
+    a.href = 'mailto:renewmapteam@gmail.com?subject=' + encodeURIComponent('[리뉴맵] 화면 오류') + '&body=' + encodeURIComponent(body);
+    a.textContent = '오류 알리기';
+    const p = document.createElement('p');
+    p.className = 'err-banner';
+    p.setAttribute('role', 'alert');
+    p.append('화면에 오류가 났습니다. 새로고침해도 계속되면 ', a, '를 눌러 주세요.');
+    document.body.append(p);
+  });
+})();

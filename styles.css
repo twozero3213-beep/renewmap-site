@@ -104,7 +104,8 @@ form.contact .form-note { margin: 0; font-size: 14px; color: var(--dim); }
 
 footer { padding: 36px 0 110px; font-size: 14px; color: var(--dim); }
 footer a { color: var(--dim); }
-footer .links { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+footer .links { display: flex; gap: 0 16px; flex-wrap: wrap; margin-bottom: 10px; }
+footer .links a { display: inline-flex; align-items: center; min-height: 44px; }   /* 누르기 영역 44px(감사 김슬아2, 기존 24px). 본문 속 메일 링크는 WCAG 2.5.8 글 안 예외 */
 
 .breadcrumb { font-size: 14px; color: var(--dim); padding-top: 20px; }
 .breadcrumb ol { list-style: none; padding: 0; margin: 0; display: flex; gap: 6px; flex-wrap: wrap; }
@@ -211,3 +212,6 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
 
 /* 넓은 화면은 왼쪽 주 메뉴가 있어 머리글 메뉴를 겹쳐 보이지 않는다(로고·상담 단추만). 좁은 화면 메뉴 단추는 그대로 */
 @media (min-width: 1100px) { header.top #site-menu { display: none; } }
+/* 화면 오류 안내(site.js). 하단 탭(약 64px) 위에 띄운다 */
+.err-banner { position: fixed; left: 16px; right: 16px; bottom: 80px; z-index: 1000; margin: 0; padding: 12px 16px; border: 1px solid #b4521d; border-radius: 8px; background: #fff7ef; color: #3a2a1e; font-size: 15px; line-height: 1.5; }
+.err-banner a { color: #7a3010; font-weight: 700; }

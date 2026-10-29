@@ -568,7 +568,7 @@
     const waiting = rows.filter(r => isPending(r.ind.standard)).map(r => r.ind.label);
     const head = `<div class="sr-tally" role="group" aria-label="기준 미달 항목 수"><p class="sr-tally-k">기준 미달 항목 수</p>` +
       `<p class="sr-tally-n"><span>확정 <b data-ck="t-c" data-count="${confirmed}">${confirmed}</b></span><span>추가확인 <b data-ck="t-p" data-count="${t.pending}">${t.pending}</b></span>${led ? '<span class="is-dim">최신 원장 기준</span>' : ''}</p>` +
-      `<details class="sr-tally-more"><summary>ⓘ 이 수를 세는 법</summary><p class="sr-tally-note">${led ? `확정은 원장 셀 '${esc(led.ind.label)}' 값이며 하한입니다.<br>쇠퇴 요건은 법정 요건 단위(인구 요건 = 30년 감소 또는 3년 연속 감소)로 셉니다.` : '확정은 법정·공식 기준선을 넘은 항목 수입니다.'}` +
+      `<details class="sr-tally-more"><summary>ⓘ 이 수를 세는 법</summary><p class="sr-tally-note">${led ? `확정은 원장 셀 '${esc(led.ind.label)}' 값이며 하한입니다.<br>쇠퇴 요건은 법정 요건 단위(인구 요건 = 30년 감소 또는 3년 연속 감소)로 셉니다.` : '확정은 법정·공식 기준선을 넘은 항목 수입니다.<br>동 페이지의 ‘쇠퇴 3요건 충족 수’는 법정 요건 단위로 세어 이 수와 다를 수 있습니다.'}` +
       `<br>추가확인은 기준선을 넘었지만 그 기준이 아직 승인 대기인 항목입니다${waiting.length ? `(${esc(waiting.join('·'))}). 확정 수에는 넣지 않습니다` : ''}.<br>가중치·순위 없이 개수만 셉니다.</p>` +
       (led && led.cell && detail(led.cell).length ? `<div class="map-detail">${dl(led.cell)}</div>` : '') + `</details></div>`;
     const list = rows.filter(r => r.ind.group !== 'sum');
@@ -766,7 +766,7 @@
   const deltaText = d => (d.prev && d.cur && isNum(d.prev.v) && isNum(d.cur.v) ? `${d.cur.v - d.prev.v >= 0 ? '+' : ''}${fmt(Math.round((d.cur.v - d.prev.v) * 100) / 100, d.cur.u === '%' ? '%p' : d.cur.u)}` : d.kind === 'new' ? '새 항목' : d.kind === 'gone' ? '빠짐' : '');
   function snapHTML(prev, cur) {
     const head = `<section class="rp-g rp-snap"><h3>${icon('fore')}기준일 비교</h3>`;
-    if (!prev) return head + '<p class="rp-intro">지금 값을 이 기기에 저장해 두면, 사전컨설팅·보완 때 다시 열어 바뀐 항목만 표로 볼 수 있습니다.<br>서버로 보내지 않습니다.</p><p class="rp-tools"><button type="button" class="btn ghost" data-snap-save>지금 값 저장</button></p></section>';
+    if (!prev) return head + '<p class="rp-intro">지금 값을 이 기기에 저장해 두면, 사전컨설팅·보완 때 다시 열어 바뀐 항목만 표로 볼 수 있습니다.<br>서버로 보내지 않습니다.<br>같은 기기·같은 브라우저에서만 보이고, 방문 기록을 지우면 함께 지워집니다.<br>남겨 둘 값은 문서 받기로 파일에 넣어 두세요.</p><p class="rp-tools"><button type="button" class="btn ghost" data-snap-save>지금 값 저장</button></p></section>';
     const d = diffSnap(prev, cur), flips = d.rows.filter(x => x.flip).length, when = String(prev.saved_at).slice(0, 10);
     const cell = x => (x ? `${esc(x.t)}<br><small>${esc(x.d || '기준일 기록 없음')}</small>` : '–');
     const table = d.rows.length ? `<div class="dg-tbl">${copyHead('기준일 비교')}<div class="table-wrap"><table class="rp-tbl rp-snap-tbl"><thead><tr><th>항목</th><th>저장 때(${esc(when)})</th><th>지금</th><th>변동</th><th>판정</th></tr></thead><tbody>` +
@@ -1206,6 +1206,10 @@
         const sync = () => { const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); };
         map.on('move zoom moveend zoomend viewreset resize', sync);
         if ('ResizeObserver' in window) new ResizeObserver(() => { nmap.autoResize && nmap.autoResize(); sync(); }).observe(el);
+        // 네이버가 만든 로고·법적 고지 링크는 이름이 없어 화면 낭독기가 읽지 못한다(감사 김슬아3). 그림만 있는 링크에 이름을 붙인다
+        N.Event.addListener(nmap, 'idle', () => nv.querySelectorAll('a').forEach(a => {
+          if (!a.getAttribute('aria-label') && !a.textContent.trim()) a.setAttribute('aria-label', 'NAVER 지도 ' + (/legal|notice|policy/i.test(a.href) ? '법적 고지' : '바로가기') + '(새 창)');
+        }));
       }
       // 칸 크기가 바뀌면(업무 패널 열기·휴대폰 순서) 경계층도 다시 재야 바탕과 어긋나지 않는다. 네이버 동기화는 위 resize 이벤트로 따라간다
       if ('ResizeObserver' in window) new ResizeObserver(() => map.invalidateSize({ pan: false })).observe(el);

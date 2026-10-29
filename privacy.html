@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
+<script src="frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>개인정보 처리방침 | 리뉴맵</title>
 <meta name="description" content="리뉴맵이 상담 문의에서 수집하는 개인정보의 항목, 목적, 보유 기간, 처리 위탁과 이용자의 권리를 안내합니다.">
@@ -78,6 +79,8 @@
 <tr><td>GitHub, Inc. (GitHub Pages)</td><td>웹사이트 호스팅, 접속 기록</td><td>접속 IP, 요청 정보</td><td>미국 · 접속 시</td></tr>
 <tr><td>Cloudflare cdnjs (Leaflet)</td><td>지도 라이브러리 전송</td><td>접속 IP</td><td>해당 사업자 서버 · 접속 시</td></tr>
 <tr><td>OpenStreetMap 타일 서버</td><td>지도 이미지</td><td>접속 IP</td><td>OSMF 서버 · 지도 열람 시</td></tr>
+<tr><td>네이버클라우드 (NAVER Maps)</td><td>동네 찾기 화면의 바탕지도</td><td>접속 IP, 보고 있는 지도 범위</td><td>대한민국 · 지도 열람 시</td></tr>
+<tr><td>국토교통부 브이월드</td><td>바탕지도(네이버 지도를 못 쓸 때), 현장 확인 화면의 배경지도(켤 때만)</td><td>접속 IP, 보고 있는 지도 범위(현장 배경지도는 그 근처의 대략 위치)</td><td>대한민국 · 지도 열람 시</td></tr>
 </table></div>
 <p>상담 폼은 사이트 서버가 아니라 방문자의 메일 앱을 통해 팀 메일로 전달됩니다.</p>
 <p>국외 이전을 거부하실 수 있으나, 현재 모든 접수 경로(폼·직접 이메일)가 Gmail(미국)이라 거부하시면 이메일 상담을 받지 못합니다.</p>
@@ -103,6 +106,11 @@
 <p>리뉴맵 서비스는 현장 사진의 얼굴과 차량번호를 가린 뒤 저장하는 것을 전제로 설계합니다.</p>
 <p>건물 소유자·거주자의 이름·연락처는 저장하지 않습니다.</p>
 <p>현장 확인 화면(현장 확인 앱)에서 찍거나 고른 사진은 이 기기 안에만 저장됩니다.</p>
+<p>현장 확인 화면은 '현재 위치 받기'를 누를 때만 이 기기의 위치(위도·경도·정확도)를 받아 기록에 넣습니다.</p>
+<p>이 위치는 사람의 위치가 아니라 조사 대상 지점의 위치로 쓰며, 기록과 함께 이 기기 안에만 저장합니다.</p>
+<p>위치는 사용자가 지도에서 옮겨 고칠 수 있고, 고친 위치는 '보정됨'으로 남습니다.</p>
+<p>배경지도를 켜면 지도 조각을 받기 위해 그 근처의 대략 위치가 국토교통부 브이월드로 갑니다. 끄면 보내지 않습니다.</p>
+<p>위치정보법상 개인위치정보에 해당하는지는 법률 검토 중입니다.</p>
 <p>사진은 줄여서 다시 만들어 저장하므로 촬영 위치·시각·기기 정보(EXIF)가 남지 않고, 얼굴·차량번호·소유자 정보를 가렸다고 확인한 사진만 붙일 수 있습니다.</p>
 <p>사진의 얼굴·번호판 자동 찾기는 이 기기 안에서 돌고(오픈소스 MediaPipe·Tesseract를 사이트에 함께 두었습니다) 사진을 서버로 보내지 않습니다. 자동 결과는 보조일 뿐이며 가림 확인은 사용자가 합니다.</p>
 <p>현재 현장 사진·기록을 서버로 올리는 기능은 꺼져 있습니다. 켜는 경우 저장 사업자와 위치를 이 처방침에 먼저 적고 알립니다.</p>
@@ -118,7 +126,7 @@
 <h2>8. 변경 이력, 시행일</h2>
 <p>시행일: &lt;YYYY-MM-DD&gt;.</p>
 <p>변경하면 시행 7일 전에 사이트에 공지하고 이전 버전 링크를 남깁니다.</p>
-<p>v1(초안) → v2(이 문서, 2026-10-24).</p>
+<p>v1(초안) → v2(2026-10-24) → v2.1(2026-10-29: 현장 위치 기록, 네이버 지도·브이월드 추가).</p>
 </main>
 <footer><div class="wrap"><div class="links"><a href="./">홈</a><a href="./#faq">자주 묻는 질문</a><a href="./#contact">문의</a><a href="ethics.html">AI 윤리·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a></div>
 <p>리뉴맵 RENEWMAP · 부산 · <a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div></footer>
