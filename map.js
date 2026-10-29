@@ -775,8 +775,16 @@
     return head + `<p class="rp-snap-sum">${esc(when)} 저장분 대비 바뀐 항목 <b>${d.rows.length}</b>개 · 판정 바뀜 <b>${flips}</b>개 · 그대로 ${d.same}개</p>${table}` +
       '<p class="rp-tools"><button type="button" class="btn ghost" data-snap-save>지금 값으로 다시 저장</button><button type="button" class="btn ghost" data-snap-clear>저장 지우기</button></p></section>';
   }
+  // 납품 파일(HWPX·DOCX·PPTX·XLSX)용 표. 문서 글꼴 검사(clean)가 화살표를 지우므로 '에서 …로'로 쓴다
+  function snapDoc(prev, cur) {
+    if (!prev) return null;
+    const d = diffSnap(prev, cur), when = String(prev.saved_at).slice(0, 10), flips = d.rows.filter(x => x.flip).length;
+    const cell = x => (x ? `${x.t}${x.d ? ` (${x.d})` : ''}` : '-');
+    return { when, summary: d.rows.length ? `${when}에 저장한 값과 비교하면 바뀐 항목은 ${d.rows.length}개, 판정이 바뀐 항목은 ${flips}개, 그대로인 항목은 ${d.same}개다.` : `${when}에 저장한 뒤 바뀐 값이 없다(${d.same}개 항목).`,
+      rows: [['항목', '저장 때 값(기준일)', '지금 값(기준일)', '변동', '판정'], ...d.rows.map(x => [(x.cur || x.prev).l, cell(x.prev), cell(x.cur), deltaText(x), x.flip ? `${x.prev.s}에서 ${x.cur.s}로 바뀜` : (x.cur || x.prev).s])] };
+  }
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
-  const api = { snapshotOf, diffSnap, snapHTML, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
+  const api = { snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
@@ -944,11 +952,13 @@
     const built = docFor(cur.v, cur.m, cur.it); if (built.error) { notify({ format: kind, status: 'error', message: built.error }); return; }
     const one = reportMode === 'onepage', stem = `${cur.it.code}_${DG.safeName(cur.it.name)}_${one ? '요약' : '근거서'}`;
     try {
-      const OOXML = 'application/vnd.openxmlformats-officedocument.', pick = one ? built.one : built.doc;
+      // 동 보고서에서 '지금 값 저장'을 했으면 본문·엑셀에 기준일 비교를 붙인다(1쪽 요약은 분량 때문에 넣지 않는다)
+      const snap = typeof localStorage !== 'undefined' ? snapDoc(snapGet(cur.it.code), snapshotOf(cur.it, rowsFor(cur.v, cur.m, cur.it), new Date())) : null, full = DG.withSnap(built.doc, snap);
+      const OOXML = 'application/vnd.openxmlformats-officedocument.', pick = one ? built.one : full;
       const file = kind === 'hwpx' ? [`${stem}.hwpx`, DG.hwpxBytes(pick), 'application/hwp+zip']
         : kind === 'docx' ? [`${stem}.docx`, DG.docxBytes(pick), OOXML + 'wordprocessingml.document']
         : kind === 'pptx' ? [`${stem}.pptx`, DG.pptxBytes(pick), OOXML + 'presentationml.presentation']
-        : [`${stem}.xlsx`, DG.workbookBytes(built.doc), OOXML + 'spreadsheetml.sheet'];
+        : [`${stem}.xlsx`, DG.workbookBytes(full), OOXML + 'spreadsheetml.sheet'];
       notify({ format: kind, status: 'done', file: file[0], size: DG.saveBytes(...file), year: built.doc.brief.year, one });
     } catch (err) { notify({ format: kind, status: 'error', message: err.message }); }
   }

@@ -491,6 +491,16 @@
     return { kind: 'full', title: blocks[0].text, blocks, sources: src.list, cells: brief.cells, snapshot: brief.snapshot, templateVersion: TP.version, footer: `리뉴맵 · 원장 ${String(brief.snapshot).slice(0, 8)} · `,
       parts, src, brief, writtenOn: brief.writtenOn, sizes: 'full', byCode, facts };
   }
+  // 기준일 비교(map.js 동 보고서 '지금 값 저장'): 본문 '붙임 1' 앞에 장 하나를 끼운다. 엑셀은 workbookSheets가 시트를 더한다.
+  // snap = { when: 'YYYY-MM-DD', summary: 문장, rows: [[항목, 저장 때 값(기준일), 지금 값(기준일), 변동, 판정], ...] }. 없으면 문서 그대로
+  function withSnap(doc, snap) {
+    if (!snap) return doc;
+    const at = doc.blocks.findIndex(b => b.kind === 'h1' && /^붙임 1/.test(b.text)), n = doc.blocks.filter(b => b.kind === 'h1' && /^\d+\./.test(b.text)).length + 1;
+    const add = finish([block('h1', `${n}. 기준일 비교`), block('para', snap.summary),
+      ...(snap.rows.length > 1 ? [block('table', '', { rows: snap.rows, widths: [28, 21, 21, 12, 18], caption: `표. 기준일 비교(${snap.when} 저장분 대비)` })] : [])]);
+    const blocks = [...doc.blocks]; blocks.splice(at < 0 ? blocks.length : at, 0, ...add);
+    return { ...doc, blocks, snap };
+  }
   const docText = d => d.blocks.map(b => (b.kind === 'images' ? b.text : b.kind === 'table' || b.kind === 'box' ? `${b.caption}\n${b.rows.map(r => r.join('\t')).join('\n')}` : b.text)).join('\n');
 
   // ── 1쪽 요약: 요약 5문장 + 기준 대비 표(8행 이하) + 출처 5개 이하('끝' 표시 없음). 양식은 JSON의 onepage(파이썬 build_onepage와 같다)
@@ -766,6 +776,7 @@
       { name: '기준 대비', rows: crit, widths: [11, 12, 38, 14, 14, 44, 18, 20] },
       { name: '시계열', rows: ser, widths: [11, 12, 34, ...Array(SERIES_YEARS).fill(10)] },
       { name: '출처', rows: so, widths: [11, 12, 8, 34, 40, 50, 12, 12, 16, 50, 16, 26] },
+      ...(doc.snap ? [{ name: '기준일 비교', rows: [[...head, ...doc.snap.rows[0]], ...doc.snap.rows.slice(1).map(r => [b.code8, b.dongName, ...r.map(clean)])], widths: [11, 12, 34, 24, 24, 14, 26] }] : []),
     ];
   }
   const workbookBytes = doc => xlsxBytes(workbookSheets(doc), doc.writtenOn);
@@ -1087,7 +1098,7 @@
 
   return {
     crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, fmtNum, roundD, govDate, josa, valueWithUnit, fmtCell, hidden, usable, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
-    setTemplates, getTemplates, displayName, BriefError, Sources, sourceLine, buildBrief, buildDoc, buildOnepage, estimateHeightMm, docText, sentenceText, sizesFor, textRuns, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
+    setTemplates, getTemplates, displayName, BriefError, Sources, sourceLine, buildBrief, buildDoc, buildOnepage, estimateHeightMm, docText, sentenceText, sizesFor, textRuns, withSnap, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
     tablePayload, sentencePayload, copyToClipboard, buildFragments, fragmentChoices, fragmentPayload, fragmentHTML, docHTML, COPY_TABLE, COPY_SENT, projectFeatures, mapSvg, safeName, saveBytes, svgToPng, xe,
   };
 });
