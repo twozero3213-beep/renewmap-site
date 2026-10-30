@@ -783,13 +783,26 @@
     return { when, summary: d.rows.length ? `${when}에 저장한 값과 비교하면 바뀐 항목은 ${d.rows.length}개, 판정이 바뀐 항목은 ${flips}개, 그대로인 항목은 ${d.same}개다.` : `${when}에 저장한 뒤 바뀐 값이 없다(${d.same}개 항목).`,
       rows: [['항목', '저장 때 값(기준일)', '지금 값(기준일)', '변동', '판정'], ...d.rows.map(x => [(x.cur || x.prev).l, cell(x.prev), cell(x.cur), deltaText(x), x.flip ? `${x.prev.s}에서 ${x.cur.s}로 바뀜` : (x.cur || x.prev).s])] };
   }
+  // 2026년 행정구역 개편: 지도 경계·이름·코드는 SGIS 2024 기준이라, 바뀐 지역을 열면 바뀐 사실과 공식 출처를 함께 적는다(2026-10-30 전수검사: 3,559동 중 468동)
+  const MOIS_REORG = 'https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000052&nttId=127039';
+  const REORG = [
+    { sido: ['24', '36'], text: '2026. 7. 1. 광주광역시와 전라남도가 전남광주통합특별시로 통합됐다. 행정동·법정동 코드도 새로 매겨졌다.', url: MOIS_REORG },
+    { sg: ['23010', '23020'], text: '2026. 7. 1. 중구·동구가 제물포구·영종구로 바뀌었다.', url: MOIS_REORG },
+    { sg: ['23080'], text: '2026. 7. 1. 서구가 서해구와 검단구로 나뉘었다.', url: MOIS_REORG },
+    { sg: ['31240'], text: '2026. 2. 1. 화성시에 만세구·효행구·병점구·동탄구가 생겼다.', url: 'https://www.code.go.kr/comp/compBas_01.do' },
+  ];
+  function reorgNote(v) {
+    const s2 = v && v.sido ? String(v.sido.code2) : '', s5 = v && v.sigungu ? String(v.sigungu.code5) : '';
+    const r = REORG.find(x => (x.sido || []).includes(s2) || (x.sg || []).includes(s5));
+    return r ? `<p class="map-note">${esc(r.text)} 이 지도의 경계·이름·코드는 SGIS 2024 기준이다. <a href="${r.url}" target="_blank" rel="noopener">공식 변경 내역</a></p>` : '';
+  }
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
   const api = { snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
     reportSentences, verifyPolished, stdTextOf, olsFit, trendSVG, donutSVG, coverLabel, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
-    gapRows, gapsHTML, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
+    gapRows, gapsHTML, reorgNote, REORG, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewMap = api;
@@ -883,10 +896,10 @@
     if (m.kind === 'noemd' || m.nodata) return emptyHTML(`${here} · 읍·면·동 자료 준비 중`, [m.kind === 'noemd' ? '이 지역의 읍·면·동 자료가 아직 없습니다.' : '경계는 있지만 지표 시계열이 아직 없습니다.', '준비되기 전에는 숫자를 보여 드리지 않습니다.']);
     const it = m.items.find(x => x.code === v.dong), dist = ind.level === 'sg' ? `<p class="map-note">${esc(ind.label)}은(는) 시·군·구 단위 자료라 읍·면·동 분포가 없습니다.</p>`
       : `<h4 class="map-h4">${esc(here)} 읍·면·동 분포 · ${esc(ind.label)} <small>순위 아님${m.year ? ` · ${esc(m.year)}년` : ''}</small></h4>${strip(m.items, it ? it.code : null, ind, scale)}`;
-    if (!it) return `<h3 class="map-h3">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3><p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.</p>${dist}${hubHTML(v)}`;
+    if (!it) return `<h3 class="map-h3">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3><p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.</p>${reorgNote(v)}${dist}${hubHTML(v)}`;
     const rows = rowsFor(v, m, it), D = window.RenewDashboard, dy = rows.find(r => r.ind.series && r.year)?.year;
     return `<div class="map-panel-head"><h3 class="map-h3">${esc(it.name)} <small>${esc(it.kind || '행정동')} · ${esc(it.code)}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` +
-      `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>` +
+      `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>${reorgNote(v)}` +
       `<p class="map-report-link"><a href="#report">${icon('book')}동네 보고서 보기</a></p>` +
       scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist + hubHTML(v);
   }

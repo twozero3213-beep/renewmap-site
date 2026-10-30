@@ -110,7 +110,11 @@
   // 빠른 쪽: 못 정한 건물을 노후로 일찍 셈(날짜 없음은 처음부터, 연한이 갈리면 짧은 연한). 늦은 쪽: 날짜 없으면 세지 않고 긴 연한
   const fromEarly = (r) => (r.b.use_apr_day ? addYears(r.b.use_apr_day, yearsRange(r.b)[0]) : "");
   const fromLate = (r) => (r.b.use_apr_day ? addYears(r.b.use_apr_day, yearsRange(r.b)[1]) : null);
-  const URBAN = { years: 20, thr: 50 };   // 도시재생법 시행령 제17조 노후 요건(동수). 적용 단위가 달라 참고로만 같이 센다
+  const URBAN = { years: 20, thr: 50 };
+  // 날짜 없는 건물의 구조로 '어느 건물부터 확인할지' 정하는 참고값. 판정에 쓰지 않는다(추정으로 충족을 만들지 않음).
+  // 근거: 부산 건축물대장 주건축물 중 날짜 있는 목조·블록·벽돌·조적 165,371동의 98.4%가 20년 이상, 날짜 없는 건물의 90.7%가 이 구조(backend/scripts/busan_undated_share.py, 2026-10-24 수집·기준일 2026-10-26)
+  const MASONRY = /목구조|블록|벽돌|조적/;
+  const MASONRY_PRIOR = { pct: 98.4, n: 165371, basis: "부산 건축물대장 2026-10-24 수집" };   // 도시재생법 시행령 제17조 노후 요건(동수). 적용 단위가 달라 참고로만 같이 센다
 
   // blds: match().buildings, ref: 'YYYY-MM-DD'(파일 age_reference_date), district: 재정비촉진지구, areaM2: 사용자가 넣은 구역 면적(없으면 null)
   function review(blds, { ref, district = false, areaM2 = null }) {
@@ -139,7 +143,10 @@
     // 같은 목록, 다른 사업 기준: 도시재생은 구조·용도와 관계없이 준공 20년 이상 건축물 수를 센다
     const uOld = rows.filter((r) => r.b.use_apr_day && ageYears(r.b.use_apr_day, ref) >= URBAN.years).length, uUnk = rows.filter((r) => !r.b.use_apr_day).length;
     const uLo = (uOld / n) * 100, uHi = ((uOld + uUnk) / n) * 100;
-    const urban = { label: "도시재생 쇠퇴 진단 노후 요건", rule: `준공 ${URBAN.years}년 이상 건축물 수 ${URBAN.thr}% 이상`, value: range(uLo, uHi),
+    // 사용승인일 없는 건물을 분모에서 뺀 값도 함께 둔다. 부산 원도심은 날짜 없는 건물이 많아(중구 47%) 분모 선택만으로 판정이 뒤집힌다(2026-10-30 전수검사)
+    const known = uUnk && n > uUnk ? (uOld / (n - uUnk)) * 100 : null;
+    const unkMasonry = rows.filter((r) => !r.b.use_apr_day && MASONRY.test(r.b.structure || "")).length;
+    const urban = { label: "도시재생 쇠퇴 진단 노후 요건", rule: `준공 ${URBAN.years}년 이상 건축물 수 ${URBAN.thr}% 이상`, value: range(uLo, uHi), known, unk: uUnk, unkMasonry,
       status: status(uLo, uHi, URBAN.thr), basis: "도시재생법 시행령 제17조" };
     const one = (w) => [reachDate(rows, w, thr, ref, fromEarly), reachDate(rows, w, thr, ref, fromLate)];
     const reach = { count: one(() => 1), area: one((r) => Number(r.b.tot_area) || 0) };
@@ -171,7 +178,7 @@
       `${res.thr}% 도달일(지금 건물 기준): 건물 수 ${c[2]}, 연면적 ${a[2]} 적용 판본은 구역 이력마다 다를 수 있다.`;
   };
   const refRows = (res) => [
-    [`참고: ${res.urban.label}`, res.urban.rule, `${res.urban.value}, ${res.urban.status}`, res.urban.basis],
+    [`참고: ${res.urban.label}`, res.urban.rule, `${res.urban.value}${res.urban.known === null ? "" : `(날짜 있는 건물만 ${fmt(res.urban.known)}%)`}, ${res.urban.status}`, res.urban.basis],
     ["건물 수 기준 도달 날짜", `전체의 ${res.thr}%`, reachText(res.reach.count, res.ref), "사용승인일 + 조례 연한"],
     ["연면적 기준 도달 날짜", `전체의 ${res.thr}%`, res.area ? reachText(res.reach.area, res.ref) : "연면적 자료 없음", "사용승인일 + 조례 연한"],
   ];
@@ -188,8 +195,9 @@
       `<div class="rv-stacks">${stackHTML("건물 수", res.nOld, res.nUnk, res.n, res.thr)}${stackHTML("연면적", res.aOld, res.aUnk, res.area, res.thr)}` +
       `<p class="rv-key"><i class="rv-old"></i>노후·불량 <i class="rv-unk"></i>못 정함 <i class="rv-no"></i>아님 <i class="rv-thr"></i>기준선</p></div></div>` +
       `<dl class="rv-ref">${refRows(res).map(([k, rule, v]) => `<div><dt>${escH(k)}</dt><dd><b>${escH(v)}</b> <span>기준 ${escH(rule)}</span></dd></div>`).join("")}</dl>` +
-      `<p class="rv-key">${escH(REACH_NOTE)}</p>`;
+      `<p class="rv-key">${escH(REACH_NOTE)}</p>` + (res.urban.unkMasonry ? `<p class="rv-key">${escH(masonryNote(res.urban))}</p>` : "");
   }
+  const masonryNote = (u) => `사용승인일 없는 ${u.unk}동 중 목조·블록·벽돌·조적이 ${u.unkMasonry}동이다. ${MASONRY_PRIOR.basis} 기준 같은 구조의 날짜 있는 건물 ${MASONRY_PRIOR.n.toLocaleString("ko-KR")}동 중 ${MASONRY_PRIOR.pct}%가 20년 이상이다. 판정에는 쓰지 않고, 대장 열람·현장 확인을 이 건물부터 하라는 참고다.`;
 
   // 엑셀이 수식으로 읽지 않게 =·+·-·@로 시작하는 칸 앞에 '를 붙인다
   const csvCell = (v) => { let s = v === null || v === undefined ? "" : String(v); if (/^[=+\-@]/.test(s)) s = `'${s}`; return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
