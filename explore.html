@@ -48,6 +48,7 @@
   </div>
 </header>
 <main id="main">
+<h1 class="sr-only">리뉴맵 지역 탐색: 조건, 지도, 문서</h1>
   <div class="evidence-workspace" data-workspace data-active-panel="map">
     <nav class="workspace-tabs" aria-label="작업공간 패널">
       <button type="button" data-workspace-tab="filters" aria-controls="find" aria-pressed="false">조건</button>
@@ -72,7 +73,7 @@
       <section id="map" class="workspace-panel" data-workspace-panel="map" aria-labelledby="heroTitle">
         <div class="workspace-panel-inner">
           <div class="hero-head">
-            <h1 id="heroTitle">지도</h1>
+            <h2 id="heroTitle">지도</h2>
             <p class="lead">동을 누르면 값과 출처·기준일이 나옵니다.<br>판정이 아니며 순위를 매기지 않습니다.</p>
           </div>
           <form id="heroSearch" class="hero-search" role="search" autocomplete="off">
@@ -90,7 +91,7 @@
       <section id="report" class="workspace-panel" data-workspace-panel="evidence" aria-labelledby="reportTitle">
         <div class="workspace-panel-inner">
           <div class="section-head"><div><h2 id="reportTitle">문서 받기</h2></div><p>아래 문장은 공공데이터 값과 출처를 그대로 옮겼습니다.<br>평가나 판정은 하지 않습니다.</p></div>
-          <div class="export-tools" data-export-tools aria-label="보고서 납품 형식">
+          <div class="export-tools" data-export-tools role="group" aria-label="보고서 납품 형식">
             <div class="export-buttons">
               <button type="button" class="btn" data-export-format="hwpx" disabled>한글 받기</button>
               <button type="button" class="btn" data-export-format="xlsx" disabled>엑셀 받기</button>

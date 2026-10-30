@@ -836,7 +836,7 @@
   let timer = null, autoT = null, lastLegend = '', lastLive = '', lastDong = null;
 
   app.innerHTML = `<div class="map-top" data-top></div><div class="map-stage" data-stage><div class="map-canvas is-wait" data-map-slot>전국 자료를 불러오는 중입니다.</div>` +
-    `<aside class="map-panel" data-panel hidden aria-label="선택한 지역의 세부항목 척도표"></aside></div><div class="map-bottom" data-bottom></div>`;
+    `<section class="map-panel" data-panel hidden aria-label="선택한 지역의 세부항목 척도표"></section></div><div class="map-bottom" data-bottom></div>`;
   const $ = s => app.querySelector(s), top = $('[data-top]'), stage = $('[data-stage]'), panel = $('[data-panel]'), bottom = $('[data-bottom]');
   const heroLive = document.getElementById('heroLive'), heroCount = document.querySelector('[data-emd-count]');
 

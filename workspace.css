@@ -11,7 +11,7 @@
 .workspace-panel .hero-grid { display: block; padding: 0; }
 .workspace-panel .hero-side { display: block; position: static; }
 .workspace-panel .hero-head { margin-bottom: 18px; }
-.workspace-panel .hero-head h1 { margin: 0 0 8px; font-size: 28px; line-height: 36px; }
+.workspace-panel .hero-head h2 { margin: 0 0 8px; font-size: 28px; line-height: 36px; }
 .workspace-panel .hero-map { animation: none; }
 .workspace-panel .hero-live { margin-top: 12px; }
 .workspace-panel .hero-cta { margin-top: 14px; }
