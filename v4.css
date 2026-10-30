@@ -128,6 +128,12 @@ body.field .card { border-radius: var(--radius-card); }
 .rv-key { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; font-size: 12px; color: var(--dim); }
 .rv-key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 2px; vertical-align: -1px; }
 .rv-key i.rv-thr { width: 3px; height: 12px; background: var(--ink); border-radius: 0; }
+/* 참고 줄(다른 사업 기준·도달 날짜): 요건 줄과 구분해 구분선 목록으로 */
+.rv-ref { display: grid; margin: 0; }
+.rv-ref div { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid var(--line); }
+.rv-ref dt { font-size: 13px; color: var(--dim); }
+.rv-ref dd { margin: 0; font-variant-numeric: tabular-nums; }
+.rv-ref dd span { font-size: 12px; color: var(--dim); }
 .redev-v4 .req-list li { padding-left: 0; }
 @media (min-width: 1100px) {
   body.redev-v4 main { max-width: 1180px; display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); column-gap: 24px; align-items: start; }
