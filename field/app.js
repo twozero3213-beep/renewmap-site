@@ -454,6 +454,15 @@
   function clearChecks() {
     for (const c of R.CHECKS) { $(`ck-${c.id}`).checked = false; $(`ckm-${c.id}`).value = ""; $(`ckp-${c.id}`).value = ""; $(`ck-${c.id}`).closest("li").querySelector(".ck-more").hidden = true; }
   }
+  // 입안요건 사전검토(redev.html)의 '현장 확인' 줄에서 왔으면(?check=road) 그 항목을 미리 고른다. 대상 유형은 그 항목이 보이는 '주거지 골목'
+  const fromCheck = R.CHECKS.find((c) => c.id === new URLSearchParams(location.search).get("check"));
+  if (fromCheck) {
+    const t = document.querySelector('input[name="target"][value="주거지 골목"]');
+    t.checked = true; checkTarget(); $("checkBox").open = true;
+    $(`ck-${fromCheck.id}`).checked = true; $(`ck-${fromCheck.id}`).closest("li").querySelector(".ck-more").hidden = false;
+    const show = () => $(`ck-${fromCheck.id}`).closest("li").scrollIntoView({ block: "center" });   // 위쪽 안내가 다 그려진 뒤에 내려야 자리가 맞는다
+    if (document.readyState === "complete") show(); else window.addEventListener("load", show, { once: true });
+  }
   $("item").append(new Option("고르지 않음", ""));
   for (const v of R.ITEMS) $("item").append(new Option(v, v));
 

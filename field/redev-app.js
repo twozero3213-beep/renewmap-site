@@ -12,6 +12,15 @@
   const today = () => { const t = new Date(), p = (n) => String(n).padStart(2, "0"); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; };
   const fileName = (ext) => `${last.file.name}_입안요건_사전검토_승인전_${today()}.${ext}`;
 
+  // 예시: 고른 법정동의 모든 지번을 넣고 계산한다(사업계획서의 반여동 숫자를 버튼 하나로 다시 얻는다). 특정 구역을 짚지 않으려고 동 전체만 쓴다
+  $("demo").addEventListener("click", async () => {
+    let file;
+    try { file = await getJson(`buildings/${$("dong").value}.json`); } catch (err) { return say("건축물대장 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
+    $("list").value = [...new Set(file.buildings.map((b) => b.jibun).filter(Boolean))].join("\n");
+    $("area").value = "";
+    $("f").requestSubmit();
+  });
+
   $("f").addEventListener("submit", async (e) => {
     e.preventDefault();
     const p = R.parseList($("list").value);
@@ -36,6 +45,11 @@
       b.textContent = `${l.label} · ${l.status}`;
       s.textContent = `기준 ${l.rule} · 이 목록 ${l.value} · ${l.basis}`;
       li.append(b, s);
+      if (l.field && l.status === R.CHECK) {   // 현장에서 볼 수 있는 줄은 현장 기록으로 바로 넘긴다(같은 앱, 항목이 미리 골라진다)
+        const a = document.createElement("a");
+        a.href = `./?check=${l.field}`; a.textContent = "현장 기록으로 확인하기";
+        li.append(a);
+      }
       return li;
     }));
     $("out").hidden = false;
