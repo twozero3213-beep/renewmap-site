@@ -34,7 +34,7 @@
 .map-play[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
 
 /* 지도 캔버스. isolation으로 Leaflet z-index를 가둔다 */
-.map-canvas { position: relative; isolation: isolate; z-index: 0; height: min(70vh, 680px); min-height: 360px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #e7eeea; }
+.map-canvas { position: relative; isolation: isolate; z-index: 0; height: min(70vh, 680px); min-height: 360px; border-radius: var(--radius-card); overflow: hidden; border: 1px solid var(--line); background: #e7eeea; }
 @media (max-width: 720px) { .map-canvas { height: 54vh; min-height: 300px; } }
 .map-canvas.is-wait { display: grid; place-items: center; color: var(--dim); font-size: 15px; }
 #map .leaflet-container { font: inherit; background: #e7eeea; }
@@ -66,7 +66,7 @@
 #map button:focus-visible, #map select:focus-visible, #map input:focus-visible, #map summary:focus-visible, #map a:focus-visible { outline: 3px solid #153c39; outline-offset: 2px; box-shadow: 0 0 0 5px #fff; }
 
 /* 척도표 패널: 데스크톱은 지도 오른쪽 서랍, 모바일은 지도 아래(동을 고르면 아래 시트) */
-.map-panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 20px; min-width: 0; }
+.map-panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 18px 18px 20px; min-width: 0; }
 .map-panel[hidden] { display: none; }
 @media (min-width: 900px) {
   .map-panel { position: absolute; top: 10px; right: 10px; bottom: 10px; width: min(400px, 46%); overflow-y: auto; overscroll-behavior: contain; z-index: 2; box-shadow: 0 6px 20px rgba(21,60,57,.18); animation: rm-drawer .3s cubic-bezier(.2, .8, .2, 1) both; }
@@ -74,7 +74,7 @@
 @media (max-width: 899px) {
   .map-stage { display: contents; } /* 모바일 순서: 지도 → 범례·목록 → 패널 */
   .map-panel { order: 3; margin-top: 12px; }
-  .map-panel.is-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; margin: 0; max-height: 64vh; overflow-y: auto; overscroll-behavior: contain; border-radius: 18px 18px 0 0; padding-top: 22px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 -6px 24px rgba(21,60,57,.22); animation: rm-sheet .3s cubic-bezier(.2, .8, .2, 1) both; }
+  .map-panel.is-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; margin: 0; max-height: 64vh; overflow-y: auto; overscroll-behavior: contain; border-radius: var(--radius-card) 18px 0 0; padding-top: 22px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 -6px 24px rgba(21,60,57,.22); animation: rm-sheet .3s cubic-bezier(.2, .8, .2, 1) both; }
   .map-panel.is-sheet::before { content: ''; position: absolute; top: 8px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: #b9cbc4; }
   body.sheet-open .sticky-cta { display: none; }
 }
@@ -89,7 +89,7 @@
 .map-panel-wait { color: var(--dim); font-size: 15px; }
 
 /* 기준 미달 항목 수 */
-.sr-tally { background: var(--bg); border-radius: 14px; padding: 12px 14px; margin: 8px 0 4px; }
+.sr-tally { background: var(--bg); border-radius: var(--radius-card); padding: 12px 14px; margin: 8px 0 4px; }
 .sr-tally-k { margin: 0; font-size: 14px; font-weight: 700; color: var(--dim); }
 .sr-tally-n { margin: 2px 0 4px; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 15px; font-weight: 700; align-items: baseline; }
 .sr-tally-n b { font-size: 30px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin-left: 2px; }
@@ -137,7 +137,7 @@
 .map-hub-more { font-size: 14px; font-weight: 700; }
 
 /* 빈 상태(마스코트는 usage.md 6.2: 320×200, 240px 아래로 줄이지 않는다) */
-.map-empty { text-align: center; background: var(--card); border: 1px dashed #b9cbc4; border-radius: 18px; padding: 28px 20px; }
+.map-empty { text-align: center; background: var(--card); border: 1px dashed #b9cbc4; border-radius: var(--radius-card); padding: 28px 20px; }
 .map-empty img { width: 120px; height: auto; display: block; margin: 0 auto 6px; }
 .map-empty h3 { margin: 8px 0 6px; } .map-empty p { margin: 0; color: var(--dim); }
 
@@ -147,7 +147,7 @@
 }
 
 /* 지도 위 큰 연도·진행 막대(전국·시도 단계). 지도 조작을 막지 않게 pointer-events 없음 */
-.map-yearbar { position: absolute; top: 10px; right: 10px; z-index: 800; pointer-events: none; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 14px; padding: 8px 14px 10px; width: min(260px, 60%); display: grid; gap: 4px; }
+.map-yearbar { position: absolute; top: 10px; right: 10px; z-index: 800; pointer-events: none; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 8px 14px 10px; width: min(260px, 60%); display: grid; gap: 4px; }
 .map-yearbar[hidden] { display: none; }
 .yb-y { font-size: 34px; font-weight: 700; line-height: 1.1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); }
 .yb-track { display: flex; gap: 2px; height: 8px; }
@@ -179,7 +179,7 @@
 .sr-why .sr-std { margin-top: 4px; }
 .sr-group-note { margin: 0 0 6px; font-size: 13px; color: var(--warn); background: #fff7e8; border: 1px solid #e3c79a; border-radius: 8px; padding: 6px 10px; line-height: 1.5; }
 /* 한눈 요약: 묶음별 점 배열. 점 하나 = 항목 하나. 색은 상태 칩과 같은 뜻(글자 병기) */
-.sr-glance { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 8px 0; }
+.sr-glance { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 12px 14px; margin: 8px 0; }
 .gl-n { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; font-weight: 700; color: var(--dim); }
 .gl-n b { font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin-left: 2px; }
 .gl-dots { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 8px 16px; }
@@ -193,22 +193,22 @@
 
 /* 동네 보고서 */
 #report .wrap { max-width: 860px; }
-.rp-empty { text-align: center; background: var(--card); border: 1px dashed #b9cbc4; border-radius: 18px; padding: 28px 20px; }
+.rp-empty { text-align: center; background: var(--card); border: 1px dashed #b9cbc4; border-radius: var(--radius-card); padding: 28px 20px; }
 .rp-empty img { width: 120px; height: auto; display: block; margin: 0 auto 6px; } .rp-empty h3 { margin: 8px 0 6px; } .rp-empty p { margin: 0; color: var(--dim); }
 .rp-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .rp-crumb { margin: 0; font-size: 14px; color: var(--dim); } .rp-title { margin: 0; font-size: clamp(22px, 3vw, 28px); }
 .rp-tools { margin: 0; display: flex; gap: 8px; flex-wrap: wrap; } .rp-tools .btn { padding: 8px 14px; font-size: 14px; }
 .rp-intro { color: var(--dim); margin: 0 0 16px; font-size: 15px; }
-.rp-g { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+.rp-g { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 16px 18px; margin-bottom: 12px; }
 .rp-g h3 { margin: 0 0 8px; font-size: 18px; }
 .rp-fixed { margin: 0 0 10px; font-size: 13px; color: var(--warn); background: #fff7e8; border: 1px solid #e3c79a; border-radius: 8px; padding: 6px 10px; }
 .rp-item { border-top: 1px solid var(--line); padding: 10px 0 8px; display: grid; gap: 6px; }
 .rp-item p { margin: 0; font-size: 16px; }
 .rp-item .sr-bar { height: 16px; } .rp-item .map-spark { width: 220px; max-width: 100%; height: 56px; }
-.rp-src { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 18px; margin-bottom: 12px; }
+.rp-src { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 12px 18px; margin-bottom: 12px; }
 .rp-src summary { font-weight: 700; } .rp-src table { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 8px; }
 .rp-src th, .rp-src td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; } .rp-src td:nth-child(2) { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rp-ai { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; margin-bottom: 12px; display: grid; gap: 8px; }
+.rp-ai { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 14px 18px; margin-bottom: 12px; display: grid; gap: 8px; }
 .rp-ai-head { margin: 0; font-weight: 700; font-size: 15px; }
 .rp-ai-btn { justify-self: start; padding: 9px 14px; font-size: 15px; } .rp-ai-btn[disabled] { opacity: .55; cursor: not-allowed; } .rp-ai-btn small { font-size: 12px; font-weight: 600; }
 .rp-ai-note { font-size: 13px; color: var(--dim); }
@@ -221,11 +221,11 @@
 /* 인쇄: 동네 보고서만 */
 @media print {
   header.top, .hero, #verdict, #problem, #how, #ledger, #case, #dashboard, #scope, #faq, #contact, footer, .sticky-cta, .rp-tools, .rp-ai, .skip { display: none !important; }
-  body { background: #fff; color: #000; font-size: 12pt; }
+  body { background: #fff; color: var(--print-ink); font-size: 12pt; }
   #report { padding: 0; } #report .wrap { max-width: none; padding: 0; }
   .rp-g, .rp-src, .rp-empty { border: 1px solid #999; break-inside: avoid; }
   .rp-src details, .rp-src[open] { display: block; } .rp-src summary { display: none; } .rp-src .table-wrap { display: block; }
-  a { color: #000; text-decoration: none; } a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; }
+  a { color: var(--print-ink); text-decoration: none; } a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; }
   .map-spark path { stroke: #000; }
 }
 
@@ -256,7 +256,7 @@
 .fd-count.is-idle b { color: #b9cbc4; display: block; } .fd-count.is-idle small { display: block; }
 .fd-skip { font-size: 13px; color: var(--warn); margin: 0 0 6px; }
 .fd-sort { margin-bottom: 8px; }
-.fd-map { background: #e7eeea; border: 1px solid var(--line); border-radius: 14px; padding: 10px; margin-bottom: 12px; }
+.fd-map { background: #e7eeea; border: 1px solid var(--line); border-radius: var(--radius-card); padding: 10px; margin-bottom: 12px; }
 .fd-svg { display: block; width: 100%; height: auto; max-height: 440px; }
 .fd-svg path { stroke: #fff; stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }
 .fd-svg path.is-idle { fill: #b9cbc4; } .fd-svg path.is-hit { fill: var(--green); } .fd-svg path.is-miss { fill: #d4ddd9; } .fd-svg path.is-na { fill: url(#fdHatch); }
@@ -269,7 +269,7 @@
 .fd-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 12px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); animation: rm-rise .3s ease-out both; }
 .fd-list li:last-child { border-bottom: 0; }
 .fd-n b { display: block; font-size: 15px; } .fd-n small { font-size: 12px; color: var(--dim); }
-.fd-b { font-size: 15px; letter-spacing: 2px; white-space: nowrap; }
+.fd-b { font-size: 15px; white-space: nowrap; }
 .fd-list a { font-size: 14px; font-weight: 700; white-space: nowrap; }
 .fd-wait, .fd-empty { color: var(--dim); font-size: 15px; margin: 8px 0; }
 @media (max-width: 520px) { .fd-list li { grid-template-columns: minmax(0, 1fr) auto; } .fd-b { grid-column: 1; grid-row: 2; } .fd-count b { font-size: 40px; } }
@@ -301,7 +301,7 @@
 .workspace-intro h1 { margin: 0 0 12px; max-width: 760px; font-size: clamp(30px, 5vw, 48px); line-height: 1.25; letter-spacing: -.025em; }
 .workspace-intro .sub { max-width: 680px; margin-bottom: 0; }
 .workspace-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 24px; }
-.workspace-steps a { display: grid; grid-template-columns: 36px minmax(0, 1fr); column-gap: 10px; align-items: center; min-height: 76px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--ink); text-decoration: none; transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+.workspace-steps a { display: grid; grid-template-columns: 36px minmax(0, 1fr); column-gap: 10px; align-items: center; min-height: 76px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); color: var(--ink); text-decoration: none; transition: transform .2s ease, border-color .2s ease, background .2s ease; }
 .workspace-steps a:hover { transform: translateY(-2px); border-color: var(--green); background: #f3faf6; }
 .workspace-steps a > span { grid-row: span 2; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: var(--lime); font-size: 14px; font-weight: 700; }
 .workspace-steps b { font-size: 15px; line-height: 1.35; }
@@ -310,9 +310,9 @@
 .section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px 32px; margin-bottom: 24px; }
 .section-head h2 { margin-bottom: 0; }
 .section-head > p { max-width: 460px; margin: 0; color: var(--dim); font-size: 14px; }
-.explore-page .fd-left { padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+.explore-page .fd-left { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
 .explore-page .fd-map { box-shadow: 0 8px 24px rgba(21,60,57,.06); }
-.explore-page .rp-g, .explore-page .rp-src { border-radius: 16px; }
+.explore-page .rp-g, .explore-page .rp-src { border-radius: var(--radius-card); }
 @media (max-width: 720px) {
   .workspace-intro { padding-top: 32px; }
   .workspace-steps { gap: 6px; margin-top: 20px; }
@@ -331,7 +331,7 @@
 .gov-cards li { display: flex; flex-direction: column; gap: 4px; } .gov-cards .gov-card { flex: 1; }
 .gov-more { font-size: 12px; padding: 0 4px; } .gov-more summary { cursor: pointer; color: var(--dim); font-weight: 600; } .gov-more .gov-c, .gov-more .gov-law { display: block; margin-top: 4px; }
 .gov-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
-.gov-card { width: 100%; height: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--card); border: 1.5px solid #b9cbc4; border-radius: 14px; padding: 12px 14px; cursor: pointer; display: grid; gap: 4px; align-content: start; transition: border-color .15s ease, transform .15s ease; }
+.gov-card { width: 100%; height: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--card); border: 1.5px solid #b9cbc4; border-radius: var(--radius-card); padding: 12px 14px; cursor: pointer; display: grid; gap: 4px; align-content: start; transition: border-color .15s ease, transform .15s ease; }
 .gov-card:hover { border-color: var(--green); transform: translateY(-2px); }
 .gov-card:focus-visible { outline: 3px solid #153c39; outline-offset: 2px; }
 .gov-e { font-size: 24px; line-height: 1; }
@@ -343,7 +343,7 @@
 .fd-hint { flex-basis: 100%; margin: 0; font-size: 13px; font-weight: 700; color: var(--warn); background: #fff7e8; border: 1px solid #e3c79a; border-radius: 8px; padding: 4px 10px; }
 .fd-conds { margin: 0 0 8px; font-size: 13px; color: var(--dim); } .fd-conds b { color: var(--green); }
 /* 기준 미달·참고 구간 밖 항목(척도표 한눈 요약 아래 · 근거서 3절) */
-.sr-gaps { background: var(--bg); border: 0; border-radius: 14px; padding: 10px 14px; margin: 0 0 8px; }
+.sr-gaps { background: var(--bg); border: 0; border-radius: var(--radius-card); padding: 10px 14px; margin: 0 0 8px; }
 .sr-gaps summary { font-size: 15px; } .sr-gaps summary b { font-size: 20px; font-variant-numeric: tabular-nums; }
 .sr-gaps ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
 .gp { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 14px; border-top: 1px solid var(--line); padding-top: 6px; }
@@ -375,7 +375,7 @@
 .dg-copy { padding: 6px 12px; font-size: 13px; border-width: 1.5px; min-height: 36px; }
 .dg-copy-s { font: inherit; font-size: 12px; font-weight: 700; margin-left: 8px; padding: 3px 10px; min-height: 30px; border: 1.5px solid var(--green); color: var(--green); background: #fff; border-radius: 999px; cursor: pointer; white-space: nowrap; vertical-align: baseline; }
 .dg-copy-s:hover, .dg-copy:hover { background: #e3f1ea; color: var(--ink); }
-.dg-doc { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+.dg-doc { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 16px 18px; margin-bottom: 12px; }
 .dg-title { margin: 0 0 10px; font-size: clamp(19px, 2.6vw, 24px); text-align: center; }
 .dg-box { width: 100%; border-collapse: collapse; margin: 0 0 8px; font-size: 14px; }
 .dg-box th, .dg-box td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
@@ -408,11 +408,11 @@
   .workspace-panel { animation: none !important; opacity: 1 !important; transform: none !important; }
   body.print-onepage .evidence-workspace, body.print-onepage .workspace-panel, body.print-onepage .workspace-panel-inner { background: #fff !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }
   .dg-doc { border: 0; padding: 0; margin: 0; background: #fff; }
-  .dg-onepage { font-family: "함초롬바탕", "HCR Batang", "맑은 고딕", "Malgun Gothic", serif; color: #000; }
+  .dg-onepage { font-family: "함초롬바탕", "HCR Batang", "맑은 고딕", "Malgun Gothic", serif; color: var(--print-ink); }
   .dg-onepage .dg-title { font-size: 15pt; margin: 0 0 6pt; }
   .dg-onepage .dg-h1 { font-size: 11.5pt; margin: 8pt 0 3pt; break-after: avoid; }
   .dg-onepage .dg-p { font-size: 10pt; line-height: 1.5; margin: 0 0 3pt; }
-  .dg-onepage .dg-small { font-size: 8.5pt; line-height: 1.4; color: #000; margin: 0 0 2pt; }
+  .dg-onepage .dg-small { font-size: 8.5pt; line-height: 1.4; color: var(--print-ink); margin: 0 0 2pt; }
   .dg-onepage .dg-src { font-size: 9.5pt; margin: 0 0 4pt; }
   .dg-onepage .dg-box, .dg-onepage .dg-table { font-size: 9pt; line-height: 1.35; }
   .dg-onepage .dg-box th, .dg-onepage .dg-box td, .dg-onepage .dg-table th, .dg-onepage .dg-table td { border: 0.5pt solid #000; padding: 1.5pt 4pt; }

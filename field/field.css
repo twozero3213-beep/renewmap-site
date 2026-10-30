@@ -1,3 +1,9 @@
+/* Hallmark · checked: 2026-10-30 · genre: modern-minimal (inferred) · scope: app · surface: absolute
+ * fixed: 3 4 7a 12 26b 29 30a 34 39a 50 54 62 63 67 · home recomposed in place: rows, ruled columns, one large card, divider lists, struck list, two-column close
+ * built: the project · redesign: polish (home: full) · system: docs/design/DESIGN.md (brand kept) · v2.0.0 */
+/* Hallmark · dismissed 67 · RENEWMAP is the wordmark, and HWPX, QGIS, JSONL are product and file names spelled as their makers spell them */
+/* Hallmark · dismissed 63 · the consent sentence in the about.html contact form is legal text and is never reworded */
+/* Hallmark · waive 7b · the field app cards stay #ffffff for sunlight reading outdoors · field buttons carry white text on green 6.13:1 */
 /* 현장 기록(field/). 토큰은 ../styles.css, 문구·크기는 docs/design/redesign_2026-10-27.md 5.5·6장. CSP: 인라인 style 없음 */
 body.field { font-size: 17px; }
 .field section:not(.card) { padding: 0; }
@@ -9,27 +15,31 @@ body.field { font-size: 17px; }
 .field h2 { font-size: 18px; line-height: 26px; margin: 0 0 8px; }
 .field h3 { font-size: 15px; line-height: 22px; margin: 0 0 4px; }
 .note, .hint, .warn, .msg { margin: 8px 0; font-size: 14px; line-height: 20px; color: var(--dim); }
-.note { padding: 12px 16px; border-radius: 12px; background: var(--soft); color: var(--soft-ink); }
+.note { padding: 12px 16px; border-radius: var(--radius-btn); background: var(--soft); color: var(--soft-ink); }
 .warn { color: var(--notice); }
 .msg { min-height: 20px; font-weight: 600; color: var(--ink); white-space: pre-line; }
 .msg.err { color: var(--error); }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 16px; margin-top: 16px; }
 .field label { display: block; margin: 12px 0 4px; font-weight: 600; font-size: 15px; }
-.field input, .field select, .field textarea, .field button { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--dim); border-radius: 10px; background: var(--card); color: var(--ink); min-height: 48px; }
+.field input, .field select, .field textarea, .field button { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); background: var(--card); color: var(--ink); min-height: 48px; }
 .field textarea { min-height: 56px; resize: vertical; }
-.field button { background: var(--green); color: var(--on-green); border-color: var(--green); font-weight: 700; margin-top: 8px; cursor: pointer; transition: background-color .12s var(--ease); }
+/* 버튼(UX 정비 2026-10-30): 주 버튼은 녹색 채움, 보조는 흰 바탕 + 1px 경계. 비활성은 흐리게만 하지 않고 채움·글자·커서를 함께 바꾼다 */
+.field button { background: var(--green); color: var(--on-green); border-color: transparent; font-weight: 600; margin-top: 8px; cursor: pointer; transition: background-color .12s var(--ease), border-color .12s var(--ease); }
 .field button:hover { background: var(--green-press); }
-.field button.ghost { background: transparent; color: var(--green); }
-.field button.ghost:hover { background: var(--soft); }
-.field button:disabled { opacity: .5; cursor: default; }
+.field button:active { background: var(--green-deep); }
+.field button.ghost { background: var(--card); color: var(--green); border-color: var(--line-strong); }
+.field button.ghost:hover { background: var(--soft); border-color: var(--green); }
+.field button.ghost:active { background: var(--soft-press); }
+.field button:disabled, .field button.ghost:disabled { background: var(--off-bg); color: var(--off-ink); border-color: transparent; cursor: not-allowed; }
 .field button.save { min-height: 56px; font-size: 17px; margin-top: 16px; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .check { display: flex !important; gap: 10px; align-items: center; }
 .field input[type=checkbox] { width: 24px; height: 24px; min-height: 24px; padding: 0; flex: none; accent-color: var(--green); }
 .pick { display: grid; gap: 8px; }
 .pick input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.pick label { margin: 0; display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 12px; border: 1px solid var(--green); color: var(--green); font-weight: 700; cursor: pointer; text-align: center; transition: background-color .12s var(--ease); }
-.pick label.big { min-height: 72px; font-size: 19px; background: var(--green); color: var(--on-green); }
+.pick label { margin: 0; display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: var(--radius-btn); border: 1px solid var(--line-strong); background: var(--card); color: var(--green); font-weight: 600; cursor: pointer; text-align: center; transition: background-color .12s var(--ease); }
+.pick label.big { min-height: 72px; font-size: 19px; border-color: transparent; background: var(--green); color: var(--on-green); }
+.pick label:not(.big):hover { background: var(--soft); border-color: var(--green); }
 .pick label:active { background: var(--green-press); color: var(--on-green); }
 .pick label:focus-within { outline: 3px solid var(--ink); outline-offset: 2px; }
 #cv { width: 100%; height: auto; touch-action: none; border-radius: 8px; background: #222; display: block; }
@@ -62,7 +72,7 @@ body.field { font-size: 17px; }
 fieldset.chips { border: 0; padding: 0; margin: 0 0 4px; }
 fieldset.chips legend { font-weight: 600; font-size: 15px; margin: 12px 0 8px; padding: 0; }
 .chips div { display: flex; flex-wrap: wrap; gap: 8px; }
-.chips label { margin: 0; display: inline-flex; align-items: center; min-height: 48px; padding: 0 16px; border: 1px solid var(--dim); border-radius: 99px; font-weight: 600; cursor: pointer; transition: background-color .12s var(--ease); }
+.chips label { margin: 0; display: inline-flex; align-items: center; min-height: 48px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 99px; background: var(--card); font-weight: 600; cursor: pointer; transition: background-color .12s var(--ease); }
 .chips input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .chips label:has(input:checked) { background: var(--soft); border-color: var(--green); color: var(--soft-ink); }
 .chips label:has(input:checked)::before { content: '✓'; margin-right: 6px; }
@@ -76,7 +86,7 @@ details summary { min-height: 48px; display: flex; align-items: center; font-wei
 .toast { position: fixed; left: 16px; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 40; max-width: 528px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 12px; background: var(--ink); color: var(--bg); font-weight: 600; animation: toast-in .16s ease-out; white-space: pre-line; }
 .toast button { width: auto !important; margin: 0 !important; min-height: 44px !important; background: transparent !important; border: 0 !important; color: var(--bg) !important; text-decoration: underline; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
-dialog { max-width: 480px; width: calc(100% - 32px); border: 0; border-radius: 16px; padding: 20px; background: var(--card); color: var(--ink); }
+dialog { max-width: 480px; width: calc(100% - 32px); border: 0; border-radius: var(--radius-card); padding: 20px; background: var(--card); color: var(--ink); }
 dialog::backdrop { background: rgba(0,0,0,.5); }
 dialog h2 { margin-top: 0; }
 dialog p { font-size: 15px; line-height: 24px; margin: 0 0 12px; }
@@ -95,7 +105,7 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 .acc-chip[data-q="wide"] { background: var(--notice-bg); color: var(--notice); border-color: var(--notice); }
 /* 저장 성공: 체크가 한 번 톡 나타난다 */
 .toast-ok { display: none; flex: none; width: 24px; height: 24px; fill: none; stroke: var(--bg); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.toast.ok .toast-ok { display: block; animation: ok-pop .28s cubic-bezier(.2, 0, 0, 1.4) backwards; }
+.toast.ok .toast-ok { display: block; animation: ok-pop .28s var(--ease) backwards; }
 .toast.ok .toast-ok path { transform-box: fill-box; transform-origin: left center; animation: ok-tick .2s .12s var(--ease) backwards; }
 .toast.ok #toastText { margin-right: auto; }
 @keyframes ok-pop { from { opacity: 0; transform: scale(.5); } }
@@ -112,8 +122,8 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 @media print {
   @page { size: A4; margin: 18mm 20mm; }
   body.printing > *:not(#printDoc) { display: none !important; }
-  body.printing { padding: 0; background: #fff; color: #000; }
-  body.printing .print-doc { display: block; font-family: "NanumGothic", "나눔고딕", Pretendard, sans-serif; font-size: 10pt; line-height: 1.6; color: #000; }
+  body.printing { padding: 0; background: #fff; color: var(--ink); }
+  body.printing .print-doc { display: block; font-family: "NanumGothic", "나눔고딕", Pretendard, sans-serif; font-size: 10pt; line-height: 1.6; color: var(--ink); }
   .print-doc .dg-title { text-align: center; font-size: 17pt; margin: 0 0 6mm; }
   .print-doc .dg-key { font-size: 11pt; font-weight: 700; }
   .print-doc .dg-h1 { font-size: 12pt; margin: 4mm 0 2mm; }

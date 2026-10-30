@@ -35,7 +35,7 @@
   // 숫자 올리기: 진행률 p(0~1)에서 보일 값(ease-out). 끝은 항상 최종값
   const countAt = (n, p) => Math.round(n * (1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 3)));
 
-  // 움직임 3곳(문서 쌓기·3단계 켜기·숫자 올리기). 화면에 들어올 때 한 번만. 감속 설정·IO 없음이면 완성 상태 그대로 둔다(home.css)
+  // 움직임 2곳(문서 쌓기·숫자 올리기). 화면에 들어올 때 한 번만. 감속 설정·IO 없음이면 완성 상태 그대로 둔다(home.css)
   function motion(win) {
     const doc = win.document;
     if (typeof win.IntersectionObserver !== 'function' || win.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -44,13 +44,14 @@
       const io = new win.IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); fn(); } }, { threshold });
       io.observe(el);
     };
-    const hero = doc.getElementById('heroDoc'), steps = doc.getElementById('steps'), stats = doc.getElementById('stats');
+    const hero = doc.getElementById('heroDoc'), stats = doc.getElementById('stats');
     if (hero) hero.classList.add('is-anim');
-    if (steps) steps.classList.add('is-anim');
     once(hero, 0.3, () => hero.classList.add('is-play'));
-    once(steps, 0.4, () => steps.classList.add('is-on'));
-    const nums = stats ? [...stats.querySelectorAll('[data-count]')] : [];
+    // 숫자는 화면 아래에 있을 때만 0으로 두고 올린다. 이미 보이는 자리·인쇄·스크립트 실패에서는 HTML의 실제 값이 그대로 남는다(UX 정비 2026-10-30: 전체 캡처에 0이 찍혔다)
+    const nums = stats && stats.getBoundingClientRect().top > win.innerHeight ? [...stats.querySelectorAll('[data-count]')] : [];
+    const final = () => nums.forEach(el => { el.textContent = (+el.dataset.count).toLocaleString('ko-KR'); });
     nums.forEach(el => { el.textContent = '0'; });
+    win.addEventListener('beforeprint', final);
     once(stats, 0.5, () => {
       const t0 = win.performance.now();
       const tick = now => {

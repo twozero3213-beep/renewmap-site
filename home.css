@@ -7,11 +7,11 @@
 .home-sub { margin: 0 0 16px; font-size: 15px; line-height: 22px; color: var(--dim); }
 .home-search-row { position: relative; }
 .home-search-row svg { position: absolute; left: 16px; top: 16px; width: 24px; height: 24px; fill: none; stroke: var(--dim); stroke-width: 2; stroke-linecap: round; pointer-events: none; }
-.home-search-row input { width: 100%; min-height: 56px; padding: 0 16px 0 52px; font: inherit; font-size: 17px; border: 2px solid var(--dim); border-radius: 12px; background: var(--card); color: var(--ink); transition: border-color .12s var(--ease); }
+.home-search-row input { width: 100%; min-height: 56px; padding: 0 16px 0 52px; font: inherit; font-size: 17px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); background: var(--card); color: var(--ink); transition: border-color .12s var(--ease); }
+.home-search-row input:hover { border-color: var(--ink); }
 .home-search-row input::placeholder { color: var(--dim); opacity: 1; }
-.home-search-row input:focus-visible { border-color: var(--green); }
 .home-hits { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
-.home-hits a { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font-weight: 600; text-decoration: none; transition: background-color .12s var(--ease); }
+.home-hits a { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 16px; border: 1px solid var(--line); border-radius: var(--radius-btn); background: var(--card); color: var(--ink); font-weight: 600; text-decoration: none; transition: background-color .12s var(--ease); }
 .home-hits a:hover, .home-hits a:active { background: var(--soft); }
 .home-hits a small { color: var(--dim); font-weight: 400; font-size: 14px; }
 .home-msg { min-height: 20px; margin: 4px 0 0; font-size: 14px; line-height: 20px; color: var(--dim); white-space: pre-line; }
@@ -24,136 +24,163 @@
 
 /* 보관함 */
 .box-list { list-style: none; margin: 8px 0 24px; padding: 0; display: grid; gap: 8px; }
-.box-list li { display: grid; gap: 8px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.box-list li { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
 .box-list .meta { font-size: 14px; line-height: 20px; color: var(--dim); }
 .box-list .acts { display: flex; flex-wrap: wrap; gap: 8px; }
-.box-list button { min-height: 48px; padding: 0 16px; font: inherit; font-size: 15px; font-weight: 600; border-radius: 10px; border: 1px solid var(--green); background: transparent; color: var(--green); cursor: pointer; transition: background-color .12s var(--ease); }
-.box-list button:hover { background: var(--soft); }
-.box-list button.del { border-color: var(--dim); color: var(--dim); }
+.box-list button { min-height: 44px; padding: 0 16px; font: inherit; font-size: 15px; font-weight: 600; border-radius: var(--radius-btn); border: 1px solid var(--line-strong); background: var(--card); color: var(--green); cursor: pointer; transition: background-color .12s var(--ease), border-color .12s var(--ease); }
+.box-list button:hover { background: var(--soft); border-color: var(--green); }
+.box-list button:active { background: var(--soft-press); }
+.box-list button:disabled { background: var(--off-bg); color: var(--off-ink); border-color: transparent; cursor: not-allowed; }
+.box-list button.del { color: var(--dim); }
+.box-list button.del:hover { border-color: var(--dim); background: var(--bg); }
 .box-list li.skel { min-height: 88px; border-color: var(--line); background: var(--soft); }
 .box-empty { margin: 8px 0 24px; color: var(--dim); white-space: pre-line; }
 .box-links { list-style: none; margin: 8px 0 24px; padding: 0; border-top: 1px solid var(--line); }
 .box-links a { display: flex; align-items: center; min-height: 56px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 600; }
 .home h2 { font-size: 18px; line-height: 26px; margin: 24px 0 0; }
 
-/* ── 홈 v3: 8개 섹션 ── */
+/* ── 홈 v3: 8개 섹션 ──
+   UX 정비 2026-10-30(Hallmark 점검): 눈썹 글, 원 번호 3단계, 같은 카드 세 줄, 01~04 번호, × 알약을 걷어 냈다.
+   섹션마다 구성을 달리한다: 줄 목록(누가) · 선 위 세 단(어떻게) · 큰 카드 1 + 작은 카드 2(제품) · 구분선 목록(원칙) · 취소선(안 하는 일) · 큰 숫자(확인된 숫자) · 두 단 마무리 */
 .v3 { --src: #1f4f8a; --src-bg: #dbe8f7; --ex: #8a4b00; --ex-bg: #fff7e8; word-break: keep-all; overflow-wrap: break-word; }
 .v3 section { padding: 0; }
-.v3 .h-sec { padding: 72px 0; }
-.v3 .h-alt { background: var(--card); border-block: 1px solid var(--line); }
-.v3 h2 { font-size: clamp(26px, 3.4vw, 34px); line-height: 1.3; font-weight: 700; margin: 0 0 24px; }
-.v3 h3 { font-size: 20px; line-height: 1.35; font-weight: 700; margin: 0 0 8px; }
+.v3 .h-sec { padding: 104px 0; }
+.v3 .h-alt { padding: 120px 0; background: var(--card); border-block: 1px solid var(--line); }
+.v3 h2 { min-width: 0; margin: 0 0 40px; font-size: clamp(28px, 3.4vw, 40px); line-height: 1.3; font-weight: 700; letter-spacing: -0.02em; overflow-wrap: break-word; }
+.v3 h3 { margin: 0 0 8px; font-size: 20px; line-height: 1.4; font-weight: 700; }
 .v3 p { margin: 0; }
-.v3 .btn { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-.v3 .btn.ghost:hover { background: var(--soft); }
+.v3 .h-lede { max-width: 40em; margin: -16px 0 48px; font-size: 18px; color: var(--dim); }
 
-/* 1 첫 화면 */
-.v3 .h-hero { padding: 72px 0; }
-.h-hero-grid { display: grid; gap: 56px; grid-template-columns: minmax(0, 1fr) 444px; align-items: center; }
-.h-hero-copy { display: grid; gap: 20px; }
-.h-eyebrow { font-size: 15px; font-weight: 700; color: var(--green); letter-spacing: .04em; }
-.h-hero h1 { margin: 0; font-size: clamp(34px, 5.2vw, 52px); line-height: 1.25; font-weight: 700; }
-.h-sub { font-size: 19px; line-height: 1.6; color: var(--dim); }
-.h-label { display: block; margin: 8px 0 8px; font-size: 15px; font-weight: 700; }
+/* 1 첫 화면: 제목 · 한 문장 · 행동. 가입 안내는 검색 아래 도움말로 내렸다 */
+.v3 .h-hero { padding: 80px 0 96px; }
+.h-hero-grid { display: grid; gap: 64px; grid-template-columns: minmax(0, 1fr) 444px; align-items: center; }
+.h-hero-copy { display: grid; gap: 24px; }
+.h-hero h1 { min-width: 0; margin: 0; font-size: clamp(36px, 5.2vw, 56px); line-height: 1.2; font-weight: 800; letter-spacing: -0.03em; overflow-wrap: break-word; }
+.h-sub { max-width: 28em; font-size: 19px; line-height: 1.6; color: var(--dim); }
+.h-label { display: block; margin: 16px 0 8px; font-size: 15px; font-weight: 700; }
+.v3 .h-note { margin-top: 8px; font-size: 14px; line-height: 20px; color: var(--dim); }
 
 /* 1쪽 문서 미리보기(나눔고딕). 뒤 종이 두 장은 12px씩 어긋나게 쌓는다 */
 .h-doc { position: relative; margin: 0; padding: 0 24px 24px 0; font-family: NanumGothic, "Nanum Gothic", var(--font); }
-.h-sheet { position: absolute; top: 0; left: 0; right: 24px; bottom: 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.h-sheet { position: absolute; top: 0; left: 0; right: 24px; bottom: 24px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
 .h-sheet-1 { top: 12px; left: 12px; right: 12px; bottom: 12px; }
 .h-sheet-2 { top: 24px; left: 24px; right: 0; bottom: 0; }
-.h-page { position: relative; display: grid; gap: 12px; padding: 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.h-page { position: relative; display: grid; gap: 12px; padding: 24px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
 .h-page-t { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 18px; line-height: 1.4; }
 .h-page-t b { font-weight: 800; }
 .h-ex { flex: none; padding: 2px 8px; border-radius: 6px; background: var(--ex-bg); color: var(--ex); font: 700 13px/1.6 var(--font); }
 .h-page-s { font-size: 14px; color: var(--dim); }
-.h-photo { position: relative; height: 150px; border-radius: 10px; background: var(--soft); overflow: hidden; }
+.h-photo { position: relative; height: 150px; border-radius: var(--radius-btn); background: var(--soft); overflow: hidden; }
 .h-photo i { position: absolute; bottom: 0; border-radius: 4px 4px 0 0; background: var(--green); opacity: .28; }
 .h-photo i:nth-child(1) { left: 6%; width: 16%; height: 60%; } .h-photo i:nth-child(2) { left: 26%; width: 19%; height: 76%; }
 .h-photo i:nth-child(3) { left: 50%; width: 15%; height: 49%; } .h-photo i:nth-child(4) { left: 70%; width: 11%; height: 67%; }
 .h-mask { position: absolute; left: 31%; top: 36%; padding: 2px 8px; border-radius: 6px; background: var(--dim); color: var(--card); font: 700 13px/1.6 var(--font); }
 .h-loc { position: absolute; left: 12px; bottom: 12px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); font: 700 13px/1.6 var(--font); }
-.h-nums { display: grid; gap: 10px; margin: 0; }
-.h-nums > div { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 15px; }
+.h-nums { display: grid; gap: 12px; margin: 0; }
+.h-nums > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 15px; }
 .h-nums dt { color: var(--ink); }
 .h-nums dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
 .h-nums .h-src { grid-column: 1 / -1; justify-self: start; padding: 2px 10px; border-radius: 999px; background: var(--src-bg); color: var(--src); font: 700 13px/1.6 var(--font); }
 
-/* 2 누가 쓰나 · 4 지금 쓸 수 있는 것 */
-.h-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
-.h-card { display: grid; align-content: start; gap: 0; padding: 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
-.h-card p { color: var(--dim); }
-.h-product { grid-template-rows: auto 1fr auto; gap: 4px; }
-.h-product .btn { justify-self: start; margin-top: 16px; }
+/* 2 누가 쓰나: 왼쪽 제목, 오른쪽 줄 목록 */
+.h-split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: start; }
+.v3 .h-split h2 { margin: 0; }
+.h-rows { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+.h-rows li { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+.v3 .h-rows h3 { margin: 0; font-size: 19px; }
+.h-rows p { color: var(--dim); }
 
-/* 3 찍고, 붙이고, 받습니다 */
-.h-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 24px; grid-template-columns: repeat(3, 1fr); }
-.h-steps li { position: relative; display: grid; gap: 12px; align-content: start; }
-.h-step-n { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--green); color: var(--on-green); font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.h-steps li:not(:last-child)::after { content: ''; position: absolute; top: 23px; left: 60px; right: -12px; height: 2px; background: var(--green); }
-.h-step-t h3 { font-size: 22px; }
+/* 3 찍고, 붙이고, 받습니다: 순서는 ol이 전하고, 원 번호·잇는 선 없이 굵은 선 위 세 단 */
+.h-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 40px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.h-steps li { display: grid; align-content: start; padding-top: 24px; border-top: 2px solid var(--ink); }
+.v3 .h-step-t h3 { margin-bottom: 12px; font-size: 28px; letter-spacing: -0.02em; }
 .h-step-t p { color: var(--dim); }
 
-/* 5 가치관: 누르면 풀어 쓴 문장이 펼쳐진다(details) */
-.h-values { display: grid; gap: 16px; grid-template-columns: repeat(2, 1fr); align-items: start; }
-.h-val { margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
-.h-val summary { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; min-height: 48px; padding: 24px; cursor: pointer; list-style: none; font-weight: 400; border-radius: 14px; }
+/* 4 지금 쓸 수 있는 것: 카드 전체가 링크. 현장 확인 근거(대표 제품)를 크게 */
+.h-prods { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
+.h-prods li:first-child { grid-row: span 2; }
+.h-prod { display: grid; align-content: start; gap: 8px; height: 100%; padding: 32px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--bg); color: var(--ink); text-decoration: none; transition: border-color .12s var(--ease), background-color .12s var(--ease); }
+.h-prod p { color: var(--dim); }
+.h-prod:hover { border-color: var(--green); }
+.h-prod:active { background: var(--soft-press); }
+.h-prod.is-main { align-content: start; border-color: transparent; background: var(--soft); }
+/* 실제 현장 기록 화면 캡처(2026-10-30, 390px 폭). '위치' 카드 끝까지만 보이게 자른다 */
+.h-shot { width: 300px; height: 330px; margin-bottom: 16px; object-fit: cover; object-position: top; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); box-shadow: var(--shadow); }
+.v3 .h-prod.is-main h3 { font-size: 30px; letter-spacing: -0.02em; }
+.h-prod.is-main p { color: var(--soft-ink); }
+.h-go { justify-self: start; display: inline-flex; align-items: center; min-height: 44px; margin-top: 16px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); background: var(--card); color: var(--green); font-size: 16px; font-weight: 600; }
+.h-prod:hover .h-go { border-color: var(--green); }
+.h-prod.is-main .h-go { border-color: transparent; background: var(--green); color: var(--on-green); }
+.h-prod.is-main:hover .h-go { background: var(--green-press); }
+
+/* 5 가치관: 상자 없이 구분선 목록. 누르면 풀어 쓴 문장이 펼쳐진다(details) */
+.h-values { display: grid; gap: 0 48px; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; border-top: 1px solid var(--line); }
+.v3 .h-val { margin: 0; padding: 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: none; }
+.h-val summary { display: grid; grid-template-columns: minmax(0, 1fr) 24px; gap: 4px 16px; padding: 24px 0; cursor: pointer; list-style: none; font-weight: 400; }
 .h-val summary::-webkit-details-marker { display: none; }
-.h-val summary::after { content: '+'; grid-column: 3; grid-row: 1; font-size: 24px; line-height: 1; font-weight: 700; color: var(--green); }
+.h-val summary::after { content: '+'; grid-column: 2; grid-row: 1; font-size: 24px; line-height: 1.2; color: var(--green); text-align: right; }
 .h-val[open] summary::after { content: '−'; }
 .h-val summary:hover h3 { color: var(--green); }
-.h-val summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 5px var(--bg); }
-.h-val-n { grid-column: 1; grid-row: 1; font-size: 15px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
-.h-val h3 { grid-column: 2; grid-row: 1; margin: 0; }
-.h-val-l { grid-column: 1 / -1; grid-row: 2; }
-.h-val p { margin: 0 24px 24px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--dim); }
+.v3 .h-val h3 { grid-column: 1; grid-row: 1; margin: 0; }
+.h-val-l { grid-column: 1; grid-row: 2; }
+.v3 .h-val p { margin: 0 0 24px; color: var(--dim); }
 
-/* 6 하지 않는 일: 글자(×)와 문장으로 뜻을 전하고 색에 기대지 않는다 */
-.h-nots { list-style: none; margin: 0 0 24px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.h-nots li { padding: 8px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--dim); font-size: 16px; font-weight: 700; }
-.h-nots li::before { content: '× '; }
-.h-not-end { font-size: 20px; font-weight: 700; }
+/* 6 하지 않는 일: × 표시와 마무리 문장으로 뜻을 전한다(색에 기대지 않는다) */
+.h-nots { list-style: none; margin: 0 0 40px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+.h-nots li { padding: 20px 16px 20px 0; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 18px; font-weight: 600; }
+.h-nots li::before { content: '× '; color: var(--notice); font-weight: 700; }   /* 취소선은 한글 획을 가려 읽기 어렵다(마무리 검토 2026-10-30) */
+.v3 .h-not-end { max-width: 26em; font-size: clamp(22px, 2.4vw, 28px); line-height: 1.45; font-weight: 700; letter-spacing: -0.01em; }
 
 /* 7 확인된 숫자 */
-.h-stats { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 24px; grid-template-columns: repeat(3, 1fr); }
-.h-stats li { padding-top: 16px; border-top: 3px solid var(--green); color: var(--dim); }
-.h-stat-n { display: flex; align-items: baseline; gap: 4px; color: var(--ink); font-size: clamp(40px, 5vw, 56px); line-height: 1.15; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-.h-stat-n small { font-size: .43em; font-weight: 700; letter-spacing: 0; }
+.h-stats { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 40px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.h-stats li { color: var(--dim); }
+.h-stat-n { display: flex; align-items: baseline; gap: 4px; color: var(--green); font-size: clamp(44px, 5.6vw, 64px); line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.h-stat-n small { font-variant-numeric: tabular-nums; font-size: .4em; font-weight: 700; letter-spacing: 0; color: var(--ink); }
 .h-stat-src { font-size: 16px; color: var(--dim); }
 
-/* 8 마무리 */
+/* 8 마무리: 글은 왼쪽, 행동은 오른쪽 */
 .v3 .h-end { padding-top: 0; }
-.h-cta-box { display: grid; gap: 16px; justify-items: start; padding: 48px; border-radius: 18px; background: var(--soft); }
-.h-cta-box h2 { margin: 0; }
+.h-cta-box { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 48px; align-items: center; padding: 56px; border-radius: var(--radius-card); background: var(--soft); }
+.v3 .h-cta-box h2 { grid-column: 1; margin: 0; }
+.h-cta-box p { grid-column: 1; color: var(--soft-ink); }
+.h-cta-box .btn { grid-column: 2; grid-row: 1 / span 2; }
 
 @media (max-width: 959px) {
-  .h-hero-grid { grid-template-columns: 1fr; gap: 40px; }
+  .h-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 48px; }
   .h-doc { max-width: 444px; }
+  .h-split { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .h-nots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
   .v3 .wrap { padding: 0 16px; }
-  .v3 .h-sec { padding: 40px 0; }
-  .v3 .h-hero { padding: 24px 0 40px; }
+  .v3 .h-sec, .v3 .h-alt { padding: 56px 0; }
+  .v3 .h-hero { padding: 32px 0 56px; }
   .v3 .h-end { padding-top: 0; }
+  .v3 h2 { margin-bottom: 28px; }
   .h-hero-copy { gap: 16px; }
-  .h-sub, .v3 .h-card p, .h-step-t p, .h-val p, .h-val-l, .h-stats li p:last-child { font-size: 16px; }
-  .v3 h3, .h-step-t h3 { font-size: 19px; }
-  .h-cta .btn, .h-product .btn, .h-cta-box .btn { width: 100%; }
-  .h-product .btn { justify-self: stretch; }
-  .h-cards, .h-stats, .h-values { grid-template-columns: 1fr; gap: 12px; }
-  .h-card, .h-val summary { padding: 20px; }
-  .h-val p { margin: 0 20px 20px; }
-  .h-steps { grid-template-columns: 1fr; gap: 20px; }
-  .h-steps li { grid-template-columns: 44px 1fr; gap: 16px; }
-  .h-step-n { width: 44px; height: 44px; font-size: 19px; }
-  .h-steps li:not(:last-child)::after { top: 52px; bottom: -16px; left: 21px; right: auto; width: 2px; height: auto; }
-  .h-step-t h3 { margin-bottom: 4px; }
-  .h-not-end { font-size: 18px; }
-  .h-cta-box { padding: 28px 20px; justify-items: stretch; }
+  .h-sub, .v3 .h-lede, .h-rows p, .h-step-t p, .h-prod p, .v3 .h-val p, .h-val-l, .h-stats li p:last-child { font-size: 16px; }
+  .v3 .h-lede { margin: -12px 0 32px; }
+  .v3 h3 { font-size: 19px; }
+  .h-cta .btn, .h-cta-box .btn { width: 100%; }
+  .h-rows li { grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 20px 0; }
+  .h-steps { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .v3 .h-step-t h3 { font-size: 24px; }
+  .h-prods { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .h-prods li:first-child { grid-row: auto; }
+  .h-prod { padding: 24px; }
+  .h-shot { width: 100%; height: auto; aspect-ratio: 390 / 430; }
+  .v3 .h-prod.is-main h3 { font-size: 24px; }
+  .h-values, .h-stats { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .h-stats { gap: 28px; }
+  .h-nots li { font-size: 16px; }
+  .v3 .h-not-end { font-size: 20px; }
+  .h-cta-box { grid-template-columns: minmax(0, 1fr); padding: 32px 20px; }
+  .h-cta-box .btn { grid-column: 1; grid-row: auto; margin-top: 8px; }
   .h-page { padding: 20px; }
   .h-photo { height: 130px; }
 }
 
-/* 움직임 3곳(시안 'Motion notes'). home.js가 감속 설정이 아닐 때만 .is-anim을 붙인다. 없으면 완성 상태 그대로 */
+/* 움직임 2곳(문서 쌓기·숫자 올리기). home.js가 감속 설정이 아닐 때만 .is-anim을 붙인다. 없으면 완성 상태 그대로 */
 .h-doc .layer, .h-page { transition: opacity .32s var(--ease), transform .32s var(--ease), background-color .32s var(--ease), border-color .32s var(--ease); }
 .h-doc.is-anim .layer { opacity: 0; transform: translateY(12px); }
 .h-doc.is-anim .h-sheet { transform: none; }
@@ -164,15 +191,7 @@
 .h-doc.is-play .h-nums > :nth-child(1) { transition-delay: 1.4s; } .h-doc.is-play .h-nums > :nth-child(2) { transition-delay: 1.55s; } .h-doc.is-play .h-nums > :nth-child(3) { transition-delay: 1.7s; }
 .h-doc.is-play [data-step="4"], .h-doc.is-play .h-page { transition-delay: 2.3s; }
 
-.h-step-n, .h-step-t, .h-steps li::after { transition: background-color .28s var(--ease), color .28s var(--ease), box-shadow .28s var(--ease), opacity .28s var(--ease); }
-.h-steps.is-anim .h-step-n { background: transparent; color: var(--dim); box-shadow: inset 0 0 0 2px var(--dim); }
-.h-steps.is-anim .h-step-t, .h-steps.is-anim li::after { opacity: .45; }
-.h-steps.is-on .h-step-n { background: var(--green); color: var(--on-green); box-shadow: none; }
-.h-steps.is-on .h-step-t, .h-steps.is-on li::after { opacity: 1; }
-.h-steps.is-on li:nth-child(2) .h-step-n, .h-steps.is-on li:nth-child(2) .h-step-t, .h-steps.is-on li:nth-child(1)::after { transition-delay: .52s; }
-.h-steps.is-on li:nth-child(3) .h-step-n, .h-steps.is-on li:nth-child(3) .h-step-t, .h-steps.is-on li:nth-child(2)::after { transition-delay: 1.04s; }
-
 @media (prefers-reduced-motion: reduce) {
   .home-hits.fresh li { animation: none !important; }
-  .home-hits a, .home-search-row input, .box-list button, .h-doc .layer, .h-page, .h-step-n, .h-step-t, .h-steps li::after { transition: none !important; }
+  .home-hits a, .home-search-row input, .box-list button, .h-doc .layer, .h-page, .h-prod { transition: none !important; }
 }

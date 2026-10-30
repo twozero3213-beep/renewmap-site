@@ -3,7 +3,7 @@
 :root { --over: #b4521d; --within: #2e7d5e; --pending: #4f63a8; --nodata: #7a8a85; --ref: #8fa39c; --soft2: #e7f1ec; }
 
 /* ── 상태 도넛 + 개수 ── */
-.sr-glance { padding: 12px 14px; border-radius: 14px; background: var(--bg); }
+.sr-glance { padding: 12px 14px; border-radius: var(--radius-card); background: var(--bg); }
 .gl-top { display: flex; align-items: center; gap: 16px; }
 .dn { width: 108px; height: 108px; flex: none; }
 .dn circle { fill: none; stroke-width: 16; }
@@ -82,7 +82,7 @@
 .v4-tiles li { display: grid; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--soft2); }
 .v4-tiles span { font-size: 13px; font-weight: 600; color: var(--dim); }
 .v4-tiles b { font-size: 24px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.2; }
-.v4-charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.v4-charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
 @media (max-width: 520px) { .v4-charts { grid-template-columns: minmax(0, 1fr); } }
 .v4-donut { display: flex; align-items: center; gap: 12px; }
 .v4-donut .gl-n { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
@@ -93,25 +93,25 @@
 .v4-days text { font-size: 7px; fill: var(--dim); text-anchor: middle; }
 .v4-col { fill: var(--ref); } .v4-col.is-today { fill: var(--green); }
 .v4-days figcaption { font-size: 12px; color: var(--dim); }
-.v4-bars { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.v4-bars { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
 .v4-bars > div { display: grid; grid-template-columns: 6.5em minmax(0, 1fr) 2.5em; align-items: center; gap: 8px; font-size: 13px; }
 .v4-bars svg { width: 100%; height: 10px; display: block; }
 .v4-bars b { text-align: right; font-variant-numeric: tabular-nums; }
 .v4-track { fill: var(--bg); } .v4-fill { fill: var(--green); }
 
 /* 현장: 카드 모양을 찾기와 같게, 넓은 화면은 기록하기 | 저장된 기록 두 칸 */
-body.field .card { border-radius: 14px; }
+body.field .card { border-radius: var(--radius-card); }
 @media (min-width: 1100px) {
   body.field header.top .wrap { max-width: 1180px; }
   body.field main { max-width: 1180px; display: grid; grid-template-columns: minmax(0, 560px) minmax(0, 1fr); column-gap: 24px; align-items: start; }
   body.field main > * { grid-column: 1; }
   body.field main > section[aria-labelledby="listTitle"], body.field main > #upBox { grid-column: 2; }
-  body.field main > section[aria-labelledby="listTitle"] { grid-row: 1 / span 40; position: sticky; top: 72px; max-height: calc(100vh - 88px); overflow-y: auto; overscroll-behavior: contain; margin-top: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+  body.field main > section[aria-labelledby="listTitle"] { grid-row: 1 / span 40; position: sticky; top: 72px; max-height: calc(100vh - 88px); overflow-y: auto; overscroll-behavior: contain; margin-top: 16px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
 }
 
 /* 보관함: 요약 위, 받은 문서 | 현장 기록 두 칸 */
 .box-v4 .box-cols section { padding: 0; }
-.box-v4 .box-list li { border-radius: 14px; }
+.box-v4 .box-list li { border-radius: var(--radius-card); }
 @media (min-width: 1100px) {
   .home.box-v4 { max-width: 1180px; }
   .box-v4 .box-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
@@ -128,10 +128,7 @@ body.field .card { border-radius: 14px; }
 .rv-key { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; font-size: 12px; color: var(--dim); }
 .rv-key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 2px; vertical-align: -1px; }
 .rv-key i.rv-thr { width: 3px; height: 12px; background: var(--ink); border-radius: 0; }
-.redev-v4 .req-list li { border-left: 4px solid var(--nodata); padding-left: 10px; }
-.redev-v4 .req-list li[data-status="충족"] { border-left-color: var(--within); }
-.redev-v4 .req-list li[data-status="미충족"] { border-left-color: var(--over); }
-.redev-v4 .req-list li[data-status="현장 확인"] { border-left-color: var(--pending); }
+.redev-v4 .req-list li { padding-left: 0; }
 @media (min-width: 1100px) {
   body.redev-v4 main { max-width: 1180px; display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); column-gap: 24px; align-items: start; }
   body.redev-v4 main > .note, body.redev-v4 main > .warn { grid-column: 1 / -1; }
@@ -155,7 +152,7 @@ body.field .card { border-radius: 14px; }
 /* 업무: 짧은 이름 타일 두 줄 */
 .gov-n { display: none; font-size: 14px; font-weight: 700; line-height: 1.35; }
 @media (min-width: 1100px) {
-  .explore-page .gov-cards { grid-template-columns: 1fr 1fr; }
+  .explore-page .gov-cards { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .explore-page .gov-card { flex-direction: column; align-items: flex-start !important; gap: 4px; min-height: 72px; }
   .explore-page .gov-card b { display: none; }
   .explore-page .gov-n { display: block; }
@@ -191,7 +188,7 @@ body.field .card { border-radius: 14px; }
 .box-list .outcome legend { font-size: 13px; font-weight: 700; color: var(--dim); padding: 0 4px; }
 .box-list .outcome label { display: inline-flex; align-items: center; gap: 6px; }
 .box-list .outcome .consent { font-size: 13px; color: var(--dim); }
-.home > .outcome-sum, .outcome-sum { margin: 8px 0 20px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.home > .outcome-sum, .outcome-sum { margin: 8px 0 20px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
 .outcome-sum h2 { margin: 0 0 4px; }
 .outcome-sum button { min-height: 44px; padding: 0 16px; font: inherit; font-weight: 600; border-radius: 10px; border: 1px solid var(--green); background: transparent; color: var(--green); cursor: pointer; }
 
@@ -230,8 +227,7 @@ body.field .card { border-radius: 14px; }
 }
 /* 동 보고서 카드형(UI 검수 P1-7): 숫자를 문장 밖으로. 카드 왼쪽 띠 색은 상태 색과 같다 */
 .rp-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin: 8px 0 4px; }
-.rp-item.rp-card { border: 1px solid var(--line); border-left: 4px solid var(--nodata); border-radius: 12px; padding: 12px 14px; background: var(--card); gap: 6px; align-content: start; }
-.rp-card.is-over { border-left-color: var(--over); } .rp-card.is-in { border-left-color: var(--within); } .rp-card.is-wait { border-left-color: var(--pending); } .rp-card.is-nostd { border-left-color: #cdd7d3; }
+.rp-item.rp-card { border: 1px solid var(--line); border-radius: var(--radius-card); padding: 12px 14px; background: var(--card); gap: 6px; align-content: start; }
 .rp-card .rc-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .rp-card .rc-l { font-size: 14px; font-weight: 700; color: var(--dim); line-height: 1.35; }
 .rp-item.rp-card p.rc-v { font-size: 24px; font-weight: 800; line-height: 1.15; color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -245,3 +241,15 @@ body.field .card { border-radius: 14px; }
 /* 기준일 스냅샷 비교: 판정이 바뀐 줄을 눈에 띄게 */
 .rp-snap-sum { margin: 4px 0 8px; font-size: 15px; } .rp-snap-tbl small { color: var(--dim); }
 .rp-snap-tbl tr.is-flip td { background: #fdf1e6; } .rp-snap .rp-tools .btn + .btn { margin-left: 8px; }
+
+/* UX 정비(2026-10-30, Hallmark 점검): 동 패널 안의 회색 상자 → 그 안의 흰 상자(카드 속 카드)를 걷고 가는 구분선으로 나눈다.
+   흰 상자는 styles.css의 공통 details 규칙이 접힘 설명에까지 붙은 것이다 */
+.sr-glance, .sr-tally, .sr-gaps { margin: 0; padding: 16px 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; }
+.sr-tally-more, .sr .map-detail, .sr-group > details { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
+.map-panel { border-radius: var(--radius-card); }
+/* 머리 로고를 화면 본문 왼쪽 선에 맞춘다(UX 정비 2026-10-30: 탐색은 본문 104px·로고 244px, 보관함은 190px·244px로 어긋났다) */
+@media (min-width: 1100px) {
+  .explore-page header.top .wrap { max-width: none; padding-inline: 16px; }
+  body:has(.box-v4) header.top .wrap { max-width: 1180px; padding-inline: 16px; }
+  body:has(.home.docs) header.top .wrap { max-width: 640px; padding-inline: 16px; }
+}

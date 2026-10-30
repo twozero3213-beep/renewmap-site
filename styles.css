@@ -1,3 +1,9 @@
+/* Hallmark · checked: 2026-10-30 · genre: modern-minimal (inferred) · scope: app · surface: absolute
+ * fixed: 3 4 7a 12 26b 29 30a 34 39a 50 54 62 63 67 · home recomposed in place: rows, ruled columns, one large card, divider lists, struck list, two-column close
+ * built: the project · redesign: polish (home: full) · system: docs/design/DESIGN.md (brand kept) · v2.0.0 */
+/* Hallmark · dismissed 67 · RENEWMAP is the wordmark, and HWPX, QGIS, JSONL are product and file names spelled as their makers spell them */
+/* Hallmark · dismissed 63 · the consent sentence in the about.html contact form is legal text and is never reworded */
+/* Hallmark · waive 7b · --card and --on-green stay #ffffff · DESIGN.md 1.1 measured every RenewMap text pair on this white, ink 12.09:1 */
 /* 리뉴맵 랜딩 공통 스타일. 색은 V23 시제품(reference/v23) 값을 따른다. */
 :root {
   /* 색 토큰: docs/design/redesign_2026-10-27.md 6.1(대비는 그 표의 계산값). 이름은 기존 것을 그대로 쓴다 */
@@ -15,6 +21,15 @@
   --error: #b42318;
   --lime: #d7f988;
   --line: #d5e0db;
+  --line-strong: #7a9089;   /* 입력·보조 버튼 경계 3:1(DESIGN.md 1.4) */
+  --green-deep: #004a3d;    /* 주 버튼 누름 */
+  --soft-press: #d3eae1;    /* 보조 버튼 누름 */
+  --off-bg: #e7ecea; --off-ink: #52615c;   /* 비활성: 채움·글자·커서 세 갈래로 알린다 */
+  --yes-line: #a9d3c2; --no-line: #e6b8a2;
+  --radius-btn: 8px;        /* KRDS 형태: 높이 48px x 1/8 = 6 → 짝수 올림 8 */
+  --radius-card: 12px;      /* KRDS 최대 12px */
+  --print-ink: #000;        /* 공문 인쇄·1쪽 문서는 순검정(화면 글자는 --ink) */
+  --audience-bg: #e3f1ea;
   --ease: cubic-bezier(.2, 0, 0, 1);
   --warn: #8a4b00;
   --navy: #102f2d;
@@ -25,7 +40,7 @@
   --skel-hi: rgba(255,255,255,.6);
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: clip; }
 body {
   margin: 0;
   background: var(--bg);
@@ -35,7 +50,9 @@ body {
   line-height: 1.7;
   word-break: keep-all;
   overflow-wrap: break-word;
+  overflow-x: clip;
 }
+h1, h2, h3 { text-wrap: balance; }
 button, input, select, textarea { font-family: inherit; }
 a { color: var(--green); }
 img { max-width: 100%; height: auto; }
@@ -43,27 +60,31 @@ img { max-width: 100%; height: auto; }
 .skip { position: absolute; left: -999px; }
 .skip:focus { left: 12px; top: 12px; background: var(--card); padding: 8px 12px; z-index: 30; }
 
-header.top { position: sticky; top: 0; z-index: 20; background: rgba(242,245,243,.94); border-bottom: 1px solid var(--line); backdrop-filter: blur(6px); }
+header.top { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); }
 header.top .wrap { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; }
 .logo { font-weight: 700; font-size: 20px; color: var(--ink); text-decoration: none; letter-spacing: .02em; }
 .logo span { color: var(--green); }
 nav.menu { display: flex; gap: 4px; flex-wrap: wrap; }
 nav.menu a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 10px; border-radius: 8px; color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; }
-nav.menu a:hover { color: var(--green); background: #e3f1ea; }
+nav.menu a:hover { color: var(--green); background: var(--soft); }
 .header-cta { padding: 10px 16px; font-size: 14px; white-space: nowrap; }
-.menu-toggle { display: none; align-items: center; justify-content: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid #7a9089; border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.menu-toggle { display: none; align-items: center; justify-content: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); background: var(--card); color: var(--ink); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .menu-toggle::before { content: ''; width: 16px; height: 12px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; background: linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat; }
-.menu-toggle[aria-expanded="true"] { background: var(--ink); color: #fff; }
-.menu-toggle:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 5px #fff; }
+.menu-toggle[aria-expanded="true"] { background: var(--ink); color: var(--card); }
+.menu-toggle:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 5px var(--card); }
 
-.btn { display: inline-block; background: var(--green); color: var(--on-green); font-weight: 700; text-decoration: none; border: 0; border-radius: 10px; padding: 14px 22px; font-size: 17px; cursor: pointer; font-family: inherit; transition: background-color .12s var(--ease), border-color .12s var(--ease); }
-.btn:hover, .btn:active { background: var(--green-press); }
-.btn.ghost { background: transparent; color: var(--green); border: 2px solid var(--green); }
-.btn:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid #153c39; outline-offset: 2px; box-shadow: 0 0 0 5px #fff; }
+/* 버튼(UX 정비 2026-10-30): 높이 48, 모서리 8(KRDS 형태), 굵기 600. 보조는 2px 녹색 테두리 대신 1px 경계 + 흰 바탕으로 주 버튼과 위계를 나눈다 */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px; border: 1px solid transparent; border-radius: var(--radius-btn); background: var(--green); color: var(--on-green); font-family: inherit; font-size: 17px; font-weight: 600; line-height: 1.3; text-align: center; text-decoration: none; cursor: pointer; transition: background-color .12s var(--ease), border-color .12s var(--ease), color .12s var(--ease); }
+.btn:hover { background: var(--green-press); }
+.btn:active { background: var(--green-deep); }
+.btn.ghost { background: var(--card); color: var(--green); border-color: var(--line-strong); }
+.btn.ghost:hover { background: var(--soft); border-color: var(--green); }
+.btn.ghost:active { background: var(--soft-press); }
+.btn:disabled, .btn[aria-disabled="true"] { background: var(--off-bg); color: var(--off-ink); border-color: transparent; cursor: not-allowed; }
+.btn:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 5px var(--card); }
 
-.hero h1 em { font-style: normal; background: linear-gradient(transparent 60%, var(--lime) 60%); }
 .ico { width: 44px; height: 44px; display: block; margin-bottom: 10px; fill: none; stroke: var(--green); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.ico .f { fill: #e3f1ea; }
+.ico .f { fill: var(--soft); }
 .num, svg text { font-variant-numeric: tabular-nums; }
 
 section { padding: 56px 0; scroll-margin-top: 60px; }
@@ -72,10 +93,9 @@ h2 { font-size: clamp(24px, 3.4vw, 34px); line-height: 1.3; margin: 0 0 12px; }
 h3 { font-size: 19px; margin: 0 0 6px; }
 .sub { color: var(--dim); margin: 0 0 28px; }
 .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 24px; }
 section.alt .card { background: var(--bg); }
 .card p { margin: 0; }
-.step { font-size: 13px; font-weight: 700; color: var(--green); letter-spacing: .06em; }
 .tag { display: inline-block; font-size: 13px; font-weight: 700; border-radius: 999px; padding: 2px 10px; margin-right: 6px; }
 .tag.ok { background: #dcefe7; color: #0b5a48; }
 .tag.conflict { background: #fde2d4; color: #8f2f0c; }
@@ -92,7 +112,7 @@ details p { margin: 10px 0 0; }
 
 form.contact { display: grid; gap: 14px; max-width: 640px; }
 form.contact label { font-weight: 700; font-size: 15px; display: grid; gap: 6px; }
-form.contact input, form.contact textarea, form.contact select { font: inherit; padding: 12px 14px; border: 1px solid #7a9089; border-radius: 10px; background: #fff; color: var(--ink); width: 100%; }
+form.contact input, form.contact textarea, form.contact select { font: inherit; min-height: 48px; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); background: var(--card); color: var(--ink); width: 100%; }
 form.contact .agree { font-weight: 400; display: flex; gap: 8px; align-items: flex-start; }
 form.contact .agree input { width: auto; margin-top: 6px; }
 form.contact .form-hint { display: block; font-weight: 400; font-size: 13px; color: var(--dim); }
@@ -100,7 +120,7 @@ form.contact .consent-full { margin: -6px 0 0; padding: 10px 16px; font-size: 14
 form.contact .consent-full summary { font-size: 14px; color: var(--green); }
 form.contact .consent-full ul { margin: 8px 0 0; padding-left: 1.2em; } form.contact .consent-full li { margin-bottom: 4px; }
 form.contact .form-note { margin: 0; font-size: 14px; color: var(--dim); }
-.reply-time { background: #e8f4ef; border-left: 4px solid var(--green); padding: 12px 16px; border-radius: 6px; margin: 0 0 20px; }
+.reply-time { background: var(--soft); border: 1px solid var(--yes-line); padding: 12px 16px; border-radius: var(--radius-btn); margin: 0 0 20px; }
 
 footer { padding: 36px 0 110px; font-size: 14px; color: var(--dim); }
 footer a { color: var(--dim); }
@@ -128,7 +148,7 @@ footer .links a { display: inline-flex; align-items: center; min-height: 44px; }
   header.top .wrap { min-height: 60px; }
   .menu-toggle { display: inline-flex; }
   .header-cta { display: none; }
-  nav.menu { display: none; position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; z-index: 22; padding: 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); box-shadow: 0 16px 36px rgba(21,60,57,.16); }
+  nav.menu { display: none; position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; z-index: 22; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); box-shadow: 0 16px 36px rgba(21,60,57,.16); }
   nav.menu.is-open { display: grid; }
   nav.menu a { min-height: 48px; padding: 10px 14px; font-size: 16px; }
   .sticky-cta { display: block; position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 25; text-align: center; box-shadow: 0 6px 20px rgba(21,60,57,.25); }
@@ -139,23 +159,21 @@ footer .links a { display: inline-flex; align-items: center; min-height: 44px; }
 /* 원칙 8개: 번호·아이콘·한 줄 제목·짧은 설명. docs/legal/ai_ethics.md 1부 문장을 그대로 쓴다 */
 .eth-lead { font-size: 18px; margin: 0 0 24px; }
 .eth-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin: 0 0 32px; }
-.eth-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; grid-template-columns: 44px 1fr; gap: 6px 14px; align-items: start; }
+.eth-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 20px; display: grid; grid-template-columns: 44px 1fr; gap: 6px 14px; align-items: start; }
 .eth-card .ico { margin: 0; grid-row: span 3; }
-.eth-card .n { font-size: 13px; font-weight: 700; color: var(--green); letter-spacing: .06em; }
+.eth-card .n { font-size: 14px; font-weight: 700; color: var(--green); }
 .eth-card h2 { margin: 0; font-size: 18px; line-height: 1.35; }
 .eth-card p { margin: 0; font-size: 15px; color: var(--dim); }
-.eth-card.is-no { border-left: 5px solid #8f2f0c; } .eth-card.is-yes { border-left: 5px solid #0b5a48; }
+.eth-card.is-no { border-color: var(--no-line); } .eth-card.is-yes { border-color: var(--yes-line); }   /* 뜻은 제목 글자가 전한다. 굵은 왼쪽 띠는 쓰지 않는다 */
 .eth-no { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 32px; padding: 0; list-style: none; }
 .eth-no li { background: #fde2d4; color: #8f2f0c; font-weight: 700; font-size: 14px; border-radius: 999px; padding: 6px 14px; }
 .eth-no li::before { content: '✕ '; }
 .eth-flow { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 0 0 32px; padding: 0; list-style: none; counter-reset: s; }
 .eth-flow li { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; text-align: center; font-size: 14px; position: relative; }
-.eth-flow li b { display: block; font-size: 16px; margin-bottom: 4px; } .eth-flow li span { font-size: 26px; display: block; }
+.eth-flow li b { display: block; font-size: 16px; margin-bottom: 4px; }
 .eth-flow li::before { counter-increment: s; content: counter(s); position: absolute; top: -10px; left: 10px; background: var(--green); color: #fff; font-size: 12px; font-weight: 700; width: 22px; height: 22px; border-radius: 50%; line-height: 22px; }
 .eth-note { font-size: 14px; color: var(--dim); }
 
-/* 자주 묻는 질문 앞 이모지 */
-.faq-e { margin-right: 8px; }
 
 /* 주 메뉴 4개(찾기·업무별·현장·보관함). 1100px 미만은 하단 탭, 이상은 왼쪽 세로 막대(redesign 4장) */
 .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }

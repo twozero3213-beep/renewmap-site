@@ -794,10 +794,12 @@
   if (typeof document === 'undefined') return;
   window.RenewMap = api;
   api.countUp = el => countUp(el); // find.js·hero.js가 같은 카운트업을 쓴다
+  // countUp이 쓰는 값은 지도 없는 화면(about.html)에서도 있어야 한다. 아래 '지도 없으면 끝'보다 먼저 둔다(2026-10-30: about에서 초기화 전 접근 오류로 등장 효과가 멈췄다)
+  const shown = new Map();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches, coarse = matchMedia('(pointer: coarse)').matches, wide = matchMedia('(min-width: 900px)');
 
   // ── 브라우저 ──
   const app = document.getElementById('mapApp'); if (!app) return;
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches, coarse = matchMedia('(pointer: coarse)').matches, wide = matchMedia('(min-width: 900px)');
   const fetchJson = url => (window.renewFetch ? window.renewFetch(url) : fetch(url, { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
   // 외부 AI 서버 주소는 비워 둔다(서버로 문장을 보내지 않는다). 다듬기는 기기 안 AI(detectDeviceAI)로만 한다(docs/legal/ai_ethics.md ⑤)
   const AI_POLISH_ENDPOINT = '';
@@ -828,7 +830,6 @@
   const extOf = v => ({ migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate, horizon: horizon(),
     forecast: v && v.level === 'emd' ? forecastOf(v.emdCode) || null : null, sg: v ? (v.gu || v.sigungu || null) : null });
   let timer = null, autoT = null, lastLegend = '', lastLive = '', lastDong = null;
-  const shown = new Map();
 
   app.innerHTML = `<div class="map-top" data-top></div><div class="map-stage" data-stage><div class="map-canvas is-wait" data-map-slot>전국 자료를 불러오는 중입니다.</div>` +
     `<aside class="map-panel" data-panel hidden aria-label="선택한 지역의 세부항목 척도표"></aside></div><div class="map-bottom" data-bottom></div>`;

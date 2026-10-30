@@ -19,7 +19,7 @@
 
 .dash-main { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); margin-top: 8px; }
 @media (min-width: 900px) { .dash-main { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); } }
-.dash-panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px; min-width: 0; }
+.dash-panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 20px; min-width: 0; }
 .dash-panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 10px; }
 .dash-panel h3 { margin: 0; font-size: 20px; }
 .dash-panel h3 small { white-space: nowrap; font-size: 13px; font-weight: 400; color: var(--dim); font-variant-numeric: tabular-nums; }
@@ -32,7 +32,7 @@
 
 /* 큰 숫자 카드 */
 .dash-bigs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.dash-big { font: inherit; text-align: left; color: var(--ink); background: var(--bg); border: 1px solid transparent; border-radius: 14px; padding: 14px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; min-width: 0; transition: transform .2s, border-color .2s, background .2s; }
+.dash-big { font: inherit; text-align: left; color: var(--ink); background: var(--bg); border: 1px solid transparent; border-radius: var(--radius-card); padding: 14px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; min-width: 0; transition: transform .2s, border-color .2s, background .2s; }
 .dash-big:hover { border-color: var(--green); transform: translateY(-2px); }
 .dash-big[aria-expanded="true"] { background: #e3f1ea; border-color: var(--green); }
 .dash-big .k { font-size: 14px; font-weight: 600; color: var(--dim); }
@@ -84,7 +84,7 @@
 .dash-cmp-name { font: inherit; font-weight: 700; font-size: 15px; color: var(--ink); background: none; border: 0; padding: 2px 0 6px; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
 
 /* 빈 상태 */
-.dash-empty { text-align: center; background: var(--card); border: 1px dashed #b9cbc4; border-radius: 18px; padding: 32px 20px; margin-top: 8px; }
+.dash-empty { text-align: center; background: var(--card); border: 1px dashed #b9cbc4; border-radius: var(--radius-card); padding: 32px 20px; margin-top: 8px; }
 .dash-empty img { width: 120px; height: auto; display: block; margin: 0 auto; }
 .dash-empty h3 { margin: 10px 0 6px; }
 .dash-empty p { margin: 0; color: var(--dim); }
@@ -92,7 +92,7 @@
 /* 지도 보기(Leaflet). isolation으로 Leaflet 내부 z-index(최대 1000)가 머리글 위로 올라오지 않게 가둔다 */
 .dash-view { margin: 0 0 12px; }
 .dash-map-ctl { display: flex; flex-wrap: wrap; gap: 8px; }
-.dash-map { position: relative; isolation: isolate; z-index: 0; height: min(60vh, 520px, 110vw); min-height: 280px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #e7eeea; }
+.dash-map { position: relative; isolation: isolate; z-index: 0; height: min(60vh, 520px, 110vw); min-height: 280px; border-radius: var(--radius-card); overflow: hidden; border: 1px solid var(--line); background: #e7eeea; }
 .dash-map.is-wait { display: grid; place-items: center; color: var(--dim); font-size: 15px; }
 #dashboard .leaflet-container { font: inherit; }
 #dashboard .leaflet-tooltip { font-size: 14px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
