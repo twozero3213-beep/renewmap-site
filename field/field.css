@@ -3,7 +3,6 @@
  * built: the project · redesign: polish (home: full) · system: docs/design/DESIGN.md (brand kept) · v2.0.0 */
 /* Hallmark · dismissed 67 · RENEWMAP is the wordmark, and HWPX, QGIS, JSONL are product and file names spelled as their makers spell them */
 /* Hallmark · dismissed 63 · the consent sentence in the about.html contact form is legal text and is never reworded */
-/* Hallmark · waive 7b · the field app cards stay #ffffff for sunlight reading outdoors · field buttons carry white text on green 6.13:1 */
 /* 현장 기록(field/). 토큰은 ../styles.css, 문구·크기는 docs/design/redesign_2026-10-27.md 5.5·6장. CSP: 인라인 style 없음 */
 body.field { font-size: 17px; }
 .field section:not(.card) { padding: 0; }
@@ -42,7 +41,7 @@ body.field { font-size: 17px; }
 .pick label:not(.big):hover { background: var(--soft); border-color: var(--green); }
 .pick label:active { background: var(--green-press); color: var(--on-green); }
 .pick label:focus-within { outline: 3px solid var(--ink); outline-offset: 2px; }
-#cv { width: 100%; height: auto; touch-action: none; border-radius: 8px; background: #222; display: block; }
+#cv { width: 100%; height: auto; touch-action: none; border-radius: 8px; background: var(--stage-bg); display: block; }
 .thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .thumbs figure { margin: 0; position: relative; }
 .thumbs img { width: 88px; height: 88px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
@@ -87,7 +86,7 @@ details summary { min-height: 48px; display: flex; align-items: center; font-wei
 .toast button { width: auto !important; margin: 0 !important; min-height: 44px !important; background: transparent !important; border: 0 !important; color: var(--bg) !important; text-decoration: underline; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 dialog { max-width: 480px; width: calc(100% - 32px); border: 0; border-radius: var(--radius-card); padding: 20px; background: var(--card); color: var(--ink); }
-dialog::backdrop { background: rgba(0,0,0,.5); }
+dialog::backdrop { background: var(--backdrop); }
 dialog h2 { margin-top: 0; }
 dialog p { font-size: 15px; line-height: 24px; margin: 0 0 12px; }
 dialog[open] { animation: toast-in .24s var(--ease); }
@@ -122,19 +121,19 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 @media print {
   @page { size: A4; margin: 18mm 20mm; }
   body.printing > *:not(#printDoc) { display: none !important; }
-  body.printing { padding: 0; background: #fff; color: var(--ink); }
-  body.printing .print-doc { display: block; font-family: "NanumGothic", "나눔고딕", Pretendard, sans-serif; font-size: 10pt; line-height: 1.6; color: var(--ink); }
+  body.printing { padding: 0; background: var(--card); color: var(--ink); }
+  body.printing .print-doc { display: block; font-family: var(--font-doc); font-size: 10pt; line-height: 1.6; color: var(--ink); }
   .print-doc .dg-title { text-align: center; font-size: 17pt; margin: 0 0 6mm; }
   .print-doc .dg-key { font-size: 11pt; font-weight: 700; }
   .print-doc .dg-h1 { font-size: 12pt; margin: 4mm 0 2mm; }
   .print-doc table { width: 100%; border-collapse: collapse; font-size: 9pt; margin: 0 0 3mm; }
-  .print-doc th, .print-doc td { border: 1px solid #000; padding: 1mm 2mm; text-align: left; vertical-align: top; }
-  .print-doc th { background: #d9d9d9; }
+  .print-doc th, .print-doc td { border: 1px solid var(--print-ink); padding: 1mm 2mm; text-align: left; vertical-align: top; }
+  .print-doc th { background: var(--print-th); }
   .print-doc .dg-box th { width: 22%; }
   .print-doc .dg-photos { display: grid; grid-template-columns: repeat(auto-fit, minmax(34mm, 1fr)); gap: 3mm; }
   .print-doc figure { margin: 0; break-inside: avoid; }
   .print-doc img { width: 100%; max-height: 40mm; object-fit: contain; }
-  .print-doc figcaption, .print-doc .dg-small { font-size: 7.5pt; color: #333; }
+  .print-doc figcaption, .print-doc .dg-small { font-size: 7.5pt; color: var(--print-cap); }
   .print-doc sup { font-size: 70%; }
   .print-doc button { display: none; }
 }

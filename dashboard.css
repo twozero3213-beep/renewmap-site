@@ -1,21 +1,21 @@
 /* 동네 노후도 대시보드. 색은 styles.css 토큰(V23)을 쓴다. */
-#dashboard { --y20: #006f5b; --y30: #2e7d5e; --bCOUNT: #153c39; --bAREA: #006f5b; --bHH: #5d8a1c; }
+:root { --y20: #006f5b; --y30: #2e7d5e; --bCOUNT: #153c39; --bAREA: #006f5b; --bHH: #5d8a1c; }
 .dash-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--dim); margin: 0 0 20px; }
 .dash-meta b { color: var(--ink); font-variant-numeric: tabular-nums; }
-.dash-meta .mono { font-family: ui-monospace, Consolas, monospace; }
+.dash-meta .mono { font-family: var(--font-mono); }
 .dash-meta .note { flex-basis: 100%; }
 
 /* 직방식 지역 칩: 한 줄 가로 스크롤(페이지는 넘치지 않고 칩 줄 안에서만 움직인다) */
 .dash-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; margin-bottom: 8px; scroll-snap-type: x proximity; scrollbar-width: thin; }
 .dash-chip { flex: none; scroll-snap-align: start; font: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
 .dash-chip:hover { border-color: var(--green); }
-.dash-chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
-.dash-chip.is-planned { color: #4f625d; background: #eef2f0; border-style: dashed; }
+.dash-chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-green); }
+.dash-chip.is-planned { color: var(--off-ink); background: var(--mute-bg); border-style: dashed; }
 .dash-chip.is-planned small { font-size: 12px; margin-left: 4px; }
-.dash-chip.is-planned[aria-pressed="true"] { background: #4f625d; color: #fff; border-style: solid; }
+.dash-chip.is-planned[aria-pressed="true"] { background: var(--off-ink); color: var(--on-green); border-style: solid; }
 .dash-dongs .dash-chip { font-size: 14px; padding: 6px 14px; }
 .dash-dongs .dash-chip[aria-pressed="true"] { background: var(--green); border-color: var(--green); }
-#dashboard button:focus-visible { outline: 3px solid #153c39; outline-offset: 2px; box-shadow: 0 0 0 5px #fff; } /* 문채원 P1: 밝은 배경 ink 링 + 흰 안쪽 링 */
+#dashboard button:focus-visible { outline: 3px solid var(--focus-ink); outline-offset: 2px; box-shadow: 0 0 0 5px var(--card); } /* 문채원 P1: 밝은 배경 ink 링 + 흰 안쪽 링 */
 
 .dash-main { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); margin-top: 8px; }
 @media (min-width: 900px) { .dash-main { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); } }
@@ -26,15 +26,15 @@
 .dash-cap { font-size: 14px; color: var(--dim); margin: 0 0 12px; }
 
 /* 토스식 세그먼트 탭 */
-.dash-seg { display: inline-flex; background: #e7eeea; border-radius: 10px; padding: 3px; }
+.dash-seg { display: inline-flex; background: var(--canvas); border-radius: 10px; padding: 3px; }
 .dash-seg button { font: inherit; font-size: 14px; font-weight: 700; border: 0; background: transparent; color: var(--dim); border-radius: 8px; padding: 6px 14px; cursor: pointer; transition: background .2s, color .2s; }
-.dash-seg button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(21,60,57,.18); }
+.dash-seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px var(--shade-18); }
 
 /* 큰 숫자 카드 */
 .dash-bigs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .dash-big { font: inherit; text-align: left; color: var(--ink); background: var(--bg); border: 1px solid transparent; border-radius: var(--radius-card); padding: 14px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; min-width: 0; transition: transform .2s, border-color .2s, background .2s; }
 .dash-big:hover { border-color: var(--green); transform: translateY(-2px); }
-.dash-big[aria-expanded="true"] { background: #e3f1ea; border-color: var(--green); }
+.dash-big[aria-expanded="true"] { background: var(--soft); border-color: var(--green); }
 .dash-big .k { font-size: 14px; font-weight: 600; color: var(--dim); }
 .dash-big .n { display: flex; align-items: baseline; gap: 2px; }
 .dash-big .v { font-size: clamp(26px, 6.4vw, 40px); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; }
@@ -42,13 +42,13 @@
 .dash-big .u { font-size: 16px; font-weight: 700; }
 .dash-big .tag { align-self: flex-start; margin: 2px 0 0; }
 .dash-big .more { font-size: 14px; color: var(--green); font-weight: 600; }
-.tag.none { background: #e7eeea; color: #3f524d; }
+.tag.none { background: var(--canvas); color: var(--neutral-ink); }
 
 /* 셀 상세(PRD S5) */
 .dash-detail { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 12px; animation: dash-open .25s ease-out; }
 .dash-detail-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .dash-detail h4 { margin: 0; font-size: 16px; }
-.dash-close { font: inherit; font-size: 14px; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 4px 12px; cursor: pointer; color: var(--ink); }
+.dash-close { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 4px 12px; cursor: pointer; color: var(--ink); }
 .dash-detail dl { margin: 10px 0 0; display: grid; gap: 6px; }
 .dash-detail dl div { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; font-size: 14px; }
 .dash-detail dt { color: var(--dim); font-weight: 600; }
@@ -65,8 +65,8 @@
 .dash-yr { font-size: 12px; fill: var(--dim); }
 .dash-val { font-size: 14px; font-weight: 700; fill: var(--ink); }
 .dash-val.s { font-size: 13px; }
-.dash-track { fill: #eef3f1; }
-.dash-track.is-hidden { fill: none; stroke: #9db1aa; stroke-dasharray: 4 3; }
+.dash-track { fill: var(--mute-bg); }
+.dash-track.is-hidden { fill: none; stroke: var(--track-off); stroke-dasharray: 4 3; }
 .dash-fill { transform-box: fill-box; transform-origin: left center; transform: scaleX(0); transition: transform .9s cubic-bezier(.2, .8, .2, 1); }
 #dashApp.is-in .dash-fill { transform: scaleX(1); }
 .dash-fill.y20 { fill: var(--y20); } .dash-fill.y30 { fill: var(--y30); }
@@ -80,11 +80,11 @@
 .dash-cmp-wrap { margin-top: 16px; }
 .dash-cmp { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
 .dash-cmp li { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; transition: border-color .2s, background .2s; }
-.dash-cmp li.is-sel { border-color: var(--green); background: #f3faf6; }
+.dash-cmp li.is-sel { border-color: var(--green); background: var(--hover-tint); }
 .dash-cmp-name { font: inherit; font-weight: 700; font-size: 15px; color: var(--ink); background: none; border: 0; padding: 2px 0 6px; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
 
 /* 빈 상태 */
-.dash-empty { text-align: center; background: var(--card); border: 1px dashed #b9cbc4; border-radius: var(--radius-card); padding: 32px 20px; margin-top: 8px; }
+.dash-empty { text-align: center; background: var(--card); border: 1px dashed var(--line-mid); border-radius: var(--radius-card); padding: 32px 20px; margin-top: 8px; }
 .dash-empty img { width: 120px; height: auto; display: block; margin: 0 auto; }
 .dash-empty h3 { margin: 10px 0 6px; }
 .dash-empty p { margin: 0; color: var(--dim); }
@@ -92,15 +92,15 @@
 /* 지도 보기(Leaflet). isolation으로 Leaflet 내부 z-index(최대 1000)가 머리글 위로 올라오지 않게 가둔다 */
 .dash-view { margin: 0 0 12px; }
 .dash-map-ctl { display: flex; flex-wrap: wrap; gap: 8px; }
-.dash-map { position: relative; isolation: isolate; z-index: 0; height: min(60vh, 520px, 110vw); min-height: 280px; border-radius: var(--radius-card); overflow: hidden; border: 1px solid var(--line); background: #e7eeea; }
+.dash-map { position: relative; isolation: isolate; z-index: 0; height: min(60vh, 520px, 110vw); min-height: 280px; border-radius: var(--radius-card); overflow: hidden; border: 1px solid var(--line); background: var(--canvas); }
 .dash-map.is-wait { display: grid; place-items: center; color: var(--dim); font-size: 15px; }
 #dashboard .leaflet-container { font: inherit; }
 #dashboard .leaflet-tooltip { font-size: 14px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
 #dashboard .leaflet-control-attribution { font-size: 12px; }
 .dash-map-hint { font-size: 14px; color: var(--dim); margin: 10px 0 8px; word-break: keep-all; }
 .dash-map-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
-.dash-map-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 5px; vertical-align: -2px; border: 1px solid rgba(21,60,57,.25); }
-.dash-map-legend i.is-hidden { border: 1px dashed #4f625d; } /* 지도에서도 비공개 동은 회색 + 점선 테두리 */
+.dash-map-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 5px; vertical-align: -2px; border: 1px solid var(--shade-25); }
+.dash-map-legend i.is-hidden { border: 1px dashed var(--off-ink); } /* 지도에서도 비공개 동은 회색 + 점선 테두리 */
 .dash-map-note { font-size: 13px; color: var(--dim); margin: 6px 0 12px; }
 .dash-map-list { flex-wrap: wrap; overflow: visible; }
 .dash-map-sel { font-size: 15px; margin: 4px 0 0; font-variant-numeric: tabular-nums; word-break: keep-all; }

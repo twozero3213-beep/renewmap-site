@@ -794,6 +794,10 @@
   if (typeof document === 'undefined') return;
   window.RenewMap = api;
   api.countUp = el => countUp(el); // find.js·hero.js가 같은 카운트업을 쓴다
+  // 네이버가 만든 로고·법적 고지 링크는 이름이 없어 화면 낭독기가 읽지 못한다(감사 김슬아3). 그림만 있는 링크에 이름을 붙인다
+  api.nameMapLinks = root => root.querySelectorAll('a').forEach(a => {
+    if (!a.getAttribute('aria-label') && !a.textContent.trim()) a.setAttribute('aria-label', 'NAVER 지도 ' + (/legal|notice|policy/i.test(a.href) ? '법적 고지' : '바로가기') + '(새 창)');
+  });
   // countUp이 쓰는 값은 지도 없는 화면(about.html)에서도 있어야 한다. 아래 '지도 없으면 끝'보다 먼저 둔다(2026-10-30: about에서 초기화 전 접근 오류로 등장 효과가 멈췄다)
   const shown = new Map();
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches, coarse = matchMedia('(pointer: coarse)').matches, wide = matchMedia('(min-width: 900px)');
@@ -1198,7 +1202,8 @@
       ybar = document.createElement('div'); ybar.className = 'map-yearbar'; ybar.hidden = true; ybar.setAttribute('aria-hidden', 'true'); el.appendChild(ybar);
       // 네이버 배경: Leaflet(경계·누르기·확대) 아래에 움직이지 않는 네이버 지도를 깔고 같은 중심·확대로 맞춘다. 네이버는 정수 확대라 Leaflet도 정수로
       const nv = state.naver ? document.createElement('div') : null;
-      if (nv) { nv.className = 'map-naver'; nv.setAttribute('aria-hidden', 'true'); el.appendChild(nv); el.classList.add('has-naver'); }
+      // aria-hidden을 두지 않는다: 안의 법적 고지 링크가 키보드 초점을 받으므로 숨기면 이름 없는 초점이 된다(2026-10-30 배포 화면 확인)
+      if (nv) { nv.className = 'map-naver'; el.appendChild(nv); el.classList.add('has-naver'); }
       const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false }); // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
       L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
       if (nv) {
@@ -1207,10 +1212,8 @@
         const sync = () => { const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); };
         map.on('move zoom moveend zoomend viewreset resize', sync);
         if ('ResizeObserver' in window) new ResizeObserver(() => { nmap.autoResize && nmap.autoResize(); sync(); }).observe(el);
-        // 네이버가 만든 로고·법적 고지 링크는 이름이 없어 화면 낭독기가 읽지 못한다(감사 김슬아3). 그림만 있는 링크에 이름을 붙인다
-        N.Event.addListener(nmap, 'idle', () => nv.querySelectorAll('a').forEach(a => {
-          if (!a.getAttribute('aria-label') && !a.textContent.trim()) a.setAttribute('aria-label', 'NAVER 지도 ' + (/legal|notice|policy/i.test(a.href) ? '법적 고지' : '바로가기') + '(새 창)');
-        }));
+        // 링크는 지도가 그려진 뒤 늦게 생기고 'idle'보다 늦을 수 있다(배포 화면에서 이름 없음 확인). 생길 때마다 이름을 붙인다
+        new MutationObserver(() => api.nameMapLinks(nv)).observe(nv, { childList: true, subtree: true });
       }
       // 칸 크기가 바뀌면(업무 패널 열기·휴대폰 순서) 경계층도 다시 재야 바탕과 어긋나지 않는다. 네이버 동기화는 위 resize 이벤트로 따라간다
       if ('ResizeObserver' in window) new ResizeObserver(() => map.invalidateSize({ pan: false })).observe(el);

@@ -106,9 +106,8 @@
 
   <section id="report" aria-labelledby="reportTitle">
     <div class="wrap">
-      <span class="label-scenario">무료, 로그인 없음, 입력 저장 없음</span>
       <h2 id="reportTitle" data-reveal>동네 보고서</h2>
-      <p class="sub" data-reveal>지도에서 고른 동의 원장 숫자와 출처를 문장으로 옮깁니다.<br>평가나 판정은 하지 않습니다.<br>브라우저 인쇄로 PDF를 만들 수 있습니다.</p>
+      <p class="sub" data-reveal>지도에서 고른 동의 원장 숫자와 출처를 문장으로 옮깁니다.<br>평가나 판정은 하지 않습니다.<br>브라우저 인쇄로 PDF를 만들 수 있습니다.<br>무료이고 로그인이 없으며, 입력은 저장하지 않습니다.</p>
       <div id="reportPreview"><div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 탐색 작업공간에서 동네 보고서가 생깁니다</h3><p><a class="btn" href="explore.html#report">동네 보고서 만들기</a></p></div></div>
       <noscript><p>보고서는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
     </div>
@@ -116,9 +115,8 @@
 
   <section class="alt" id="verdict" aria-labelledby="verdictTitle">
     <div class="wrap">
-      <span class="label-scenario">예시: 실제 동 1곳을 초안 규칙으로 비교</span>
       <h2 id="verdictTitle" data-reveal>1분 요건 대조 예시</h2>
-      <p class="sub" data-reveal>쇠퇴 3요건의 셀 값과 기준값을 나란히 둡니다.<br>자료가 없는 요건은 추정하지 않고 '추가확인'으로 남깁니다.</p>
+      <p class="sub" data-reveal>실제 동 1곳을 초안 규칙으로 비교한 예시입니다.<br>쇠퇴 3요건의 셀 값과 기준값을 나란히 둡니다.<br>자료가 없는 요건은 추정하지 않고 '추가확인'으로 남깁니다.</p>
       <div id="verdictCards"></div>
     </div>
   </section>
@@ -166,9 +164,8 @@
 
   <section class="alt" id="case" aria-labelledby="caseTitle">
     <div class="wrap">
-      <span class="label-scenario">예시: 가상 시나리오(고객 인터뷰로 검증 중)</span>
       <h2 id="caseTitle" data-reveal>활용 사례: 부산 용역사 실무자의 공모 준비</h2>
-      <p class="sub" data-reveal>자치구가 공모 후보 2~3개 동의 기초조사를 맡겼습니다.<br>접수까지 5주가 남은 상황입니다.</p>
+      <p class="sub" data-reveal>가상 시나리오이며, 고객 인터뷰로 검증하고 있습니다.<br>자치구가 공모 후보 2~3개 동의 기초조사를 맡겼습니다.<br>접수까지 5주가 남은 상황입니다.</p>
       <div class="cmp" data-reveal>
         <p class="cmp-k">기초조사 작업 시간</p>
         <div class="cmp-row"><span class="cmp-l">지금 방식</span><span class="cmp-tbd">[측정 예정]</span></div>
@@ -186,9 +183,8 @@
 
   <section id="dashboard" aria-labelledby="dashTitle">
     <div class="wrap">
-      <span class="label-scenario">시범 수집 지역</span>
-      <h2 id="dashTitle" data-reveal>정밀 사례 · 부산 해운대구 건축물대장 3기준</h2>
-      <p class="sub" data-reveal>전국 지도는 행정동 단위 공공 통계입니다.<br>이 사례는 해운대구 건축물대장을 한 동씩 직접 모아 동수·연면적·세대 기준 노후율을 따로 계산했습니다.<br>숫자를 누르면 출처와 계산식이 열립니다.</p>
+      <h2 id="dashTitle" data-reveal>정밀 사례: 부산 해운대구 건축물대장 3기준</h2>
+      <p class="sub" data-reveal>전국 지도는 행정동 단위 공공 통계입니다.<br>이 사례는 시범 수집 지역인 해운대구의 건축물대장을 한 동씩 직접 모아 동수·연면적·세대 기준 노후율을 따로 계산했습니다.<br>숫자를 누르면 출처와 계산식이 열립니다.</p>
       <p class="dash-meta" data-meta>설명: 건축물대장 기준 노후 건축물 비율이며, 판정 결과가 아닙니다.</p>
       <div id="dashApp"></div>
       <noscript><p>대시보드는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
@@ -244,7 +240,7 @@
       <details><summary>법정 판정이 틀리면 어떻게 하나요?</summary><p>판정 규칙은 사람이 조문을 보고 작성·승인합니다.<br>결과마다 근거 조문과 규칙 버전을 표시합니다.<br>자료가 부족하면 '충족'으로 만들지 않고 '추가확인'으로 표시합니다.</p></details>
       <details><summary>납품 후 데이터가 갱신되면 숫자가 바뀌나요?</summary><p>납품본은 기준일을 고정한 스냅샷으로 남습니다.<br>같은 스냅샷으로 다시 계산하면 같은 값이 나옵니다.<br>새 기준일과의 차이는 따로 보여 드립니다.</p></details>
       <details><summary>현장 사진에 사람 얼굴이나 차량번호가 찍히면요?</summary><p>얼굴과 차량번호를 가린 뒤 저장하는 것을 전제로 설계합니다.<br>소유자 개인정보는 저장하지 않습니다.</p></details>
-      <details><summary>한글 공모 서식으로 받을 수 있나요?</summary><p>HWPX, PDF, 엑셀 조서로 납품하는 것을 목표로 개발하고 있습니다.<br>시범 납품에서 실제 서식에 맞춰 드립니다.</p></details>
+      <details><summary>한글 공모 서식으로 받을 수 있나요?</summary><p><abbr title="한글 문서 형식">HWPX</abbr>, PDF, 엑셀 조서로 납품하는 것을 목표로 개발하고 있습니다.<br>시범 납품에서 실제 서식에 맞춰 드립니다.</p></details>
     </div>
   </section>
 

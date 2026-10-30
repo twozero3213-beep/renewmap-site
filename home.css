@@ -42,7 +42,7 @@
 /* ── 홈 v3: 8개 섹션 ──
    UX 정비 2026-10-30(Hallmark 점검): 눈썹 글, 원 번호 3단계, 같은 카드 세 줄, 01~04 번호, × 알약을 걷어 냈다.
    섹션마다 구성을 달리한다: 줄 목록(누가) · 선 위 세 단(어떻게) · 큰 카드 1 + 작은 카드 2(제품) · 구분선 목록(원칙) · 취소선(안 하는 일) · 큰 숫자(확인된 숫자) · 두 단 마무리 */
-.v3 { --src: #1f4f8a; --src-bg: #dbe8f7; --ex: #8a4b00; --ex-bg: #fff7e8; word-break: keep-all; overflow-wrap: break-word; }
+.v3 { --src: var(--info); --src-bg: var(--info-bg); --ex: var(--warn); --ex-bg: var(--tbd-bg); word-break: keep-all; overflow-wrap: break-word; }
 .v3 section { padding: 0; }
 .v3 .h-sec { padding: 104px 0; }
 .v3 .h-alt { padding: 120px 0; background: var(--card); border-block: 1px solid var(--line); }
@@ -61,7 +61,7 @@
 .v3 .h-note { margin-top: 8px; font-size: 14px; line-height: 20px; color: var(--dim); }
 
 /* 1쪽 문서 미리보기(나눔고딕). 뒤 종이 두 장은 12px씩 어긋나게 쌓는다 */
-.h-doc { position: relative; margin: 0; padding: 0 24px 24px 0; font-family: NanumGothic, "Nanum Gothic", var(--font); }
+.h-doc { position: relative; margin: 0; padding: 0 24px 24px 0; font-family: var(--font-doc); }
 .h-sheet { position: absolute; top: 0; left: 0; right: 24px; bottom: 24px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
 .h-sheet-1 { top: 12px; left: 12px; right: 12px; bottom: 12px; }
 .h-sheet-2 { top: 24px; left: 24px; right: 0; bottom: 0; }

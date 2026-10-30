@@ -7,17 +7,17 @@
 .gl-top { display: flex; align-items: center; gap: 16px; }
 .dn { width: 108px; height: 108px; flex: none; }
 .dn circle { fill: none; stroke-width: 16; }
-.dn .dn-r { stroke: var(--over); } .dn .dn-g { stroke: var(--within); } .dn .dn-y { stroke: var(--pending); } .dn .dn-w { stroke: var(--nodata); } .dn .dn-b { stroke: #cdd7d3; }
+.dn .dn-r { stroke: var(--over); } .dn .dn-g { stroke: var(--within); } .dn .dn-y { stroke: var(--pending); } .dn .dn-w { stroke: var(--nodata); } .dn .dn-b { stroke: var(--bar-empty); }
 .dn-n { font-size: 26px; font-weight: 800; fill: var(--ink); text-anchor: middle; }
 .dn-k { font-size: 12px; font-weight: 600; fill: var(--dim); text-anchor: middle; }
 .sr-glance .gl-n { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
 .sr-glance .gl-n li { display: flex; align-items: center; gap: 8px; }
 .sr-glance .gl-n li > b:last-child { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .gl-sw { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-.sw-r { background: var(--over); } .sw-g { background: var(--within); } .sw-y { background: var(--pending); } .sw-w { background: var(--nodata); } .sw-b { background: #cdd7d3; }
+.sw-r { background: var(--over); } .sw-g { background: var(--within); } .sw-y { background: var(--pending); } .sw-w { background: var(--nodata); } .sw-b { background: var(--bar-empty); }
 .sr-glance .gl-dots { margin: 10px 0 0; font-size: 12px; }
 .sr-glance .gl-dots i.gl-r { background: var(--over); } .sr-glance .gl-dots i.gl-g { background: var(--within); }
-.sr-glance .gl-dots i.gl-y { background: var(--pending); } .sr-glance .gl-dots i.gl-w { background: var(--nodata); } .sr-glance .gl-dots i.gl-b { background: #cdd7d3; } .sr-glance .gl-dots i.gl-p { background: #fff; border: 1px dashed var(--nodata); }
+.sr-glance .gl-dots i.gl-y { background: var(--pending); } .sr-glance .gl-dots i.gl-w { background: var(--nodata); } .sr-glance .gl-dots i.gl-b { background: var(--bar-empty); } .sr-glance .gl-dots i.gl-p { background: var(--card); border: 1px dashed var(--nodata); }
 .sr-glance .gl-note { margin: 4px 0 0; font-size: 12px; color: var(--dim); }
 
 /* ── 기준 미달 수: 숫자만 보이고 설명은 접는다 ── */
@@ -34,7 +34,7 @@
 .tr-line { fill: none; stroke: var(--green); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
 .tr-fit { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 5 4; }
 .tr-std { stroke: var(--ref); stroke-width: 1.5; stroke-dasharray: 2 3; }
-.tr-dot { fill: var(--green); stroke: #fff; stroke-width: 2; }
+.tr-dot { fill: var(--green); stroke: var(--card); stroke-width: 2; }
 .tr figcaption { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
 
 /* ── 업무로 시작: 카드 7장을 한 줄 단추 목록으로 ── */
@@ -148,7 +148,7 @@ body.field .card { border-radius: var(--radius-card); }
 .sr-gsum .gs-r { color: var(--over); } .sr-gsum .gs-g { color: var(--within); } .sr-gsum .gs-y { color: var(--pending); } .sr-gsum .gs-w { color: var(--dim); } .sr-gsum .gs-b { color: var(--dim); }
 .sr-glance .gl-dots, .sr-glance .gl-note { display: none; } /* 묶음별 개수는 접힌 줄에 있다 */
 /* 일부 지역만 모은 지표 표시 */
-.dash-chip small.is-part { margin-left: 4px; padding: 1px 6px; border-radius: 999px; background: #fff0c2; color: var(--warn); font-size: 11px; font-weight: 700; }
+.dash-chip small.is-part { margin-left: 4px; padding: 1px 6px; border-radius: 999px; background: var(--check-bg); color: var(--warn); font-size: 11px; font-weight: 700; }
 /* 업무: 짧은 이름 타일 두 줄 */
 .gov-n { display: none; font-size: 14px; font-weight: 700; line-height: 1.35; }
 @media (min-width: 1100px) {
@@ -240,7 +240,7 @@ body.field .card { border-radius: var(--radius-card); }
 .gov-e .map-ico { width: 20px; height: 20px; }
 /* 기준일 스냅샷 비교: 판정이 바뀐 줄을 눈에 띄게 */
 .rp-snap-sum { margin: 4px 0 8px; font-size: 15px; } .rp-snap-tbl small { color: var(--dim); }
-.rp-snap-tbl tr.is-flip td { background: #fdf1e6; } .rp-snap .rp-tools .btn + .btn { margin-left: 8px; }
+.rp-snap-tbl tr.is-flip td { background: var(--flip-bg); } .rp-snap .rp-tools .btn + .btn { margin-left: 8px; }
 
 /* UX 정비(2026-10-30, Hallmark 점검): 동 패널 안의 회색 상자 → 그 안의 흰 상자(카드 속 카드)를 걷고 가는 구분선으로 나눈다.
    흰 상자는 styles.css의 공통 details 규칙이 접힘 설명에까지 붙은 것이다 */
