@@ -12,6 +12,8 @@
   const NOT_APPROVED = "승인 전 참고 · 납품용 아님";
   // 입안 전 후보지 목록은 미공개정보다(이해충돌방지법 제14조: 받은 제3자도 처벌, 도시정비법 제77조 권리산정기준일). 표시는 사용자가 끌 수 있다
   const SECRET = "대외비(입안 전 후보지 정보, 외부 배포 금지)";
+  // 조례 제3조②2나는 기존무허가건축물도 20년 노후·불량에 넣는데, 대장에 없으니 세지 못한다(공개 계획서에서 분모 차이 26%p 사례: 수원 매산동)
+  const UNREG = "대장에 없는 무허가 건축물은 세지 않았다(조례 제3조②)";
   const mark = (secret, text, short = false) => (secret ? `${short ? "대외비" : SECRET} · ${text}` : text);   // short: 1쪽 본문 한 줄(쪽 높이), 풀이는 바닥글에
   const MET = "충족", NOT_MET = "미충족", CHECK = "현장 확인";
 
@@ -227,7 +229,7 @@
     const box = [
       ["대상", `붙여 넣은 목록에서 건물 ${res.n}동을 찾음${m.missing.length ? ` · 못 찾은 지번 ${m.missing.length}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})` : ""}${m.otherDong.length ? ` · 다른 법정동 ${m.otherDong.length}개 제외` : ""}${bld}`],
       ["기준", `${res.district ? "재정비촉진지구(50%)" : "일반(60%)"} · 연한은 조례 제3조②${law} · 경과 기준일 ${res.ref}`],
-      ["못 정한 건물", res.nUnk ? `${res.nUnk}동(사용승인일 없음 또는 구조·용도에 따라 연한이 갈림). 비율은 범위로 적었다` : "없음"],
+      ["못 정한 건물", `${res.nUnk ? `${res.nUnk}동(사용승인일 없음 또는 구조·용도에 따라 연한이 갈림). 비율은 범위로 적었다` : "없음"}. ${UNREG}`],
     ];
     const blocks = [block("title", title), block("para", mark(secret, `${NOT_APPROVED} · 판정 아님 · ${RULES.map((x) => `${x.id} 초안`).join(", ")}`, true), { small: true }),
       block("box", "", { rows: box.map((r) => r.map(D.clean)), widths: [18, 82], refs: true }),
@@ -238,5 +240,5 @@
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: mark(secret, `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · `) };
   }
 
-  return { THR, RULES, NOT_APPROVED, SECRET, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });
