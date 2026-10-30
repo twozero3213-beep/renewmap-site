@@ -54,4 +54,5 @@
     window.print();
   });
   $("csv").addEventListener("click", () => D.saveBytes(fileName("csv"), R.toCSV(last.res, last.file), "text/csv;charset=utf-8"));
+  $("sample").addEventListener("click", () => D.saveBytes(fileName("csv").replace("_사전검토_", "_수기대조표본_"), R.sampleCSV(last.res, last.file), "text/csv;charset=utf-8"));
 })();

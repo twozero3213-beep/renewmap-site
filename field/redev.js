@@ -196,6 +196,25 @@
     return "﻿" + [note, head, ...body].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   }
 
+  // 수기 대조 표본(회계감사 표본추출 방식). 목록 순서와 관계없이 같은 건물들이면 같은 표본: 건물 키를 정렬해 FNV-1a로 시드를 만들고 mulberry32로 섞는다.
+  // 불일치 0건일 때 오류율 95% 상한은 1 - 0.05^(1/n)(n=60이면 약 4.9%). 불일치가 있으면 상한을 쓰지 않고 원인부터 본다
+  const bKey = (b) => [b.pnu || "", b.jibun || "", b.use_apr_day || "", b.tot_area ?? "", b.main_use || "", b.structure || ""].join("|");
+  function fnv1a(s) { let h = 0x811c9dc5; for (const c of s) { h ^= c.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0; } return h; }
+  function mulberry32(a) { return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function sample(res, n = 60) {
+    const rows = [...res.perBuilding].sort((x, y) => (bKey(x.b) < bKey(y.b) ? -1 : bKey(x.b) > bKey(y.b) ? 1 : 0));
+    const seed = fnv1a(rows.map((r) => bKey(r.b)).join("\n")), rnd = mulberry32(seed), k = Math.min(n, rows.length);
+    for (let i = 0; i < k; i++) { const j = i + Math.floor(rnd() * (rows.length - i)); [rows[i], rows[j]] = [rows[j], rows[i]]; }
+    return { picked: rows.slice(0, k), seed: seed.toString(16).padStart(8, "0"), upper: (1 - Math.pow(0.05, 1 / k)) * 100 };
+  }
+  function sampleCSV(res, file, n = 60) {
+    const s = sample(res, n), k = s.picked.length;
+    const note = [`수기 대조 표본 ${k}동 / 전체 ${res.n}동 · 같은 목록이면 같은 표본(시드 ${s.seed}) · 불일치 0건이면 오류율 95% 상한 ${fmt(s.upper)}% · ${NOT_APPROVED} · 건축물대장 기준일 ${file.hub_reference_date}`];
+    const head = ["표본 번호", "지번", "PNU", "주용도", "구조", "사용승인일", "연면적(㎡)", "리뉴맵 판단", "열람 주용도", "열람 구조", "열람 사용승인일", "열람 연면적(㎡)", "일치(O/X)", "메모"];
+    const body = s.picked.map((r, i) => [i + 1, r.b.jibun, r.b.pnu, r.b.main_use, r.b.structure, r.b.use_apr_day, r.b.tot_area, r.mark, "", "", "", "", "", ""]);
+    return "﻿" + [note, head, ...body].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  }
+
   const block = (kind, text = "", extra = {}) => ({ kind, text: D.clean(text), rows: [], widths: [], caption: "", small: false, ...extra });
   // 한글·PDF 1쪽. 건물별 표는 CSV로 뺀다
   function buildDoc(res, m, file, today) {
@@ -216,5 +235,5 @@
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · ` };
   }
 
-  return { THR, RULES, NOT_APPROVED, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, reachText, summaryHTML, toCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { THR, RULES, NOT_APPROVED, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });
