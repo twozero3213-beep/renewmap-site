@@ -251,5 +251,4 @@ body.field .card { border-radius: var(--radius-card); }
 @media (min-width: 1100px) {
   .explore-page header.top .wrap { max-width: none; padding-inline: 16px; }
   body:has(.box-v4) header.top .wrap { max-width: 1180px; padding-inline: 16px; }
-  body:has(.home.docs) header.top .wrap { max-width: 640px; padding-inline: 16px; }
 }
