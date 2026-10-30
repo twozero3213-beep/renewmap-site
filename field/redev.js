@@ -10,6 +10,9 @@
   const ORD = "부산광역시 도시 및 주거환경정비 조례(조례 제7751호, 2025. 10. 1. 시행)";
   const RULES = [{ id: "BSN-AGE-2025.10", article: "제3조제2항", approved: false }, { id: "BSN-ORD-2025.10", article: "제5조제2항제2호", approved: false }];
   const NOT_APPROVED = "승인 전 참고 · 납품용 아님";
+  // 입안 전 후보지 목록은 미공개정보다(이해충돌방지법 제14조: 받은 제3자도 처벌, 도시정비법 제77조 권리산정기준일). 표시는 사용자가 끌 수 있다
+  const SECRET = "대외비(입안 전 후보지 정보, 외부 배포 금지)";
+  const mark = (secret, text, short = false) => (secret ? `${short ? "대외비" : SECRET} · ${text}` : text);   // short: 1쪽 본문 한 줄(쪽 높이), 풀이는 바닥글에
   const MET = "충족", NOT_MET = "미충족", CHECK = "현장 확인";
 
   // 조례 제3조② '철근콘크리트·철골콘크리트·철골철근콘크리트 또는 강구조'. 대장 구조명이 어느 쪽인지 원문만으로 못 정하는 것
@@ -189,10 +192,10 @@
   // 엑셀이 수식으로 읽지 않게 =·+·-·@로 시작하는 칸 앞에 '를 붙인다
   const csvCell = (v) => { let s = v === null || v === undefined ? "" : String(v); if (/^[=+\-@]/.test(s)) s = `'${s}`; return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
   // 건물별 산정 근거(엑셀용, BOM). 첫 줄에 승인 전 표시. 소유자 등 개인 항목은 파일에 없다
-  function toCSV(res, file) {
+  function toCSV(res, file, { secret = false } = {}) {
     const head = ["지번", "PNU", "주용도", "구조", "사용승인일", "연면적(㎡)", "적용 연한", "경과 연수", "노후·불량", "사유"];
     const body = res.perBuilding.map((r) => [r.b.jibun, r.b.pnu, r.b.main_use, r.b.structure, r.b.use_apr_day, r.b.tot_area, r.years || "", r.age ?? "", r.mark, r.why || ""]);
-    const note = [`${NOT_APPROVED} · ${RULES.map((x) => x.id).join("·")} 초안 · 경과 기준일 ${res.ref} · 건축물대장 기준일 ${file.hub_reference_date}`];
+    const note = [mark(secret, `${NOT_APPROVED} · ${RULES.map((x) => x.id).join("·")} 초안 · 경과 기준일 ${res.ref} · 건축물대장 기준일 ${file.hub_reference_date}`)];
     return "﻿" + [note, head, ...body].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   }
 
@@ -207,9 +210,9 @@
     for (let i = 0; i < k; i++) { const j = i + Math.floor(rnd() * (rows.length - i)); [rows[i], rows[j]] = [rows[j], rows[i]]; }
     return { picked: rows.slice(0, k), seed: seed.toString(16).padStart(8, "0"), upper: (1 - Math.pow(0.05, 1 / k)) * 100 };
   }
-  function sampleCSV(res, file, n = 60) {
+  function sampleCSV(res, file, { n = 60, secret = false } = {}) {
     const s = sample(res, n), k = s.picked.length;
-    const note = [`수기 대조 표본 ${k}동 / 전체 ${res.n}동 · 같은 목록이면 같은 표본(시드 ${s.seed}) · 불일치 0건이면 오류율 95% 상한 ${fmt(s.upper)}% · ${NOT_APPROVED} · 건축물대장 기준일 ${file.hub_reference_date}`];
+    const note = [mark(secret, `수기 대조 표본 ${k}동 / 전체 ${res.n}동 · 같은 목록이면 같은 표본(시드 ${s.seed}) · 불일치 0건이면 오류율 95% 상한 ${fmt(s.upper)}% · ${NOT_APPROVED} · 건축물대장 기준일 ${file.hub_reference_date}`)];
     const head = ["표본 번호", "지번", "PNU", "주용도", "구조", "사용승인일", "연면적(㎡)", "리뉴맵 판단", "열람 주용도", "열람 구조", "열람 사용승인일", "열람 연면적(㎡)", "일치(O/X)", "메모"];
     const body = s.picked.map((r, i) => [i + 1, r.b.jibun, r.b.pnu, r.b.main_use, r.b.structure, r.b.use_apr_day, r.b.tot_area, r.mark, "", "", "", "", "", ""]);
     return "﻿" + [note, head, ...body].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
@@ -217,7 +220,7 @@
 
   const block = (kind, text = "", extra = {}) => ({ kind, text: D.clean(text), rows: [], widths: [], caption: "", small: false, ...extra });
   // 한글·PDF 1쪽. 건물별 표는 CSV로 뺀다
-  function buildDoc(res, m, file, today) {
+  function buildDoc(res, m, file, today, { secret = false } = {}) {
     const src = new D.Sources(), title = `${file.name} 재개발 입안요건 사전검토`;
     const bld = src.ref({ source_name: file.source, source_url: file.source_url, reference_date: file.hub_reference_date, retrieved_at: file.retrieved_at, license_type: file.license });
     const law = src.ref({ source_name: ORD, source_url: ORD_URL, reference_date: "2025-10-01", retrieved_at: "2026-10-23", license_type: "저작권 보호 대상 아님(저작권법 제7조)" });
@@ -226,14 +229,14 @@
       ["기준", `${res.district ? "재정비촉진지구(50%)" : "일반(60%)"} · 연한은 조례 제3조②${law} · 경과 기준일 ${res.ref}`],
       ["못 정한 건물", res.nUnk ? `${res.nUnk}동(사용승인일 없음 또는 구조·용도에 따라 연한이 갈림). 비율은 범위로 적었다` : "없음"],
     ];
-    const blocks = [block("title", title), block("para", `${NOT_APPROVED} · 판정 아님 · ${RULES.map((x) => `${x.id} 초안`).join(", ")}`, { small: true }),
+    const blocks = [block("title", title), block("para", mark(secret, `${NOT_APPROVED} · 판정 아님 · ${RULES.map((x) => `${x.id} 초안`).join(", ")}`, true), { small: true }),
       block("box", "", { rows: box.map((r) => r.map(D.clean)), widths: [18, 82], refs: true }),
       block("table", "", { rows: [["요건", "기준", "이 목록", "상태", "근거"], ...res.lines.map((l) => [l.label, l.rule, l.value, l.status, l.basis].map(D.clean))], widths: [20, 22, 30, 12, 16], caption: "표 1. 줄마다 따로 본 결과(종합 판정 아님)" }),
       block("para", `현장 확인 줄은 자료로 정하지 못한 요건이다. 주민 동의(도시정비법 제36조)와 재건축진단은 다루지 않고, 건물별 근거는 같은 이름의 CSV에 있다. ${refPara(res)}`, { small: true }),
       block("h1", "출처")];
     src.list.forEach((s, n) => blocks.push(block("para", D.sourceLine(n + 1, s), { small: true })));
-    return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · ` };
+    return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: mark(secret, `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · `) };
   }
 
-  return { THR, RULES, NOT_APPROVED, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { THR, RULES, NOT_APPROVED, SECRET, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

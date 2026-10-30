@@ -460,7 +460,7 @@
     const t = document.querySelector('input[name="target"][value="주거지 골목"]');
     t.checked = true; checkTarget(); $("checkBox").open = true;
     $(`ck-${fromCheck.id}`).checked = true; $(`ck-${fromCheck.id}`).closest("li").querySelector(".ck-more").hidden = false;
-    // 위쪽 안내가 다 그려진 뒤에 내려야 자리가 맞는다. html의 smooth 스크롤은 배포 화면에서 움직이지 않은 적이 있어(2026-10-30) 바로 옮긴다
+    // 위쪽 안내가 다 그려진 뒤에 내려야 자리가 맞는다. html의 smooth 스크롤은 숨은 탭에서 멈추므로(2026-10-30 확인) 바로 옮긴다
     const show = () => $(`ck-${fromCheck.id}`).closest("li").scrollIntoView({ block: "center", behavior: "instant" });
     if (document.readyState === "complete") show(); else window.addEventListener("load", show, { once: true });
   }

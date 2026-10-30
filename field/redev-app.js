@@ -10,7 +10,8 @@
 
   const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };
   const today = () => { const t = new Date(), p = (n) => String(n).padStart(2, "0"); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; };
-  const fileName = (ext) => `${last.file.name}_입안요건_사전검토_승인전_${today()}.${ext}`;
+  const opt = () => ({ secret: $("secret").checked });
+  const fileName = (ext) => `${opt().secret ? "대외비_" : ""}${last.file.name}_입안요건_사전검토_승인전_${today()}.${ext}`;
 
   // 예시: 고른 법정동의 모든 지번을 넣고 계산한다(사업계획서의 반여동 숫자를 버튼 하나로 다시 얻는다). 특정 구역을 짚지 않으려고 동 전체만 쓴다
   $("demo").addEventListener("click", async () => {
@@ -56,7 +57,7 @@
     $("out").scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
-  const doc = async () => { await templates; return R.buildDoc(last.res, last.m, last.file, today()); };
+  const doc = async () => { await templates; return R.buildDoc(last.res, last.m, last.file, today(), opt()); };
   $("hwpx").addEventListener("click", async () => {
     try { D.saveBytes(fileName("hwpx"), D.hwpxBytes(await doc()), "application/hwp+zip"); } catch (err) { say("문서를 만들지 못했습니다.\nPDF로 저장해 보세요.", true); }
   });
@@ -67,6 +68,6 @@
     window.addEventListener("afterprint", () => { document.body.classList.remove("printing"); box.textContent = ""; }, { once: true });
     window.print();
   });
-  $("csv").addEventListener("click", () => D.saveBytes(fileName("csv"), R.toCSV(last.res, last.file), "text/csv;charset=utf-8"));
-  $("sample").addEventListener("click", () => D.saveBytes(fileName("csv").replace("_사전검토_", "_수기대조표본_"), R.sampleCSV(last.res, last.file), "text/csv;charset=utf-8"));
+  $("csv").addEventListener("click", () => D.saveBytes(fileName("csv"), R.toCSV(last.res, last.file, opt()), "text/csv;charset=utf-8"));
+  $("sample").addEventListener("click", () => D.saveBytes(fileName("csv").replace("_사전검토_", "_수기대조표본_"), R.sampleCSV(last.res, last.file, opt()), "text/csv;charset=utf-8"));
 })();
