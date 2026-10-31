@@ -158,13 +158,17 @@
   // 대장 주용도가 단독주택·공동주택 두 갈래뿐이라 지상 4층 이하 단독·공동주택을 저층 주거로 본다(5층 이상 = 아파트 등). 층수가 없거나 0이면 못 정함
   // 3분의 2는 정수로 비교한다(2/3×100이 부동소수로 기준선보다 작게 나와 정확히 3분의 2가 미충족이 되는 것을 막음)
   const LOWRISE = { rule: "저층 주거용 건축물 수 3분의 2 이상" };
-  const lowState = (b) => (b.main_use !== "단독주택" && b.main_use !== "공동주택" ? false : !b.floors ? null : b.floors <= 4);
+  // 주용도가 근린생활시설 등이어도 기타용도에 주택이 있으면(mixed_home, 1층 상가·위층 살림집) 저층 주거인지 법령이 정하지 않아 못 정함으로 센다
+  const lowState = (b) => (b.main_use === "단독주택" || b.main_use === "공동주택" ? (!b.floors ? null : b.floors <= 4)
+    : b.mixed_home && b.floors >= 1 && b.floors <= 4 ? null : false);
   const NV_BASIS = "2027 도시재생 신규사업 평가 가이드라인(노후주거지정비 신청요건)";
   function newVillage(blds, urban) {
     const n = blds.length, st = blds.map(lowState), yes = st.filter((s) => s === true).length, unk = st.filter((s) => s === null).length;
+    const mixed = blds.filter((b, i) => st[i] === null && b.mixed_home).length, noFloor = unk - mixed;
+    const unkText = unk ? `, 확인 필요 ${[noFloor ? `층수 없는 주택 ${noFloor}동` : "", mixed ? `주택 겸용 ${mixed}동` : ""].filter(Boolean).join("·")}` : "";
     const lo = (yes / n) * 100, hi = ((yes + unk) / n) * 100;
-    const lowrise = { label: "저층 주거 비율", rule: LOWRISE.rule, value: `${range(lo, hi)} (${yes}/${n}동${unk ? `, 층수 없는 주택 ${unk}동` : ""})`,
-      status: yes * 3 >= 2 * n ? MET : (yes + unk) * 3 < 2 * n ? NOT_MET : CHECK, unit: "신청 구역(이 목록)", define: "지상 4층 이하 단독·공동주택", basis: NV_BASIS };
+    const lowrise = { label: "저층 주거 비율", rule: LOWRISE.rule, value: `${range(lo, hi)} (${yes}/${n}동${unkText})`, mixed,
+      status: yes * 3 >= 2 * n ? MET : (yes + unk) * 3 < 2 * n ? NOT_MET : CHECK, unit: "신청 구역(이 목록)", define: "지상 4층 이하 단독·공동주택(주택 겸용 근린생활시설 등은 확인 필요)", basis: NV_BASIS };
     // ③(20년 경과)이 안 되면 나머지와 관계없이 불충족. ①②는 행정동 공식 쇠퇴진단 값이라 이 목록으로는 정하지 못한다
     const decline = { label: "쇠퇴요건 2개 이상(20년 경과 포함)", rule: "①인구 감소 ②사업체 감소 ③20년 이상 건축물 2분의 1 중 ③ 포함 2개 이상",
       value: urban.status === NOT_MET ? "③ 20년 경과 미충족" : `③ 20년 경과 ${urban.status}, ①·② 중 하나 이상은 공식 쇠퇴진단(행정동) 값으로 확인`,
