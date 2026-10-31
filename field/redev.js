@@ -224,6 +224,17 @@
   }
   const masonryNote = (u) => `사용승인일 없는 ${u.unk}동 중 목조·블록·벽돌·조적이 ${u.unkMasonry}동이다. ${MASONRY_PRIOR.basis} 기준 같은 구조의 날짜 있는 건물 ${MASONRY_PRIOR.n.toLocaleString("ko-KR")}동 중 ${MASONRY_PRIOR.pct}%가 20년 이상이다. 판정에는 쓰지 않고, 대장 열람·현장 확인을 이 건물부터 하라는 참고다.`;
 
+  // 확인할 건물: 사용승인일 없는 건물. 목조·블록·벽돌·조적 먼저(같은 구조의 날짜 있는 건물 98.4%가 20년 이상, 판정에는 안 씀).
+  // 현장 기록(같은 기기 FieldStore)은 PNU로만 붙인다. 지번만으로는 법정동이 갈려 다른 건물에 붙을 수 있다
+  function todoList(res, records = []) {
+    const byPnu = new Map();
+    for (const r of records) { const p = r.pnu || (r.building && r.building.pnu); if (p) byPnu.set(p, [...(byPnu.get(p) || []), r]); }
+    const items = res.perBuilding.filter((r) => !r.b.use_apr_day)
+      .map((r) => ({ b: r.b, masonry: MASONRY.test(r.b.structure || ""), records: (r.b.pnu && byPnu.get(r.b.pnu)) || [] }));
+    items.sort((x, y) => (y.masonry - x.masonry) || String(x.b.jibun || "").localeCompare(String(y.b.jibun || ""), "ko", { numeric: true }));
+    return { items, withRecord: items.filter((i) => i.records.length).length };
+  }
+
   // 경계안 비교(최대 3개). plans: [{name, res, keys}] — res는 review 결과, keys는 planKeys(건물). 첫 안을 기준으로 빠진·더한 건물을 센다.
   // 판정을 합치지 않는다. 안마다 요건별 상태를 나란히 둘 뿐이다
   const PLAN_MAX = 3;
@@ -296,5 +307,5 @@
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: mark(secret, `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · `) };
   }
 
-  return { THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, newVillage, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

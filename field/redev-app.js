@@ -23,7 +23,8 @@
   }).catch(() => {});
 
   const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };
-  const today = () => { const t = new Date(), p = (n) => String(n).padStart(2, "0"); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; };
+  const localDay = (t) => { const p = (n) => String(n).padStart(2, "0"); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; };   // recorded_at은 UTC라 기기 시간대 날짜로
+  const today = () => localDay(new Date());
   const opt = () => ({ secret: $("secret").checked });
   const fileName = (ext) => `${opt().secret ? "대외비_" : ""}${last.file.name}_입안요건_사전검토_승인전_${today()}.${ext}`;
 
@@ -67,9 +68,39 @@
       }
       return li;
     }));
+    renderTodo(res);
     $("out").hidden = false;
     $("out").scrollIntoView({ behavior: "smooth", block: "start" });
   });
+
+  // 확인할 건물 → 현장 기록(같은 앱). 링크에 PNU·지번을 실어 보내고, 돌아오면 이 기기의 현장 기록을 PNU로 붙여 보여 준다
+  const TODO_SHOW = 30;
+  async function renderTodo(res) {
+    const recs = window.FieldStore ? await window.FieldStore.records().catch(() => []) : [];
+    const t = R.todoList(res, recs), box = $("todo");
+    if (!t.items.length) { box.replaceChildren(); return; }
+    const h = document.createElement("h3"), p = document.createElement("p"), ul = document.createElement("ul");
+    h.textContent = `확인할 건물 ${t.items.length.toLocaleString("ko-KR")}동 · 현장 기록이 붙은 건물 ${t.withRecord}동`;
+    p.className = "hint"; p.textContent = "사용승인일이 없는 건물입니다. 목조·블록·벽돌·조적부터 보입니다. 판정에는 쓰지 않고 확인 순서만 정합니다.";
+    ul.className = "todo-list";
+    for (const it of t.items.slice(0, TODO_SHOW)) {
+      const li = document.createElement("li"), s = document.createElement("span");
+      s.textContent = `${it.b.jibun || "지번 없음"} · ${it.b.structure || "구조 없음"} · ${it.b.main_use || "용도 없음"}`;
+      li.append(s);
+      if (it.records.length) {
+        const r = document.createElement("b");
+        r.textContent = `현장 기록 ${it.records.length}건(최근 ${D.govDate(localDay(new Date(it.records[0].recorded_at)))})`;
+        li.append(r);
+      } else if (it.b.pnu) {
+        const a = document.createElement("a");
+        a.href = `./?check=unregistered&pnu=${it.b.pnu}&jibun=${encodeURIComponent(it.b.jibun || "")}`; a.textContent = "현장 기록으로 보내기";
+        li.append(a);
+      }
+      ul.append(li);
+    }
+    box.replaceChildren(h, p, ul);
+    if (t.items.length > TODO_SHOW) { const more = document.createElement("p"); more.className = "hint"; more.textContent = `나머지 ${(t.items.length - TODO_SHOW).toLocaleString("ko-KR")}동은 건물별 근거 CSV에 있습니다.`; box.append(more); }
+  }
 
   // 경계안: 지번 목록 글과 법정동만 이 기기(localStorage)에 둔다. 볼 때마다 같은 건물 파일로 다시 센다(저장한 숫자를 믿지 않음)
   const PLAN_KEY = "renewmap-redev-plans";

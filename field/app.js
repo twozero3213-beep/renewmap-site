@@ -466,6 +466,9 @@
   }
   $("item").append(new Option("고르지 않음", ""));
   for (const v of R.ITEMS) $("item").append(new Option(v, v));
+  // 입안요건의 '확인할 건물'에서 왔으면(?pnu=&jibun=) 그 건물을 채우고 항목을 사용승인일로 둔다. 기록의 pnu로 계산표에 다시 붙는다
+  const fromBld = new URLSearchParams(location.search);
+  if (/^\d{19}$/.test(fromBld.get("pnu") || "")) { $("pnu").value = fromBld.get("pnu"); $("jibun").value = fromBld.get("jibun") || ""; $("item").value = "사용승인일"; }
 
   // ── 자주 쓰는 한 줄(A2): 대상 유형별로 이 기기(localStorage)에만 둔다. ZIP 내보내기에 넣지 않는다(개인 습관 정보)
   const phrases = () => storeJson(PHRASE_KEY) || {};

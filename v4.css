@@ -136,6 +136,10 @@ body.field .card { border-radius: var(--radius-card); }
 .rv-ref dd span { font-size: 12px; color: var(--dim); }
 .nv-h { margin: 18px 0 4px; font-size: 15px; color: var(--ink); }
 .nv-st { margin-left: 4px; font-weight: 700; color: var(--ink); }
+.todo h3 { margin: 18px 0 4px; font-size: 15px; color: var(--ink); }
+.todo-list { list-style: none; margin: 0; padding: 0; }
+.todo-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.todo-list li b { font-size: 13px; color: var(--ink); }
 .plan-wrap { overflow-x: auto; }
 .plan-cmp { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
 .plan-cmp th, .plan-cmp td { padding: 8px 6px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
