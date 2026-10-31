@@ -90,7 +90,7 @@
   const fmt = (x) => (Math.round(x * 10) / 10).toLocaleString("ko-KR", { maximumFractionDigits: 1 });
   // lo: 못 정한 건물을 노후 아님으로, hi: 노후로 볼 때. 기준이 둘 사이에 걸리면 현장 확인
   const status = (lo, hi, thr) => (lo >= thr ? MET : hi < thr ? NOT_MET : CHECK);
-  const range = (lo, hi) => (lo === hi ? `${fmt(lo)}%` : `${fmt(lo)}~${fmt(hi)}%`);
+  const range = (lo, hi) => (fmt(lo) === fmt(hi) ? `${fmt(lo)}%` : `${fmt(lo)}~${fmt(hi)}%`);   // 반올림해 같으면 한 값(못 정한 동수는 값 옆에 따로 적는다)
 
   // 사용승인일 + n년이 되는 날. ageYears와 같이 기념일 당일부터 '지난' 것으로 보고, 2월 29일은 평년이면 3월 1일
   const addYears = (day, n) => {
@@ -224,6 +224,29 @@
   }
   const masonryNote = (u) => `사용승인일 없는 ${u.unk}동 중 목조·블록·벽돌·조적이 ${u.unkMasonry}동이다. ${MASONRY_PRIOR.basis} 기준 같은 구조의 날짜 있는 건물 ${MASONRY_PRIOR.n.toLocaleString("ko-KR")}동 중 ${MASONRY_PRIOR.pct}%가 20년 이상이다. 판정에는 쓰지 않고, 대장 열람·현장 확인을 이 건물부터 하라는 참고다.`;
 
+  // 경계안 비교(최대 3개). plans: [{name, res, keys}] — res는 review 결과, keys는 planKeys(건물). 첫 안을 기준으로 빠진·더한 건물을 센다.
+  // 판정을 합치지 않는다. 안마다 요건별 상태를 나란히 둘 뿐이다
+  const PLAN_MAX = 3;
+  const planKeys = (blds) => new Set(blds.map(bKey));
+  function comparePlans(plans) {
+    const base = plans[0].keys;
+    return plans.map((p, i) => ({ name: p.name, n: p.res.n, lowrise: p.res.newVillage.lowrise, urban: p.res.urban, decline: p.res.newVillage.decline,
+      old: p.res.lines.find((l) => l.label === "노후·불량 건축물 수"),
+      added: i ? [...p.keys].filter((k) => !base.has(k)).length : 0, removed: i ? [...base].filter((k) => !p.keys.has(k)).length : 0 }));
+  }
+  function compareHTML(rows) {
+    const cell = (v, st) => `<td><b>${escH(v)}</b>${st ? `<br><span class="nv-st">${escH(st)}</span>` : ""}</td>`;
+    const tr = (k, f) => `<tr><th scope="row">${escH(k)}</th>${rows.map(f).join("")}</tr>`;
+    return `<table class="plan-cmp"><thead><tr><th scope="col">요건</th>${rows.map((r) => `<th scope="col">${escH(r.name)}</th>`).join("")}</tr></thead><tbody>` +
+      tr("건물 수", (r) => cell(`${r.n.toLocaleString("ko-KR")}동`)) +
+      tr("저층 주거 비율(3분의 2)", (r) => cell(r.lowrise.value.split(" (")[0], r.lowrise.status)) +
+      tr("20년 경과(2분의 1)", (r) => cell(r.urban.value, r.urban.status)) +
+      tr("쇠퇴요건 2개 이상", (r) => cell(r.decline.status === NOT_MET ? "③ 미충족" : "①·② 확인", r.decline.shown || r.decline.status)) +
+      tr("노후·불량 건축물 수(재개발)", (r) => cell(r.old.value.split(" (")[0], r.old.status)) +
+      tr("첫 경계안과 다른 건물", (r, i) => cell(i ? `더함 ${r.added.toLocaleString("ko-KR")}동 · 빠짐 ${r.removed.toLocaleString("ko-KR")}동` : "기준")) +
+      `</tbody></table>`;
+  }
+
   // 엑셀이 수식으로 읽지 않게 =·+·-·@로 시작하는 칸 앞에 '를 붙인다
   const csvCell = (v) => { let s = v === null || v === undefined ? "" : String(v); if (/^[=+\-@]/.test(s)) s = `'${s}`; return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
   // 건물별 산정 근거(엑셀용, BOM). 첫 줄에 승인 전 표시. 소유자 등 개인 항목은 파일에 없다
@@ -273,5 +296,5 @@
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: mark(secret, `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · `) };
   }
 
-  return { THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, newVillage, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, newVillage, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

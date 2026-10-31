@@ -71,6 +71,41 @@
     $("out").scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
+  // 경계안: 지번 목록 글과 법정동만 이 기기(localStorage)에 둔다. 볼 때마다 같은 건물 파일로 다시 센다(저장한 숫자를 믿지 않음)
+  const PLAN_KEY = "renewmap-redev-plans";
+  const loadPlans = () => { try { return JSON.parse(localStorage.getItem(PLAN_KEY) || "[]"); } catch (e) { return []; } };
+  const savePlans = (ps) => { try { localStorage.setItem(PLAN_KEY, JSON.stringify(ps)); return true; } catch (e) { return false; } };
+  const planSay = (text, err) => { $("planMsg").textContent = text; $("planMsg").className = err ? "msg err" : "msg"; };
+  async function renderPlans() {
+    const ps = loadPlans();
+    $("plans").hidden = !ps.length;
+    if (!ps.length) return;
+    try {
+      const plans = await Promise.all(ps.map(async (p) => {
+        const file = await getJson(`buildings/${p.dong}.json`), m = R.match(R.parseList(p.list).items, file);
+        return { name: p.name, res: R.review(m.buildings, { ref: file.age_reference_date, district: p.district }), keys: R.planKeys(m.buildings), dongName: file.name };
+      }));
+      $("planTable").innerHTML = R.compareHTML(R.comparePlans(plans));
+      $("planList").replaceChildren(...plans.map((p, i) => {
+        const li = document.createElement("li"), b = document.createElement("button");
+        li.textContent = `${p.name} · ${p.dongName} ${p.res.n.toLocaleString("ko-KR")}동 `;
+        b.type = "button"; b.className = "ghost"; b.textContent = "지우기";
+        b.addEventListener("click", () => { savePlans(loadPlans().filter((_, j) => j !== i)); renderPlans(); });
+        li.append(b);
+        return li;
+      }));
+    } catch (err) { planSay("경계안을 다시 세지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
+  }
+  $("savePlan").addEventListener("click", () => {
+    const ps = loadPlans();
+    if (ps.length >= R.PLAN_MAX) return planSay(`경계안은 ${R.PLAN_MAX}개까지 비교해요. 하나를 지우고 넣어 주세요.`, true);
+    const name = `경계안 ${["A", "B", "C"].find((x) => !ps.some((p) => p.name === `경계안 ${x}`))}`;
+    if (!savePlans([...ps, { name, dong: last.file.bjd10, list: $("list").value, district: $("district").checked }])) return planSay("이 브라우저는 저장을 막아 두었습니다.", true);
+    planSay(`${name}으로 저장했어요.`);
+    renderPlans().then(() => $("plans").scrollIntoView({ behavior: "smooth", block: "start" }));
+  });
+  renderPlans();
+
   const doc = async () => { await templates; return R.buildDoc(last.res, last.m, last.file, today(), opt()); };
   $("hwpx").addEventListener("click", async () => {
     try { D.saveBytes(fileName("hwpx"), D.hwpxBytes(await doc()), "application/hwp+zip"); } catch (err) { say("문서를 만들지 못했습니다.\nPDF로 저장해 보세요.", true); }

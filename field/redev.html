@@ -64,6 +64,15 @@
     <button type="button" class="ghost" id="csv">건물별 근거 CSV 받기</button>
     <button type="button" class="ghost" id="sample">수기 대조 표본 받기</button>
     <p class="hint">수기 대조 표본은 같은 목록이면 늘 같은 건물이 뽑힙니다.<br>건축물대장 열람 값과 맞춰 보고 결과를 문서에 적으세요.</p>
+    <button type="button" class="ghost" id="savePlan">이 목록을 경계안으로 저장</button>
+  </section>
+
+  <section id="plans" class="card" aria-labelledby="plansTitle" hidden>
+    <h2 id="plansTitle">경계안 비교</h2>
+    <p class="hint">경계안은 3개까지 이 기기에만 저장합니다.<br>같은 기준으로 다시 세어 나란히 보여 줍니다. 종합 판정이 아닙니다.</p>
+    <div id="planTable" class="plan-wrap" aria-live="polite"></div>
+    <ul id="planList" class="plan-list"></ul>
+    <p id="planMsg" class="msg" role="status" aria-live="polite"></p>
   </section>
 </main>
 <section id="printDoc" class="print-doc" aria-hidden="true"></section>
