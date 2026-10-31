@@ -8,6 +8,20 @@
   const templates = getJson("report_templates.json").then((t) => D.setTemplates(t));
   let last = null;   // {res, m, file}
 
+  // 구·군 → 법정동 목록(buildings/index.json). 부산 조례 기준만 계산하므로 부산(26)만 싣는다. 목록을 못 받으면 HTML의 해운대구 8개 동 그대로 쓴다
+  const BUSAN = "26";
+  getJson("buildings/index.json").then((idx) => {
+    const gus = idx.sigungu.filter((s) => s.code.startsWith(BUSAN) && s.dongs.length);
+    if (!gus.length) return;
+    const fill = (sel, items, pick) => sel.replaceChildren(...items.map(([v, t]) => { const o = new Option(t, v); o.selected = v === pick; return o; }));
+    const showDongs = (gu, pick) => fill($("dong"), gus.find((s) => s.code === gu).dongs.map((d) => [d.code, `${d.name} (${d.count.toLocaleString("ko-KR")}동)`]), pick);
+    fill($("gu"), gus.map((s) => [s.code, s.name]), "26350");
+    showDongs("26350", $("dong").value);
+    $("gu").addEventListener("change", () => showDongs($("gu").value));
+    const n = gus.reduce((s, g) => s + g.dongs.length, 0);
+    $("coverage").textContent = `부산 ${gus.length}개 구·군 ${n}개 법정동의 건축물대장을 담았습니다. 다른 시·도는 그 조례를 확인한 뒤 엽니다.`;
+  }).catch(() => {});
+
   const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };
   const today = () => { const t = new Date(), p = (n) => String(n).padStart(2, "0"); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; };
   const opt = () => ({ secret: $("secret").checked });

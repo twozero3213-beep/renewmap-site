@@ -31,12 +31,14 @@
   <p class="warn">승인 전 참고입니다.<br>규칙(부산 정비조례 제3조②·제5조②2)이 담당자 승인 전이라 납품용으로 쓰지 마세요.<br><a href="../rules.html#BSN-ORD-2025.10">기준 원문과 판본 보기</a></p>
 
   <form id="f" class="card" novalidate>
-    <label for="dong">법정동(부산 해운대구)</label>
+    <label for="gu">구·군(부산)</label>
+    <select id="gu"><option value="26350" selected>해운대구</option></select>
+    <label for="dong">법정동</label>
     <select id="dong">
       <option value="2635010100">반송동</option><option value="2635010200">석대동</option><option value="2635010300" selected>반여동</option><option value="2635010400">재송동</option>
       <option value="2635010500">우동</option><option value="2635010600">중동</option><option value="2635010700">좌동</option><option value="2635010800">송정동</option>
     </select>
-    <p class="hint">지금은 부산 조례 기준만 있습니다.<br>다른 시·도는 그 조례를 확인한 뒤 엽니다.</p>
+    <p class="hint" id="coverage">지금은 부산 조례 기준만 있습니다.<br>다른 시·도는 그 조례를 확인한 뒤 엽니다.</p>
     <label for="list">지번 또는 PNU 목록</label>
     <textarea id="list" rows="8" placeholder="1291-5&#10;산 12-3&#10;엑셀에서 '지번' 열을 머리와 함께 복사해도 됩니다"></textarea>
     <button type="button" class="ghost" id="demo">고른 동 전체로 계산해 보기</button>
