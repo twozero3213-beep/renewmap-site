@@ -70,4 +70,6 @@
   });
   $("csv").addEventListener("click", () => D.saveBytes(fileName("csv"), R.toCSV(last.res, last.file, opt()), "text/csv;charset=utf-8"));
   $("sample").addEventListener("click", () => D.saveBytes(fileName("csv").replace("_사전검토_", "_수기대조표본_"), R.sampleCSV(last.res, last.file, opt()), "text/csv;charset=utf-8"));
+  // 현장 앱(sw.js)이 이 쪽도 맡는다. 새 판이 자리를 잡으면 옛 계산 파일로 문서를 받지 않게 새로고침을 알린다
+  if ("serviceWorker" in navigator && navigator.serviceWorker.controller) navigator.serviceWorker.addEventListener("controllerchange", () => say("계산 파일의 새 판을 받았습니다. 새로고침한 뒤 다시 계산하세요."));
 })();

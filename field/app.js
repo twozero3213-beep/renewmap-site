@@ -694,6 +694,9 @@
   render().catch(() => say("이 브라우저에서는 기기 저장소를 쓸 수 없습니다.", true));
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
+    // 이미 옛 판이 있던 기기에서만 알린다(첫 설치는 알릴 것이 없다). 쓰던 기록은 기기 저장소에 남아 새로고침해도 그대로다
+    let hadCtrl = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadCtrl) toast("새 판을 받았습니다.\n새로고침하면 반영됩니다.", "새로고침", () => location.reload()); hadCtrl = true; });
     // ready는 앱 셸을 다 저장한 서비스 워커가 켜져야 풀린다. 현장에 나가기 전에 오프라인으로 열리는지 보이게 한다(감사 이수진2)
     navigator.serviceWorker.ready.then(() => { $("ready").hidden = false; });
   }
