@@ -1,7 +1,7 @@
 // 앱 셸을 캐시해 오프라인에서 연다. 기록은 IndexedDB에만 있고 네트워크로 나가지 않는다.
 // 캐시 이름 = 앱 셸 파일 내용의 지문. 파일이 바뀌면 이름도 바뀌어야 새 판이 설치된다(감사 이수진1: v20을 안 올린 채 7번 바뀜).
 // 셸 파일을 고치면 field/evidence.test.cjs가 실패하며 새 지문을 알려 준다
-const CACHE = "renewmap-field-deb9fb758b";
+const CACHE = "renewmap-field-0c8ec58fca";
 const SHELL = ["./", "index.html", "field.css", "record.js", "store.js", "evidence.js", "app.js", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-400.woff2", "../fonts/pretendard-600.woff2", "../fonts/pretendard-700.woff2", "../styles.css", "../v4.css", "../site.js", "../frame-guard.js", "../docgen.js",
   "../data/report_templates.json", "upload.js", "upload-config.js", "detect.js", "redev.html", "redev.js", "redev-app.js", "../favicon.svg", "../icon-192.png"];
 // 설치 때는 브라우저 HTTP 캐시(Pages max-age=600)를 건너뛴다. 안 그러면 갱신 직전에 열어 둔 옛 파일이 새 캐시에 들어간다

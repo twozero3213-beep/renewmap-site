@@ -212,11 +212,15 @@
     const decline = { label: "쇠퇴요건 2개 이상(20년 경과 포함)", rule: "①인구 감소 ②사업체 감소 ③20년 이상 건축물 2분의 1 중 ③ 포함 2개 이상",
       value: urban.status === NOT_MET ? "③ 20년 경과 미충족" : `③ 20년 경과 ${urban.status}, ①·② 중 하나 이상은 공식 쇠퇴진단(행정동) 값으로 확인`,
       status: urban.status === NOT_MET ? NOT_MET : CHECK, shown: urban.status === NOT_MET ? NOT_MET : "공식값 확인", unit: "③은 이 목록, ①·②는 행정동", basis: NV_BASIS };
-    return { lowrise, decline };
+    // 원문은 활성화지역 안을 먼저 요구한다(p.36, 일반·빈집정비형 모두). 지번 목록으로는 정하지 못해 공식 고시로 확인하게 둔다.
+    // 이 줄이 없으면 아래 두 줄이 충족일 때 신청할 수 있는 것처럼 읽힌다(규칙 대조 분류표 17, 2026-11-01)
+    const area = { label: "도시재생활성화지역 안", rule: "전략계획상 도시재생활성화지역(접수 마감일 기준)", value: "이 목록으로는 정하지 못함. 도시재생전략계획 고시로 확인",
+      status: CHECK, shown: "공식값 확인", unit: "신청 구역", basis: NV_BASIS };
+    return { area, lowrise, decline };
   }
   function newVillageHTML(nv) {
     const row = (x) => `<div><dt>${escH(x.label)} <span class="nv-st">${escH(x.shown || x.status)}</span></dt><dd><b>${escH(x.value)}</b> <span>기준 ${escH(x.rule)} · 적용 단위: ${escH(x.unit)}${x.define ? ` · 저층 주거 = ${escH(x.define)}` : ""}</span></dd></div>`;
-    return `<h3 class="nv-h">노후주거지정비 신청요건</h3><dl class="rv-ref">${row(nv.lowrise)}${row(nv.decline)}</dl>` +
+    return `<h3 class="nv-h">노후주거지정비 신청요건</h3><dl class="rv-ref">${row(nv.area)}${row(nv.lowrise)}${row(nv.decline)}</dl>` +
       `<p class="rv-key">${escH(`${NV_BASIS}. 적용 단위는 가이드라인 원문과 대조 전이다. 종합 판정이 아니라 요건별 상태다.`)}</p>`;
   }
 
@@ -293,10 +297,11 @@
     const tr = (k, f) => `<tr><th scope="row">${escH(k)}</th>${rows.map(f).join("")}</tr>`;
     return `<table class="plan-cmp"><thead><tr><th scope="col">요건</th>${rows.map((r) => `<th scope="col">${escH(r.name)}</th>`).join("")}</tr></thead><tbody>` +
       tr("건물 수", (r) => cell(`${r.n.toLocaleString("ko-KR")}동`)) +
+      tr("도시재생활성화지역 안", () => cell("고시로 확인", "공식값 확인")) +
       tr("저층 주거 비율(3분의 2)", (r) => cell(r.lowrise.value.split(" (")[0], r.lowrise.status)) +
       tr("20년 경과(2분의 1)", (r) => cell(r.urban.value, r.urban.status)) +
       tr("쇠퇴요건 2개 이상", (r) => cell(r.decline.status === NOT_MET ? "③ 미충족" : "①·② 확인", r.decline.shown || r.decline.status)) +
-      tr("노후·불량 건축물 수(재개발)", (r) => cell(r.old.value.split(" (")[0], r.old.status)) +
+      tr("노후·불량 건축물 수(주택정비형 재개발)", (r) => cell(r.old.value.split(" (")[0], r.old.status)) +
       tr("첫 경계안과 다른 건물", (r, i) => cell(i ? `더함 ${r.added.toLocaleString("ko-KR")}동 · 빠짐 ${r.removed.toLocaleString("ko-KR")}동` : "기준")) +
       `</tbody></table>`;
   }
@@ -333,12 +338,13 @@
   const block = (kind, text = "", extra = {}) => ({ kind, text: D.clean(text), rows: [], widths: [], caption: "", small: false, ...extra });
   // 한글·PDF 1쪽. 건물별 표는 CSV로 뺀다
   function buildDoc(res, m, file, today, { secret = false } = {}) {
-    const src = new D.Sources(), title = `${file.name} 재개발 입안요건 사전검토`;
+    // 조례 제5조②2는 주택정비형 재개발사업구역에만 쓴다(도시정비형은 대상 아님). 제목과 기준 줄에 밝힌다(규칙 대조 분류표 6)
+    const src = new D.Sources(), title = `${file.name} 주택정비형 재개발 입안요건 사전검토`;
     const bld = src.ref({ source_name: file.source, source_url: file.source_url, reference_date: file.hub_reference_date, retrieved_at: file.retrieved_at, license_type: file.license });
     const law = src.ref({ source_name: ORD, source_url: ORD_URL, reference_date: "2025-10-01", retrieved_at: "2026-10-23", license_type: "저작권 보호 대상 아님(저작권법 제7조)" });
     const box = [
       ["대상", `붙여 넣은 목록에서 건물 ${res.n}동을 찾음${m.missing.length ? ` · 못 찾은 지번 ${m.missing.length}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})` : ""}${m.otherDong.length ? ` · 다른 법정동 ${m.otherDong.length}개 제외` : ""}${bld}`],
-      ["기준", `${res.district ? "재정비촉진지구(50%)" : "일반(60%)"} · 연한은 조례 제3조②${law} · 경과 기준일 ${res.ref}`],
+      ["기준", `주택정비형 재개발(도시정비형은 대상 아님, 조례 제5조②2) · ${res.district ? "재정비촉진지구(50%)" : "일반(60%)"} · 연한은 조례 제3조②${law} · 경과 기준일 ${res.ref}`],
       ["못 정한 건물", `${res.nUnk ? `${res.nUnk}동(사용승인일 없음 또는 구조·용도에 따라 연한이 갈림). 비율은 범위로 적었다` : "없음"}. ${UNREG}`],
     ];
     const blocks = [block("title", title), block("para", mark(secret, `${NOT_APPROVED} · 판정 아님 · ${RULES.map((x) => `${x.id} 초안`).join(", ")}`, true), { small: true }),
