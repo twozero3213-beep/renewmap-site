@@ -47,44 +47,69 @@
     return { old: null, age, years, why: "구조·용도에 따라 연한이 갈림" };
   }
 
-  // 붙여 넣은 글 → [{raw, pnu} | {raw, jibun}]. 첫 줄에 'PNU'·'지번' 머리가 있으면 그 열만 읽는다(엑셀 복사·CSV).
+  // 붙여 넣은 글 → [{raw, pnu} | {raw, jibun, dong?}]. 첫 줄에 'PNU'·'지번' 머리가 있으면 그 열만 읽는다(엑셀 복사·CSV).
+  // 지번 앞의 동 이름("재송동 45")과 '소재지'·'법정동' 열은 dong으로 남긴다. 버리면 고른 동의 같은 번지 건물이 대신 세어진다
   // ponytail: 따옴표 안 쉼표는 나누지 않는다. 토지조서 CSV가 그런 형식이면 열 고르기를 더한다
   const JIBUN_RE = /(산)?\s*(\d{1,4})(?:\s*-\s*(\d{1,4}))?\s*(?:번지)?$/;
+  const dongOf = (s) => { const t = String(s || "").trim().split(/\s+/).pop() || ""; return /^[가-힣][가-힣0-9]*(동|리|가)$/.test(t) ? t : undefined; };
   function parseList(text) {
     const lines = String(text || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
     const cellsOf = (l) => l.split(/[\t,]/).map((c) => c.replace(/^"|"$/g, "").trim());
     const head = lines.length ? cellsOf(lines[0]) : [];
-    const pc = head.findIndex((h) => /^(pnu|필지고유번호)$/i.test(h)), jc = head.findIndex((h) => /지번/.test(h));
+    const pc = head.findIndex((h) => /^(pnu|필지고유번호)$/i.test(h)), jc = head.findIndex((h) => /지번/.test(h)), dc = head.findIndex((h) => /^(소재지|법정동)$/.test(h));
     const cells = pc >= 0 || jc >= 0
-      ? lines.slice(1).map((l) => { const c = cellsOf(l); return (pc >= 0 && c[pc]) || (jc >= 0 && c[jc]) || ""; })
-      : lines.flatMap((l) => l.split(/[,;\t]/));
+      ? lines.slice(1).map((l) => { const c = cellsOf(l); return [(pc >= 0 && c[pc]) || (jc >= 0 && c[jc]) || "", dc >= 0 ? c[dc] : ""]; })
+      : lines.flatMap((l) => l.split(/[,;\t]/)).map((c) => [c, ""]);
     const items = [], bad = [], seen = new Set();
-    for (const raw of cells.map((c) => c.trim()).filter(Boolean)) {
+    for (const [raw, place] of cells.map(([c, p]) => [c.trim(), p]).filter(([c]) => c)) {
       let it = null;
       if (/^\d{19}$/.test(raw)) it = { raw, pnu: raw };
       else {
         const m = JIBUN_RE.exec(raw), ji = m && Number(m[3] || 0);
-        if (m) it = { raw, jibun: `${m[1] || ""}${Number(m[2])}${ji ? `-${ji}` : ""}` };
+        if (m) {
+          it = { raw, jibun: `${m[1] || ""}${Number(m[2])}${ji ? `-${ji}` : ""}` };
+          const dong = dongOf(raw.slice(0, m.index)) || dongOf(place);
+          if (dong) it.dong = dong;
+        }
       }
       if (!it) { bad.push(raw); continue; }
-      const key = it.pnu || it.jibun;
+      const key = it.pnu || `${it.dong || ""}|${it.jibun}`;
       if (!seen.has(key)) { seen.add(key); items.push(it); }
     }
     return { items, bad };
   }
 
-  // 목록을 한 법정동 파일(buildings/{법정동}.json)의 건물과 잇는다. 같은 건물은 한 번만 센다.
+  // 목록을 법정동 파일(buildings/{법정동}.json, 여러 동이면 mergeFiles 결과)의 건물과 잇는다. 같은 건물은 한 번만 센다.
+  // 동 이름도 PNU도 없는 지번은 고른 동(file.bjd10)으로 본다.
   // 관리번호(mgm_bld_pk)는 2^53을 넘는 값이 있어 JS 숫자로는 서로 다른 건물이 같아진다 → 객체로 가린다
   function match(items, file) {
-    const by = (k) => { const m = new Map(); for (const b of file.buildings) if (b[k]) m.set(b[k], [...(m.get(b[k]) || []), b]); return m; };
-    const byPnu = by("pnu"), byJibun = by("jibun"), found = new Set(), missing = [], otherDong = [];
+    const dongs = file.dongs || [{ code: file.bjd10, name: file.name }], codeOf = new Map(dongs.map((d) => [d.name, d.code]));
+    const byPnu = new Map(), byJibun = new Map(), found = new Set(), missing = [], otherDong = [];
+    const put = (m, k, b) => m.set(k, [...(m.get(k) || []), b]);
+    for (const b of file.buildings) {
+      if (b.pnu) put(byPnu, b.pnu, b);
+      if (b.jibun) put(byJibun, `${(b.pnu || file.bjd10).slice(0, 10)}|${b.jibun}`, b);
+    }
     for (const it of items) {
-      if (it.pnu && it.pnu.slice(0, 10) !== file.bjd10) { otherDong.push(it.raw); continue; }
-      const hits = it.pnu ? byPnu.get(it.pnu) : byJibun.get(it.jibun);
+      const code = it.pnu ? it.pnu.slice(0, 10) : it.dong ? codeOf.get(it.dong) : file.bjd10;
+      if (!code || !dongs.some((d) => d.code === code)) { otherDong.push(it.raw); continue; }
+      const hits = it.pnu ? byPnu.get(it.pnu) : byJibun.get(`${code}|${it.jibun}`);
       if (!hits) { missing.push(it.raw); continue; }
       for (const b of hits) found.add(b);
     }
     return { buildings: [...found.values()], missing, otherDong };
+  }
+
+  // 신청 구역이 법정동 경계를 넘으면 여러 동 파일을 한 파일처럼 잇는다. 첫 파일이 고른 동이다.
+  // 수집일은 가장 이른 날(보수적), 경과 기준일이 다르면 같은 잣대가 아니라 합치지 않는다. 받는 파일 수는 MERGE_MAX까지
+  const MERGE_MAX = 5;
+  function mergeFiles(files) {
+    const [f] = files;
+    if (files.some((x) => x.age_reference_date !== f.age_reference_date)) throw new Error("경과 기준일이 다른 법정동 파일");
+    const first = (k) => files.map((x) => x[k]).sort()[0];
+    return { ...f, name: files.map((x) => x.name).join("·"), dongs: files.map((x) => ({ code: x.bjd10, name: x.name })),
+      hub_reference_date: first("hub_reference_date"), retrieved_at: first("retrieved_at"),
+      count: files.reduce((s, x) => s + x.buildings.length, 0), buildings: files.flatMap((x) => x.buildings) };
   }
 
   const fmt = (x) => (Math.round(x * 10) / 10).toLocaleString("ko-KR", { maximumFractionDigits: 1 });
@@ -155,20 +180,34 @@
 
   // 노후주거지정비 지원사업 신청요건(2027 도시재생 신규사업 평가 가이드라인, 일반·빈집정비형).
   // 저층 주거용 건축물(단독·다가구·연립·다세대 등)이 3분의 2 이상 + 쇠퇴요건 ①인구 ②사업체 ③20년 이상 건축물 2분의 1 중 ③ 포함 2개 이상.
-  // 대장 주용도가 단독주택·공동주택 두 갈래뿐이라 지상 4층 이하 단독·공동주택을 저층 주거로 본다(5층 이상 = 아파트 등). 층수가 없거나 0이면 못 정함
+  // 원문은 저층 주거를 주택 유형(단독·다가구·연립·다세대 등)으로 적고 층수 기준이 없다(docs/rule_reviews/OLDRES-2027-GEN.md).
+  // 유형으로 읽든 지상 4층 이하로 읽든 저층 주거면 true, 둘 다 아니면 false, 두 읽기가 갈리면 못 정함(null).
+  // 갈리는 건물: 5층 이상 단독주택·다세대·연립(1층 필로티 등), 4층 이하 아파트·기숙사, 층수 없는 주택. house_type은 기타용도에서 읽은 공동주택 유형
   // 3분의 2는 정수로 비교한다(2/3×100이 부동소수로 기준선보다 작게 나와 정확히 3분의 2가 미충족이 되는 것을 막음)
   const LOWRISE = { rule: "저층 주거용 건축물 수 3분의 2 이상" };
   // 주용도가 근린생활시설 등이어도 기타용도에 주택이 있으면(mixed_home, 1층 상가·위층 살림집) 저층 주거인지 법령이 정하지 않아 못 정함으로 센다
-  const lowState = (b) => (b.main_use === "단독주택" || b.main_use === "공동주택" ? (!b.floors ? null : b.floors <= 4)
-    : b.mixed_home && b.floors >= 1 && b.floors <= 4 ? null : false);
+  function lowState(b) {
+    const low = b.floors >= 1 && b.floors <= 4;
+    if (b.main_use === "단독주택") return low || null;
+    if (b.main_use !== "공동주택") return b.mixed_home && low ? null : false;
+    if (b.house_type === "다세대·연립") return low || null;
+    if (b.house_type === "아파트") return b.floors >= 5 ? false : null;
+    if (b.house_type) return null;   // 기숙사, 아파트·다세대 혼재
+    return !b.floors ? null : low;
+  }
+  // 못 정한 까닭(화면 글). lowState가 null인 건물만 부른다
+  const lowWhy = (b) => (b.mixed_home && b.main_use !== "단독주택" && b.main_use !== "공동주택" ? "주택 겸용"
+    : !b.floors ? "층수 없는 주택" : b.main_use === "단독주택" || b.house_type === "다세대·연립" ? "5층 이상 단독·다세대·연립" : "4층 이하 아파트·기숙사 등");
   const NV_BASIS = "2027 도시재생 신규사업 평가 가이드라인(노후주거지정비 신청요건)";
   function newVillage(blds, urban) {
     const n = blds.length, st = blds.map(lowState), yes = st.filter((s) => s === true).length, unk = st.filter((s) => s === null).length;
-    const mixed = blds.filter((b, i) => st[i] === null && b.mixed_home).length, noFloor = unk - mixed;
-    const unkText = unk ? `, 확인 필요 ${[noFloor ? `층수 없는 주택 ${noFloor}동` : "", mixed ? `주택 겸용 ${mixed}동` : ""].filter(Boolean).join("·")}` : "";
+    const why = new Map();
+    blds.forEach((b, i) => { if (st[i] === null) why.set(lowWhy(b), (why.get(lowWhy(b)) || 0) + 1); });
+    const mixed = why.get("주택 겸용") || 0;
+    const unkText = unk ? `, 확인 필요 ${["층수 없는 주택", "주택 겸용", "5층 이상 단독·다세대·연립", "4층 이하 아파트·기숙사 등"].filter((k) => why.has(k)).map((k) => `${k} ${why.get(k)}동`).join("·")}` : "";
     const lo = (yes / n) * 100, hi = ((yes + unk) / n) * 100;
     const lowrise = { label: "저층 주거 비율", rule: LOWRISE.rule, value: `${range(lo, hi)} (${yes}/${n}동${unkText})`, mixed,
-      status: yes * 3 >= 2 * n ? MET : (yes + unk) * 3 < 2 * n ? NOT_MET : CHECK, unit: "신청 구역(이 목록)", define: "지상 4층 이하 단독·공동주택(주택 겸용 근린생활시설 등은 확인 필요)", basis: NV_BASIS };
+      status: yes * 3 >= 2 * n ? MET : (yes + unk) * 3 < 2 * n ? NOT_MET : CHECK, unit: "신청 구역(이 목록)", define: "단독·다가구·연립·다세대 등(유형과 지상 4층 이하 기준이 갈리는 건물, 주택 겸용 근린생활시설 등은 확인 필요)", basis: NV_BASIS };
     // ③(20년 경과)이 안 되면 나머지와 관계없이 불충족. ①②는 행정동 공식 쇠퇴진단 값이라 이 목록으로는 정하지 못한다
     const decline = { label: "쇠퇴요건 2개 이상(20년 경과 포함)", rule: "①인구 감소 ②사업체 감소 ③20년 이상 건축물 2분의 1 중 ③ 포함 2개 이상",
       value: urban.status === NOT_MET ? "③ 20년 경과 미충족" : `③ 20년 경과 ${urban.status}, ①·② 중 하나 이상은 공식 쇠퇴진단(행정동) 값으로 확인`,
@@ -311,5 +350,5 @@
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: mark(secret, `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · `) };
   }
 
-  return { THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

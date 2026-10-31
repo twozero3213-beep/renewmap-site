@@ -6,15 +6,15 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'">
 <script src="../frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>재개발 입안요건 사전검토 | 리뉴맵</title>
-<meta name="description" content="지번 목록을 붙여 넣으면 건축물대장으로 노후·불량 건축물 수와 연면적 비율을 부산 정비조례 조문과 함께 계산해 1쪽 문서와 건물별 근거 CSV로 만듭니다. 목록은 이 기기 밖으로 보내지 않습니다.">
+<title>신청요건 확인(노후주거지정비·재개발) | 리뉴맵</title>
+<meta name="description" content="지번 목록을 붙여 넣으면 부산 254개 법정동 건축물대장으로 노후주거지정비 신청요건(저층 주거 3분의 2, 20년 경과)과 재개발 입안요건(노후·불량 비율)을 조문과 함께 계산해 1쪽 문서와 건물별 근거 CSV로 만듭니다. 목록은 이 기기 밖으로 보내지 않습니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/field/redev.html">
 <meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/field/redev.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="리뉴맵 RENEWMAP">
-<meta property="og:title" content="재개발 입안요건 사전검토 | 리뉴맵">
-<meta property="og:description" content="지번 목록 → 노후·불량 비율과 조문 → 결재용 1쪽·건물별 근거 CSV.">
+<meta property="og:title" content="신청요건 확인(노후주거지정비·재개발) | 리뉴맵">
+<meta property="og:description" content="지번 목록 → 저층 주거·20년 경과·노후·불량 비율과 조문 → 결재용 1쪽·건물별 근거 CSV.">
 <meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
 <meta name="theme-color" content="#006f5b">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
@@ -25,9 +25,9 @@
 </head>
 <body class="field redev-v4">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><h1>입안요건 사전검토</h1></div></header>
+<header class="top"><div class="wrap"><h1>신청요건 확인</h1></div></header>
 <main id="main">
-  <p class="note">지번 목록을 붙여 넣으면 노후·불량 비율을 조문과 함께 계산합니다.<br>목록은 이 기기 안에서만 계산하고 어디로도 보내지 않습니다.</p>
+  <p class="note">지번 목록을 붙여 넣으면 노후주거지정비 신청요건과 재개발 노후·불량 비율을 조문과 함께 계산합니다.<br>구역이 법정동 경계를 넘으면 지번 앞에 동 이름을 붙여 주세요.<br>목록은 이 기기 안에서만 계산하고 어디로도 보내지 않습니다.</p>
   <p class="warn">승인 전 참고입니다.<br>규칙(부산 정비조례 제3조②·제5조②2)이 담당자 승인 전이라 납품용으로 쓰지 마세요.<br><a href="../rules.html#BSN-ORD-2025.10">기준 원문과 판본 보기</a></p>
 
   <form id="f" class="card" novalidate>
@@ -40,7 +40,7 @@
     </select>
     <p class="hint" id="coverage">지금은 부산 조례 기준만 있습니다.<br>다른 시·도는 그 조례를 확인한 뒤 엽니다.</p>
     <label for="list">지번 또는 PNU 목록</label>
-    <textarea id="list" rows="8" placeholder="1291-5&#10;산 12-3&#10;엑셀에서 '지번' 열을 머리와 함께 복사해도 됩니다"></textarea>
+    <textarea id="list" rows="8" placeholder="1291-5&#10;산 12-3&#10;재송동 45(다른 동이면 동 이름을 앞에)&#10;엑셀에서 '지번' 열을 머리와 함께 복사해도 됩니다"></textarea>
     <button type="button" class="ghost" id="demo">고른 동 전체로 계산해 보기</button>
     <label for="area">구역 면적(㎡, 아는 경우만)</label>
     <input id="area" type="number" inputmode="decimal" min="0" step="any">

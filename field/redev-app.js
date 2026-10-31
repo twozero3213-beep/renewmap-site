@@ -10,7 +10,9 @@
 
   // 구·군 → 법정동 목록(buildings/index.json). 부산 조례 기준만 계산하므로 부산(26)만 싣는다. 목록을 못 받으면 HTML의 해운대구 8개 동 그대로 쓴다
   const BUSAN = "26";
-  getJson("buildings/index.json").then((idx) => {
+  const index = getJson("buildings/index.json").catch(() => null);
+  index.then((idx) => {
+    if (!idx) return;
     const gus = idx.sigungu.filter((s) => s.code.startsWith(BUSAN) && s.dongs.length);
     if (!gus.length) return;
     const fill = (sel, items, pick) => sel.replaceChildren(...items.map(([v, t]) => { const o = new Option(t, v); o.selected = v === pick; return o; }));
@@ -21,6 +23,20 @@
     const n = gus.reduce((s, g) => s + g.dongs.length, 0);
     $("coverage").textContent = `부산 ${gus.length}개 구·군 ${n}개 법정동의 건축물대장을 담았습니다. 다른 시·도는 그 조례를 확인한 뒤 엽니다.`;
   }).catch(() => {});
+
+  // 고른 동 + 목록이 가리키는 다른 법정동(PNU 앞 10자리, 지번 앞 동 이름은 같은 구·군 안에서 찾음). 신청 구역이 동 경계를 넘을 때
+  async function loadFor(items, code) {
+    const idx = await index, gu = idx && idx.sigungu.find((s) => s.code === code.slice(0, 5));
+    const byName = new Map((gu ? gu.dongs : []).map((d) => [d.name, d.code]));
+    const known = new Set(idx ? idx.sigungu.flatMap((s) => s.dongs.map((d) => d.code)) : []);
+    const codes = [code];
+    for (const it of items) {
+      const c = it.pnu ? it.pnu.slice(0, 10) : it.dong && byName.get(it.dong);
+      if (c && known.has(c) && !codes.includes(c) && codes.length < R.MERGE_MAX) codes.push(c);
+    }
+    const files = await Promise.all(codes.map((c) => getJson(`buildings/${c}.json`)));
+    return files.length === 1 ? files[0] : R.mergeFiles(files);
+  }
 
   const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };
   const localDay = (t) => { const p = (n) => String(n).padStart(2, "0"); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; };   // recorded_at은 UTC라 기기 시간대 날짜로
@@ -45,13 +61,13 @@
     if (areaM2 !== null && !(areaM2 >= 0)) return say("구역 면적은 숫자로 넣어 주세요.", true);
     say("건축물대장 자료를 여는 중입니다.");
     let file;
-    try { file = await getJson(`buildings/${$("dong").value}.json`); } catch (err) { return say("건축물대장 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
+    try { file = await loadFor(p.items, $("dong").value); } catch (err) { return say("건축물대장 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
     const m = R.match(p.items, file);
     if (!m.buildings.length) return say(`목록에서 찾은 건물이 없습니다.\n${file.name} 지번이 맞는지 확인해 주세요.`, true);
     const res = R.review(m.buildings, { ref: file.age_reference_date, district: $("district").checked, areaM2 });
     last = { res, m, file };
     const skipped = [...(p.bad.length ? [`지번으로 읽지 못한 칸 ${p.bad.length}개`] : []), ...(m.missing.length ? [`대장에 없는 지번 ${m.missing.length}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})`] : []),
-      ...(m.otherDong.length ? [`다른 법정동 ${m.otherDong.length}개`] : [])];
+      ...(m.otherDong.length ? [`계산에 넣지 못한 다른 동 지번 ${m.otherDong.length}개(같은 구·군 법정동 이름이 아니거나 ${R.MERGE_MAX}개 동을 넘음: ${m.otherDong.slice(0, 3).join(", ")}${m.otherDong.length > 3 ? " 등" : ""})`] : [])];
     say(skipped.length ? `제외: ${skipped.join(" · ")}` : "");
     $("outBase").textContent = `${file.name} 건물 ${res.n}동 · 기준 ${res.thr}% · 경과 기준일 ${D.govDate(res.ref)} · 건축물대장 기준일 ${D.govDate(file.hub_reference_date)}`;
     $("viz").innerHTML = R.summaryHTML(res);   // 그림 요약(종합 판정 아님)
@@ -113,7 +129,7 @@
     if (!ps.length) return;
     try {
       const plans = await Promise.all(ps.map(async (p) => {
-        const file = await getJson(`buildings/${p.dong}.json`), m = R.match(R.parseList(p.list).items, file);
+        const items = R.parseList(p.list).items, file = await loadFor(items, p.dong), m = R.match(items, file);
         return { name: p.name, res: R.review(m.buildings, { ref: file.age_reference_date, district: p.district }), keys: R.planKeys(m.buildings), dongName: file.name };
       }));
       $("planTable").innerHTML = R.compareHTML(R.comparePlans(plans));
