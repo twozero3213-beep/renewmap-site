@@ -150,7 +150,31 @@
       status: status(uLo, uHi, URBAN.thr), basis: "도시재생법 시행령 제17조" };
     const one = (w) => [reachDate(rows, w, thr, ref, fromEarly), reachDate(rows, w, thr, ref, fromLate)];
     const reach = { count: one(() => 1), area: one((r) => Number(r.b.tot_area) || 0) };
-    return { thr, district, n, nOld, nUnk, area, aOld, aUnk, lines, perBuilding, ref, urban, reach };
+    return { thr, district, n, nOld, nUnk, area, aOld, aUnk, lines, perBuilding, ref, urban, reach, newVillage: newVillage(blds, urban) };
+  }
+
+  // 노후주거지정비 지원사업 신청요건(2027 도시재생 신규사업 평가 가이드라인, 일반·빈집정비형).
+  // 저층 주거용 건축물(단독·다가구·연립·다세대 등)이 3분의 2 이상 + 쇠퇴요건 ①인구 ②사업체 ③20년 이상 건축물 2분의 1 중 ③ 포함 2개 이상.
+  // 대장 주용도가 단독주택·공동주택 두 갈래뿐이라 지상 4층 이하 단독·공동주택을 저층 주거로 본다(5층 이상 = 아파트 등). 층수가 없거나 0이면 못 정함
+  // 3분의 2는 정수로 비교한다(2/3×100이 부동소수로 기준선보다 작게 나와 정확히 3분의 2가 미충족이 되는 것을 막음)
+  const LOWRISE = { rule: "저층 주거용 건축물 수 3분의 2 이상" };
+  const lowState = (b) => (b.main_use !== "단독주택" && b.main_use !== "공동주택" ? false : !b.floors ? null : b.floors <= 4);
+  const NV_BASIS = "2027 도시재생 신규사업 평가 가이드라인(노후주거지정비 신청요건)";
+  function newVillage(blds, urban) {
+    const n = blds.length, st = blds.map(lowState), yes = st.filter((s) => s === true).length, unk = st.filter((s) => s === null).length;
+    const lo = (yes / n) * 100, hi = ((yes + unk) / n) * 100;
+    const lowrise = { label: "저층 주거 비율", rule: LOWRISE.rule, value: `${range(lo, hi)} (${yes}/${n}동${unk ? `, 층수 없는 주택 ${unk}동` : ""})`,
+      status: yes * 3 >= 2 * n ? MET : (yes + unk) * 3 < 2 * n ? NOT_MET : CHECK, unit: "신청 구역(이 목록)", define: "지상 4층 이하 단독·공동주택", basis: NV_BASIS };
+    // ③(20년 경과)이 안 되면 나머지와 관계없이 불충족. ①②는 행정동 공식 쇠퇴진단 값이라 이 목록으로는 정하지 못한다
+    const decline = { label: "쇠퇴요건 2개 이상(20년 경과 포함)", rule: "①인구 감소 ②사업체 감소 ③20년 이상 건축물 2분의 1 중 ③ 포함 2개 이상",
+      value: urban.status === NOT_MET ? "③ 20년 경과 미충족" : `③ 20년 경과 ${urban.status}, ①·② 중 하나 이상은 공식 쇠퇴진단(행정동) 값으로 확인`,
+      status: urban.status === NOT_MET ? NOT_MET : CHECK, shown: urban.status === NOT_MET ? NOT_MET : "공식값 확인", unit: "③은 이 목록, ①·②는 행정동", basis: NV_BASIS };
+    return { lowrise, decline };
+  }
+  function newVillageHTML(nv) {
+    const row = (x) => `<div><dt>${escH(x.label)} <span class="nv-st">${escH(x.shown || x.status)}</span></dt><dd><b>${escH(x.value)}</b> <span>기준 ${escH(x.rule)} · 적용 단위: ${escH(x.unit)}${x.define ? ` · 저층 주거 = ${escH(x.define)}` : ""}</span></dd></div>`;
+    return `<h3 class="nv-h">노후주거지정비 신청요건</h3><dl class="rv-ref">${row(nv.lowrise)}${row(nv.decline)}</dl>` +
+      `<p class="rv-key">${escH(`${NV_BASIS}. 적용 단위는 가이드라인 원문과 대조 전이다. 종합 판정이 아니라 요건별 상태다.`)}</p>`;
   }
 
   // 화면 요약(v4): 숫자 칸, 줄 상태 도넛, 건물 수·연면적 쌓은 막대(노후·불량 | 못 정함 | 아님)와 기준선. 종합 판정·순위 아님
@@ -195,7 +219,8 @@
       `<div class="rv-stacks">${stackHTML("건물 수", res.nOld, res.nUnk, res.n, res.thr)}${stackHTML("연면적", res.aOld, res.aUnk, res.area, res.thr)}` +
       `<p class="rv-key"><i class="rv-old"></i>노후·불량 <i class="rv-unk"></i>못 정함 <i class="rv-no"></i>아님 <i class="rv-thr"></i>기준선</p></div></div>` +
       `<dl class="rv-ref">${refRows(res).map(([k, rule, v]) => `<div><dt>${escH(k)}</dt><dd><b>${escH(v)}</b> <span>기준 ${escH(rule)}</span></dd></div>`).join("")}</dl>` +
-      `<p class="rv-key">${escH(REACH_NOTE)}</p>` + (res.urban.unkMasonry ? `<p class="rv-key">${escH(masonryNote(res.urban))}</p>` : "");
+      `<p class="rv-key">${escH(REACH_NOTE)}</p>` + (res.urban.unkMasonry ? `<p class="rv-key">${escH(masonryNote(res.urban))}</p>` : "") +
+      (res.newVillage ? newVillageHTML(res.newVillage) : "");
   }
   const masonryNote = (u) => `사용승인일 없는 ${u.unk}동 중 목조·블록·벽돌·조적이 ${u.unkMasonry}동이다. ${MASONRY_PRIOR.basis} 기준 같은 구조의 날짜 있는 건물 ${MASONRY_PRIOR.n.toLocaleString("ko-KR")}동 중 ${MASONRY_PRIOR.pct}%가 20년 이상이다. 판정에는 쓰지 않고, 대장 열람·현장 확인을 이 건물부터 하라는 참고다.`;
 
@@ -248,5 +273,5 @@
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: mark(secret, `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · `) };
   }
 
-  return { THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, review, newVillage, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });
