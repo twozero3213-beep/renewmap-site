@@ -45,6 +45,9 @@
     <label for="area">구역 면적(㎡, 아는 경우만)</label>
     <input id="area" type="number" inputmode="decimal" min="0" step="any">
     <p class="hint">비워 두면 추정하지 않고 '현장 확인'으로 남깁니다.</p>
+    <label for="ref">경과 기준일(접수 마감일 등, 아는 경우만)</label>
+    <input id="ref" type="date">
+    <p class="hint">비워 두면 자료 기준일로 셉니다.<br>노후 연한은 이 날짜에 지났는지로 셉니다.<br>건물 목록은 건축물대장 기준일 그대로입니다.</p>
     <label class="check" for="district"><input id="district" type="checkbox"><span>재정비촉진지구 안입니다(기준 50%)</span></label>
     <label class="check" for="secret"><input id="secret" type="checkbox" checked><span>받는 문서에 대외비로 표시(입안 전 후보지 정보)</span></label>
     <button type="submit" class="save">계산하기</button>

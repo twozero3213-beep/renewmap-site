@@ -59,12 +59,15 @@
     if (!p.items.length) return say("지번을 한 줄에 하나씩 넣어 주세요.", true);
     const areaRaw = $("area").value.trim(), areaM2 = areaRaw === "" ? null : Number(areaRaw);
     if (areaM2 !== null && !(areaM2 >= 0)) return say("구역 면적은 숫자로 넣어 주세요.", true);
+    const refIn = $("ref").value;
     say("건축물대장 자료를 여는 중입니다.");
     let file;
     try { file = await loadFor(p.items, $("dong").value); } catch (err) { return say("건축물대장 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
     const m = R.match(p.items, file);
     if (!m.buildings.length) return say(`목록에서 찾은 건물이 없습니다.\n${file.name} 지번이 맞는지 확인해 주세요.`, true);
-    const res = R.review(m.buildings, { ref: file.age_reference_date, district: $("district").checked, areaM2 });
+    // 기준일은 자료 기준일보다 앞설 수 없다. 그 사이에 지은 건물을 대장 스냅숏으로는 가려낼 수 없어 분모가 틀어진다
+    if (refIn && refIn < file.age_reference_date) return say(`경과 기준일은 자료 기준일(${D.govDate(file.age_reference_date)}) 이후로 넣어 주세요.\n그 전 날짜는 그 뒤에 지은 건물이 섞여 바르게 셀 수 없습니다.`, true);
+    const res = R.review(m.buildings, { ref: refIn || file.age_reference_date, district: $("district").checked, areaM2 });
     last = { res, m, file };
     const skipped = [...(p.bad.length ? [`지번으로 읽지 못한 칸 ${p.bad.length}개`] : []), ...(m.missing.length ? [`대장에 없는 지번 ${m.missing.length}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})`] : []),
       ...(m.otherDong.length ? [`계산에 넣지 못한 다른 동 지번 ${m.otherDong.length}개(같은 구·군 법정동 이름이 아니거나 ${R.MERGE_MAX}개 동을 넘음: ${m.otherDong.slice(0, 3).join(", ")}${m.otherDong.length > 3 ? " 등" : ""})`] : [])];
@@ -130,7 +133,7 @@
     try {
       const plans = await Promise.all(ps.map(async (p) => {
         const items = R.parseList(p.list).items, file = await loadFor(items, p.dong), m = R.match(items, file);
-        return { name: p.name, res: R.review(m.buildings, { ref: file.age_reference_date, district: p.district }), keys: R.planKeys(m.buildings), dongName: file.name };
+        return { name: p.name, res: R.review(m.buildings, { ref: p.ref && p.ref > file.age_reference_date ? p.ref : file.age_reference_date, district: p.district }), keys: R.planKeys(m.buildings), dongName: file.name };
       }));
       $("planTable").innerHTML = R.compareHTML(R.comparePlans(plans));
       $("planList").replaceChildren(...plans.map((p, i) => {
@@ -147,7 +150,7 @@
     const ps = loadPlans();
     if (ps.length >= R.PLAN_MAX) return planSay(`경계안은 ${R.PLAN_MAX}개까지 비교해요. 하나를 지우고 넣어 주세요.`, true);
     const name = `경계안 ${["A", "B", "C"].find((x) => !ps.some((p) => p.name === `경계안 ${x}`))}`;
-    if (!savePlans([...ps, { name, dong: last.file.bjd10, list: $("list").value, district: $("district").checked }])) return planSay("이 브라우저는 저장을 막아 두었습니다.", true);
+    if (!savePlans([...ps, { name, dong: last.file.bjd10, list: $("list").value, district: $("district").checked, ref: last.res.ref }])) return planSay("이 브라우저는 저장을 막아 두었습니다.", true);
     planSay(`${name}으로 저장했어요.`);
     renderPlans().then(() => $("plans").scrollIntoView({ behavior: "smooth", block: "start" }));
   });
