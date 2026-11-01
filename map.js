@@ -677,7 +677,7 @@
       `<p class="map-note">상태는 기준선과의 사실 비교입니다. 승인 대기 기준은 확정 수에 넣지 않습니다.</p></section>`;
     const sec3 = `<section class="rp-g"><h3>3. 기준 미달·확인 필요 목록</h3>${gapsHTML(rows, { open: true })}</section>`;
     const sec4 = `<section class="rp-g"><h3>4. 출처·계산식 표</h3><div class="dg-tbl">${copyHead('출처·계산식')}<div class="table-wrap"><table class="rp-tbl"><thead><tr><th>항목</th><th>값</th><th>출처</th><th>기준일</th><th>계산식</th><th>규칙 버전</th></tr></thead><tbody>${facts.map(r => { const s = srcOf(r);
-      return `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name)}</td><td>${esc(s.ref || (r.year ? `${r.year}년` : '기록 없음'))}</td><td>${esc(s.formula || '기록 없음')}</td><td>${esc(s.rule || '기록 없음')}</td></tr>`; }).join('')}</tbody></table></div></div></section>`;
+      return `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name)}</td><td>${esc(s.ref || (r.year ? `${r.year}년` : '기록 없음'))}${ageSmall(s.ref)}</td><td>${esc(s.formula || '기록 없음')}</td><td>${esc(s.rule || '기록 없음')}</td></tr>`; }).join('')}</tbody></table></div></div></section>`;
     return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 사업 근거서</h3><p class="rp-tools">${fileTools(it, dy, '근거서', false)}</p></div>` +
       `<p class="rp-intro rp-src-line">${esc(srcHead('4. 출처·계산식 표'))}</p><p class="rp-intro rp-brief-head">${esc(BRIEF_HEAD)}</p><p class="rp-intro">${esc(here)} · ${esc(it.kind || '행정동')} ${esc(it.code)} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'} · 생활 지표는 항목별 기준연도</p>${fragPanelHTML(sel || '')}${sec1}${sec2}${sec3}${sec4}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
@@ -796,6 +796,15 @@
     const r = REORG.find(x => (x.sido || []).includes(s2) || (x.sg || []).includes(s5));
     return r ? `<p class="map-note">${esc(r.text)} 이 지도의 경계·이름·코드는 SGIS 2024 기준이다. <a href="${r.url}" target="_blank" rel="noopener">공식 변경 내역</a></p>` : '';
   }
+  // 기준일이 오늘보다 몇 달 앞인지(팩트풀니스: 낡은 숫자를 지금 숫자로 읽지 않게, 2026-11-01). 지난 달 수만 센다. 날짜가 아니거나 미래면 빈 문자열.
+  // 연도만 있는 값(예: 2024년)은 날짜를 지어내지 않으려고 대지 않는다
+  function ageText(ref, today = new Date()) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(ref || '')); if (!m) return '';
+    const t = today instanceof Date ? [today.getFullYear(), today.getMonth() + 1, today.getDate()] : String(today).split('-').map(Number);
+    const n = (t[0] - m[1]) * 12 + (t[1] - m[2]) - (t[2] < +m[3] ? 1 : 0);
+    return n < 0 ? '' : n === 0 ? '1개월 안 자료' : `${n >= 12 ? `${Math.floor(n / 12)}년${n % 12 ? ` ${n % 12}개월` : ''}` : `${n}개월`} 전 자료`;
+  }
+  const ageSmall = (ref, today) => { const a = ageText(ref, today); return a ? `<br><small>${esc(a)}</small>` : ''; };
   // ── 수변 수질 측정지점(data/national/water_quality.json, 국가 수질측정망 연평균) ──
   // 등급 구간은 환경정책기본법 시행령 별표 1 제3호 가목 2) 하천 생활환경기준 문언(2025. 10. 1. 개정본, 2026-11-01 law.go.kr 확인).
   // 하천 지점의 BOD·총인만 대어 본다. 호소는 기준 항목·조건(총인/총질소 비율)이 달라 대지 않는다. 연평균을 기준 구간에 대어 본 것이지 판정·정비 필요 여부가 아니다
@@ -813,16 +822,16 @@
     return `<b>${esc(p.name)}</b> ${esc(p.type)} 측정지점<br>${esc(year)}년 평균(${esc(p.n)}개월)` + row('BOD', p.bod, 'mg/L', 1, 'bod') + row('총인', p.tp, 'mg/L', 3, 'tp') +
       row('TOC', p.toc, 'mg/L', 1) + row('총대장균군', p.tcoli, '/100mL', 0) + (isLake(p) ? row('클로로필-a', p.chla, 'mg/㎥', 1) + '<br>호소는 등급 구간을 대지 않음' : '');
   }
-  const waterNoteHTML = d => (d === null ? '<p class="map-legend-note">수질 측정지점 자료를 불러오지 못했습니다.</p>'
-    : `<p class="map-legend-note">점 색: 하천 BOD ${esc(d.year)}년 평균이 드는 ${esc(WATER_LAW)} 구간(진할수록 BOD 높음). 흰 점은 호소(구간 대조 안 함).<br>원본에 0으로 적힌 달은 측정하지 않은 것으로 보고 평균에서 뺐습니다.<br>판정 아님 · 출처 <a href="${esc(safeUrl(d.source && d.source.url) || '#')}" target="_blank" rel="noopener">${esc(d.source && d.source.name)}</a> · ${esc(d.points.length)}개 지점</p>`);
+  const waterNoteHTML = (d, today) => (d === null ? '<p class="map-legend-note">수질 측정지점 자료를 불러오지 못했습니다.</p>'
+    : `<p class="map-legend-note">${esc(d.year)}년 12월까지 측정값(${esc(ageText(`${d.year}-12-31`, today))}).<br>점 색: 하천 BOD ${esc(d.year)}년 평균이 드는 ${esc(WATER_LAW)} 구간(진할수록 BOD 높음). 흰 점은 호소(구간 대조 안 함).<br>원본에 0으로 적힌 달은 측정하지 않은 것으로 보고 평균에서 뺐습니다.<br>판정 아님 · 출처 <a href="${esc(safeUrl(d.source && d.source.url) || '#')}" target="_blank" rel="noopener">${esc(d.source && d.source.name)}</a> · ${esc(d.points.length)}개 지점</p>`);
   // 4대강 수질자동측정소(data/national/water_auto.json): 공개 좌표가 없어 지도 점 대신 수계별 표로만 보인다. 하루 평균 확정값의 30일 평균
   const AUTO_COLS = [['temp', '수온(℃)', 1], ['ph', 'pH', 1], ['do', '용존산소(mg/L)', 1], ['toc', 'TOC(mg/L)', 1], ['tn', '총질소(mg/L)', 2], ['tp', '총인(mg/L)', 3], ['chla', '클로로필-a(mg/㎥)', 1]];
-  function waterAutoHTML(d) {
+  function waterAutoHTML(d, today) {
     if (!d || !Array.isArray(d.sites) || !d.sites.length) return '';
     const cell = (x, dg) => (x && isNum(x.cur) ? `${esc(nf(dg).format(x.cur))}${isNum(x.prev) ? `<br><small>직전 ${esc(nf(dg).format(x.prev))}</small>` : ''}` : '-');
     const basins = [...new Set(d.sites.map(s => s.basin))];
     return `<details class="map-hint"><summary>4대강 수질자동측정소 ${esc(d.sites.length)}곳 표 (위치 좌표 비공개라 지도에 없음)</summary>` +
-      `<p>${esc(d.cur[0])}~${esc(d.cur[1])} 하루 평균 확정값의 평균. 아래 작은 글씨는 직전 30일(${esc(d.prev[0])}~${esc(d.prev[1])}) 평균.<br>실시간이 아닙니다. 판정 아님 · 출처 <a href="${esc(safeUrl(d.source && d.source.url) || '#')}" target="_blank" rel="noopener">${esc(d.source && d.source.name)}</a></p>` +
+      `<p>${esc(d.cur[0])}~${esc(d.cur[1])} 하루 평균 확정값의 평균(${esc(ageText(d.cur[1], today))}). 아래 작은 글씨는 직전 30일(${esc(d.prev[0])}~${esc(d.prev[1])}) 평균.<br>실시간이 아닙니다. 판정 아님 · 출처 <a href="${esc(safeUrl(d.source && d.source.url) || '#')}" target="_blank" rel="noopener">${esc(d.source && d.source.name)}</a></p>` +
       basins.map(b => `<div class="table-wrap"><table class="rp-tbl"><caption>${esc(b)}</caption><thead><tr><th scope="col">측정소</th>${AUTO_COLS.map(c => `<th scope="col">${esc(c[1])}</th>`).join('')}</tr></thead><tbody>` +
         d.sites.filter(s => s.basin === b).map(s => `<tr><th scope="row">${esc(s.name)}</th>${AUTO_COLS.map(([k, , dg]) => `<td class="num">${cell(s.v && s.v[k], dg)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>').join('') + '</details>';
   }
@@ -832,7 +841,7 @@
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
     reportSentences, verifyPolished, stdTextOf, olsFit, trendSVG, donutSVG, coverLabel, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
-    gapRows, gapsHTML, reorgNote, REORG, WATER_GRADES, WATER_EDGES, waterGrade, waterStyle, waterTipHTML, waterNoteHTML, waterAutoHTML, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
+    gapRows, gapsHTML, reorgNote, REORG, ageText, WATER_GRADES, WATER_EDGES, waterGrade, waterStyle, waterTipHTML, waterNoteHTML, waterAutoHTML, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewMap = api;
@@ -948,7 +957,7 @@
           `<p class="rc-v">${esc(r ? rowText(r) : s.value)}</p>${r && !r.ind.categorical ? barSVG(r) : ''}${r && r.series && r.series.some(p => p[1] !== null) ? sparkline(r.series, r.year, r.ind.label) : ''}` +
           `<details class="rc-more"><summary>문장·출처</summary><p>${esc(s.text)}</p></details></div>`; }).join('')}</div></section>`).join('');
     const src = `<details class="rp-src"><summary>출처표 (${sents.length}개 항목)</summary><div class="table-wrap"><table><thead><tr><th>항목</th><th>값</th><th>출처</th><th>기준일</th></tr></thead><tbody>${sents.map(s =>
-      `<tr><td>${esc(s.label)}</td><td>${esc(s.value)}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source)}</a>` : esc(s.source)}</td><td>${esc(s.ref || (s.year ? `${s.year}년` : '기록 없음'))}</td></tr>`).join('')}</tbody></table></div></details>`;
+      `<tr><td>${esc(s.label)}</td><td>${esc(s.value)}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source)}</a>` : esc(s.source)}</td><td>${esc(s.ref || (s.year ? `${s.year}년` : '기록 없음'))}${ageSmall(s.ref)}</td></tr>`).join('')}</tbody></table></div></details>`;
     const pol = polished && polished.key === reportKey ? polished : null;
     const ai = `<div class="rp-ai"><p class="rp-ai-head">${esc(AI_HEAD)}</p><div data-ai-dev>${aiDevHTML(aiDet)}</div>` +
       `<span class="rp-ai-note">선택 기능 · 기본 꺼짐 · 무료 · 로그인 없음 · 서버 전송 없음</span>` +
