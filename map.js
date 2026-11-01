@@ -796,13 +796,32 @@
     const r = REORG.find(x => (x.sido || []).includes(s2) || (x.sg || []).includes(s5));
     return r ? `<p class="map-note">${esc(r.text)} 이 지도의 경계·이름·코드는 SGIS 2024 기준이다. <a href="${r.url}" target="_blank" rel="noopener">공식 변경 내역</a></p>` : '';
   }
+  // ── 수변 수질 측정지점(data/national/water_quality.json, 국가 수질측정망 연평균) ──
+  // 등급 구간은 환경정책기본법 시행령 별표 1 제3호 가목 2) 하천 생활환경기준 문언(2025. 10. 1. 개정본, 2026-11-01 law.go.kr 확인).
+  // 하천 지점의 BOD·총인만 대어 본다. 호소는 기준 항목·조건(총인/총질소 비율)이 달라 대지 않는다. 연평균을 기준 구간에 대어 본 것이지 판정·정비 필요 여부가 아니다
+  const WATER_LAW = '환경정책기본법 시행령 별표 1 하천 생활환경기준';
+  const WATER_GRADES = [['Ia', '매우 좋음'], ['Ib', '좋음'], ['II', '약간 좋음'], ['III', '보통'], ['IV', '약간 나쁨'], ['V', '나쁨'], ['VI', '매우 나쁨']];
+  const WATER_EDGES = { bod: [1, 2, 3, 5, 8, 10], tp: [0.02, 0.04, 0.1, 0.2, 0.3, 0.5] };
+  const WATER_COLORS = [...REF, '#2a3b52', '#16202e']; // BOD 구간이 높을수록 진한 청회색(좋음·나쁨 색 아님)
+  const isLake = p => p.type === '호소';
+  const waterGrade = (v, edges) => (isNum(v) ? (edges.findIndex(e => v <= e) + 1 || edges.length + 1) - 1 : null);
+  const waterStyle = p => { const g = isLake(p) ? null : waterGrade(p.bod, WATER_EDGES.bod);
+    return { pane: 'water', radius: 5, weight: 1, color: '#153c39', fillOpacity: 0.9, fillColor: g === null ? '#fff' : WATER_COLORS[g] }; };
+  function waterTipHTML(p, year) {
+    const row = (label, v, unit, d, k) => { if (!isNum(v)) return ''; const g = k && !isLake(p) ? waterGrade(v, WATER_EDGES[k]) : null;
+      return `<br>${label} ${esc(nf(d).format(v))}${unit}${g === null ? '' : ` (${WATER_GRADES[g][0]} ${WATER_GRADES[g][1]} 구간)`}`; };
+    return `<b>${esc(p.name)}</b> ${esc(p.type)} 측정지점<br>${esc(year)}년 평균(${esc(p.n)}개월)` + row('BOD', p.bod, 'mg/L', 1, 'bod') + row('총인', p.tp, 'mg/L', 3, 'tp') +
+      row('TOC', p.toc, 'mg/L', 1) + row('총대장균군', p.tcoli, '/100mL', 0) + (isLake(p) ? row('클로로필-a', p.chla, 'mg/㎥', 1) + '<br>호소는 등급 구간을 대지 않음' : '');
+  }
+  const waterNoteHTML = d => (d === null ? '<p class="map-legend-note">수질 측정지점 자료를 불러오지 못했습니다.</p>'
+    : `<p class="map-legend-note">점 색: 하천 BOD ${esc(d.year)}년 평균이 드는 ${esc(WATER_LAW)} 구간(진할수록 BOD 높음). 흰 점은 호소(구간 대조 안 함).<br>원본에 0으로 적힌 달은 측정하지 않은 것으로 보고 평균에서 뺐습니다.<br>판정 아님 · 출처 <a href="${esc(safeUrl(d.source && d.source.url) || '#')}" target="_blank" rel="noopener">${esc(d.source && d.source.name)}</a> · ${esc(d.points.length)}개 지점</p>`);
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
   const api = { snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
     reportSentences, verifyPolished, stdTextOf, olsFit, trendSVG, donutSVG, coverLabel, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
-    gapRows, gapsHTML, reorgNote, REORG, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
+    gapRows, gapsHTML, reorgNote, REORG, WATER_GRADES, WATER_EDGES, waterGrade, waterStyle, waterTipHTML, waterNoteHTML, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewMap = api;
@@ -1136,7 +1155,9 @@
     const sgSel = kids.length && !(v.sido.kind === '특별자치시' && kids.length === 1) ? selectHTML('sg', '시·군·구', opts(kids, 'code5'), v.sigungu && v.sigungu.code5, '고르기') : '';
     const guSel = v.sigungu && childrenOf(state.index, v.sigungu.code5).length ? selectHTML('gu', '일반구·행정시', opts(childrenOf(state.index, v.sigungu.code5), 'code5'), v.gu && v.gu.code5, '고르기') : '';
     const chips = m.kind === 'emd' ? `<div class="dash-chips dash-dongs map-list" role="group" aria-label="읍·면·동">${m.items.map(x => `<button type="button" class="dash-chip" data-dong="${esc(x.code)}" aria-pressed="${x.code === v.dong}">${esc(x.name)}</button>`).join('')}</div>` : '';
-    bottom.innerHTML = legend + (DG ? `<p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, + − 버튼으로 확대합니다.'} 지도의 칸을 누르면 바로 아래 단계로 내려갑니다.<br>지도 대신 아래 목록으로도 고를 수 있습니다.</p></details>` +
+    const water = `<p class="map-png"><button type="button" class="btn ghost" data-water aria-pressed="${!!state.water}">수변 수질 측정지점 ${state.water ? '끄기' : '보기'}</button></p>` +
+      (state.water && state.waterData !== undefined ? waterNoteHTML(state.waterData) : '');
+    bottom.innerHTML = legend + (DG ? `<p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + water + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, + − 버튼으로 확대합니다.'} 지도의 칸을 누르면 바로 아래 단계로 내려갑니다.<br>지도 대신 아래 목록으로도 고를 수 있습니다.</p></details>` +
       `<div class="map-selects">${sidoSel}${sgSel}${guSel}</div>${chips}<p class="map-live" aria-live="polite">${esc(liveText(v, it, ind, mode))}</p>`;
     styleData(bottom);
     const inEmd = v.level === 'emd';
@@ -1241,7 +1262,8 @@
         layer.on('click', () => { const r = leafRoute(state.index, String(f.properties.code)); if (r) go(r); });
       } }).addTo(map);
       const sido = state.sidoGeo ? L.geoJSON(state.sidoGeo, { interactive: false, style: { color: '#153c39', weight: 1.5, fill: false } }).addTo(map) : null;
-      M = { el, map, sg, sido, emd: null, emdCode: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
+      map.createPane('water').style.zIndex = 450; // 수질 점은 경계층(overlayPane 400) 위. 동 층을 다시 만들어도 덮이지 않는다
+      M = { el, map, sg, sido, emd: null, emdCode: null, water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
       setTimeout(startAuto, 1500);
     }
     const L = window.L, ind = curInd(), mode = effMode(ind);
@@ -1271,6 +1293,8 @@
         l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: sel ? 0.25 : 0.6, color: sel ? '#153c39' : '#fff', weight: sel ? 4 : 1.5, dashArray: !it || it.value === null ? '4 3' : null });
         if (sel && reorder) l.bringToFront(); });
     } else if (M.emd && !inEmd) { M.emd.remove(); M.emd = null; M.emdCode = null; }
+    if (state.water && state.waterData && !M.water) M.water = L.layerGroup(state.waterData.points.map(p => L.circleMarker([p.lat, p.lon], waterStyle(p)).bindTooltip(waterTipHTML(p, state.waterData.year)))).addTo(M.map);
+    else if (!state.water && M.water) { M.water.remove(); M.water = null; }
     // 단계가 바뀔 때만 화면을 옮긴다(연도 재생·지표 자동 전환 중에는 움직이지 않는다)
     const key = v.level + ':' + m.kind + ':' + (v.emdCode || (v.sigungu && v.sigungu.code5) || (v.sido && v.sido.code2) || '');
     if (M.fitKey !== key && m.kind !== 'wait') {
@@ -1356,6 +1380,11 @@
     else if (b.hasAttribute('data-close')) go({ ...state.route, dong: null }, `.map-list [data-dong]`);
     else if (b.hasAttribute('data-play')) { play(); app.querySelector('[data-play]')?.focus({ preventScroll: true }); }
     else if (b.hasAttribute('data-map-png')) mapPng();
+    else if (b.hasAttribute('data-water')) {
+      state.water = !state.water;
+      if (state.water && state.waterData === undefined) fetchJson('data/national/water_quality.json').then(j => { state.waterData = j && Array.isArray(j.points) ? j : null; render(); });
+      render(); app.querySelector('[data-water]')?.focus({ preventScroll: true });
+    }
   });
   app.addEventListener('input', e => { const r = e.target.closest('[data-year]'); if (r) { stopPlay(); state.year = +r.value; state.yearByAuto = false; render(); app.querySelector('[data-year]')?.focus({ preventScroll: true }); } });
   app.addEventListener('change', e => {
