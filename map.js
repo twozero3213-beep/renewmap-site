@@ -815,13 +815,24 @@
   }
   const waterNoteHTML = d => (d === null ? '<p class="map-legend-note">수질 측정지점 자료를 불러오지 못했습니다.</p>'
     : `<p class="map-legend-note">점 색: 하천 BOD ${esc(d.year)}년 평균이 드는 ${esc(WATER_LAW)} 구간(진할수록 BOD 높음). 흰 점은 호소(구간 대조 안 함).<br>원본에 0으로 적힌 달은 측정하지 않은 것으로 보고 평균에서 뺐습니다.<br>판정 아님 · 출처 <a href="${esc(safeUrl(d.source && d.source.url) || '#')}" target="_blank" rel="noopener">${esc(d.source && d.source.name)}</a> · ${esc(d.points.length)}개 지점</p>`);
+  // 4대강 수질자동측정소(data/national/water_auto.json): 공개 좌표가 없어 지도 점 대신 수계별 표로만 보인다. 하루 평균 확정값의 30일 평균
+  const AUTO_COLS = [['temp', '수온(℃)', 1], ['ph', 'pH', 1], ['do', '용존산소(mg/L)', 1], ['toc', 'TOC(mg/L)', 1], ['tn', '총질소(mg/L)', 2], ['tp', '총인(mg/L)', 3], ['chla', '클로로필-a(mg/㎥)', 1]];
+  function waterAutoHTML(d) {
+    if (!d || !Array.isArray(d.sites) || !d.sites.length) return '';
+    const cell = (x, dg) => (x && isNum(x.cur) ? `${esc(nf(dg).format(x.cur))}${isNum(x.prev) ? `<br><small>직전 ${esc(nf(dg).format(x.prev))}</small>` : ''}` : '-');
+    const basins = [...new Set(d.sites.map(s => s.basin))];
+    return `<details class="map-hint"><summary>4대강 수질자동측정소 ${esc(d.sites.length)}곳 표 (위치 좌표 비공개라 지도에 없음)</summary>` +
+      `<p>${esc(d.cur[0])}~${esc(d.cur[1])} 하루 평균 확정값의 평균. 아래 작은 글씨는 직전 30일(${esc(d.prev[0])}~${esc(d.prev[1])}) 평균.<br>실시간이 아닙니다. 판정 아님 · 출처 <a href="${esc(safeUrl(d.source && d.source.url) || '#')}" target="_blank" rel="noopener">${esc(d.source && d.source.name)}</a></p>` +
+      basins.map(b => `<div class="table-wrap"><table class="rp-tbl"><caption>${esc(b)}</caption><thead><tr><th scope="col">측정소</th>${AUTO_COLS.map(c => `<th scope="col">${esc(c[1])}</th>`).join('')}</tr></thead><tbody>` +
+        d.sites.filter(s => s.basin === b).map(s => `<tr><th scope="row">${esc(s.name)}</th>${AUTO_COLS.map(([k, , dg]) => `<td class="num">${cell(s.v && s.v[k], dg)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>').join('') + '</details>';
+  }
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
   const api = { snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
     reportSentences, verifyPolished, stdTextOf, olsFit, trendSVG, donutSVG, coverLabel, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
-    gapRows, gapsHTML, reorgNote, REORG, WATER_GRADES, WATER_EDGES, waterGrade, waterStyle, waterTipHTML, waterNoteHTML, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
+    gapRows, gapsHTML, reorgNote, REORG, WATER_GRADES, WATER_EDGES, waterGrade, waterStyle, waterTipHTML, waterNoteHTML, waterAutoHTML, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewMap = api;
@@ -1156,7 +1167,7 @@
     const guSel = v.sigungu && childrenOf(state.index, v.sigungu.code5).length ? selectHTML('gu', '일반구·행정시', opts(childrenOf(state.index, v.sigungu.code5), 'code5'), v.gu && v.gu.code5, '고르기') : '';
     const chips = m.kind === 'emd' ? `<div class="dash-chips dash-dongs map-list" role="group" aria-label="읍·면·동">${m.items.map(x => `<button type="button" class="dash-chip" data-dong="${esc(x.code)}" aria-pressed="${x.code === v.dong}">${esc(x.name)}</button>`).join('')}</div>` : '';
     const water = `<p class="map-png"><button type="button" class="btn ghost" data-water aria-pressed="${!!state.water}">수변 수질 측정지점 ${state.water ? '끄기' : '보기'}</button></p>` +
-      (state.water && state.waterData !== undefined ? waterNoteHTML(state.waterData) : '');
+      (state.water && state.waterData !== undefined ? waterNoteHTML(state.waterData) : '') + (state.water ? waterAutoHTML(state.waterAuto) : '');
     bottom.innerHTML = legend + (DG ? `<p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + water + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, + − 버튼으로 확대합니다.'} 지도의 칸을 누르면 바로 아래 단계로 내려갑니다.<br>지도 대신 아래 목록으로도 고를 수 있습니다.</p></details>` +
       `<div class="map-selects">${sidoSel}${sgSel}${guSel}</div>${chips}<p class="map-live" aria-live="polite">${esc(liveText(v, it, ind, mode))}</p>`;
     styleData(bottom);
@@ -1382,7 +1393,10 @@
     else if (b.hasAttribute('data-map-png')) mapPng();
     else if (b.hasAttribute('data-water')) {
       state.water = !state.water;
-      if (state.water && state.waterData === undefined) fetchJson('data/national/water_quality.json').then(j => { state.waterData = j && Array.isArray(j.points) ? j : null; render(); });
+      if (state.water && state.waterData === undefined) {
+        fetchJson('data/national/water_quality.json').then(j => { state.waterData = j && Array.isArray(j.points) ? j : null; render(); });
+        fetchJson('data/national/water_auto.json').then(j => { state.waterAuto = j && Array.isArray(j.sites) ? j : null; render(); });
+      }
       render(); app.querySelector('[data-water]')?.focus({ preventScroll: true });
     }
   });
