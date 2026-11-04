@@ -142,9 +142,9 @@
   const fromLate = (r) => { const s = aprSpan(r.b); return s ? addYears(s[1], yearsRange(r.b)[1]) : null; };
   const URBAN = { years: 20, thr: 50 };
   // 날짜 없는 건물의 구조로 '어느 건물부터 확인할지' 정하는 참고값. 판정에 쓰지 않는다(추정으로 충족을 만들지 않음).
-  // 근거: 부산 건축물대장 주건축물 중 날짜 있는 목조·블록·벽돌·조적 165,226동의 98.4%가 20년 이상, 날짜(연·월도) 없는 건물의 89.5%가 이 구조(backend/scripts/busan_undated_share.py, 2026-10-24 수집·기준일 2026-10-26, 11-01 연·월만 있는 건물 분리)
+  // 근거: 부산 건축물대장 주건축물 중 날짜 있는 목조·블록·벽돌·조적 165,205동의 98.4%가 20년 이상, 날짜(연·월도) 없는 건물의 89.6%가 이 구조(backend/scripts/busan_undated_share.py, 2026-10-24 수집·기준일 2026-10-26, 11-01 연·월만 있는 건물 분리)
   const MASONRY = /목구조|블록|벽돌|조적/;
-  const MASONRY_PRIOR = { pct: 98.4, n: 165226, basis: "부산 건축물대장 2026-10-24 수집" };   // 도시재생법 시행령 제17조 노후 요건(동수). 적용 단위가 달라 참고로만 같이 센다
+  const MASONRY_PRIOR = { pct: 98.4, n: 165205, basis: "부산 건축물대장 2026-10-24 수집" };   // 도시재생법 시행령 제17조 노후 요건(동수). 적용 단위가 달라 참고로만 같이 센다
 
   // blds: match().buildings, ref: 'YYYY-MM-DD'(파일 age_reference_date), district: 재정비촉진지구, areaM2: 사용자가 넣은 구역 면적(없으면 null)
   function review(blds, { ref, district = false, areaM2 = null }) {

@@ -133,7 +133,7 @@
   const SAFETY_DISCLAIMER = '이 수치는 시설 현황이며 범죄 발생이나 안전 수준을 의미하지 않습니다.';
   const UNSETTLED = () => FMT().unsettled_status || ['추가확인', '충돌', '폐기'];
   const SENTENCE_MAX = 60;
-  const SRC_HEAD = ref => `출처: 국토교통부·행정안전부·통계청 등 공공데이터(${ref}) · 가공: 리뉴맵`;   // 화면용 머리말. 원본 기관명이 앞, 가공(리뉴맵)이 뒤
+  const SRC_HEAD = ref => `출처: 국토교통부·행정안전부·국가데이터처 등 공공데이터(${ref}) · 가공: 리뉴맵`;   // 화면용 머리말. 원본 기관명이 앞, 가공(리뉴맵)이 뒤
   const GROUPS = [
     ['정비 신호', ['DECLINE_AGING_20Y_PCT', 'DECLINE_AGING_20Y_PCT_DELTA5Y', 'DECLINE_BIZ_TOTAL', 'DECLINE_BIZ_TOTAL_DELTA5Y', 'DECLINE_BIZ_DROP10Y_PCT', 'DECLINE_BIZ_DECL3IN5', 'DECLINE_MET_COUNT', 'DEPOP_STATUS']],
     ['인구 변화', ['DECLINE_POP_TOTAL', 'DECLINE_POP_CHANGE_PCT', 'DECLINE_POP_CHANGE_PCT_DELTA5Y', 'DECLINE_POP_DROP30Y_PCT', 'DECLINE_POP_DECL3IN5', 'POP_AGED65_PCT', 'POP_AGED65_PCT_DELTA5Y', 'POP_YOUTH_PCT', 'POP_YOUTH_PCT_DELTA5Y', 'YOUTH_NET_MIGRATION', 'YOUTH_NET_MIGRATION_PER1K']],
