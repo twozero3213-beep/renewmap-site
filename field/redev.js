@@ -392,5 +392,48 @@
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: mark(secret, `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · `) };
   }
 
-  return { dongDecline, dongDeclineHTML, dongCandidates, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  function applicationRecords(res, records) {
+    const pnus = new Set(res.perBuilding.map((r) => r.b.pnu).filter(Boolean));
+    return records.filter((r) => pnus.has(r.pnu || (r.building && r.building.pnu)))
+      .sort((a, b) => String(a.recorded_at).localeCompare(String(b.recorded_at)) || String(a.id).localeCompare(String(b.id)));
+  }
+
+  function buildApplicationDoc(res, m, file, today, { secret = false, records = [], dataHash = "" } = {}) {
+    const src = new D.Sources(), nv = res.newVillage, recs = applicationRecords(res, records);
+    const bld = src.ref({ source_name: file.source, source_url: file.source_url, reference_date: file.hub_reference_date, retrieved_at: file.retrieved_at, license_type: file.license });
+    const guide = src.ref({ source_name: "국토교통부 2027 도시재생 신규사업 평가 가이드라인 p.36·94", source_url: "https://www.krihs.re.kr/board.es?act=view&bid=0077&list_no=398642&mid=a60504000000", reference_date: "2026-09-11", retrieved_at: "2026-11-04", license_type: "이용조건 확인 필요" });
+    const title = `${file.name} 노후주거지정비 신청요건 근거`;
+    const rows = [
+      ["현황조사 항목(p.94)", "이 목록으로 확인한 내용 / 판단 못 한 내용"],
+      ["노후주거지 개요", "인구·가구·세대·거주형태, 도시·군 관리계획, 토지이용: 구역 자료 확인 필요"],
+      ["건축물 현황", `총 ${res.n}동 · 저층 주거 ${nv.lowrise.value.split(" (")[0]} · 20년 경과 ${res.urban.value}${bld}. 용도·승인일·층수·구조는 건물별 CSV. 공폐가·허가 여부 확인 필요`],
+      ["주택정비 현황", "최근 5년 신규주택·정비사업, 주택규모별 비율·미분양: 확인 필요"],
+      ["기반·편의시설 현황", "신청 구역 현장 조사 필요(행정동 값을 구역 값으로 쓰지 않음)"],
+      ["빈집현황·실태조사", "실태조사 미실시. 현장 기록은 실태조사를 대체하지 않음"],
+      ["도시재생활성화지역 지정 요건", `${nv.area.shown} · 저층 주거 ${nv.lowrise.status} · ③20년 경과 ${res.urban.status}. ①인구·②사업체는 행정동 공식값 확인${guide}`],
+    ];
+    const missing = [...m.missing, ...m.otherDong];
+    const blocks = [
+      block("title", title),
+      block("para", mark(secret, `${NOT_APPROVED} · 판정 아님 · 일반정비형 참고(빈집정비형 추가요건 별도 확인)`, true), { small: true }),
+      block("para", `대상 ${res.n}동 · 경과 기준일 ${D.govDate(res.ref)} · 못 정한 건물 ${res.nUnk}동. ${missing.length ? `계산 제외 ${missing.length}개: ${missing.slice(0, 3).join("·")}${missing.length > 3 ? " 등(전체는 CSV)" : ""}` : "계산 제외 없음"}. ${UNREG}`, { small: true }),
+      block("table", "", { rows: rows.map((r) => r.map(D.clean)), widths: [25, 75] }),
+      block("para", `신청요건(p.36): 활성화지역 고시 확인, 저층 주거 3분의 2 이상, ①②③ 중 ③ 포함 2개 이상. ③은 20년 이상 건축물 2분의 1 이상. 저층 유형 해석·규칙 승인 전. 종합 판정을 내리지 않는다.`, { small: true }),
+      block("para", `현장 기록 ${recs.length}건 / ${new Set(recs.map((r) => r.pnu || r.building.pnu)).size}필지(이 기기, PNU 일치). 기록만 첨부하며 대장 값·계산값은 바꾸지 않았다. 상세는 신청요건 근거 CSV.`, { small: true }),
+      block("para", `자료 판: 법정동 ${file.bjd10} · SHA-256 ${dataHash || "미기록(같은 건물 파일 보관 필요)"} · 받은 시각 ${file.retrieved_at || "미표시"} · ${RULES.map((r) => r.id).join("·")} 초안. 다시 계산: 같은 건물 파일·지번 목록·경과 기준일로 계산한다. 건물 파일·건물별 CSV·신청요건 CSV를 함께 보관한다.`, { small: true }),
+      ...src.list.map((s, i) => block("para", D.sourceLine(i + 1, s), { small: true })),
+    ];
+    return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: mark(secret, `리뉴맵 신청요건 근거 · ${NOT_APPROVED} · `) };
+  }
+
+  function applicationCSV(res, m, file, today, opt = {}) {
+    const doc = buildApplicationDoc(res, m, file, today, opt);
+    const rows = doc.blocks.flatMap((b) => b.kind === "table" ? b.rows : [[b.text]]);
+    rows.push(["계산 제외 지번", ...m.missing], ["계산 제외 다른 동", ...m.otherDong],
+      ["현장 기록 ID", "PNU", "기록 시각", "확인 항목", "관찰값", "상태"]);
+    for (const r of applicationRecords(res, opt.records || [])) rows.push([r.id, r.pnu || r.building.pnu, r.recorded_at, r.item || r.target, r.observed, r.status]);
+    return "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  }
+
+  return { buildApplicationDoc, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

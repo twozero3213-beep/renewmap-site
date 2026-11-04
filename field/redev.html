@@ -71,7 +71,12 @@
     <div id="todo" class="todo" aria-live="polite"></div>
     <p class="hint">종합 판정이 아닙니다.<br>'현장 확인'은 자료로 정하지 못한 요건입니다.<br>주민 동의와 재건축진단은 다루지 않습니다.<br>건축물대장에 없는 무허가 건축물은 세지 않습니다(조례상 노후·불량에 포함). <a href="./?check=unregistered">현장 기록으로 확인하기</a></p>
     <div class="row">
-      <button type="button" id="hwpx">한글 1쪽 받기</button>
+      <button type="button" id="applicationHwpx">신청요건 근거 한글 1쪽 받기</button>
+      <button type="button" class="ghost" id="applicationCsv">신청요건 근거 CSV 받기</button>
+    </div>
+    <p class="hint">현황조사 항목별 확인한 내용과 미확인 항목, 이 기기의 현장 기록을 함께 담습니다.<br>한글 파일이 열리지 않으면 같은 내용을 CSV로 받으세요.</p>
+    <div class="row">
+      <button type="button" id="hwpx">재개발 입안요건 한글 1쪽 받기</button>
       <button type="button" class="ghost" id="pdf">PDF로 저장</button>
     </div>
     <button type="button" class="ghost" id="csv">건물별 근거 CSV 받기</button>
