@@ -259,3 +259,5 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
 /* 화면 오류 안내(site.js). 하단 탭(약 64px) 위에 띄운다 */
 .err-banner { position: fixed; left: 16px; right: 16px; bottom: 80px; z-index: 1000; margin: 0; padding: 12px 16px; border: 1px solid var(--alarm); border-radius: 8px; background: var(--err-bg); color: var(--err-ink); font-size: 15px; line-height: 1.5; }
 .err-banner a { color: var(--err-link); font-weight: 700; }
+.nowrap { white-space: nowrap; }
+table.wide { min-width: 680px; }   /* 좁은 화면에서 낱말마다 줄이 갈리지 않게 표만 옆으로 민다 */
