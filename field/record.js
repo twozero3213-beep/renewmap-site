@@ -37,6 +37,41 @@
     const kinds = [...new Set(texts.flatMap(personalKinds))];
     if (kinds.length) throw new Error(`${kinds.join("·")}처럼 보이는 글자가 있습니다.\n개인정보는 저장하지 않습니다.\n지우고 다시 저장해 주세요.`);
   }
+  // ── 사진 SHA-256 (PRD FR-45 "촬영 시 기기에서 SHA-256 계산·저장", FR-13 확인 전이의 사진 근거) ──
+  // 2026-11-01 리뷰: 현장앱에 해시 계산이 없어 원장 셀의 photo_sha256과 현장 사진을 이을 수 없었다(납품 후 "원본이냐"에 답 못 함).
+  // 브라우저 crypto.subtle은 비동기이고 보안 연결(https)에서만 열려, 동기 함수인 ZIP 가져오기(parseImport)에서 쓸 수 없다.
+  // 그래서 FIPS 180-4 SHA-256을 그대로 옮긴 순수 함수로 둔다(표준 시험 벡터·Node crypto와 대조하는 테스트: record.test.cjs).
+  const SHA_K = new Uint32Array([0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01,
+    0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa,
+    0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138,
+    0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624,
+    0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f,
+    0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]);
+  function sha256Hex(bytes) {
+    const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    const bitLen = b.length * 8, padded = new Uint8Array(((b.length + 9 + 63) >> 6) << 6);
+    padded.set(b); padded[b.length] = 0x80;
+    const dv = new DataView(padded.buffer);
+    dv.setUint32(padded.length - 8, Math.floor(bitLen / 2 ** 32)); dv.setUint32(padded.length - 4, bitLen >>> 0);
+    const H = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]), W = new Uint32Array(64);
+    const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+    for (let off = 0; off < padded.length; off += 64) {
+      for (let i = 0; i < 16; i++) W[i] = dv.getUint32(off + i * 4);
+      for (let i = 16; i < 64; i++) {
+        const s0 = rotr(W[i - 15], 7) ^ rotr(W[i - 15], 18) ^ (W[i - 15] >>> 3), s1 = rotr(W[i - 2], 17) ^ rotr(W[i - 2], 19) ^ (W[i - 2] >>> 10);
+        W[i] = (W[i - 16] + s0 + W[i - 7] + s1) >>> 0;
+      }
+      let [a, bb, c, d, e, f, g, h] = H;
+      for (let i = 0; i < 64; i++) {
+        const t1 = (h + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + SHA_K[i] + W[i]) >>> 0;
+        const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & bb) ^ (a & c) ^ (bb & c))) >>> 0;
+        h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = bb; bb = a; a = (t1 + t2) >>> 0;
+      }
+      H[0] += a; H[1] += bb; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += h;
+    }
+    return [...H].map((x) => x.toString(16).padStart(8, "0")).join("");
+  }
+  const SHA_RE = /^[0-9a-f]{64}$/;
   const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
   const isDay = (v) => /^\d{4}-\d{2}-\d{2}/.test(v) && !Number.isNaN(Date.parse(v));
 
@@ -77,6 +112,9 @@
     rejectPersonal(checker);
     // 사진은 기록과 따로 저장하고 기록에는 id만 둔다. 얼굴·차량번호·소유자 정보가 없거나 가렸다는 확인 없이는 붙이지 않는다
     const photos = Array.isArray(input.photos) ? input.photos.map(clean).filter(Boolean) : [];
+    // 사진별 SHA-256(FR-45). 이 기록에 붙인 사진 id만, 64자리 소문자 16진수만 남긴다. 촬영 시 값이 없으면(이전 기록) 칸을 비운다
+    const shaIn = input.photo_sha256 && typeof input.photo_sha256 === "object" ? input.photo_sha256 : {};
+    const photoSha = Object.fromEntries(photos.filter((p) => SHA_RE.test(clean(shaIn[p]))).map((p) => [p, clean(shaIn[p])]));
     // 같은 자리 묶음(A4). site_id는 묶음 첫 기록의 id라 이전 기록을 고치지 않는다. 이전 기록 사진은 고른 것만 1쪽에 넣는다
     const site = clean(input.site_id);
     if (site && !ID_RE.test(site)) throw new Error("같은 자리 묶음 번호가 올바르지 않습니다.");
@@ -110,6 +148,8 @@
       id: id || (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : String(now.getTime())),
       recorded_at: now.toISOString(), pnu: pnu || null, jibun: jibun || null, parcel: pnu || jibun ? null : NO_PARCEL,
       target, item: item || null, observed: observed || null, status, memo: memo || null, photos, lat, lng,
+      // photo_sha256_source: 해시를 언제 계산했는지. '촬영 시'가 FR-45 원칙이고, 해시 없이 가져온 이전 기록만 '가져올 때 계산'
+      photo_sha256: photoSha, photo_sha256_source: Object.keys(photoSha).length ? (input.photo_sha256_source === "가져올 때 계산" ? "가져올 때 계산" : "촬영 시") : null,
       accuracy_m: Number.isFinite(accuracy) ? accuracy : null, corrected,
       gps_original: corrected && Number.isFinite(num(g.lat)) && Number.isFinite(num(g.lng)) ? { lat: num(g.lat), lng: num(g.lng), accuracy_m: num(g.accuracy) } : null,
       dong, indicators: lat !== null && dong && Array.isArray(input.indicators) ? input.indicators.slice(0, 8).map(cleanInd) : [],
@@ -185,9 +225,18 @@
         const own = Array.isArray(r.photos) ? r.photos.map(String) : [];
         const got = (id) => files.get(`photos/${id}.jpg`);
         if (!own.every((id) => isJpeg(got(id)))) throw new Error("사진 없음");
+        // 사진 무결성(FR-45, 2026-11-01): 기록에 촬영 시 해시가 있으면 ZIP 안 사진을 다시 해시해 대조하고, 다르면 그 기록을 받지 않는다
+        // (사진이 바뀌었거나 다른 사진으로 바꿔치기됨). 해시가 없는 이전 기록은 받되 '가져올 때 계산'으로 표시한다
+        const shaIn = r.photo_sha256 && typeof r.photo_sha256 === "object" ? r.photo_sha256 : {}, sha = {};
+        for (const id of own) {
+          const h = sha256Hex(got(id)), rec0 = String(shaIn[id] || "");
+          if (rec0 && rec0 !== h) throw new Error("사진 해시 다름");
+          sha[id] = h;
+        }
+        const shaSource = own.length && own.every((id) => SHA_RE.test(String(shaIn[id] || ""))) && r.photo_sha256_source !== "가져올 때 계산" ? "촬영 시" : "가져올 때 계산";
         const g = r.gps_original || {};
         const rec = makeRecord({ pnu: r.pnu, jibun: r.jibun, target: r.target, item: r.item, observed: r.observed, status: r.status, memo: r.memo,
-          photos: own, photoSafe: true, lat: r.lat, lng: r.lng, accuracy: r.accuracy_m, corrected: r.corrected === true, gps: { lat: g.lat, lng: g.lng, accuracy: g.accuracy_m },
+          photos: own, photo_sha256: sha, photo_sha256_source: shaSource, photoSafe: true, lat: r.lat, lng: r.lng, accuracy: r.accuracy_m, corrected: r.corrected === true, gps: { lat: g.lat, lng: g.lng, accuracy: g.accuracy_m },
           dong: r.dong, indicators: r.indicators, site_id: r.site_id, site_prev: r.site_prev, site_radius_m: r.site_radius_m,
           prev_photos: Array.isArray(r.prev_photos) ? r.prev_photos.filter((id) => isJpeg(got(id))) : [], snapshot: r.data_snapshot, checks: r.checks, building: r.building, checker: r.checker }, new Date(r.recorded_at), String(r.id));
         rec.imported = true; rec.imported_at = now.toISOString();
@@ -263,7 +312,9 @@
     const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(now); d.setDate(d.getDate() - (6 - i)); const k = dayKey(d); return { day: `${d.getMonth() + 1}.${d.getDate()}`, n: list.filter((r) => dayKey(new Date(r.recorded_at)) === k).length }; });
     return { total: list.length, today: list.filter((r) => dayKey(new Date(r.recorded_at)) === today).length, photos: list.reduce((a, r) => a + (r.photos || []).length, 0), byStatus, byTarget, days };
   }
-  const escH = (v) => String(v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  // 홑따옴표도 바꾼다(2026-11-01 리뷰, SW 개발보안 가이드 XSS 항목). 지금은 큰따옴표 속성에만 쓰지만 홑따옴표 속성에 쓰면 빠져나갈 수 있었다.
+  // 사이트의 다른 esc()와 같은 다섯 글자를 바꾼다
+  const escH = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const ST_CLS = { 확인: "g", 충돌: "r", 추가확인: "y" };
   // tiles: [[라벨, 숫자]]를 앞에 더 붙인다(보관함의 받은 문서 수)
   function statsHTML(st, tiles) {
@@ -356,6 +407,6 @@
     return { text: lines.length ? lines.join("\n") + "\n" : "", n: lines.length };
   }
 
-  const api = { blockSnapshot, blockEdits, hwpxText, exemplarOf, dice, OUTCOME_STATUS, REASON_CODES, NEEDS_REASON, docKind, setOutcome, outcomeRecord, outcomesJSONL, stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
+  const api = { sha256Hex, blockSnapshot, blockEdits, hwpxText, exemplarOf, dice, OUTCOME_STATUS, REASON_CODES, NEEDS_REASON, docKind, setOutcome, outcomeRecord, outcomesJSONL, stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.FieldRecord = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

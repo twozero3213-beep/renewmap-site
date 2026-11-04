@@ -58,6 +58,13 @@
     <h2 id="outTitle">줄마다 따로 본 결과</h2>
     <p id="outBase" class="hint"></p>
     <div id="viz" class="v4-stats" aria-live="polite"></div>
+    <div id="dongDecline" hidden>
+      <h3 class="nv-h">행정동 쇠퇴 3요건 값</h3>
+      <p class="hint">①·②는 지번 목록으로 구하지 못하는 행정동 값입니다.<br>신청 구역이 속한 행정동을 고르면 값·출처·기준일을 보여 줍니다.</p>
+      <label for="hdong">행정동</label>
+      <select id="hdong"></select>
+      <div id="hdongOut" aria-live="polite"></div>
+    </div>
     <h3 class="nv-h">주택정비형 재개발 입안요건</h3>
     <p class="hint">조례 제5조②2는 주택정비형 재개발에만 적용됩니다.<br>도시정비형 재개발은 이 기준의 대상이 아닙니다.</p>
     <div class="facts"><ul id="lines" class="req-list"></ul></div>

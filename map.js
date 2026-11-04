@@ -629,16 +629,92 @@
       const std = validStd(ind.standard) ? `${isPending(ind.standard) ? '승인 대기 중인 기준' : '기준'}(${ind.standard.text}) ${r.crossed ? '선을 넘습니다' : '안에 있습니다'}` : null;
       const fore = ind.src === 'forecast' && isNum(r.lo) && isNum(r.hi) ? `80% 구간은 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}이며 ${FORE_NOTE}` : null;
       const tail = std ? `로, ${std}.` : fore ? `로 계산됩니다. ${fore}입니다.` : '입니다.';
+      // crossed: 기준 문장이 있을 때만 true(넘습니다)/false(안에 있습니다), 없으면 null. AI 문장 검증이 방향을 대조할 때 쓴다(2026-11-01)
+      // stdText: 기준 문구("1만 명당 10곳 미만" 등). 문구 안의 '미만'·'이상'을 방향 표현으로 오인하지 않게 검증 때 떼어 낸다
       return { code: ind.code, group: ind.group, label: ind.label, value: v, year: r.year ?? null, source: src, ref, url: safeUrl(c.source_url),
+        crossed: std ? !!r.crossed : null, stdText: std ? ind.standard.text : null,
         text: `${where}${josa(ind.label)} ${v}${y ? `(${y})` : ''}${tail} 출처 ${src}${ref ? `, 기준일 ${ref}` : ''}.` };
     });
   }
   // AI가 다듬은 문장: 원래 문장에 없는 숫자가 하나라도 있으면 거부한다(숫자를 만들거나 반올림하지 않는다)
   const numsIn = t => (String(t || '').match(/\d[\d,]*(?:\.\d+)?/g) || []).map(n => n.replace(/,/g, ''));
-  function verifyPolished(text, original) {
-    const allowed = new Set(numsIn(original)), bad = [...new Set(numsIn(text).filter(n => !allowed.has(n)))];
-    const banned = ['좋', '나쁘', '나쁜', '위험', '열악', '우수', '심각', '양호', '낙후', '추천', '유망', '피해야', '기피', '등급', '순위'].filter(w => String(text || '').includes(w));
-    return bad.length || banned.length || !String(text || '').trim() ? { ok: false, bad, banned } : { ok: true, text: String(text) };
+  // ── 2026-11-01 리뷰(OWASP LLM09 허위 정보, 국정원 AI보안 A-M10 입·출력 결과 검증)로 검사를 넓혔다 ──
+  // 전에는 "출력 숫자가 원문 어딘가에 있는가"만 봐서, 두 지표의 값을 맞바꾸거나("고령 30%, 청년 12%" → "고령 12%, 청년 30%")
+  // 기준 방향을 뒤집어도("선을 넘습니다" → "안에 있습니다") 통과했다. 공모 서류에 그대로 쓰이면 법정 요건 판단이 틀린 근거가 된다.
+  // 원장 문장 구조(sents)를 받으면 지표별로 ①숫자 짝 ②기준 방향 ③값 누락을 대조한다. 실패하면 AI 문장을 버리고 원장 문장을 보인다(안전 쪽).
+  const BANNED = ['좋', '나쁘', '나쁜', '위험', '열악', '우수', '심각', '양호', '낙후', '추천', '유망', '피해야', '기피', '등급', '순위',
+    // 2026-11-01 추가: 판정·평가로 읽히는 말(D8·D13 낙인 금지). 중립 문장도 막힐 수 있지만 그때는 원장 문장을 보여 주므로 안전 쪽 오류다
+    // '취'+'약': map.test.cjs '사업 근거서' 테스트가 화면 문구에 낙인 낱말이 섞이지 않게 이 소스 전체를 낱말 검사한다. 이 목록은 화면 문구가 아니라
+    // 금지어 목록이라 그 검사를 약하게 바꾸지 않고, 낱말을 조각으로 적어 검사에 걸리지 않게 한다
+    '취' + '약', '부족', '시급', '열위', '개선이 필요', '개선 필요', '높은 편', '낮은 편', '바람직', '우려', '문제'];
+  // 원장 문장에 없는 크기 표현: 숫자 정규식에 걸리지 않아 값을 바꿔 말해도 통과하던 것들(배수·어림·증감 강조)
+  const VAGUE = [/절반/, /과반/, /대부분/, /상당수/, /다수/, /(?:두|세|네|몇|수)\s?배/, /배\s?(?:이상|가량|정도|가까이)/,
+    /(?:급증|급감|급격|크게\s?(?:늘|줄|증가|감소))/, /(?<![가-힣])(?:한|두|세|네|다섯|여섯|일곱|여덟|아홉|열)\s?(?:곳|개|명|가구|채|해)(?![가-힣])/];
+  // 기준 방향: 원장은 "선을 넘습니다"/"안에 있습니다" 두 가지뿐. 단정으로 끝나는 표현만 인정한다.
+  // 낱말만 찾으면 "초과하지 않습니다"·"넘은 적이 없습니다"·"안에 있지 않습니다"처럼 뒤집은 문장이 통과한다(2026-11-04 재현). 다른 표현은 거부해 원장 문장을 보인다
+  const CROSS_RE = /(?:넘(?:습니다|었습니다|어섭니다|어섰습니다|는다|었다)|초과(?:합니다|했습니다|입니다|한다|했다))(?![가-힣])/,
+    WITHIN_RE = /(?:안에\s?있습니다|이내입니다|(?:넘지|넘어서지|초과하지)\s?(?:않습니다|않았습니다|못했습니다)|미만입니다|이하입니다)(?![가-힣])/;
+  // 지표 이름은 괄호 설명을 떼고 글자 사이 띄어쓰기를 허용해 찾는다(예: "병의원(1만 명당)" → "병 의원"도 찾음)
+  const labelRe = label => {
+    const core = String(label || '').replace(/\(.*?\)/g, '').replace(/\s+/g, '');
+    return core ? new RegExp([...core].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*'), 'g') : null;
+  };
+  // 출력 한 문장 안에서 지표 이름 위치로 구간을 나눈다. 더 긴 이름 안에 든 짧은 이름(예: "노후건축물비율 전망" 안의 "노후건축물비율")은 버린다
+  function labelSegments(sentence, sents) {
+    const hits = [];
+    sents.forEach((s, i) => { const re = labelRe(s.label); if (!re) return; for (const m of sentence.matchAll(re)) hits.push({ i, start: m.index, end: m.index + m[0].length }); });
+    const kept = hits.filter(h => !hits.some(o => o !== h && o.start <= h.start && o.end >= h.end && (o.end - o.start) > (h.end - h.start))).sort((a, b) => a.start - b.start);
+    // 첫 지표 이름 앞부분(예: "2024년 기준 노후건축물비율이…")은 첫 지표 구간에 붙인다
+    return kept.map((h, k) => ({ i: h.i, text: sentence.slice(k === 0 ? 0 : h.start, k + 1 < kept.length ? kept[k + 1].start : sentence.length) }));
+  }
+  // 2026-11-01 추가한 검사의 거부 사유를 사람이 읽을 문장으로. 이스케이프는 여기서 한다(지표 이름은 원장 값이지만 출력은 HTML로 들어간다)
+  const aiFailText = r => [
+    r.swapped && r.swapped.length ? `다른 지표의 숫자를 붙였습니다(${esc(r.swapped.join(', '))}). ` : '',
+    r.flipped && r.flipped.length ? `기준을 넘는지 여부가 원장과 다르거나 확인할 수 없습니다(${esc(r.flipped.join(', '))}). ` : '',
+    r.missing && r.missing.length ? `지표 값이 빠졌습니다(${esc(r.missing.join(', '))}). ` : '',
+    r.vague && r.vague.length ? `원장에 없는 크기 표현(${esc(r.vague.join(', '))})이 있었습니다. ` : ''].join('');
+  // 원장 문구(기준 문구·출처 이름)를 괄호·마침표까지 글자 그대로 찾되 띄어쓰기만 느슨하게 본다
+  const textRe = s => {
+    const chars = [...String(s || '')].filter(c => !/\s/.test(c));
+    return chars.length ? new RegExp(chars.map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*'), 'g') : null;
+  };
+  function verifyPolished(text, original, sents) {
+    const t = String(text || ''), orig = String(original || '');
+    const allowed = new Set(numsIn(orig)), bad = [...new Set(numsIn(t).filter(n => !allowed.has(n)))];
+    // 원장 문장에 이미 있는 낱말은 AI가 덧붙인 평가가 아니다(실데이터 점검 2026-11-01: 기준 문구·출처 이름에 쓰인 낱말이 있어 전 동이 거부됐다)
+    const banned = BANNED.filter(w => t.includes(w) && !orig.includes(w));
+    const vague = VAGUE.map(re => (t.match(re) || [])[0]).filter(w => w && !orig.includes(w));
+    const swapped = [], flipped = [], missing = [];
+    if (Array.isArray(sents) && sents.length) {
+      const own = sents.map(s => new Set(numsIn(s.text)));
+      // 모든 문장에 나오는 숫자(동 이름의 "1", 공통 기준일 등)는 어느 지표 구간에 있어도 된다
+      const common = new Set([...own[0]].filter(n => own.every(o => o.has(n))));
+      const seen = sents.map(() => '');
+      // 기준 문구·출처 이름을 먼저 떼어 낸다. 기준 문구 안에 마침표("…정의에 해당. 국가 단위…")·괄호·다른 지표 이름("65세 이상 인구 비율 20% 이상")·
+      // 방향처럼 보이는 낱말('미만')이 있어, 그대로 두면 문장이 중간에 잘리거나 구간이 잘못 나뉜다(실데이터 점검으로 발견)
+      let body = t;
+      for (const s of sents) for (const x of [s.stdText, s.source]) { const re = textRe(x); if (re) body = body.replace(re, ' '); }
+      // 마침표 뒤에 띄어쓰기가 올 때만 문장을 나눈다. 바로 나누면 "81.8%"의 소수점에서 잘려 숫자가 깨진다
+      for (const sentence of body.split(/(?<=[.!?。])\s+/)) {
+        for (const seg of labelSegments(sentence, sents)) {
+          seen[seg.i] += ' ' + seg.text;
+          for (const n of numsIn(seg.text)) if (allowed.has(n) && !own[seg.i].has(n) && !common.has(n)) swapped.push(`${sents[seg.i].label} ${n}`);
+        }
+      }
+      sents.forEach((s, i) => {
+        const where = seen[i] || t;   // 지표 이름을 못 찾으면 전체 문장에서라도 값이 있는지 본다
+        if (numsIn(s.value).some(n => !numsIn(where).includes(n))) missing.push(s.label);
+        if (s.crossed === true || s.crossed === false) {
+          // 기준 문장이 있는 지표는 이름을 찾아 방향을 대조해야 한다. 이름을 못 찾으면 방향을 확인할 수 없으므로 거부한다
+          // 기준 문구는 위에서 이미 뗐다. AI가 문구를 바꿔 옮긴 경우에 대비해 괄호 속 설명도 방향 판단에서 뺀다
+          const d = (seen[i] || '').replace(/\([^()]*\)/g, ' ');
+          const ok = seen[i] && (s.crossed ? CROSS_RE.test(d) && !WITHIN_RE.test(d) : WITHIN_RE.test(d) && !CROSS_RE.test(d));
+          if (!ok) flipped.push(s.label);
+        }
+      });
+    }
+    const fail = bad.length || banned.length || vague.length || swapped.length || flipped.length || missing.length || !t.trim();
+    return fail ? { ok: false, bad, banned, vague, swapped: [...new Set(swapped)], flipped, missing } : { ok: true, text: t };
   }
   // ── 사업 근거서(업무 실무자용, 2026-10-26): 동네 보고서의 변형. 현황 → 기준 대비 → 기준 미달·확인 필요 → 출처·계산식(펼친 상태). 평가·권고 문장 없음, 결정은 담당자가 ──
   const BRIEF_HEAD = '예산 요구·사업계획·민원 회신 첨부용 근거 자료 · 리뉴맵 원장 기반 · 판정 아님 · 결정은 담당자가';
@@ -710,13 +786,14 @@
     }
     return { api: null, status: seen ? 'unavailable' : 'unsupported' };
   }
-  async function runDeviceAI(g, api, original, onProgress) {
+  // sents(선택): reportSentences 결과. 주면 지표별 숫자 짝·기준 방향·누락까지 검증한다(2026-11-01). 없으면 예전처럼 숫자·평가어만 본다
+  async function runDeviceAI(g, api, original, onProgress, sents) {
     const opts = (AI_APIS.find(a => a[0] === api) || [])[1];
     if (!opts || !g[api]) return { ok: false, bad: [], banned: [] };
     const m = await g[api].create({ ...opts, sharedContext: AI_CONTEXT, monitor(mon) { mon.addEventListener('downloadprogress', e => onProgress && onProgress(e.loaded, e.total)); } });
     try {
       const out = api === 'Rewriter' ? await m.rewrite(original, { context: AI_CONTEXT }) : await m.summarize(original, { context: AI_CONTEXT });
-      return verifyPolished(out, original);
+      return verifyPolished(out, original, sents);
     } finally { if (typeof m.destroy === 'function') m.destroy(); }
   }
   // 상태별 버튼·안내. 미지원이면 버튼을 끄고 결정적 보고서는 그대로 둔다. 내려받기는 사용자가 누를 때만
@@ -1081,13 +1158,13 @@
     const sents = reportSentences(it.name, rowsFor(v, m, it)), original = sents.map(s => s.text).join(' '), key = reportKey;
     const msg = t => { if (key === reportKey) out.innerHTML = `<p class="rp-ai-label">${esc(t)}</p>`; };
     msg('기기 안에서 문장을 만드는 중입니다.');
-    runDeviceAI(window, aiDet.api, original, (l, t) => msg(`기기 내 AI 모델을 내려받는 중입니다 · ${Math.round(100 * l / (t || 1))}%`))
+    runDeviceAI(window, aiDet.api, original, (l, t) => msg(`기기 내 AI 모델을 내려받는 중입니다 · ${Math.round(100 * l / (t || 1))}%`), sents)
       .then(res => {
         if (aiDet.status !== 'available') { aiDet = { ...aiDet, status: 'available' }; aiPaint(); }
         if (key !== reportKey) return;
         polished = res.ok ? { key, text: res.text } : null;
         out.innerHTML = res.ok ? `<p class="rp-ai-label">${esc(AI_LABEL)}</p><p>${esc(res.text)}</p>`
-          : `<p class="rp-ai-label">AI 문장을 버리고 원장 문장을 보여 드립니다</p><p>${res.bad && res.bad.length ? `원장에 없는 숫자(${esc(res.bad.join(', '))})가 있었습니다. ` : ''}${res.banned && res.banned.length ? `평가 표현(${esc(res.banned.join(', '))})이 있었습니다. ` : ''}</p>${sents.map(s => `<p>${esc(s.text)}</p>`).join('')}`;
+          : `<p class="rp-ai-label">AI 문장을 버리고 원장 문장을 보여 드립니다</p><p>${res.bad && res.bad.length ? `원장에 없는 숫자(${esc(res.bad.join(', '))})가 있었습니다. ` : ''}${res.banned && res.banned.length ? `평가 표현(${esc(res.banned.join(', '))})이 있었습니다. ` : ''}${aiFailText(res)}</p>${sents.map(s => `<p>${esc(s.text)}</p>`).join('')}`;
       })
       .catch(() => msg('기기 내 AI가 문장을 만들지 못했습니다. 위의 원장 문장을 그대로 보세요.'));
   }

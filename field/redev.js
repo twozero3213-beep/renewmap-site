@@ -231,7 +231,37 @@
   }
 
   // 화면 요약(v4): 숫자 칸, 줄 상태 도넛, 건물 수·연면적 쌓은 막대(노후·불량 | 못 정함 | 아님)와 기준선. 종합 판정·순위 아님
-  const escH = (v) => String(v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  // 홑따옴표도 바꾼다(2026-11-01 리뷰, SW 개발보안 가이드 XSS 항목). record.js escH와 같은 다섯 글자
+  const escH = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  // 행정동 쇠퇴 3요건 값(2026-11-04). ①·②는 지번 목록으로 구하지 못해 지도와 같은 원장 셀을 그대로 옮긴다.
+  // 충족 여부는 정하지 않는다: 판정 규칙(rules/decline.py)이 승인 전이고, 행정동과 신청 구역은 경계가 달라 이 값이 구역의 값은 아니다
+  const DONG_REQ = [
+    { label: "① 인구", rule: "최근 30년 최대 대비 20% 이상 감소, 또는 최근 5년 중 3년 이상 연속 감소", rate: "DECLINE_POP_DROP30Y_PCT", rateName: "30년 최대 대비 감소율", run: "DECLINE_POP_DECL3IN5" },
+    { label: "② 사업체", rule: "최근 10년 최대 대비 5% 이상 감소, 또는 최근 5년 중 3년 이상 연속 감소", rate: "DECLINE_BIZ_DROP10Y_PCT", rateName: "10년 최대 대비 감소율", run: "DECLINE_BIZ_DECL3IN5" },
+    { label: "③ 20년 이상 건축물", rule: "비율 50% 이상", rate: "DECLINE_AGING_20Y_PCT", rateName: "행정동 전체 비율" },
+  ];
+  function dongDecline(dong) {
+    const cell = (code) => (dong.cells || []).find((c) => c.indicator_code === code);
+    const num = (c) => (c && typeof c.value === "number" ? c.value : null);
+    return DONG_REQ.map((q) => {
+      const rate = cell(q.rate), run = q.run ? cell(q.run) : null, r = num(rate), s = num(run);
+      const parts = [`${q.rateName} ${r === null ? "자료 없음" : `${r.toFixed(1)}%`}`];
+      if (q.run) parts.push(`3년 연속 감소 ${s === null ? "자료 없음" : s === 1 ? "있음" : "없음"}`);
+      const c = rate || run || {};
+      return { label: q.label, rule: q.rule, value: parts.join(", "), source: c.source_name || "출처 없음", ref: c.reference_date || "", checked: c.status === "미확인" ? "수기 대조 전" : c.status || "" };
+    });
+  }
+  function dongDeclineHTML(dong) {
+    const rows = dongDecline(dong).map((x) => `<div><dt>${escH(x.label)}</dt><dd><b>${escH(x.value)}</b> <span>기준 ${escH(x.rule)} · 기준일 ${escH(x.ref ? D.govDate(x.ref) : "없음")} · ${escH(x.source)} · ${escH(x.checked)}</span></dd></div>`);
+    return `<dl class="rv-ref">${rows.join("")}</dl><p class="rv-key">${escH(dong.name)} 전체의 값입니다.<br>신청 구역의 값이 아니고, 충족 판정이 아닙니다.</p>`;
+  }
+  // 법정동 이름으로 이어지는 행정동(반여동 → 반여1~4동, 중앙동1가 → 중앙동). 이름만 보는 것이라 못 찾는 동이 있어 사람이 고르게 둔다
+  function dongCandidates(legalName, dongs) {
+    const stem = String(legalName || "").replace(/\d+가$/, "").replace(/동$/, "");
+    if (!stem) return [];
+    const re = new RegExp(`^${stem.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}제?\\d*(?:[·,.]\\d+)*동$`);
+    return dongs.filter((d) => re.test(d.name)).sort((a, b) => a.name.localeCompare(b.name, "ko"));
+  }
   function stackHTML(label, old, unk, tot, thr) {
     if (!tot) return `<div class="rv-stack is-empty"><div class="rv-h"><b>${escH(label)}</b><span>자료 없음</span></div></div>`;
     const a = (old / tot) * 100, b = (unk / tot) * 100, c = Math.max(0, 100 - a - b), r = range(a, a + b);
@@ -362,5 +392,5 @@
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: mark(secret, `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · `) };
   }
 
-  return { THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { dongDecline, dongDeclineHTML, dongCandidates, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

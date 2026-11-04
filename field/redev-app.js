@@ -24,6 +24,36 @@
     $("coverage").textContent = `부산 ${gus.length}개 구·군 ${n}개 법정동의 건축물대장을 담았습니다. 다른 시·도는 그 조례를 확인한 뒤 엽니다.`;
   }).catch(() => {});
 
+  // 행정동 쇠퇴 값은 전국 지도 자료(national/emd)에 있다. 건축물대장과 시군구 코드 체계가 달라 구·군 이름으로 잇는다
+  const national = getJson("national/index.json").catch(() => null);
+  async function showDongDecline(file) {
+    const box = $("dongDecline"), sel = $("hdong"), out = $("hdongOut");
+    box.hidden = true; out.replaceChildren();
+    try {
+      const [idx, nat] = await Promise.all([index, national]);
+      const gu = idx && idx.sigungu.find((s) => s.code === String(file.bjd10).slice(0, 5));
+      const nsg = gu && nat && nat.sigungu.find((s) => s.sido2 === "21" && s.name === gu.name);
+      if (!nsg) throw new Error("no sigungu");
+      const emd = await getJson(`national/emd/${nsg.code5}.json`);
+      if (last.file !== file) return;   // 그사이 다른 목록을 계산했다
+      const near = R.dongCandidates(file.name, emd.dongs), rest = emd.dongs.filter((d) => !near.includes(d));
+      sel.replaceChildren(new Option("행정동을 고르세요", ""), ...[...near, ...rest].map((d) => new Option(d.name, d.code7)));
+      const show = () => {
+        const d = emd.dongs.find((x) => x.code7 === sel.value);
+        if (d) out.innerHTML = R.dongDeclineHTML(d); else out.replaceChildren();
+      };
+      sel.onchange = show;
+      if (near.length === 1) sel.value = near[0].code7;
+      show();
+      box.hidden = false;
+    } catch (err) {
+      if (last.file !== file) return;
+      sel.replaceChildren();
+      out.textContent = "행정동 값을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.";
+      box.hidden = false;
+    }
+  }
+
   // 고른 동 + 목록이 가리키는 다른 법정동(PNU 앞 10자리, 지번 앞 동 이름은 같은 구·군 안에서 찾음). 신청 구역이 동 경계를 넘을 때
   async function loadFor(items, code) {
     const idx = await index, gu = idx && idx.sigungu.find((s) => s.code === code.slice(0, 5));
@@ -88,6 +118,7 @@
       return li;
     }));
     renderTodo(res);
+    showDongDecline(file);
     $("out").hidden = false;
     $("out").scrollIntoView({ behavior: "smooth", block: "start" });
   });

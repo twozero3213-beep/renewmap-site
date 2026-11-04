@@ -391,9 +391,12 @@
     if (!$("safe").checked) { say("사진을 붙이기 전에 '가릴 곳을 모두 확인했습니다'를 눌러 주세요.", true); return; }
     if (pending.length + (site ? site.photos.size : 0) >= R.MAX_PHOTOS) { say(`사진은 한 기록에 ${R.MAX_PHOTOS}장까지 붙일 수 있습니다.`, true); return; }
     paint(false);
-    $("cv").toBlob((blob) => {   // 캔버스에서 새로 만든 JPEG라 원본의 위치·기기 정보(EXIF)가 없다
+    $("cv").toBlob(async (blob) => {   // 캔버스에서 새로 만든 JPEG라 원본의 위치·기기 정보(EXIF)가 없다
       const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-      pending.push({ id, blob, url: URL.createObjectURL(blob) });
+      // FR-45: 가림을 마친 이 JPEG 바이트(저장·내보내기되는 그대로)의 SHA-256을 붙이는 순간 계산한다(2026-11-01).
+      // 나중에 ZIP 가져오기·원장 확인 이력에서 사진이 바뀌지 않았는지 대조하는 근거가 된다
+      const sha256 = R.sha256Hex(new Uint8Array(await blob.arrayBuffer()));
+      pending.push({ id, blob, url: URL.createObjectURL(blob), sha256 });
       const link = linkNext; linkNext = null;
       closeEdit(); drawThumbs(); say("");
       if (link) { $(`ck-${link}`).checked = true; $(`ck-${link}`).dispatchEvent(new Event("change")); $(`ckp-${link}`).value = id; }
@@ -508,7 +511,7 @@
       // 붙인 사진은 '가림 확인' 칸을 거쳐야 pending에 들어오므로 photoSafe는 그 확인을 뜻한다
       const dong = place && place.code ? { code: place.code, name: place.name, sgName: place.sgName, sido: place.sido, nearby: place.nearby.map((x) => x.name), boundary: place.boundary } : null;
       const rec = R.makeRecord({ pnu: $("pnu").value, jibun: $("jibun").value, target: picked("target"), item: $("item").value, observed: $("observed").value,
-        status: picked("status"), memo: $("memo").value, checker: $("checker").value, photos: pending.map((p) => p.id), photoSafe: true, checks: readChecks(), building: chosen,
+        status: picked("status"), memo: $("memo").value, checker: $("checker").value, photos: pending.map((p) => p.id), photo_sha256: Object.fromEntries(pending.map((p) => [p.id, p.sha256])), photoSafe: true, checks: readChecks(), building: chosen,
         ...(pos ? { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy, corrected, gps } : {}), dong, indicators: dong ? place.rows : [], snapshot: dong ? place.snapshot : null,
         ...(site ? { site_id: site.id, site_radius_m: radius(), prev_photos: [...site.photos],
           site_prev: (await S.records()).filter((r) => E.siteOf(r) === site.id).map((r) => r.recorded_at) } : {}) }, new Date());
@@ -638,7 +641,15 @@
   // ── 내보내기: records.json + photos/<id>.jpg 를 ZIP 하나로. 공유는 같은 ZIP을 기기의 공유 창으로 넘긴다
   async function buildZip() {
     const rows = await S.records(), entries = [{ name: "records.json", data: JSON.stringify(R.exportDoc(rows, new Date()), null, 2) }];
-    for (const r of rows) for (const id of r.photos || []) { const b = await S.photo(id); if (b) entries.push({ name: `photos/${id}.jpg`, data: new Uint8Array(await b.arrayBuffer()) }); }
+    let changed = 0;
+    for (const r of rows) for (const id of r.photos || []) {
+      const b = await S.photo(id); if (!b) continue;
+      const data = new Uint8Array(await b.arrayBuffer());
+      // 기기에 저장된 사진이 촬영 때와 같은지 내보내기 전에 대조한다(FR-45). 달라도 내보내되 알린다(받는 쪽 가져오기가 그 기록을 거절한다)
+      if (r.photo_sha256 && r.photo_sha256[id] && R.sha256Hex(data) !== r.photo_sha256[id]) changed++;
+      entries.push({ name: `photos/${id}.jpg`, data });
+    }
+    if (changed) toast(`사진 ${changed}장이 촬영 때와 다릅니다.\n기기 저장 공간을 확인해 주세요.`);
     const day = new Date().toISOString();
     return { name: `renewmap-field-${day.slice(0, 10)}.zip`, bytes: D.zipStore(entries, day) };
   }
