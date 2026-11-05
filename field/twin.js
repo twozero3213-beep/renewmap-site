@@ -56,7 +56,7 @@
       const obj=pending.pop();
       if(!obj || typeof obj!=='object') continue;
       for(const [k,v] of Object.entries(obj)) {
-        if(/^(uri|url)$/i.test(k) && v) throw Error('외부 URI 없이 텍스처·버퍼를 내장한 GLB로 다시 내보내 주세요.');
+        if(/(uri|url)$/i.test(k) && v) throw Error('외부 URI 없이 텍스처·버퍼를 내장한 GLB로 다시 내보내 주세요.');
         if(v && typeof v==='object') pending.push(v);
       }
     }
