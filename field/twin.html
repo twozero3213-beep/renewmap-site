@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net/npm/cesium@1.134.0/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/npm/cesium@1.134.0/; img-src 'self' data: blob: https://tile.openstreetmap.org https://cdn.jsdelivr.net/npm/cesium@1.134.0/; connect-src 'self' data: blob: https://tile.openstreetmap.org https://cdn.jsdelivr.net/npm/cesium@1.134.0/; worker-src blob: https://cdn.jsdelivr.net/npm/cesium@1.134.0/; font-src 'self' data:; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>3D 모델과 4D 단계 비교 | 리뉴맵</title>
+<meta name="description" content="제공받은 GLB 모델을 지도에 배치하고 현재·계획안·날짜별 단계를 비교합니다. 모델과 현장 사진은 기기 안에서 처리합니다.">
+<script src="../frame-guard.js"></script>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../pretendard.css">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="field.css">
+<link rel="stylesheet" href="twin.css">
+</head>
+<body class="field twin">
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top"><div class="wrap"><h1>3D 모델과 4D 단계 비교</h1><a href="./">현장 기록</a></div></header>
+<main id="main">
+<p class="note">현재 모습과 계획안을 같은 위치에서 비교합니다.<br>건물·조형물의 GLB 파일은 직접 준비해 주세요.<br>사진만으로 건물 형상을 자동 복원하지 않습니다.</p>
+<div class="twin-layout">
+<section class="twin-map" aria-labelledby="mapTitle">
+<h2 id="mapTitle">배치 지도</h2>
+<button id="start" type="button">3D 지도 시작하기</button>
+<p class="hint">시작하면 CesiumJS 1.134.0과 OpenStreetMap 지도를 인터넷에서 불러옵니다.<br>모델·사진 파일은 전송하지 않습니다.<br>배경은 평면 지구 타원체이며 지형·주변 건물 높이는 제공하지 않습니다.</p>
+<div id="globe" tabindex="0" aria-label="3D 지도. 위치·회전은 입력 칸으로도 조정할 수 있습니다."></div>
+<div class="row"><button type="button" class="ghost" id="focus" disabled>선택 모델로 이동</button><button type="button" class="ghost" id="rotate" disabled>시점 15도 돌리기</button><button type="button" class="ghost" id="zoom" disabled>확대하기</button></div>
+<p class="hint">지도를 클릭하면 경도·위도 입력만 바뀝니다.<br>고도는 자동으로 정하지 않습니다.<br>기준점 고도를 입력하고 ‘배치 반영’을 눌러 주세요.</p>
+<p id="message" class="msg" role="status" aria-live="polite"></p>
+<fieldset><legend>비교할 안</legend><div class="row">
+<label><input type="radio" name="view" value="current" checked>현재</label>
+<label><input type="radio" name="view" value="A">A안</label>
+<label><input type="radio" name="view" value="B">B안</label>
+</div></fieldset>
+<label for="date">보는 날짜</label><input id="date" type="date" required>
+<label for="timeline">날짜 이동</label><input id="timeline" type="range" min="0" max="0" value="0" disabled>
+<p id="stage" class="msg" aria-live="polite">단계 미입력</p>
+<details><summary>4D 계획 일정 입력</summary>
+<p class="hint">직접 입력한 계획 일정입니다.<br>실제 공사 진행이나 자동 예측을 뜻하지 않습니다.<br>각 날짜 당일부터 해당 단계로 표시합니다.</p>
+<form id="phases"><label for="demolition">철거 시작일</label><input id="demolition" type="date"><label for="construction">착공일</label><input id="construction" type="date"><label for="completion">준공일</label><input id="completion" type="date"><button type="submit" class="ghost">일정 반영</button></form>
+</details>
+<section aria-labelledby="filesTitle"><h2 id="filesTitle">장면 보관</h2>
+<button id="export" type="button">장면 파일 받기</button>
+<label for="import">장면 파일 다시 열기</label><input id="import" type="file" accept=".json,application/json">
+<p class="hint">GLB, 출처, 배치, 날짜, 카메라, 현장 대조 기록을 한 JSON 파일에 담습니다.<br>사진은 기록 ID와 해시만 담습니다.<br>브라우저를 닫기 전에 파일을 받아 보관하세요.</p></section>
+</section>
+<div class="twin-editor">
+<section class="card" aria-labelledby="modelTitle"><h2 id="modelTitle">선택한 안의 모델</h2>
+<p id="modelInfo" class="hint">현재 모델 없음</p>
+<form id="modelForm">
+<label for="modelFile">GLB 2.0 파일(모델당 20MB)</label><input id="modelFile" type="file" accept=".glb,model/gltf-binary">
+<p class="hint">버퍼·텍스처가 모두 내장된 파일만 받습니다.<br>모델 좌표 단위는 m이며, 형상을 설계하는 편집기는 아닙니다.</p>
+<label for="source">출처·제작자(개인정보 제외)</label><input id="source" required maxlength="500">
+<label for="license">허가받은 이용조건</label><input id="license" required maxlength="500">
+<label for="reference">모델 자료 기준일</label><input id="reference" type="date" required>
+<label for="kind">자료 구분</label><select id="kind"><option>현황 자료(미검수)</option><option>추정</option><option>계획</option></select>
+<label for="origin">모델 원점·축·단위의 근거</label><input id="origin" required maxlength="500" placeholder="제작자가 정한 원점, 위쪽 축, 단위 m">
+<label for="pnu">PNU(알고 있는 경우)</label><input id="pnu" inputmode="numeric" maxlength="19">
+<label for="building_id">대장 건물 ID(알고 있는 경우)</label><input id="building_id" maxlength="500">
+<div class="twin-coordinates">
+<div><label for="longitude">경도(WGS84)</label><input id="longitude" type="number" min="-180" max="180" step="any" required></div>
+<div><label for="latitude">위도(WGS84)</label><input id="latitude" type="number" min="-90" max="90" step="any" required></div>
+<div><label for="height">원점 타원체고(m)</label><input id="height" type="number" step="any" required></div>
+<div><label for="scale">축척 배수</label><input id="scale" type="number" min="0.000001" step="any" value="1" required></div>
+<div><label for="heading">방위 회전(도)</label><input id="heading" type="number" min="-360" max="360" step="any" value="0" required></div>
+<div><label for="pitch">앞뒤 기울기(도)</label><input id="pitch" type="number" min="-180" max="180" step="any" value="0" required></div>
+<div><label for="roll">좌우 기울기(도)</label><input id="roll" type="number" min="-180" max="180" step="any" value="0" required></div>
+</div>
+<p class="warn">해발고도와 타원체고는 다릅니다.<br>기준점·모델 치수·방향을 대조하기 전에는 현장에 맞는 배치로 확정하지 마세요.</p>
+<button type="submit">배치 반영</button></form></section>
+<section class="card" aria-labelledby="fieldTitle"><h2 id="fieldTitle">현장 사진과 실물 대조</h2>
+<button id="recordsRefresh" class="ghost" type="button">이 기기 현장 기록 읽기</button>
+<label for="record">현장 기록</label><select id="record"><option value="">기록을 먼저 읽어 주세요</option></select>
+<p id="recordInfo" class="hint"></p><div id="photos" class="twin-photos"></div>
+<button id="recordLocation" class="ghost" type="button" disabled>기록 GPS를 배치 입력으로</button>
+<form id="verification"><label for="reference_m">현장 기준 치수(m)</label><input id="reference_m" type="number" step="any" min="0.000001" required>
+<label for="model_m">같은 구간의 모델 치수(m)</label><input id="model_m" type="number" step="any" min="0.000001" required>
+<label for="basis">측정일·기준점·대조한 구간과 측정 도구</label><textarea id="basis" maxlength="500" required></textarea>
+<label for="checker">확인자 소속·직위(성명·연락처 제외)</label><input id="checker" maxlength="500" required>
+<button type="submit" class="ghost">대조 기록 추가</button></form>
+<p id="verificationInfo" class="hint">최종검수 전입니다.<br>허용오차와 측량 기준은 아직 승인되지 않았습니다.</p>
+</section>
+<section class="card"><h2>법정 규칙 승인</h2><p class="warn">승인 대기입니다.<br>3D 배치나 현장 대조를 저장해도 법정 규칙은 승인되지 않습니다.</p><p><a href="../rules.html">규칙별 원문·판본·승인 상태 보기</a></p><p class="hint">담당자가 원문 해석과 골든 기대값을 검토하고 승인자를 기록해야 합니다.<br>이 화면은 종합 판정이나 승인자 서명을 대신하지 않습니다.</p></section>
+</div>
+</div>
+<noscript><p>3D 비교에는 자바스크립트가 필요합니다.<br><a href="./">현장 기록</a>과 <a href="redev.html">신청요건 확인</a>을 이용할 수 있습니다.</p></noscript>
+</main>
+<script src="record.js"></script><script src="store.js"></script><script src="twin.js"></script><script src="twin-app.js"></script>
+</body></html>
