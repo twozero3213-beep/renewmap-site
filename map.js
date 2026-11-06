@@ -85,7 +85,7 @@
       const b = bt && bt[c] && typeof bt[c] === 'object' ? bt[c] : null, base = INDICATORS.find(i => i.code === c) || (lv || []).find(i => i.code === c) || null;
       const fb = FORECAST_BASE.find(x => x[0] === c) || [, c, ''], lbl = base ? base.label : fb[1], mape = b && isNum(b.median_mape) ? b.median_mape : null, held = b && typeof b.withheld === 'string' && b.withheld ? b.withheld : null;
       const sgScope = !!b && typeof b.scope === 'string' && /시군구|시·군·구/.test(b.scope);
-      const common = { code: 'FORECAST_' + c, group: 'fore', icon: 'fore', level: sgScope ? 'sg' : 'emd', src: 'forecast', mape, held, standard: null, pending: !fi, empty: !!held || (!!b && isNum(b.n_areas) && b.n_areas === 0),
+      const common = { code: 'FORECAST_' + c, group: 'fore', icon: 'fore', level: sgScope ? 'sg' : 'emd', src: 'forecast', mape, held, standard: null, pending: !fi, sgFile: !!(fi && typeof fi.sigungu_file === 'string'), empty: !!held || (!!b && isNum(b.n_areas) && b.n_areas === 0),
         disclaimer: fi && typeof fi.disclaimer === 'string' ? fi.disclaimer : null, source: fi && typeof fi.method === 'string' ? `추세 외삽(${fi.method})` : '추세 외삽' };
       const tail = `${sgScope ? ' · 시·군·구 단위' : ''} · 추세 외삽 · 판정·투자 조언 아님 · 승인 전 초안${mape === null ? '' : ` · 백테스트 MAPE ${fmt(mape, '%')}`}`;
       // 절대량 지표(명·개)는 자료가 주는 변화율 키(change_pct_key, 기준연도 실측 대비 %)로 칠한다 — 고정 참고 구간, 기준 없음. 화면에서 나누지 않는다
@@ -231,7 +231,7 @@
   // 지도에 그려지는 칸(경계가 있는 단위): 아래에 일반구를 둔 시(수원시 등)는 빼고 그 일반구를 넣는다
   // 시·군·구 대표값이 절반 미만 지역에만 있으면 그 시·도 이름(2곳까지)을 돌려준다. 예: '부산만'. 순위 아님
   function coverLabel(ind, index) {
-    if (ind.src === 'forecast' && ind.level !== 'sg' && !ind.pending) return '동 단위'; // 전망은 읍·면·동 파일에만 있어 전국·시·도 지도는 빈칸
+    if (ind.src === 'forecast' && ind.level !== 'sg' && !ind.pending && !ind.sgFile) return '동 단위'; // 시·군·구 전망 파일(forecast/sigungu.json)이 없으면 전국·시·도 지도는 빈칸
     if (!index || ind.src || ind.computed || ind.level === 'sg' || ind.pending) return '';
     const all = leavesOf(index), has = all.filter(sg => isNum(summaryOf(sg, ind.code).value));
     if (!has.length || has.length >= all.length / 2) return '';
@@ -338,6 +338,15 @@
       const prov = e.realestate && e.realestate.source && Array.isArray(e.realestate.source.provisional_months) && e.realestate.source.provisional_months.map(Number).includes(ym) ? ' (잠정)' : '';
       return { value: v, year: null, text: v === null ? '자료 없음' : `${fmt(v, ind.unit)} · ${String(ym).slice(0, 4)}.${String(ym).slice(4, 6)}${prov}`, color: colorOf(v, scaleFor(ind, 'now')), cell };
     }
+    if (ind.src === 'forecast') { // 시·군·구 전망(forecast/sigungu.json): 인구는 동 GB 합과 시·군·구 추세의 평균, 65세 이상은 시·군·구 추세. 구간 없으면 값 없음(윤리 원칙 ④)
+      const row = sgMatch(e.forecastSg && e.forecastSg.sigungu, sg), a = row && row.forecast && row.forecast[ind.fc] && isNum(e.horizon) ? row.forecast[ind.fc][String(e.horizon)] : null;
+      if (!Array.isArray(a) || !isNum(a[0]) || !isNum(a[1]) || !isNum(a[2])) {
+        const held = row && row.excluded && typeof row.excluded[ind.fc.replace(/_CHANGE_PCT$/, '')] === 'string' ? '보류' : '자료 없음';
+        return { value: null, year: null, text: held, color: NULL_COLOR, cell: null };
+      }
+      const lo = Math.min(a[1], a[2]), hi = Math.max(a[1], a[2]);
+      return { value: a[0], year: e.horizon, text: `${fmt(a[0], ind.unit)} · ${e.horizon}년 전망 · 80% 구간 ${fmt(lo, ind.unit)}~${fmt(hi, ind.unit)}`, color: colorOf(a[0], scaleFor(ind, 'now')), cell: null, lo, hi };
+    }
     return { value: null, year: null, text: '자료 없음', color: NULL_COLOR, cell: null };
   }
   // 추세 전망 한 동·한 지표·선택한 연도: [점추정, 하한, 상한]. 구간이 없으면 점추정만 두지 않고 자료 없음(윤리 원칙 ④)
@@ -394,7 +403,7 @@
   function sigunguModel(sgs, ind, mode, inds, year, ext) {
     const scale = scaleFor(ind, mode), key = keyOf(ind, mode), byYear = !!ind.series && mode !== 'trend';
     return (sgs || []).map(sg => {
-      if (ind.level === 'sg') { const x = sgExtra(ind, sg, ext); return { code: String(sg.code5), name: sg.name, kind: sg.kind || null, value: x.value, year: x.year, status: null, text: x.text, color: x.color, bbox: sg.bbox || null, over: null, n: null, abs: x.abs ?? null, since: x.since ?? null }; }
+      if (ind.level === 'sg' || (ind.src === 'forecast' && ind.sgFile)) { const x = sgExtra(ind, sg, ext); return { code: String(sg.code5), name: sg.name, kind: sg.kind || null, value: x.value, year: x.year, status: null, text: x.text, color: x.color, bbox: sg.bbox || null, over: null, n: null, abs: x.abs ?? null, since: x.since ?? null }; }
       let s = summaryOf(sg, key);
       const r = byYear ? sgRow(sg, ind.code, isNum(year) ? year : null) : null;
       if (byYear && isNum(year)) s = { value: r ? r.value : null, year, status: null }; // 그해 시·군·구 색 = 그 안 읍·면·동 값의 중앙값(원장 값)
@@ -962,7 +971,10 @@
   const livingOf = code5 => (state.living ? lazy('living:' + code5, () => fetchJson(`data/national/living/${code5}.json`).then(j => (j && Array.isArray(j.dongs) ? j : null))) : null);
   // 전망 파일: forecast/index.json이 없으면 시군구 파일도 찾지 않는다
   const forecastOf = code5 => (state.forecastIdx ? lazy('fc:' + code5, () => fetchJson(`data/national/forecast/${code5}.json`).then(j => (j && Array.isArray(j.dongs) ? j : null))) : null);
-  const extOf = v => ({ migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate, horizon: horizon(),
+  // 시·군·구 전망 파일(약 220KB): 추세 전망 지표를 고를 때만 받는다
+  const forecastSgOf = () => (state.forecastIdx && typeof state.forecastIdx.sigungu_file === 'string' && curInd().src === 'forecast'
+    ? lazy('fcsg', () => fetchJson(`data/national/forecast/${state.forecastIdx.sigungu_file}`).then(j => (j && Array.isArray(j.sigungu) ? j : null))) : null);
+  const extOf = v => ({ migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate, horizon: horizon(), forecastSg: forecastSgOf(),
     forecast: v && v.level === 'emd' ? forecastOf(v.emdCode) || null : null, sg: v ? (v.gu || v.sigungu || null) : null });
   let timer = null, autoT = null, lastLegend = '', lastLive = '', lastDong = null;
 
@@ -1242,7 +1254,8 @@
     const yearCtl = py && py.years.length ? `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${sgOn}" aria-label="${sgOn ? '재생 멈춤' : `${py.years[0]}년부터 ${py.years[py.years.length - 1]}년까지 재생`}">${sgOn ? '❚❚' : '▶'}</button><label>연도 <b>${esc(m.year ?? '')}</b><input type="range" data-year min="${py.years[0]}" max="${py.years[py.years.length - 1]}" step="1" value="${m.year ?? py.years[py.years.length - 1]}"></label></div>`
       : m.kind === 'emd' && m.years && (ind.series || ind.computed) ? `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${state.playing}" aria-label="${state.playing ? '재생 멈춤' : `${m.years.min}년부터 ${m.years.max}년까지 재생`}">${state.playing ? '❚❚' : '▶'}</button><label>연도 <b>${esc(m.year ?? '')}</b><input type="range" data-year min="${m.years.min}" max="${m.years.max}" step="1" value="${m.year ?? m.years.max}"></label></div>` : '';
     const base = state.index.source && isNum(state.index.source.base_year) ? state.index.source.base_year : null;
-    const hzCtl = ind.src === 'forecast' && horizons().length ? seg('horizon', horizons().map(h => [h, `${h}년${base !== null ? ` (+${h - base}년)` : ''}`]), horizon(), '전망 연도') : '';
+    // 휴대폰 폭에서 네 칸이 한 줄에 들어가게 '(+1년)'은 뺐다. 기준연도는 지표 이름(○○년 대비)에 있다
+    const hzCtl = ind.src === 'forecast' && horizons().length ? seg('horizon', horizons().map(h => [h, `${h}년`]), horizon(), base !== null ? `전망 연도(기준 ${base}년)` : '전망 연도') : '';
     // 연도 막대를 끄는 중이면 막대를 다시 만들지 않는다(다시 만들면 끌기가 한 칸에서 끊긴다)
     const sliding = top.contains(document.activeElement) && document.activeElement.matches('[data-year]');
     if (sliding) { const yb = top.querySelector('.map-year b'); if (yb) yb.textContent = m.year ?? ''; }
