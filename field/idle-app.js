@@ -8,6 +8,24 @@
   const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };
   const n = (x) => Number(x).toLocaleString("ko-KR");
   let last = null;
+  // 구별 공개 빈집 수(data/vacant_busan.json). 공개 파일이 있는 구만 표를 보인다. 순서는 원자료 그대로
+  const vacant = getJson("vacant_busan.json").catch(() => null);
+  async function drawVacant(gu) {
+    const d = await vacant, g = d && d.gus.find((x) => x.gu === gu), name = $("gu").selectedOptions[0] ? $("gu").selectedOptions[0].text : "";
+    $("vacant").hidden = !g;
+    $("vacantNone").hidden = !!g;
+    if (!g) { $("vacantNone").textContent = `${name}의 행정동별 빈집 수 공개 파일은 찾지 못했습니다. 지금은 영도구·부산진구·해운대구만 있습니다.`; return; }
+    const th = (t) => { const c = document.createElement("th"); c.scope = "col"; c.textContent = t; return c; };
+    const head = document.createElement("tr"); head.append(th("행정동"), th("빈집 수(호)"), ...g.grade_names.map(th));
+    $("vacantHead").replaceChildren(head);
+    $("vacantRows").replaceChildren(...g.rows.map((r) => {
+      const tr = document.createElement("tr");
+      for (const v of [r.dong, n(r.total), ...(r.grades || []).map(n)]) { const c = document.createElement("td"); c.textContent = v; tr.append(c); }
+      return tr;
+    }));
+    $("vacantTitle").textContent = `${g.gu_name} 행정동별 공개 빈집 수 ${n(g.total)}호`;
+    $("vacantBase").textContent = `출처: ${g.title} · 기준일 ${g.base_date} · ${d.license_type}`;
+  }
 
   // 구·군 → 법정동 목록(buildings/index.json, 부산만). 처음 고른 곳은 영도구 청학동(창고·공장이 가장 많은 동)
   getJson("buildings/index.json").then((idx) => {
@@ -16,7 +34,8 @@
     const showDongs = (gu, pick) => fill($("dong"), gus.find((s) => s.code === gu).dongs.map((d) => [d.code, d.name]), pick);
     fill($("gu"), gus.map((s) => [s.code, s.name]), "26200");
     showDongs("26200", "2620012000");
-    $("gu").addEventListener("change", () => showDongs($("gu").value));
+    $("gu").addEventListener("change", () => { showDongs($("gu").value); drawVacant($("gu").value); });
+    drawVacant("26200");
   }).catch(() => say("구·군 목록을 불러오지 못했습니다.\n영도구 청학동만 볼 수 있습니다.", true));
 
   function draw(res, file) {
