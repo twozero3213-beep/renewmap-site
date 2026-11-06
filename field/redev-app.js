@@ -124,15 +124,22 @@
     say(got.n === null ? `${f.name}을 목록에 넣었습니다.` : `${f.name}에서 ${got.n}필지를 넣었습니다.${got.skipped ? `\nPNU·지번이 없는 ${got.skipped}개는 뺐습니다.` : ""}`);
   });
 
-  async function parcelText(file, items, blds, areaM2) {
-    if (typeof ParcelRef === "undefined") return null;
-    const codes = (file.dongs || [{ code: file.bjd10 }]).map((d) => d.code);
-    const files = (await Promise.all(codes.map((c) => getJson(`parcels/${c}.json`).catch(() => null)))).filter(Boolean);
-    if (!files.length) return null;
-    const map = new Map(files.flatMap((f) => [...ParcelRef.index(f)]));
+  // 나·다·라목 참고 범위: 브이월드 토지특성을 격리 창(vw-frame)으로 그때그때 묻는다. 약관 제19조(저장·제공 금지)로 파일을 만들지 않는다.
+  // 키가 없는 주소(로컬)·조회 실패면 null → 예전처럼 '현장 확인'만 쓴다
+  async function parcelText(items, blds, areaM2) {
+    if (typeof ParcelRef === "undefined" || !VW) return null;
     const pnus = [...items.map((it) => it.pnu).filter(Boolean), ...blds.map((b) => b.pnu).filter(Boolean)];
+    const pres = ParcelRef.prefixes(pnus);
+    if (!pres.length) return null;
+    say(`토지특성(도로접면·필지 면적)을 브이월드에서 묻는 중입니다. 본번 ${pres.length}곳.`);
+    // 토지특성은 해마다 7월 무렵 공시된다. 작년 판이 아직 없으면 그 전 해로 묻는다
+    let r = await vwAsk({ land: pres, year: String(new Date().getFullYear() - 1) }, 90000);
+    if (r && !r.error && r.rows && !r.rows.length) r = await vwAsk({ land: pres, year: String(new Date().getFullYear() - 2) }, 90000);
+    if (!r || r.error || !r.rows || !r.rows.length) return null;
+    const map = ParcelRef.fromRows(r.rows);
     return ParcelRef.texts({ density: ParcelRef.houseDensity(blds, areaM2), road: ParcelRef.roadFrontage(blds, map), lots: ParcelRef.smallLots(pnus, map) });
   }
+
 
   // ── 지도에서 영역 그리기(T20, D24 경쟁사 흡수: 부동산플래닛 영역 그리기·Prom 구역계). 필지 조회는 격리된 창(vw-frame.html)이 한다
   const LEAFLET = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/";
@@ -149,8 +156,8 @@
     const done = vwWait.get(e.data && e.data.id);
     if (done) { vwWait.delete(e.data.id); done(e.data); }
   });
-  const vwAskArea = (wkt) => new Promise((ok) => {
-    const send = () => { const id = ++vwSeq; vwWait.set(id, ok); vwFrame.contentWindow.postMessage({ id, wkt }, "*"); setTimeout(() => { if (vwWait.delete(id)) ok({ error: "시간 초과" }); }, 25000); };
+  const vwAsk = (msg, ms = 25000) => new Promise((ok) => {
+    const send = () => { const id = ++vwSeq; vwWait.set(id, ok); vwFrame.contentWindow.postMessage({ id, ...msg }, "*"); setTimeout(() => { if (vwWait.delete(id)) ok({ error: "시간 초과" }); }, ms); };
     if (vwFrame) return send();
     vwFrame = document.createElement("iframe");
     vwFrame.hidden = true; vwFrame.title = "브이월드 필지 조회"; vwFrame.setAttribute("sandbox", "allow-scripts"); vwFrame.src = "vw-frame.html";
@@ -176,7 +183,7 @@
     if (!wkt) return say("꼭짓점을 3개 이상 찍어 주세요.", true);
     if (!VW) return say("이 주소에서는 브이월드 필지 조회를 쓸 수 없습니다.\n공개 사이트에서 다시 시도해 주세요.", true);
     $("drawDone").disabled = true; say("브이월드에서 영역 안 필지를 찾는 중입니다.");
-    const r = await vwAskArea(wkt);
+    const r = await vwAsk({ wkt });
     $("drawDone").disabled = false;
     if (r.error) return say(`필지를 찾지 못했습니다(${r.error}).\n인터넷 연결을 확인해 주세요.`, true);
     if (!r.pnus.length) return say("영역 안에서 필지를 찾지 못했습니다.", true);
@@ -201,7 +208,7 @@
     // 기준일은 자료 기준일보다 앞설 수 없다. 그 사이에 지은 건물을 대장 스냅숏으로는 가려낼 수 없어 분모가 틀어진다
     if (refIn && refIn < file.age_reference_date) return say(`경과 기준일은 자료 기준일(${D.govDate(file.age_reference_date)}) 이후로 넣어 주세요.\n그 전 날짜는 그 뒤에 지은 건물이 섞여 바르게 셀 수 없습니다.`, true);
     // 나·다·라목 참고 범위(1365 트윈의 호수밀도·접도율·과소필지 흡수). 토지특성 파일이 없거나 못 받으면 예전처럼 '현장 확인'만 쓴다
-    const parcel = await parcelText(file, p.items, m.buildings, areaM2);
+    const parcel = await parcelText(p.items, m.buildings, areaM2);
     const res = R.review(m.buildings, { ref: refIn || file.age_reference_date, district: $("district").checked, areaM2, parcel });
     last = { res, m, file };
     const skipped = [...(p.bad.length ? [`지번으로 읽지 못한 칸 ${p.bad.length}개`] : []), ...(m.missing.length ? [`대장에 없는 지번 ${m.missing.length}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})`] : []),
