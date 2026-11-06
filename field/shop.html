@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'">
+<script src="../frame-guard.js"></script>
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>음식점 상권 변화 유형 | 리뉴맵</title>
+<meta name="description" content="부산 법정동마다 일반음식점·휴게음식점의 운영 업소와 최근 10년 폐업 업소 평균 영업기간을 부산 평균과 견줘 다이나믹·상권확장·상권축소·정체로 나눕니다. 서울시 상권분석서비스 상권변화지표 방식이며 판정이나 추천이 아닙니다.">
+<link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/field/shop.html">
+<meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/field/shop.html">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="리뉴맵 RENEWMAP">
+<meta property="og:title" content="음식점 상권 변화 유형 | 리뉴맵">
+<meta property="og:description" content="부산 법정동별 음식점 영업기간으로 본 상권 변화 유형(참고).">
+<meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
+<meta name="theme-color" content="#006f5b">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="../site.webmanifest">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<link rel="stylesheet" href="../pretendard.css">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="../site-v4.css">
+<link rel="stylesheet" href="../v4.css">
+<link rel="stylesheet" href="field.css">
+</head>
+<body class="field redev-v4">
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top"><div class="wrap"><h1>음식점 상권 변화 유형</h1></div></header>
+<main id="main">
+  <p class="note">구·군을 고르면 법정동마다 일반음식점·휴게음식점의 영업기간을 부산 평균과 견줍니다.<br>운영 중인 업소와 최근 10년 안에 폐업한 업소의 평균 영업기간을 봅니다.</p>
+  <p class="warn">판정이나 추천이 아닌 참고 지표입니다.<br>인허가 대장의 개업·폐업 신고일만 쓰므로 실제 영업과 다를 수 있습니다.</p>
+
+  <form id="f" class="card" novalidate>
+    <label for="gu">구·군(부산)</label>
+    <select id="gu"><option value="중구" selected>중구</option></select>
+    <button type="submit">표 보기</button>
+  </form>
+
+  <p id="msg" class="msg" role="status" aria-live="polite">상권 자료를 여는 중입니다.</p>
+
+  <section id="out" class="card" aria-labelledby="outTitle" hidden>
+    <h2 id="outTitle">표</h2>
+    <p id="outBase" class="hint"></p>
+    <button type="button" class="ghost" id="csv">표 CSV 받기</button>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="법정동별 음식점 상권 변화 유형 표">
+      <table>
+        <thead><tr><th scope="col">법정동</th><th scope="col">일반음식점 유형</th><th scope="col">일반 운영</th><th scope="col">일반 폐업(10년)</th><th scope="col">휴게음식점 유형</th><th scope="col">휴게 운영</th><th scope="col">휴게 폐업(10년)</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="howTitle">
+    <h2 id="howTitle">유형 읽는 법</h2>
+    <ul class="facts">
+      <li>다이나믹: 운영·폐업 업소 모두 영업기간이 부산 평균보다 짧음</li>
+      <li>상권확장: 운영 업소는 짧고 폐업 업소는 김</li>
+      <li>상권축소: 운영 업소는 길고 폐업 업소는 짧음</li>
+      <li>정체: 운영·폐업 업소 모두 김</li>
+    </ul>
+    <p class="hint">부산 평균과 같으면 김으로 셉니다.<br>운영·폐업 업소가 각각 10곳 미만인 동은 유형을 내지 않습니다.<br>업소 이름과 주소는 싣지 않고 동별 개수와 평균만 보입니다.</p>
+  </section>
+  <p class="hint" id="src">출처와 방법은 표를 연 뒤 여기에 적습니다.</p>
+  <p class="hint">빈 창고·공장은 <a href="idle.html">오래된 창고·공장 목록</a>에서, 신청 구역 계산은 <a href="redev.html">신청요건 확인</a>에서 합니다.</p>
+</main>
+<script src="../site.js"></script>
+<script src="../site-motion.js" defer></script>
+<script src="shop.js"></script>
+<script src="shop-app.js"></script>
+</body>
+</html>
