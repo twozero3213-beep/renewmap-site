@@ -78,3 +78,42 @@
     document.body.append(p);
   });
 })();
+
+/* 방문 분석(핵클, 모두의 창업 스타터 플랜). 키 파일(hackle-key.js)은 사이트 저장소에만 있어 원본·로컬에서는 아무것도 보내지 않는다.
+   이 브라우저에서 끈 경우(privacy.html)·전역 개인정보 보호 신호(GPC)·추적 안 함(DNT)이면 SDK를 아예 불러오지 않는다.
+   이벤트에는 회원 번호·검색어·파일 이름을 담지 않는다(개인정보처리방침 1-4). */
+(function () {
+  'use strict';
+  if (typeof document === 'undefined' || !document.currentScript) return;
+  const base = new URL('.', document.currentScript.src).href, OFF = 'renewmap-analytics-off';
+  const off = () => { try { return localStorage.getItem(OFF) === '1'; } catch (e) { return false; } };
+  const page = () => location.pathname.replace(/^.*\/renewmap-site\//, '/').replace(/\/index\.html$/, '/') || '/';
+  // 개인정보처리방침의 '방문 분석 끄기' 버튼
+  document.querySelectorAll('[data-analytics-toggle]').forEach(btn => {
+    const show = () => { btn.textContent = off() ? '이 브라우저에서 방문 분석 켜기' : '이 브라우저에서 방문 분석 끄기'; };
+    show();
+    btn.addEventListener('click', () => { try { off() ? localStorage.removeItem(OFF) : localStorage.setItem(OFF, '1'); } catch (e) { /* 저장 못 하면 바뀌지 않는다 */ } show(); });
+  });
+  if (off() || navigator.globalPrivacyControl === true || navigator.doNotTrack === '1') return;
+  const load = (src, then) => { const s = document.createElement('script'); s.src = src; s.onload = then; document.head.appendChild(s); };
+  load(base + 'hackle-key.js', () => {
+    const key = window.RENEWMAP_HACKLE_KEY;
+    if (!key) return;
+    load(base + 'vendor/hackle-12.2.1.min.js', () => {
+      const client = window.Hackle && window.Hackle.createInstance(key);
+      if (!client) return;
+      const track = (k, props) => client.track({ key: k, properties: Object.assign({ page: page() }, props) });
+      // 내려받기는 모두 <a download>를 눌러서 일어난다(docgen·overlay·viewer·현장 앱). 형식만 남기고 파일 이름은 보내지 않는다
+      document.addEventListener('click', ev => {
+        const a = ev.target.closest && ev.target.closest('a');
+        if (!a) return;
+        if (a.hasAttribute('download')) track('download_document', { format: ((a.download || '').split('.').pop() || 'unknown').toLowerCase() });
+        else if (/#contact$/.test(a.getAttribute('href') || '')) track('click_contact', {});
+      }, true);
+      document.addEventListener('submit', ev => {
+        if (ev.target.id === 'homeSearch') track('search_dong', {});
+        else if (ev.target.id === 'f' && /redev\.html$/.test(location.pathname)) track('run_redev_check', {});
+      }, true);
+    });
+  });
+})();

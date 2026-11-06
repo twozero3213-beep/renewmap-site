@@ -24,3 +24,12 @@
 | Tesseract.js·tesseract.js-core (`vision/tesseract/`) | 7.0.0 | Apache-2.0 | 번호판 숫자 읽기(`models/eng.traineddata.gz`, tessdata_fast) | https://github.com/naptha/tesseract.js |
 
 - 전부 이 기기 안에서 돌고, 처음 쓸 때만 약 20MB를 받는다. 자동 결과는 보조이며 사람의 가림 확인을 대신하지 않는다.
+
+## 방문 분석 (`hackle-12.2.1.min.js`, site.js가 키 파일이 있을 때만 불러옴)
+
+| 도구 | 버전 | 라이선스 | 쓰임 | 출처 |
+|---|---|---|---|---|
+| Hackle JavaScript SDK (`@hackler/javascript-sdk`, `lib/index.browser.umd.min.js`) | 12.2.1 | ISC | 페이지 조회·주요 행동 수(모두의 창업 스타터 플랜) | https://www.npmjs.com/package/@hackler/javascript-sdk |
+
+- npm 묶음의 무결성 값(sha512-VkeN62bU…)을 받은 뒤 확인했고 파일은 고치지 않았다. 보내는 곳은 sdk-api·event-api·monitoring·static.hackle.io다.
+- 키(`hackle-key.js`)는 사이트 저장소에만 둔다. 키가 없으면(로컬·원본 저장소) SDK를 불러오지 않는다.

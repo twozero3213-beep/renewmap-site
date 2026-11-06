@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
 <script src="frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>개인정보 처리방침 | 리뉴맵</title>
@@ -65,7 +65,10 @@
 <h3>1-4. 자동으로 수집되는 정보</h3>
 <p>방문 기록(접속 일시, 이용 페이지), 브라우저·기기 종류.</p>
 <p>수집 주체와 방식은 3절에서 설명합니다.</p>
-<p>현재 이 사이트는 방문 분석 도구(쿠키 기반 행동 분석)를 켜지 않았습니다.</p>
+<p>방문 분석 도구로 핵클(Hackle)을 씁니다.<br>브라우저에 기기 식별용 무작위 값(쿠키·로컬 저장소)을 두고, 페이지 조회와 동네 찾기·계산하기·문서 내려받기·상담 버튼을 누른 횟수를 셉니다.</p>
+<p>이름·연락처·회원 번호·검색어·파일 이름은 보내지 않습니다. 내려받은 문서는 형식(hwpx·xlsx 등)만 남깁니다.</p>
+<p>브라우저의 전역 개인정보 보호 신호(GPC)나 추적 안 함(DNT)이 켜져 있으면 분석 도구를 불러오지 않습니다.<br>아래 버튼으로 이 브라우저에서 끌 수 있습니다.</p>
+<p><button type="button" class="btn ghost" data-analytics-toggle>이 브라우저에서 방문 분석 끄기</button></p>
 
 <h2>2. 제3자 제공</h2>
 <p>팀은 개인정보를 제3자에게 제공하지 않습니다.</p>
@@ -78,6 +81,7 @@
 <tr><td>Google LLC (Gmail)</td><td>상담 이메일 송수신·보관</td><td>폼 항목 전부</td><td>미국, 메일 발송 시, 네트워크 전송</td></tr>
 <tr><td>GitHub, Inc. (GitHub Pages)</td><td>웹사이트 호스팅, 접속 기록</td><td>접속 IP, 요청 정보</td><td>미국, 접속 시</td></tr>
 <tr><td>Cloudflare cdnjs (Leaflet)</td><td>지도 라이브러리 전송</td><td>접속 IP</td><td>해당 사업자 서버, 접속 시</td></tr>
+<tr><td>핵클 (Hackle, 방문 분석)</td><td>페이지 조회·주요 행동 수 집계</td><td>기기 식별용 무작위 값, 조회한 페이지 주소, 행동 이름과 문서 형식</td><td>대한민국(AWS 서울 리전), 방문 시, 네트워크 전송</td></tr>
 <tr><td>OpenStreetMap 타일 서버</td><td>지도 이미지</td><td>접속 IP</td><td>OSMF 서버, 지도 열람 시</td></tr>
 <tr><td>네이버클라우드 (NAVER Maps)</td><td>동네 찾기 화면의 바탕지도</td><td>접속 IP, 보고 있는 지도 범위</td><td>대한민국, 지도 열람 시</td></tr>
 <tr><td>국토교통부 브이월드</td><td>바탕지도(네이버 지도를 못 쓸 때), 현장 확인 화면의 배경지도(켤 때만)</td><td>접속 IP, 보고 있는 지도 범위(현장 배경지도는 그 근처의 대략 위치)</td><td>대한민국, 지도 열람 시</td></tr>
