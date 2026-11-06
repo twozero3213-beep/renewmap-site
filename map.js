@@ -1305,6 +1305,7 @@
   // Leaflet 지도는 한 번 만들어 무대(stage)에 두고, render()는 색·선택만 바꾼다
   let M = null;
   // 네이버 지도(배경만). 키(field/naver-map-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작. 실패·5초 초과면 브이월드로
+  // SDK가 NAVER 로고 img에 style 속성을 넣는다. explore.html CSP style-src에 그 문자열 해시만 허용했다('unsafe-hashes', 2026-11-07). SDK가 문구를 바꾸면 콘솔 오류로 다시 드러난다
   function loadNaver() {
     const key = window.RENEWMAP_NAVER_KEY;
     if (!/^[A-Za-z0-9]{6,40}$/.test(key || '')) return Promise.resolve(false);
