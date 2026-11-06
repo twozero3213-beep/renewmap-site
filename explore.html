@@ -6,8 +6,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com oapi.map.naver.com nrbe.map.naver.net nrbe.pstatic.net; style-src 'self' https://cdnjs.cloudflare.com 'unsafe-hashes' 'sha256-H7dQF5ax9lLTUTM/FW7YC+KypydYJF03Qhs1DNfoWeQ='; img-src 'self' data: https://tile.openstreetmap.org https://api.vworld.kr map.pstatic.net nrbe.map.naver.net nrbe.pstatic.net static.naver.net ssl.pstatic.net oapi.map.naver.com; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io oapi.map.naver.com nrbe.map.naver.net nrbe.pstatic.net map.pstatic.net kr-col-ext.nelo.navercorp.com; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
 <script src="frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>동네 찾기 | 리뉴맵</title>
-<meta name="description" content="전국 읍·면·동을 지도와 조건으로 찾고, 공공데이터 값과 출처·기준일이 붙은 문서를 한글·워드·엑셀·PDF로 받습니다.">
+<title>동네 찾기·지도 | 리뉴맵</title>
+<meta name="description" content="전국 3,559개 행정동을 지도와 조건으로 찾아보세요. 공공데이터 값과 출처·기준일이 붙은 문서를 한글·워드·엑셀·PDF로 받습니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/explore.html">
 <meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/explore.html">
 <meta property="og:type" content="website">
@@ -50,7 +50,7 @@
   </div>
 </header>
 <main id="main">
-<h1 class="sr-only">리뉴맵 지역 탐색: 조건, 지도, 문서</h1>
+<h1 class="sr-only">동네 찾기: 조건으로 고르고, 지도로 보고, 문서로 받기</h1>
   <div class="evidence-workspace" data-workspace data-active-panel="map">
     <nav class="workspace-tabs" aria-label="작업공간 패널">
       <button type="button" data-workspace-tab="filters" aria-controls="find" aria-pressed="false">조건</button>
@@ -62,11 +62,11 @@
         <div class="workspace-panel-inner">
           <button type="button" class="btn ghost ws-close" data-filters-close aria-label="업무 패널 닫기">닫기</button>
           <div id="gov" class="gov" aria-labelledby="govTitle">
-            <div class="section-head"><div><h2 id="govTitle">어떤 일 때문에 오셨나요?</h2></div><p>카드를 누르면 아래 지역 찾기가 그 조건으로 열립니다.<br>동을 고른 뒤 '사업 근거서'를 받습니다.</p></div>
+            <div class="section-head"><div><h2 id="govTitle">어떤 일 때문에 오셨나요?</h2></div><p>하려는 일을 고르면 맞는 조건이 미리 걸린 채로 열립니다.<br>동을 고르고 '사업 근거서'를 받으세요.</p></div>
             <div data-gov><p class="fd-wait">자료를 불러오는 중입니다.</p></div>
           </div>
           <details id="findMore" class="find-more">
-          <summary class="section-head"><div><h2 id="findTitle">조건으로 지역 찾기</h2></div><p>고른 조건을 모두 갖춘 동만 보입니다.<br>행정동 코드 순입니다.<br>순위가 아닙니다.</p></summary>
+          <summary class="section-head"><div><h2 id="findTitle">조건으로 동네 고르기</h2></div><p>고른 조건을 모두 갖춘 동만 남습니다.<br>목록은 행정동 코드 순서입니다.<br>순위는 <a href="rank.html">동네 순위</a>에서 따로 봅니다.</p></summary>
           <div id="findApp"><p class="fd-wait">자료를 불러오는 중입니다.</p></div>
           </details>
           <noscript><p>지역 찾기는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
@@ -76,7 +76,7 @@
         <div class="workspace-panel-inner">
           <div class="hero-head">
             <h2 id="heroTitle">지도</h2>
-            <p class="lead">동을 누르면 값과 출처·기준일이 나옵니다.<br>판정이 아니며 순위를 매기지 않습니다.</p>
+            <p class="lead">동을 누르면 값과 출처, 기준일이 함께 열립니다.<br>지도의 색은 값의 크기이고 판정이 아닙니다.</p>
           </div>
           <form id="heroSearch" class="hero-search" role="search" autocomplete="off">
             <label for="heroQ">동네 찾기</label>
@@ -92,7 +92,7 @@
       </section>
       <section id="report" class="workspace-panel" data-workspace-panel="evidence" aria-labelledby="reportTitle">
         <div class="workspace-panel-inner">
-          <div class="section-head"><div><h2 id="reportTitle">문서 받기</h2></div><p>아래 문장은 공공데이터 값과 출처를 그대로 옮겼습니다.<br>평가나 판정은 하지 않습니다.</p></div>
+          <div class="section-head"><div><h2 id="reportTitle">문서로 받기</h2></div><p>아래 문장은 공공데이터 값과 출처를 그대로 옮긴 것입니다.<br>평가하는 말은 넣지 않았습니다.</p></div>
           <div class="export-tools" data-export-tools role="group" aria-label="보고서 납품 형식">
             <div class="export-buttons">
               <button type="button" class="btn" data-export-format="hwpx" disabled>한글 받기</button>

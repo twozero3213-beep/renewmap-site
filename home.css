@@ -126,10 +126,11 @@
 .v3 .h-val p { margin: 0 0 24px; color: var(--dim); }
 
 /* 6 하지 않는 일: × 표시와 마무리 문장으로 뜻을 전한다(색에 기대지 않는다) */
-.h-nots { list-style: none; margin: 0 0 40px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); }
-.h-nots li { padding: 20px 16px 20px 0; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 18px; font-weight: 600; }
+/* 항목은 글 길이만큼 이어서 놓는다. 격자 칸에 가두면 긴 항목이 칸 안에서 접혔다(2026-11-07 대표 지적) */
+.h-nots { list-style: none; margin: 0 0 40px; padding: 0; display: flex; flex-wrap: wrap; column-gap: 40px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.h-nots li { padding: 20px 0; color: var(--ink); font-size: 18px; font-weight: 600; white-space: nowrap; }
 .h-nots li::before { content: '× '; color: var(--notice); font-weight: 700; }   /* 취소선은 한글 획을 가려 읽기 어렵다(마무리 검토 2026-10-30) */
-.v3 .h-not-end { max-width: 26em; font-size: clamp(22px, 2.4vw, 28px); line-height: 1.45; font-weight: 700; letter-spacing: -0.01em; }
+.v3 .h-not-end { max-width: none; font-size: clamp(22px, 2.4vw, 28px); line-height: 1.45; font-weight: 700; letter-spacing: -0.01em; }
 
 /* 7 확인된 숫자 */
 .h-stats { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 40px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -149,7 +150,6 @@
   .h-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 48px; }
   .h-doc { max-width: 444px; }
   .h-split { grid-template-columns: minmax(0, 1fr); gap: 32px; }
-  .h-nots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
   .v3 .wrap { padding: 0 16px; }
@@ -172,7 +172,7 @@
   .v3 .h-prod.is-main h3 { font-size: 24px; }
   .h-values, .h-stats { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .h-stats { gap: 28px; }
-  .h-nots li { font-size: 16px; }
+  .h-nots li { font-size: 16px; white-space: normal; padding: 12px 0; }   /* 좁은 화면에서는 항목 안에서 접힌다(가로 넘침 방지) */
   .v3 .h-not-end { font-size: 20px; }
   .h-cta-box { grid-template-columns: minmax(0, 1fr); padding: 32px 20px; }
   .h-cta-box .btn { grid-column: 1; grid-row: auto; margin-top: 8px; }

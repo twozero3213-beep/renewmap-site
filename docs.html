@@ -7,8 +7,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; worker-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; manifest-src 'self'">
 <script src="frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>문서 열기 | 리뉴맵 RENEWMAP</title>
-<meta name="description" content="한글·워드·엑셀·파워포인트·PDF·그림 파일을 이 기기 안에서 열어 보고 받을 수 있습니다. 서버로 보내지 않습니다.">
+<title>문서 열기·받기 | 리뉴맵 RENEWMAP</title>
+<meta name="description" content="한글·워드·엑셀·파워포인트·PDF 파일을 설치 없이 브라우저에서 바로 엽니다. 파일은 이 기기 밖으로 나가지 않습니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/docs.html">
 <meta name="theme-color" content="#006f5b">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -43,18 +43,18 @@
 </header>
 
 <main id="main" class="home docs">
-  <h1>문서 열기·받기</h1>
+  <h1>한글 파일도 브라우저에서 바로</h1>
 
   <section aria-labelledby="getTitle" class="docs-card">
-    <h2 id="getTitle">보고서 받기</h2>
-    <p>동네를 고르면 근거가 붙은 보고서를 이 형식들로 받습니다.</p>
+    <h2 id="getTitle">동네 보고서 받기</h2>
+    <p>동네를 고르면 출처가 붙은 보고서를 원하는 형식으로 받습니다.</p>
     <ul class="docs-formats"><li>한글(HWPX)</li><li>워드(DOCX)</li><li>엑셀(XLSX)</li><li>파워포인트(PPTX)</li><li>PDF</li></ul>
     <a class="btn" href="explore.html#report">보고서 만들러 가기</a>
   </section>
 
   <section aria-labelledby="openTitle" class="docs-card">
-    <h2 id="openTitle">가진 문서 열기</h2>
-    <p>파일은 이 기기 안에서만 열립니다. 서버로 보내지 않습니다.</p>
+    <h2 id="openTitle">갖고 있는 문서 열기</h2>
+    <p>한글 프로그램이 없어도 열립니다.<br>파일은 이 기기 밖으로 나가지 않습니다.</p>
     <label id="docDrop" class="doc-drop" for="docFile"><b>파일 고르기</b><span>또는 여기에 끌어다 놓기</span><span>60MB까지 엽니다</span>
       <input id="docFile" type="file" accept=".hwp,.hwpx,.docx,.xlsx,.xls,.xlsb,.ods,.csv,.pptx,.pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.md,.json,.odt"></label>
     <ul class="docs-formats"><li>한글 hwp·hwpx</li><li>워드 docx·odt</li><li>엑셀 xlsx·xls·csv</li><li>파워포인트 pptx</li><li>PDF</li><li>그림</li><li>글 txt·md</li></ul>
