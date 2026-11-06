@@ -536,7 +536,7 @@
     }
     const row = node && e.forecastSg ? sgMatch(e.forecastSg.sigungu, node) : null;
     const svg = row && row.forecast && row.observed ? forecastSVG(row.observed[base], row.forecast[base], `${node.name} ${ind.label}`, unit) : '';
-    const how = base === 'DECLINE_POP_TOTAL' ? (row && row.pop_model === 'ens' ? '동 GB 합과 시·군·구 추세의 평균' : '시·군·구 추세') : ind.how && ind.how !== '추세 외삽' ? `시·군·구 ${ind.how}` : '시·군·구 추세 외삽';
+    const how = base === 'DECLINE_POP_TOTAL' ? (row && row.pop_model === 'ens' ? '동 GB 합과 시·군·구 추세의 평균' : '시·군·구 추세') : row && row.models && typeof row.models[base] === 'string' ? `시·군·구 ${row.models[base]}` : ind.how && ind.how !== '추세 외삽' ? `시·군·구 ${ind.how}` : '시·군·구 추세 외삽'; // 시·군·구마다 코호트·추세가 다를 수 있어 그 곳 모델(sigungu.json models)을 먼저
     return svg ? `<h4 class="map-h4">${esc(node.name)} 추세 전망 <small>${esc(how)} · 판정 아님</small></h4>${svg}` : '';
   }
   // 상태 개수 도넛(비율 그림). 개수를 글자로 함께 쓴다. 순위·점수 아님
