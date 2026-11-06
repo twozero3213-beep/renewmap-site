@@ -99,7 +99,9 @@
   function fmtCell(c) {
     if (c === null || c === undefined) return noData();
     if (hidden(c)) return (FMT().hidden || '비공개({reason})').replace('{reason}', c.value_hidden_reason);
-    return c.value === null || c.value === undefined ? noData() : fmtNum(c.value);
+    // 30년 감소율은 1995~2024년 값이 다 있어야 계산한다(dong_brief.DROP30_SHORT와 같은 문구)
+    if (c.value === null || c.value === undefined) return c.indicator_code === 'DECLINE_POP_DROP30Y_PCT' ? '계산 안 함(1995~2024년 인구 기록이 다 있지 않음)' : noData();
+    return fmtNum(c.value);
   }
   const licenseOf = c => c.license_type || '미표시';
   // 2026-10-26 → '2026. 10. 26.' (행정업무규정 제7조제5항). 형식이 아니면 그대로
