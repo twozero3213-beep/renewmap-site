@@ -21,10 +21,13 @@
 <p class="note">국토교통부 브이월드 3D 지도에 있는 지금 건물을 입체로 봅니다.<br>건물 형상·높이는 브이월드 자료이며, 리뉴맵은 이를 받아 저장하지 않습니다.<br>계획안 모델을 올려 비교하려면 <a href="twin.html">3D 모델 비교</a>를 쓰세요.</p>
 <div id="vmap" class="city3d-map" role="region" aria-label="브이월드 3D 건물 지도"></div>
 <p id="message" class="msg" role="status" aria-live="polite"></p>
+<section id="pick" class="card" aria-live="polite" hidden><h2>건물 정보</h2><dl class="pick-list"></dl></section>
+<p class="hint">건물을 누르면 같은 자리의 국토교통부 GIS건물통합정보 외곽선으로 리뉴맵 건축물대장 행을 찾아 보여 줍니다.<br>지금은 해운대구 재송동·반여동, 부산진구 부암동만 준비돼 있습니다.<br>높이는 대장에 신고된 값이며, 신고가 없는 건물은 '없음'으로 둡니다.</p>
 <p class="hint">브이월드 지도는 리뉴맵 공개 사이트 주소에서만 열립니다.<br>건물 모양은 브이월드가 제공하는 그대로이며, 리뉴맵이 측량하거나 고치지 않았습니다.</p>
 </main>
 <script src="vworld-key.js"></script>
 <script src="city3d-boot.js"></script>
 <script src="city3d.js"></script>
+<script src="city3d-pick.js"></script>
 </body>
 </html>

@@ -19,4 +19,7 @@
 .twin :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .twin #globe button,.city3d-map button { width: auto; min-height: 0; margin: 0; padding: 0; }
 .twin #globe .cesium-credit-textContainer { font-size: 12px; }
-@media(max-width: 800px) { .twin-layout { display: block; } .twin-map { position: static; } #globe,.city3d-map { height: 360px; } .twin-editor { margin-top: 24px; } .twin header.top .wrap { gap: 16px; } }
+@media(max-width: 800px) { .twin-layout { display: block; } .twin-map { position: static; } #globe { height: 360px; } .city3d-map { height: 520px; } .twin-editor { margin-top: 24px; } .twin header.top .wrap { gap: 16px; } }
+.pick-list { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; }
+.pick-list dt { color: var(--dim); }
+.pick-list dd { margin: 0; overflow-wrap: anywhere; }

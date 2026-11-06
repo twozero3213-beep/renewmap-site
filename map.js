@@ -88,7 +88,7 @@
       // 코호트 모델(예: 65세 이상 비율)은 추세 외삽이 아니다. 자료가 준 모델 이름을 그대로 쓴다
       const how = b && b.model === 'cohort' && typeof b.model_label === 'string' && b.model_label ? b.model_label : '추세 외삽';
       const common = { code: 'FORECAST_' + c, group: 'fore', icon: 'fore', level: sgScope ? 'sg' : 'emd', src: 'forecast', mape, held, standard: null, pending: !fi, sgFile: !!(fi && typeof fi.sigungu_file === 'string'), empty: !!held || (!!b && isNum(b.n_areas) && b.n_areas === 0),
-        disclaimer: fi && typeof fi.disclaimer === 'string' ? fi.disclaimer : null, source: how !== '추세 외삽' ? how : fi && typeof fi.method === 'string' ? `추세 외삽(${fi.method})` : '추세 외삽' };
+        disclaimer: fi && typeof fi.disclaimer === 'string' ? fi.disclaimer : null, how, source: how !== '추세 외삽' ? how : fi && typeof fi.method === 'string' ? `추세 외삽(${fi.method})` : '추세 외삽' };
       const tail = `${sgScope ? ' · 시·군·구 단위' : ''} · ${how} · 판정·투자 조언 아님 · 승인 전 초안${mape === null ? '' : ` · 백테스트 MAPE ${fmt(mape, '%')}`}`;
       // 절대량 지표(명·개)는 자료가 주는 변화율 키(change_pct_key, 기준연도 실측 대비 %)로 칠한다 — 고정 참고 구간, 기준 없음. 화면에서 나누지 않는다
       const ck = b && typeof b.change_pct_key === 'string' && b.change_pct_key ? b.change_pct_key : null, by = fi && isNum(fi.base_year) ? fi.base_year : null;
@@ -112,7 +112,9 @@
     return [mig, des, ...estate, ...fore];
   }
   const FORE_NOTE = '추세 외삽 · 판정·투자 조언 아님 · 승인 전 초안';
-  const foreLine = ind => `${FORE_NOTE}${ind.mape === null || ind.mape === undefined ? '' : ` · 백테스트 MAPE ${fmt(ind.mape, '%')}`}${ind.disclaimer ? ` · ${ind.disclaimer}` : ''}`;
+  // 지표마다 모델 이름(코호트 등)이 있으면 '추세 외삽' 자리에 그것을 쓴다
+  const foreNote = ind => (ind && ind.how && ind.how !== '추세 외삽' ? FORE_NOTE.replace('추세 외삽', ind.how) : FORE_NOTE);
+  const foreLine = ind => `${foreNote(ind)}${ind.mape === null || ind.mape === undefined ? '' : ` · 백테스트 MAPE ${fmt(ind.mape, '%')}`}${ind.disclaimer ? ` · ${ind.disclaimer}` : ''}`;
   const SAFE_NOTE = '공식 기준 없음 · 점수 아님 · 공식 시설 현황만';
   // 공식 기준이 없는 생활 지표의 고정 참고 구간(화면 표시용 눈금, 분위 아님). 자료가 ref_edges를 주면 그것을 쓴다
   const REF_EDGES = { POP_YOUTH_PCT: [10, 15, 20, 25], HOSP_CLINIC_COUNT: [1, 5, 10, 30], HOSP_PER10K: [2, 5, 10, 20], PARK_COUNT: [1, 3, 5, 10], BUS_STOP_DENSITY: [5, 10, 20, 40] };
@@ -534,7 +536,7 @@
     }
     const row = node && e.forecastSg ? sgMatch(e.forecastSg.sigungu, node) : null;
     const svg = row && row.forecast && row.observed ? forecastSVG(row.observed[base], row.forecast[base], `${node.name} ${ind.label}`, unit) : '';
-    const how = base === 'DECLINE_POP_TOTAL' ? (row && row.pop_model === 'ens' ? '동 GB 합과 시·군·구 추세의 평균' : '시·군·구 추세') : '시·군·구 추세 외삽';
+    const how = base === 'DECLINE_POP_TOTAL' ? (row && row.pop_model === 'ens' ? '동 GB 합과 시·군·구 추세의 평균' : '시·군·구 추세') : ind.how && ind.how !== '추세 외삽' ? `시·군·구 ${ind.how}` : '시·군·구 추세 외삽';
     return svg ? `<h4 class="map-h4">${esc(node.name)} 추세 전망 <small>${esc(how)} · 판정 아님</small></h4>${svg}` : '';
   }
   // 상태 개수 도넛(비율 그림). 개수를 글자로 함께 쓴다. 순위·점수 아님
@@ -644,7 +646,7 @@
   }
   function tooltipHTML(it, ind, mode, year, source) {
     const t = mode === 'trend' ? trendText(it.value, ind) : null;
-    const band = isNum(it.lo) && isNum(it.hi) ? `<br>80% 구간 ${esc(fmt(it.lo, ind.unit))}~${esc(fmt(it.hi, ind.unit))} · ${FORE_NOTE}` : ind.level === 'sg' ? `<br>시·군·구 단위${isNum(it.abs) ? ` · 순이동 ${esc(fmt(it.abs, '명'))}` : ''}${it.since ? ` · 지정 ${esc(it.since)}` : ''}` : '';
+    const band = isNum(it.lo) && isNum(it.hi) ? `<br>80% 구간 ${esc(fmt(it.lo, ind.unit))}~${esc(fmt(it.hi, ind.unit))} · ${esc(foreNote(ind))}` : ind.level === 'sg' ? `<br>시·군·구 단위${isNum(it.abs) ? ` · 순이동 ${esc(fmt(it.abs, '명'))}` : ''}${it.since ? ` · 지정 ${esc(it.since)}` : ''}` : '';
     return `<b>${esc(it.name)}</b>${it.kind ? ` <small>${esc(it.kind)}</small>` : ''}<br>${esc(ind.label)}${mode === 'trend' ? ' 5년 변화' : ''} ${esc(it.text)}${t ? ` ${t.arrow} ${t.word}` : ''}${isNum(it.n) && it.n > 0 ? `<br>그해 기준선 넘은 동 ${esc(it.over ?? '–')}곳 / ${esc(it.n)}곳` : ''}${band}<br>${it.year ? `${esc(it.year)}년 · ` : ''}${esc(ind.source || source || SOURCE_DEFAULT)}`;
   }
   // 범례 아래 기준선 한 줄. 지도 이미지(PNG)도 같은 글을 쓴다
@@ -670,7 +672,7 @@
       const src = c.source_name || ind.source || SOURCE_DEFAULT, ref = c.reference_date ? String(c.reference_date).slice(0, 10) : null;
       const where = r.sgLevel ? `이 동이 속한 시·군·구의 ${ind.label}` : `${name}의 ${ind.label}`;
       const std = validStd(ind.standard) ? `${isPending(ind.standard) ? '승인 대기 중인 기준' : '기준'}(${ind.standard.text}) ${r.crossed ? '선을 넘습니다' : '안에 있습니다'}` : null;
-      const fore = ind.src === 'forecast' && isNum(r.lo) && isNum(r.hi) ? `80% 구간은 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}이며 ${FORE_NOTE}` : null;
+      const fore = ind.src === 'forecast' && isNum(r.lo) && isNum(r.hi) ? `80% 구간은 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}이며 ${foreNote(ind)}` : null;
       const tail = std ? `로, ${std}.` : fore ? `로 계산됩니다. ${fore}입니다.` : '입니다.';
       // crossed: 기준 문장이 있을 때만 true(넘습니다)/false(안에 있습니다), 없으면 null. AI 문장 검증이 방향을 대조할 때 쓴다(2026-11-01)
       // stdText: 기준 문구("1만 명당 10곳 미만" 등). 문구 안의 '미만'·'이상'을 방향 표현으로 오인하지 않게 검증 때 떼어 낸다
@@ -1392,6 +1394,19 @@
       // 확대는 17(골목·건물 단위)까지. 두 번 누르기를 거듭해도 그 이상 커지지 않는다. 휠 확대는 지도를 한 번 누른 뒤에만 켠다(페이지를 내리다 지도에 걸려 확대되지 않게). 지도 밖으로 나가면 다시 끈다(2026-11-07 대표 지시)
       map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => map.scrollWheelZoom.disable());
       L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
+      // 지금 보는 곳의 현재 건물을 브이월드 3D 지도(field/city3d.html, 저장 없음)로 연다. 주소에는 지도 중심 좌표만 싣는다
+      const to3d = L.control({ position: 'topleft' });
+      to3d.onAdd = () => {
+        const a = L.DomUtil.create('a', 'leaflet-bar map-3d');
+        a.textContent = '3D 건물'; a.target = '_blank'; a.rel = 'noopener';
+        a.title = '지금 보는 곳의 현재 건물을 브이월드 3D 지도로 엽니다(새 창)';
+        // 컨트롤을 붙일 때는 아직 지도 시점이 없어 getCenter가 오류를 낸다. 첫 맞춤(fitBounds) 뒤 moveend부터 좌표를 싣는다
+        a.href = 'field/city3d.html';
+        map.on('moveend', () => { const c = map.getCenter(); a.href = `field/city3d.html?lat=${c.lat.toFixed(5)}&lng=${c.lng.toFixed(5)}`; });
+        L.DomEvent.disableClickPropagation(a);
+        return a;
+      };
+      to3d.addTo(map);
       if (nv) {
         const N = window.naver.maps, nmap = new N.Map(nv, { center: new N.LatLng(36.3, 127.8), zoom: 7, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
           disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });

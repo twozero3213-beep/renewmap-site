@@ -20,17 +20,18 @@ body.field { font-size: 17px; }
 .msg.err { color: var(--error); }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 16px; margin-top: 16px; }
 .field label { display: block; margin: 12px 0 4px; font-weight: 600; font-size: 15px; }
-.field input, .field select, .field textarea, .field button { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); background: var(--card); color: var(--ink); min-height: 48px; }
+/* 버튼 규칙은 브이월드 3D 지도(.city3d-map) 안 조작 버튼에는 걸지 않는다. 걸면 40px 버튼에 16px 굵은 흰 글씨·초록 바탕이 덮여 글자가 잘린다(2026-11-07). :where라 우선순위는 그대로 */
+.field input, .field select, .field textarea, .field button:not(:where(.city3d-map *)) { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); background: var(--card); color: var(--ink); min-height: 48px; }
 .field textarea { min-height: 56px; resize: vertical; }
 /* 버튼(UX 정비 2026-10-30): 주 버튼은 녹색 채움, 보조는 흰 바탕 + 1px 경계. 비활성은 흐리게만 하지 않고 채움·글자·커서를 함께 바꾼다 */
-.field button { background: var(--green); color: var(--on-green); border-color: transparent; font-weight: 600; margin-top: 8px; cursor: pointer; transition: background-color .12s var(--ease), border-color .12s var(--ease); }
-.field button:hover { background: var(--green-press); }
-.field button:active { background: var(--green-deep); }
-.field button.ghost { background: var(--card); color: var(--green); border-color: var(--line-strong); }
-.field button.ghost:hover { background: var(--soft); border-color: var(--green); }
-.field button.ghost:active { background: var(--soft-press); }
-.field button:disabled, .field button.ghost:disabled { background: var(--off-bg); color: var(--off-ink); border-color: transparent; cursor: not-allowed; }
-.field button.save { min-height: 56px; font-size: 17px; margin-top: 16px; }
+.field button:not(:where(.city3d-map *)) { background: var(--green); color: var(--on-green); border-color: transparent; font-weight: 600; margin-top: 8px; cursor: pointer; transition: background-color .12s var(--ease), border-color .12s var(--ease); }
+.field button:not(:where(.city3d-map *)):hover { background: var(--green-press); }
+.field button:not(:where(.city3d-map *)):active { background: var(--green-deep); }
+.field button:not(:where(.city3d-map *)).ghost { background: var(--card); color: var(--green); border-color: var(--line-strong); }
+.field button:not(:where(.city3d-map *)).ghost:hover { background: var(--soft); border-color: var(--green); }
+.field button:not(:where(.city3d-map *)).ghost:active { background: var(--soft-press); }
+.field button:not(:where(.city3d-map *)):disabled, .field button:not(:where(.city3d-map *)).ghost:disabled { background: var(--off-bg); color: var(--off-ink); border-color: transparent; cursor: not-allowed; }
+.field button:not(:where(.city3d-map *)).save { min-height: 56px; font-size: 17px; margin-top: 16px; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .check { display: flex !important; gap: 10px; align-items: center; }
 .field input[type=checkbox] { width: 24px; height: 24px; min-height: 24px; padding: 0; flex: none; accent-color: var(--green); }
@@ -92,8 +93,8 @@ dialog p { font-size: 15px; line-height: 24px; margin: 0 0 12px; }
 dialog[open] { animation: toast-in .24s var(--ease); }
 .print-doc { display: none; }
 /* 누름: 살짝 눌리는 느낌만(120ms). 크기가 바뀌지 않아 주변이 밀리지 않는다 */
-.field button, .pick label { transition: background-color .12s var(--ease), transform .12s var(--ease); }
-.field button:not(:disabled):active, .pick label:active { transform: scale(.98); }
+.field button:not(:where(.city3d-map *)), .pick label { transition: background-color .12s var(--ease), transform .12s var(--ease); }
+.field button:not(:where(.city3d-map *)):not(:disabled):active, .pick label:active { transform: scale(.98); }
 /* 위치를 받는 동안 '사진 찍기' 둘레가 천천히 퍼진다(받는 중이라는 표시). 끝나면 바로 멈춘다 */
 .pick label.big { position: relative; }
 .gps-wait .pick label.big::after { content: ''; position: absolute; inset: -2px; border-radius: inherit; border: 3px solid var(--green); opacity: 0; animation: gps-pulse 1.2s ease-out infinite; pointer-events: none; }
@@ -112,8 +113,8 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 @media (min-width: 1100px) { .field header.top .wrap { max-width: 560px; } }
 @media (prefers-reduced-motion: reduce) {
   .toast, dialog[open] { animation: none; }
-  .field button, .pick label, .chips label, .acc-chip { transition: none; }
-  .field button:active, .pick label:active { transform: none; }
+  .field button:not(:where(.city3d-map *)), .pick label, .chips label, .acc-chip { transition: none; }
+  .field button:not(:where(.city3d-map *)):active, .pick label:active { transform: none; }
   .gps-wait .pick label.big::after, .toast.ok .toast-ok, .toast.ok .toast-ok path { animation: none; }
   .gps-wait .pick label.big::after { opacity: 1; }
 }

@@ -103,3 +103,9 @@
 - 신청요건 화면 '영역 안 생활 SOC 세기'가 읽는다. `sources[]`(kind·name·id·url·retrieved_at·부산 행 수·뺀 행 수·기준일 범위), `points[]` = `[source 순번, 이름, 종류, 위도, 경도, 데이터기준일자, 관리번호(공원·주차장만)]`(`fields`에 같은 순서), `crs` EPSG:4326.
 - 원천은 표준데이터 파일(이용허락범위 제한 없음) 도서관·도시공원·경로당·주차장. 원장 셀이 아니라 원자료 점 목록이다. 개수는 사용자가 그린 영역마다 기기에서 센다.
 - 만들기: `backend/scripts/export_soc_busan.py`. 확인 기록: `docs/research/soc_datasets_2026-11-07.md`.
+
+## 건물 외곽선·대장 연결 (2026-11-07) — `bldg_outline/{bjd10}.json`, `bldg_outline/index.json`
+- 현재 건물 3D 보기(`field/city3d.html`)에서 누른 자리의 건물을 우리 건축물대장 행(`buildings/{bjd10}.json`)과 잇는 데 쓴다.
+- `items[]` = `[mgm_bld_pk|null, match, height_m|null, floors|null, pnu, [lng,lat,...] 바깥 고리]`. match 1 PNU+사용승인일+연면적, 2 PNU+연면적, 3 PNU+사용승인일(모두 대장 한 행과만 맞을 때), 0 못 이음.
+- 원천: 국토교통부 GIS건물통합정보 부산 SHP(기준일 2026-10-09, 공공누리 제1유형). 높이는 대장 신고값 그대로, 층수로 만들지 않는다. `index.json`은 법정동별 경계 상자.
+- 지금은 해운대구 재송동·반여동, 부산진구 부암동만. 만들기: `backend/scripts/export_bldg_outline.py <bjd10...>`.

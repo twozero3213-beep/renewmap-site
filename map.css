@@ -42,6 +42,9 @@
 #map .leaflet-tooltip { font-size: 14px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
 #map .leaflet-tooltip small { color: var(--dim); }
 #map .leaflet-control-attribution { font-size: 12px; }
+/* 3D 건물 버튼: 확대·축소 아래, 글자 버튼(Leaflet 기본 30px 정사각형보다 넓게, 누르기 영역 44px) */
+#map a.map-3d { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; background: var(--card, #fff); color: var(--ink); font-size: 14px; font-weight: 700; text-decoration: none; }
+#map a.map-3d:hover, #map a.map-3d:focus-visible { background: var(--ink); color: #fff; }
 .map-hint { font-size: 14px; color: var(--dim); margin: 6px 0 8px; }
 
 /* 범례: 지표별 고정 구간 + 빗금(자료 없음) + 기준선·상태 + 상시 문구. 지표를 바꾸면 한 칸씩 나타난다 */
