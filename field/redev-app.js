@@ -6,6 +6,16 @@
   const DATA = "../data/";
   const getJson = (p) => fetch(DATA + p).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); });
   const templates = getJson("report_templates.json").then((t) => D.setTemplates(t));
+  // 법정동 건물 파일은 큰 동이 2.8MB(연산동 12,474동)라 계산마다 다시 받아 풀면 경계안 비교가 느려진다. 계산 함수는 파일을 고치지 않으므로
+  // 풀어 둔 것을 다시 쓴다. ponytail: 최근 8개만 두고 오래된 것부터 버린다(전 동을 다 열어도 메모리가 계속 늘지 않게)
+  const buildingCache = new Map();
+  const getBuildings = (code) => {
+    if (buildingCache.has(code)) { const p = buildingCache.get(code); buildingCache.delete(code); buildingCache.set(code, p); return p; }
+    const p = getJson(`buildings/${code}.json`).catch((err) => { buildingCache.delete(code); throw err; });
+    buildingCache.set(code, p);
+    if (buildingCache.size > 8) buildingCache.delete(buildingCache.keys().next().value);
+    return p;
+  };
   let last = null;   // {res, m, file}
 
   // 구·군 → 법정동 목록(buildings/index.json). 부산 조례 기준만 계산하므로 부산(26)만 싣는다. 목록을 못 받으면 HTML의 해운대구 8개 동 그대로 쓴다
@@ -20,6 +30,7 @@
     fill($("gu"), gus.map((s) => [s.code, s.name]), "26350");
     showDongs("26350", $("dong").value);
     $("gu").addEventListener("change", () => showDongs($("gu").value));
+    restoreDraft(gus, showDongs);
     const n = gus.reduce((s, g) => s + g.dongs.length, 0);
     $("coverage").textContent = `부산 ${gus.length}개 구·군 ${n}개 법정동의 건축물대장을 담았습니다. 다른 시·도는 그 조례를 확인한 뒤 엽니다.`;
   }).catch(() => {});
@@ -64,9 +75,24 @@
       const c = it.pnu ? it.pnu.slice(0, 10) : it.dong && byName.get(it.dong);
       if (c && known.has(c) && !codes.includes(c) && codes.length < R.MERGE_MAX) codes.push(c);
     }
-    const files = await Promise.all(codes.map((c) => getJson(`buildings/${c}.json`)));
+    const files = await Promise.all(codes.map(getBuildings));
     return files.length === 1 ? files[0] : R.mergeFiles(files);
   }
+
+  // 입력 자동 저장: 지번 목록·구역 면적·고른 동을 이 기기에만 남겨, 브라우저를 닫거나 계산이 끊긴 뒤 다시 열면 이어서 계산한다
+  const DRAFT_KEY = "renewmap-redev-draft";
+  const saveDraft = () => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ gu: $("gu").value, dong: $("dong").value, list: $("list").value, area: $("area").value })); } catch (e) { /* 저장을 막은 브라우저는 이어 쓰기만 안 된다 */ } };
+  function restoreDraft(gus, showDongs) {
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) { d = null; }
+    if (!d || !d.list || $("list").value.trim()) return;
+    const gu = gus.find((s) => s.code === d.gu);
+    if (gu && gu.dongs.some((x) => x.code === d.dong)) { $("gu").value = d.gu; showDongs(d.gu, d.dong); }
+    $("list").value = d.list; $("area").value = d.area || "";
+    say("지난번에 넣은 목록을 불러왔습니다.\n새로 시작하려면 목록 칸을 비우세요.");
+  }
+  ["list", "area", "dong"].forEach((id) => $(id).addEventListener("input", saveDraft));
+  $("dong").addEventListener("change", saveDraft);
 
   const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };
   const localDay = (t) => { const p = (n) => String(n).padStart(2, "0"); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; };   // recorded_at은 UTC라 기기 시간대 날짜로
@@ -77,7 +103,7 @@
   // 예시: 고른 법정동의 모든 지번을 넣고 계산한다(사업계획서의 반여동 숫자를 버튼 하나로 다시 얻는다). 특정 구역을 짚지 않으려고 동 전체만 쓴다
   $("demo").addEventListener("click", async () => {
     let file;
-    try { file = await getJson(`buildings/${$("dong").value}.json`); } catch (err) { return say("건축물대장 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
+    try { file = await getBuildings($("dong").value); } catch (err) { return say("건축물대장 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
     $("list").value = [...new Set(file.buildings.map((b) => b.jibun).filter(Boolean))].join("\n");
     $("area").value = "";
     $("f").requestSubmit();
@@ -85,6 +111,7 @@
 
   $("f").addEventListener("submit", async (e) => {
     e.preventDefault();
+    saveDraft();
     const p = R.parseList($("list").value);
     if (!p.items.length) return say("지번을 한 줄에 하나씩 넣어 주세요.", true);
     const areaRaw = $("area").value.trim(), areaM2 = areaRaw === "" ? null : Number(areaRaw);
