@@ -5,5 +5,7 @@
   "use strict";
   const key = window.RENEWMAP_VWORLD_KEY || "";
   if (!/^[A-Za-z0-9-]+$/.test(key)) return;
-  document.write(`<script src="https://map.vworld.kr/js/webglMapInit.js.do?version=3.0&apiKey=${key}"><\/script>`);
+  // https에서는 키에 등록한 서비스 주소를 domain으로 같이 보낸다(vw-frame.js의 DOMAIN과 같은 값)
+  const domain = encodeURIComponent("https://twozero3213-beep.github.io/renewmap-site/");
+  document.write(`<script src="https://map.vworld.kr/js/webglMapInit.js.do?version=3.0&apiKey=${key}&domain=${domain}"><\/script>`);
 })();

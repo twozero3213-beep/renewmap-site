@@ -17,7 +17,7 @@
     initPosition: new vw.CameraPosition(new vw.CoordZ(at[0], at[1] - 0.012, 800), new vw.Direction(0, -45, 0)),
     logo: true, navigation: true,
   });
+  vw.ws3dInitCallBack = () => say("국토교통부 브이월드 3D 건물입니다.\n마우스로 끌어 옮기고 휠로 확대·축소합니다.");
   map.start();
   say("브이월드 3D 지도를 여는 중입니다.\n건물은 가까이 갈수록 그려집니다.");
-  vw.ws3dInitCallBack = () => say("국토교통부 브이월드 3D 건물입니다.\n마우스 휠로 확대·축소하고, 끌어서 옮기고, Ctrl을 누른 채 끌면 기울입니다.");
 })();
