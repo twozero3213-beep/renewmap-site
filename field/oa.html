@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'">
+<script src="../frame-guard.js"></script>
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>집계구로 다시 보기 | 리뉴맵</title>
+<meta name="description" content="행정동 단위로 쇠퇴 요건이 모자란 부산 행정동을 통계청 집계구로 나눠 인구·사업체 요건을 다시 봅니다. 집계구 경계 지도와 연도별 값, CSV를 함께 줍니다. 판정 규칙은 승인 전이고 노후건축물은 집계구로 계산하지 않습니다.">
+<link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/field/oa.html">
+<meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/field/oa.html">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="리뉴맵 RENEWMAP">
+<meta property="og:title" content="집계구로 다시 보기 | 리뉴맵">
+<meta property="og:description" content="행정동 미충족 → 집계구별 인구·사업체 요건과 경계 지도.">
+<meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
+<meta name="theme-color" content="#006f5b">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../pretendard.css">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="../v4.css">
+<link rel="stylesheet" href="field.css">
+</head>
+<body class="field redev-v4">
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top"><div class="wrap"><h1>집계구로 다시 보기</h1></div></header>
+<main id="main">
+  <p class="note">행정동 단위로 쇠퇴 요건을 넘지 못하면 더 작은 공간 단위로 제시할 수 있습니다.<br>부산에서 요건 충족 수가 2개보다 적은 행정동을 통계청 집계구로 나눠 인구·사업체 요건을 다시 봅니다.</p>
+  <p class="warn">판정 규칙은 담당자 승인 전입니다.<br>노후건축물 비율은 건물 위치가 없어 집계구로 나누지 못해 계산하지 않습니다.<br>집계구 인구는 통계청 인구총조사 값이라 행정동 주민등록 인구와 합이 다릅니다.</p>
+
+  <form id="f" class="card" novalidate>
+    <label for="dong">행정동(부산, 요건 충족 수 2개 미만)</label>
+    <select id="dong"></select>
+  </form>
+
+  <p id="msg" class="msg" role="status" aria-live="polite"></p>
+
+  <section id="out" class="card" aria-labelledby="outTitle" hidden>
+    <h2 id="outTitle">집계구</h2>
+    <p id="outBase" class="hint"></p>
+    <ul id="outCount" class="facts"></ul>
+    <figure id="map" aria-label="집계구 경계 지도"></figure>
+    <p class="hint">색은 인구·사업체 두 요건 중 몇 개를 충족했는지입니다.<br>지도의 집계구를 누르면 아래 표에서 그 줄을 찾습니다.</p>
+    <button type="button" class="ghost" id="csv">집계구 CSV 받기</button>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="집계구 요건 표">
+      <table>
+        <thead><tr><th scope="col">집계구</th><th scope="col">인구 2019→2024</th><th scope="col">인구 3년 연속 감소</th><th scope="col">인구 요건</th><th scope="col">사업체 10년 최대 대비 감소</th><th scope="col">사업체 3년 연속 감소</th><th scope="col">사업체 요건</th><th scope="col">충족(2개 중)</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+  <p class="hint" id="src">출처는 표 위에 적습니다.<br>건물 단위 현황은 <a href="idle.html">오래된 창고·공장·빈집</a>과 <a href="redev.html">신청요건 확인</a>에서 봅니다.</p>
+</main>
+<script src="../site.js"></script>
+<script src="oa.js"></script>
+<script src="oa-app.js"></script>
+</body>
+</html>
