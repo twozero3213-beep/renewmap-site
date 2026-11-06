@@ -41,9 +41,11 @@
     body.prepend(prog);
   }
   let ticking = false;
+  let pending = [];   // 아직 안 드러난 요소(빠르게 지나쳐 관찰자가 놓친 것을 스크롤에서 마저 연다)
   const onScroll = () => {
     ticking = false;
     body.classList.toggle('scrolled', window.scrollY > 8);
+    if (pending.length) pending = pending.filter((el) => (el.getBoundingClientRect().top < window.innerHeight * 0.92 ? (el.classList.add('in'), false) : !el.classList.contains('in')));
     if (prog) {
       const h = doc.documentElement.scrollHeight - window.innerHeight;
       prog.style.setProperty('--p', h > 0 ? (window.scrollY / h).toFixed(4) : '0');
@@ -64,7 +66,8 @@
       el.style.setProperty('--k', k);
     });
     const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
-    targets.filter((el) => el.classList.contains('rv')).forEach((el) => io.observe(el));
+    pending = targets.filter((el) => el.classList.contains('rv'));
+    pending.forEach((el) => io.observe(el));
     // 페이지 안 이동(#목차)으로 건너뛴 요소가 숨은 채 남지 않게
     window.addEventListener('hashchange', () => doc.querySelectorAll('.rv:not(.in)').forEach((el) => el.classList.add('in')));
   }
