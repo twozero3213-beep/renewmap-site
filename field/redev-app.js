@@ -170,7 +170,9 @@
     if (drawMap) return;
     try { await loadLeaflet(); } catch (err) { return say("지도를 불러오지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
     const L = window.L;
-    drawMap = L.map($("drawMap"), { scrollWheelZoom: false }).setView([35.2052, 129.1196], 16);
+    // 누르기는 꼭짓점 찍기라 두 번 누르기 확대는 끈다. 휠 확대는 지도를 누른 뒤에만, 확대는 필지가 보이는 19(배경 타일 끝)까지
+    drawMap = L.map($("drawMap"), { scrollWheelZoom: false, doubleClickZoom: false, maxZoom: 19 }).setView([35.2052, 129.1196], 16);
+    drawMap.on("click", () => drawMap.scrollWheelZoom.enable()); drawMap.on("mouseout", () => drawMap.scrollWheelZoom.disable());
     if (VW) L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VW}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: "&copy; 국토교통부 브이월드" }).addTo(drawMap);
     else L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }).addTo(drawMap);
     drawLine = L.polyline([], { color: "#b45309", weight: 3 }).addTo(drawMap);
