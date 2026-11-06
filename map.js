@@ -934,7 +934,8 @@
 
   // ── 브라우저 ──
   const app = document.getElementById('mapApp'); if (!app) return;
-  const fetchJson = url => (window.renewFetch ? window.renewFetch(url) : fetch(url, { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
+  // low: 첫 지도에 필요 없는 자료. 경계·지도 라이브러리가 먼저 받히도록 낮은 우선순위로 받는다
+  const fetchJson = (url, low) => (window.renewFetch && !low ? window.renewFetch(url) : fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
   // 외부 AI 서버 주소는 비워 둔다(서버로 문장을 보내지 않는다). 다듬기는 기기 안 AI(detectDeviceAI)로만 한다(docs/legal/ai_ethics.md ⑤)
   const AI_POLISH_ENDPOINT = '';
   const state = { route: parseHash(location.hash) || {}, ind: INDICATORS[0].code, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, sidoGeo: undefined, dash: null, mapErr: false, touched: false,
@@ -1518,6 +1519,11 @@
     q.addEventListener('change', () => { if (entries.some(e => e.label === q.value.trim())) pick(); });
   }
 
+  // 지도 라이브러리(리플렛·네이버 배경)는 경계 자료를 기다리지 않고 지금 받기 시작한다. 전에는 목록→경계→리플렛→네이버→타일이 한 줄로 이어져 휴대폰 첫 지도가 11초 걸렸다
+  if (stage.querySelector('[data-map-slot]')) {
+    if (window.RenewDashboard) window.RenewDashboard.loadLeaflet().catch(() => {});
+    state.naver = null; loadNaver().then(ok => { state.naver = ok; render(); });
+  }
   // dashboard.json(2.5MB)은 정밀 사례 묶음에만 쓴다. 첫 화면은 기다리지 않는다
   fetchJson('data/dashboard.json').then(dash => { state.dash = dash; if (state.index) render(); });
   fetchJson('data/national/index.json').then(index => {
@@ -1531,12 +1537,15 @@
       state.sgGeo = sg && Array.isArray(sg.features) ? sg : null; state.sidoGeo = sido && Array.isArray(sido.features) ? sido : null; render(); startAuto();
     });
   });
-  fetchJson('data/report_templates.json').then(j => { state.templates = j && typeof j === 'object' && j.onepage && j.summary ? j : null; if (DG && state.templates) DG.setTemplates(j); if (state.index) render(); });
-  fetchJson('data/national/living/index.json').then(li => { state.living = li && Array.isArray(li.indicators) ? li : null; if (state.index) render(); });
-  // 다른 직원이 만드는 중인 파일. 없으면 null → 해당 칩은 '수집 중'
-  fetchJson('data/national/migration.json').then(j => { state.migration = j && Array.isArray(j.sigungu) ? j : null; if (state.index) render(); });
-  fetchJson('data/national/designations.json').then(j => { state.designations = j && Array.isArray(j.items) ? j : null; if (state.index) render(); });
-  fetchJson('data/national/realestate.json').then(j => { state.realestate = j && Array.isArray(j.sigungu) ? j : null; if (state.index) render(); });
-  fetchJson('data/national/forecast/index.json').then(j => { state.forecastIdx = j && Array.isArray(j.horizons) ? j : null; if (state.index) render(); });
-  fetchJson('data/national/dong_index.json').then(di => { state.dongIndex = Array.isArray(di) ? di : null; if (state.index) searchSetup(); });
+  // 보조 자료 여섯 개는 다 받은 뒤 한 번만 다시 그린다(하나 올 때마다 지도·문서를 새로 그리면 휴대폰에서 1초 넘게 멈췄다, 2026-11-07 라이트하우스)
+  Promise.all([
+    fetchJson('data/report_templates.json', true).then(j => { state.templates = j && typeof j === 'object' && j.onepage && j.summary ? j : null; if (DG && state.templates) DG.setTemplates(j); }),
+    fetchJson('data/national/living/index.json').then(li => { state.living = li && Array.isArray(li.indicators) ? li : null; }),
+    // 다른 직원이 만드는 중인 파일. 없으면 null → 해당 칩은 '수집 중'
+    fetchJson('data/national/migration.json', true).then(j => { state.migration = j && Array.isArray(j.sigungu) ? j : null; }),
+    fetchJson('data/national/designations.json', true).then(j => { state.designations = j && Array.isArray(j.items) ? j : null; }),
+    fetchJson('data/national/realestate.json', true).then(j => { state.realestate = j && Array.isArray(j.sigungu) ? j : null; }),
+    fetchJson('data/national/forecast/index.json', true).then(j => { state.forecastIdx = j && Array.isArray(j.horizons) ? j : null; }),
+  ]).then(() => { if (state.index) render(); });
+  fetchJson('data/national/dong_index.json', true).then(di => { state.dongIndex = Array.isArray(di) ? di : null; if (state.index) searchSetup(); });
 })();
