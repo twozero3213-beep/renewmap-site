@@ -85,9 +85,11 @@
       const b = bt && bt[c] && typeof bt[c] === 'object' ? bt[c] : null, base = INDICATORS.find(i => i.code === c) || (lv || []).find(i => i.code === c) || null;
       const fb = FORECAST_BASE.find(x => x[0] === c) || [, c, ''], lbl = base ? base.label : fb[1], mape = b && isNum(b.median_mape) ? b.median_mape : null, held = b && typeof b.withheld === 'string' && b.withheld ? b.withheld : null;
       const sgScope = !!b && typeof b.scope === 'string' && /시군구|시·군·구/.test(b.scope);
+      // 코호트 모델(예: 65세 이상 비율)은 추세 외삽이 아니다. 자료가 준 모델 이름을 그대로 쓴다
+      const how = b && b.model === 'cohort' && typeof b.model_label === 'string' && b.model_label ? b.model_label : '추세 외삽';
       const common = { code: 'FORECAST_' + c, group: 'fore', icon: 'fore', level: sgScope ? 'sg' : 'emd', src: 'forecast', mape, held, standard: null, pending: !fi, sgFile: !!(fi && typeof fi.sigungu_file === 'string'), empty: !!held || (!!b && isNum(b.n_areas) && b.n_areas === 0),
-        disclaimer: fi && typeof fi.disclaimer === 'string' ? fi.disclaimer : null, source: fi && typeof fi.method === 'string' ? `추세 외삽(${fi.method})` : '추세 외삽' };
-      const tail = `${sgScope ? ' · 시·군·구 단위' : ''} · 추세 외삽 · 판정·투자 조언 아님 · 승인 전 초안${mape === null ? '' : ` · 백테스트 MAPE ${fmt(mape, '%')}`}`;
+        disclaimer: fi && typeof fi.disclaimer === 'string' ? fi.disclaimer : null, source: how !== '추세 외삽' ? how : fi && typeof fi.method === 'string' ? `추세 외삽(${fi.method})` : '추세 외삽' };
+      const tail = `${sgScope ? ' · 시·군·구 단위' : ''} · ${how} · 판정·투자 조언 아님 · 승인 전 초안${mape === null ? '' : ` · 백테스트 MAPE ${fmt(mape, '%')}`}`;
       // 절대량 지표(명·개)는 자료가 주는 변화율 키(change_pct_key, 기준연도 실측 대비 %)로 칠한다 — 고정 참고 구간, 기준 없음. 화면에서 나누지 않는다
       const ck = b && typeof b.change_pct_key === 'string' && b.change_pct_key ? b.change_pct_key : null, by = fi && isNum(fi.base_year) ? fi.base_year : null;
       if (ck) return { ...common, label: `${lbl} 전망 · ${by === null ? '기준연도' : by + '년'} 대비`, unit: '%', fc: ck, worseUp: false, ref: true, domain: [-50, 50],
@@ -502,6 +504,38 @@
     const u = unit === '%' ? '%p' : unit || '', slope = fit ? `${fit.slope >= 0 ? '+' : ''}${fmt(Math.round(fit.slope * 100) / 100)}${u}` : '';
     const cap = `${y0}~${y1}년${fit ? ` · 추세 연 ${slope}(선형회귀, 설명용)` : ''}${isNum(std) ? ` · 가로 점선 기준 ${fmt(std)}${unit || ''}` : ''}`;
     return `<figure class="tr"><svg class="tr-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)} ${esc(cap)}, ${cur[0]}년 ${esc(fmt(cur[1]))}">${stdLine}${trend}<path class="tr-line" d="${d}"/><circle class="tr-dot" cx="${X(cur[0]).toFixed(1)}" cy="${Y(cur[1]).toFixed(1)}" r="4"/></svg><figcaption>${esc(cap)}</figcaption></figure>`;
+  }
+  // 추세 전망 그래프: 실측(실선) + 전망 점추정(점선) + 80% 구간(띠). obs [[연도, 값]], fc {연도: [점, 하한, 상한]}. 구간 없는 해는 그리지 않는다(윤리 원칙 ④)
+  function forecastSVG(obs, fc, label, unit) {
+    const W = 520, H = 180, L = 78, R = 12, T = 10, B = 24; // 패널 폭에 맞춰 늘고 줄어든다(v4.css .fc-svg). 글자 크기도 함께 줄어 휴대폰에서도 겹치지 않게 칸을 넉넉히
+    const o = (obs || []).filter(p => isNum(p[0]) && isNum(p[1])).slice(-12), f = Object.entries(fc || {}).map(([y, a]) => [Number(y), a]).filter(([y, a]) => isNum(y) && Array.isArray(a) && a.length >= 3 && a.slice(0, 3).every(isNum)).sort((a, b) => a[0] - b[0]);
+    if (!o.length || !f.length) return '';
+    const xs = [...o.map(p => p[0]), ...f.map(p => p[0])], x0 = Math.min(...xs), x1 = Math.max(...xs);
+    const vs = [...o.map(p => p[1]), ...f.flatMap(p => p[1].slice(0, 3))], lo = Math.min(...vs), hi = Math.max(...vs), pad = (hi - lo) * 0.08 || Math.abs(hi) * 0.05 || 1, v0 = lo - pad, v1 = hi + pad;
+    const X = y => L + (x1 === x0 ? (W - L - R) / 2 : (y - x0) / (x1 - x0) * (W - L - R)), Y = v => T + (v1 - v) / (v1 - v0) * (H - T - B), P = (x, y) => `${X(x).toFixed(1)} ${Y(y).toFixed(1)}`;
+    const last = o[o.length - 1], fcPts = [[last[0], [last[1], last[1], last[1]]], ...f.filter(p => p[0] > last[0])];
+    const band = `M${fcPts.map(([y, a]) => P(y, Math.max(a[1], a[2]))).join('L')}L${fcPts.slice().reverse().map(([y, a]) => P(y, Math.min(a[1], a[2]))).join('L')}Z`;
+    const ticks = [v0 + (v1 - v0) * 0.1, (v0 + v1) / 2, v1 - (v1 - v0) * 0.1].map(v => `<text class="fc-ax" x="${L - 4}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end">${esc(fmt(Math.round(v * (unit === '%' ? 10 : 1)) / (unit === '%' ? 10 : 1), unit))}</text>`).join('');
+    const xl = [x0, last[0], x1].filter((y, i, a) => a.indexOf(y) === i).map(y => `<text class="fc-ax" x="${X(y).toFixed(1)}" y="${H - 6}" text-anchor="middle">${y}</text>`).join('');
+    const end = f[f.length - 1], cap = `${o[0][0]}~${last[0]}년 실측 · ${f[0][0]}~${end[0]}년 전망(점선)과 80% 구간(띠) · ${end[0]}년 ${fmt(end[1][0], unit)}(${fmt(Math.min(end[1][1], end[1][2]), unit)}~${fmt(Math.max(end[1][1], end[1][2]), unit)})`;
+    return `<figure class="tr fc"><svg class="tr-svg fc-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)} ${esc(cap)}">${ticks}${xl}` +
+      `<line class="fc-now" x1="${X(last[0]).toFixed(1)}" x2="${X(last[0]).toFixed(1)}" y1="${T}" y2="${H - B}"/><path class="fc-band" d="${band}"/>` +
+      `<path class="tr-line" d="M${o.map(p => P(p[0], p[1])).join('L')}"/><path class="fc-line" d="M${fcPts.map(([y, a]) => P(y, a[0])).join('L')}"/>` +
+      `${f.filter(p => p[0] > last[0]).map(([y, a]) => `<circle class="fc-dot" cx="${X(y).toFixed(1)}" cy="${Y(a[0]).toFixed(1)}" r="4"/>`).join('')}</svg><figcaption>${esc(cap)}</figcaption></figure>`;
+  }
+  // 지금 보는 지표의 그래프 재료: 인구 변화율 전망은 사람 수로 그린다(변화율보다 읽기 쉬움). code7이 있으면 그 동, 없으면 시·군·구
+  function forecastChart(ind, ext, node, dong) {
+    if (!ind || ind.src !== 'forecast') return '';
+    const base = String(ind.fc || '').replace(/_CHANGE_PCT$/, ''), unit = base === ind.fc ? ind.unit : '명', e = ext || {};
+    if (dong) {
+      const fd = e.forecast && Array.isArray(e.forecast.dongs) ? e.forecast.dongs.find(d => codeOf(d) === String(codeOf(dong))) : null;
+      const svg = fd && fd.forecast ? forecastSVG(seriesOf(dong, base), fd.forecast[base], `${dong.name} ${ind.label}`, unit) : '';
+      if (svg) return `<h4 class="map-h4">${esc(dong.name)} 추세 전망 <small>행정동 GradientBoosting · 판정 아님</small></h4>${svg}`;
+    }
+    const row = node && e.forecastSg ? sgMatch(e.forecastSg.sigungu, node) : null;
+    const svg = row && row.forecast && row.observed ? forecastSVG(row.observed[base], row.forecast[base], `${node.name} ${ind.label}`, unit) : '';
+    const how = base === 'DECLINE_POP_TOTAL' ? (row && row.pop_model === 'ens' ? '동 GB 합과 시·군·구 추세의 평균' : '시·군·구 추세') : '시·군·구 추세 외삽';
+    return svg ? `<h4 class="map-h4">${esc(node.name)} 추세 전망 <small>${esc(how)} · 판정 아님</small></h4>${svg}` : '';
   }
   // 상태 개수 도넛(비율 그림). 개수를 글자로 함께 쓴다. 순위·점수 아님
   // 한 동 패널의 세 요약(도넛·기준 미달 항목 수·확인할 항목)은 같은 항목 범위·같은 낱말을 쓴다. '공식 기준 없음'(값만)과 '자료 없음'을 섞지 않는다
@@ -923,7 +957,7 @@
         d.sites.filter(s => s.basin === b).map(s => `<tr><th scope="row">${esc(s.name)}</th>${AUTO_COLS.map(([k, , dg]) => `<td class="num">${cell(s.v && s.v[k], dg)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>').join('') + '</details>';
   }
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
-  const api = { snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
+  const api = { forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
@@ -1027,12 +1061,12 @@
     if (m.kind === 'noemd' || m.nodata) return emptyHTML(`${here} · 읍·면·동 자료 준비 중`, [m.kind === 'noemd' ? '이 지역의 읍·면·동 자료가 아직 없습니다.' : '경계는 있지만 지표 시계열이 아직 없습니다.', '준비되기 전에는 숫자를 보여 드리지 않습니다.']);
     const it = m.items.find(x => x.code === v.dong), dist = ind.level === 'sg' ? `<p class="map-note">${esc(ind.label)}은(는) 시·군·구 단위 자료라 읍·면·동 분포가 없습니다.</p>`
       : `<h4 class="map-h4">${esc(here)} 읍·면·동 분포 · ${esc(ind.label)} <small>순위 아님${m.year ? ` · ${esc(m.year)}년` : ''}</small></h4>${strip(m.items, it ? it.code : null, ind, scale)}`;
-    if (!it) return `<h3 class="map-h3">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3><p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.</p>${reorgNote(v)}${dist}${hubHTML(v)}`;
+    if (!it) return `<h3 class="map-h3">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3><p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.</p>${reorgNote(v)}${forecastChart(ind, m.ext, v.gu || v.sigungu, null)}${dist}${hubHTML(v)}`;
     const rows = rowsFor(v, m, it), D = window.RenewDashboard, dy = rows.find(r => r.ind.series && r.year)?.year;
     return `<div class="map-panel-head"><h3 class="map-h3">${esc(it.name)} <small>${esc(it.kind || '행정동')} · ${esc(it.code)}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` +
       `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>${reorgNote(v)}` +
       `<p class="map-report-link"><a href="#report">${icon('book')}동네 보고서 보기</a></p>` +
-      scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist + hubHTML(v);
+      forecastChart(ind, m.ext, v.gu || v.sigungu, m.json.dongs.find(d => codeOf(d) === it.code) || null) + scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist + hubHTML(v);
   }
   const rowsFor = (v, m, it) => dongRows(inds(), m.json.dongs.find(d => codeOf(d) === it.code), livingMap(m.living).get(it.code), m.selYear, m.ext);
   // ── 동네 보고서(#report): 원장 문장 + 그래프 + 출처표. 인쇄는 브라우저 인쇄(@media print), HWPX·XLSX는 메일 요청 ──
@@ -1349,10 +1383,12 @@
       slot.replaceWith(el);
       ybar = document.createElement('div'); ybar.className = 'map-yearbar'; ybar.hidden = true; ybar.setAttribute('aria-hidden', 'true'); el.appendChild(ybar);
       // 네이버 배경: Leaflet(경계·누르기·확대) 아래에 움직이지 않는 네이버 지도를 깔고 같은 중심·확대로 맞춘다. 네이버는 정수 확대라 Leaflet도 정수로
+      // 네이버 지도는 6보다 작게 축소되지 않는다(실측 getMinZoom 6). Leaflet이 그 아래로 내려가면 배경은 멈추고 경계만 작아져 둘이 어긋났다(2026-11-07 대표 지적)
+      const NAVER_MIN_ZOOM = 6;
       const nv = state.naver ? document.createElement('div') : null;
       // aria-hidden을 두지 않는다: 안의 법적 고지 링크가 키보드 초점을 받으므로 숨기면 이름 없는 초점이 된다(2026-10-30 배포 화면 확인)
       if (nv) { nv.className = 'map-naver'; el.appendChild(nv); el.classList.add('has-naver'); }
-      const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false }); // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
+      const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false }); // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
       // 확대는 17(골목·건물 단위)까지. 두 번 누르기를 거듭해도 그 이상 커지지 않는다. 휠 확대는 지도를 한 번 누른 뒤에만 켠다(페이지를 내리다 지도에 걸려 확대되지 않게). 지도 밖으로 나가면 다시 끈다(2026-11-07 대표 지시)
       map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => map.scrollWheelZoom.disable());
       L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래

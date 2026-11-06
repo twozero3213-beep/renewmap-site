@@ -36,6 +36,13 @@
 .tr-std { stroke: var(--ref); stroke-width: 1.5; stroke-dasharray: 2 3; }
 .tr-dot { fill: var(--green); stroke: var(--card); stroke-width: 2; }
 .tr figcaption { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+/* 추세 전망 그래프(map.js forecastSVG): 실측 실선 · 전망 점선 · 80% 구간 띠 · 기준연도 세로선 */
+.fc-svg { height: auto; max-width: 560px; aspect-ratio: 520 / 180; }
+.fc-band { fill: var(--green); fill-opacity: .16; stroke: none; }
+.fc-line { fill: none; stroke: var(--green); stroke-width: 2.5; stroke-dasharray: 5 4; }
+.fc-dot { fill: var(--card); stroke: var(--green); stroke-width: 2; }
+.fc-now { stroke: var(--ref); stroke-width: 1; stroke-dasharray: 2 3; }
+.fc-ax { font-size: 15px; fill: var(--dim); font-variant-numeric: tabular-nums; }
 
 /* ── 업무로 시작: 카드 7장을 한 줄 단추 목록으로 ── */
 .gov .section-head > p { display: none; }
