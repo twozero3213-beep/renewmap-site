@@ -10,6 +10,24 @@
     const { id, lng, lat } = e.data || {};
     const reply = (body) => window.parent.postMessage({ id, ...body }, "*");   // 부모는 e.source로 이 창인지 확인한다
     if (!KEY) return reply({ error: "키 없음" });
+    // 영역 그리기(T20): 다각형 안 필지의 PNU만 돌려준다. 도형은 돌려주지 않고 저장하지 않는다. 한 번에 1,000필지까지
+    if (typeof e.data.wkt === "string") {
+      if (!/^POLYGON\(\([0-9., -]+\)\)$/.test(e.data.wkt) || e.data.wkt.length > 8000) return reply({ error: "영역 오류" });
+      const cb = `vw${++n}`, s = document.createElement("script");
+      const done = (body) => { clearTimeout(t); delete window[cb]; s.remove(); reply(body); };
+      const t = setTimeout(() => done({ error: "시간 초과" }), 20000);
+      window[cb] = (d) => {
+        const r = d && d.response;
+        if (r && r.status === "NOT_FOUND") return done({ pnus: [], total: 0 });
+        if (!(r && r.status === "OK")) return done({ error: "조회 실패" });
+        const pnus = r.result.featureCollection.features.map((f) => String(f.properties.pnu || "")).filter((v) => /^\d{19}$/.test(v));
+        done({ pnus, total: Number(r.record && r.record.total) || pnus.length });
+      };
+      s.onerror = () => done({ error: "조회 실패" });
+      s.src = "https://api.vworld.kr/req/data?" + new URLSearchParams({ service: "data", request: "GetFeature", data: "LP_PA_CBND_BUBUN", key: KEY, format: "json", geometry: "false",
+        attribute: "true", crs: "EPSG:4326", geomFilter: e.data.wkt, size: "1000", domain: DOMAIN, callback: cb });
+      return document.head.append(s);
+    }
     if (!(typeof lng === "number" && typeof lat === "number" && Math.abs(lat) <= 90 && Math.abs(lng) <= 180)) return reply({ error: "좌표 오류" });
     const cb = `vw${++n}`, s = document.createElement("script");
     const done = (body) => { clearTimeout(t); delete window[cb]; s.remove(); reply(body); };

@@ -124,6 +124,67 @@
     say(got.n === null ? `${f.name}을 목록에 넣었습니다.` : `${f.name}에서 ${got.n}필지를 넣었습니다.${got.skipped ? `\nPNU·지번이 없는 ${got.skipped}개는 뺐습니다.` : ""}`);
   });
 
+  async function parcelText(file, items, blds, areaM2) {
+    if (typeof ParcelRef === "undefined") return null;
+    const codes = (file.dongs || [{ code: file.bjd10 }]).map((d) => d.code);
+    const files = (await Promise.all(codes.map((c) => getJson(`parcels/${c}.json`).catch(() => null)))).filter(Boolean);
+    if (!files.length) return null;
+    const map = new Map(files.flatMap((f) => [...ParcelRef.index(f)]));
+    const pnus = [...items.map((it) => it.pnu).filter(Boolean), ...blds.map((b) => b.pnu).filter(Boolean)];
+    return ParcelRef.texts({ density: ParcelRef.houseDensity(blds, areaM2), road: ParcelRef.roadFrontage(blds, map), lots: ParcelRef.smallLots(pnus, map) });
+  }
+
+  // ── 지도에서 영역 그리기(T20, D24 경쟁사 흡수: 부동산플래닛 영역 그리기·Prom 구역계). 필지 조회는 격리된 창(vw-frame.html)이 한다
+  const LEAFLET = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/";
+  const loadLeaflet = () => window.L ? Promise.resolve() : new Promise((ok, fail) => {
+    const tag = (name, attrs) => { const el = Object.assign(document.createElement(name), attrs, { crossOrigin: "anonymous" }); el.onerror = fail; document.head.appendChild(el); return el; };
+    tag("link", { rel: "stylesheet", href: LEAFLET + "leaflet.css", integrity: "sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==" });
+    tag("script", { src: LEAFLET + "leaflet.js", integrity: "sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==" }).onload = ok;
+  });
+  const VW = /^[A-Za-z0-9-]+$/.test(window.RENEWMAP_VWORLD_KEY || "") ? window.RENEWMAP_VWORLD_KEY : "";
+  let drawMap = null, drawPts = [], drawLine = null, vwFrame = null, vwSeq = 0;
+  const vwWait = new Map();
+  window.addEventListener("message", (e) => {
+    if (!vwFrame || e.source !== vwFrame.contentWindow) return;
+    const done = vwWait.get(e.data && e.data.id);
+    if (done) { vwWait.delete(e.data.id); done(e.data); }
+  });
+  const vwAskArea = (wkt) => new Promise((ok) => {
+    const send = () => { const id = ++vwSeq; vwWait.set(id, ok); vwFrame.contentWindow.postMessage({ id, wkt }, "*"); setTimeout(() => { if (vwWait.delete(id)) ok({ error: "시간 초과" }); }, 25000); };
+    if (vwFrame) return send();
+    vwFrame = document.createElement("iframe");
+    vwFrame.hidden = true; vwFrame.title = "브이월드 필지 조회"; vwFrame.setAttribute("sandbox", "allow-scripts"); vwFrame.src = "vw-frame.html";
+    vwFrame.addEventListener("load", send, { once: true });
+    document.body.append(vwFrame);
+  });
+  const redraw = () => { drawLine.setLatLngs(drawPts.length > 2 ? [...drawPts, drawPts[0]] : drawPts); };
+  $("drawOpen").addEventListener("click", async () => {
+    $("drawBox").hidden = false;
+    if (drawMap) return;
+    try { await loadLeaflet(); } catch (err) { return say("지도를 불러오지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
+    const L = window.L;
+    drawMap = L.map($("drawMap"), { scrollWheelZoom: false }).setView([35.2052, 129.1196], 16);
+    if (VW) L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VW}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: "&copy; 국토교통부 브이월드" }).addTo(drawMap);
+    else L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }).addTo(drawMap);
+    drawLine = L.polyline([], { color: "#b45309", weight: 3 }).addTo(drawMap);
+    drawMap.on("click", (e) => { if (drawPts.length < 100) { drawPts.push([e.latlng.lat, e.latlng.lng]); redraw(); } });
+  });
+  $("drawUndo").addEventListener("click", () => { if (drawLine) { drawPts.pop(); redraw(); } });
+  $("drawClear").addEventListener("click", () => { if (drawLine) { drawPts = []; redraw(); } });
+  $("drawDone").addEventListener("click", async () => {
+    const wkt = R.polygonWKT(drawPts);
+    if (!wkt) return say("꼭짓점을 3개 이상 찍어 주세요.", true);
+    if (!VW) return say("이 주소에서는 브이월드 필지 조회를 쓸 수 없습니다.\n공개 사이트에서 다시 시도해 주세요.", true);
+    $("drawDone").disabled = true; say("브이월드에서 영역 안 필지를 찾는 중입니다.");
+    const r = await vwAskArea(wkt);
+    $("drawDone").disabled = false;
+    if (r.error) return say(`필지를 찾지 못했습니다(${r.error}).\n인터넷 연결을 확인해 주세요.`, true);
+    if (!r.pnus.length) return say("영역 안에서 필지를 찾지 못했습니다.", true);
+    $("list").value = r.pnus.join("\n");
+    saveDraft();
+    say(`영역 안 ${r.pnus.length}필지를 넣었습니다.${r.total > r.pnus.length ? `\n전체 ${r.total}필지 중 1,000필지까지만 넣었습니다. 영역을 나눠 주세요.` : ""}\n경계에 걸친 필지도 들어가니 목록을 확인해 주세요.`);
+  });
+
   $("f").addEventListener("submit", async (e) => {
     e.preventDefault();
     saveDraft();
@@ -139,7 +200,9 @@
     if (!m.buildings.length) return say(`목록에서 찾은 건물이 없습니다.\n${file.name} 지번이 맞는지 확인해 주세요.`, true);
     // 기준일은 자료 기준일보다 앞설 수 없다. 그 사이에 지은 건물을 대장 스냅숏으로는 가려낼 수 없어 분모가 틀어진다
     if (refIn && refIn < file.age_reference_date) return say(`경과 기준일은 자료 기준일(${D.govDate(file.age_reference_date)}) 이후로 넣어 주세요.\n그 전 날짜는 그 뒤에 지은 건물이 섞여 바르게 셀 수 없습니다.`, true);
-    const res = R.review(m.buildings, { ref: refIn || file.age_reference_date, district: $("district").checked, areaM2 });
+    // 나·다·라목 참고 범위(1365 트윈의 호수밀도·접도율·과소필지 흡수). 토지특성 파일이 없거나 못 받으면 예전처럼 '현장 확인'만 쓴다
+    const parcel = await parcelText(file, p.items, m.buildings, areaM2);
+    const res = R.review(m.buildings, { ref: refIn || file.age_reference_date, district: $("district").checked, areaM2, parcel });
     last = { res, m, file };
     const skipped = [...(p.bad.length ? [`지번으로 읽지 못한 칸 ${p.bad.length}개`] : []), ...(m.missing.length ? [`대장에 없는 지번 ${m.missing.length}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})`] : []),
       ...(m.otherDong.length ? [`계산에 넣지 못한 다른 동 지번 ${m.otherDong.length}개(같은 구·군 법정동 이름이 아니거나 ${R.MERGE_MAX}개 동을 넘음: ${m.otherDong.slice(0, 3).join(", ")}${m.otherDong.length > 3 ? " 등" : ""})`] : [])];
@@ -236,6 +299,13 @@
     const dataHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
     return [current.res, current.m, current.file, day, { ...options, records, dataHash }];
   };
+  $("consultHwpx").addEventListener("click", async () => {
+    try {
+      const args = await applicationArgs();
+      await templates;
+      D.saveBytes(fileName("hwpx", args[2], args[4], args[3]).replace("_입안요건_사전검토_", "_사전컨설팅_부록_"), D.hwpxBytes(R.buildConsultDoc(...args)), "application/hwp+zip");
+    } catch (err) { say("부록을 만들지 못했습니다.\n신청요건 근거 CSV 끝에도 같은 질의가 있습니다.", true); }
+  });
   $("applicationHwpx").addEventListener("click", async () => {
     try {
       const args = await applicationArgs();

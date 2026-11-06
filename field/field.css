@@ -164,3 +164,5 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 /* 입안요건 사전검토: 상태 낱말이 본 정보이고 색은 보조다 */
 .req-list li[data-status="현장 확인"] b { color: var(--notice); }
 .req-list li[data-status="미충족"] b { color: var(--dim); }
+
+.draw-map { height: 320px; margin: 8px 0; border-radius: 8px; }

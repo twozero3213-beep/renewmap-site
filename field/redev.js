@@ -84,6 +84,14 @@
     return { items, bad };
   }
 
+  // 지도에서 찍은 꼭짓점 [[lat,lng],...] → 브이월드 geomFilter용 WKT(경도 위도 순, 고리를 닫는다). 3~100점, 한국 범위 밖이면 null
+  function polygonWKT(pts) {
+    if (!Array.isArray(pts) || pts.length < 3 || pts.length > 100) return null;
+    if (!pts.every(([la, ln]) => la > 32 && la < 39.5 && ln > 124 && ln < 132)) return null;
+    const ring = [...pts, pts[0]].map(([la, ln]) => `${ln.toFixed(7)} ${la.toFixed(7)}`);
+    return `POLYGON((${ring.join(", ")}))`;
+  }
+
   // GIS·엑셀에서 내보낸 파일 → parseList가 읽는 글. CSV·TXT는 그대로 둔다.
   // GeoJSON은 도형이 아니라 속성(PNU 19자리, 없으면 지번+법정동)만 읽는다. 필지 도형은 이용 조건(D16) 때문에 쓰지 않는다
   function listFromFile(name, text) {
@@ -164,7 +172,8 @@
   const MASONRY_PRIOR = { pct: 98.4, n: 165169, basis: "부산 건축물대장 2026-10-24 수집" };   // 도시재생법 시행령 제17조 노후 요건(동수). 적용 단위가 달라 참고로만 같이 센다
 
   // blds: match().buildings, ref: 'YYYY-MM-DD'(파일 age_reference_date), district: 재정비촉진지구, areaM2: 사용자가 넣은 구역 면적(없으면 null)
-  function review(blds, { ref, district = false, areaM2 = null }) {
+  // parcel: parcel-ref.js texts() 결과(나·다·라목 참고 범위). 있어도 상태는 '현장 확인' 그대로다(규칙 승인 전·정의 일부를 자료로 못 채움)
+  function review(blds, { ref, district = false, areaM2 = null, parcel = null }) {
     if (!blds.length) throw new Error("목록에서 찾은 건물이 없습니다.");
     const thr = district ? THR.district : THR.default, rows = blds.map((b) => ({ b, ...oldState(b, ref) }));
     const sum = (f) => rows.reduce((s, r) => s + (f(r) ? Number(r.b.tot_area) || 0 : 0), 0);
@@ -180,9 +189,9 @@
       { label: "노후·불량 건축물 수", rule: `전체의 ${thr}% 이상`, value: `${range(cLo, cHi)} (${nOld}/${n}동${nUnk ? `, 못 정한 ${nUnk}동` : ""})`,
         status: status(cLo, cHi, thr), basis: `${art("제5조②2")}·제3조②` },
       { label: "가목 노후·불량 연면적", rule: `전체의 ${thr}% 이상`, value: area ? range(fLo, fHi) : "연면적 자료 없음", status: ga, basis: art("제5조②2가") },
-      { label: "나목 호수밀도", rule: "1ha당 50동 이상", value: "대장 표제부로 셀 수 없음(공동주택 세대층 기준)", status: CHECK, basis: `${art("제5조②2나")}·제2조8호` },
-      { label: "다목 도로", rule: "폭 4m 미만 30% 이상 또는 접도율 40% 이하", value: "현장·도면 확인", status: CHECK, basis: art("제5조②2다"), field: "road" },   // field: 현장 앱 R.CHECKS id(접도 상태)
-      { label: "라목 필지", rule: "과소·부정형·세장형 40% 이상", value: "지적도 확인", status: CHECK, basis: art("제5조②2라") },
+      { label: "나목 호수밀도", rule: "1ha당 50동 이상", value: parcel ? `참고 ${parcel.density}` : "대장 표제부로 셀 수 없음(공동주택 세대층 기준)", status: CHECK, basis: `${art("제5조②2나")}·제2조8호` },
+      { label: "다목 도로", rule: "폭 4m 미만 30% 이상 또는 접도율 40% 이하", value: parcel ? `참고 접도율 ${parcel.road}` : "현장·도면 확인", status: CHECK, basis: art("제5조②2다"), field: "road" },   // field: 현장 앱 R.CHECKS id(접도 상태)
+      { label: "라목 필지", rule: "과소·부정형·세장형 40% 이상", value: parcel ? `참고 ${parcel.lots}` : "지적도 확인", status: CHECK, basis: art("제5조②2라") },
       { label: "마·바목", rule: "순환용주택·재해 우려 등", value: "행정 판단", status: CHECK, basis: art("제5조②2마·바") },
       { label: "가~바목 중 하나", rule: "하나 이상", value: ga === MET ? "가목 충족" : "가목 외 확인 필요", status: ga === MET ? MET : CHECK, basis: art("제5조②2") },
     ];
@@ -456,14 +465,38 @@
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: mark(secret, `리뉴맵 신청요건 근거 · ${NOT_APPROVED} · `) };
   }
 
+  function consultRows(res, m, file) {
+    const nv = res.newVillage, out = m.missing.length + m.otherDong.length;
+    return [
+      ["질의", "근거(조문·자료)", "이 문서의 한계"],
+      ["20년 이상 건축물 비율은 어떤 기준일·분모로 셌나", `도시재생법 시행령 제17조 · 건축물대장 기준일 ${D.govDate(file.hub_reference_date)} · 분모 ${res.n}동(주건축물)`, `사용승인일 없는 ${res.urban.unk}동은 범위로 둠. 대장에 없는 무허가 건축물 미포함`],
+      ["저층 주거 3분의 2는 어떻게 셌나", "2027 평가 가이드라인 p.36 · 주용도·층수·기타용도(주택 유형)", `${nv.lowrise.value.split(" (")[0]}. 주택 겸용·층수 해석은 확인 필요`],
+      ["인구·사업체 요건은 어디 값인가", "쇠퇴진단지표(행정동, 2024) · 30년·5년 두 길", "행정동 값이며 구역 값이 아님. 행정동에서 안 맞으면 집계구 등으로 따로 제시"],
+      ["경계를 바꾸면 결과가 어떻게 달라지나", "같은 건물 파일로 경계안 최대 3개 비교", `경계 도형은 없고 지번 목록 기준. 계산 제외 지번 ${out}개`],
+      ["현장 확인은 했나", "현장 기록(사진·위치 오차·확인자)을 PNU로 연결", "실태조사를 대신하지 않음. 기록은 대장 값을 바꾸지 않음"],
+    ];
+  }
+
+  // 사전컨설팅(2027 공모 최소 2회)에서 먼저 나올 질문. 1쪽 높이를 지키려고 따로 낸다. 답은 이 계산의 값과 한계만 쓴다(경쟁·흡수 보고서 2026-11-07 흡수 14)
+  function buildConsultDoc(res, m, file, today, { secret = false } = {}) {
+    const title = `${file.name} 신청요건 근거 · 사전컨설팅 부록`;
+    const blocks = [
+      block("title", title),
+      block("para", mark(secret, `${NOT_APPROVED} · 판정 아님 · 같은 날 받은 신청요건 근거 1쪽과 함께 본다`, true), { small: true }),
+      block("table", "", { rows: consultRows(res, m, file).map((r) => r.map(D.clean)), widths: [28, 36, 36] }),
+    ];
+    return { kind: "redev", sizes: "onepage", title, blocks, sources: [], writtenOn: today, footer: mark(secret, `리뉴맵 사전컨설팅 부록 · ${NOT_APPROVED} · `) };
+  }
+
   function applicationCSV(res, m, file, today, opt = {}) {
     const doc = buildApplicationDoc(res, m, file, today, opt);
     const rows = doc.blocks.flatMap((b) => b.kind === "table" ? b.rows : [[b.text]]);
+    rows.push(["사전컨설팅 예상 질의"], ...consultRows(res, m, file));
     rows.push(["계산 제외 지번", ...m.missing], ["계산 제외 다른 동", ...m.otherDong],
       ["현장 기록 ID", "PNU", "기록 시각", "확인 항목", "관찰값", "상태"]);
     for (const r of applicationRecords(res, opt.records || [])) rows.push([r.id, r.pnu || r.building.pnu, r.recorded_at, r.item || r.target, r.observed, r.status]);
     return "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   }
 
-  return { listFromFile, buildApplicationDoc, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { polygonWKT, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://api.vworld.kr https://tile.openstreetmap.org https://cdnjs.cloudflare.com; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'self'">
 <script src="../frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>신청요건 확인(노후주거지정비·재개발) | 리뉴맵</title>
@@ -44,6 +44,14 @@
     <textarea id="list" rows="8" placeholder="1291-5&#10;산 12-3&#10;재송동 45(다른 동이면 동 이름을 앞에)&#10;엑셀에서 '지번' 열을 머리와 함께 복사해도 됩니다"></textarea>
     <label for="listFile">또는 GIS·엑셀에서 내보낸 파일 열기(CSV·GeoJSON, PNU나 지번 열)</label>
     <input id="listFile" type="file" accept=".csv,.txt,.geojson,.json">
+    <button type="button" class="ghost" id="drawOpen">지도에서 영역 그리기</button>
+    <div id="drawBox" hidden>
+      <p class="hint">지도를 눌러 꼭짓점을 찍고 '영역 안 필지 넣기'를 누르세요.<br>브이월드 연속지적도에서 영역 안 필지 번호(PNU)만 받아 목록에 넣습니다. 도형은 저장하지 않습니다.</p>
+      <div id="drawMap" class="draw-map" role="region" aria-label="영역 그리기 지도"></div>
+      <button type="button" id="drawDone">영역 안 필지 넣기</button>
+      <button type="button" class="ghost" id="drawUndo">마지막 점 지우기</button>
+      <button type="button" class="ghost" id="drawClear">다시 그리기</button>
+    </div>
     <button type="button" class="ghost" id="demo">고른 동 전체로 계산해 보기</button>
     <label for="area">구역 면적(㎡, 아는 경우만)</label>
     <input id="area" type="number" inputmode="decimal" min="0" step="any">
@@ -76,6 +84,7 @@
     <div class="row">
       <button type="button" id="applicationHwpx">신청요건 근거 한글 1쪽 받기</button>
       <button type="button" class="ghost" id="applicationCsv">신청요건 근거 CSV 받기</button>
+      <button type="button" class="ghost" id="consultHwpx">사전컨설팅 부록 한글 받기</button>
     </div>
     <p class="hint">현황조사 항목별 확인한 내용과 미확인 항목, 이 기기의 현장 기록을 함께 담습니다.<br>한글 파일이 열리지 않으면 같은 내용을 CSV로 받으세요.</p>
     <div class="row">
@@ -87,6 +96,7 @@
     <p class="hint">QGIS에서는 CSV를 첫 줄(안내 문구) 하나 건너뛰고 열어, 연속지적도의 PNU 칸과 결합하면 지도에 붙습니다.<br>리뉴맵은 필지 도형을 담지 않아 GeoJSON은 만들지 않습니다.</p>
     <p class="hint">수기 대조 표본은 같은 목록이면 늘 같은 건물이 뽑힙니다.<br>건축물대장 열람 값과 맞춰 보고 결과를 문서에 적으세요.</p>
     <button type="button" class="ghost" id="savePlan">이 목록을 경계안으로 저장</button>
+    <p class="hint"><a href="idle.html">오래된 창고·공장 목록</a>도 같은 건물 자료로 볼 수 있습니다.</p>
   </section>
 
   <section id="plans" class="card" aria-labelledby="plansTitle" hidden>
@@ -101,7 +111,9 @@
 <script src="../site.js"></script>
 <script src="../docgen.js"></script>
 <script src="store.js"></script>
+<script src="parcel-ref.js"></script>
 <script src="redev.js"></script>
+<script src="vworld-key.js"></script>
 <script src="redev-app.js"></script>
 </body>
 </html>
