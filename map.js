@@ -953,7 +953,8 @@
   const curInd = () => indOf(state.ind, inds());
   const effMode = ind => (hasTrend(ind) ? state.mode : 'now');
   const horizons = () => (state.forecastIdx && Array.isArray(state.forecastIdx.horizons) ? state.forecastIdx.horizons.filter(isNum) : []);
-  const horizon = () => (isNum(state.horizon) && horizons().includes(state.horizon) ? state.horizon : horizons()[0] ?? null);
+  // 처음 보이는 전망 연도는 가장 먼 해다. 첫 해(1년 뒤)는 거의 모든 시·군·구가 0~10% 감소 한 칸에 들어가 색이 안 바뀌어 보였다(2026-11-07 대표 지적)
+  const horizon = () => (isNum(state.horizon) && horizons().includes(state.horizon) ? state.horizon : horizons()[horizons().length - 1] ?? null);
   const avail = ind => { const v = state.index && resolve(state.index, state.route), e = v && v.level === 'emd' ? emdOf(v.emdCode) : null; return isAvailable(ind, state.index, state.living, e && e.json); };
   // find.js '설치 현황' 카드가 쓴다: 그 묶음의 첫 지표를 고른다(묶음 탭을 누른 것과 같다)
   api.showGroup = g => { const list = inds().filter(i => i.group === g), pick = list.find(avail) || list[0]; if (!pick) return; stopAuto(true); state.ind = pick.code; state.year = null; if (state.index !== undefined) render(); };
