@@ -1,0 +1,11 @@
+# 리뉴맵 공개 사이트: 브라우저가 읽도록 일부러 공개하는 키 파일만 검사에서 뺀다(2026-11-07).
+# - field/vworld-key.js: 브이월드 개발키. 등록 주소(이 사이트)에서만 동작
+# - field/naver-map-key.js: 네이버 지도 Client ID(URL 등록 제한)
+# - hackle-key.js: 핵클 App/Browser 키(Server 키 아님)
+# 이 밖의 파일에서 키가 나오면 검사가 실패한다. 서버용 비밀은 어디에도 두지 않는다
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "공개용 브라우저 키 파일"
+paths = ['''^field/vworld-key\.js$''', '''^field/naver-map-key\.js$''', '''^hackle-key\.js$''']
