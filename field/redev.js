@@ -116,13 +116,16 @@
   const socTypes = (r) => Object.entries(r.types).sort((a, b) => b[1] - a[1]).map(([t, n]) => `${t} ${n}`).join(" · ");
   const socDates = (r) => !r.dates ? "" : r.dates[0] === r.dates[1] ? r.dates[0] : `${r.dates[0]}~${r.dates[1]}`;
 
+  // 원자료에는 이름·종류·좌표·기준일이 같고 관리번호만 다른 행이 있다(부산 2026-11-07: 공원 1쌍·주차장 3쌍). 기관이 따로 올린 행이라 지우지 않고 CSV에 표시만 한다
+  const socKey = (p) => p.slice(0, 6).join("|");
   function socCSV(soc, pts, today) {
-    const { rows, inside } = socCount(soc, pts);
+    const { rows, inside } = socCount(soc, pts), same = new Map();
+    for (const p of inside) same.set(socKey(p), (same.get(socKey(p)) || 0) + 1);
     const out = [[`리뉴맵 지역 SOC 현황표 · ${today} · 그린 영역 안 시설 점 수 · 경계 도형은 담지 않음 · ${soc.license_type}`],
       ["시설", "영역 안 수", "종류별", "데이터기준일자", "자료", "받은 날"],
       ...rows.map((r) => [r.kind, r.n, socTypes(r), socDates(r), `${r.source.name}(공공데이터포털 ${r.source.id}) ${r.source.url}`, r.source.retrieved_at.slice(0, 10)]),
-      [], ["시설", "이름", "종류", "위도", "경도", "데이터기준일자"],
-      ...inside.map((p) => [soc.sources[p[0]].kind, p[1], p[2], p[3], p[4], p[5]])];
+      [], ["시설", "이름", "종류", "위도", "경도", "데이터기준일자", "관리번호", "같은 이름·위치 행"],
+      ...inside.map((p) => [soc.sources[p[0]].kind, p[1], p[2], p[3], p[4], p[5], p[6] || "", same.get(socKey(p)) > 1 ? `${same.get(socKey(p))}행(관리번호로 구분)` : ""])];
     return "﻿" + out.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   }
 

@@ -100,6 +100,6 @@
 - 보고서 템플릿 `report_templates.json`(TPL-2026-10-27.2): 파이썬(`report_quality/templates.py`)과 JS(`docgen.js`)가 같은 파일을 읽는다. `doc_style`(나눔고딕·글자 크기)·`onepage.sizes`가 보고서 서식이다(GOV_DOC_STYLE.md 6장). 양식 조각 정의는 `docs/gov/form_fragments.md`.
 
 ## 지역 SOC 점 (2026-11-07) — `soc_busan.json`
-- 신청요건 화면 '영역 안 생활 SOC 세기'가 읽는다. `sources[]`(kind·name·id·url·retrieved_at·부산 행 수·뺀 행 수·기준일 범위), `points[]` = `[source 순번, 이름, 종류, 위도, 경도, 데이터기준일자]`(`fields`에 같은 순서), `crs` EPSG:4326.
+- 신청요건 화면 '영역 안 생활 SOC 세기'가 읽는다. `sources[]`(kind·name·id·url·retrieved_at·부산 행 수·뺀 행 수·기준일 범위), `points[]` = `[source 순번, 이름, 종류, 위도, 경도, 데이터기준일자, 관리번호(공원·주차장만)]`(`fields`에 같은 순서), `crs` EPSG:4326.
 - 원천은 표준데이터 파일(이용허락범위 제한 없음) 도서관·도시공원·경로당·주차장. 원장 셀이 아니라 원자료 점 목록이다. 개수는 사용자가 그린 영역마다 기기에서 센다.
 - 만들기: `backend/scripts/export_soc_busan.py`. 확인 기록: `docs/research/soc_datasets_2026-11-07.md`.
