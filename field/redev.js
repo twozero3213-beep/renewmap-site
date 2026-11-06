@@ -84,6 +84,23 @@
     return { items, bad };
   }
 
+  // GIS·엑셀에서 내보낸 파일 → parseList가 읽는 글. CSV·TXT는 그대로 둔다.
+  // GeoJSON은 도형이 아니라 속성(PNU 19자리, 없으면 지번+법정동)만 읽는다. 필지 도형은 이용 조건(D16) 때문에 쓰지 않는다
+  function listFromFile(name, text) {
+    if (!/\.(geo)?json$/i.test(name || "")) return { text: String(text || ""), n: null, skipped: 0 };
+    const feats = (JSON.parse(text).features || []).map((f) => f && f.properties || {});
+    const out = [];
+    let skipped = 0;
+    for (const pr of feats) {
+      const vals = Object.entries(pr), pnu = vals.find(([, v]) => /^\d{19}$/.test(String(v).trim()));
+      const ji = vals.find(([k]) => /지번|jibun/i.test(k)), dong = vals.find(([k]) => /^(법정동|emd_?nm|dong)$/i.test(k));
+      if (pnu) out.push(String(pnu[1]).trim());
+      else if (ji && String(ji[1]).trim()) out.push(`${dong ? `${String(dong[1]).trim()} ` : ""}${String(ji[1]).trim()}`);
+      else skipped += 1;
+    }
+    return { text: out.join("\n"), n: out.length, skipped };
+  }
+
   // 목록을 법정동 파일(buildings/{법정동}.json, 여러 동이면 mergeFiles 결과)의 건물과 잇는다. 같은 건물은 한 번만 센다.
   // 동 이름도 PNU도 없는 지번은 고른 동(file.bjd10)으로 본다.
   // 관리번호(mgm_bld_pk)는 2^53을 넘는 값이 있어 JS 숫자로는 서로 다른 건물이 같아진다 → 객체로 가린다
@@ -235,10 +252,11 @@
   const escH = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   // 행정동 쇠퇴 3요건 값(2026-11-04). ①·②는 지번 목록으로 구하지 못해 지도와 같은 원장 셀을 그대로 옮긴다.
   // 충족 여부는 정하지 않는다: 판정 규칙(rules/decline.py)이 승인 전이고, 행정동과 신청 구역은 경계가 달라 이 값이 구역의 값은 아니다
+  const REQ_OVER = "기준 해당", REQ_INSIDE = "기준 비해당", REQ_UNKNOWN = "정할 수 없음", UNSETTLED = ["추가확인", "충돌", "폐기"];
   const DONG_REQ = [
-    { label: "① 인구", rule: "최근 30년 최대 대비 20% 이상 감소, 또는 최근 5년 중 3년 이상 연속 감소", rate: "DECLINE_POP_DROP30Y_PCT", rateName: "30년 최대 대비 감소율", run: "DECLINE_POP_DECL3IN5" },
-    { label: "② 사업체", rule: "최근 10년 최대 대비 5% 이상 감소, 또는 최근 5년 중 3년 이상 연속 감소", rate: "DECLINE_BIZ_DROP10Y_PCT", rateName: "10년 최대 대비 감소율", run: "DECLINE_BIZ_DECL3IN5" },
-    { label: "③ 20년 이상 건축물", rule: "비율 50% 이상", rate: "DECLINE_AGING_20Y_PCT", rateName: "행정동 전체 비율" },
+    { label: "① 인구", rule: "최근 30년 최대 대비 20% 이상 감소, 또는 최근 5년 중 3년 이상 연속 감소", rate: "DECLINE_POP_DROP30Y_PCT", rateName: "30년 최대 대비 감소율", thr: 20, run: "DECLINE_POP_DECL3IN5" },
+    { label: "② 사업체", rule: "최근 10년 최대 대비 5% 이상 감소, 또는 최근 5년 중 3년 이상 연속 감소", rate: "DECLINE_BIZ_DROP10Y_PCT", rateName: "10년 최대 대비 감소율", thr: 5, run: "DECLINE_BIZ_DECL3IN5" },
+    { label: "③ 20년 이상 건축물", rule: "비율 50% 이상", rate: "DECLINE_AGING_20Y_PCT", rateName: "행정동 전체 비율", thr: 50 },
   ];
   function dongDecline(dong) {
     const cell = (code) => (dong.cells || []).find((c) => c.indicator_code === code);
@@ -250,12 +268,22 @@
       const parts = [`${q.rateName} ${short ? "계산 안 함(1995~2024년 인구 기록이 다 있지 않음)" : r === null ? "자료 없음" : `${r.toFixed(1)}%`}`];
       if (q.run) parts.push(`3년 연속 감소 ${s === null ? "자료 없음" : s === 1 ? "있음" : "없음"}`);
       const c = rate || run || {};
-      return { label: q.label, rule: q.rule, value: parts.join(", "), source: c.source_name || "출처 없음", ref: c.reference_date || "", checked: c.status === "미확인" ? "수기 대조 전" : c.status || "" };
+      // 두 길(시행령 제17조 가목·나목) 중 하나라도 기준에 닿으면 그 요건은 기준 해당 값이 있다. 30년 값이 없어도 5년 길로 본다(2026-11-07).
+      // dong_brief.requirement_paths와 같은 규칙: 값이 없거나 가렸거나 추가확인·충돌·폐기면 그 길은 정할 수 없음
+      const hit = (cl, v, ok) => (!cl || v === null || cl.value_hidden_reason || UNSETTLED.includes(cl.status) ? null : ok(v));
+      const ways = [hit(rate, r, (v) => v >= q.thr)].concat(q.run ? [hit(run, s, (v) => v === 1)] : []);
+      const path = ways.includes(true) ? REQ_OVER : ways.every((w) => w === false) ? REQ_INSIDE : REQ_UNKNOWN;
+      return { label: q.label, rule: q.rule, value: parts.join(", "), path, source: c.source_name || "출처 없음", ref: c.reference_date || "", checked: c.status === "미확인" ? "수기 대조 전" : c.status || "" };
     });
   }
   function dongDeclineHTML(dong) {
-    const rows = dongDecline(dong).map((x) => `<div><dt>${escH(x.label)}</dt><dd><b>${escH(x.value)}</b> <span>기준 ${escH(x.rule)} · 기준일 ${escH(x.ref ? D.govDate(x.ref) : "없음")} · ${escH(x.source)} · ${escH(x.checked)}</span></dd></div>`);
-    return `<dl class="rv-ref">${rows.join("")}</dl><p class="rv-key">${escH(dong.name)} 전체의 값입니다.<br>신청 구역의 값이 아니고, 충족 판정이 아닙니다.</p>`;
+    const reqs = dongDecline(dong);
+    const rows = reqs.map((x) => `<div><dt>${escH(x.label)}</dt><dd><b>${escH(x.value)}</b> → ${escH(x.path)} <span>기준 ${escH(x.rule)} · 기준일 ${escH(x.ref ? D.govDate(x.ref) : "없음")} · ${escH(x.source)} · ${escH(x.checked)}</span></dd></div>`);
+    // 행정동 값으로 기준에 닿지 않는 요건이 있으면 집계구 제시 길을 알린다(2027 가이드라인, claims C74)
+    const block = reqs.some((x) => x.path !== REQ_OVER)
+      ? `<p class="rv-key">행정동 값으로 기준에 닿지 않거나 정할 수 없는 요건이 있습니다.<br>2027 도시재생 신규사업 평가 가이드라인은 지역특화재생 사전적격성에서 행정동 단위 기준에 미치지 못하면 집계구 등 공간 단위로 제시하게 합니다(인정사업은 읍·면·동 단위만).<br>리뉴맵에는 아직 집계구 인구·사업체 값이 없습니다. ③은 위 지번 목록으로 구역 값을 셉니다.</p>`
+      : "";
+    return `<dl class="rv-ref">${rows.join("")}</dl><p class="rv-key">${escH(dong.name)} 전체의 값입니다.<br>인구·사업체는 두 길 중 하나라도 기준에 닿으면 기준 해당입니다. 규칙 승인 전 참고이고, 신청 구역의 값이 아니고, 충족 판정이 아닙니다.</p>${block}`;
   }
   // 법정동 이름으로 이어지는 행정동(반여동 → 반여1~4동, 중앙동1가 → 중앙동). 이름만 보는 것이라 못 찾는 동이 있어 사람이 고르게 둔다
   function dongCandidates(legalName, dongs) {
@@ -403,7 +431,7 @@
   function buildApplicationDoc(res, m, file, today, { secret = false, records = [], dataHash = "" } = {}) {
     const src = new D.Sources(), nv = res.newVillage, recs = applicationRecords(res, records);
     const bld = src.ref({ source_name: file.source, source_url: file.source_url, reference_date: file.hub_reference_date, retrieved_at: file.retrieved_at, license_type: file.license });
-    const guide = src.ref({ source_name: "국토교통부 2027 도시재생 신규사업 평가 가이드라인 p.36·94", source_url: "https://www.krihs.re.kr/board.es?act=view&bid=0077&list_no=398642&mid=a60504000000", reference_date: "2026-09-11", retrieved_at: "2026-11-04", license_type: "이용조건 확인 필요" });
+    const guide = src.ref({ source_name: "국토교통부 2027 도시재생 신규사업 평가 가이드라인 p.36·94", source_url: "https://www.krihs.re.kr/board.es?act=view&bid=0077&list_no=398642&mid=a60504000000", reference_date: "2026-09-11", retrieved_at: "2026-11-04", license_type: "확인 필요" });
     const title = `${file.name} 노후주거지정비 신청요건 근거`;
     const rows = [
       ["현황조사 항목(p.94)", "이 목록으로 확인한 내용 / 판단 못 한 내용"],
@@ -420,9 +448,9 @@
       block("para", mark(secret, `${NOT_APPROVED} · 판정 아님 · 일반정비형 참고(빈집정비형 추가요건 별도 확인)`, true), { small: true }),
       block("para", `대상 ${res.n}동 · 경과 기준일 ${D.govDate(res.ref)} · 못 정한 건물 ${res.nUnk}동. ${missing.length ? `계산 제외 ${missing.length}개: ${missing.slice(0, 3).join("·")}${missing.length > 3 ? " 등(전체는 CSV)" : ""}` : "계산 제외 없음"}. ${UNREG}`, { small: true }),
       block("table", "", { rows: rows.map((r) => r.map(D.clean)), widths: [25, 75] }),
-      block("para", `신청요건(p.36): 활성화지역 고시 확인, 저층 주거 3분의 2 이상, ①②③ 중 ③ 포함 2개 이상. ③은 20년 이상 건축물 2분의 1 이상. 저층 유형 해석·규칙 승인 전. 종합 판정을 내리지 않는다.`, { small: true }),
+      block("para", `신청요건(p.36): 활성화지역 고시 확인, 저층 주거 3분의 2 이상, ①②③ 중 ③ 포함 2개 이상. ③은 20년 이상 건축물 2분의 1 이상. 저층 유형 해석·규칙 승인 전. 종합 판정을 내리지 않는다. 이 문서는 요건 검토용 계산 근거이며 최종 적격성 판단은 국토교통부·지자체 검토를 따른다.`, { small: true }),
       block("para", `현장 기록 ${recs.length}건 / ${new Set(recs.map((r) => r.pnu || r.building.pnu)).size}필지(이 기기, PNU 일치). 기록만 첨부하며 대장 값·계산값은 바꾸지 않았다. 상세는 신청요건 근거 CSV.`, { small: true }),
-      block("para", `자료 판: 법정동 ${file.bjd10} · SHA-256 ${dataHash || "미기록(같은 건물 파일 보관 필요)"} · 받은 시각 ${file.retrieved_at || "미표시"} · ${RULES.map((r) => r.id).join("·")} 초안. 다시 계산: 같은 건물 파일·지번 목록·경과 기준일로 계산한다. 건물 파일·건물별 CSV·신청요건 CSV를 함께 보관한다.`, { small: true }),
+      block("para", `자료 판: 법정동 ${file.bjd10} · SHA-256 ${dataHash || "미기록(같은 건물 파일 보관 필요)"} · 받은 시각 ${file.retrieved_at ? String(file.retrieved_at).slice(0, 16).replace("T", " ") : "미표시"} · ${RULES.map((r) => r.id).join("·")} 초안. SHA-256은 건물 파일이 바뀌지 않았는지만 확인하며 현장 사실을 입증하지 않는다. 다시 계산: 같은 건물 파일·지번 목록·경과 기준일로 계산한다. 건물 파일·건물별 CSV·신청요건 CSV를 함께 보관한다.`, { small: true }),
       ...src.list.map((s, i) => block("para", D.sourceLine(i + 1, s), { small: true })),
     ];
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: mark(secret, `리뉴맵 신청요건 근거 · ${NOT_APPROVED} · `) };
@@ -437,5 +465,5 @@
     return "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   }
 
-  return { buildApplicationDoc, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { listFromFile, buildApplicationDoc, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

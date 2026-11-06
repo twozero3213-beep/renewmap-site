@@ -109,6 +109,21 @@
     $("f").requestSubmit();
   });
 
+  // 파일은 이 기기에서만 읽는다. 한국어 엑셀 CSV는 EUC-KR이 많아 UTF-8로 깨지면 다시 읽는다
+  $("listFile").addEventListener("change", async () => {
+    const f = $("listFile").files[0];
+    if (!f) return;
+    const buf = await f.arrayBuffer();
+    let text = new TextDecoder("utf-8").decode(buf);
+    if (text.includes("�")) text = new TextDecoder("euc-kr").decode(buf);
+    let got;
+    try { got = R.listFromFile(f.name, text); } catch (err) { return say("파일을 읽지 못했습니다.\nCSV나 GeoJSON인지 확인해 주세요.", true); }
+    if (got.n === 0) return say("파일에서 PNU나 지번 열을 찾지 못했습니다.", true);
+    $("list").value = got.text;
+    saveDraft();
+    say(got.n === null ? `${f.name}을 목록에 넣었습니다.` : `${f.name}에서 ${got.n}필지를 넣었습니다.${got.skipped ? `\nPNU·지번이 없는 ${got.skipped}개는 뺐습니다.` : ""}`);
+  });
+
   $("f").addEventListener("submit", async (e) => {
     e.preventDefault();
     saveDraft();
