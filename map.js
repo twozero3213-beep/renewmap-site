@@ -1524,8 +1524,6 @@
     if (window.RenewDashboard) window.RenewDashboard.loadLeaflet().catch(() => {});
     state.naver = null; loadNaver().then(ok => { state.naver = ok; render(); });
   }
-  // dashboard.json(2.5MB)은 정밀 사례 묶음에만 쓴다. 첫 화면은 기다리지 않는다
-  fetchJson('data/dashboard.json').then(dash => { state.dash = dash; if (state.index) render(); });
   fetchJson('data/national/index.json').then(index => {
     state.index = index && Array.isArray(index.sigungu) ? index : null;
     if (heroCount && index && isNum(index.emd_count)) { heroCount.innerHTML = `<b data-ck="emd" data-count="${index.emd_count}">0</b>개 `; countUp(heroCount.firstChild); }
@@ -1537,8 +1535,9 @@
       state.sgGeo = sg && Array.isArray(sg.features) ? sg : null; state.sidoGeo = sido && Array.isArray(sido.features) ? sido : null; render(); startAuto();
     });
   });
-  // 보조 자료 여섯 개는 다 받은 뒤 한 번만 다시 그린다(하나 올 때마다 지도·문서를 새로 그리면 휴대폰에서 1초 넘게 멈췄다, 2026-11-07 라이트하우스)
+  // 보조 자료 일곱 개는 다 받은 뒤 한 번만 다시 그린다(하나 올 때마다 지도·문서를 새로 그리면 휴대폰에서 1초 넘게 멈췄다, 2026-11-07 라이트하우스)
   Promise.all([
+    fetchJson('data/dashboard.json', true).then(dash => { state.dash = dash; }), // 2.5MB, 정밀 사례 묶음에만 쓴다
     fetchJson('data/report_templates.json', true).then(j => { state.templates = j && typeof j === 'object' && j.onepage && j.summary ? j : null; if (DG && state.templates) DG.setTemplates(j); }),
     fetchJson('data/national/living/index.json').then(li => { state.living = li && Array.isArray(li.indicators) ? li : null; }),
     // 다른 직원이 만드는 중인 파일. 없으면 null → 해당 칩은 '수집 중'

@@ -101,5 +101,6 @@
     const box = $('ledgerAnat'), html = anatomyHTML(dong, cell, D);
     if (box && html) { box.innerHTML = html; box.classList.add('is-real'); }
   }
-  Promise.all(['data/dashboard.json', 'data/national/index.json', 'data/national/living/index.json'].map(window.renewFetch)).then(([dash, index, li]) => { verdict(dash); sections(dash, index, li); reveal(); });
+  // 받을 자리가 있는 화면(소개)에서만 받는다. 지도 화면은 이 자리가 없는데도 dashboard.json(2.5MB)을 높은 우선순위로 받아 첫 지도가 늦었다
+  if (document.querySelector('#verdictCards, #ledgerAnat, [data-stat]')) Promise.all(['data/dashboard.json', 'data/national/index.json', 'data/national/living/index.json'].map(window.renewFetch)).then(([dash, index, li]) => { verdict(dash); sections(dash, index, li); reveal(); });
 })();
