@@ -1,0 +1,26 @@
+# 배포가 끝날 때마다 공개 사이트를 휴대폰 기준으로 잰다(GoogleChrome/lighthouse-ci).
+# 접근성·검색 점수가 떨어지면 실패, 속도·화면 밀림은 경고만 남긴다. 보고서는 실행 결과 파일로만 남기고 외부에 올리지 않는다.
+name: lighthouse
+on:
+  workflow_run:
+    workflows: ["pages build and deployment"]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: lighthouse
+  cancel-in-progress: true
+jobs:
+  audit:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          sparse-checkout: .github
+      - uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # 12.6.2
+        with:
+          configPath: ./.github/lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: false
