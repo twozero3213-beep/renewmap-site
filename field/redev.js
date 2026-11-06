@@ -245,7 +245,9 @@
     const num = (c) => (c && typeof c.value === "number" ? c.value : null);
     return DONG_REQ.map((q) => {
       const rate = cell(q.rate), run = q.run ? cell(q.run) : null, r = num(rate), s = num(run);
-      const parts = [`${q.rateName} ${r === null ? "자료 없음" : `${r.toFixed(1)}%`}`];
+      // 셀은 있는데 값이 비고 가린 이유도 없으면 시계열이 모자라 계산하지 않은 것이다(2026-11-06 조사: 대부분 지금 행정동 코드가 1995년 이후 생김)
+      const short = r === null && rate && !rate.value_hidden_reason && q.rate === "DECLINE_POP_DROP30Y_PCT";
+      const parts = [`${q.rateName} ${short ? "계산 안 함(1995~2024년 인구 기록이 다 있지 않음)" : r === null ? "자료 없음" : `${r.toFixed(1)}%`}`];
       if (q.run) parts.push(`3년 연속 감소 ${s === null ? "자료 없음" : s === 1 ? "있음" : "없음"}`);
       const c = rate || run || {};
       return { label: q.label, rule: q.rule, value: parts.join(", "), source: c.source_name || "출처 없음", ref: c.reference_date || "", checked: c.status === "미확인" ? "수기 대조 전" : c.status || "" };
