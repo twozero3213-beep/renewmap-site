@@ -18,9 +18,14 @@
     logo: true, navigation: true,
   });
   vw.ws3dInitCallBack = () => {
-    // initPosition만으로는 시작 위치가 반영되지 않았다(2026-11-07 공개 사이트: 360km 높이 한반도 전체로 열림). 초기화 뒤 카메라를 직접 옮긴다
-    const C = window.Cesium, cam = window.ws3d && ws3d.viewer && ws3d.viewer.camera;
-    if (C && cam) cam.setView({ destination: C.Cartesian3.fromDegrees(at[0], at[1] - 0.012, 800), orientation: { heading: 0, pitch: C.Math.toRadians(-45), roll: 0 } });
+    // 브이월드는 이 콜백을 부른 '뒤'에 자기 방식으로 initPosition으로 옮긴다(VWViewerStartup.v30: 콜백 → lookat.moveTo).
+    // 그 결과가 요청 위치와 달랐다(2026-11-07 공개 사이트: 3km 남쪽 2km 높이, 산만 보임). 그 이동이 끝난 다음 차례에 카메라를 직접 옮긴다
+    setTimeout(() => {
+      const C = window.Cesium, cam = window.ws3d && ws3d.viewer && ws3d.viewer.camera;
+      if (!C || !cam) return;
+      cam.cancelFlight();
+      cam.setView({ destination: C.Cartesian3.fromDegrees(at[0], at[1] - 0.012, 800), orientation: { heading: 0, pitch: C.Math.toRadians(-45), roll: 0 } });
+    }, 0);
     say("국토교통부 브이월드 3D 건물입니다.\n마우스로 끌어 옮기고 휠로 확대·축소합니다.");
   };
   map.start();
