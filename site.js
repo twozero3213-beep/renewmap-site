@@ -94,6 +94,8 @@
     show();
     btn.addEventListener('click', () => { try { off() ? localStorage.removeItem(OFF) : localStorage.setItem(OFF, '1'); } catch (e) { /* 저장 못 하면 바뀌지 않는다 */ } show(); });
   });
+  // 개인정보처리방침 '변경 7일 전 공지'를 지킨다: 2026-11-07 공지, 11-14 시행(로폼 AI 법무질의 2026-11-06 기록, docs/legal)
+  if (Date.now() < Date.parse('2026-11-14T00:00:00+09:00')) return;
   if (off() || navigator.globalPrivacyControl === true || navigator.doNotTrack === '1') return;
   const load = (src, then) => { const s = document.createElement('script'); s.src = src; s.onload = then; document.head.appendChild(s); };
   load(base + 'hackle-key.js', () => {
