@@ -1,0 +1,163 @@
+/* 첫 화면 v4(2026-11-07): 어두운 첫 화면 위에서 전국 지도가 부산부터 그려지고, 아래 단락은 스크롤에 맞춰 차례로 올라온다.
+   home.css(v3) 위에 덧쓴다. 색은 styles.css 토큰과 map.js 색(D22: 기준 안 무채색, 넘은 쪽 주황→갈색)만 쓴다.
+   움직임은 html.motion(home-motion.js, 동작 줄이기 아님)일 때만. 그 밖에는 모든 내용이 처음부터 보인다. */
+:root {
+  --hero-bg: #062823; --hero-bg-2: #0b3b33; --hero-ink: #f1faf6; --hero-dim: #b8d3c9; --hero-line: rgba(241,250,246,.16);
+  --map-b0: #3a524c; --map-b1: #557069; --map-b2: #7d958e; --map-na: #2a3f3a;
+  --map-o1: #f2ad6f; --map-o2: #d9793a; --map-o3: #b4521d;
+  --glow: rgba(215,249,136,.35);
+  --spring: cubic-bezier(.22, 1.2, .36, 1);
+  --out: cubic-bezier(.16, 1, .3, 1);
+}
+
+/* 읽은 만큼 차는 맨 위 선 */
+.read-prog { position: fixed; inset: 0 0 auto 0; height: 3px; z-index: 60; background: var(--lime); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); pointer-events: none; }
+
+/* 머리띠: 스크롤하면 반투명 판이 생긴다 */
+.app-home header.top { position: sticky; top: 0; z-index: 40; transition: background-color .2s var(--ease), box-shadow .2s var(--ease); }
+body.scrolled header.top { background: var(--veil); box-shadow: 0 1px 0 var(--line), 0 8px 24px var(--shade-06); backdrop-filter: saturate(1.4) blur(10px); }
+
+/* ── 첫 화면 ── */
+.v3 .h-hero { position: relative; overflow: hidden; isolation: isolate; color: var(--hero-ink);
+  background: radial-gradient(120% 90% at 85% 40%, var(--hero-bg-2) 0%, var(--hero-bg) 60%); padding-bottom: 0; }
+.v3 .h-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .5; pointer-events: none;
+  background-image: linear-gradient(var(--hero-line) 1px, transparent 1px), linear-gradient(90deg, var(--hero-line) 1px, transparent 1px);
+  background-size: 48px 48px; mask-image: radial-gradient(80% 70% at 70% 45%, #000 0%, transparent 75%); }
+.v3 .h-hero .wrap { position: relative; z-index: 2; }
+.v3 .h-hero h1 { color: var(--hero-ink); font-size: clamp(32px, 4.1vw, 54px); line-height: 1.12; letter-spacing: -.02em; text-wrap: balance; }
+.v3 .h-hero .h-sub { color: var(--hero-dim); font-size: clamp(16px, 1.4vw, 18px); line-height: 1.65; max-width: 34em; }
+.v3 .h-hero .h-label, .v3 .h-hero .h-note, .v3 .h-hero .home-msg { color: var(--hero-dim); }
+.v3 .h-hero .btn { background: var(--lime); color: var(--navy); border-color: var(--lime); box-shadow: 0 0 0 0 var(--glow); transition: transform .18s var(--spring), box-shadow .3s var(--ease), background-color .15s var(--ease); }
+.v3 .h-hero .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px var(--glow); }
+.v3 .h-hero .btn:active { transform: translateY(0) scale(.98); }
+.v3 .h-hero .home-search-row input { background: rgba(255,255,255,.96); border-color: transparent; box-shadow: 0 12px 34px rgba(0,0,0,.28); }
+.v3 .h-hero .home-search-row input:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+
+/* 지도 그림: 첫 화면 오른쪽 뒤. 근거 1쪽 예시 카드가 그 위에 뜬다(지도 → 문서) */
+.h-map { position: absolute; z-index: 1; right: 1vw; top: 48%; width: min(46vw, 620px); aspect-ratio: 400 / 429; transform: translateY(-50%) perspective(1200px) rotateX(calc(var(--rx, 0) * -6deg)) rotateY(calc(var(--ry, 0) * 8deg)); transition: transform .4s var(--out); pointer-events: auto; }
+.h-map-svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 30px 60px rgba(0,0,0,.35)); }
+.h-map-p { stroke: var(--hero-bg); stroke-width: .35; stroke-linejoin: round; transition: opacity .2s var(--ease), fill .2s var(--ease); }
+.h-map-p.b0 { fill: var(--map-b0); } .h-map-p.b1 { fill: var(--map-b1); } .h-map-p.b2 { fill: var(--map-b2); } .h-map-p.na { fill: var(--map-na); }
+.h-map-p.o1 { fill: var(--map-o1); } .h-map-p.o2 { fill: var(--map-o2); } .h-map-p.o3 { fill: var(--map-o3); }
+.h-map-p:hover { fill: var(--lime); }
+.h-map-dot { fill: var(--lime); }
+.h-map-wave { fill: none; stroke: var(--lime); stroke-width: 1.2; opacity: 0; }
+.h-map-cap { position: relative; z-index: 2; margin: 24px 0 0; max-width: 30em; color: var(--hero-dim); font-size: 15px; line-height: 1.6; }
+.h-map-cap b { color: var(--hero-ink); font-size: 20px; font-variant-numeric: tabular-nums; }
+.h-map-cap small { font-size: 13px; }
+
+/* 근거 1쪽 예시 카드는 지도 위에 떠 있다 */
+.v3 .h-hero .h-doc { position: relative; z-index: 3; color: var(--ink); filter: drop-shadow(0 24px 48px rgba(0,0,0,.35)); transform: translate(-26%, 4%) scale(.74); transform-origin: 100% 100%; }
+.v3 .h-hero .h-doc .h-page-t b { color: var(--ink); }
+
+/* 출처 띠: 첫 화면 아래를 가로질러 흐른다 */
+.h-band { position: relative; z-index: 2; margin-top: 56px; border-top: 1px solid var(--hero-line); display: flex; align-items: center; gap: 12px; padding: 0 16px; }
+.h-band-track { flex: 1; display: flex; overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.h-band-row { display: flex; flex: none; gap: 40px; margin: 0; padding: 18px 20px; list-style: none; color: var(--hero-dim); font-size: 15px; font-weight: 600; white-space: nowrap; }
+.h-band-row li::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 12px; border-radius: 50%; background: var(--map-o1); vertical-align: middle; }
+.h-band-btn { flex: none; min-height: 44px; padding: 0 14px; font: inherit; font-size: 14px; color: var(--hero-ink); background: transparent; border: 1px solid var(--hero-line); border-radius: var(--radius-btn); cursor: pointer; transition: background-color .15s var(--ease); }
+.h-band-btn:hover { background: rgba(255,255,255,.08); }
+.h-band-btn:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+
+/* ── 아래 단락 ── */
+.v3 .h-sec h2 { font-size: clamp(26px, 3vw, 40px); line-height: 1.2; letter-spacing: -.015em; text-wrap: balance; }
+.v3 .h-lede { font-size: 17px; line-height: 1.7; max-width: 40em; }
+
+/* 세 단계: 가로선이 스크롤만큼 차고, 지난 단계는 불이 켜진다 */
+.v3 .h-steps { position: relative; }
+.v3 .h-steps::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--green); transform-origin: 0 50%; transform: scaleX(var(--p, 1)); z-index: 1; }
+.v3 .h-steps > li { transition: color .3s var(--ease); }
+.v3 .h-steps > li h3 { transition: color .3s var(--ease), transform .4s var(--spring); }
+.motion .v3 .h-steps > li:not(.lit) h3 { color: var(--dim); }
+.motion .v3 .h-steps > li.lit h3 { color: var(--green); transform: translateX(4px); }
+
+/* 제품 카드: 포인터 자리를 밝히고, 누르면 살짝 눌린다 */
+.v3 .h-prod { position: relative; overflow: hidden; transition: transform .25s var(--spring), box-shadow .25s var(--ease), border-color .2s var(--ease); }
+.v3 .h-prod::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .25s var(--ease);
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgba(0,111,91,.12), transparent 60%); }
+.v3 .h-prod:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--green); }
+.v3 .h-prod:hover::after { opacity: 1; }
+.v3 .h-prod:active { transform: translateY(-1px) scale(.99); }
+.v3 .h-prod .h-shot { transition: transform .5s var(--out); }
+.v3 .h-prod:hover .h-shot { transform: translateY(-6px) rotate(-1deg); }
+
+/* 숫자 단락: 크게, 녹색에서 갈색으로(지도의 기준선 안→넘음) */
+.v3 .h-stat-n { font-size: clamp(48px, 6vw, 80px); line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+  background: linear-gradient(100deg, var(--green) 10%, var(--map-o3) 95%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.v3 .h-stat-n small { color: var(--map-o3); -webkit-text-fill-color: var(--map-o3); }
+
+/* 마지막 권유 칸: 어두운 판, 버튼은 첫 화면과 같은 연두 */
+.v3 .h-cta-box { background: var(--hero-bg); color: var(--hero-ink); position: relative; overflow: hidden; }
+.v3 .h-cta-box h2 { color: var(--hero-ink); }
+.v3 .h-cta-box p { color: var(--hero-dim); }
+.v3 .h-cta-box .btn { background: var(--lime); color: var(--navy); border-color: var(--lime); }
+.v3 .h-cta-box::before { content: ""; position: absolute; width: 420px; height: 420px; right: -120px; top: -160px; border-radius: 50%; background: radial-gradient(circle, var(--glow), transparent 65%); pointer-events: none; }
+
+/* ── 움직임(동작 줄이기가 아닐 때만) ── */
+.motion .h-map:not(.on) .h-map-p { opacity: 0; }
+.motion .h-map-p { opacity: 1; animation: map-in .7s var(--out) both; animation-delay: calc(var(--t) * 1.6s + .2s); transform-box: fill-box; transform-origin: center; }
+@keyframes map-in { from { opacity: 0; transform: scale(.6) translateY(6px); } }
+.motion .h-map.on .h-map-wave { animation: wave 3.2s var(--out) infinite; animation-delay: calc(var(--i) * 1.05s); }
+@keyframes wave { 0% { opacity: .9; r: 4; } 100% { opacity: 0; r: 160; } }
+.motion .h-map-dot { animation: dot 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes dot { 50% { transform: scale(1.5); } }
+.motion .v3 .h-hero h1 { animation: rise .9s var(--out) both; }
+.motion .v3 .h-hero .h-sub { animation: rise .9s var(--out) .12s both; }
+.motion .v3 .h-hero .h-cta, .motion .v3 .h-hero .home-search { animation: rise .9s var(--out) .22s both; }
+.motion .h-map-cap { animation: rise .9s var(--out) .4s both; }
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } }
+.motion .h-band-track:not(.paused) .h-band-row { animation: band 42s linear infinite; }
+.motion .h-band-track.paused .h-band-row { animation: band 42s linear infinite paused; }
+.h-band-track:hover .h-band-row { animation-play-state: paused; }
+@keyframes band { to { transform: translateX(-100%); } }
+.motion .rv { opacity: 0; transform: translateY(28px); transition: opacity .7s var(--out), transform .8s var(--out); transition-delay: calc(var(--k, 0) * 70ms); }
+.motion .rv.in { opacity: 1; transform: none; }
+
+@media (max-width: 900px) {
+  /* 폰·태블릿: 지도는 글 뒤의 옅은 배경이 되고, 제목이 첫 화면 위에 먼저 온다 */
+  .h-map { right: -28%; top: 0; width: min(92vw, 560px); transform: none; opacity: .32; pointer-events: none; }
+  .v3 .h-hero .h-doc { transform: none; margin-top: 8px; }
+  .h-map-cap { margin-top: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .h-map, .v3 .h-prod, .v3 .h-prod .h-shot, .v3 .h-hero .btn { transition: none; }
+  .read-prog { display: none; }
+}
+@media print { .h-map, .h-band, .read-prog { display: none; } }
+
+/* ── 아래 단락 v4 ── */
+/* 누구를 위해: 줄에 손을 대면 왼쪽에서 녹색 띠가 밀려 들어온다 */
+.v3 .h-rows li { position: relative; transition: padding-left .3s var(--out); }
+.v3 .h-rows li::before { content: ""; position: absolute; left: 0; top: -1px; bottom: -1px; width: 100%; background: var(--soft); transform: scaleX(0); transform-origin: 0 50%; transition: transform .45s var(--out); z-index: -1; }
+.v3 .h-rows { position: relative; isolation: isolate; }
+.v3 .h-rows li:hover { padding-left: 16px; }
+.v3 .h-rows li:hover::before { transform: scaleX(1); }
+
+/* 세 단계: 큰 번호(01·02·03)와, 지난 단계에 켜지는 점 */
+.v3 .h-steps { counter-reset: step; }
+.v3 .h-steps > li { counter-increment: step; border-top-color: var(--line); }
+.v3 .h-steps > li::before { content: "0" counter(step); display: block; margin-bottom: 8px; font-size: clamp(56px, 7vw, 96px); font-weight: 800; line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums;
+  color: transparent; -webkit-text-stroke: 1.5px var(--line-mid); transition: color .5s var(--out), -webkit-text-stroke-color .5s var(--out); }
+.v3 .h-steps > li.lit::before, html:not(.motion) .v3 .h-steps > li::before { color: var(--green); -webkit-text-stroke-color: var(--green); }
+
+/* 지키는 네 가지: 떠 있는 판 넷. 열린 판은 녹색 테두리 */
+.v3 .h-values { gap: 16px; border-top: 0; }
+.v3 .h-val { padding: 4px 24px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); transition: border-color .2s var(--ease), box-shadow .25s var(--ease), transform .25s var(--spring); }
+.v3 .h-val:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.v3 .h-val[open] { border-color: var(--green); box-shadow: 0 0 0 3px var(--soft); }
+.v3 .h-val summary::after { transition: transform .3s var(--spring); }
+.v3 .h-val[open] summary::after { transform: rotate(45deg); }
+.motion .v3 .h-val[open] p { animation: rise .45s var(--out) both; }
+
+/* 하지 않는 일: 나타날 때 ×가 돌며 찍힌다 */
+.v3 .h-nots li::before { display: inline-block; transition: transform .5s var(--spring); }
+.motion .v3 .h-nots li.rv:not(.in)::before { transform: scale(0) rotate(-180deg); }
+
+/* 확인된 숫자: 어두운 띠 위의 큰 숫자 */
+.v3 .h-sec:has(#stats) { background: var(--hero-bg); color: var(--hero-ink); }
+.v3 .h-sec:has(#stats) h2 { color: var(--hero-ink); }
+.v3 .h-sec:has(#stats) .h-stats li { color: var(--hero-dim); border-top: 1px solid var(--hero-line); padding-top: 24px; }
+.v3 .h-sec:has(#stats) .h-stat-n { background: linear-gradient(100deg, var(--lime) 0%, var(--map-o1) 100%); -webkit-background-clip: text; background-clip: text; }
+.v3 .h-sec:has(#stats) .h-stat-n small { color: var(--map-o1); -webkit-text-fill-color: var(--map-o1); }
+.v3 .h-sec:has(#stats) .h-stat-src, .v3 .h-sec:has(#stats) .h-stat-src a { color: var(--hero-dim); }
+.v3 .h-sec:has(#stats) .h-stat-src a:hover { color: var(--lime); }

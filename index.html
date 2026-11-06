@@ -29,6 +29,7 @@
 <link rel="stylesheet" href="pretendard.css">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="home-v4.css">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"WebApplication","@id":"https://twozero3213-beep.github.io/renewmap-site/#app","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","inLanguage":"ko","applicationCategory":"BusinessApplication","operatingSystem":"웹 브라우저","isAccessibleForFree":true,"description":"리뉴맵은 도시재생·노후주거지정비 담당자가 공모 신청요건(쇠퇴 3요건·저층 주거 3분의 2)을 공식 통계와 현장 사진으로 확인해 결재에 바로 붙일 수 있는 동네 근거 문서를 만드는 서비스입니다.","offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"publisher":{"@id":"https://twozero3213-beep.github.io/renewmap-site/#org"}},
@@ -36,8 +37,10 @@
 </script>
 <script src="site.js" defer></script>
 <script src="home.js" defer></script>
+<script src="home-motion.js" defer></script>
 </head>
 <body class="app-home">
+<div id="readProg" class="read-prog"></div>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="top">
   <div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a></div>
@@ -46,6 +49,7 @@
 <!-- 문장 원본: docs/design/site_v3_copy_2026-10-28.md 3장. 시안: Figma ieUP8NdrjuCow9holCrElx 'v3 웹사이트 2026-10-28' -->
 <main id="main" class="v3">
   <section class="h-hero" aria-labelledby="heroTitle">
+    <div id="heroMap" class="h-map"></div>
     <div class="wrap h-hero-grid">
       <div class="h-hero-copy">
         <h1 id="heroTitle">도시재생·노후주거지정비<br>공모 신청요건 근거 1쪽</h1>
@@ -61,6 +65,7 @@
           <ul id="homeHits" class="home-hits"></ul>
           <p id="homeMsg" class="home-msg" aria-live="polite"></p>
         </form>
+        <p id="heroMapCap" class="h-map-cap"></p>
       </div>
       <!-- 문서 쌓기: 사진 → 위치 → 숫자 칩(출처 꼬리표) → 완성 문서. 숫자는 반여1동 근거 페이지(dong/21090700.html)의 실제 값이다 -->
       <figure id="heroDoc" class="h-doc" aria-label="현장 확인 근거 1쪽 예시">
@@ -82,6 +87,7 @@
         </div>
       </figure>
     </div>
+    <div class="h-band"><div id="srcBand" class="h-band-track"></div><button id="srcBandBtn" class="h-band-btn" type="button" aria-pressed="false" hidden>출처 띠 멈춤</button></div>
   </section>
 
   <section class="h-sec h-alt" aria-labelledby="whoTitle">
