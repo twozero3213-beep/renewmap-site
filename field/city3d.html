@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' https://map.vworld.kr; style-src 'self' 'unsafe-inline' https://map.vworld.kr; img-src 'self' data: blob: https://*.vworld.kr; connect-src 'self' data: blob: https://*.vworld.kr; worker-src 'self' blob: https://map.vworld.kr; font-src 'self' data: https://map.vworld.kr; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>현재 건물 3D 보기 | 리뉴맵</title>
+<meta name="description" content="국토교통부 브이월드 3D 지도로 현재 건물을 입체로 봅니다. 리뉴맵은 건물 형상을 저장하지 않습니다.">
+<script src="../frame-guard.js"></script>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../pretendard.css">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="field.css">
+<link rel="stylesheet" href="twin.css">
+</head>
+<body class="field twin">
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top"><div class="wrap"><h1>현재 건물 3D 보기</h1><a href="twin.html">3D 모델 비교</a></div></header>
+<main id="main">
+<p class="note">국토교통부 브이월드 3D 지도에 있는 지금 건물을 입체로 봅니다.<br>건물 형상·높이는 브이월드 자료이며, 리뉴맵은 이를 받아 저장하지 않습니다.<br>계획안 모델을 올려 비교하려면 <a href="twin.html">3D 모델 비교</a>를 쓰세요.</p>
+<div id="vmap" class="city3d-map" role="region" aria-label="브이월드 3D 건물 지도"></div>
+<p id="message" class="msg" role="status" aria-live="polite"></p>
+<p class="hint">브이월드 지도는 리뉴맵 공개 사이트 주소에서만 열립니다.<br>건물 모양은 브이월드가 제공하는 그대로이며, 리뉴맵이 측량하거나 고치지 않았습니다.</p>
+</main>
+<script src="vworld-key.js"></script>
+<script src="city3d-boot.js"></script>
+<script src="city3d.js"></script>
+</body>
+</html>

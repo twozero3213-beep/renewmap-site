@@ -3,7 +3,7 @@
 .twin-map { position: sticky; top: 12px; min-width: 0; }
 .twin-editor { min-width: 0; }
 .twin .card:first-child { margin-top: 0; }
-#globe { height: 480px; background: var(--soft); border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; }
+#globe,.city3d-map { height: 480px; background: var(--soft); border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; }
 .twin fieldset { min-width: 0; border: 1px solid var(--line-strong); border-radius: 8px; margin: 16px 0; }
 .twin .row { display: flex; gap: 8px; flex-wrap: wrap; }
 .twin .row button,.twin .row label { flex: 1; width: auto; min-width: 100px; }
@@ -17,6 +17,6 @@
 .twin summary { cursor: pointer; padding: 12px 0; }
 .twin #modelInfo { overflow-wrap: anywhere; }
 .twin :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
-.twin #globe button { width: auto; min-height: 0; margin: 0; padding: 0; }
+.twin #globe button,.city3d-map button { width: auto; min-height: 0; margin: 0; padding: 0; }
 .twin #globe .cesium-credit-textContainer { font-size: 12px; }
-@media(max-width: 800px) { .twin-layout { display: block; } .twin-map { position: static; } #globe { height: 360px; } .twin-editor { margin-top: 24px; } .twin header.top .wrap { gap: 16px; } }
+@media(max-width: 800px) { .twin-layout { display: block; } .twin-map { position: static; } #globe,.city3d-map { height: 360px; } .twin-editor { margin-top: 24px; } .twin header.top .wrap { gap: 16px; } }
