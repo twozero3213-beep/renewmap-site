@@ -164,7 +164,7 @@
     vwFrame.addEventListener("load", send, { once: true });
     document.body.append(vwFrame);
   });
-  const redraw = () => { drawLine.setLatLngs(drawPts.length > 2 ? [...drawPts, drawPts[0]] : drawPts); };
+  const redraw = () => { drawLine.setLatLngs(drawPts.length > 2 ? [...drawPts, drawPts[0]] : drawPts); $("socOut").hidden = true; };   // 영역이 바뀌면 지난 SOC 표는 맞지 않는다
   $("drawOpen").addEventListener("click", async () => {
     $("drawBox").hidden = false;
     if (drawMap) return;
@@ -190,6 +190,33 @@
     $("list").value = r.pnus.join("\n");
     saveDraft();
     say(`영역 안 ${r.pnus.length}필지를 넣었습니다.${r.total > r.pnus.length ? `\n전체 ${r.total}필지 중 1,000필지까지만 넣었습니다. 영역을 나눠 주세요.` : ""}\n경계에 걸친 필지도 들어가니 목록을 확인해 주세요.`);
+  });
+
+  // 지역 SOC 현황표(흡수 6번). 그린 꼭짓점과 시설 점은 이 기기에서만 맞대 본다. 브이월드는 부르지 않는다
+  let soc = null;
+  const socReady = () => soc || (soc = getJson("soc_busan.json").catch((err) => { soc = null; throw err; }));
+  $("socRun").addEventListener("click", async () => {
+    if (!R.polygonWKT(drawPts)) return say("꼭짓점을 3개 이상 찍어 주세요.", true);
+    let data;
+    try { data = await socReady(); } catch (err) { return say("시설 자료를 불러오지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
+    const { rows } = R.socCount(data, drawPts);
+    $("socBody").replaceChildren(...rows.map((r) => {
+      const tr = document.createElement("tr");
+      for (const [i, v] of [r.kind, r.n.toLocaleString("ko-KR"), R.socTypes(r) || "-", R.socDates(r) || "-"].entries()) {
+        const c = document.createElement(i ? "td" : "th");
+        if (!i) c.scope = "row";
+        c.textContent = v;
+        tr.append(c);
+      }
+      return tr;
+    }));
+    $("socOut").hidden = false;
+    say(`영역 안 시설 ${rows.reduce((s, r) => s + r.n, 0).toLocaleString("ko-KR")}곳을 셌습니다.`);
+  });
+  $("socCsv").addEventListener("click", async () => {
+    if (!R.polygonWKT(drawPts)) return say("꼭짓점을 3개 이상 찍어 주세요.", true);
+    try { D.saveBytes(`지역SOC현황_${today()}.csv`, R.socCSV(await socReady(), drawPts, today()), "text/csv;charset=utf-8"); }
+    catch (err) { say("CSV를 만들지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
   });
 
   $("f").addEventListener("submit", async (e) => {

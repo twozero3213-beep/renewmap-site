@@ -54,6 +54,14 @@
       <button type="button" id="drawDone">영역 안 필지 넣기</button>
       <button type="button" class="ghost" id="drawUndo">마지막 점 지우기</button>
       <button type="button" class="ghost" id="drawClear">다시 그리기</button>
+      <button type="button" class="ghost" id="socRun">영역 안 생활 SOC 세기</button>
+      <div id="socOut" hidden>
+        <table class="plan-cmp"><caption>영역 안 생활 SOC 현황(부산)</caption>
+          <thead><tr><th scope="col">시설</th><th scope="col">수</th><th scope="col">종류별</th><th scope="col">데이터기준일자</th></tr></thead>
+          <tbody id="socBody"></tbody></table>
+        <button type="button" class="ghost" id="socCsv">SOC 현황 CSV 받기</button>
+        <p class="hint">공공데이터포털 표준데이터(도서관·도시공원·경로당·주차장, 이용허락범위 제한 없음)의 위치 점을 이 기기에서 셉니다.<br>지자체가 올린 자료라 기관마다 기준일이 다르고, 빠진 시설이 있을 수 있습니다.<br>경로당은 영업상태 '영업'만, 원자료에 같은 행이 두 번 있으면 두 번 셉니다.</p>
+      </div>
     </div>
     <button type="button" class="ghost" id="demo">고른 동 전체로 계산해 보기</button>
     <label for="area">구역 면적(㎡, 아는 경우만)</label>

@@ -92,6 +92,40 @@
     return `POLYGON((${ring.join(", ")}))`;
   }
 
+  // 점이 다각형 안인지(짝홀 규칙, 위경도 평면). 구역 크기에서는 평면으로 봐도 된다. 경계선 바로 위 점은 어느 한쪽으로 들어간다
+  function inPolygon(lat, lng, pts) {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const [ai, oi] = pts[i], [aj, oj] = pts[j];
+      if ((ai > lat) !== (aj > lat) && lng < (oj - oi) * (lat - ai) / (aj - ai) + oi) inside = !inside;
+    }
+    return inside;
+  }
+
+  // 지역 SOC 현황표(경쟁·흡수 보고서 6번). soc: data/soc_busan.json, pts: 그린 꼭짓점. 원자료 행을 그대로 센다(값을 고치지 않는다)
+  function socCount(soc, pts) {
+    const inside = soc.points.filter(([, , , la, ln]) => inPolygon(la, ln, pts));
+    const rows = soc.sources.map((s, i) => {
+      const mine = inside.filter((p) => p[0] === i), types = {};
+      for (const p of mine) types[p[2] || "구분 없음"] = (types[p[2] || "구분 없음"] || 0) + 1;
+      const dates = mine.map((p) => p[5]).filter(Boolean).sort();
+      return { kind: s.kind, n: mine.length, types, dates: dates.length ? [dates[0], dates[dates.length - 1]] : null, source: s };
+    });
+    return { rows, inside };
+  }
+  const socTypes = (r) => Object.entries(r.types).sort((a, b) => b[1] - a[1]).map(([t, n]) => `${t} ${n}`).join(" · ");
+  const socDates = (r) => !r.dates ? "" : r.dates[0] === r.dates[1] ? r.dates[0] : `${r.dates[0]}~${r.dates[1]}`;
+
+  function socCSV(soc, pts, today) {
+    const { rows, inside } = socCount(soc, pts);
+    const out = [[`리뉴맵 지역 SOC 현황표 · ${today} · 그린 영역 안 시설 점 수 · 경계 도형은 담지 않음 · ${soc.license_type}`],
+      ["시설", "영역 안 수", "종류별", "데이터기준일자", "자료", "받은 날"],
+      ...rows.map((r) => [r.kind, r.n, socTypes(r), socDates(r), `${r.source.name}(공공데이터포털 ${r.source.id}) ${r.source.url}`, r.source.retrieved_at.slice(0, 10)]),
+      [], ["시설", "이름", "종류", "위도", "경도", "데이터기준일자"],
+      ...inside.map((p) => [soc.sources[p[0]].kind, p[1], p[2], p[3], p[4], p[5]])];
+    return "﻿" + out.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  }
+
   // GIS·엑셀에서 내보낸 파일 → parseList가 읽는 글. CSV·TXT는 그대로 둔다.
   // GeoJSON은 도형이 아니라 속성(PNU 19자리, 없으면 지번+법정동)만 읽는다. 필지 도형은 이용 조건(D16) 때문에 쓰지 않는다
   function listFromFile(name, text) {
@@ -498,5 +532,5 @@
     return "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   }
 
-  return { polygonWKT, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { polygonWKT, inPolygon, socCount, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

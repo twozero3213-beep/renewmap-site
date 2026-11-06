@@ -98,3 +98,8 @@
 - `indicators[].hidden_until_decision`(+hidden_reason): true면 셀은 있으나 화면에 내지 않는다. 현재 EMERGENCY_BELL_PER_KM2만(대표 결정 대기, D17).
 - 부산만 있는 지표(허가·철거·노후시설·독거노인·정비)는 부산 행정동에만 셀. value 있고 status 추가확인이면 하한(위치를 다 못 가림). DEMOLITION_COUNT_3Y는 원천 철거멸실대장이 2021-12-31 이후 미갱신이라 전부 null. 허가·철거는 법정동 단위라 관할 법정동이 한 행정동에만 속할 때만 행정동 값, `living/{code5}.json`에 `sigungu_cells[]`·`bjdong_cells[{code10,name,cells}]` 추가.
 - 보고서 템플릿 `report_templates.json`(TPL-2026-10-27.2): 파이썬(`report_quality/templates.py`)과 JS(`docgen.js`)가 같은 파일을 읽는다. `doc_style`(나눔고딕·글자 크기)·`onepage.sizes`가 보고서 서식이다(GOV_DOC_STYLE.md 6장). 양식 조각 정의는 `docs/gov/form_fragments.md`.
+
+## 지역 SOC 점 (2026-11-07) — `soc_busan.json`
+- 신청요건 화면 '영역 안 생활 SOC 세기'가 읽는다. `sources[]`(kind·name·id·url·retrieved_at·부산 행 수·뺀 행 수·기준일 범위), `points[]` = `[source 순번, 이름, 종류, 위도, 경도, 데이터기준일자]`(`fields`에 같은 순서), `crs` EPSG:4326.
+- 원천은 표준데이터 파일(이용허락범위 제한 없음) 도서관·도시공원·경로당·주차장. 원장 셀이 아니라 원자료 점 목록이다. 개수는 사용자가 그린 영역마다 기기에서 센다.
+- 만들기: `backend/scripts/export_soc_busan.py`. 확인 기록: `docs/research/soc_datasets_2026-11-07.md`.
