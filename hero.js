@@ -66,7 +66,8 @@
 
   // JSON을 한 번만 받아 hero.js·map.js가 같이 쓴다. 404·오류는 null
   const cache = {};
-  window.renewFetch = url => cache[url] || (cache[url] = fetch(url, { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
+  // low: 첫 화면에 필요 없는 자료(먼저 부른 쪽의 우선순위를 따른다). 같은 파일을 두 번 받아 두 번 읽지 않게 우선순위가 달라도 같은 캐시를 쓴다
+  window.renewFetch = (url, low) => cache[url] || (cache[url] = fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = id => document.getElementById(id);
 

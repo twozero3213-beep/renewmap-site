@@ -935,7 +935,7 @@
   // ── 브라우저 ──
   const app = document.getElementById('mapApp'); if (!app) return;
   // low: 첫 지도에 필요 없는 자료. 경계·지도 라이브러리가 먼저 받히도록 낮은 우선순위로 받는다
-  const fetchJson = (url, low) => (window.renewFetch && !low ? window.renewFetch(url) : fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
+  const fetchJson = (url, low) => (window.renewFetch ? window.renewFetch(url, low) : fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
   // 외부 AI 서버 주소는 비워 둔다(서버로 문장을 보내지 않는다). 다듬기는 기기 안 AI(detectDeviceAI)로만 한다(docs/legal/ai_ethics.md ⑤)
   const AI_POLISH_ENDPOINT = '';
   const state = { route: parseHash(location.hash) || {}, ind: INDICATORS[0].code, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, sidoGeo: undefined, dash: null, mapErr: false, touched: false,
