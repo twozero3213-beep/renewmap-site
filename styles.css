@@ -261,3 +261,13 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
 .err-banner a { color: var(--err-link); font-weight: 700; }
 .nowrap { white-space: nowrap; }
 table.wide { min-width: 680px; }   /* 좁은 화면에서 낱말마다 줄이 갈리지 않게 표만 옆으로 민다 */
+
+/* 동네 점수·순위(rank.html)·사업성 간이 계산(biz.html), D24 2026-11-07 */
+.rank-form, .biz-form { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin: 16px 0; }
+.rank-form label, .biz-form label { display: grid; gap: 6px; font-size: 14px; color: var(--dim); }
+.rank-form select, .biz-form input { font: inherit; color: var(--ink); min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); background: var(--card); width: 100%; }
+.rank-table td.num, .rank-table th { white-space: nowrap; }
+/* 여러 칸 표(점수·두 길·민감도): 카드로 쌓지 않고 표 감싸개 안에서 가로로 민다(kv 모바일 규칙은 기준일 칸 전용) */
+.page table.grid th, .page table.grid td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.page table.grid td.num { text-align: right; }
+.page table.grid { min-width: 480px; }

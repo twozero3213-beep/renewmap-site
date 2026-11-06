@@ -132,7 +132,7 @@
   function livingIndicators(li) {
     if (!li || !Array.isArray(li.indicators)) return LIVING_EXPECTED;
     const cov = li.coverage || {};
-    // hidden_until_decision: 셀은 있으나 대표 결정 전까지 화면에 내지 않는다(D17 — 안전비상벨)
+    // hidden_until_decision: 대표 결정 전까지 화면에 내지 않는 지표. 2026-11-07 D26로 안전비상벨은 풀었다
     const list = li.indicators.filter(x => x && x.code && x.label && !/_DELTA5Y$/.test(x.code) && x.hidden_until_decision !== true).map(x => {
       const code = String(x.code), group = groupKey(x.group), c = cov[code], ref = ascending(x.ref_edges) ? x.ref_edges : REF_EDGES[code];
       const base = { code, group, label: String(x.label), unit: x.unit || '', icon: iconFor(x.label), living: true, title: String(x.label), empty: !!c && c.dongs_with_value === 0,
@@ -642,7 +642,8 @@
   // 전에는 "출력 숫자가 원문 어딘가에 있는가"만 봐서, 두 지표의 값을 맞바꾸거나("고령 30%, 청년 12%" → "고령 12%, 청년 30%")
   // 기준 방향을 뒤집어도("선을 넘습니다" → "안에 있습니다") 통과했다. 공모 서류에 그대로 쓰이면 법정 요건 판단이 틀린 근거가 된다.
   // 원장 문장 구조(sents)를 받으면 지표별로 ①숫자 짝 ②기준 방향 ③값 누락을 대조한다. 실패하면 AI 문장을 버리고 원장 문장을 보인다(안전 쪽).
-  const BANNED = ['좋', '나쁘', '나쁜', '위험', '열악', '우수', '심각', '양호', '낙후', '추천', '유망', '피해야', '기피', '등급', '순위',
+  const BANNED = ['좋', '나쁘', '나쁜', '위험', '열악', '우수', '심각', '양호', '낙후', '추천', '유망', '피해야', '기피', '등급',
+    // '순위'는 2026-11-07 D24·D26으로 뺐다(전국·시도·시군구 순위가 원장 값이 됨). 숫자는 아래 대조로 검사한다
     // 2026-11-01 추가: 판정·평가로 읽히는 말(D8·D13 낙인 금지). 중립 문장도 막힐 수 있지만 그때는 원장 문장을 보여 주므로 안전 쪽 오류다
     // '취'+'약': map.test.cjs '사업 근거서' 테스트가 화면 문구에 낙인 낱말이 섞이지 않게 이 소스 전체를 낱말 검사한다. 이 목록은 화면 문구가 아니라
     // 금지어 목록이라 그 검사를 약하게 바꾸지 않고, 낱말을 조각으로 적어 검사에 걸리지 않게 한다
