@@ -38,15 +38,17 @@ jobs:
             const res = await github.request('POST /repos/{owner}/{repo}/pages/deployments',
               { owner, repo, artifact_id: art.id, pages_build_version: context.sha, oidc_token: oidc });
             const id = res.data.id || String(res.data.status_url || '').split('/').pop();
-            core.info(`배포 ${id}, 묶음 ${art.size} bytes`);
+            core.info(`배포 ${id}, 묶음 ${art.size_in_bytes} bytes, 응답 ${JSON.stringify(res.data).slice(0, 300)}`);
             const FINAL = ['deployment_failed', 'deployment_content_failed', 'deployment_cancelled', 'deployment_lost'];
             const start = Date.now();
             while (Date.now() - start < 40 * 60 * 1000) {
               await new Promise(r => setTimeout(r, 20000));
               let s;
-              try { s = (await github.request('GET /repos/{owner}/{repo}/pages/deployments/{id}', { owner, repo, id })).data.status; }
+              let d;
+              try { d = (await github.request('GET /repos/{owner}/{repo}/pages/deployments/{id}', { owner, repo, id })).data; s = d.status; }
               catch (e) { core.warning(`상태 조회 실패: ${e.status || e.message}`); continue; }
               core.info(`상태: ${s} (${Math.round((Date.now() - start) / 1000)}초)`);
+              if (!s) core.info(`응답 원문: ${JSON.stringify(d).slice(0, 300)}`);   // 상태가 비면 무엇이 오는지 남긴다(2026-11-07 40분 빈 상태)
               if (s === 'succeed') return;
               if (FINAL.includes(s)) throw new Error(`배포 실패: ${s}`);
             }
