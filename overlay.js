@@ -379,16 +379,17 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
   const pickStyle = (color, size, num, label) => ({ color: COLORS[color] || '#1f4e9c', base: SIZES[size] || 6, num: +num, label: +label });
   const cellNum = (rows, i, c) => (c >= 0 ? toNum(rows[i][c]) : NaN);
   // 코드 열 → [{ code, v }]. 자릿수가 맞는 코드만, 법정동 코드는 앞 5자리(시군구)로 모은다
-  function readCodes(rows, c, method, numCol) {
+  // 값은 읽지 않고 행 번호만 둔다: 얹은 뒤 숫자 열을 바꿔도 그때 열로 다시 읽는다
+  function readCodes(rows, c, method) {
     const re = method === 'adm8' ? ADM8 : BJD10;
-    return rows.map((r, i) => ({ code: String(r[c]).trim(), v: cellNum(rows, i, numCol) })).filter(x => re.test(x.code)).map(x => ({ ...x, code: method === 'bjd10' ? x.code.slice(0, 5) : x.code }));
+    return rows.map((r, i) => ({ code: String(r[c]).trim(), i })).filter(x => re.test(x.code)).map(x => ({ ...x, code: method === 'bjd10' ? x.code.slice(0, 5) : x.code }));
   }
   // 그릴 점: 좌표 방식은 행마다 하나, 코드 방식은 지금 보이는 경계(feats) 중심에 코드별로 하나
   function toDots(s, st, feats) {
     if (isCoord(s.method)) return (s.pts || []).map(p => ({ lat: p.lat, lon: p.lon, v: cellNum(s.table.rows, p.i, st.num), text: st.label >= 0 ? s.table.rows[p.i][st.label] : '', i: p.i }));
     if (!s.codes) return [];
     const byCode = new Map(feats.map(f => [f.code, f])), agg = new Map(), dots = [];
-    s.codes.forEach(c => { const g = agg.get(c.code) || { n: 0, sum: 0 }; g.n++; if (Number.isFinite(c.v)) g.sum += c.v; agg.set(c.code, g); });
+    s.codes.forEach(c => { const g = agg.get(c.code) || { n: 0, sum: 0 }, v = cellNum(s.table.rows, c.i, st.num); g.n++; if (Number.isFinite(v)) g.sum += v; agg.set(c.code, g); });
     agg.forEach((g, code) => { const f = byCode.get(code); if (f) dots.push({ lat: f.center[0], lon: f.center[1], v: st.num >= 0 ? g.sum : g.n, text: `${f.name} ${g.n}건`, bubble: true }); });
     return dots;
   }
@@ -418,7 +419,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
   }
   // 집계에 넣을 항목: 좌표 방식은 점이 든 경계의 코드, 코드 방식은 읽은 코드 그대로
   const aggItems = (s, feats, numCol) => (isCoord(s.method) ? (s.pts || []).map(p => { const f = featureAt(feats, p.lat, p.lon); return { code: f ? f.code : null, v: cellNum(s.table.rows, p.i, numCol) }; })
-    : (s.codes || []).map(c => ({ code: c.code, v: c.v })));
+    : (s.codes || []).map(c => ({ code: c.code, v: cellNum(s.table.rows, c.i, numCol) })));
   function aggTableHtml(a, len, valueLabel, showSum) {
     const sumF = n => n.toLocaleString('ko-KR', { maximumFractionDigits: 3 });
     return `<h3 class="ov-h">${len === 8 ? '동별' : '시군구별'} 집계</h3><div class="ov-scroll" tabindex="0" role="region" aria-label="집계 표"><table class="ov-table"><caption>코드 순 · 순위 아님</caption><thead><tr><th scope="col">코드</th><th scope="col">이름</th><th scope="col" class="num">점 개수</th>${showSum ? `<th scope="col" class="num">${esc(valueLabel)} 합계</th>` : ''}</tr></thead><tbody>${a.rows.map(g => `<tr><td>${esc(g.code)}</td><td>${esc(g.name)}</td><td class="num">${g.count.toLocaleString('ko-KR')}</td>${showSum ? `<td class="num">${sumF(g.sum)}</td>` : ''}</tr>`).join('')}</tbody></table></div>`
@@ -539,7 +540,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       } else {
         const c = +val(S.method === 'adm8' ? 'ovAdm' : 'ovBjd');
         if (!(c >= 0)) { status('코드 열을 골라 주세요.', true); return; }
-        S.codes = readCodes(T.rows, c, S.method, st.num);
+        S.codes = readCodes(T.rows, c, S.method);
         if (!S.codes.length) { status('올바른 코드가 없습니다. 자릿수와 열을 확인하세요.', true); return; }
       }
       status(liveMap() ? '지도에 얹었습니다.' : '지도가 아직 준비되지 않았습니다. 잠시 뒤 다시 눌러 주세요.', !liveMap());
