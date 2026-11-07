@@ -1591,14 +1591,18 @@
     if (window.RenewDashboard) window.RenewDashboard.loadLeaflet().catch(() => {});
     state.naver = null; loadNaver().then(ok => { state.naver = ok; render(); });
   }
-  fetchJson('data/national/index.json').then(index => {
+  // 목록과 경계를 동시에 받는다(전에는 목록을 다 받은 뒤 경계를 받아 첫 지도가 한 번 더 기다렸다). 보조 자료(낮은 우선순위)는 이 둘이 온 뒤에 받는다(hero.js renewFetch)
+  const geoP = Promise.all([fetchJson('data/national/sigungu.geojson'), fetchJson('data/national/sido.geojson')]);
+  const indexP = fetchJson('data/national/index.json');
+  window.renewAfter = Promise.all([indexP, geoP]).then(() => {}, () => {});
+  indexP.then(index => {
     state.index = index && Array.isArray(index.sigungu) ? index : null;
     if (heroCount && index && isNum(index.emd_count)) { heroCount.innerHTML = `<b data-ck="emd" data-count="${index.emd_count}">0</b>개 `; countUp(heroCount.firstChild); }
     if (!state.index) { render(); return; }
     if (state.route.sido && !matchMedia('(min-width: 1100px)').matches) app.scrollIntoView({ block: 'start' }); // 넓은 화면은 한 화면 배치라 옮기지 않는다
     searchSetup();
     render();
-    Promise.all([fetchJson('data/national/sigungu.geojson'), fetchJson('data/national/sido.geojson')]).then(([sg, sido]) => {
+    geoP.then(([sg, sido]) => {
       state.sgGeo = sg && Array.isArray(sg.features) ? sg : null; state.sidoGeo = sido && Array.isArray(sido.features) ? sido : null; render(); startAuto();
     });
   });

@@ -241,7 +241,7 @@
 
   // ── 브라우저 ──
   const root = document.getElementById('findApp'); if (!root) return;
-  const fetchJson = url => (window.renewFetch ? window.renewFetch(url) : fetch(url, { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
+  const fetchJson = (url, low) => (window.renewFetch ? window.renewFetch(url, low) : fetch(url, { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
   const st = { sel: [], by: 'code', page: 1, scope: { sido: '', sg: '' }, ctx: { index: null }, sgGeo: null, emd: new Map(), svgKey: '', lastSg: null, lastDong: null, hint: '', govKey: '' };
   const gov = document.querySelector('#gov [data-gov]');
   root.innerHTML = `<div class="fd-scope" data-fd-scope></div><div class="fd-grid"><div class="fd-left" data-fd-chips></div><div class="fd-right"><div data-fd-out></div><div class="fd-map" data-fd-map><div class="fd-wait" data-state="loading" role="status"><img src="mascot/crew/saeum-waiting.svg" width="104" height="104" alt="" aria-hidden="true"><p>경계 자료를 불러오는 중입니다.</p></div></div><div data-fd-list></div></div></div>`;
@@ -270,6 +270,7 @@
     $('[data-fd-scope]').innerHTML = scopeHTML();
     $('[data-fd-chips]').innerHTML = chipsHTML(st.sel, ctx, unit());
     renderGov(ctx);
+    if (more && !more.open) return; // 접힌 조건 칸은 열 때 그린다(전국 경계 그림이 휴대폰 첫 화면에서 0.2~0.3초 멈췄다)
     if (st.scope.sg && !e) { $('[data-fd-out]').innerHTML = '<p class="fd-wait" data-state="loading" role="status">읍·면·동 자료를 불러오는 중입니다.</p>'; $('[data-fd-list]').innerHTML = ''; return; }
     const areas = areasOf(st.scope, ctx), ev = evaluate(areas, st.sel, ctx, unit());
     const [head, list] = resultHTML(ev, areas, ctx, unit(), st.by, st.page).split(LIST_MARK); // 큰 숫자 → 지도 → 목록 순서로 놓는다
@@ -317,7 +318,9 @@
     // 작업공간 규칙: 화면을 강제로 스크롤하지 않는다(모바일 탭 전환이 표시를 바꾼다). 초점만 옮긴다
     (st.scope.sg ? root.querySelector('[data-fd-sort="code"]') : f)?.focus({ preventScroll: true });
   }
-  const openMore = () => document.getElementById('findMore')?.setAttribute('open', ''); // 업무를 고르거나 #find로 오면 접힌 조건 칸을 연다
+  const more = document.getElementById('findMore');
+  const openMore = () => more?.setAttribute('open', ''); // 업무를 고르거나 #find로 오면 접힌 조건 칸을 연다
+  more?.addEventListener('toggle', () => { if (more.open) render(); });
   if (/^#find/.test(location.hash)) openMore();
   if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) { openMore(); applyPreset(b.dataset.govPreset); } });
   addEventListener('hashchange', trackHash);
@@ -365,7 +368,7 @@
     render(); root.querySelector(s.hasAttribute('data-fd-sido') ? '[data-fd-sido]' : '[data-fd-sg]')?.focus({ preventScroll: true });
   });
   const ok = (j, k) => (j && Array.isArray(j[k]) ? j : null);
-  Promise.all(['index.json', 'living/index.json', 'designations.json', 'migration.json', 'forecast/index.json', 'realestate.json'].map(f => fetchJson('data/national/' + f)))
+  Promise.all(['index.json', 'living/index.json', 'designations.json', 'migration.json', 'forecast/index.json', 'realestate.json'].map((f, i) => fetchJson('data/national/' + f, i > 1)))
     .then(([index, li, des, mig, fi, re]) => {
       st.ctx = { index: ok(index, 'sigungu'), living: ok(li, 'indicators'), designations: ok(des, 'items'), migration: ok(mig, 'sigungu'), forecastIdx: ok(fi, 'horizons'), realestate: ok(re, 'sigungu') };
       if (!st.ctx.index) { root.innerHTML = '<div class="fd-empty" data-state="error" role="alert"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>전국 원장 자료를 불러오지 못했습니다.<br>네트워크를 확인한 뒤 다시 열어 주세요.</p></div>'; return; }

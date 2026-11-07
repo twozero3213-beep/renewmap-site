@@ -67,7 +67,8 @@
   // JSON을 한 번만 받아 hero.js·map.js가 같이 쓴다. 404·오류는 null
   const cache = {};
   // low: 첫 화면에 필요 없는 자료(먼저 부른 쪽의 우선순위를 따른다). 같은 파일을 두 번 받아 두 번 읽지 않게 우선순위가 달라도 같은 캐시를 쓴다
-  window.renewFetch = (url, low) => cache[url] || (cache[url] = fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
+  // low: 지도 화면이 window.renewAfter(첫 지도에 필요한 목록·경계)를 걸어 두면 그 뒤에 받는다. 느린 망에서 보조 자료가 첫 지도와 대역을 나눠 쓰지 않게 한다
+  window.renewFetch = (url, low) => cache[url] || (cache[url] = (low && window.renewAfter ? window.renewAfter : Promise.resolve()).then(() => fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' })).then(r => (r.ok ? r.json() : null)).catch(() => null));
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = id => document.getElementById(id);
 
@@ -103,5 +104,5 @@
     if (box && html) { box.innerHTML = html; box.classList.add('is-real'); }
   }
   // 받을 자리가 있는 화면(소개)에서만 받는다. 지도 화면은 이 자리가 없는데도 dashboard.json(2.5MB)을 높은 우선순위로 받아 첫 지도가 늦었다
-  if (document.querySelector('#verdictCards, #ledgerAnat, [data-stat]')) Promise.all(['data/dashboard.json', 'data/national/index.json', 'data/national/living/index.json'].map(window.renewFetch)).then(([dash, index, li]) => { verdict(dash); sections(dash, index, li); reveal(); });
+  if (document.querySelector('#verdictCards, #ledgerAnat, [data-stat]')) Promise.all(['data/dashboard.json', 'data/national/index.json', 'data/national/living/index.json'].map(u => window.renewFetch(u))).then(([dash, index, li]) => { verdict(dash); sections(dash, index, li); reveal(); });
 })();
