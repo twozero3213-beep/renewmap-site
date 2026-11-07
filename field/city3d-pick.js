@@ -1,5 +1,5 @@
 // 현재 건물 3D 보기에서 건물을 누르면, 누른 자리의 GIS건물통합정보 외곽선(data/bldg_outline)으로 우리 건축물대장 행을 찾아 보여 준다.
-// 브이월드 3D 건물에는 대장 번호가 없어서 위치로 잇는다. 외곽선 파일이 있는 법정동만 된다(2026-11-07: 재송동·반여동·부산진구 부암동).
+// 브이월드 3D 건물에는 대장 번호가 없어서 위치로 잇는다. 외곽선 파일이 있는 법정동만 된다(2026-11-07: 부산 건축물대장 파일이 있는 법정동 254곳).
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
   else root.City3dPick = factory();
@@ -64,7 +64,7 @@
         if (it[0]) bld = ((await get(`buildings/${code}.json`)).buildings || []).find((b) => b.mgm_bld_pk === it[0]) || null;
         return show(bld ? `${bld.jibun} ${bld.name || bld.main_use || "건물"}` : "대장과 잇지 못한 건물", describe(it, bld, file));
       }
-      show("누른 자리의 건물 외곽선이 없습니다", [["안내", "건물 정보는 해운대구 재송동·반여동, 부산진구 부암동만 준비돼 있습니다. 건물 지붕 가운데를 눌러 보세요."]]);
+      show("누른 자리의 건물 외곽선이 없습니다", [["안내", "건물 정보는 부산광역시만 준비돼 있습니다. 건물 지붕 가운데를 눌러 보세요."]]);
     }
     let tries = 0;
     const timer = setInterval(() => {
