@@ -8,7 +8,7 @@
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
   const MAX_FILE = 50 * 1024 * 1024, MAX_ROWS = 200000, MAX_COLS = 200, MAX_UNZIP = 120 * 1024 * 1024, MAX_DRAW = 20000, MAX_LABELS = 300;
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const { esc } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
 
   // ── 1. 글자 판별 · CSV ──
   // BOM이 있으면 그대로, 없으면 UTF-8로 엄격히 읽어 보고 깨지면 CP949(euc-kr)로 읽는다

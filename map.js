@@ -4,9 +4,9 @@
    위쪽은 노드 시험용 순수 함수, 아래쪽은 브라우저 연결부(Leaflet, dashboard.js의 loadLeaflet 재사용). */
 (function () {
   'use strict';
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const DG = typeof module !== 'undefined' && module.exports ? require('./docgen.js') : (typeof window !== 'undefined' && window.RenewDocgen) || null; // HWPX·XLSX·복사용 표·1쪽 요약·지도 이미지
-  const isNum = v => typeof v === 'number' && Number.isFinite(v);
+  const { esc, isNum } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
+  // HWPX·XLSX·복사용 표·1쪽 요약·지도 이미지. 브라우저에서는 첫 지도 뒤에 받는다(아래 loadDocgen): undefined = 아직, null = 못 받음
+  let DG = typeof module !== 'undefined' && module.exports ? require('./docgen.js') : (typeof window !== 'undefined' && window.RenewDocgen) || undefined;
   const nf =d => new Intl.NumberFormat('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d });
   const digitsOf = v => (Math.round(v * 10) % 10 === 0 ? 0 : 1);
   const fmt = (v, unit) => (isNum(v) ? nf(digitsOf(v)).format(v) + (unit || '') : null);
@@ -296,11 +296,19 @@
     }
     return out;
   }
+  const flatName = x => String(x || '').replace(/\s|·/g, '');
   function findEntry(entries, q) {
     const s = String(q || '').trim().replace(/\s+/g, ' ');
     if (!s) return null;
-    const flat = x => x.replace(/\s|·/g, ''), f = flat(s);
-    return entries.find(e => e.label === s) || entries.find(e => flat(e.label).startsWith(f)) || entries.find(e => flat(e.label).includes(f)) || null;
+    const f = flatName(s);
+    return entries.find(e => e.label === s) || entries.find(e => flatName(e.label).startsWith(f)) || entries.find(e => flatName(e.label).includes(f)) || null;
+  }
+  // 입력한 글자에 맞는 이름만 n개(앞에서 맞는 것 먼저). 자동완성 목록에 전국 이름 3,800여 개를 한꺼번에 넣으면 화면 요소가 4,700개로 늘어 첫 화면이 무거웠다
+  function suggestEntries(entries, q, n = 20) {
+    const f = flatName(q); if (!f) return [];
+    const head = [], mid = [];
+    for (const e of entries) { const l = flatName(e.label); if (l.startsWith(f)) head.push(e); else if (l.includes(f)) mid.push(e); if (head.length >= n) break; }
+    return head.concat(mid).slice(0, n);
   }
 
   // ── 모델 ──
@@ -906,7 +914,7 @@
     return { when, summary: d.rows.length ? `${when}에 저장한 값과 비교하면 바뀐 항목은 ${d.rows.length}개, 판정이 바뀐 항목은 ${flips}개, 그대로인 항목은 ${d.same}개다.` : `${when}에 저장한 뒤 바뀐 값이 없다(${d.same}개 항목).`,
       rows: [['항목', '저장 때 값(기준일)', '지금 값(기준일)', '변동', '판정'], ...d.rows.map(x => [(x.cur || x.prev).l, cell(x.prev), cell(x.cur), deltaText(x), x.flip ? `${x.prev.s}에서 ${x.cur.s}로 바뀜` : (x.cur || x.prev).s])] };
   }
-  // 2026년 행정구역 개편: 지도 경계·이름·코드는 SGIS 2024 기준이라, 바뀐 지역을 열면 바뀐 사실과 공식 출처를 함께 적는다(2026-10-30 전수검사: 3,559동 중 468동)
+  // 2026년 행정구역 개편: 지도 경계·이름·코드는 SGIS 2025 기준이라, 바뀐 지역을 열면 바뀐 사실과 공식 출처를 함께 적는다(2026-10-30 전수검사: 3,559동 중 468동)
   const MOIS_REORG = 'https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000052&nttId=127039';
   const REORG = [
     { sido: ['24', '36'], text: '2026. 7. 1. 광주광역시와 전라남도가 전남광주통합특별시로 통합됐다. 행정동·법정동 코드도 새로 매겨졌다.', url: MOIS_REORG },
@@ -917,7 +925,7 @@
   function reorgNote(v) {
     const s2 = v && v.sido ? String(v.sido.code2) : '', s5 = v && v.sigungu ? String(v.sigungu.code5) : '';
     const r = REORG.find(x => (x.sido || []).includes(s2) || (x.sg || []).includes(s5));
-    return r ? `<p class="map-note">${esc(r.text)} 이 지도의 경계·이름·코드는 SGIS 2024 기준이다. <a href="${r.url}" target="_blank" rel="noopener">공식 변경 내역</a></p>` : '';
+    return r ? `<p class="map-note">${esc(r.text)} 이 지도의 경계·이름·코드는 SGIS 2025 기준이다. <a href="${r.url}" target="_blank" rel="noopener">공식 변경 내역</a></p>` : '';
   }
   // 기준일이 오늘보다 몇 달 앞인지(팩트풀니스: 낡은 숫자를 지금 숫자로 읽지 않게, 2026-11-01). 지난 달 수만 센다. 날짜가 아니거나 미래면 빈 문자열.
   // 연도만 있는 값(예: 2024년)은 날짜를 지어내지 않으려고 대지 않는다
@@ -961,7 +969,7 @@
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
   const api = { forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
-    livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
+    livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
     reportSentences, verifyPolished, stdTextOf, olsFit, trendSVG, donutSVG, coverLabel, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
     gapRows, gapsHTML, reorgNote, REORG, ageText, WATER_GRADES, WATER_EDGES, waterGrade, waterStyle, waterTipHTML, waterNoteHTML, waterAutoHTML, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
@@ -980,7 +988,7 @@
   // ── 브라우저 ──
   const app = document.getElementById('mapApp'); if (!app) return;
   // low: 첫 지도에 필요 없는 자료. 경계·지도 라이브러리가 먼저 받히도록 낮은 우선순위로 받는다
-  const fetchJson = (url, low) => (window.renewFetch ? window.renewFetch(url, low) : fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
+  const fetchJson = window.RenewUtil.fetchJson;
   // 외부 AI 서버 주소는 비워 둔다(서버로 문장을 보내지 않는다). 다듬기는 기기 안 AI(detectDeviceAI)로만 한다(docs/legal/ai_ethics.md ⑤)
   const AI_POLISH_ENDPOINT = '';
   const state = { route: parseHash(location.hash) || {}, ind: INDICATORS[0].code, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, sidoGeo: undefined, dash: null, mapErr: false, touched: false,
@@ -1114,7 +1122,18 @@
   let docMemo = { key: '', val: null }, fragChoice = { id: '', variant: '' };
   // 생활·전망·순이동 자료가 아직 오는 중이면 '파일 없음'으로 적히지 않게 만들기를 미룬다
   const filesLoading = v => [state.templates, state.living, state.migration, state.designations, state.realestate, state.forecastIdx].some(x => x === undefined) || (!!state.living && livingOf(v.emdCode) === undefined) || (!!state.forecastIdx && forecastOf(v.emdCode) === undefined);
+  // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
+  let dgWait = null;
+  const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
+    const s = document.createElement('script'); s.src = 'docgen.js'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+  }).then(d => {
+    DG = d; docMemo = { key: '', val: null };
+    if (DG && state.templates) DG.setTemplates(state.templates);
+    document.dispatchEvent(new Event('renew-docgen')); // find.js가 XLSX 단추를 다시 그린다
+    if (state.index) render();
+  }));
   function docFor(v, m, it) {
+    if (DG === undefined) { loadDocgen(); return { error: '문서 생성기를 불러오는 중입니다.' }; }
     if (!DG) return { error: '이 브라우저에서 문서 생성기를 불러오지 못했습니다.' };
     if (state.templates === null) return { error: '문서 양식 파일(data/report_templates.json)을 불러오지 못했습니다. 페이지를 새로 고쳐 주세요.' };
     if (filesLoading(v)) return { error: '생활·전망 자료를 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요.' };
@@ -1580,8 +1599,7 @@
   function searchSetup() {
     if (!form) return;
     entries = searchEntries(state.index, state.dongIndex);
-    const dl = form.querySelector('datalist'), note = form.querySelector('[data-search-note]');
-    if (dl) dl.innerHTML = entries.map(e => `<option value="${esc(e.label)}"></option>`).join('');
+    const note = form.querySelector('[data-search-note]');
     if (note) note.textContent = Array.isArray(state.dongIndex) ? '동 이름, 시·군·구, 시·도로 찾습니다.' : '지금은 시·도와 시·군·구 이름으로 찾습니다. 읍·면·동 이름 목록은 준비 중입니다.';
   }
   if (form) {
@@ -1589,6 +1607,8 @@
     const pick = () => { const e = findEntry(entries, q.value); if (msg) msg.textContent = e ? `${e.label}(으)로 이동했습니다.` : '찾는 이름이 없습니다. 시·군·구 이름으로 다시 찾아 보세요.'; if (e) { go(e.route); app.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); } };
     form.addEventListener('submit', e => { e.preventDefault(); pick(); });
     q.addEventListener('focus', touch);
+    const dl = form.querySelector('datalist');
+    if (dl) q.addEventListener('input', () => { dl.innerHTML = suggestEntries(entries, q.value).map(e => `<option value="${esc(e.label)}"></option>`).join(''); });
     q.addEventListener('change', () => { if (entries.some(e => e.label === q.value.trim())) pick(); });
   }
 
@@ -1597,10 +1617,11 @@
     if (window.RenewDashboard) window.RenewDashboard.loadLeaflet().catch(() => {});
     state.naver = null; loadNaver().then(ok => { state.naver = ok; render(); });
   }
-  // 목록과 경계를 동시에 받는다(전에는 목록을 다 받은 뒤 경계를 받아 첫 지도가 한 번 더 기다렸다). 보조 자료(낮은 우선순위)는 이 둘이 온 뒤에 받는다(hero.js renewFetch)
+  // 목록과 경계를 동시에 받는다(전에는 목록을 다 받은 뒤 경계를 받아 첫 지도가 한 번 더 기다렸다). 보조 자료(낮은 우선순위)는 이 둘이 온 뒤에 받는다(util.js fetchJson)
   const geoP = Promise.all([fetchJson('data/national/sigungu.geojson'), fetchJson('data/national/sido.geojson')]);
   const indexP = fetchJson('data/national/index.json');
   window.renewAfter = Promise.all([indexP, geoP]).then(() => {}, () => {});
+  if (DG === undefined) window.renewAfter.then(loadDocgen);
   indexP.then(index => {
     state.index = index && Array.isArray(index.sigungu) ? index : null;
     if (heroCount && index && isNum(index.emd_count)) { heroCount.innerHTML = `<b data-ck="emd" data-count="${index.emd_count}">0</b>개 `; countUp(heroCount.firstChild); }

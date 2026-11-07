@@ -7,9 +7,8 @@
   const node = typeof module !== 'undefined' && module.exports;
   const M = node ? require('./map.js') : window.RenewMap;
   if (!M) return;
-  const DG = node ? require('./docgen.js') : window.RenewDocgen || null; // XLSX 만들기
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const isNum = v => typeof v === 'number' && Number.isFinite(v);
+  const dg = () => (node ? require('./docgen.js') : window.RenewDocgen || null); // XLSX 만들기. 브라우저에서는 map.js가 첫 지도 뒤에 싣는다
+  const { esc, isNum } = node ? require('./util.js') : window.RenewUtil;
   const pm = v => (v < 0 ? '−' + M.fmt(Math.abs(v)) : M.fmt(v));
   // 공식 기준이 없는 조건의 참고 구간(화면 눈금, 판정 기준 아님). 대표 지시(2026-10-25) 값
   const REF = { LIB_M: 1000, HOSP_PER10K: 10, BUS_PER_KM2: 20, MIG_PER1K: 5, FORE_PCT: 10, DEAL_PCT: 20 };
@@ -173,7 +172,7 @@
     const list = sortAreas(ev.hits, by), p = paginate(list, page);
     return head + skip + conds + `<p class="fd-count" aria-live="polite">조건에 맞는 곳 <b data-ck="fd-n" data-count="${ev.hits.length}">${ev.hits.length}</b>곳 <small>/ 전체 ${esc(M.fmt(areas.length))}곳${ev.nodata ? ` · 자료가 없어 판단하지 않은 곳 ${esc(M.fmt(ev.nodata))}곳` : ''}</small></p>` +
       LIST_MARK + `<div class="dash-seg fd-sort" role="group" aria-label="목록 순서"><button type="button" data-fd-sort="code" aria-pressed="${by !== 'name'}">행정코드 순</button><button type="button" data-fd-sort="name" aria-pressed="${by === 'name'}">가나다 순</button></div>` +
-      (DG ? `<p class="fd-xlsx"><button type="button" class="btn ghost" data-fd-xlsx>XLSX 내려받기</button><small>조건에 맞는 곳 ${ev.hits.length}곳(행정코드 순), 범위 전체의 해당 여부, 조건·출처 시트</small><span class="map-png-msg" data-fd-xlsx-msg role="status"></span></p>` : '') +
+      (dg() ? `<p class="fd-xlsx"><button type="button" class="btn ghost" data-fd-xlsx>XLSX 내려받기</button><small>조건에 맞는 곳 ${ev.hits.length}곳(행정코드 순), 범위 전체의 해당 여부, 조건·출처 시트</small><span class="map-png-msg" data-fd-xlsx-msg role="status"></span></p>` : '') +
       (list.length ? `<div data-state="ready"><h3 class="fd-list-title" data-fd-list-start tabindex="-1">전체 ${p.total}곳 중 ${p.from}–${p.to}곳</h3><ol class="fd-list">${p.items.map(a => `<li><span class="fd-n"><b>${esc(a.name)}</b><small>${esc(a.sub)} · ${esc(a.code)}</small></span><span class="fd-b" aria-label="맞는 조건">${esc(emo)}</span><a href="${esc(hashOf(a, ctx))}" data-fd-go>${a.dong ? '이 동 보기' : '이 지역 보기'}</a></li>`).join('')}</ol>${pagerHTML(p)}</div>`
         : `<div class="fd-empty" data-state="empty" role="status"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>조건을 모두 만족하는 곳이 없습니다.<br>조건을 하나 빼 보세요.</p><button type="button" class="btn ghost" data-fd-relax>마지막 조건 빼기</button></div>`);
   }
@@ -241,7 +240,7 @@
 
   // ── 브라우저 ──
   const root = document.getElementById('findApp'); if (!root) return;
-  const fetchJson = (url, low) => (window.renewFetch ? window.renewFetch(url, low) : fetch(url, { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
+  const fetchJson = window.RenewUtil.fetchJson;
   const st = { sel: [], by: 'code', page: 1, scope: { sido: '', sg: '' }, ctx: { index: null }, sgGeo: null, emd: new Map(), svgKey: '', lastSg: null, lastDong: null, hint: '', govKey: '' };
   const gov = document.querySelector('#gov [data-gov]');
   root.innerHTML = `<div class="fd-scope" data-fd-scope></div><div class="fd-grid"><div class="fd-left" data-fd-chips></div><div class="fd-right"><div data-fd-out></div><div class="fd-map" data-fd-map><div class="fd-wait" data-state="loading" role="status"><img src="mascot/crew/saeum-waiting.svg" width="104" height="104" alt="" aria-hidden="true"><p>경계 자료를 불러오는 중입니다.</p></div></div><div data-fd-list></div></div></div>`;
@@ -321,11 +320,13 @@
   const more = document.getElementById('findMore');
   const openMore = () => more?.setAttribute('open', ''); // 업무를 고르거나 #find로 오면 접힌 조건 칸을 연다
   more?.addEventListener('toggle', () => { if (more.open) render(); });
+  document.addEventListener('renew-docgen', () => render());
   if (/^#find/.test(location.hash)) openMore();
   if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) { openMore(); applyPreset(b.dataset.govPreset); } });
   addEventListener('hashchange', trackHash);
   // 지금 화면의 조건·범위 그대로 XLSX를 만든다(이 브라우저 안에서만)
   function exportXlsx() {
+    const DG = dg(); if (!DG) return;
     const msg = root.querySelector('[data-fd-xlsx-msg]'), say = t => { if (msg) msg.textContent = t; };
     let ctx = st.ctx; if (st.scope.sg) { const e = emdCtx(st.scope.sg); if (!e) { say('읍·면·동 자료를 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요.'); return; } ctx = { ...st.ctx, emd: e.json, lv: e.lv, forecast: e.fc }; }
     const areas = areasOf(st.scope, ctx), ev = evaluate(areas, st.sel, ctx, unit());

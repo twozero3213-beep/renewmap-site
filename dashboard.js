@@ -7,9 +7,8 @@
   const STATUS_CLASS = { '확인': 'ok', '충돌': 'conflict', '추가확인': 'check' };
   const NOTE = '건축물대장 기준 노후 건축물 비율이며, 판정 결과가 아닙니다.';
   const nf = d => new Intl.NumberFormat('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d });
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const { esc, isNum } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
   const byCode = (a, b) => String(a.code).localeCompare(String(b.code));
-  const isNum = v => typeof v === 'number' && Number.isFinite(v);
 
   // 소수 한 자리까지. 카운트업 중 자릿수가 흔들리지 않게 목표값의 자릿수를 고정해 쓴다
   function digitsOf(v) { return Math.round(v * 10) % 10 === 0 ? 0 : 1; }
@@ -366,9 +365,7 @@
   }), { threshold: 0.2 }).observe(app);
 
   render();
-  fetch('data/dashboard.json', { cache: 'no-cache' })
-    .then(r => (r.ok ? r.json() : null))
-    .catch(() => null)
+  window.RenewUtil.fetchJson('data/dashboard.json') // hero.js와 같은 캐시: 소개 화면에서 2.5MB를 두 번 받지 않는다
     .then(data => {
       state.data = data;
       render();

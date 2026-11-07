@@ -6,7 +6,7 @@
   if (root && root.document) root.RenewRank = api;
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
-  const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const { esc } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
   const KINDS = {
     total: { label: '동네 점수', get: d => d.total },
     safety: { label: '치안 점수', get: d => d.sub.safety },

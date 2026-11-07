@@ -5,7 +5,7 @@
   if (root && root.document) root.RenewReport = api;
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
-  const esc = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+  const { esc } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
   const FORMATS = ['hwpx', 'pdf', 'xlsx', 'docx', 'pptx'];
   // detail: { file, size, message } (done·error일 때)
   function exportStateHTML(format, status, detail) {
