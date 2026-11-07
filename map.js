@@ -1389,76 +1389,88 @@
       document.head.appendChild(s);
     });
   }
-  function drawMap(v, m) {
-    const slot = stage.querySelector('[data-map-slot]');
+  // 지도를 처음 만들기 전 준비: 경계 자료·Leaflet·네이버 SDK를 차례로 기다린다. 기다리는 동안 false, 지도를 만들면 true
+  function mapReady(slot) {
     const wait = msg => { if (slot) { slot.className = 'map-canvas is-wait'; slot.textContent = msg; } };
-    if (!M) {
-      // 경계가 아직 오는 중(undefined)이면 배경 지도부터 만들고 경계는 온 뒤에 얹는다(첫 화면 배경 타일이 경계를 기다리지 않게)
-      if (state.sgGeo === null) { if (slot) slot.outerHTML = emptyHTML('경계 자료 준비 중', ['시군구 경계가 아직 없습니다.', '아래 목록으로 숫자는 볼 수 있습니다.']); return; }
-      const D = window.RenewDashboard;
-      if (!window.L) { wait('지도를 불러오는 중입니다.'); (D ? D.loadLeaflet() : Promise.reject()).then(render, () => { state.mapErr = true; render(); }); return; }
-      if (state.naver === undefined) { state.naver = null; wait('지도를 불러오는 중입니다.'); loadNaver().then(ok => { state.naver = ok; render(); }); return; }
-      if (state.naver === null) return;
-      const L = window.L, el = document.createElement('div'); el.className = 'map-canvas'; el.setAttribute('role', 'region');
-      el.insertAdjacentHTML('beforeend', '<svg class="map-defs" width="0" height="0" aria-hidden="true"><defs><pattern id="rmHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" fill="#d4dbd8"/><line x1="0" y1="0" x2="0" y2="6" stroke="#6b7a75" stroke-width="2"/></pattern></defs></svg>');
-      slot.replaceWith(el);
-      ybar = document.createElement('div'); ybar.className = 'map-yearbar'; ybar.hidden = true; ybar.setAttribute('aria-hidden', 'true'); el.appendChild(ybar);
-      // 네이버 배경: Leaflet(경계·누르기·확대) 아래에 움직이지 않는 네이버 지도를 깔고 같은 중심·확대로 맞춘다. 네이버는 정수 확대라 Leaflet도 정수로
-      // 네이버 지도는 6보다 작게 축소되지 않는다(실측 getMinZoom 6). Leaflet이 그 아래로 내려가면 배경은 멈추고 경계만 작아져 둘이 어긋났다(2026-11-07 대표 지적)
-      const NAVER_MIN_ZOOM = 6;
-      const nv = state.naver ? document.createElement('div') : null;
-      // aria-hidden을 두지 않는다: 안의 법적 고지 링크가 키보드 초점을 받으므로 숨기면 이름 없는 초점이 된다(2026-10-30 배포 화면 확인)
-      if (nv) { nv.className = 'map-naver'; el.appendChild(nv); el.classList.add('has-naver'); }
-      const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false }); // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
-      // 확대는 17(골목·건물 단위)까지. 두 번 누르기를 거듭해도 그 이상 커지지 않는다. 휠 확대는 지도를 한 번 누른 뒤에만 켠다(페이지를 내리다 지도에 걸려 확대되지 않게). 지도 밖으로 나가면 다시 끈다(2026-11-07 대표 지시)
-      map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => map.scrollWheelZoom.disable());
-      L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
-      // 지금 보는 곳의 현재 건물을 브이월드 3D 지도(field/city3d.html, 저장 없음)로 연다. 주소에는 지도 중심 좌표만 싣는다
-      const to3d = L.control({ position: 'topleft' });
-      to3d.onAdd = () => {
-        const a = L.DomUtil.create('a', 'leaflet-bar map-3d');
-        a.textContent = '3D 건물'; a.target = '_blank'; a.rel = 'noopener';
-        a.title = '지금 보는 곳의 현재 건물을 브이월드 3D 지도로 엽니다(새 창)';
-        // 컨트롤을 붙일 때는 아직 지도 시점이 없어 getCenter가 오류를 낸다. 첫 맞춤(fitBounds) 뒤 moveend부터 좌표를 싣는다
-        a.href = 'field/city3d.html';
-        map.on('moveend', () => { const c = map.getCenter(); a.href = `field/city3d.html?lat=${c.lat.toFixed(5)}&lng=${c.lng.toFixed(5)}`; });
-        L.DomEvent.disableClickPropagation(a);
-        return a;
-      };
-      to3d.addTo(map);
-      if (nv) {
-        const N = window.naver.maps, nmap = new N.Map(nv, { center: new N.LatLng(36.3, 127.8), zoom: 7, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
-          disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
-        const sync = () => { const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); };
-        map.on('move zoom moveend zoomend viewreset resize', sync);
-        if ('ResizeObserver' in window) new ResizeObserver(() => { nmap.autoResize && nmap.autoResize(); sync(); }).observe(el);
-        // 링크는 지도가 그려진 뒤 늦게 생기고 'idle'보다 늦을 수 있다(배포 화면에서 이름 없음 확인). 생길 때마다 이름을 붙인다
-        new MutationObserver(() => api.nameMapLinks(nv)).observe(nv, { childList: true, subtree: true });
-      }
-      // 칸 크기가 바뀌면(업무 패널 열기·휴대폰 순서) 경계층도 다시 재야 바탕과 어긋나지 않는다. 네이버 동기화는 위 resize 이벤트로 따라간다
-      if ('ResizeObserver' in window) new ResizeObserver(() => map.invalidateSize({ pan: false })).observe(el);
-      // 배경지도: 브이월드(국토교통부 공식 지도, 한국 지명·도로). 키(field/vworld-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작 → 없으면 OSM
-      const vw = /^[A-Za-z0-9-]+$/.test(window.RENEWMAP_VWORLD_KEY || '') ? window.RENEWMAP_VWORLD_KEY : '';
-      if (nv) { /* 배경은 네이버 */ }
-      else if (vw) L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${vw}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: '&copy; <a href="https://www.vworld.kr">국토교통부 브이월드</a>' }).addTo(map);
-      else L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
-      const src = () => state.index.source && state.index.source.name;
-      map.createPane('water').style.zIndex = 450; // 수질 점은 경계층(overlayPane 400) 위. 동 층을 다시 만들어도 덮이지 않는다
-      map.createPane('sg').style.zIndex = 395; // 시군구·시도 경계는 동 층(overlayPane 400) 아래. 경계가 동 층보다 늦게 와도 동을 덮지 않는다
-      M = { el, map, sg: null, sido: null, emd: null, emdCode: null, water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
-      setTimeout(startAuto, 1500);
-    }
-    const L = window.L, ind = curInd(), mode = effMode(ind);
-    if (!M.sg && state.sgGeo) {
-      M.sg = L.geoJSON(state.sgGeo, { pane: 'sg', style: { weight: 1, color: '#fff' }, onEachFeature: (f, layer) => {
-        layer.bindTooltip(() => { const it = M.sgItems.get(String(f.properties.code)); return it ? tooltipHTML(it, curInd(), effMode(curInd()), null, M.src()) : `<b>${esc(f.properties.name)}</b>`; }, { sticky: true });
-        layer.on('click', () => { const r = leafRoute(state.index, String(f.properties.code)); if (r) go(r); });
-      } }).addTo(M.map);
-      M.sido = state.sidoGeo ? L.geoJSON(state.sidoGeo, { pane: 'sg', interactive: false, style: { color: '#153c39', weight: 1.5, fill: false } }).addTo(M.map) : null;
-      M.order = null; M.fitKey = null; // 새 층이라 앞뒤 순서와 화면 맞춤을 다시 한다
-    }
-    M.el.setAttribute('aria-label', `${v.crumbs.map(c => c.label).join(' › ')} ${ind.label} 지도. 아래 목록으로도 고를 수 있습니다.`);
-    // 시군구 레이어: 현재 단계의 항목만 색, 나머지는 옅게
+    // 경계가 아직 오는 중(undefined)이면 배경 지도부터 만들고 경계는 온 뒤에 얹는다(첫 화면 배경 타일이 경계를 기다리지 않게)
+    if (state.sgGeo === null) { if (slot) slot.outerHTML = emptyHTML('경계 자료 준비 중', ['시군구 경계가 아직 없습니다.', '아래 목록으로 숫자는 볼 수 있습니다.']); return false; }
+    const D = window.RenewDashboard;
+    if (!window.L) { wait('지도를 불러오는 중입니다.'); (D ? D.loadLeaflet() : Promise.reject()).then(render, () => { state.mapErr = true; render(); }); return false; }
+    if (state.naver === undefined) { state.naver = null; wait('지도를 불러오는 중입니다.'); loadNaver().then(ok => { state.naver = ok; render(); }); return false; }
+    if (state.naver === null) return false;
+    createMap(slot);
+    return true;
+  }
+  function createMap(slot) {
+    const L = window.L, el = document.createElement('div'); el.className = 'map-canvas'; el.setAttribute('role', 'region');
+    el.insertAdjacentHTML('beforeend', '<svg class="map-defs" width="0" height="0" aria-hidden="true"><defs><pattern id="rmHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" fill="#d4dbd8"/><line x1="0" y1="0" x2="0" y2="6" stroke="#6b7a75" stroke-width="2"/></pattern></defs></svg>');
+    slot.replaceWith(el);
+    ybar = document.createElement('div'); ybar.className = 'map-yearbar'; ybar.hidden = true; ybar.setAttribute('aria-hidden', 'true'); el.appendChild(ybar);
+    // 네이버 배경: Leaflet(경계·누르기·확대) 아래에 움직이지 않는 네이버 지도를 깔고 같은 중심·확대로 맞춘다. 네이버는 정수 확대라 Leaflet도 정수로
+    // 네이버 지도는 6보다 작게 축소되지 않는다(실측 getMinZoom 6). Leaflet이 그 아래로 내려가면 배경은 멈추고 경계만 작아져 둘이 어긋났다(2026-11-07 대표 지적)
+    const NAVER_MIN_ZOOM = 6;
+    const nv = state.naver ? document.createElement('div') : null;
+    // aria-hidden을 두지 않는다: 안의 법적 고지 링크가 키보드 초점을 받으므로 숨기면 이름 없는 초점이 된다(2026-10-30 배포 화면 확인)
+    if (nv) { nv.className = 'map-naver'; el.appendChild(nv); el.classList.add('has-naver'); }
+    const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false }); // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
+    // 확대는 17(골목·건물 단위)까지. 두 번 누르기를 거듭해도 그 이상 커지지 않는다. 휠 확대는 지도를 한 번 누른 뒤에만 켠다(페이지를 내리다 지도에 걸려 확대되지 않게). 지도 밖으로 나가면 다시 끈다(2026-11-07 대표 지시)
+    map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => map.scrollWheelZoom.disable());
+    L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
+    add3dControl(map);
+    if (nv) followWithNaver(map, el, nv);
+    // 칸 크기가 바뀌면(업무 패널 열기·휴대폰 순서) 경계층도 다시 재야 바탕과 어긋나지 않는다. 네이버 동기화는 resize 이벤트로 따라간다
+    if ('ResizeObserver' in window) new ResizeObserver(() => map.invalidateSize({ pan: false })).observe(el);
+    if (!nv) addBaseTiles(map);
+    const src = () => state.index.source && state.index.source.name;
+    map.createPane('water').style.zIndex = 450; // 수질 점은 경계층(overlayPane 400) 위. 동 층을 다시 만들어도 덮이지 않는다
+    map.createPane('sg').style.zIndex = 395; // 시군구·시도 경계는 동 층(overlayPane 400) 아래. 경계가 동 층보다 늦게 와도 동을 덮지 않는다
+    M = { el, map, sg: null, sido: null, emd: null, emdCode: null, water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
+    setTimeout(startAuto, 1500);
+  }
+  // 지금 보는 곳의 현재 건물을 브이월드 3D 지도(field/city3d.html, 저장 없음)로 연다. 주소에는 지도 중심 좌표만 싣는다
+  function add3dControl(map) {
+    const to3d = window.L.control({ position: 'topleft' });
+    to3d.onAdd = () => {
+      const a = window.L.DomUtil.create('a', 'leaflet-bar map-3d');
+      a.textContent = '3D 건물'; a.target = '_blank'; a.rel = 'noopener';
+      a.title = '지금 보는 곳의 현재 건물을 브이월드 3D 지도로 엽니다(새 창)';
+      // 컨트롤을 붙일 때는 아직 지도 시점이 없어 getCenter가 오류를 낸다. 첫 맞춤(fitBounds) 뒤 moveend부터 좌표를 싣는다
+      a.href = 'field/city3d.html';
+      map.on('moveend', () => { const c = map.getCenter(); a.href = `field/city3d.html?lat=${c.lat.toFixed(5)}&lng=${c.lng.toFixed(5)}`; });
+      window.L.DomEvent.disableClickPropagation(a);
+      return a;
+    };
+    to3d.addTo(map);
+  }
+  // 네이버 배경(nv)을 Leaflet 지도와 같은 중심·확대로 따라 움직인다. 네이버 지도는 스스로 움직이지 않는다
+  function followWithNaver(map, el, nv) {
+    const N = window.naver.maps, nmap = new N.Map(nv, { center: new N.LatLng(36.3, 127.8), zoom: 7, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
+      disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
+    const sync = () => { const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); };
+    map.on('move zoom moveend zoomend viewreset resize', sync);
+    if ('ResizeObserver' in window) new ResizeObserver(() => { nmap.autoResize && nmap.autoResize(); sync(); }).observe(el);
+    // 링크는 지도가 그려진 뒤 늦게 생기고 'idle'보다 늦을 수 있다(배포 화면에서 이름 없음 확인). 생길 때마다 이름을 붙인다
+    new MutationObserver(() => api.nameMapLinks(nv)).observe(nv, { childList: true, subtree: true });
+  }
+  // 네이버가 없을 때 배경지도: 브이월드(국토교통부 공식 지도, 한국 지명·도로). 키(field/vworld-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작 → 없으면 OSM
+  function addBaseTiles(map) {
+    const vw = /^[A-Za-z0-9-]+$/.test(window.RENEWMAP_VWORLD_KEY || '') ? window.RENEWMAP_VWORLD_KEY : '';
+    if (vw) window.L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${vw}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: '&copy; <a href="https://www.vworld.kr">국토교통부 브이월드</a>' }).addTo(map);
+    else window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
+  }
+  // 시군구·시도 경계층: 경계 자료가 오면 한 번만 만든다
+  function addSgLayers() {
+    if (M.sg || !state.sgGeo) return;
+    const L = window.L;
+    M.sg = L.geoJSON(state.sgGeo, { pane: 'sg', style: { weight: 1, color: '#fff' }, onEachFeature: (f, layer) => {
+      layer.bindTooltip(() => { const it = M.sgItems.get(String(f.properties.code)); return it ? tooltipHTML(it, curInd(), effMode(curInd()), null, M.src()) : `<b>${esc(f.properties.name)}</b>`; }, { sticky: true });
+      layer.on('click', () => { const r = leafRoute(state.index, String(f.properties.code)); if (r) go(r); });
+    } }).addTo(M.map);
+    M.sido = state.sidoGeo ? L.geoJSON(state.sidoGeo, { pane: 'sg', interactive: false, style: { color: '#153c39', weight: 1.5, fill: false } }).addTo(M.map) : null;
+    M.order = null; M.fitKey = null; // 새 층이라 앞뒤 순서와 화면 맞춤을 다시 한다
+  }
+  // 시군구 레이어 색: 현재 단계의 항목만 색, 나머지는 옅게. 칸 구성이 바뀌었는지(reorder)와 색칠한 코드(active)를 돌려준다
+  function paintSg(v, m) {
     M.sgItems = new Map((m.kind === 'sg' ? m.items : []).map(it => [it.code, it]));
     const active = new Set(M.sgItems.keys()), inEmd = v.level === 'emd';
     // 앞으로 올리기(bringToFront)는 DOM에서 path를 다시 붙인다. 누르는 도중에 하면 click이 사라지므로 칸 구성이 바뀔 때만 한다
@@ -1468,11 +1480,14 @@
         : { fillColor: '#c9d3cf', fillOpacity: inEmd ? 0.08 : 0.15, color: '#fff', weight: 0.5, dashArray: null });
       if (on && reorder) l.bringToFront(); });
     if (M.sido && reorder) M.sido.bringToFront();
-    // 행정동 레이어: 시군구가 바뀔 때만 다시 만들고, 연도·지표는 setStyle로만 바꾼다(CSS transition)
+    return { active, reorder };
+  }
+  // 행정동 레이어: 시군구가 바뀔 때만 다시 만들고, 연도·지표는 setStyle로만 바꾼다(CSS transition)
+  function paintEmd(v, m, reorder) {
     if (m.kind === 'emd' && m.geo) {
       if (!M.emd || M.emdCode !== v.emdCode) {
         if (M.emd) M.emd.remove();
-        M.emd = L.geoJSON(m.geo, { style: { weight: 1.5, color: '#fff' }, onEachFeature: (f, layer) => {
+        M.emd = window.L.geoJSON(m.geo, { style: { weight: 1.5, color: '#fff' }, onEachFeature: (f, layer) => {
           layer.bindTooltip(() => { const it = M.emdItems.get(String((f.properties || {}).code)); return it ? tooltipHTML(it, curInd(), effMode(curInd()), it.year, M.src()) : `<b>${esc((f.properties || {}).name)}</b><br>지표와 코드가 맞지 않는 동`; }, { sticky: true });
           layer.on('click', () => { const code = String((f.properties || {}).code); if (M.emdItems.has(code)) go({ ...state.route, dong: code }); });
         } }).addTo(M.map);
@@ -1482,22 +1497,35 @@
       M.emd.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.emdItems.get(code), sel = code === v.dong;
         l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: sel ? 0.25 : 0.6, color: sel ? '#153c39' : '#fff', weight: sel ? 4 : 1.5, dashArray: !it || it.value === null ? '4 3' : null });
         if (sel && reorder) l.bringToFront(); });
-    } else if (M.emd && !inEmd) { M.emd.remove(); M.emd = null; M.emdCode = null; }
-    if (state.water && state.waterData && !M.water) M.water = L.layerGroup(state.waterData.points.map(p => L.circleMarker([p.lat, p.lon], waterStyle(p)).bindTooltip(waterTipHTML(p, state.waterData.year)))).addTo(M.map);
+    } else if (M.emd && v.level !== 'emd') { M.emd.remove(); M.emd = null; M.emdCode = null; }
+  }
+  function syncWater() {
+    if (state.water && state.waterData && !M.water) M.water = window.L.layerGroup(state.waterData.points.map(p => window.L.circleMarker([p.lat, p.lon], waterStyle(p)).bindTooltip(waterTipHTML(p, state.waterData.year)))).addTo(M.map);
     else if (!state.water && M.water) { M.water.remove(); M.water = null; }
-    // 단계가 바뀔 때만 화면을 옮긴다(연도 재생·지표 자동 전환 중에는 움직이지 않는다)
+  }
+  // 단계가 바뀔 때만 화면을 옮긴다(연도 재생·지표 자동 전환 중에는 움직이지 않는다)
+  function fitView(v, m, active) {
+    const L = window.L, inEmd = v.level === 'emd';
     const key = v.level + ':' + m.kind + ':' + (v.emdCode || (v.sigungu && v.sigungu.code5) || (v.sido && v.sido.code2) || '');
-    if (M.fitKey !== key && m.kind !== 'wait') {
-      let b = null;
-      if (m.kind === 'emd' && M.emd) b = M.emd.getBounds();
-      else if (!M.sg) { const bx = (m.kind === 'sg' ? m.items : []).map(it => it.bbox).filter(x => Array.isArray(x) && x.length === 4); b = bx.length ? L.latLngBounds(bx.flatMap(x => [[x[1], x[0]], [x[3], x[2]]])) : null; } // 경계 전: 목록의 bbox로 같은 범위를 먼저 잡는다
-      else { const fg = L.featureGroup(); M.sg.eachLayer(l => { if (active.has(String((l.feature.properties || {}).code))) fg.addLayer(l); }); b = fg.getLayers().length ? fg.getBounds() : M.sg.getBounds(); }
-      const right = inEmd && wide.matches && !panel.hidden && getComputedStyle(panel).position !== 'static' ? panel.offsetWidth + 28 : 12; // 지도 위에 겹친 패널일 때만 비운다
-      const opt = { paddingTopLeft: [12, 12], paddingBottomRight: [right, 12], maxZoom: 14 };
-      if (b && b.isValid()) { if (reduced || !M.ready || state.naver) M.map.fitBounds(b, opt); else M.map.flyToBounds(b, { ...opt, duration: 0.9 }); }
-      // 첫 맞춤은 시점이 없어 flyTo를 못 쓴다. 경계 전 bbox 맞춤은 임시라 끝난 것으로 치지 않는다(경계가 오면 애니메이션 없이 다시 맞춘다)
-      if (M.sg || (m.kind === 'emd' && M.emd)) { M.fitKey = key; M.ready = true; }
-    }
+    if (M.fitKey === key || m.kind === 'wait') return;
+    let b = null;
+    if (m.kind === 'emd' && M.emd) b = M.emd.getBounds();
+    else if (!M.sg) { const bx = (m.kind === 'sg' ? m.items : []).map(it => it.bbox).filter(x => Array.isArray(x) && x.length === 4); b = bx.length ? L.latLngBounds(bx.flatMap(x => [[x[1], x[0]], [x[3], x[2]]])) : null; } // 경계 전: 목록의 bbox로 같은 범위를 먼저 잡는다
+    else { const fg = L.featureGroup(); M.sg.eachLayer(l => { if (active.has(String((l.feature.properties || {}).code))) fg.addLayer(l); }); b = fg.getLayers().length ? fg.getBounds() : M.sg.getBounds(); }
+    const right = inEmd && wide.matches && !panel.hidden && getComputedStyle(panel).position !== 'static' ? panel.offsetWidth + 28 : 12; // 지도 위에 겹친 패널일 때만 비운다
+    const opt = { paddingTopLeft: [12, 12], paddingBottomRight: [right, 12], maxZoom: 14 };
+    if (b && b.isValid()) { if (reduced || !M.ready || state.naver) M.map.fitBounds(b, opt); else M.map.flyToBounds(b, { ...opt, duration: 0.9 }); }
+    // 첫 맞춤은 시점이 없어 flyTo를 못 쓴다. 경계 전 bbox 맞춤은 임시라 끝난 것으로 치지 않는다(경계가 오면 애니메이션 없이 다시 맞춘다)
+    if (M.sg || (m.kind === 'emd' && M.emd)) { M.fitKey = key; M.ready = true; }
+  }
+  function drawMap(v, m) {
+    if (!M && !mapReady(stage.querySelector('[data-map-slot]'))) return;
+    addSgLayers();
+    M.el.setAttribute('aria-label', `${v.crumbs.map(c => c.label).join(' › ')} ${curInd().label} 지도. 아래 목록으로도 고를 수 있습니다.`);
+    const { active, reorder } = paintSg(v, m);
+    paintEmd(v, m, reorder);
+    syncWater();
+    fitView(v, m, active);
   }
   function go(route, focusSel) {
     stopPlay(); stopAuto(true);

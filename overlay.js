@@ -324,29 +324,10 @@
     return [head].concat(rows.map(g => [g.code, g.name, g.count].concat(valueLabel ? [g.sum] : []))).map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
-  const api = { CRS, MAX_DRAW, MAX_LABELS, decodeText, parseCSV, toTable, parseXlsx, readFileBytes, toNum, findPII, excludeColumns, detectColumns, tmInverse, toWgs84, inKorea, locate, compileFeatures, featureAt, aggregate, toCsv };
-  if (typeof document === 'undefined') return api;
 
-  // ── 7. 브라우저 ──
-  // map.js가 만든 Leaflet 지도를 얻으려고 Leaflet이 실릴 때 init hook을 건다(map.js는 지도 객체를 내보내지 않는다)
-  const maps = [];
-  (function hookLeaflet() {
-    let hooked = false;
-    const hook = () => { if (window.L && window.L.Map && !hooked) { hooked = true; window.L.Map.addInitHook(function () { maps.push(this); }); } };
-    const D = window.RenewDashboard;
-    if (window.L) hook();
-    else if (D && typeof D.loadLeaflet === 'function') { const orig = D.loadLeaflet; D.loadLeaflet = function () { return orig.apply(this, arguments).then(v => { hook(); return v; }); }; }
-  })();
-  const liveMap = () => maps.filter(m => m._container && m._container.isConnected).pop() || null;
-
-  function boot() {
-    const app = document.getElementById('overlayApp'); if (!app) return;
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const COLORS = { 남색: '#1f4e9c', 주황: '#b45309', 보라: '#6d3fa0', 청록: '#0b7a75', 진회색: '#374151' }, SIZES = { 작게: 4, 보통: 6, 크게: 9 };
-    const S = { sheets: null, table: null, pii: [], det: null, method: null, pts: null, codes: null, loc: null, agg: null, valueLabel: '' };
-    let group = null, timer = 0;
-
-    app.innerHTML = `<details class="ov" id="overlay"><summary>우리 파일 얹기<small>부서 엑셀·CSV 대장을 같은 지도에</small></summary>
+  // ── 7. 화면 조각(순수 함수): 양식·미리보기·점 계산·안내·집계 표. 아래 브라우저 연결부가 부르고 노드 시험도 직접 부른다 ──
+  const COLORS = { 남색: '#1f4e9c', 주황: '#b45309', 보라: '#6d3fa0', 청록: '#0b7a75', 진회색: '#374151' }, SIZES = { 작게: 4, 보통: 6, 크게: 9 };
+  const SHELL_HTML = `<details class="ov" id="overlay"><summary>우리 파일 얹기<small>부서 엑셀·CSV 대장을 같은 지도에</small></summary>
 <div class="ov-body">
 <div class="ov-privacy"><p><strong>파일은 이 브라우저 안에서만 처리합니다.</strong></p><p>서버로 보내지 않고, 저장하지 않습니다.</p><p>새로고침하거나 ‘지우기’를 누르면 사라집니다.</p></div>
 <div class="ov-pick"><label for="ovFile">엑셀(.xlsx) 또는 CSV 파일</label><input id="ovFile" type="file" accept=".xlsx,.csv,.txt"><p class="ov-hint">글자 깨짐은 UTF-8·CP949를 자동으로 가립니다.<br>예전 .xls는 엑셀에서 .xlsx로 저장해 올려 주세요.</p></div>
@@ -361,53 +342,146 @@
 <div class="ov-actions"><button type="button" class="btn" data-ov-place>지도에 얹기</button><button type="button" class="btn ghost" data-ov-clear>지우기</button></div>
 <div data-ov-result></div>
 </div></div></details>`;
-    const $ = sel => app.querySelector(sel);
-    const status = (msg, bad) => { const el = $('[data-ov-status]'); el.textContent = msg || ''; el.classList.toggle('is-bad', !!bad); };
-    const opts = (cols, sel, blank) => (blank ? '<option value="-1">선택 안 함</option>' : '') + cols.map(c => `<option value="${c}"${c === sel ? ' selected' : ''}>${esc(S.table.headers[c])}</option>`).join('');
-    const allCols = () => S.table.headers.map((_, c) => c).filter(c => !S.table.excluded.has(c));
-    const val = name => { const el = app.querySelector(`[name="${name}"]`); return el ? el.value : ''; };
-    const pickedMethod = () => { const r = app.querySelector('[name="ovMethod"]:checked'); return r ? r.value : 'latlon'; };
-
-    function reset() {
-      clearLayer(); Object.assign(S, { sheets: null, table: null, pii: [], det: null, pts: null, codes: null, loc: null, agg: null, valueLabel: '' });
-      $('[data-ov-after]').hidden = true; $('[data-ov-result]').innerHTML = ''; status('');
-    }
-    function clearLayer() { if (group) { group.remove(); group = null; } }
-
-    function buildForms() {
-      const T = S.table, d = S.det, cols = allCols();
-      $('[data-ov-info]').textContent = `${S.fileName} · ${T.rows.length.toLocaleString('ko-KR')}행 · ${T.headers.length}열 · ${S.encoding === 'XLSX' ? '엑셀 통합 문서' : '글자 ' + S.encoding}`;
-      const pii = $('[data-ov-pii]');
-      pii.hidden = !S.pii.length;
-      pii.innerHTML = S.pii.length ? `<p><strong>개인정보일 수 있는 열을 제외했습니다.</strong></p><ul>${S.pii.map(f => `<li>‘${esc(f.header)}’ — ${esc(f.reason)}</li>`).join('')}</ul><p>이 열은 미리보기·지도·집계·내려받기에서 빠지고, 값도 메모리에서 지웠습니다.</p><p>시설 이름 열이라면 제목을 ‘시설명’처럼 바꿔 다시 올려 주세요.</p>` : '';
-      const radio = (v, t, note) => `<label class="ov-radio"><input type="radio" name="ovMethod" value="${v}"${d.method === v ? ' checked' : ''}> <span><b>${t}</b><small>${note}</small></span></label>`;
-      $('[data-ov-loc]').innerHTML = `<legend>1. 위치를 어떻게 읽을까요</legend>
+  const isCoord = method => method === 'latlon' || method === 'xy';
+  const visibleCols = table => table.headers.map((_, c) => c).filter(c => !table.excluded.has(c));
+  const optionsHtml = (headers, cols, sel, blank) => (blank ? '<option value="-1">선택 안 함</option>' : '') + cols.map(c => `<option value="${c}"${c === sel ? ' selected' : ''}>${esc(headers[c])}</option>`).join('');
+  const fileInfo = (fileName, table, encoding) => `${fileName} · ${table.rows.length.toLocaleString('ko-KR')}행 · ${table.headers.length}열 · ${encoding === 'XLSX' ? '엑셀 통합 문서' : '글자 ' + encoding}`;
+  const piiHtml = pii => (pii.length ? `<p><strong>개인정보일 수 있는 열을 제외했습니다.</strong></p><ul>${pii.map(f => `<li>‘${esc(f.header)}’ — ${esc(f.reason)}</li>`).join('')}</ul><p>이 열은 미리보기·지도·집계·내려받기에서 빠지고, 값도 메모리에서 지웠습니다.</p><p>시설 이름 열이라면 제목을 ‘시설명’처럼 바꿔 다시 올려 주세요.</p>` : '');
+  function locFormHtml(headers, cols, d) {
+    const opts = sel => optionsHtml(headers, cols, sel, true);
+    const radio = (v, t, note) => `<label class="ov-radio"><input type="radio" name="ovMethod" value="${v}"${d.method === v ? ' checked' : ''}> <span><b>${t}</b><small>${note}</small></span></label>`;
+    return `<legend>1. 위치를 어떻게 읽을까요</legend>
 ${radio('latlon', '위도·경도', 'WGS84 도(EPSG:4326)')}
-<div class="ov-sel" data-ov-m="latlon"><label>위도 열<select name="ovLat">${opts(cols, d.lat, true)}</select></label><label>경도 열<select name="ovLon">${opts(cols, d.lon, true)}</select></label></div>
+<div class="ov-sel" data-ov-m="latlon"><label>위도 열<select name="ovLat">${opts(d.lat)}</select></label><label>경도 열<select name="ovLon">${opts(d.lon)}</select></label></div>
 ${radio('xy', 'X·Y 좌표(미터)', '내부 도면: 중부원점·구 중부원점·UTM-K')}
-<div class="ov-sel" data-ov-m="xy"><label>X(동서) 열<select name="ovX">${opts(cols, d.x, true)}</select></label><label>Y(남북) 열<select name="ovY">${opts(cols, d.y, true)}</select></label>
+<div class="ov-sel" data-ov-m="xy"><label>X(동서) 열<select name="ovX">${opts(d.x)}</select></label><label>Y(남북) 열<select name="ovY">${opts(d.y)}</select></label>
 <label>좌표계<select name="ovCrs">${Object.keys(CRS).map(k => `<option value="${k}"${+k === d.crs ? ' selected' : ''}>${CRS[k].label}</option>`).join('')}</select></label>
 <label class="ov-check"><input type="checkbox" name="ovSwap"> X와 Y 열 바꿔 읽기</label>
 <p class="ov-hint">5186과 5174는 값 범위가 비슷해 자동으로 가릴 수 없습니다.<br>도면의 좌표계를 확인해 고르세요. 변환 결과가 한국 범위 밖이면 알려 드립니다.</p></div>
 ${radio('adm8', '행정동 코드(8자리)', '동별로 모아 동 중심에 표시')}
-<div class="ov-sel" data-ov-m="adm8"><label>행정동 코드 열<select name="ovAdm">${opts(cols, d.adm, true)}</select></label></div>
+<div class="ov-sel" data-ov-m="adm8"><label>행정동 코드 열<select name="ovAdm">${opts(d.adm)}</select></label></div>
 ${radio('bjd10', '법정동 코드(10자리)', '행정동 경계와 일대일이 아니라 앞 5자리(시군구)까지만 모읍니다')}
-<div class="ov-sel" data-ov-m="bjd10"><label>법정동 코드 열<select name="ovBjd">${opts(cols, d.bjd, true)}</select></label></div>
+<div class="ov-sel" data-ov-m="bjd10"><label>법정동 코드 열<select name="ovBjd">${opts(d.bjd)}</select></label></div>
 ${radio('addr', '지번 주소', '좌표가 없는 파일')}
 <div class="ov-sel" data-ov-m="addr"><p class="ov-hint"><strong>좌표 없음: 지오코딩은 외부 전송이라 하지 않음.</strong><br>주소를 좌표로 바꾸려면 파일 내용을 외부 서버로 보내야 하므로 이 기능에서는 하지 않습니다.<br>위도·경도나 X·Y 좌표 열, 또는 행정동 코드 열을 함께 담아 올려 주세요.</p></div>`;
-      const num = d.numeric;
-      $('[data-ov-style]').innerHTML = `<legend>2. 모양</legend>
+  }
+  const styleFormHtml = (headers, cols, numeric) => `<legend>2. 모양</legend>
 <div class="ov-sel"><label>색<select name="ovColor">${Object.keys(COLORS).map(k => `<option>${k}</option>`).join('')}</select></label>
 <label>크기<select name="ovSize">${Object.keys(SIZES).map(k => `<option${k === '보통' ? ' selected' : ''}>${k}</option>`).join('')}</select></label>
-<label>숫자 열(크기·합계)<select name="ovNum">${opts(num, -1, true)}</select></label>
-<label>라벨 열<select name="ovLabel">${opts(cols, -1, true)}</select></label></div>
+<label>숫자 열(크기·합계)<select name="ovNum">${optionsHtml(headers, numeric, -1, true)}</select></label>
+<label>라벨 열<select name="ovLabel">${optionsHtml(headers, cols, -1, true)}</select></label></div>
 <p class="ov-hint">숫자 열을 고르면 점 크기가 값에 비례하고, 동별 표에 합계가 붙습니다.<br>크기는 값의 크기일 뿐 평가나 순위가 아닙니다.</p>`;
-      const shown = cols.slice(0, 8);
-      $('[data-ov-prev]').innerHTML = `<table class="ov-table"><caption>앞 5행 (처음 ${shown.length}열)</caption><thead><tr>${shown.map(c => `<th scope="col">${esc(T.headers[c])}</th>`).join('')}</tr></thead><tbody>${T.rows.slice(0, 5).map(r => `<tr>${shown.map(c => `<td>${esc(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  function previewHtml(table, cols) {
+    const shown = cols.slice(0, 8);
+    return `<table class="ov-table"><caption>앞 5행 (처음 ${shown.length}열)</caption><thead><tr>${shown.map(c => `<th scope="col">${esc(table.headers[c])}</th>`).join('')}</tr></thead><tbody>${table.rows.slice(0, 5).map(r => `<tr>${shown.map(c => `<td>${esc(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+  // 양식 값(글자) → 모양. 숫자·라벨 열은 고르지 않으면 -1
+  const pickStyle = (color, size, num, label) => ({ color: COLORS[color] || '#1f4e9c', base: SIZES[size] || 6, num: +num, label: +label });
+  const cellNum = (rows, i, c) => (c >= 0 ? toNum(rows[i][c]) : NaN);
+  // 코드 열 → [{ code, v }]. 자릿수가 맞는 코드만, 법정동 코드는 앞 5자리(시군구)로 모은다
+  function readCodes(rows, c, method, numCol) {
+    const re = method === 'adm8' ? ADM8 : BJD10;
+    return rows.map((r, i) => ({ code: String(r[c]).trim(), v: cellNum(rows, i, numCol) })).filter(x => re.test(x.code)).map(x => ({ ...x, code: method === 'bjd10' ? x.code.slice(0, 5) : x.code }));
+  }
+  // 그릴 점: 좌표 방식은 행마다 하나, 코드 방식은 지금 보이는 경계(feats) 중심에 코드별로 하나
+  function toDots(s, st, feats) {
+    if (isCoord(s.method)) return (s.pts || []).map(p => ({ lat: p.lat, lon: p.lon, v: cellNum(s.table.rows, p.i, st.num), text: st.label >= 0 ? s.table.rows[p.i][st.label] : '', i: p.i }));
+    if (!s.codes) return [];
+    const byCode = new Map(feats.map(f => [f.code, f])), agg = new Map(), dots = [];
+    s.codes.forEach(c => { const g = agg.get(c.code) || { n: 0, sum: 0 }; g.n++; if (Number.isFinite(c.v)) g.sum += c.v; agg.set(c.code, g); });
+    agg.forEach((g, code) => { const f = byCode.get(code); if (f) dots.push({ lat: f.center[0], lon: f.center[1], v: st.num >= 0 ? g.sum : g.n, text: `${f.name} ${g.n}건`, bubble: true }); });
+    return dots;
+  }
+  // 최대 MAX_DRAW개까지, 반지름 r을 붙인다. 숫자 열을 골랐거나 코드별 모음이면 값의 제곱근에 비례
+  function planDots(all, st) {
+    const over = all.length > MAX_DRAW, cut = over ? all.slice(0, MAX_DRAW) : all;
+    const max = cut.reduce((m, d) => (Number.isFinite(d.v) && d.v > m ? d.v : m), 0), scaled = st.num >= 0 || cut.some(d => d.bubble);
+    const dots = cut.map(d => ({ ...d, r: scaled ? 3 + 13 * Math.sqrt(Math.max(0, Number.isFinite(d.v) ? d.v : 0) / (max || 1)) : st.base }));
+    return { dots, over, max, scaled };
+  }
+  const tipText = (d, valueLabel) => [d.text, Number.isFinite(d.v) && !d.bubble ? `${valueLabel || '값'} ${d.v.toLocaleString('ko-KR')}` : '', d.i != null ? `${d.i + 2}행` : ''].filter(Boolean).join(' · ');
+  // 결과 안내 줄(<li>): 읽은 행·뺀 행·좌표계 경고·그리기 제한
+  function noteLines(loc, codes, drawn, valueLabel) {
+    const lines = [];
+    if (loc) {
+      lines.push(`<li>읽은 행 ${loc.total.toLocaleString('ko-KR')}건 중 <b>${loc.pts.length.toLocaleString('ko-KR')}건</b>을 지도에 얹었습니다.</li>`);
+      if (loc.empty) lines.push(`<li>좌표가 비어 있거나 숫자가 아닌 행 ${loc.empty.toLocaleString('ko-KR')}건은 뺐습니다.</li>`);
+      if (loc.outside) lines.push(`<li class="is-warn">변환한 위치가 한국 범위 밖인 행 ${loc.outside.toLocaleString('ko-KR')}건은 뺐습니다. 좌표계를 확인하세요.</li>`);
+      if (loc.swapHint) lines.push('<li class="is-warn">X와 Y를 바꾸면 더 많은 행이 한국 범위에 들어옵니다. ‘X와 Y 열 바꿔 읽기’를 확인하세요.</li>');
+    } else if (codes) lines.push(`<li>코드가 있는 행 ${codes.length.toLocaleString('ko-KR')}건을 모아 중심에 표시했습니다.</li>`);
+    if (drawn) {
+      if (drawn.over) lines.push(`<li class="is-warn">점이 많아 처음 ${MAX_DRAW.toLocaleString('ko-KR')}개만 그렸습니다. 아래 집계는 전체 행 기준입니다.</li>`);
+      if (drawn.labelsCut) lines.push(`<li>라벨은 처음 ${MAX_LABELS}개만 항상 보입니다. 나머지는 점에 올리면 보입니다.</li>`);
+      if (drawn.scaled && drawn.max) lines.push(`<li>점 크기는 ${esc(valueLabel || '개수')} 값에 비례합니다(최댓값 ${drawn.max.toLocaleString('ko-KR', { maximumFractionDigits: 3 })}). 평가나 순위가 아닙니다.</li>`);
+    }
+    return lines;
+  }
+  // 집계에 넣을 항목: 좌표 방식은 점이 든 경계의 코드, 코드 방식은 읽은 코드 그대로
+  const aggItems = (s, feats, numCol) => (isCoord(s.method) ? (s.pts || []).map(p => { const f = featureAt(feats, p.lat, p.lon); return { code: f ? f.code : null, v: cellNum(s.table.rows, p.i, numCol) }; })
+    : (s.codes || []).map(c => ({ code: c.code, v: c.v })));
+  function aggTableHtml(a, len, valueLabel, showSum) {
+    const sumF = n => n.toLocaleString('ko-KR', { maximumFractionDigits: 3 });
+    return `<h3 class="ov-h">${len === 8 ? '동별' : '시군구별'} 집계</h3><div class="ov-scroll" tabindex="0" role="region" aria-label="집계 표"><table class="ov-table"><caption>코드 순 · 순위 아님</caption><thead><tr><th scope="col">코드</th><th scope="col">이름</th><th scope="col" class="num">점 개수</th>${showSum ? `<th scope="col" class="num">${esc(valueLabel)} 합계</th>` : ''}</tr></thead><tbody>${a.rows.map(g => `<tr><td>${esc(g.code)}</td><td>${esc(g.name)}</td><td class="num">${g.count.toLocaleString('ko-KR')}</td>${showSum ? `<td class="num">${sumF(g.sum)}</td>` : ''}</tr>`).join('')}</tbody></table></div>`
+      + (a.outside ? `<p class="ov-hint">${a.outside.toLocaleString('ko-KR')}건은 지금 보이는 지역 밖이라 표에 넣지 않았습니다.</p>` : '')
+      + `<button type="button" class="btn" data-ov-csv>집계 CSV 내려받기</button>`;
+  }
+  const NO_MAP_HTML = '<p class="ov-hint">지도가 아직 준비되지 않았습니다. 지도가 나타난 뒤 다시 눌러 주세요.</p>';
+  const NO_DONG_HTML = `<p class="ov-hint"><strong>동별 집계를 하려면 시군구를 먼저 고르세요.</strong><br>지도에서 시군구를 누르면 그 지역의 읍·면·동 경계가 나타나고, 표가 만들어집니다.</p>`;
+
+  const api = { CRS, MAX_DRAW, MAX_LABELS, decodeText, parseCSV, toTable, parseXlsx, readFileBytes, toNum, findPII, excludeColumns, detectColumns, tmInverse, toWgs84, inKorea, locate, compileFeatures, featureAt, aggregate, toCsv,
+    optionsHtml, fileInfo, piiHtml, locFormHtml, styleFormHtml, previewHtml, pickStyle, readCodes, toDots, planDots, tipText, noteLines, aggItems, aggTableHtml };
+  if (typeof document === 'undefined') return api;
+
+  // ── 8. 브라우저 ──
+  // map.js가 만든 Leaflet 지도를 얻으려고 Leaflet이 실릴 때 init hook을 건다(map.js는 지도 객체를 내보내지 않는다)
+  const maps = [];
+  (function hookLeaflet() {
+    let hooked = false;
+    const hook = () => { if (window.L && window.L.Map && !hooked) { hooked = true; window.L.Map.addInitHook(function () { maps.push(this); }); } };
+    const D = window.RenewDashboard;
+    if (window.L) hook();
+    else if (D && typeof D.loadLeaflet === 'function') { const orig = D.loadLeaflet; D.loadLeaflet = function () { return orig.apply(this, arguments).then(v => { hook(); return v; }); }; }
+  })();
+  const liveMap = () => maps.filter(m => m._container && m._container.isConnected).pop() || null;
+  // 지도에 보이는 경계 중 코드 길이가 len인 것(8 = 행정동, 5 = 시군구)
+  function visibleFeatures(map, len) {
+    const seen = new Map(); if (!map) return [];
+    map.eachLayer(l => { const f = l.feature, c = f && f.properties && String(f.properties.code); if (f && f.geometry && c && c.length === len && !seen.has(c)) seen.set(c, f); });
+    return compileFeatures([...seen.values()]);
+  }
+  function saveCsv(rows, valueLabel) {
+    const blob = new Blob(['﻿', toCsv(rows, valueLabel)], { type: 'text/csv;charset=utf-8' }), a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = '우리파일_동별집계.csv'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  function boot() {
+    const app = document.getElementById('overlayApp'); if (!app) return;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const S = { sheets: null, table: null, pii: [], det: null, method: null, pts: null, codes: null, loc: null, agg: null, valueLabel: '' };
+    let group = null, timer = 0;
+    app.innerHTML = SHELL_HTML;
+    const $ = sel => app.querySelector(sel);
+    const status = (msg, bad) => { const el = $('[data-ov-status]'); el.textContent = msg || ''; el.classList.toggle('is-bad', !!bad); };
+    const val = name => { const el = app.querySelector(`[name="${name}"]`); return el ? el.value : ''; };
+    const pickedMethod = () => { const r = app.querySelector('[name="ovMethod"]:checked'); return r ? r.value : 'latlon'; };
+    const styleOf = () => pickStyle(val('ovColor'), val('ovSize'), val('ovNum'), val('ovLabel'));
+    const labelOf = st => (st.num >= 0 ? S.table.headers[st.num] : '');
+    const clearLayer = () => { if (group) { group.remove(); group = null; } };
+    const syncMethod = () => { const m = pickedMethod(); app.querySelectorAll('[data-ov-m]').forEach(el => { el.hidden = el.dataset.ovM !== m; }); };
+    function reset() {
+      clearLayer(); Object.assign(S, { sheets: null, table: null, pii: [], det: null, pts: null, codes: null, loc: null, agg: null, valueLabel: '' });
+      $('[data-ov-after]').hidden = true; $('[data-ov-result]').innerHTML = ''; status('');
+    }
+    function buildForms() {
+      const T = S.table, cols = visibleCols(T), pii = $('[data-ov-pii]');
+      $('[data-ov-info]').textContent = fileInfo(S.fileName, T, S.encoding);
+      pii.hidden = !S.pii.length; pii.innerHTML = piiHtml(S.pii);
+      $('[data-ov-loc]').innerHTML = locFormHtml(T.headers, cols, S.det);
+      $('[data-ov-style]').innerHTML = styleFormHtml(T.headers, cols, S.det.numeric);
+      $('[data-ov-prev]').innerHTML = previewHtml(T, cols);
       syncMethod();
     }
-    function syncMethod() { const m = pickedMethod(); app.querySelectorAll('[data-ov-m]').forEach(el => { el.hidden = el.dataset.ovM !== m; }); }
-
     async function load(file) {
       reset();
       if (!file) return;
@@ -415,7 +489,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       try {
         const r = await readFileBytes(await file.arrayBuffer(), file.name);
         S.sheets = r.sheets; S.encoding = r.encoding; S.fileName = file.name;
-        const sel = $('#ovSheet'); sel.innerHTML = S.sheets.map((s, i) => `<option value="${i}">${esc(s.name)}</option>`).join('');
+        $('#ovSheet').innerHTML = S.sheets.map((s, i) => `<option value="${i}">${esc(s.name)}</option>`).join('');
         $('[data-ov-sheet]').hidden = S.sheets.length < 2;
         useSheet(0);
       } catch (e) { reset(); status(e.message || '파일을 읽지 못했습니다.', true); }
@@ -428,98 +502,49 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       $('[data-ov-after]').hidden = false; buildForms();
       status(`${S.table.rows.length.toLocaleString('ko-KR')}행을 읽었습니다. 위치 읽는 방법을 확인한 뒤 ‘지도에 얹기’를 누르세요.`);
     }
-
-    // ── 지도 연결 ──
-    function visibleFeatures(len) {
-      const map = liveMap(), seen = new Map(); if (!map) return [];
-      map.eachLayer(l => { const f = l.feature, c = f && f.properties && String(f.properties.code); if (f && f.geometry && c && c.length === len && !seen.has(c)) seen.set(c, f); });
-      return compileFeatures([...seen.values()]);
-    }
-    const styleOf = () => ({ color: COLORS[val('ovColor')] || '#1f4e9c', base: SIZES[val('ovSize')] || 6, num: +val('ovNum'), label: +val('ovLabel') });
-    const rowNum = (i, c) => (c >= 0 ? toNum(S.table.rows[i][c]) : NaN);
     function drawLayer(fit) {
       const map = liveMap(), L = window.L; clearLayer();
       if (!map || !L) return;
       if (!map.getPane('rmOverlay')) map.createPane('rmOverlay').style.zIndex = 620;
       const st = styleOf(), renderer = L.canvas({ pane: 'rmOverlay', padding: 0.5 }); group = L.layerGroup().addTo(map);
-      let dots = []; // { lat, lon, size(원 반지름 기준값), text }
-      if (S.method === 'latlon' || S.method === 'xy') dots = (S.pts || []).map(p => ({ lat: p.lat, lon: p.lon, v: rowNum(p.i, st.num), text: st.label >= 0 ? S.table.rows[p.i][st.label] : '', i: p.i }));
-      else if (S.codes) {
-        const feats = new Map(visibleFeatures(S.method === 'adm8' ? 8 : 5).map(f => [f.code, f])), agg = new Map();
-        S.codes.forEach(c => { const g = agg.get(c.code) || { n: 0, sum: 0 }; g.n++; if (Number.isFinite(c.v)) g.sum += c.v; agg.set(c.code, g); });
-        agg.forEach((g, code) => { const f = feats.get(code); if (f) dots.push({ lat: f.center[0], lon: f.center[1], v: st.num >= 0 ? g.sum : g.n, text: `${f.name} ${g.n}건`, bubble: true }); });
-      }
-      const over = dots.length > MAX_DRAW; if (over) dots = dots.slice(0, MAX_DRAW);
-      const max = dots.reduce((m, d) => (Number.isFinite(d.v) && d.v > m ? d.v : m), 0), scaled = st.num >= 0 || dots.some(d => d.bubble);
-      const bounds = [];
-      dots.forEach((d, k) => {
-        const r = scaled ? 3 + 13 * Math.sqrt(Math.max(0, Number.isFinite(d.v) ? d.v : 0) / (max || 1)) : st.base;
-        const m = L.circleMarker([d.lat, d.lon], { renderer, radius: r, color: '#ffffff', weight: 1.2, fillColor: st.color, fillOpacity: 0.85 }).addTo(group);
-        bounds.push([d.lat, d.lon]);
-        const tipEl = () => { const el = document.createElement('span'); el.textContent = [d.text, Number.isFinite(d.v) && !d.bubble ? `${S.valueLabel || '값'} ${d.v.toLocaleString('ko-KR')}` : '', d.i != null ? `${d.i + 2}행` : ''].filter(Boolean).join(' · '); return el; };
+      const p = planDots(toDots(S, st, isCoord(S.method) || !S.codes ? [] : visibleFeatures(map, S.method === 'adm8' ? 8 : 5)), st);
+      p.dots.forEach((d, k) => {
+        const m = L.circleMarker([d.lat, d.lon], { renderer, radius: d.r, color: '#ffffff', weight: 1.2, fillColor: st.color, fillOpacity: 0.85 }).addTo(group);
+        const tipEl = () => { const el = document.createElement('span'); el.textContent = tipText(d, S.valueLabel); return el; };
         if (st.label >= 0 && d.text && k < MAX_LABELS) m.bindTooltip(tipEl(), { permanent: true, direction: 'right', className: 'ov-label', opacity: 0.95 });
         else m.on('mouseover click', ev => { if (!ev.target.getTooltip()) ev.target.bindTooltip(tipEl(), { direction: 'top' }); ev.target.openTooltip(); });
       });
-      if (fit && bounds.length) { map.fitBounds(L.latLngBounds(bounds).pad(0.1), { maxZoom: 17 }); (map.getContainer().scrollIntoView || (() => {})).call(map.getContainer(), { block: 'center', behavior: reduced ? 'auto' : 'smooth' }); }
-      S.drawn = { n: dots.length, over, scaled, max, labelsCut: st.label >= 0 && dots.length > MAX_LABELS };
+      if (fit && p.dots.length) { map.fitBounds(L.latLngBounds(p.dots.map(d => [d.lat, d.lon])).pad(0.1), { maxZoom: 17 }); (map.getContainer().scrollIntoView || (() => {})).call(map.getContainer(), { block: 'center', behavior: reduced ? 'auto' : 'smooth' }); }
+      S.drawn = { n: p.dots.length, over: p.over, scaled: p.scaled, max: p.max, labelsCut: st.label >= 0 && p.dots.length > MAX_LABELS };
     }
     function result() {
-      const st = styleOf(), out = $('[data-ov-result]'); S.valueLabel = st.num >= 0 ? S.table.headers[st.num] : '';
-      const lines = [];
-      if (S.loc) {
-        const l = S.loc; lines.push(`<li>읽은 행 ${l.total.toLocaleString('ko-KR')}건 중 <b>${l.pts.length.toLocaleString('ko-KR')}건</b>을 지도에 얹었습니다.</li>`);
-        if (l.empty) lines.push(`<li>좌표가 비어 있거나 숫자가 아닌 행 ${l.empty.toLocaleString('ko-KR')}건은 뺐습니다.</li>`);
-        if (l.outside) lines.push(`<li class="is-warn">변환한 위치가 한국 범위 밖인 행 ${l.outside.toLocaleString('ko-KR')}건은 뺐습니다. 좌표계를 확인하세요.</li>`);
-        if (l.swapHint) lines.push('<li class="is-warn">X와 Y를 바꾸면 더 많은 행이 한국 범위에 들어옵니다. ‘X와 Y 열 바꿔 읽기’를 확인하세요.</li>');
-      } else if (S.codes) lines.push(`<li>코드가 있는 행 ${S.codes.length.toLocaleString('ko-KR')}건을 모아 중심에 표시했습니다.</li>`);
-      if (S.drawn) {
-        if (S.drawn.over) lines.push(`<li class="is-warn">점이 많아 처음 ${MAX_DRAW.toLocaleString('ko-KR')}개만 그렸습니다. 아래 집계는 전체 행 기준입니다.</li>`);
-        if (S.drawn.labelsCut) lines.push(`<li>라벨은 처음 ${MAX_LABELS}개만 항상 보입니다. 나머지는 점에 올리면 보입니다.</li>`);
-        if (S.drawn.scaled && S.drawn.max) lines.push(`<li>점 크기는 ${esc(S.valueLabel || '개수')} 값에 비례합니다(최댓값 ${S.drawn.max.toLocaleString('ko-KR', { maximumFractionDigits: 3 })}). 평가나 순위가 아닙니다.</li>`);
-      }
-      let table = '';
-      const coordMode = S.method === 'latlon' || S.method === 'xy';
-      const len = S.method === 'bjd10' ? 5 : 8, feats = visibleFeatures(len);
-      if (!liveMap()) table = '<p class="ov-hint">지도가 아직 준비되지 않았습니다. 지도가 나타난 뒤 다시 눌러 주세요.</p>';
-      else if (!feats.length) table = `<p class="ov-hint"><strong>동별 집계를 하려면 시군구를 먼저 고르세요.</strong><br>지도에서 시군구를 누르면 그 지역의 읍·면·동 경계가 나타나고, 표가 만들어집니다.</p>`;
-      else {
-        const items = coordMode ? (S.pts || []).map(p => { const f = featureAt(feats, p.lat, p.lon); return { code: f ? f.code : null, v: rowNum(p.i, st.num) }; })
-          : (S.codes || []).map(c => ({ code: c.code, v: c.v }));
-        S.agg = aggregate(feats, items);
-        const a = S.agg, showSum = st.num >= 0, sumF = n => n.toLocaleString('ko-KR', { maximumFractionDigits: 3 });
-        table = `<h3 class="ov-h">${len === 8 ? '동별' : '시군구별'} 집계</h3><div class="ov-scroll" tabindex="0" role="region" aria-label="집계 표"><table class="ov-table"><caption>코드 순 · 순위 아님</caption><thead><tr><th scope="col">코드</th><th scope="col">이름</th><th scope="col" class="num">점 개수</th>${showSum ? `<th scope="col" class="num">${esc(S.valueLabel)} 합계</th>` : ''}</tr></thead><tbody>${a.rows.map(g => `<tr><td>${esc(g.code)}</td><td>${esc(g.name)}</td><td class="num">${g.count.toLocaleString('ko-KR')}</td>${showSum ? `<td class="num">${sumF(g.sum)}</td>` : ''}</tr>`).join('')}</tbody></table></div>`
-          + (a.outside ? `<p class="ov-hint">${a.outside.toLocaleString('ko-KR')}건은 지금 보이는 지역 밖이라 표에 넣지 않았습니다.</p>` : '')
-          + `<button type="button" class="btn" data-ov-csv>집계 CSV 내려받기</button>`;
-      }
-      out.innerHTML = (lines.length ? `<ul class="ov-notes">${lines.join('')}</ul>` : '') + table;
+      const st = styleOf(), len = S.method === 'bjd10' ? 5 : 8, feats = visibleFeatures(liveMap(), len); S.valueLabel = labelOf(st);
+      const lines = noteLines(S.loc, S.codes, S.drawn, S.valueLabel);
+      let table;
+      if (!liveMap()) table = NO_MAP_HTML;
+      else if (!feats.length) table = NO_DONG_HTML;
+      else { S.agg = aggregate(feats, aggItems(S, feats, st.num)); table = aggTableHtml(S.agg, len, S.valueLabel, st.num >= 0); }
+      $('[data-ov-result]').innerHTML = (lines.length ? `<ul class="ov-notes">${lines.join('')}</ul>` : '') + table;
     }
     function place() {
       const T = S.table; if (!T) return;
       S.method = pickedMethod(); S.pts = S.codes = S.loc = S.agg = null;
       if (S.method === 'addr') { status('좌표 없음: 지오코딩은 외부 전송이라 하지 않음. 위도·경도, X·Y, 행정동 코드 중 하나를 쓰세요.', true); $('[data-ov-result]').innerHTML = ''; clearLayer(); return; }
       const st = styleOf();
-      if (S.method === 'latlon' || S.method === 'xy') {
+      if (isCoord(S.method)) {
         const o = S.method === 'latlon' ? { method: 'latlon', lat: +val('ovLat'), lon: +val('ovLon') } : { method: 'xy', x: +val('ovX'), y: +val('ovY'), crs: +val('ovCrs'), swap: app.querySelector('[name="ovSwap"]').checked };
-        const a = S.method === 'latlon' ? [o.lat, o.lon] : [o.x, o.y];
-        if (a.some(c => !(c >= 0))) { status('위치 열을 두 개 모두 골라 주세요.', true); return; }
+        if ((S.method === 'latlon' ? [o.lat, o.lon] : [o.x, o.y]).some(c => !(c >= 0))) { status('위치 열을 두 개 모두 골라 주세요.', true); return; }
         S.loc = locate(T, o); S.pts = S.loc.pts;
         if (!S.pts.length) { status('지도에 얹을 수 있는 점이 없습니다. 열과 좌표계를 확인하세요.', true); $('[data-ov-result]').innerHTML = ''; result(); clearLayer(); return; }
       } else {
-        const c = +val(S.method === 'adm8' ? 'ovAdm' : 'ovBjd'), re = S.method === 'adm8' ? ADM8 : BJD10;
+        const c = +val(S.method === 'adm8' ? 'ovAdm' : 'ovBjd');
         if (!(c >= 0)) { status('코드 열을 골라 주세요.', true); return; }
-        S.codes = T.rows.map((r, i) => ({ code: String(r[c]).trim(), v: rowNum(i, st.num) })).filter(x => re.test(x.code)).map(x => ({ ...x, code: S.method === 'bjd10' ? x.code.slice(0, 5) : x.code }));
+        S.codes = readCodes(T.rows, c, S.method, st.num);
         if (!S.codes.length) { status('올바른 코드가 없습니다. 자릿수와 열을 확인하세요.', true); return; }
       }
-      if (!liveMap()) status('지도가 아직 준비되지 않았습니다. 잠시 뒤 다시 눌러 주세요.', true);
-      else status('지도에 얹었습니다.');
-      S.valueLabel = st.num >= 0 ? T.headers[st.num] : '';
+      status(liveMap() ? '지도에 얹었습니다.' : '지도가 아직 준비되지 않았습니다. 잠시 뒤 다시 눌러 주세요.', !liveMap());
+      S.valueLabel = labelOf(st);
       drawLayer(true); result();
-    }
-    function download() {
-      if (!S.agg) return;
-      const blob = new Blob(['﻿', toCsv(S.agg.rows, S.valueLabel)], { type: 'text/csv;charset=utf-8' }), a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = '우리파일_동별집계.csv'; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     }
 
     app.addEventListener('change', ev => {
@@ -527,13 +552,13 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       if (t.id === 'ovFile') { load(t.files && t.files[0]); t.value = ''; }
       else if (t.id === 'ovSheet') { try { useSheet(+t.value); } catch (e) { status(e.message, true); } }
       else if (t.name === 'ovMethod') syncMethod();
-      else if (S.table && /^ov(Color|Size|Num|Label)$/.test(t.name || '') && (S.pts || S.codes)) { S.valueLabel = styleOf().num >= 0 ? S.table.headers[styleOf().num] : ''; drawLayer(false); result(); }
+      else if (S.table && /^ov(Color|Size|Num|Label)$/.test(t.name || '') && (S.pts || S.codes)) { S.valueLabel = labelOf(styleOf()); drawLayer(false); result(); }
     });
     app.addEventListener('click', ev => {
       const b = ev.target.closest('button'); if (!b) return;
       if (b.hasAttribute('data-ov-place')) place();
       else if (b.hasAttribute('data-ov-clear')) { reset(); $('#ovFile').value = ''; status('지웠습니다. 메모리에 남은 파일이 없습니다.'); }
-      else if (b.hasAttribute('data-ov-csv')) download();
+      else if (b.hasAttribute('data-ov-csv') && S.agg) saveCsv(S.agg.rows, S.valueLabel);
     });
     const box = $('details');
     box.addEventListener('dragover', ev => { ev.preventDefault(); });
@@ -542,7 +567,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
     const watch = () => {
       const map = liveMap(); if (!map || map.__ovWatched) return;
       map.__ovWatched = true;
-      map.on('layeradd layerremove', e => { if (!e.layer.feature || !(S.pts || S.codes)) return; clearTimeout(timer); timer = setTimeout(() => { if (S.table && (S.pts || S.codes)) { if (!(S.method === 'latlon' || S.method === 'xy')) drawLayer(false); result(); } }, 300); });
+      map.on('layeradd layerremove', e => { if (!e.layer.feature || !(S.pts || S.codes)) return; clearTimeout(timer); timer = setTimeout(() => { if (S.table && (S.pts || S.codes)) { if (!isCoord(S.method)) drawLayer(false); result(); } }, 300); });
     };
     const poll = setInterval(() => { if (liveMap()) { watch(); clearInterval(poll); } }, 1000); // 지도는 나중에 만들어진다. 걸고 나면 멈춘다
     if (location.hash === '#overlay') box.open = true;
