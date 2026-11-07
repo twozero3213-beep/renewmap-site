@@ -1,0 +1,28 @@
+# 공개 사이트 배포(2026-11-07 대표 결정). 브랜치 배포(pages-build-deployment)는 업로드 한도가 10분이라
+# 한 번에 수천 개 파일이 바뀌면(기준연도 전환 4,685개) 세 번 연속 시간 초과로 반영되지 않았다. 한도를 30분으로 늘린다
+name: pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with: { path: . }
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with: { timeout: 1800000 }
