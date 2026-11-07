@@ -95,3 +95,17 @@ main.page:has(> .pg-band:first-child) { padding-top: 0; }
 body.field header.top { background: var(--hero-bg); border-bottom: 0; box-shadow: inset 0 -3px 0 var(--lime); }
 body.field header.top h1, body.field header.top .today { color: var(--hero-ink); }
 body.field.scrolled header.top { background: var(--hero-bg); backdrop-filter: none; box-shadow: inset 0 -3px 0 var(--lime), 0 8px 24px var(--shade-16); }
+
+/* 공통 머리글 메뉴(심사 06, 2026-11-08): 모든 화면에 같은 5개. 스크립트 없이 동작하고, 좁은 화면에서는 로고 옆에서 가로로 민다 */
+.site-nav { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.site-nav::-webkit-scrollbar { display: none; }
+.site-nav a { display: inline-flex; align-items: center; flex: none; min-height: 44px; padding: 8px 10px; border-radius: 8px; color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.site-nav a:hover { color: var(--green); background: var(--soft); }
+.site-nav a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--green); border-radius: 8px 8px 0 0; }
+.site-nav a:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; box-shadow: 0 0 0 5px var(--green); }
+body.field .logo, body.field .site-nav a { color: var(--hero-ink); }
+body.field .logo span { color: var(--lime); }
+body.field .site-nav a:hover { color: var(--lime); background: rgba(255,255,255,.08); }
+body.field .site-nav a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--lime); }
+body.field header.top .wrap:has(.site-nav) { min-height: 44px; padding-top: 4px; }
+@media (max-width: 720px) { .site-nav a { padding: 8px 7px; font-size: 13px; } }

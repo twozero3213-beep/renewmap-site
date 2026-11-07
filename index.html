@@ -43,9 +43,7 @@
 <body class="app-home">
 <div id="readProg" class="read-prog"></div>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top">
-  <div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a></div>
-</header>
+<header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="field/">현장 기록</a><a href="field/redev.html">신청요건</a><a href="data.html">데이터 출처</a><a href="about.html#contact">시범 상담</a></nav></div></header>
 
 <!-- 문장 원본: docs/design/site_v5_copy_2026-11-07.md(2026-11-07 문구 전면 개편). 시안: Figma ieUP8NdrjuCow9holCrElx 'v3 웹사이트 2026-10-28' -->
 <main id="main" class="v3">
@@ -55,7 +53,7 @@
       <div class="h-hero-copy">
         <h1 id="heroTitle">이 동네,<br>공모에 낼 수 있을까요?</h1>
         <p class="h-sub">동 이름을 넣으면 도시재생·노후주거지정비 요건을 공식 통계로 계산합니다.<br>숫자마다 출처와 기준일이 붙은 한글(HWPX)·워드·엑셀 근거 문서를 바로 받습니다.</p>
-        <p class="h-cta"><a class="btn" href="explore.html#map/21/21090/21090700">반여1동 예시 문서 보기</a></p>
+        <p class="h-cta"><a class="btn" href="explore.html?report=onepage#map/21/21090/21090700">반여1동 예시 문서 보기</a></p>
         <form id="homeSearch" class="home-search" role="search" autocomplete="off">
           <label for="homeQ" class="h-label">동네 찾기</label>
           <div class="home-search-row">
@@ -69,11 +67,11 @@
         <p id="heroMapCap" class="h-map-cap"></p>
       </div>
       <!-- 문서 쌓기: 사진 → 위치 → 숫자 칩(출처 꼬리표) → 완성 문서. 숫자는 반여1동 근거 페이지(dong/21090700.html)의 실제 값이다 -->
-      <figure id="heroDoc" class="h-doc" aria-label="현장 확인 근거 1쪽 예시">
+      <figure id="heroDoc" class="h-doc" aria-label="현장 기록 1쪽 예시">
         <span class="h-sheet h-sheet-2 layer" data-step="4" aria-hidden="true"></span>
         <span class="h-sheet h-sheet-1 layer" data-step="4" aria-hidden="true"></span>
         <div class="h-page">
-          <p class="h-page-t layer" data-step="4"><b>현장 확인 근거 1쪽</b><span class="h-ex">예시</span></p>
+          <p class="h-page-t layer" data-step="4"><b>현장 기록 1쪽</b><span class="h-ex">예시</span></p>
           <p class="h-page-s layer" data-step="4">부산 해운대구 반여1동</p>
           <div class="h-photo layer" data-step="1">
             <i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i>
@@ -93,7 +91,7 @@
 
   <section class="h-sec h-alt" aria-labelledby="whoTitle">
     <div class="wrap h-split">
-      <h2 id="whoTitle">이런 분들의 책상에서 일합니다</h2>
+      <h2 id="whoTitle">누가 씁니까</h2>
       <ul class="h-rows">
         <li><h3>용역사 실무자</h3><p>구역 경계를 바꿀 때마다 건물을 다시 세던 일을 버튼 한 번으로 끝냅니다.</p></li>
         <li><h3>구청 정비·재생 담당</h3><p>"그 숫자 어디서 나왔어요?"라는 질문에 출처와 조문을 바로 보여 줍니다.</p></li>
@@ -118,17 +116,17 @@
     <div class="wrap">
       <h2 id="productsTitle">지금 바로 써 볼 수 있습니다</h2>
       <ul class="h-prods">
-        <li><a class="h-prod is-main" href="field/"><img class="h-shot" src="img/field-record.webp" width="390" height="640" loading="lazy" alt="현장 기록 화면: 사진 찍기, 현재 위치 받기, 무엇을 봤나요 고르기"><h3>현장 확인 근거 1쪽</h3><p>사진 한 장이 결재 문서가 됩니다.<br>같은 기록으로 사진대지도 함께 만듭니다.</p><span class="h-go">써 보기</span></a></li>
-        <li><a class="h-prod" href="field/twin.html"><h3>3D 모델과 4D 단계 비교</h3><p>건물 모델을 지도에 올려 현재 모습과 A안·B안을 나란히 봅니다.<br>날짜별 계획 단계도 넘겨 볼 수 있습니다.</p><span class="h-go">써 보기</span></a></li>
+        <li><a class="h-prod is-main" href="field/"><img class="h-shot" src="img/field-record.webp" width="390" height="640" loading="lazy" alt="현장 기록 화면: 사진 찍기, 현재 위치 받기, 무엇을 봤나요 고르기"><h3>현장 기록 1쪽</h3><p>사진 한 장이 결재 문서가 됩니다.<br>같은 기록으로 사진대지도 함께 만듭니다.</p><span class="h-go">써 보기</span></a></li>
         <li><a class="h-prod" href="field/redev.html"><h3>신청요건 확인</h3><p>지번 목록이나 GIS 파일을 넣으면 노후주거지정비·재개발 요건을 조문과 함께 계산합니다.<br>부산 254개 법정동, 규칙 승인 전 참고용입니다.</p><span class="h-go">써 보기</span></a></li>
         <li><a class="h-prod" href="dong/index.html"><h3>동네 근거 페이지</h3><p>전국 3,559개 행정동의 쇠퇴 지표와 동네 점수·순위를 출처와 함께 봅니다.</p><span class="h-go">써 보기</span></a></li>
       </ul>
+      <p id="tools" class="h-tools"><b>참고 도구</b><a href="field/twin.html">3D·4D 비교(PC)</a> · <a href="rank.html">동네 점수·순위</a> · <a href="biz.html">사업성 간이 계산</a> · <a href="field/oa.html">집계구(통계청 최소 통계 구역)로 다시 보기</a> · <a href="field/idle.html">오래된 창고·공장</a> · <a href="field/shop.html">음식점 상권 변화</a></p>
     </div>
   </section>
 
   <section class="h-sec" aria-labelledby="valuesTitle">
     <div class="wrap">
-      <h2 id="valuesTitle">숫자를 믿게 하는 네 가지 약속</h2>
+      <h2 id="valuesTitle">숫자를 어떻게 다룹니까</h2>
       <div class="h-values">
         <details class="h-val" open><summary><h3>숫자에는 출처를</h3><span class="h-val-l">모든 숫자에 출처·기준일·계산식을 붙입니다.</span></summary><p>따라가서 확인할 수 있어야 근거입니다.<br>같은 자료로 다시 만들면 같은 문서가 나옵니다.</p></details>
         <details class="h-val"><summary><h3>모르면 모른다고</h3><span class="h-val-l">자료로 정할 수 없는 건물은 '현장 확인'으로 남깁니다.</span></summary><p>빈칸을 추정으로 채우지 않습니다.<br>확인하지 못한 것은 범위와 이유로 보여 드립니다.</p></details>
@@ -140,7 +138,7 @@
 
   <section class="h-sec h-alt" aria-labelledby="notTitle">
     <div class="wrap">
-      <h2 id="notTitle">선을 긋는 일도 있습니다</h2>
+      <h2 id="notTitle">하지 않는 일</h2>
       <ul class="h-nots">
         <li>감정평가·투자 권유</li>
         <li>매물 중개</li>
@@ -152,7 +150,7 @@
 
   <section class="h-sec" aria-labelledby="statsTitle">
     <div class="wrap">
-      <h2 id="statsTitle">숫자로 보는 리뉴맵</h2>
+      <h2 id="statsTitle">지금 있는 자료</h2>
       <ul id="stats" class="h-stats">
         <li><p class="h-stat-n"><span data-count="3559" aria-hidden="true">3,559</span><span class="sr">3,559</span></p><p>전국 행정동 근거 페이지(2025 경계, 통합 전 옛 동 51곳은 따로)</p></li>
         <li><p class="h-stat-n"><span data-count="26" aria-hidden="true">26</span><small aria-hidden="true">년</small><span class="sr">26년</span></p><p>2000~2025년 쇠퇴 지표를 해마다 기록</p></li>
@@ -167,12 +165,12 @@
       <div class="h-cta-box">
         <h2 id="ctaTitle">끝낸 과업 한 건으로 시간을 재 보세요</h2>
         <p>이미 납품한 기초조사 한 건을 리뉴맵으로 다시 만들고, 걸린 시간을 나란히 비교해 드립니다.</p>
-        <a class="btn" href="about.html#contact">시범 비교 상담하기</a>
+        <a class="btn" href="about.html#contact">시범 상담하기</a>
       </div>
     </div>
   </section>
 </main>
 
-<footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="about.html#contact">도입 문의</a><a href="ethics.html">데이터 원칙</a><a href="data.html">데이터 출처</a><a href="dong/index.html">행정동 목록</a><a href="privacy.html">개인정보 처리방침</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
+<footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="rules.html">기준 원문 대조</a><a href="data.html">데이터 출처</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="rank.html">동네 점수·순위</a><a href="biz.html">사업성 간이 계산</a><a href="index.html#tools">참고 도구</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
 </body>
 </html>

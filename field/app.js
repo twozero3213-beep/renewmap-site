@@ -210,7 +210,7 @@
     for (const { rec, dist } of near) {
       const li = document.createElement("li"), body = document.createElement("div"), head = document.createElement("b"), meta = document.createElement("div"), btn = document.createElement("button");
       const first = rec.photos && rec.photos[0] && await S.photo(rec.photos[0]);
-      if (first) { const img = document.createElement("img"), u = URL.createObjectURL(first); nearUrls.push(u); img.src = u; img.alt = `${E.localTime(rec.recorded_at)} 기록 사진`; li.append(img); }
+      if (first) { const img = document.createElement("img"), u = URL.createObjectURL(first); nearUrls.push(u); img.src = u; img.alt = `${E.localTime(rec.recorded_at)} 기록 사진`; img.width = 64; img.height = 64; li.append(img); }
       else { const blank = document.createElement("span"); blank.className = "blank"; li.append(blank); }
       head.textContent = `${E.localTime(rec.recorded_at)} · ${rec.target}${rec.imported ? " · 가져옴" : ""}`;
       meta.className = "meta";
@@ -344,8 +344,8 @@
     if (guide && edit.drag) { ctx.strokeStyle = "#d7f988"; ctx.lineWidth = 3; ctx.strokeRect(edit.drag.x, edit.drag.y, edit.drag.w, edit.drag.h); }
   }
   function point(e) {
-    const cv = $("cv"), r = cv.getBoundingClientRect();
-    return { x: Math.min(cv.width, Math.max(0, (e.clientX - r.left) * cv.width / r.width)), y: Math.min(cv.height, Math.max(0, (e.clientY - r.top) * cv.height / r.height)) };
+    const cv = $("cv");
+    return window.FieldDetect.fitPoint(cv.getBoundingClientRect(), cv.width, cv.height, e.clientX, e.clientY);
   }
   async function startEdit(file) {
     if (!file) return;
@@ -406,7 +406,7 @@
     const box = $("thumbs"); box.textContent = "";
     pending.forEach((p, i) => {
       const f = document.createElement("figure"), img = document.createElement("img"), x = document.createElement("button");
-      img.src = p.url; img.alt = `붙인 사진 ${i + 1}`;
+      img.src = p.url; img.alt = `붙인 사진 ${i + 1}`; img.width = 88; img.height = 88;
       x.type = "button"; x.textContent = "✕"; x.setAttribute("aria-label", `사진 ${i + 1} 빼기`);
       x.addEventListener("click", () => { URL.revokeObjectURL(p.url); pending.splice(i, 1); drawThumbs(); });
       f.append(img, x); box.append(f);
@@ -706,18 +706,47 @@
   // 위치 권한이 이미 있으면 바로 받는다. 처음이면 사진 찍기·'현재 위치 받기'를 누를 때 한 번 묻는다
   if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: "geolocation" }).then((s) => { if (s.state === "granted") locate(); }).catch(() => {});
   render().catch(() => say("이 브라우저에서는 기기 저장소를 쓸 수 없습니다.", true));
+  // ── 가리기 도구 미리 받기(약 20MB). 첫 사진에서 받으면 현장 LTE에서 막힌다(심사 06 §7-5).
+  // 서비스 워커가 KEEP 규칙으로 캐시하므로 워커가 이 화면을 맡은(controller) 뒤에만 받는다. 받은 비율은 알 수 없어 '받는 중'만 보인다
+  let fetchingTools = false;
+  async function toolsDone() {
+    const urls = [];
+    try { for (const k of await caches.keys()) for (const q of await (await caches.open(k)).keys()) urls.push(q.url); } catch (e) { return false; }
+    return window.FieldDetect.isDone(urls);
+  }
+  async function showTools() {
+    if (fetchingTools) return;
+    const done = await toolsDone();
+    $("prefetchState").textContent = done ? "가리기 도구: 받음" : "가리기 도구: 안 받음";
+    $("prefetch").disabled = done;
+  }
+  async function prefetchTools(auto) {
+    if (fetchingTools || !navigator.onLine) return;
+    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) { if (!auto) toast("오프라인 준비가 끝난 뒤 다시 눌러 주세요."); return; }
+    if (await toolsDone()) { showTools(); return; }
+    fetchingTools = true; $("prefetch").disabled = true; $("prefetchState").textContent = "가리기 도구: 받는 중";
+    try { await window.FieldDetect.prefetch(); }
+    catch (e) { if (!auto) toast("가리기 도구를 받지 못했습니다.\n인터넷을 확인하고 다시 해 보세요."); }
+    fetchingTools = false; showTools();
+  }
+  $("prefetch").addEventListener("click", () => prefetchTools(false));
+  showTools();
+  // 자동 받기: 홈 화면에 추가했을 때, 그리고 데이터 절약이 꺼진 채 Wi-Fi·유선이거나 4g일 때 화면이 한가해지면. 2g·3g·데이터 절약에서는 받지 않는다
+  const conn = navigator.connection;
+  const goodNet = () => !!conn && conn.saveData === false && (conn.type === "wifi" || conn.type === "ethernet" || conn.effectiveType === "4g");
+  const whenIdle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 20000 }) : setTimeout(fn, 4000));
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
     // 이미 옛 판이 있던 기기에서만 알린다(첫 설치는 알릴 것이 없다). 쓰던 기록은 기기 저장소에 남아 새로고침해도 그대로다
     let hadCtrl = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadCtrl) toast("새 판을 받았습니다.\n새로고침하면 반영됩니다.", "새로고침", () => location.reload()); hadCtrl = true; });
     // ready는 앱 셸을 다 저장한 서비스 워커가 켜져야 풀린다. 현장에 나가기 전에 오프라인으로 열리는지 보이게 한다(감사 이수진2)
-    navigator.serviceWorker.ready.then(() => { $("ready").hidden = false; });
+    navigator.serviceWorker.ready.then(() => { $("ready").hidden = false; if (goodNet()) whenIdle(() => prefetchTools(true)); });
   }
   // 홈 화면 추가(감사 이수진3). 크롬·삼성 인터넷은 beforeinstallprompt를 주고, iOS 사파리는 주지 않아 공유 메뉴를 한 번 안내한다
   let installAsk = null;
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installAsk = e; $("install").hidden = false; });
-  window.addEventListener("appinstalled", () => { $("install").hidden = true; });
+  window.addEventListener("appinstalled", () => { $("install").hidden = true; prefetchTools(true); });
   $("installGo").addEventListener("click", () => { $("install").hidden = true; if (installAsk) installAsk.prompt(); installAsk = null; });
   if (navigator.standalone === false && !store("renewmap-field-install")) {
     $("installMsg").textContent = "사파리 아래의 공유 버튼 → '홈 화면에 추가'를 누르면 앱처럼 바로 열립니다.";

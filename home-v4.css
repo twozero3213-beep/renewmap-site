@@ -161,3 +161,9 @@ body.scrolled header.top { background: var(--veil); box-shadow: 0 1px 0 var(--li
 .v3 .h-sec:has(#stats) .h-stat-n small { color: var(--map-o1); -webkit-text-fill-color: var(--map-o1); }
 .v3 .h-sec:has(#stats) .h-stat-src, .v3 .h-sec:has(#stats) .h-stat-src a { color: var(--hero-dim); }
 .v3 .h-sec:has(#stats) .h-stat-src a:hover { color: var(--lime); }
+
+/* 참고 도구 줄(심사 06, 2026-11-08): 핵심 셋 카드 아래 한 줄 링크. 3D·상권·창고·집계구·점수·사업성은 핵심과 같은 급이 아니다 */
+.v3 .h-tools { margin: 20px 0 0; padding-top: 16px; border-top: 1px solid var(--line); font-size: 16px; line-height: 1.8; color: var(--dim); }
+.v3 .h-tools b { color: var(--ink); margin-right: 8px; }
+.v3 .h-tools a { color: var(--ink); }
+.v3 .h-tools a:hover { color: var(--green); }

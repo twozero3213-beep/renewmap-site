@@ -8,7 +8,8 @@
   'use strict';
   const MAX = 8;
   const norm = s => String(s || '').replace(/\s+/g, '').toLowerCase();
-  const route = r => `explore.html#map/${r.sido}/${r.sgg}${r.dong ? '/' + r.dong : ''}`;
+  // 홈에서 들어오면 기본 보고서는 '1쪽 요약'(?report=onepage, find.js entryReportMode). 동까지 정해지면 탐색이 문서 패널을 바로 연다(심사 06: 동 이름 → 1쪽 한글 3번 안에)
+  const route = r => `explore.html?report=onepage#map/${r.sido}/${r.sgg}${r.dong ? '/' + r.dong : ''}`;
 
   // 동 이름이 같거나 포함된 곳, 시군구 이름이 맞는 곳(시군구 화면). 띄어쓰기는 무시한다.
   function find(index, query, max = MAX) {

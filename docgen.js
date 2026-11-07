@@ -135,6 +135,8 @@
   const SAFETY_DISCLAIMER = '이 수치는 시설 현황이며 범죄 발생이나 안전 수준을 의미하지 않습니다.';
   const UNSETTLED = () => FMT().unsettled_status || ['추가확인', '충돌', '폐기'];
   const SENTENCE_MAX = 60;
+  // 고정 문구: 본문 끝(붙임 앞)에 같은 자리로 넣는다. dong_brief.FIXED_NOTICE와 같다('끝' 표시는 없다)
+  const FIXED_NOTICE = '이 문서의 숫자는 공공데이터 값을 출처·기준일과 함께 옮긴 참고 자료이며 법적 효력이 있는 판정이 아닙니다. 최종 확인은 담당 기관이 합니다.';
   const SRC_HEAD = ref => `출처: 국토교통부·행정안전부·국가데이터처 등 공공데이터(${ref}) · 가공: 리뉴맵`;   // 화면용 머리말. 원본 기관명이 앞, 가공(리뉴맵)이 뒤
   const GROUPS = [
     ['정비 신호', ['DECLINE_AGING_20Y_PCT', 'DECLINE_AGING_20Y_PCT_DELTA5Y', 'DECLINE_BIZ_TOTAL', 'DECLINE_BIZ_TOTAL_DELTA5Y', 'DECLINE_BIZ_DROP10Y_PCT', 'DECLINE_BIZ_DECL3IN5', 'DECLINE_MET_COUNT', 'DEPOP_STATUS']],
@@ -389,6 +391,9 @@
     return out;
   }
   const finish = blocks => { for (const b of blocks) { b.text = clean(b.text); b.rows = b.rows.map(r => r.map(x => clean(String(x)))); b.caption = clean(b.caption); } return blocks; };
+  // 바닥글: 자료 기준일은 전망(FORECAST_*, 기준일이 대상일)을 뺀 셀의 가장 늦은 reference_date. dong_brief.basis_date·FOOTER와 같다
+  const basisDate = cells => { const ds = (cells || []).filter(c => c.reference_date && !String(c.indicator_code || '').startsWith('FORECAST_')).map(c => c.reference_date); return ds.length ? govDate(ds.reduce((a, b) => (b > a ? b : a))) : ''; };
+  const footerOf = brief => `작성 리뉴맵 · 자료 기준일 ${basisDate(brief.cells) || '-'} · 재현 번호 ${String(brief.snapshot).slice(0, 8)} · `;
   const sourceLine = (n, s) => `[${n}] ${s.name}. ${s.forecast ? '전망 대상일' : '기준일'} ${govDate(s.reference_date)} 조회일 ${govDate(s.retrieved_at)} 이용조건 ${s.license}.`;
 
   // 요약 문장 3~5개(템플릿 순서 고정). 셀이 없으면 그 문장은 건너뛴다. 근거서와 1쪽 요약이 같이 쓴다
@@ -409,9 +414,11 @@
     return lines;
   }
 
-  function buildDoc(brief) {
-    const TP = tpl();
+  // opt.forecast(기본 false): true일 때만 '5. 추세 전망' 절과 전망 관련 확인 사항·계산식 행을 넣는다(공모 붙임에 전망은 넣지 않는다). dong_brief.build_doc(forecast=)와 같다
+  function buildDoc(brief, opt) {
+    const TP = tpl(), forecast = !!(opt && opt.forecast);
     if (!brief.items || !brief.items.length) throw new BriefError('buildBrief()로 만든 brief가 아니어서 항목 정보가 없다');
+    const items = forecast ? brief.items : brief.items.filter(i => i.group !== '전망');
     const src = new Sources(), byCode = new Map(brief.items.filter(i => i.cell).map(i => [i.code, i.cell])), facts = new Map(brief.items.filter(i => i.fact).map(i => [i.code, i.fact]));
     const crit = brief.crit, todo = brief.todo, ser = brief.ser, blocks = [], parts = {};
     const dong = brief.dongName, year = brief.year, sg = brief.sgName;
@@ -455,9 +462,10 @@
     TP.criteria_notes.forEach(s => blocks.push(block('para', s)));
 
     blocks.push(block('h1', '4. 확인이 필요한 사항'));
-    for (const r of todo.rows.slice(1)) blocks.push(block('bullet', r[1] === '-' ? '확인이 필요한 항목이 없다.' : fill(TP.todo, { label: r[1], reason: r[2].replace(/\.+$/, ''), todo: r[3] })));
+    const todoRows = todo.rows.slice(1).filter(r => forecast || r[0] !== '전망');
+    for (const r of (todoRows.length ? todoRows : [['-', '-', '확인 필요 항목 없음', '-']])) blocks.push(block('bullet', r[1] === '-' ? '확인이 필요한 항목이 없다.' : fill(TP.todo, { label: r[1], reason: r[2].replace(/\.+$/, ''), todo: r[3] })));
 
-    const fcItems = brief.items.filter(i => i.group === '전망' && i.cell);
+    const fcItems = items.filter(i => i.group === '전망' && i.cell);
     if (fcItems.length) {
       blocks.push(block('h1', '5. 추세 전망'));
       const rows = [['지표', '전망값', '하한', '상한', '출처']], byKey = new Map();
@@ -475,14 +483,16 @@
       blocks.push(block('table', '', { rows, widths: [36, 16, 16, 16, 16], caption: `표 ${k + 2}. 추세 전망` }));
     }
 
+    blocks.push(block('para', FIXED_NOTICE));   // 고정 문구: 본문 끝, 붙임 앞
+
     const years = ser.rows[0].slice(1), sRows = [['연도', ...ser.rows.slice(1).map(r => r[0])], ...years.map((y, j) => [y, ...ser.rows.slice(1).map(r => r[1 + j])])];
     blocks.push(block('h1', '붙임 1. 최근 10년 시계열'));
     blocks.push(block('table', '', { rows: sRows, widths: [16, ...Array(sRows[0].length - 1).fill(28)], caption: '붙임 1 표. 연도별 값' }));
     ser.notes.forEach(s => blocks.push(block('para', s.replace('표 1의', '2장 표의'))));
 
     const fRows = [['지표', '계산식', '규칙 버전']], seenF = new Set();
-    for (const it of brief.items) { const c = it.cell; if (c && !seenF.has(c.formula_id)) { seenF.add(c.formula_id); fRows.push([it.label, `${c.formula_id}: ${c.formula_text}`, c.rule_version]); } }
-    brief.items.filter(i => i.fact).forEach(i => fRows.push([i.label, i.fact.formula, i.fact.rule_version]));
+    for (const it of items) { const c = it.cell; if (c && !seenF.has(c.formula_id)) { seenF.add(c.formula_id); fRows.push([it.label, `${c.formula_id}: ${c.formula_text}`, c.rule_version]); } }
+    items.filter(i => i.fact).forEach(i => fRows.push([i.label, i.fact.formula, i.fact.rule_version]));
     blocks.push(block('h1', '붙임 2. 계산식·규칙 버전'));
     blocks.push(block('table', '', { rows: fRows, widths: [26, 56, 18], caption: '붙임 2 표. 지표별 계산식' }));
     // 붙임 3. 출처 목록: 본문 [n]의 주석. 문서 맨 끝에 작은 글자로 둔다
@@ -490,8 +500,8 @@
     src.list.forEach((s, n) => { blocks.push(block('para', sourceLine(n + 1, s), { small: true })); blocks.push(block('para', s.url, { small: true })); });   // '끝' 표시는 쓰지 않는다
 
     finish(blocks);
-    return { kind: 'full', title: blocks[0].text, blocks, sources: src.list, cells: brief.cells, snapshot: brief.snapshot, templateVersion: TP.version, footer: `리뉴맵 · 원장 ${String(brief.snapshot).slice(0, 8)} · `,
-      parts, src, brief, writtenOn: brief.writtenOn, sizes: 'full', byCode, facts };
+    return { kind: 'full', title: blocks[0].text, blocks, sources: src.list, cells: brief.cells, snapshot: brief.snapshot, templateVersion: TP.version, footer: footerOf(brief),
+      parts, src, brief, writtenOn: brief.writtenOn, sizes: 'full', byCode, facts, forecast };
   }
   // 기준일 비교(map.js 동 보고서 '지금 값 저장'): 본문 '붙임 1' 앞에 장 하나를 끼운다. 엑셀은 workbookSheets가 시트를 더한다.
   // snap = { when: 'YYYY-MM-DD', summary: 문장, rows: [[항목, 저장 때 값(기준일), 지금 값(기준일), 변동, 판정], ...] }. 없으면 문서 그대로
@@ -530,7 +540,7 @@
         if (b.caption) h += ln.table + 2 * MM;
         for (const r of b.rows) h += Math.max(...r.map((c, i) => linesOf(c, PAGE_W_MM * b.widths[i] / tot - 3.6, z.table))) * ln.table + 4 * MM;
         h += 'gap' in z ? z.gap * 1.6 * MM + 2 * MM : ln.body + 6 * MM;      // 표 뒤 빈 문단
-      } else { const k = b.small ? 'small' : b.strong ? 'lead' : 'body'; h += linesOf(b.text, PAGE_W_MM, z[k]) * ln[k] + 6 * MM; }
+      } else { const k = b.small ? 'small' : b.strong ? 'lead' : 'body'; h += linesOf(b.text, PAGE_W_MM, z[k]) * ln[k] + (z.after ?? 6) * MM; }   // 문단 뒤 간격(pt): 1쪽은 onepage.sizes.after
     }
     return h;
   }
@@ -552,9 +562,9 @@
       const k = one.overview_keys.map((key, i) => [key, [brief.region, `${brief.year}년`, govDate(brief.writtenOn), TP.overview_basis][i]]);
       const h1 = one.headings, summary = lines.map((t, i) => block('para', t, { refs: refsIn(t), emph: true, strong: i === 0 })), critBlock = block('table', '', { rows: [head, ...rows], widths, caption: '표 1. 기준 대비' });
       const blocks = [block('title', one.title.replace('{dong}', brief.dongName)), block('box', '', { rows: k, widths: [22, 78] }), block('h1', h1[0]), ...summary, block('h1', h1[1]), critBlock,
-        block('para', one.note.join(' ')), block('h1', h1[2]), ...src.list.map((s, n) => block('para', sourceLine(n + 1, s), { small: true }))];
+        block('para', one.note.join(' ')), block('para', FIXED_NOTICE), block('h1', h1[2]), ...src.list.map((s, n) => block('para', sourceLine(n + 1, s), { small: true }))];
       finish(blocks);
-      return { kind: 'onepage', title: blocks[0].text, blocks, sources: src.list, cells: brief.cells, snapshot: brief.snapshot, templateVersion: TP.version, footer: `리뉴맵 · 원장 ${String(brief.snapshot).slice(0, 8)} · `,
+      return { kind: 'onepage', title: blocks[0].text, blocks, sources: src.list, cells: brief.cells, snapshot: brief.snapshot, templateVersion: TP.version, footer: footerOf(brief),
         parts: { box: blocks[1], summary, crit: critBlock }, src, brief, writtenOn: brief.writtenOn, sizes: 'onepage', onepage: true, byCode, facts, rows: nRows };
     };
     const nMin = Math.min(picked.length, DECLINE_CRITERIA.length + 1);          // 쇠퇴 3요건 행(5개 + 충족 수)은 줄이지 않는다
@@ -578,7 +588,8 @@
   const docSizes = () => docStyle().sizes;
   const BASE = { ls: 160, tls: 140, after: 600, gapAfter: 600, top: 5668 };
   // 1쪽 요약은 글자 크기를 onepage.sizes로 줄인다. 표 뒤 빈 줄은 gap 크기, 문단 뒤 2pt
-  const sizesFor = doc => (doc.sizes === 'onepage' ? { ...BASE, gap: docSizes().body, ...docSizes(), ...((tpl().onepage || {}).sizes || {}), gapAfter: 200 } : { ...BASE, gap: docSizes().body, ...docSizes() });
+  // 1쪽 요약: onepage.sizes.after(pt)가 있으면 문단 뒤 간격도 그 값(HWPUNIT 1/100pt). hwpx._Styles.paragraph와 같다
+  const sizesFor = doc => { if (doc.sizes !== 'onepage') return { ...BASE, gap: docSizes().body, ...docSizes() }; const oz = (tpl().onepage || {}).sizes || {}; return { ...BASE, gap: docSizes().body, ...docSizes(), ...oz, gapAfter: 200, after: oz.after != null ? Math.round(oz.after * 100) : BASE.after }; };
   // [이름, 크기 키, 굵게, 위 첨자]. 앞 7개 id는 예전과 같다
   const CHAR_DEF = [['table', 'table', 0, 0], ['title', 'title', 1, 0], ['h1', 'h1', 1, 0], ['h2', 'h2', 1, 0], ['body', 'body', 0, 0], ['small', 'small', 0, 0], ['gap', 'gap', 0, 0],
     ['lead', 'lead', 1, 0], ['table_b', 'table', 1, 0], ['body_b', 'body', 1, 0], ['body_sup', 'body', 0, 1], ['lead_sup', 'lead', 0, 1], ['table_sup', 'table', 0, 1]];
@@ -1100,7 +1111,7 @@
 
   return {
     crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, fmtNum, roundD, govDate, josa, valueWithUnit, fmtCell, hidden, usable, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
-    setTemplates, getTemplates, displayName, BriefError, Sources, sourceLine, buildBrief, buildDoc, buildOnepage, estimateHeightMm, docText, sentenceText, sizesFor, textRuns, withSnap, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
+    setTemplates, getTemplates, displayName, BriefError, Sources, sourceLine, buildBrief, buildDoc, buildOnepage, estimateHeightMm, basisDate, FIXED_NOTICE, docText, sentenceText, sizesFor, textRuns, withSnap, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
     tablePayload, sentencePayload, copyToClipboard, buildFragments, fragmentChoices, fragmentPayload, fragmentHTML, docHTML, COPY_TABLE, COPY_SENT, projectFeatures, mapSvg, safeName, saveBytes, svgToPng, xe,
   };
 });

@@ -180,9 +180,10 @@
       "h2": 11,
       "lead": 11,
       "body": 10,
-      "table": 9,
-      "small": 7.5,
-      "gap": 2
+      "table": 9.5,
+      "small": 8.5,
+      "gap": 2,
+      "after": 2
     },
     "table_max_rows": 8,
     "sources_max": 5,

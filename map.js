@@ -597,6 +597,8 @@
   function stdTextOf(r) {
     const ind = r.ind;
     if (ind.pending) return '자료를 모으는 중입니다. 숫자를 만들지 않습니다.';
+    // 30년 감소율 셀이 비면 까닭을 적는다(docs/quality/pop_drop30_missing_2026-11-06.md: 98%가 지금 행정동 코드 기록이 1995년 뒤 시작). 값을 지어 채우지 않는다
+    if (ind.code === 'DECLINE_POP_DROP30Y_PCT' && r.value === null && r.cell) return `계산 안 함 · 1996~2025년 인구 기록이 다 있지 않음(대부분 지금 행정동 코드가 1995년 뒤에 생김) · 요건 ①은 '최근 5년 중 3년 연속 감소' 길로 볼 수 있음${ind.standard ? ` · 기준 ${ind.standard.text}` : ''}`;
     if (ind.src === 'forecast') return `${r.held ? `보류 · ${r.held} · ` : ''}${foreLine(ind)}${isNum(r.lo) && isNum(r.hi) ? ` · 80% 구간 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}` : ''}${ind.level === 'sg' ? ' · 시·군·구 단위' : ''}`;
     if (ind.level === 'sg') return `시·군·구 단위 자료 · 읍·면·동 값이 아닙니다${ind.group === 'estate' ? ` · ${ESTATE_NOTE}` : ''}${r.since ? ` · 지정 ${r.since}` : ''}${isNum(r.abs) ? ` · 순이동 ${fmt(r.abs, '명')}` : ''}`;
     if (ind.standard) return `기준 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · ${ind.standard.status}${r.crossed ? ' · 기준선 넘은 쪽' : r.crossed === false ? ' · 기준선 안쪽' : ''}` : ''}`;

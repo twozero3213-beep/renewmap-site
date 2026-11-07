@@ -12,8 +12,8 @@
 <meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/explore.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RENEWMAP">
-<meta property="og:title" content="지도 탐색 | RENEWMAP">
-<meta property="og:description" content="지도·조건 필터·근거 보고서를 한 흐름으로 탐색합니다.">
+<meta property="og:title" content="동네 찾기 | RENEWMAP">
+<meta property="og:description" content="지도·조건 필터·근거 문서를 한 흐름으로 탐색합니다.">
 <meta name="theme-color" content="#006f5b">
 <meta name="ga-id" content="">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -44,11 +44,7 @@
 </head>
 <body class="explore-page">
 <a class="skip" href="#main">본문으로 바로가기</a>
-<header class="top">
-  <div class="wrap">
-    <a class="logo" href="index.html">RENEW<span>MAP</span></a>
-  </div>
-</header>
+<header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html" aria-current="page">동네 찾기</a><a href="field/">현장 기록</a><a href="field/redev.html">신청요건</a><a href="data.html">데이터 출처</a><a href="about.html#contact">시범 상담</a></nav></div></header>
 <main id="main">
 <h1 class="sr-only">동네 찾기: 조건으로 고르고, 지도로 보고, 문서로 받기</h1>
   <div class="evidence-workspace" data-workspace data-active-panel="map">
@@ -62,14 +58,14 @@
         <div class="workspace-panel-inner">
           <button type="button" class="btn ghost ws-close" data-filters-close aria-label="업무 패널 닫기">닫기</button>
           <div id="gov" class="gov" aria-labelledby="govTitle">
-            <div class="section-head"><div><h2 id="govTitle">어떤 일 때문에 오셨나요?</h2></div><p>하려는 일을 고르면 맞는 조건이 미리 걸린 채로 열립니다.<br>동을 고르고 '사업 근거서'를 받으세요.</p></div>
+            <div class="section-head"><div><h2 id="govTitle">어떤 일 때문에 오셨나요?</h2></div><p>하려는 일을 고르면 맞는 조건이 미리 걸린 채로 열립니다.<br>동을 고르고 근거 문서를 받으세요.</p></div>
             <div data-gov><p class="fd-wait">자료를 불러오는 중입니다.</p></div>
           </div>
           <details id="findMore" class="find-more">
           <summary class="section-head"><div><h2 id="findTitle">조건으로 동네 고르기</h2></div><p>고른 조건을 모두 갖춘 동만 남습니다.<br>목록은 행정동 코드 순서입니다.<br>순위는 <a href="rank.html">동네 순위</a>에서 따로 봅니다.</p></summary>
           <div id="findApp"><p class="fd-wait">자료를 불러오는 중입니다.</p></div>
           </details>
-          <noscript><p>지역 찾기는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
+          <noscript><p>동네 찾기는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
         </div>
       </section>
       <section id="map" class="workspace-panel" data-workspace-panel="map" aria-labelledby="heroTitle">
@@ -92,8 +88,8 @@
       </section>
       <section id="report" class="workspace-panel" data-workspace-panel="evidence" aria-labelledby="reportTitle">
         <div class="workspace-panel-inner">
-          <div class="section-head"><div><h2 id="reportTitle">문서로 받기</h2></div><p>아래 문장은 공공데이터 값과 출처를 그대로 옮긴 것입니다.<br>평가하는 말은 넣지 않았습니다.</p></div>
-          <div class="export-tools" data-export-tools role="group" aria-label="보고서 납품 형식">
+          <div class="section-head"><div><h2 id="reportTitle">근거 문서로 받기</h2></div><p>아래 문장은 공공데이터 값과 출처를 그대로 옮긴 것입니다.<br>평가하는 말은 넣지 않았습니다.</p></div>
+          <div class="export-tools" data-export-tools role="group" aria-label="근거 문서 형식">
             <div class="export-buttons">
               <button type="button" class="btn" data-export-format="hwpx" disabled>한글 받기</button>
               <button type="button" class="btn" data-export-format="xlsx" disabled>엑셀 받기</button>
@@ -104,12 +100,12 @@
             <div data-export-status aria-live="polite"><p class="export-state" role="status">문서는 이 휴대폰에서 만듭니다.<br>서버로 보내지 않습니다.</p></div>
           </div>
           <div id="reportApp"><div class="rp-empty" role="status"><img src="mascot/crew/taggy-default.svg" width="120" height="120" alt="" aria-hidden="true"><h3>동네를 먼저 찾아 주세요.</h3><p><a href="index.html">동네 찾기</a></p></div></div>
-          <noscript><p>보고서는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
+          <noscript><p>근거 문서는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
         </div>
       </section>
     </div>
   </div>
 </main>
-<footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="about.html#how">작동 방식</a><a href="about.html#contact">도입 문의</a><a href="ethics.html">데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a></div><p>RENEWMAP, 부산<br><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div></footer>
+<footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="rules.html">기준 원문 대조</a><a href="data.html">데이터 출처</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="rank.html">동네 점수·순위</a><a href="biz.html">사업성 간이 계산</a><a href="index.html#tools">참고 도구</a></div><p>RENEWMAP, 부산<br><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div></footer>
 </body>
 </html>

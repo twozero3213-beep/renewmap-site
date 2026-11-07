@@ -52,6 +52,7 @@
       const show = () => {
         const d = emd.dongs.find((x) => x.code7 === sel.value);
         if (d) out.innerHTML = R.dongDeclineHTML(d); else out.replaceChildren();
+        $("basis").innerHTML = R.basisHTML(last.res, file, d || null);   // 쇠퇴지표 기준연도는 고른 행정동 셀에서
       };
       sel.onchange = show;
       if (near.length === 1) sel.value = near[0].code7;
@@ -244,6 +245,7 @@
       ...(m.otherDong.length ? [`계산에 넣지 못한 다른 동 지번 ${m.otherDong.length}개(같은 구·군 법정동 이름이 아니거나 ${R.MERGE_MAX}개 동을 넘음: ${m.otherDong.slice(0, 3).join(", ")}${m.otherDong.length > 3 ? " 등" : ""})`] : [])];
     say(skipped.length ? `제외: ${skipped.join(" · ")}` : "");
     $("outBase").textContent = `${file.name} 건물 ${res.n}동 · 기준 ${res.thr}% · 경과 기준일 ${D.govDate(res.ref)} · 건축물대장 기준일 ${D.govDate(file.hub_reference_date)}`;
+    $("basis").innerHTML = R.basisHTML(res, file);   // 분모·기준시점·현장 확인 비율(행정동을 고르면 쇠퇴지표 기준연도까지)
     $("viz").innerHTML = R.summaryHTML(res);   // 그림 요약(종합 판정 아님)
     $("lines").replaceChildren(...res.lines.map((l) => {
       const li = document.createElement("li"), b = document.createElement("b"), s = document.createElement("small");

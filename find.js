@@ -143,7 +143,7 @@
       return `<fieldset class="fd-grp"><legend>${esc(gl)}</legend><div class="fd-chips">${list.map(c => {
         const st = condState(c, ctx, unit), on = flat.includes(c.id), tags = (st.ok ? tagsOf(c, ctx) : [st.why]).concat(inOr(c.id) ? ['또는'] : []);
         return `<button type="button" class="fd-chip${st.ok ? '' : ' is-off'}${on ? ' is-on' : ''}" data-fd-cond="${esc(c.id)}" aria-pressed="${on}"${st.ok || on ? '' : ' aria-disabled="true"'}><span class="fd-e" aria-hidden="true">${ico(c.e)}</span>${esc(chipLabel(c, ctx, st))}${tags.map(t => `<small>${esc(t)}</small>`).join('')}</button>`;
-      }).join('')}</div>${g === 'estate' ? `<p class="fd-gnote">${esc(ESTATE_NOTE)} · 아파트 매매 신고 건수 최근 12개월 합을 직전 12개월과 비교(원장 값) · ${esc(M.ESTATE_PROV)}</p>` : g === 'fore' ? `<p class="fd-gnote">${esc(M.FORE_FIXED)}</p>` : ''}</fieldset>`;
+      }).join('')}</div>${g === 'estate' ? `<p class="fd-gnote">${esc(ESTATE_NOTE)} · 아파트 매매 신고 건수 최근 12개월 합을 직전 12개월과 비교(자료 원본 값) · ${esc(M.ESTATE_PROV)}</p>` : g === 'fore' ? `<p class="fd-gnote">${esc(M.FORE_FIXED)}</p>` : ''}</fieldset>`;
     }).join('');
   }
   const PAGE_SIZE = 10;
@@ -215,14 +215,14 @@
   // 안전 인프라는 공식 기준이 없어 찾기 조건으로 만들지 않는다(값 임계치로 걸러 목록을 내면 D17이 금지한 하위 목록과 같다). 설치 현황 카드는 동 상세의 안전 인프라 묶음으로 보낸다
   // 법령·사업명은 부록 B 문구 그대로. 미확인 조문은 법무 확인 뒤 지운다
   const DECIDE = '결정은 담당자가 합니다';
-  const GOV_NOTE = '업무를 고르면 조건이 켜지고 맞는 동과 근거서가 나옵니다. 점수·순위를 매기지 않습니다.';
+  const GOV_NOTE = '업무를 고르면 조건이 켜지고 맞는 동과 근거 문서가 나옵니다. 점수·순위를 매기지 않습니다.';
   const PRESETS = [
     { id: 'cctv', e: 'cctv', n: 'CCTV·보안등 설치 검토', ask: 'CCTV·보안등 추가 설치 검토 자료를 요구받았을 때', give: '동별 설치 현황 사실(밀도·경찰관서까지 거리). 범죄·안전 수준이 아닙니다.', conds: [], note: '조건 없음 · 동을 고르면 안전 인프라 카드로', action: 'safe', law: '개인정보 보호법 제25조' },
     { id: 'yearend', e: 'bldg', n: '연말 소규모 정비 검토', ask: '연말에 남은 예산, 근거 있는 소규모 정비 사업을 찾을 때', give: '노후·쇠퇴·생활 기준에 해당하는 동 목록과 첨부용 근거서', conds: ['aging', 'met', ['parkLow', 'libFar']], law: '지방재정법 제37조(투자심사)·제50조(이월)' },
     { id: 'depop', e: 'flag', n: '지방소멸대응기금 현황표', ask: '지방소멸대응기금 투자계획서에 현황표가 필요할 때', give: '인구감소·고령·청년 변화 표', conds: [['depop', 'concern'], 'pop30'], condsEmd: ['aged'], law: '지방소멸대응기금(행안부), 인구감소지역 지원 특별법' },
     { id: 'housing', e: 'bldg', n: '노후주거지 후보 추리기', ask: '노후주거지 정비·도시재생 공모 전에 후보 동을 추릴 때', give: '쇠퇴 요건과 노후 건축물 기준을 함께 충족하는 동 목록', conds: ['aging', 'met', 'pop30', 'biz10'], law: '노후주거지정비 지원사업(국토부), 도시재생 활성화 및 지원에 관한 특별법' },
     { id: 'soc', e: 'tree', n: '공원·도서관 민원 회신', ask: "'우리 동네는 왜 공원·도서관이 없나' 민원에 회신할 때", give: '기준 대비 현황과 출처', conds: [['parkLow', 'libFar', 'hospLow']], law: '도시공원 및 녹지 등에 관한 법률 시행규칙 제4조, 생활SOC 최저기준' },
-    { id: 'brief', e: 'book', n: '의회·감사 근거서', ask: "의회·감사에서 '근거가 뭐냐'고 물을 때", give: '출처·기준일·계산식이 붙은 근거서', conds: [], note: '조건 없음 · 동을 고르면 사업 근거서로', action: 'brief', law: '지방자치법 제49조·제142조·제150조' },
+    { id: 'brief', e: 'book', n: '의회·감사 근거 문서', ask: "의회·감사에서 '근거가 뭐냐'고 물을 때", give: '출처·기준일·계산식이 붙은 근거 문서', conds: [], note: '조건 없음 · 동을 고르면 사업 근거서로', action: 'brief', law: '지방자치법 제49조·제142조·제150조' },
   ];
   const presetOf = id => PRESETS.find(p => p.id === id) || null;
   // 프리셋의 조건 목록: 읍·면·동 범위(unit emd)면 condsEmd를 덧붙인다. 묶음(배열)은 복사한다
@@ -233,7 +233,9 @@
     return `<p class="gov-note">${esc(GOV_NOTE)}<br>범위: ${scopeName ? `<b>${esc(scopeName)}</b> 안 읍·면·동` : '<b>시·도와 시·군·구를 먼저 고르세요</b>'}</p>` +
       `<ul class="gov-cards">${PRESETS.map(p => `<li><button type="button" class="gov-card" data-gov-preset="${esc(p.id)}" aria-label="${esc(p.n)}"><span class="gov-e" aria-hidden="true">${ico(p.e)}</span><span class="gov-n">${esc(p.n)}</span><b>${esc(p.ask)}</b><span class="gov-why">→ ${esc(p.give)}</span><span class="gov-d">${esc(DECIDE)}</span></button><details class="gov-more"><summary>조건·근거 법령</summary><span class="gov-c">${esc(condText(p))}</span><span class="gov-law">${esc(p.law)}</span></details></li>`).join('')}</ul>`;
   }
-  const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
+  // 홈에서 넘어온 기본 보고서(?report=onepage 등). 모르는 값은 무시한다(심사 06, 2026-11-08)
+  const entryReportMode = search => { const m = new URLSearchParams(search || '').get('report'); return ['report', 'brief', 'onepage'].includes(m) ? m : null; };
+  const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, entryReportMode, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
   if (node) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewFind = api;
@@ -322,6 +324,9 @@
   more?.addEventListener('toggle', () => { if (more.open) render(); });
   document.addEventListener('renew-docgen', () => render());
   if (/^#find/.test(location.hash)) openMore();
+  // 홈 예시 단추·검색(?report=onepage): 그 보고서를 기본으로 하고, 동까지 정해져 있으면 문서 패널로 바로 간다. map.js는 이미 #map 해시로 동을 잡았다
+  const entry = entryReportMode(location.search), entryRoute = M.parseHash(location.hash);
+  if (entry && M.setReportMode) { M.setReportMode(entry); if (entryRoute && entryRoute.dong) { st.lastDong = entryRoute.dong; location.hash = '#report'; } }
   if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) { openMore(); applyPreset(b.dataset.govPreset); } });
   addEventListener('hashchange', trackHash);
   // 지금 화면의 조건·범위 그대로 XLSX를 만든다(이 브라우저 안에서만)
@@ -372,7 +377,7 @@
   Promise.all(['index.json', 'living/index.json', 'designations.json', 'migration.json', 'forecast/index.json', 'realestate.json'].map((f, i) => fetchJson('data/national/' + f, i > 1)))
     .then(([index, li, des, mig, fi, re]) => {
       st.ctx = { index: ok(index, 'sigungu'), living: ok(li, 'indicators'), designations: ok(des, 'items'), migration: ok(mig, 'sigungu'), forecastIdx: ok(fi, 'horizons'), realestate: ok(re, 'sigungu') };
-      if (!st.ctx.index) { root.innerHTML = '<div class="fd-empty" data-state="error" role="alert"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>전국 원장 자료를 불러오지 못했습니다.<br>네트워크를 확인한 뒤 다시 열어 주세요.</p></div>'; return; }
+      if (!st.ctx.index) { root.innerHTML = '<div class="fd-empty" data-state="error" role="alert"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>전국 자료 원본을 불러오지 못했습니다.<br>네트워크를 확인한 뒤 다시 열어 주세요.</p></div>'; return; }
       st.sgGeo = undefined; trackHash(); render();
       fetchJson('data/national/sigungu.geojson').then(g => { st.sgGeo = g && Array.isArray(g.features) ? g : null; st.svgKey = ''; render(); });
     });

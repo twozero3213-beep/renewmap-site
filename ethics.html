@@ -25,14 +25,8 @@
 <script src="site-motion.js" defer></script>
 </head>
 <body>
-<header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu">메뉴</button><nav class="menu" id="site-menu" aria-label="주요 메뉴">
-      <a href="about.html">서비스 소개</a>
-      <a href="explore.html#map">지도 탐색</a>
-      <a href="docs.html">문서</a>
-      <a href="field/">현장 확인</a>
-      <a href="explore.html#gov">업무 바로 가기</a>
-      <a href="about.html#faq">FAQ</a>
-    </nav><a class="btn header-cta" href="about.html#contact">시범 납품 상담</a></div></header>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="field/">현장 기록</a><a href="field/redev.html">신청요건</a><a href="data.html">데이터 출처</a><a href="about.html#contact">시범 상담</a></nav></div></header>
 <main class="wrap page" id="main">
 <nav class="breadcrumb" aria-label="현재 위치"><ol><li><a href="./">홈</a></li><li aria-current="page">AI 윤리·데이터 원칙</li></ol></nav>
 <h1>AI는 거들고, 판단은 사람이</h1>
@@ -47,7 +41,7 @@
 <h2>숫자 하나가 화면에 닿기까지</h2>
 <ol class="eth-flow" aria-label="숫자의 흐름 5단계">
   <li><b>공공데이터</b>출처·기준일·이용조건 기록</li>
-  <li><b>원장 셀</b>값마다 계산식·규칙 버전</li>
+  <li><b>자료 원본 한 칸</b>값마다 계산식·규칙 버전</li>
   <li><b>사람이 만든 규칙</b>법 조문을 읽고 승인</li>
   <li><b>지도·척도표·점수</b>판정 아님, 계산식 공개</li>
   <li><b>AI 문장(선택)</b>숫자만 옮김, 사람 검토</li>
@@ -59,7 +53,7 @@
   <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="26" width="8" height="14" rx="2" class="f"/><rect x="20" y="16" width="8" height="24" rx="2" class="f"/><rect x="32" y="8" width="8" height="32" rx="2" class="f"/></svg><span class="n">02</span><h2>점수와 순위는 계산식을 함께 보여 드립니다.</h2><p>동네 점수·치안 점수·재생 필요 점수는 공개한 지표를 전국 백분위로 바꿔 같은 방식으로 더한 값입니다.<br>치안 점수는 경찰청 범죄 통계(시·군·구)와 CCTV·보안등·비상벨·경찰관서 거리로만 계산합니다.<br>'기피 지역' 같은 이름은 붙이지 않고, 점수가 낮다고 그곳 사람을 판단하지 않습니다.<br>점수와 순위는 참고용이며 판정·공모 근거·납품 문서에는 쓰지 않습니다.</p></article>
   <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h18l8 8v28H12z" class="f"/><path d="M30 6v8h8M18 24h12M18 30h12M18 36h8"/></svg><span class="n">03</span><h2>모든 숫자에 출처와 기준일이 있습니다.</h2><p>화면과 보고서의 숫자는 출처, 조회 시각, 기준일, 계산식을 따라가 확인할 수 있습니다.<br>모르는 것은 '추가확인'이라고 표시합니다.</p></article>
   <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 36l10-12 8 6 8-10 10 2" /><path d="M32 14l10 2-2 10" /><path d="M6 36l10-12 8 6 8-10 10 2v8l-10-2-8 10-8-6-10 12z" class="f" stroke-dasharray="3 3"/></svg><span class="n">04</span><h2>전망은 과거 추세를 이어 본 것입니다.</h2><p>1~5년 뒤 전망은 과거 자료의 흐름을 연장한 계산입니다.<br>판정이 아니며 투자나 부동산 거래 조언도 아닙니다.<br>예측에는 틀릴 수 있는 범위(불확실성 구간)를 함께 보여 드립니다.</p></article>
-  <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="10" width="32" height="28" rx="4" class="f"/><path d="M14 20h12M14 28h20M30 16l4 4"/><path d="M34 6l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/></svg><span class="n">05</span><h2>AI가 쓴 문장은 숫자만 인용합니다.</h2><p>AI 보고서 문장은 원장에 있는 숫자와 출처만 옮깁니다.<br>'좋다', '나쁘다', '위험하다' 같은 평가는 쓰지 않습니다.<br>AI가 쓴 문장이라는 표시를 하며, 중요한 판단 전에는 사람이 검토해 주세요.</p></article>
+  <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="10" width="32" height="28" rx="4" class="f"/><path d="M14 20h12M14 28h20M30 16l4 4"/><path d="M34 6l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/></svg><span class="n">05</span><h2>AI가 쓴 문장은 숫자만 인용합니다.</h2><p>AI 보고서 문장은 자료 원본에 있는 숫자와 출처만 옮깁니다.<br>'좋다', '나쁘다', '위험하다' 같은 평가는 쓰지 않습니다.<br>AI가 쓴 문장이라는 표시를 하며, 중요한 판단 전에는 사람이 검토해 주세요.</p></article>
   <article class="eth-card is-no"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="16" class="f"/><path d="M13 13l22 22M16 24h16"/></svg><span class="n">06</span><h2>쓰지 않는 정보가 있습니다.</h2><p>성별, 결혼 여부, 직업, 건강 정보는 쓰지 않습니다.<br>성범죄자 공개정보는 청소년성보호법 제55조가 공개 목적 밖의 활용을 금지해 쓰지 않습니다.<br>건물 소유 정보는 소유 구분과 공유인 수까지만 쓰고, 이름과 연락처는 모으지 않습니다.</p></article>
   <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6l14 6v10c0 10-6 17-14 20-8-3-14-10-14-20V12z" class="f"/><path d="M17 24l5 5 9-10"/></svg><span class="n">07</span><h2>공공데이터의 이용 조건을 지킵니다.</h2><p>공공누리 유형 등 원천 데이터의 이용 조건을 확인하고, 허용되지 않는 자료는 재배포하지 않습니다.</p></article>
   <article class="eth-card is-yes"><svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 12h32v20H20l-8 8v-8H8z" class="f"/><path d="M16 20h16M16 26h10"/></svg><span class="n">08</span><h2>이의가 있으면 알려 주세요.</h2><p>잘못된 숫자, 낙인으로 읽히는 표현, 개인정보 문제를 발견하면 <a href="mailto:renewmapteam@gmail.com?subject=%5B%EC%9D%B4%EC%9D%98%5D">renewmapteam@gmail.com</a>으로 알려 주세요.<br>영업일 기준 &lt;3일&gt; 안에 확인 결과를 답하고, 고칠 것은 고칩니다.</p></article>
@@ -68,14 +62,14 @@
 <h2>무료 AI 보고서는 이렇게 만들어집니다</h2>
 <ol class="eth-flow" aria-label="AI 보고서창 동작 4단계">
   <li><b>동 고르기</b>지도에서 읍·면·동 선택</li>
-  <li><b>원장 문장</b>숫자·출처만으로 자동 작성</li>
-  <li><b>AI 다듬기(선택)</b>동의한 뒤에만 외부 AI로 전송<br>동 이름·원장 문장만, 개인정보 없음</li>
-  <li><b>숫자 대조</b>원장 값과 다르면 표시하지 않음</li>
+  <li><b>자료 원본 문장</b>숫자·출처만으로 자동 작성</li>
+  <li><b>AI 다듬기(선택)</b>동의한 뒤에만 외부 AI로 전송<br>동 이름·자료 원본 문장만, 개인정보 없음</li>
+  <li><b>숫자 대조</b>자료 원본 값과 다르면 표시하지 않음</li>
 </ol>
-<p class="eth-note">무료이고 로그인이 없으며, 입력은 저장하지 않습니다.<br>AI가 리뉴맵 원장의 숫자와 출처를 문장으로 옮깁니다. 평가나 판정은 하지 않습니다.<br>AI 생성 문장입니다. 공모·계획에 쓰기 전에 원장 화면과 출처를 사람이 확인하세요.</p>
+<p class="eth-note">무료이고 로그인이 없으며, 입력은 저장하지 않습니다.<br>AI가 리뉴맵 자료 원본의 숫자와 출처를 문장으로 옮깁니다. 평가나 판정은 하지 않습니다.<br>AI 생성 문장입니다. 공모·계획에 쓰기 전에 자료 원본 화면과 출처를 사람이 확인하세요.</p>
 <p class="eth-note">참고 기준: 과학기술정보통신부 「국가 인공지능 윤리기준」, 개인정보보호위원회의 인공지능 관련 개인정보 안내서. 정확한 명칭·개정판은 확인 중입니다.<br>원문: <code>docs/legal/ai_ethics.md</code>.<br>개인정보: <a href="privacy.html">개인정보 처리방침</a></p>
 </main>
-<footer><div class="wrap"><div class="links"><a href="./">홈</a><a href="./#faq">자주 묻는 질문</a><a href="./#contact">문의</a><a href="ethics.html">AI 윤리·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a></div>
+<footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="rules.html">기준 원문 대조</a><a href="data.html">데이터 출처</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="rank.html">동네 점수·순위</a><a href="biz.html">사업성 간이 계산</a><a href="index.html#tools">참고 도구</a></div>
 <p>리뉴맵 RENEWMAP, 부산<br><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div></footer>
 </body>
 </html>

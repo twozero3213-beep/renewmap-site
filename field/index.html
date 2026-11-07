@@ -14,7 +14,7 @@
 <meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="리뉴맵 RENEWMAP">
 <meta property="og:title" content="현장 기록 | 리뉴맵">
-<meta property="og:description" content="사진·위치·그 동의 공식 현황을 출처와 함께 붙인 현장 확인 1쪽을 휴대폰에서 만듭니다.">
+<meta property="og:description" content="사진·위치·그 동의 공식 현황을 출처와 함께 붙인 현장 기록 1쪽을 휴대폰에서 만듭니다.">
 <meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#006f5b">
@@ -29,8 +29,8 @@
 </head>
 <body class="field">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><h1>현장 기록</h1><span id="today" class="today"></span></div></header>
-<p id="recBadge" class="rec-badge" role="status" hidden>업무 촬영 중입니다 · 리뉴맵 현장 확인</p>
+<header class="top"><div class="wrap"><a class="logo" href="../index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 찾기</a><a href="./" aria-current="page">현장 기록</a><a href="redev.html">신청요건</a><a href="../data.html">데이터 출처</a><a href="../about.html#contact">시범 상담</a></nav></div><div class="wrap"><h1>현장 기록</h1><span id="today" class="today"></span></div></header>
+<p id="recBadge" class="rec-badge" role="status" hidden>업무 촬영 중입니다 · 리뉴맵 현장 기록</p>
 <main id="main">
   <p class="hint"><a href="twin.html">3D 모델 배치와 4D 단계 비교</a></p>
   <div id="newData" class="note" role="status" hidden>
@@ -136,7 +136,7 @@
       <summary>자세히 (지번·자료와 비교)</summary>
       <label for="jibun">지번 (위치를 못 받을 때)</label>
       <input id="jibun" autocomplete="off" placeholder="예: 123-4">
-      <label for="pnu">필지 번호 (PNU, 19자리)</label>
+      <label for="pnu">필지 번호(PNU, 토지대장 번호 19자리)</label>
       <input id="pnu" inputmode="numeric" maxlength="19" autocomplete="off">
       <label for="item">대조 항목</label>
       <select id="item"></select>
@@ -171,6 +171,9 @@
       <label for="radius">같은 자리로 볼 거리</label>
       <select id="radius"><option value="20">20m</option><option value="30">30m</option><option value="50">50m (임시값)</option><option value="100">100m</option></select>
       <p class="hint">50m는 임시값입니다.<br>반여동 30지점 시연 뒤에 정합니다.</p>
+      <button type="button" class="ghost" id="prefetch">가리기 도구 미리 받기(약 20MB, Wi-Fi 권장)</button>
+      <p id="prefetchState" class="hint" role="status">가리기 도구: 확인 중</p>
+      <p class="hint">현장에 나가기 전에 받아 두면 첫 사진에서 기다리지 않습니다.<br>홈 화면에 추가하거나 Wi-Fi에 있으면 저절로 받습니다.</p>
       <label for="importZip">다른 사람이 내보낸 ZIP 가져오기</label>
       <input id="importZip" type="file" accept=".zip,application/zip">
       <p class="hint">리뉴맵 현장 기록에서 내보낸 ZIP만 받습니다.<br>가져온 기록에는 '가져옴'이 붙습니다.<br>이 기기에 있던 기록은 바뀌지 않습니다.</p>
@@ -184,6 +187,7 @@
     <button type="button" id="up">ZIP 올리기</button>
   </div>
 </main>
+<footer><div class="wrap"><div class="links"><a href="../about.html">서비스 소개</a><a href="../rules.html">기준 원문 대조</a><a href="../data.html">데이터 출처</a><a href="../ethics.html">AI 윤리</a><a href="../privacy.html">개인정보 처리방침</a><a href="../index.html#tools">참고 도구</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
 <div id="toast" class="toast" role="status" hidden><svg class="toast-ok" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11"/><path d="M7 12.5l3.2 3.2L17 9"/></svg><span id="toastText"></span><button type="button" id="toastAct" hidden></button></div>
 <dialog id="notice" aria-labelledby="noticeTitle">
   <h2 id="noticeTitle">촬영 사실 표시</h2>

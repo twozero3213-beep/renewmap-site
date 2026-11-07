@@ -105,5 +105,31 @@
     try { out.plates = await findPlates(canvas); } catch (e) { out.errors.push("번호판 찾기: " + (e && e.message ? e.message : e)); }
     return out;
   }
-  return { padBox, mergeBoxes, plateBoxes, wordsOf, findFaces, findPlates, findAll };
+  // 미리 받기: 빈 캔버스로 한 번 돌려, 실제 불러오는 파일(기기에 맞는 wasm 판까지)을 서비스 워커가 KEEP 규칙으로 캐시하게 한다.
+  // 파일 목록을 따로 들고 있지 않으므로 받은 비율은 알 수 없다(화면은 '받는 중'만 보인다)
+  async function prefetch() {
+    const c = document.createElement("canvas"); c.width = 64; c.height = 64;
+    c.getContext("2d").fillRect(0, 0, 64, 64);
+    const r = await findAll(c);
+    if (r.errors.length) throw new Error(r.errors.join(" / "));
+    // 번호판 읽기 엔진은 워커 안에서 파일을 받는다. 그 요청이 서비스 워커를 거치지 않는 브라우저(헤드리스 Chromium 실측 2026-11-08)가 있어 화면에서 한 번 더 받아 캐시에 넣는다.
+    // 코어 판 고르기는 worker.min.js(tesseract.js)와 같은 wasm 기능 검사다
+    const ok = (bytes) => WebAssembly.validate(new Uint8Array(bytes));
+    const core = ok([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 15, 1, 13, 0, 65, 1, 253, 15, 65, 2, 253, 15, 253, 128, 2, 11]) ? "relaxedsimd-" : ok([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11]) ? "simd-" : "";
+    for (const f of ["tesseract/worker.min.js", `tesseract/core/tesseract-core-${core}lstm.wasm.js`, "models/eng.traineddata.gz"]) {
+      const res = await fetch(BASE + f);
+      if (!res.ok) throw new Error(`번호판 읽기 도구를 받지 못했다(${f})`);
+      await res.arrayBuffer();
+    }
+  }
+  // 받아 둔 것 확인: 캐시에 든 주소 가운데 큰 파일 셋이 모두 있어야 '받음'. 어느 wasm 판이든 lstm 코어 하나면 된다
+  const DONE = [/\/vendor\/vision\/mediapipe\/vision_wasm_internal\.wasm$/, /\/vendor\/vision\/tesseract\/core\/tesseract-core(?:-[a-z]+)?-lstm\.wasm\.js$/, /\/vendor\/vision\/models\/eng\.traineddata\.gz$/];
+  const isDone = (urls) => DONE.every((re) => (urls || []).some((u) => re.test(u)));
+  // 편집 캔버스는 정사각형 상자(object-fit: contain)라 그림이 가운데 놓인다. 화면 좌표를 그림 좌표로 되돌리고 그림 밖은 가장자리로 자른다
+  function fitPoint(rect, W, H, cx, cy) {
+    const k = Math.min(rect.width / W, rect.height / H) || 1;
+    const ox = rect.left + (rect.width - W * k) / 2, oy = rect.top + (rect.height - H * k) / 2;
+    return { x: clamp((cx - ox) / k, 0, W), y: clamp((cy - oy) / k, 0, H) };
+  }
+  return { padBox, mergeBoxes, plateBoxes, wordsOf, findFaces, findPlates, findAll, prefetch, isDone, fitPoint };
 });
