@@ -23,7 +23,7 @@
 
 ## 동네별 페이지
 
-- 전국 행정동 3,598곳마다 정적 페이지가 있습니다:`https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html` (예: [서울특별시 종로구 사직동 쇠퇴 3요건 현황](https://twozero3213-beep.github.io/renewmap-site/dong/11010530.html)). 목록은 [행정동 목록](https://twozero3213-beep.github.io/renewmap-site/dong/index.html)과 [사이트맵](https://twozero3213-beep.github.io/renewmap-site/sitemap-dong.xml).
+- 전국 행정동 3,610곳마다 정적 페이지가 있습니다:`https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html` (예: [서울특별시 종로구 사직동 쇠퇴 3요건 현황](https://twozero3213-beep.github.io/renewmap-site/dong/11010530.html)). 목록은 [행정동 목록](https://twozero3213-beep.github.io/renewmap-site/dong/index.html)과 [사이트맵](https://twozero3213-beep.github.io/renewmap-site/sitemap-dong.xml).
 
 ## 리뉴맵이 하지 않는 일
 
@@ -75,17 +75,17 @@ HWPX, PDF, 엑셀 조서로 납품하는 것을 목표로 개발하고 있습니
 
 ## 데이터 출처 (29종, 자세히는 https://twozero3213-beep.github.io/renewmap-site/data.html)
 
-- 국토교통부 도시재생종합정보체계 쇠퇴진단지표(읍면동) — 국토교통부, 기준 2024, 이용조건 이용허락범위 제한 없음: https://www.city.go.kr/portal/notice/opensys/contents02/link.do
-- 행정안전부 주민등록인구통계(KOSIS 공유서비스 행정구역(읍면동)별 주민등록인구) — 행정안전부, 기준 1993~2024, 이용조건 공공누리 1유형: https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B04005N
+- 국토교통부 도시재생종합정보체계 쇠퇴진단지표(읍면동) — 국토교통부, 기준 2025, 이용조건 이용허락범위 제한 없음: https://www.city.go.kr/portal/notice/opensys/contents02/link.do
+- 행정안전부 주민등록인구통계(KOSIS 공유서비스 행정구역(읍면동)별 주민등록인구) — 행정안전부, 기준 1993~2025, 이용조건 공공누리 1유형: https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B04005N
 - 국가데이터처(옛 통계청) 전국사업체조사(SGIS OpenAPI 사업체 통계 stats/company) — 국가데이터처, 기준 2020~2024, 이용조건 공공누리 1유형: https://sgis.mods.go.kr/developer/html/newOpenApi/api/dataApi/census.html
-- 국가데이터처(옛 통계청) SGIS 행정구역경계(hadmarea) — 국가데이터처, 기준 2024, 이용조건 공공누리 1유형: https://sgis.mods.go.kr/developer/html/newOpenApi/api/dataApi/addressBoundary.html#hadmarea
+- 국가데이터처(옛 통계청) SGIS 행정구역경계(hadmarea) — 국가데이터처, 기준 2025, 이용조건 공공누리 1유형: https://sgis.mods.go.kr/developer/html/newOpenApi/api/dataApi/addressBoundary.html#hadmarea
 - 국토교통부 전국 버스정류장 위치정보(공공데이터포털 15067528) — 국토교통부, 기준 2025-10-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15067528/fileData.do
 - 행정안전부 CCTV정보 조회서비스(공공데이터포털 15155042) — 행정안전부, 기준 2026-09-30, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15155042/openapi.do
 - 국립중앙의료원 전국 응급의료기관 정보 조회 서비스(공공데이터포털 15000563) — 국립중앙의료원, 기준 2026-10-23, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15000563/openapi.do
 - 행정안전부 안전비상벨위치정보 조회서비스(공공데이터포털 15155046) — 행정안전부, 기준 2026-09-30, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15155046/openapi.do
 - 건강보험심사평가원 병원정보서비스(공공데이터포털 15001698) — 건강보험심사평가원, 기준 2026-10-23, 이용조건 공공누리 1유형: https://www.data.go.kr/data/15001698/openapi.do
 - 행정안전부 행정동별(통반단위) 세대원수별 주민등록 세대수(공공데이터포털 15108081) — 행정안전부, 기준 2026-10-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15108081/openapi.do
-- 행정안전부 주민등록인구통계(KOSIS DT_1B04005N 행정구역(읍면동)별/5세별 주민등록인구) — 행정안전부, 기준 2024-12-31, 이용조건 공공누리 1유형: https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B04005N
+- 행정안전부 주민등록인구통계(KOSIS DT_1B04005N 행정구역(읍면동)별/5세별 주민등록인구) — 행정안전부, 기준 2025-12-31, 이용조건 공공누리 1유형: https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B04005N
 - 전국도서관표준데이터(공공데이터포털 15013109) — 공공데이터포털, 기준 2026-10-23, 이용조건 공공누리 1유형: https://www.data.go.kr/data/15013109/standard.do
 - 부산광역시 구군 독거노인 현황조회 서비스(공공데이터포털 15160011) — 공공데이터포털, 기준 2026-05-27, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15160011/openapi.do
 - 국토안전관리원 노후화된 공공시설물현황(공공데이터포털 15017291) — 공공데이터포털, 기준 2026-10-26, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15017291/openapi.do
@@ -100,7 +100,7 @@ HWPX, PDF, 엑셀 조서로 납품하는 것을 목표로 개발하고 있습니
 - 전국마을회관및경로당표준데이터(공공데이터포털 15114136) — 공공데이터포털, 기준 2026-10-29, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15114136/standard.do
 - 전국보안등정보표준데이터(공공데이터포털 15017320) — 공공데이터포털, 기준 2026-09-15, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15017320/standard.do
 - 국가철도공단 도시광역철도 역사정보(공공데이터포털 15013205, 레일포털) — 국가철도공단, 기준 2026-06-25, 이용조건 이용허락범위 제한 없음: https://data.kric.go.kr/rips/M_01_01/detail.do?id=32
-- 국가데이터처(옛 통계청) 국내인구이동통계(KOSIS 시군구/성/연령(5세)별 순이동자수) — 국가데이터처, 기준 2019~2024, 이용조건 공공누리 1유형: https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B26002
+- 국가데이터처(옛 통계청) 국내인구이동통계(KOSIS 시군구/성/연령(5세)별 순이동자수) — 국가데이터처, 기준 2019~2025, 이용조건 공공누리 1유형: https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B26002
 - 국토교통부 아파트 매매 실거래가 자료(공공데이터포털 15126469) — 국토교통부, 기준 202401~202610, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15126469/openapi.do
 - 행정안전부 인구감소지역 및 인구감소관심지역 지정 고시(제2026-61호) — 행정안전부, 기준 2026-10-20, 이용조건 이용허락범위 제한 없음: https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000016&nttId=130293
 - 경찰청_범죄 발생 지역별 통계(2025, 공공데이터포털 3074462) — 경찰청, 기준 2025-12-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/3074462/fileData.do

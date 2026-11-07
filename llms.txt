@@ -23,7 +23,7 @@
 
 ## 동네별 페이지
 
-- 전국 행정동 3,598곳마다 정적 페이지가 있습니다:`https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html` (예: [서울특별시 종로구 사직동 쇠퇴 3요건 현황](https://twozero3213-beep.github.io/renewmap-site/dong/11010530.html)). 목록은 [행정동 목록](https://twozero3213-beep.github.io/renewmap-site/dong/index.html)과 [사이트맵](https://twozero3213-beep.github.io/renewmap-site/sitemap-dong.xml).
+- 전국 행정동 3,610곳마다 정적 페이지가 있습니다:`https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html` (예: [서울특별시 종로구 사직동 쇠퇴 3요건 현황](https://twozero3213-beep.github.io/renewmap-site/dong/11010530.html)). 목록은 [행정동 목록](https://twozero3213-beep.github.io/renewmap-site/dong/index.html)과 [사이트맵](https://twozero3213-beep.github.io/renewmap-site/sitemap-dong.xml).
 
 ## 리뉴맵이 하지 않는 일
 
