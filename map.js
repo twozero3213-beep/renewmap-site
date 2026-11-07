@@ -1374,8 +1374,8 @@
     const slot = stage.querySelector('[data-map-slot]');
     const wait = msg => { if (slot) { slot.className = 'map-canvas is-wait'; slot.textContent = msg; } };
     if (!M) {
-      if (state.sgGeo === undefined) { wait('경계를 불러오는 중입니다.'); return; }
-      if (!state.sgGeo) { if (slot) slot.outerHTML = emptyHTML('경계 자료 준비 중', ['시군구 경계가 아직 없습니다.', '아래 목록으로 숫자는 볼 수 있습니다.']); return; }
+      // 경계가 아직 오는 중(undefined)이면 배경 지도부터 만들고 경계는 온 뒤에 얹는다(첫 화면 배경 타일이 경계를 기다리지 않게)
+      if (state.sgGeo === null) { if (slot) slot.outerHTML = emptyHTML('경계 자료 준비 중', ['시군구 경계가 아직 없습니다.', '아래 목록으로 숫자는 볼 수 있습니다.']); return; }
       const D = window.RenewDashboard;
       if (!window.L) { wait('지도를 불러오는 중입니다.'); (D ? D.loadLeaflet() : Promise.reject()).then(render, () => { state.mapErr = true; render(); }); return; }
       if (state.naver === undefined) { state.naver = null; wait('지도를 불러오는 중입니다.'); loadNaver().then(ok => { state.naver = ok; render(); }); return; }
@@ -1424,23 +1424,27 @@
       else if (vw) L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${vw}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: '&copy; <a href="https://www.vworld.kr">국토교통부 브이월드</a>' }).addTo(map);
       else L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
       const src = () => state.index.source && state.index.source.name;
-      const sg = L.geoJSON(state.sgGeo, { style: { weight: 1, color: '#fff' }, onEachFeature: (f, layer) => {
-        layer.bindTooltip(() => { const it = M.sgItems.get(String(f.properties.code)); return it ? tooltipHTML(it, curInd(), effMode(curInd()), null, src()) : `<b>${esc(f.properties.name)}</b>`; }, { sticky: true });
-        layer.on('click', () => { const r = leafRoute(state.index, String(f.properties.code)); if (r) go(r); });
-      } }).addTo(map);
-      const sido = state.sidoGeo ? L.geoJSON(state.sidoGeo, { interactive: false, style: { color: '#153c39', weight: 1.5, fill: false } }).addTo(map) : null;
       map.createPane('water').style.zIndex = 450; // 수질 점은 경계층(overlayPane 400) 위. 동 층을 다시 만들어도 덮이지 않는다
-      M = { el, map, sg, sido, emd: null, emdCode: null, water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
+      map.createPane('sg').style.zIndex = 395; // 시군구·시도 경계는 동 층(overlayPane 400) 아래. 경계가 동 층보다 늦게 와도 동을 덮지 않는다
+      M = { el, map, sg: null, sido: null, emd: null, emdCode: null, water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
       setTimeout(startAuto, 1500);
     }
     const L = window.L, ind = curInd(), mode = effMode(ind);
+    if (!M.sg && state.sgGeo) {
+      M.sg = L.geoJSON(state.sgGeo, { pane: 'sg', style: { weight: 1, color: '#fff' }, onEachFeature: (f, layer) => {
+        layer.bindTooltip(() => { const it = M.sgItems.get(String(f.properties.code)); return it ? tooltipHTML(it, curInd(), effMode(curInd()), null, M.src()) : `<b>${esc(f.properties.name)}</b>`; }, { sticky: true });
+        layer.on('click', () => { const r = leafRoute(state.index, String(f.properties.code)); if (r) go(r); });
+      } }).addTo(M.map);
+      M.sido = state.sidoGeo ? L.geoJSON(state.sidoGeo, { pane: 'sg', interactive: false, style: { color: '#153c39', weight: 1.5, fill: false } }).addTo(M.map) : null;
+      M.order = null; M.fitKey = null; // 새 층이라 앞뒤 순서와 화면 맞춤을 다시 한다
+    }
     M.el.setAttribute('aria-label', `${v.crumbs.map(c => c.label).join(' › ')} ${ind.label} 지도. 아래 목록으로도 고를 수 있습니다.`);
     // 시군구 레이어: 현재 단계의 항목만 색, 나머지는 옅게
     M.sgItems = new Map((m.kind === 'sg' ? m.items : []).map(it => [it.code, it]));
     const active = new Set(M.sgItems.keys()), inEmd = v.level === 'emd';
     // 앞으로 올리기(bringToFront)는 DOM에서 path를 다시 붙인다. 누르는 도중에 하면 click이 사라지므로 칸 구성이 바뀔 때만 한다
     const order = [...active].join() + '|' + v.emdCode + '|' + v.dong, reorder = M.order !== order; M.order = order;
-    M.sg.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.sgItems.get(code), on = active.has(code);
+    if (M.sg) M.sg.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.sgItems.get(code), on = active.has(code);
       l.setStyle(on ? { fillColor: it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: 0.7, color: '#fff', weight: 0.8, dashArray: it.value === null ? '4 3' : null }
         : { fillColor: '#c9d3cf', fillOpacity: inEmd ? 0.08 : 0.15, color: '#fff', weight: 0.5, dashArray: null });
       if (on && reorder) l.bringToFront(); });
@@ -1465,13 +1469,15 @@
     // 단계가 바뀔 때만 화면을 옮긴다(연도 재생·지표 자동 전환 중에는 움직이지 않는다)
     const key = v.level + ':' + m.kind + ':' + (v.emdCode || (v.sigungu && v.sigungu.code5) || (v.sido && v.sido.code2) || '');
     if (M.fitKey !== key && m.kind !== 'wait') {
-      M.fitKey = key;
       let b = null;
       if (m.kind === 'emd' && M.emd) b = M.emd.getBounds();
+      else if (!M.sg) { const bx = (m.kind === 'sg' ? m.items : []).map(it => it.bbox).filter(x => Array.isArray(x) && x.length === 4); b = bx.length ? L.latLngBounds(bx.flatMap(x => [[x[1], x[0]], [x[3], x[2]]])) : null; } // 경계 전: 목록의 bbox로 같은 범위를 먼저 잡는다
       else { const fg = L.featureGroup(); M.sg.eachLayer(l => { if (active.has(String((l.feature.properties || {}).code))) fg.addLayer(l); }); b = fg.getLayers().length ? fg.getBounds() : M.sg.getBounds(); }
       const right = inEmd && wide.matches && !panel.hidden && getComputedStyle(panel).position !== 'static' ? panel.offsetWidth + 28 : 12; // 지도 위에 겹친 패널일 때만 비운다
       const opt = { paddingTopLeft: [12, 12], paddingBottomRight: [right, 12], maxZoom: 14 };
-      if (b && b.isValid()) { if (reduced || !M.ready || state.naver) M.map.fitBounds(b, opt); else M.map.flyToBounds(b, { ...opt, duration: 0.9 }); M.ready = true; } // 첫 맞춤은 시점이 없어 flyTo를 못 쓴다
+      if (b && b.isValid()) { if (reduced || !M.ready || state.naver) M.map.fitBounds(b, opt); else M.map.flyToBounds(b, { ...opt, duration: 0.9 }); }
+      // 첫 맞춤은 시점이 없어 flyTo를 못 쓴다. 경계 전 bbox 맞춤은 임시라 끝난 것으로 치지 않는다(경계가 오면 애니메이션 없이 다시 맞춘다)
+      if (M.sg || (m.kind === 'emd' && M.emd)) { M.fitKey = key; M.ready = true; }
     }
   }
   function go(route, focusSel) {
