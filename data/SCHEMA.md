@@ -34,6 +34,11 @@
 ## v2 전국 레이어 (2026-10-23 저녁 추가) — `landing/data/national/`
 출처: 도시재생종합정보체계 쇠퇴진단지표 읍면동 CSV(2000~2024, 전국, 행정동 7자리 코드 = 통계청 코드) + 통계청 SGIS 경계(공공누리 1유형, EPSG:5179→4326 변환). 모든 값은 원장 셀을 거쳐 `export_cell()`로 내보낸다.
 
+> **줄여 저장(cell_pack v1, 2026-11-08)** — `emd/`·`living/`·`forecast/`·`latest/`의 셀 파일은 되풀이되는 출처 칸을 파일 맨 위 `cell_pack.prov`에 한 번만 적고,
+> 셀에는 번호 `_p`와 셀마다 다른 칸만 남긴다. 모든 셀에 있는 칸의 흔한 값은 `cell_pack.omit`에 둔다. 아래 설명은 **되돌린 모양** 기준이다.
+> 읽을 때: 화면은 `util.js fetchJson`(현장앱은 `cellpack.js`)이, 파이썬은 `renewmap.export.cellpack.load_json`이 자동으로 되돌린다. 직접 `JSON.parse`/`json.loads` 하지 않는다.
+> 쓸 때: 내보내기 스크립트는 원래 모양으로 써도 되고, 마지막에 `python -m scripts.pack_cells`를 한 번 돌린다. 되돌렸을 때 원본과 다르면 그 파일은 쓰지 않는다.
+
 - `index.json`: `{generated_at, snapshot_hash, source:{name,url,license_type,base_year}, sido:[{code2,name,center}], sigungu:[{code5,sido2,name,center,bbox,summary:{indicator_code:{value,year,status}}}]}` — summary는 최신 연도의 대표 지표 3개(`DECLINE_AGING_20Y_PCT`, `DECLINE_POP_CHANGE_PCT`, `DECLINE_BIZ_*`)만.
 - `sido.geojson`, `sigungu.geojson`: 단순화된 경계(각 2MB 이하), `properties.code`, `properties.name`.
 - `emd/{code5}.geojson`: 해당 시군구의 행정동 경계. `properties.code`(7자리), `name`.

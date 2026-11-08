@@ -32,7 +32,8 @@
 
   // ── 자료(오프라인 경계·현황). 서비스 워커가 처음 받은 파일을 저장해 둔다
   const getJson = (p) => fetch(DATA + p).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); });
-  const L = E.makeLocator((p) => getJson("national/" + p));
+  // 2026-11-08: national/emd·living 파일은 원장 셀을 줄여 저장한다(cell_pack). 받자마자 원래 모양으로 되돌린다(../cellpack.js, index.html에서 먼저 싣는다)
+  const L = E.makeLocator((p) => getJson("national/" + p).then((j) => window.RenewCellPack.unpack(j)));
   const templates = getJson("report_templates.json").then((t) => D.setTemplates(t)).catch(() => null);
 
   function locLine() {
