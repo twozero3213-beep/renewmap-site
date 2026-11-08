@@ -7,7 +7,8 @@
   const { esc, isNum } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
   // HWPX·XLSX·복사용 표·1쪽 요약·지도 이미지. 브라우저에서는 첫 지도 뒤에 받는다(아래 loadDocgen): undefined = 아직, null = 못 받음
   let DG = typeof module !== 'undefined' && module.exports ? require('./docgen.js') : (typeof window !== 'undefined' && window.RenewDocgen) || undefined;
-  const nf =d => new Intl.NumberFormat('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  // 서식기는 자릿수마다 한 번만 만든다(호출마다 새로 만들면 휴대폰 첫 지도에서 1초 넘게 썼다, 2026-11-08 프로파일)
+  const NF = new Map(), nf = d => NF.get(d) || NF.set(d, new Intl.NumberFormat('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d })).get(d);
   const digitsOf = v => (Math.round(v * 10) % 10 === 0 ? 0 : 1);
   const fmt = (v, unit) => (isNum(v) ? nf(digitsOf(v)).format(v) + (unit || '') : null);
   const SOURCE_DEFAULT = '도시재생종합정보체계 쇠퇴진단지표';
@@ -410,7 +411,7 @@
     const notes = [ind.noPlay ? ind.yearNote : null, isNum(reg) && y >= reg ? `${reg}년부터 등록기반 통계로 바뀐 뒤 — 이전 해와 직접 비교 주의` : null].filter(Boolean);
     const f = nf(0).format, stdText = std === null ? '' : `기준선(${pm(std)}${ind.unit} 이상)`;
     return { year: y, over: c.over, n: c.n, std, notes, skipNote: !ind.noPlay && py.skipped.length ? `자료 없는 해 건너뜀: ${py.skipped.join('·')}` : null,
-      text: c.n ? `${stdText} 넘은 동 ${c.over === null ? '–' : f(c.over)}곳 / 값 있는 동 ${f(c.n)}곳 · ${y}년` : `${y ?? ''}년은 자료가 없습니다` };
+      text: sgs && index && index.seriesPending ? '연도별 동 수를 불러오는 중입니다' : c.n ? `${stdText} 넘은 동 ${c.over === null ? '–' : f(c.over)}곳 / 값 있는 동 ${f(c.n)}곳 · ${y}년` : `${y ?? ''}년은 자료가 없습니다` };
   }
   function sigunguModel(sgs, ind, mode, inds, year, ext) {
     const scale = scaleFor(ind, mode), key = keyOf(ind, mode), byYear = !!ind.series && mode !== 'trend';
@@ -1570,7 +1571,7 @@
   }
   function autoNext() { const list = autoList(), k = list.findIndex(x => x.code === state.ind); autoRun(list[(k + 1) % list.length], 0); }
   function startAuto(from) {
-    if (!autoAsked || autoT || reduced || state.touched || !visible || document.hidden || !M) return;
+    if (!autoAsked || autoT || reduced || state.touched || !visible || document.hidden || !M || (state.index && state.index.seriesPending)) return;
     if (resolve(state.index, state.route).level !== 'nation') return;
     const list = autoList(); if (!list.length) return;
     autoRun(list.find(x => x.code === (from || state.ind)) || list[0], 0);
@@ -1649,7 +1650,8 @@
   }
   // 목록과 경계를 동시에 받는다(전에는 목록을 다 받은 뒤 경계를 받아 첫 지도가 한 번 더 기다렸다). 보조 자료(낮은 우선순위)는 이 둘이 온 뒤에 받는다(util.js fetchJson)
   const geoP = Promise.all([fetchJson('data/national/sigungu.geojson'), fetchJson('data/national/sido.geojson')]);
-  const indexP = fetchJson('data/national/index.json');
+  // 첫 지도는 index_core.json(연도 요약·미연결 목록을 뺀 36KB)만 기다린다. 없으면 전체 index.json
+  const indexP = fetchJson('data/national/index_core.json').then(c => (c && Array.isArray(c.sigungu) ? c : fetchJson('data/national/index.json')));
   window.renewAfter = Promise.all([indexP, geoP]).then(() => {}, () => {});
   if (DG === undefined) window.renewAfter.then(loadDocgen);
   indexP.then(index => {
@@ -1658,6 +1660,15 @@
     if (!state.index) { render(); return; }
     if (state.route.sido && !matchMedia('(min-width: 1100px)').matches) app.scrollIntoView({ block: 'start' }); // 넓은 화면은 한 화면 배치라 옮기지 않는다
     searchSetup();
+    if (index.series_file) { // 시·군·구 연도 요약은 목록·경계 뒤에 받아 붙인다. 오기 전에는 연도 문구를 '불러오는 중'으로 두고 자동 재생을 미룬다
+      index.seriesPending = true;
+      fetchJson('data/national/' + index.series_file, true).then(s => {
+        const by = (s && s.sigungu) || {};
+        index.sigungu.forEach(sg => { if (by[sg.code5]) sg.series = by[sg.code5]; });
+        index.unmatched = (s && s.unmatched) || [];
+        index.seriesPending = false; render(); startAuto();
+      });
+    }
     render();
     geoP.then(([sg, sido]) => {
       state.sgGeo = sg && Array.isArray(sg.features) ? sg : null; state.sidoGeo = sido && Array.isArray(sido.features) ? sido : null; render(); startAuto();

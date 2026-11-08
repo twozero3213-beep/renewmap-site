@@ -6,7 +6,7 @@
   const YEARS = [20, 30];
   const STATUS_CLASS = { '확인': 'ok', '충돌': 'conflict', '추가확인': 'check' };
   const NOTE = '건축물대장 기준 노후 건축물 비율이며, 판정 결과가 아닙니다.';
-  const nf = d => new Intl.NumberFormat('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const NF = new Map(), nf = d => NF.get(d) || NF.set(d, new Intl.NumberFormat('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d })).get(d); // 자릿수마다 한 번만 만든다
   const { esc, isNum } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
   const byCode = (a, b) => String(a.code).localeCompare(String(b.code));
 

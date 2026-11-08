@@ -554,7 +554,7 @@
       let src = new Sources();
       const lines = summaryLines(brief, byCode, facts, src, crit, todo.rows.length - 1, one.fallback);
       const trial = new Sources(); trial.list = src.list.map(s => ({ ...s })); trial.idx = new Map(src.idx);
-      let rows = picked.slice(0, nRows).map(r => { const c = byCode.get(rc.get(r[0])); return [label(r[0]), c ? valueWithUnit(c) : tight(r[1]), r[2], r[5].replace(PENDING_SUFFIX, mark), trial.ref(c || facts.get(rc.get(r[0]))) || '-']; });
+      let rows = picked.slice(0, nRows).map(r => { const c = byCode.get(rc.get(r[0])); return [label(r[0]), tight(c ? valueWithUnit(c) : r[1]), r[2], r[5].replace(PENDING_SUFFIX, mark), trial.ref(c || facts.get(rc.get(r[0]))) || '-']; });
       let head = one.table_columns, widths = one.table_widths;
       if (trial.list.length <= one.sources_max) src = trial;     // 출처가 5개를 넘으면 표의 출처 열을 빼고 요약 문장의 출처만 싣는다
       else { head = head.slice(0, -1); widths = one.table_widths_no_ref; rows = rows.map(r => r.slice(0, -1)); }

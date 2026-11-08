@@ -374,7 +374,9 @@
     render(); root.querySelector(s.hasAttribute('data-fd-sido') ? '[data-fd-sido]' : '[data-fd-sg]')?.focus({ preventScroll: true });
   });
   const ok = (j, k) => (j && Array.isArray(j[k]) ? j : null);
-  Promise.all(['index.json', 'living/index.json', 'designations.json', 'migration.json', 'forecast/index.json', 'realestate.json'].map((f, i) => fetchJson('data/national/' + f, i > 1)))
+  // 목록은 map.js와 같은 index_core.json(연도 요약 없음, 같은 캐시로 한 번만 받는다). 없으면 전체 index.json
+  const core = fetchJson('data/national/index_core.json').then(c => (ok(c, 'sigungu') ? c : fetchJson('data/national/index.json')));
+  Promise.all([core, ...['living/index.json', 'designations.json', 'migration.json', 'forecast/index.json', 'realestate.json'].map((f, i) => fetchJson('data/national/' + f, i > 0))])
     .then(([index, li, des, mig, fi, re]) => {
       st.ctx = { index: ok(index, 'sigungu'), living: ok(li, 'indicators'), designations: ok(des, 'items'), migration: ok(mig, 'sigungu'), forecastIdx: ok(fi, 'horizons'), realestate: ok(re, 'sigungu') };
       if (!st.ctx.index) { root.innerHTML = '<div class="fd-empty" data-state="error" role="alert"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>전국 자료 원본을 불러오지 못했습니다.<br>네트워크를 확인한 뒤 다시 열어 주세요.</p></div>'; return; }
