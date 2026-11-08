@@ -1021,7 +1021,7 @@
   const fetchJson = window.RenewUtil.fetchJson;
   // 외부 AI 서버 주소는 비워 둔다(서버로 문장을 보내지 않는다). 다듬기는 기기 안 AI(detectDeviceAI)로만 한다(docs/legal/ai_ethics.md ⑤)
   const AI_POLISH_ENDPOINT = '';
-  const state = { route: parseHash(location.hash) || {}, ind: INDICATORS[0].code, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, dash: null, mapErr: false, touched: false,
+  const state = { route: parseHash(location.hash) || {}, ind: INDICATORS[0].code, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, dash: undefined, mapErr: false, touched: false,
     migration: undefined, designations: undefined, forecastIdx: undefined, realestate: undefined, templates: undefined };
   const inds = () => allIndicators(state.living, { migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate });
   const curInd = () => indOf(state.ind, inds());
@@ -1293,8 +1293,16 @@
     else if (b.hasAttribute('data-ai-go')) { if (confirm) confirm.hidden = true; aiRun(); } // 이 클릭(사용자 활성화) 안에서 create()가 불려 내려받기가 시작된다
   });
   // 건축HUB 3기준(dashboard.json, 법정동)은 수집된 시군구에서만 별도 섹션으로. 행정동 값과 합치지 않는다
+  // 2026-11-08 속도: dashboard.json(압축 풀면 2.5MB)은 이 칸에만 쓰는데, 전에는 지도를 열자마자 받아 휴대폰이 첫 화면과 함께 읽어야 했다.
+  // 이제 읍·면·동 단계에 처음 들어올 때 받는다(undefined=아직 안 받음, null=없음). 도착했을 때 '수집됨' 시군구가 있으면 한 번 다시 그린다
+  let dashP = null;
+  const loadDash = () => dashP || (dashP = fetchJson('data/dashboard.json', true).then(d => {
+    state.dash = d && Array.isArray(d.sigungu) ? d : null;
+    if (state.dash && state.dash.sigungu.some(s => s.status === '수집됨')) render();
+  }));
   function hubHTML(v) {
     const D = window.RenewDashboard, dash = state.dash;
+    if (D && v.emdCode && dash === undefined) loadDash();
     if (!D || !dash || !v.emdCode) return '';
     const node = v.gu || v.sigungu, mois = node ? String(node.mois_code5 || node.code5) : v.emdCode; // dashboard.json은 행안부 코드
     const sg = (dash.sigungu || []).find(s => String(s.code) === mois && s.status === '수집됨'); if (!sg) return '';
@@ -1705,9 +1713,9 @@
       state.sgGeo = sg && Array.isArray(sg.features) ? sg : null; render(); startAuto();
     });
   });
-  // 보조 자료 일곱 개는 다 받은 뒤 한 번만 다시 그린다(하나 올 때마다 지도·문서를 새로 그리면 휴대폰에서 1초 넘게 멈췄다, 2026-11-07 라이트하우스)
+  // 보조 자료 여섯 개는 다 받은 뒤 한 번만 다시 그린다(하나 올 때마다 지도·문서를 새로 그리면 휴대폰에서 1초 넘게 멈췄다, 2026-11-07 라이트하우스)
+  // 2026-11-08: dashboard.json(2.5MB, 정밀 사례 칸 전용)은 여기서 빼고 읍·면·동 단계에서 받는다(hubHTML의 loadDash)
   Promise.all([
-    fetchJson('data/dashboard.json', true).then(dash => { state.dash = dash; }), // 2.5MB, 정밀 사례 묶음에만 쓴다
     fetchJson('data/report_templates.json', true).then(j => { state.templates = j && typeof j === 'object' && j.onepage && j.summary ? j : null; if (DG && state.templates) DG.setTemplates(j); }),
     fetchJson('data/national/living/index.json').then(li => { state.living = li && Array.isArray(li.indicators) ? li : null; }),
     // 다른 직원이 만드는 중인 파일. 없으면 null → 해당 칩은 '수집 중'

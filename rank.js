@@ -31,7 +31,9 @@
 
   // 무게를 바꿔 다시 계산한 순위의 5~95% 구간(scores_range.json, export_scores.py 민감도). scope는 rows와 같다
   const scopeKey = scope => (scope === 'all' ? 'nat' : scope.length === 2 ? 'sido' : 'sg');
+  // range가 undefined면 아직 받는 중('…'), null이면 자료 없음('–'). 받는 중을 '없음'처럼 보이지 않게 나눈다(2026-11-08)
   function rangeText(range, code7, kind, scope) {
+    if (range === undefined) return '…';
     const r = range && range.dongs && range.dongs[code7] && range.dongs[code7][kind] && range.dongs[code7][kind][scopeKey(scope)];
     return r ? `${r[0].toLocaleString('ko-KR')}~${r[1].toLocaleString('ko-KR')}` : '–';
   }
@@ -50,7 +52,7 @@
   function init() {
     const $ = id => document.getElementById(id);
     const kindSel = $('rankKind'), sidoSel = $('rankSido'), sgSel = $('rankSg'), out = $('rankOut'), msg = $('rankMsg'), sens = $('rankSens');
-    let scores = null, idx = null, range = null;
+    let scores = null, idx = null, range;   // range: undefined=받는 중, null=없음
     const sgName = code5 => (idx.sigungu.find(s => s.code5 === code5) || {}).name || code5;
     const names = r => `${sgName(r.d.code5)} ${r.d.name}`;
     function draw() {
@@ -67,10 +69,12 @@
         .map(s => `<option value="${esc(s.code5)}">${esc(s.name)}</option>`).join('') : '');
       sgSel.disabled = !s2;
     }
-    Promise.all([fetch('data/national/scores.json').then(r => r.json()), fetch('data/national/index_core.json').then(r => r.json()),
-      fetch('data/national/scores_range.json').then(r => (r.ok ? r.json() : null)).catch(() => null)])
-      .then(([s, i, g]) => {
-        scores = s; idx = i; range = g;
+    // 2026-11-08 속도: 순위 범위(scores_range.json, 압축 풀면 1MB)를 기다리지 않고 점수·목록이 오면 표부터 그린다.
+    // 범위 열은 '…'로 두었다가 도착하면 다시 그린다. 받는 양은 같고 표가 먼저 보인다
+    const rangeP = fetch('data/national/scores_range.json').then(r => (r.ok ? r.json() : null)).catch(() => null);
+    Promise.all([fetch('data/national/scores.json').then(r => r.json()), fetch('data/national/index_core.json').then(r => r.json())])
+      .then(([s, i]) => {
+        scores = s; idx = i;
         sidoSel.innerHTML = '<option value="">전국</option>' + i.sido.map(x => `<option value="${esc(x.code2)}">${esc(x.name)}</option>`).join('');
         const q = new URLSearchParams(location.search);
         if (q.get('kind') in KINDS) kindSel.value = q.get('kind');
@@ -80,6 +84,7 @@
         kindSel.onchange = draw; sgSel.onchange = draw;
         sidoSel.onchange = () => { fillSg(); draw(); };
         draw();
+        rangeP.then(g => { range = g; draw(); });
       })
       .catch(() => { msg.textContent = '점수 자료를 불러오지 못했습니다. 새로고침해 주세요.'; });
   }
