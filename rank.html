@@ -45,10 +45,12 @@
   <label><span class="sr">시·군·구</span><select id="rankSg" disabled><option value="">시·군·구 전체</option></select></label>
 </form>
 <p id="rankMsg" aria-live="polite">불러오는 중입니다.</p>
+<p id="rankSens" class="sub"></p>
 <div class="table-wrap" tabindex="0" role="region" aria-label="동네 점수 순위 표" id="rankOut"></div>
 <h2>읽는 법과 한계</h2>
 <ul class="plain">
 <li>점수는 전국 안에서 어디쯤인지를 뜻합니다. 50점은 전국 가운데쯤입니다.</li>
+<li>무게를 바꾼 순위 범위: 모든 층의 무게를 기준의 50~150% 사이에서 1,000번 무작위로 바꿔 다시 계산했을 때 순위의 90%가 들어가는 구간입니다. 범위가 넓으면 그 순위는 계산 방식에 따라 크게 달라집니다(Saisana 외 2005, J. Royal Statistical Society A).</li>
 <li>범죄는 발생 장소 기준이라 상업·유흥지구가 있는 구는 주민 인구 대비 비율이 높게 나옵니다.</li>
 <li>범죄 값은 시·군·구 단위라 같은 구의 동은 같은 범죄 값을 씁니다. 일반구는 상위 시 전체 값을 씁니다.</li>
 <li>성범죄자 공개정보는 쓰지 않습니다(청소년성보호법 제55조). 점수가 낮다고 그곳 사람을 판단하지 않습니다.</li>
