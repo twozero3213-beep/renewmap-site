@@ -969,8 +969,35 @@
       basins.map(b => `<div class="table-wrap"><table class="rp-tbl"><caption>${esc(b)}</caption><thead><tr><th scope="col">측정소</th>${AUTO_COLS.map(c => `<th scope="col">${esc(c[1])}</th>`).join('')}</tr></thead><tbody>` +
         d.sites.filter(s => s.basin === b).map(s => `<tr><th scope="row">${esc(s.name)}</th>${AUTO_COLS.map(([k, , dg]) => `<td class="num">${cell(s.v && s.v[k], dg)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>').join('') + '</details>';
   }
+  // 폴리곤들의 바깥 경계 선([[경도, 위도], ...] 여러 개). 같은 파일 안 이웃 폴리곤은 꼭짓점을 공유하므로 한 번만 쓰인 변이 바깥이다.
+  // groupOf를 주면 같은 묶음끼리 공유한 변만 지운다(시·도 테두리). 칸과 같은 좌표에서 나오므로 선이 칸과 어긋나지 않는다
+  function outerLines(features, groupOf = () => 0) {
+    const ids = new Map(), idOf = p => { const k = Math.round(p[0] * 1e5) * 1e7 + Math.round(p[1] * 1e5); let v = ids.get(k); if (v === undefined) ids.set(k, v = ids.size); return v; }; // 문자열 키는 전국 파일에서 150ms 걸렸다
+    const edges = new Map();
+    for (const f of features) {
+      const c = f.geometry && f.geometry.coordinates; if (!c) continue;
+      const g = groupOf(f);
+      for (const poly of f.geometry.type === 'MultiPolygon' ? c : [c]) for (const ring of poly) for (let i = 1, ia = idOf(ring[0]); i < ring.length; i++) {
+        const ib = idOf(ring[i]);
+        if (ia !== ib) { const k = ia < ib ? ia * 1e7 + ib : ib * 1e7 + ia, had = edges.get(k);
+          if (!had) edges.set(k, { g, ia, ib, a: ring[i - 1], b: ring[i], used: false }); else if (had.g === g) edges.delete(k); }
+        ia = ib;
+      }
+    }
+    const at = Array.from({ length: ids.size }, () => []);
+    for (const e of edges.values()) { at[e.ia].push(e); at[e.ib].push(e); }
+    const lines = [];
+    for (const e of edges.values()) {
+      if (e.used) continue;
+      e.used = true;
+      const line = [e.a, e.b];
+      for (let next, end = e.ib; (next = at[end].find(x => !x.used));) { next.used = true; const fwd = next.ia === end; line.push(fwd ? next.b : next.a); end = fwd ? next.ib : next.ia; }
+      lines.push(line);
+    }
+    return lines;
+  }
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
-  const api = { forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
+  const api = { outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
@@ -994,7 +1021,7 @@
   const fetchJson = window.RenewUtil.fetchJson;
   // 외부 AI 서버 주소는 비워 둔다(서버로 문장을 보내지 않는다). 다듬기는 기기 안 AI(detectDeviceAI)로만 한다(docs/legal/ai_ethics.md ⑤)
   const AI_POLISH_ENDPOINT = '';
-  const state = { route: parseHash(location.hash) || {}, ind: INDICATORS[0].code, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, sidoGeo: undefined, dash: null, mapErr: false, touched: false,
+  const state = { route: parseHash(location.hash) || {}, ind: INDICATORS[0].code, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, dash: null, mapErr: false, touched: false,
     migration: undefined, designations: undefined, forecastIdx: undefined, realestate: undefined, templates: undefined };
   const inds = () => allIndicators(state.living, { migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate });
   const curInd = () => indOf(state.ind, inds());
@@ -1461,6 +1488,7 @@
     if (vw) window.L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${vw}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: '&copy; <a href="https://www.vworld.kr">국토교통부 브이월드</a>' }).addTo(map);
     else window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
   }
+  const lineLatLngs = lines => lines.map(l => l.map(([x, y]) => [y, x]));
   // 시군구·시도 경계층: 경계 자료가 오면 한 번만 만든다
   function addSgLayers() {
     if (M.sg || !state.sgGeo) return;
@@ -1469,7 +1497,7 @@
       layer.bindTooltip(() => { const it = M.sgItems.get(String(f.properties.code)); return it ? tooltipHTML(it, curInd(), effMode(curInd()), null, M.src()) : `<b>${esc(f.properties.name)}</b>`; }, { sticky: true });
       layer.on('click', () => { const r = leafRoute(state.index, String(f.properties.code)); if (r) go(r); });
     } }).addTo(M.map);
-    M.sido = state.sidoGeo ? L.geoJSON(state.sidoGeo, { pane: 'sg', interactive: false, style: { color: '#153c39', weight: 1.5, fill: false } }).addTo(M.map) : null;
+    M.sido = L.featureGroup([L.polyline(lineLatLngs(outerLines(state.sgGeo.features, f => String(f.properties.code).slice(0, 2))), { pane: 'sg', interactive: false, color: '#153c39', weight: 1.5, smoothFactor: 0 })]).addTo(M.map); // 묶음이라야 첫 시점이 잡히기 전 bringToFront가 오류 없이 지나간다
     M.order = null; M.fitKey = null; // 새 층이라 앞뒤 순서와 화면 맞춤을 다시 한다
   }
   // 시군구 레이어 색: 현재 단계의 항목만 색, 나머지는 옅게. 칸 구성이 바뀌었는지(reorder)와 색칠한 코드(active)를 돌려준다
@@ -1482,7 +1510,7 @@
       l.setStyle(on ? { fillColor: it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: 0.7, color: '#fff', weight: 0.8, dashArray: it.value === null ? '4 3' : null }
         : { fillColor: '#c9d3cf', fillOpacity: inEmd ? 0.08 : 0.15, color: '#fff', weight: 0.5, dashArray: null });
       if (on && reorder) l.bringToFront(); });
-    if (M.sido && reorder) M.sido.bringToFront();
+    if (M.sido) { M.sido.setStyle({ opacity: inEmd ? 0 : 1 }); if (reorder) M.sido.bringToFront(); } // 동 단계에서는 고른 구의 굵은 테두리가 대신한다
     return { active, reorder };
   }
   // 행정동 레이어: 시군구가 바뀔 때만 다시 만들고, 연도·지표는 setStyle로만 바꾼다(CSS transition)
@@ -1495,12 +1523,15 @@
           layer.on('click', () => { const code = String((f.properties || {}).code); if (M.emdItems.has(code)) go({ ...state.route, dong: code }); });
         } }).addTo(M.map);
         M.emdCode = v.emdCode;
+        if (M.emdLine) M.emdLine.remove();
+        M.emdLine = window.L.featureGroup([window.L.polyline(lineLatLngs(outerLines(m.geo.features)), { interactive: false, color: '#153c39', weight: 3, smoothFactor: 0 })]).addTo(M.map);
       }
       M.emdItems = new Map(m.items.map(it => [it.code, it]));
       M.emd.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.emdItems.get(code), sel = code === v.dong;
         l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: sel ? 0.25 : 0.6, color: sel ? '#153c39' : '#fff', weight: sel ? 4 : 1.5, dashArray: !it || it.value === null ? '4 3' : null });
         if (sel && reorder) l.bringToFront(); });
-    } else if (M.emd && v.level !== 'emd') { M.emd.remove(); M.emd = null; M.emdCode = null; }
+      if (reorder) M.emdLine.bringToFront();
+    } else if (M.emd && v.level !== 'emd') { M.emd.remove(); M.emdLine.remove(); M.emd = null; M.emdLine = null; M.emdCode = null; }
   }
   function syncWater() {
     if (state.water && state.waterData && !M.water) M.water = window.L.layerGroup(state.waterData.points.map(p => window.L.circleMarker([p.lat, p.lon], waterStyle(p)).bindTooltip(waterTipHTML(p, state.waterData.year)))).addTo(M.map);
@@ -1649,7 +1680,7 @@
     state.naver = null; loadNaver().then(ok => { state.naver = ok; render(); });
   }
   // 목록과 경계를 동시에 받는다(전에는 목록을 다 받은 뒤 경계를 받아 첫 지도가 한 번 더 기다렸다). 보조 자료(낮은 우선순위)는 이 둘이 온 뒤에 받는다(util.js fetchJson)
-  const geoP = Promise.all([fetchJson('data/national/sigungu.geojson'), fetchJson('data/national/sido.geojson')]);
+  const geoP = fetchJson('data/national/sigungu.geojson');
   // 첫 지도는 index_core.json(연도 요약·미연결 목록을 뺀 36KB)만 기다린다. 없으면 전체 index.json
   const indexP = fetchJson('data/national/index_core.json').then(c => (c && Array.isArray(c.sigungu) ? c : fetchJson('data/national/index.json')));
   window.renewAfter = Promise.all([indexP, geoP]).then(() => {}, () => {});
@@ -1670,8 +1701,8 @@
       });
     }
     render();
-    geoP.then(([sg, sido]) => {
-      state.sgGeo = sg && Array.isArray(sg.features) ? sg : null; state.sidoGeo = sido && Array.isArray(sido.features) ? sido : null; render(); startAuto();
+    geoP.then(sg => {
+      state.sgGeo = sg && Array.isArray(sg.features) ? sg : null; render(); startAuto();
     });
   });
   // 보조 자료 일곱 개는 다 받은 뒤 한 번만 다시 그린다(하나 올 때마다 지도·문서를 새로 그리면 휴대폰에서 1초 넘게 멈췄다, 2026-11-07 라이트하우스)

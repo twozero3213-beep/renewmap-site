@@ -38,6 +38,7 @@
 @media (max-width: 720px) { .map-canvas { height: 54vh; min-height: 300px; } }
 .map-canvas.is-wait { display: grid; place-items: center; color: var(--dim); font-size: 15px; }
 #map .leaflet-container { font: inherit; background: var(--canvas); }
+#map path.leaflet-interactive:focus { outline: none; } /* 도형을 누르면 브라우저가 둘레에 네모 틀을 그린다. 선택은 굵은 테두리로 보인다 */
 #map .leaflet-interactive { transition: fill .6s ease, fill-opacity .6s ease, stroke .3s; } /* 지표·연도 전환은 색이 번지듯 */
 #map .leaflet-tooltip { font-size: 14px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
 #map .leaflet-tooltip small { color: var(--dim); }
