@@ -66,23 +66,25 @@
         </form>
         <p id="heroMapCap" class="h-map-cap"></p>
       </div>
-      <!-- 문서 쌓기: 사진 → 위치 → 숫자 칩(출처 꼬리표) → 완성 문서. 숫자는 반여1동 근거 페이지(dong/21090700.html)의 실제 값이다 -->
+      <!-- 문서가 채워지는 순서: 사진 → 위치 → 숫자 → 출처. 항목 이름은 field/evidence.js의 실제 1쪽과 같다. 숫자는 dong/21090700.html의 실제 값(site.test.cjs가 대조). 진짜 사진이 없어 그림을 지어 넣지 않는다 -->
       <figure id="heroDoc" class="h-doc" aria-label="현장 기록 1쪽 예시">
-        <span class="h-sheet h-sheet-2 layer" data-step="4" aria-hidden="true"></span>
-        <span class="h-sheet h-sheet-1 layer" data-step="4" aria-hidden="true"></span>
         <div class="h-page">
-          <p class="h-page-t layer" data-step="4"><b>현장 기록 1쪽</b><span class="h-ex">예시</span></p>
-          <p class="h-page-s layer" data-step="4">부산 해운대구 반여1동</p>
-          <div class="h-photo layer" data-step="1">
-            <i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i>
-            <span class="h-mask">가림</span>
-            <span class="h-loc layer" data-step="2">반여1동 · 위치 오차 함께 기록</span>
-          </div>
-          <dl class="h-nums">
-            <div class="layer" data-step="3"><dt>준공 20년 이상 건축물</dt><dd>83.0%</dd><dd class="h-src">출처 쇠퇴진단지표 · 2025-12-31</dd></div>
-            <div class="layer" data-step="3"><dt>30년 최대 대비 인구 감소</dt><dd>35%</dd><dd class="h-src">출처 쇠퇴진단지표 · 2025-12-31</dd></div>
-            <div class="layer" data-step="3"><dt>노후·불량 연한</dt><dd>제3조②</dd><dd class="h-src">출처 부산 도시정비 조례 원문</dd></div>
+          <p class="h-page-run"><span>현장 기록 1쪽</span><span class="h-ex">예시</span></p>
+          <p class="h-page-t">반여1동 현장 확인 결과</p>
+          <p class="h-page-s">부산광역시 해운대구</p>
+          <dl class="h-box">
+            <div class="layer" data-step="1"><dt>사진</dt><dd>얼굴·번호판을 가린 뒤 첨부</dd></div>
+            <div class="layer" data-step="2"><dt>위치</dt><dd>반여1동, 오차 범위(±m) 함께 기록</dd></div>
           </dl>
+          <dl class="h-nums">
+            <div class="layer" data-step="3"><dt>준공 20년 이상 건축물</dt><dd>82.96%<sup><span class="sr-only">출처 </span>1</sup></dd></div>
+            <div class="layer" data-step="3"><dt>30년 최대 대비 인구 감소율</dt><dd>34.81%<sup><span class="sr-only">출처 </span>1</sup></dd></div>
+            <div class="layer" data-step="3"><dt>노후·불량 연한</dt><dd class="h-art">제3조②<sup><span class="sr-only">출처 </span>2</sup></dd></div>
+          </dl>
+          <ol class="h-notes layer" data-step="4">
+            <li>국토교통부 쇠퇴진단지표, 2025. 12. 31. 기준</li>
+            <li>부산광역시 도시 및 주거환경정비 조례 원문</li>
+          </ol>
         </div>
       </figure>
     </div>
