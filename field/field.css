@@ -177,3 +177,10 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 .req-list li[data-status="미충족"] b { color: var(--dim); }
 
 .draw-map { height: 320px; margin: 8px 0; border-radius: 8px; }
+
+.field #facilityFields, .field #visitFields { border: 0; padding: 0; margin: 12px 0; min-width: 0; }
+.field #visitFields .row > div { min-width: 0; }
+.survey-table { overflow-x: auto; margin-top: 12px; }
+.survey-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.survey-table th, .survey-table td { border-bottom: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.survey-table th { font-weight: 600; }

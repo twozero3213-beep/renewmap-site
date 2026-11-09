@@ -197,6 +197,8 @@
   $("radius").addEventListener("change", () => { store(RADIUS_KEY, $("radius").value); drawNear(); });
   function siteText() {
     $("siteLine").hidden = !site;
+    $("unlinkVisit").hidden = !site;
+    $("visitPrevious").textContent = site ? `비교할 이전 기록: ${E.localTime(site.from.recorded_at)} · ${site.from.visit ? `${site.from.visit.date} ${site.from.visit.start}~${site.from.visit.end} 관찰` : "관찰 조건 없음"}` : "연결한 이전 기록 없음";
     if (site) $("siteLine").textContent = `같은 지점으로 묶었습니다.\n이전 기록 ${E.localTime(site.from.recorded_at)}${site.photos.size ? ` · 이전 사진 ${site.photos.size}장을 1쪽에 넣습니다` : ""}`;
   }
   async function drawNear() {
@@ -218,7 +220,7 @@
       meta.textContent = `${dist}m 떨어짐 · 그때 오차 ${rec.accuracy_m === null ? "자료 없음" : `±${Math.round(rec.accuracy_m)}m`} · 지금 오차 ±${Math.round(at.accuracy || 0)}m${rec.memo ? `\n${rec.memo}` : ""}`;
       const bound = site && site.from.id === rec.id;
       btn.type = "button"; btn.className = "ghost"; btn.textContent = bound ? "묶기 풀기" : "같은 지점으로 묶기";
-      btn.addEventListener("click", () => { site = bound ? null : { id: E.siteOf(rec), from: rec, photos: new Set() }; siteText(); drawNear(); });
+      btn.addEventListener("click", () => { site = bound ? null : { id: E.siteOf(rec), from: rec, radius: radius(), photos: new Set() }; siteText(); drawNear(); });
       body.append(head, meta, btn);
       // 묶은 기록의 사진 중 1쪽에 넣을 것만 고른다(기본은 넣지 않음)
       if (bound) (rec.photos || []).forEach((id, i) => {
@@ -505,6 +507,31 @@
     drawPhrases();
   }
 
+  for (const [prefix, fields, box] of [["fac", R.FACILITY_FIELDS, "facilityText"], ["visit", R.VISIT_FIELDS, "visitText"]]) {
+    for (const [key, label, max] of fields) {
+      const l = document.createElement("label"), input = document.createElement("input");
+      l.htmlFor = input.id = prefix + "-" + key; l.textContent = label; input.maxLength = max; input.autocomplete = "off";
+      $(box).append(l, input);
+    }
+  }
+  for (const [id, options] of [["fac-observed_state", R.FACILITY_STATES], ["visit-weather", R.WEATHER]]) {
+    $(id).append(new Option("미확인", ""));
+    options.forEach((v) => $(id).append(new Option(v, v)));
+  }
+  for (const name of ["facility", "visit"]) $(name + "On").addEventListener("change", () => {
+    $(name + "Fields").hidden = $(name + "Fields").disabled = !$(name + "On").checked;
+  });
+  $("unlinkVisit").addEventListener("click", () => { site = null; siteText(); drawNear(); });
+  const readSurvey = (name, prefix, fields) => !$(name + "On").checked ? null : Object.fromEntries(fields.map((key) => [key, $(prefix + "-" + key).value]));
+  const facilityKeys = [...R.FACILITY_FIELDS.map(([k]) => k), "source_date", "observed_state"];
+  const visitKeys = [...R.VISIT_FIELDS.map(([k]) => k), "date", "start", "end", "weather", "passages", "staying"];
+  function clearSurvey() {
+    for (const name of ["facility", "visit"]) {
+      $(name + "On").checked = false; $(name + "Fields").hidden = $(name + "Fields").disabled = true;
+      $(name + "Fields").querySelectorAll("input, select").forEach((el) => { el.value = ""; });
+    }
+  }
+
   // ── 저장
   $("f").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -513,8 +540,9 @@
       const dong = place && place.code ? { code: place.code, name: place.name, sgName: place.sgName, sido: place.sido, nearby: place.nearby.map((x) => x.name), boundary: place.boundary } : null;
       const rec = R.makeRecord({ pnu: $("pnu").value, jibun: $("jibun").value, target: picked("target"), item: $("item").value, observed: $("observed").value,
         status: picked("status"), memo: $("memo").value, checker: $("checker").value, photos: pending.map((p) => p.id), photo_sha256: Object.fromEntries(pending.map((p) => [p.id, p.sha256])), photoSafe: true, checks: readChecks(), building: chosen,
+        facility: readSurvey("facility", "fac", facilityKeys), visit: readSurvey("visit", "visit", visitKeys),
         ...(pos ? { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy, corrected, gps } : {}), dong, indicators: dong ? place.rows : [], snapshot: dong ? place.snapshot : null,
-        ...(site ? { site_id: site.id, site_radius_m: radius(), prev_photos: [...site.photos],
+        ...(site ? { site_id: site.id, visit_previous_id: site.from.id, site_radius_m: site.radius || null, prev_photos: [...site.photos],
           site_prev: (await S.records()).filter((r) => E.siteOf(r) === site.id).map((r) => r.recorded_at) } : {}) }, new Date());
       // 자주 쓰는 한 줄 저장은 기록 저장보다 먼저 검사한다(개인정보 꼴이면 둘 다 저장하지 않는다)
       const keep = canStore && $("keepPhrase").checked && rec.memo ? R.rememberPhrase(phrases()[rec.target], rec.memo) : null;
@@ -526,7 +554,7 @@
       store(TARGET_KEY, rec.target);
       store(CHECKER_KEY, rec.checker || "");
       // 다음 기록은 '모름'에서 시작한다
-      document.querySelector('input[name="status"][value="추가확인"]').checked = true; $("item").value = ""; $("keepPhrase").checked = false; clearChecks();
+      document.querySelector('input[name="status"][value="추가확인"]').checked = true; $("item").value = ""; $("keepPhrase").checked = false; clearChecks(); clearSurvey();
       site = null; siteText(); drawNear();
       say("");
       toast("저장했습니다.", "되돌리기", async () => { await S.deleteRecord(rec); toast("저장을 되돌렸습니다."); render(); }, true);
@@ -590,6 +618,29 @@
   }
 
   const isToday = (iso) => new Date(iso).toDateString() === new Date().toDateString();
+  function surveyDetail(rec, prev) {
+    const detail = document.createElement("details"), summary = document.createElement("summary");
+    summary.textContent = "시설 이용 조건·관찰 기록"; detail.append(summary);
+    for (const rows of [rec.facility ? [["항목", "이전 기록", "이번 기록"], ...E.facilityRows(rec, prev)] : [], rec.visit ? [["항목", "이전 관찰", "이번 관찰"], ...E.visitRows(rec, prev)] : []]) {
+      if (!rows.length) continue;
+      const wrap = document.createElement("div"), table = document.createElement("table");
+      wrap.className = "survey-table";
+      rows.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        row.forEach((text, j) => { const cell = document.createElement(i === 0 || j === 0 ? "th" : "td"); if (cell.tagName === "TH") cell.scope = i === 0 ? "col" : "row"; cell.textContent = text; tr.append(cell); });
+        table.append(tr);
+      });
+      wrap.append(table); detail.append(wrap);
+    }
+    if (rec.visit) {
+      const result = document.createElement("p"), note = document.createElement("p");
+      result.textContent = E.comparisonText(rec, prev);
+      note.className = "hint";
+      note.textContent = (prev ? `이전 기록: ${E.localTime(prev.recorded_at)} · ${prev.id}. ` : "") + "기록한 조건만 대조합니다. 관찰값 차이는 사업 효과나 고유 방문자 수가 아닙니다.";
+      detail.append(result, note);
+    }
+    return detail;
+  }
   async function render() {
     let rows = await S.records();
     $("stats").innerHTML = R.statsHTML(R.stats(rows, new Date()));   // 개수 요약(순위 아님)
@@ -605,7 +656,7 @@
       m.className = "meta";
       m.textContent = `${E.localTime(r.recorded_at)}${r.accuracy_m !== null && r.accuracy_m !== undefined ? ` · ±${Math.round(r.accuracy_m)}m` : ""}${r.corrected ? " · 보정됨" : ""}${r.parcel ? ` · ${r.parcel}` : ""}${r.photos && r.photos.length ? ` · 사진 ${r.photos.length}장` : ""}${group.get(E.siteOf(r)).length > 1 ? ` · 같은 지점 ${group.get(E.siteOf(r)).length}건` : ""}${r.imported ? " · 가져옴" : ""}`;
       acts.className = "row";
-      for (const [label, fn] of [["한글 1쪽 받기", hwpx], ["PDF로 저장", pdf], ["해명서 부록 받기", explainer]]) {
+      for (const [label, fn] of [[r.facility || r.visit ? "한글 기록 받기" : "한글 1쪽 받기", hwpx], ["PDF로 저장", pdf], ["해명서 부록 받기", explainer]]) {
         const btn = document.createElement("button"); btn.type = "button"; btn.className = "ghost"; btn.textContent = label;
         btn.addEventListener("click", () => fn(r)); acts.append(btn);
       }
@@ -613,7 +664,20 @@
       pick.className = "check"; pc.type = "checkbox"; pc.checked = gisPick.has(r.id); pt.textContent = "GIS로 받을 기록으로 고르기";
       pc.addEventListener("change", () => { if (pc.checked) gisPick.add(r.id); else gisPick.delete(r.id); });
       pick.append(pc, pt);
-      li.append(b, m, acts, pick); ul.append(li);
+      const revisit = document.createElement("button");
+      revisit.type = "button"; revisit.className = "ghost"; revisit.textContent = "이 지점 재방문";
+      revisit.addEventListener("click", () => {
+        site = { id: E.siteOf(r), from: r, photos: new Set() }; siteText();
+        const target = [...$("targets").querySelectorAll("input")].find((el) => el.value === r.target);
+        if (target) { target.checked = true; $("targets").dispatchEvent(new Event("change")); }
+        if (!pos) { $("jibun").value = r.jibun || ""; $("pnu").value = r.pnu || ""; }
+        $("visitBox").open = true; $("visitOn").checked = true; $("visitOn").dispatchEvent(new Event("change"));
+        $("visitBox").scrollIntoView({ block: "start", behavior: "instant" });
+        if (!pos && !r.jibun && !r.pnu) say("현재 위치를 받은 뒤 관찰 조건을 적어 주세요.");
+      });
+      li.append(b, m);
+      if (r.facility || r.visit) li.append(surveyDetail(r, E.prevAtSite(rows, r)));
+      acts.append(revisit); li.append(acts, pick); ul.append(li);
     }
   }
   // ── GIS 내보내기(N2): 고른 기록(없으면 모두)을 GeoJSON·CSV로. 사진은 빼고 사진 파일 이름만 적는다

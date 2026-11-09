@@ -147,9 +147,29 @@
 
   // 같은 자리 바로 전 기록(기준일 비교의 상대). 지운 기록·뒤 기록은 쓰지 않는다
   const prevAtSite = (records, rec) => (!rec.site_id ? null : (records || [])
-    .filter((r) => r.id !== rec.id && siteOf(r) === rec.site_id && String(r.recorded_at) < String(rec.recorded_at))
+    .filter((r) => r.id !== rec.id && siteOf(r) === rec.site_id && String(r.recorded_at) < String(rec.recorded_at) && (!rec.visit_previous_id || r.id === rec.visit_previous_id))
     .sort((a, b) => String(b.recorded_at).localeCompare(String(a.recorded_at)))[0] || null);
-  // 기준일 비교(AFCC 원문 대조·Gridics 판본에서 배움): 지표 코드가 같은 행만 맞대고 값이나 기준일이 바뀐 것만 남긴다. 해석·판정은 붙이지 않는다
+  // 임의의 시간·날씨 허용 오차를 만들지 않고 기록된 조건만 정확히 대조한다.
+  function compareVisits(cur, prev) {
+    const a = prev && prev.visit, b = cur.visit;
+    if (!prev || !cur.site_id || siteOf(prev) !== cur.site_id || (cur.visit_previous_id && prev.id !== cur.visit_previous_id) || !a || !b)
+      return { status: "비교 정보 부족", reasons: ["같은 지점의 이전 관찰 기록을 선택해야 합니다."] };
+    if (a.date + "T" + a.start >= b.date + "T" + b.start) return { status: "비교 정보 부족", reasons: ["재방문 시작 시각이 이전 관찰 시작 시각보다 뒤여야 합니다."] };
+    const fields = [["area", "관찰 구간"], ["start", "시작 시각"], ["end", "종료 시각"], ["weather", "날씨"], ["method", "관찰 방식"], ["context", "특이사항"]];
+    const missing = fields.filter(([k]) => !a[k] || !b[k]).map(([, label]) => label);
+    if (a.weather === "기타" || b.weather === "기타") missing.push("기타 날씨의 상세 조건");
+    if (missing.length) return { status: "비교 정보 부족", reasons: missing.map((x) => x + " 확인 필요") };
+    const reasons = fields.filter(([k]) => a[k] !== b[k]).map(([, label]) => label + " 다름");
+    if (new Date(a.date).getUTCDay() !== new Date(b.date).getUTCDay()) reasons.push("요일 다름");
+    if (cur.target !== prev.target) reasons.push("대상 유형 다름");
+    if (cur.facility && prev.facility && cur.facility.name !== prev.facility.name) reasons.push("시설 이름 다름");
+    return { status: reasons.length ? "관찰 조건 다름" : "기록한 조건 일치", reasons };
+  }
+  const surveyValue = (v) => v === null || v === undefined || v === "" ? "미확인" : String(v);
+  const facilityRows = (r, prev) => !r.facility ? [] : [...R.FACILITY_FIELDS, ["source_date", "안내자료 확인일"], ["observed_state", "방문 당시 상태"]].map(([k, label]) => [label, surveyValue(prev && prev.facility && prev.facility[k]), surveyValue(r.facility[k])]);
+  const visitRows = (r, prev) => !r.visit ? [] : [["date", "관찰 날짜(한국시간)"], ["start", "시작 시각"], ["end", "종료 시각"], ["weather", "날씨"], ...R.VISIT_FIELDS,
+    ["passages", "관찰 중 통행 횟수(동일인 중복 가능)"], ["staying", "관찰 종료 시 머무는 인원"]].map(([k, label]) => [label, surveyValue(prev && prev.visit && prev.visit[k]), surveyValue(r.visit[k])]);
+  const comparisonText = (r, prev) => { const c = compareVisits(r, prev); return c.status + (c.reasons.length ? ": " + c.reasons.join(" · ") : " (구간·요일·시각·날씨·방식·특이사항 기준)"); };
   function compareRows(cur, prev) {
     const before = new Map(((prev && prev.indicators) || []).map((r) => [r.code, r]));
     const both = ((cur && cur.indicators) || []).filter((r) => r.code && before.has(r.code));
@@ -215,6 +235,18 @@
     // 1쪽에 들어갈 때까지 줄이는 순서: ① 현황 행을 뒤에서부터 4행까지 ② 확인 항목 메모를 뺀다(항목 이름·사진 번호는 남김)
     // ③ 사진 5장을 한 줄에 작게 놓는다(4장 이하는 이미 한 줄). ②·③은 그렇게 해서 1쪽에 들어갈 때만 쓴다.
     // 들어가지 않으면 메모를 지우지 않고 ①까지만 줄인 문서를 낸다(실제 쪽 수는 PDF로 확인). 분량 추정은 docgen.estimateHeightMm(1쪽 요약과 같은 기준)
+    // 이용 조건과 관찰값은 생략하지 않고 여러 쪽으로 낸다.
+    if (rec.facility || rec.visit) {
+      const doc = make(ind.length, true);
+      delete doc.sizes;
+      if (rec.facility) doc.blocks.push(block("h1", "시설 이용 조건"), block("table", "", { rows: [["항목", "이전 기록", "이번 기록"], ...facilityRows(rec, before)], widths: [36, 32, 32] }),
+        block("para", "안내된 이용 조건과 방문 당시 관찰은 별개다. 한 번 닫혀 있었다고 폐쇄 시설로 판정하지 않는다."));
+      if (rec.visit) doc.blocks.push(block("h1", "재방문 관찰 비교"), block("para", comparisonText(rec, before)),
+        block("para", before ? `이전 기록: ${before.id} · 기록 시각 ${localTime(before.recorded_at)}` : "이전 관찰 기록 없음"),
+        block("table", "", { rows: [["항목", "이전 관찰", "이번 관찰"], ...visitRows(rec, before)], widths: [36, 32, 32] }),
+        block("para", "기록한 조건만 대조했다. 관찰값의 차이를 사업 효과나 고유 방문자 수로 해석하지 않는다."));
+      return doc;
+    }
     const over = (x) => D.estimateHeightMm(x) > PAGE_LIMIT_MM;
     let doc = make(ind.length, true);
     for (let n = ind.length - 1; n >= Math.min(ROWS_MIN, ind.length) && over(doc); n--) doc = make(n, true);
@@ -334,5 +366,5 @@
     const ok = (pt) => Array.isArray(pt) && Number.isFinite(pt[0]) && Number.isFinite(pt[1]);
     return (Array.isArray(polys) ? polys : []).flat().filter((r) => Array.isArray(r) && r.length <= 2000 && r.every(ok)).slice(0, 20).map((r) => r.map(([x, y]) => [x, y]));
   }
-  return { LEGAL, buildExplainer, srcKind, prevAtSite, compareRows, buildPhotoSheet, parcelFrom, ringsFrom, bjdongCandidates, findBuildings, buildingFill, lic, PAGE_LIMIT_MM, inRing, contains, findFeature, plane, distanceM, nearby, makeLocator, PICK, pickIndicators, localTime, localDay, shortSrc, oldestDate, summaryRows, buildFieldDoc, fileName, siteOf, nearbyRecords, isNewData };
+  return { compareVisits, facilityRows, visitRows, comparisonText, LEGAL, buildExplainer, srcKind, prevAtSite, compareRows, buildPhotoSheet, parcelFrom, ringsFrom, bjdongCandidates, findBuildings, buildingFill, lic, PAGE_LIMIT_MM, inRing, contains, findFeature, plane, distanceM, nearby, makeLocator, PICK, pickIndicators, localTime, localDay, shortSrc, oldestDate, summaryRows, buildFieldDoc, fileName, siteOf, nearbyRecords, isNewData };
 });

@@ -121,6 +121,38 @@
       <p class="hint">본 항목만 고르세요.<br>판정이 아니라 본 것을 적습니다.<br>점수는 매기지 않습니다.</p>
       <ul id="checkList" class="check-list"></ul>
     </details>
+    <details id="facilityBox" class="checks">
+      <summary>시설 이용 조건 기록</summary>
+      <label class="check" for="facilityOn"><input id="facilityOn" type="checkbox"><span>이번 기록에 시설 이용 조건을 남깁니다</span></label>
+      <fieldset id="facilityFields" hidden disabled>
+        <legend>안내자료와 방문 당시 상태</legend>
+        <p class="hint">운영시간·휴관일·예약·이용료·이용 대상을 적으면 출처와 확인일도 적어 주세요.<br>모르는 항목은 비워 두세요.<br>이름·전화번호 등 개인정보는 적지 마세요.</p>
+        <div id="facilityText"></div>
+        <label for="fac-source_date">안내자료 확인일</label><input id="fac-source_date" type="date">
+        <label for="fac-observed_state">방문 당시 상태</label><select id="fac-observed_state"></select>
+        <p class="hint">현장 사진은 위에서 붙입니다.<br>한 번 닫혀 있었다고 폐쇄 시설로 판단하지 않습니다.</p>
+      </fieldset>
+    </details>
+    <details id="visitBox" class="checks">
+      <summary>관찰 조건과 재방문 비교</summary>
+      <p id="visitPrevious" class="hint" aria-live="polite">연결한 이전 기록 없음</p>
+      <button id="unlinkVisit" type="button" class="ghost" hidden>재방문 연결 풀기</button>
+      <label class="check" for="visitOn"><input id="visitOn" type="checkbox"><span>이번 기록에 관찰 조건을 남깁니다</span></label>
+      <fieldset id="visitFields" hidden disabled>
+        <legend>이번 관찰 (한국시간)</legend>
+        <p class="hint">재방문이면 저장된 기록의 '이 지점 재방문' 또는 위치의 '같은 지점으로 묶기'를 누르세요.<br>조건은 이전 기록에서 자동으로 채우지 않습니다.</p>
+        <label for="visit-date">관찰 날짜</label><input id="visit-date" type="date">
+        <div class="row">
+          <div><label for="visit-start">시작 시각</label><input id="visit-start" type="time"></div>
+          <div><label for="visit-end">종료 시각</label><input id="visit-end" type="time"></div>
+        </div>
+        <label for="visit-weather">날씨</label><select id="visit-weather"></select>
+        <div id="visitText"></div>
+        <label for="visit-passages">관찰 중 통행 횟수 (선택)</label><input id="visit-passages" type="number" min="0" step="1" inputmode="numeric">
+        <label for="visit-staying">관찰 종료 시 머무는 인원 (선택)</label><input id="visit-staying" type="number" min="0" step="1" inputmode="numeric">
+        <p class="hint">통행 횟수에는 같은 사람이 여러 번 포함될 수 있습니다.<br>관찰하지 않았으면 비워 두세요.<br>특이사항이 없었음을 확인했으면 '없음'으로 적어 주세요.<br>추가 조사 내용은 한글·PDF에서 여러 쪽으로 나올 수 있습니다.</p>
+      </fieldset>
+    </details>
     <label for="memo">한 줄 메모 (선택)</label>
     <div id="phraseBox" class="phrases" hidden>
       <div id="phrases" class="phrase-list" role="group" aria-label="자주 쓰는 한 줄"></div>

@@ -9,7 +9,7 @@
   // 대조 항목(선택). 숫자 판정은 하지 않고 본 것만 적는다.
   const ITEMS = ["사용승인일", "주용도", "층수", "연면적", "세대수", "공실·폐가 여부(관찰)", "기타"];
   // 무엇을 봤나(대상 유형). 고정 목록(expert_panel 9-1 4단계)
-  const TARGETS = ["보도", "계단", "옹벽·축대", "공원", "건물 외관", "빈 건물 외관", "주거지 골목", "보안등", "기타"];
+  const TARGETS = ["보도", "계단", "옹벽·축대", "공원", "건물 외관", "빈 건물 외관", "주거지 골목", "보안등", "생활시설", "기타"];
   // 현장 확인 항목: 공공데이터로 확인 못 하는 것(docs/research/redevelopment_literature_2026-10-28.md 3장·4장 ③). 판정이 아니라 본 것을 적는 칸이다
   const CHECK_TARGETS = ["건물 외관", "빈 건물 외관", "주거지 골목"];
   const CHECKS = [
@@ -86,6 +86,54 @@
       src: { source_name: clean(s.source_name), source_url: clean(s.source_url), reference_date: clean(s.reference_date), retrieved_at: clean(s.retrieved_at), license_type: clean(s.license_type) || "미표시" } };
   };
 
+  const FACILITY_FIELDS = [["name", "시설 이름", 80], ["hours", "안내된 운영·개방시간", 120], ["closed_days", "안내된 휴관일", 80], ["reservation", "안내된 예약 조건", 80], ["fee", "안내된 이용료", 80], ["eligibility", "안내된 이용 대상", 120], ["entrance", "확인한 출입구 위치", 120], ["access", "확인한 계단·경사로·통행 제한", 200], ["source", "안내자료 출처·주소", 300]];
+  const FACILITY_STATES = ["열림", "닫힘", "일부 이용 가능"];
+  const VISIT_FIELDS = [["area", "관찰 구간·범위", 120], ["method", "관찰 방식", 120], ["context", "행사·공사 등 특이사항", 120], ["activity", "관찰한 활동", 200]];
+  const WEATHER = ["맑음", "흐림", "비", "눈", "기타"];
+  const dayValid = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v;
+  const timeValid = (v) => /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(v);
+  function surveyText(input, fields) {
+    return Object.fromEntries(fields.map(([key, label, max]) => {
+      if (input[key] != null && typeof input[key] !== "string") throw new Error(`${label}은 글자로 적어 주세요.`);
+      const value = clean(input[key]);
+      if (value.length > max) throw new Error(`${label}은 ${max}자까지 적어 주세요.`);
+      rejectPersonal(value);
+      return [key, value || null];
+    }));
+  }
+  function facilityRecord(input) {
+    if (input == null) return null;
+    if (typeof input !== "object" || Array.isArray(input)) throw new Error("시설 이용 조건 형식이 올바르지 않습니다.");
+    const f = surveyText(input, FACILITY_FIELDS);
+    if (!f.name) throw new Error("시설 이름을 적어 주세요.");
+    const day = clean(input.source_date), state = clean(input.observed_state);
+    if (day && !dayValid(day)) throw new Error("안내자료 확인일을 올바르게 적어 주세요.");
+    if (state && !FACILITY_STATES.includes(state)) throw new Error("방문 당시 상태를 목록에서 골라 주세요.");
+    if ([f.hours, f.closed_days, f.reservation, f.fee, f.eligibility].some(Boolean) && (!f.source || !day))
+      throw new Error("안내된 이용 조건에는 출처와 안내자료 확인일이 필요합니다.");
+    return { ...f, source_date: day || null, observed_state: state || null };
+  }
+  function visitRecord(input) {
+    if (input == null) return null;
+    if (typeof input !== "object" || Array.isArray(input)) throw new Error("관찰 조건 형식이 올바르지 않습니다.");
+    const text = surveyText(input, VISIT_FIELDS), date = clean(input.date), start = clean(input.start), end = clean(input.end), weather = clean(input.weather);
+    if (!dayValid(date) || !timeValid(start) || !timeValid(end)) throw new Error("관찰 날짜와 시작·종료 시각을 올바르게 적어 주세요.");
+    if (end <= start) throw new Error("종료는 시작 이후여야 합니다. 자정을 넘으면 날짜별로 나누어 기록해 주세요.");
+    if (!text.area || !text.method) throw new Error("관찰 구간과 방식을 적어 주세요.");
+    if (weather && !WEATHER.includes(weather)) throw new Error("날씨를 목록에서 골라 주세요.");
+    const counts = {};
+    for (const key of ["passages", "staying"]) {
+      const v = input[key];
+      if (v == null || v === "") counts[key] = null;
+      else {
+        if ((typeof v !== "number" && (typeof v !== "string" || !/^\d+$/.test(v))) || !Number.isSafeInteger(Number(v)) || Number(v) < 0)
+          throw new Error("관찰 횟수·인원은 0 이상의 정수로 적어 주세요. 관찰하지 않았으면 비워 두세요.");
+        counts[key] = Number(v);
+      }
+    }
+    return { date, start, end, weather: weather || null, ...text, ...counts };
+  }
+
   function makeRecord(input, now, id) {
     const status = clean(input.status) || "추가확인";
     if (!STATUSES.includes(status)) throw new Error("확인 상태는 확인·충돌·추가확인 중 하나여야 합니다.");
@@ -118,6 +166,8 @@
     // 같은 자리 묶음(A4). site_id는 묶음 첫 기록의 id라 이전 기록을 고치지 않는다. 이전 기록 사진은 고른 것만 1쪽에 넣는다
     const site = clean(input.site_id);
     if (site && !ID_RE.test(site)) throw new Error("같은 자리 묶음 번호가 올바르지 않습니다.");
+    const previous = clean(input.visit_previous_id);
+    if (previous && (!site || !ID_RE.test(previous))) throw new Error("재방문 비교 기록 번호가 올바르지 않습니다.");
     const prevPhotos = site && Array.isArray(input.prev_photos) ? input.prev_photos.map(clean).filter((x) => ID_RE.test(x)) : [];
     if (photos.length + prevPhotos.length > MAX_PHOTOS) throw new Error(`사진은 한 기록에 ${MAX_PHOTOS}장까지 붙일 수 있습니다.`);
     if (photos.length && input.photoSafe !== true) throw new Error("사진을 붙이기 전에 '가릴 곳을 모두 확인했습니다'를 눌러 주세요.");
@@ -154,6 +204,7 @@
       gps_original: corrected && Number.isFinite(num(g.lat)) && Number.isFinite(num(g.lng)) ? { lat: num(g.lat), lng: num(g.lng), accuracy_m: num(g.accuracy) } : null,
       dong, indicators: lat !== null && dong && Array.isArray(input.indicators) ? input.indicators.slice(0, 8).map(cleanInd) : [],
       checks, building, checker: checker || null,
+      facility: facilityRecord(input.facility), visit: visitRecord(input.visit), visit_previous_id: previous || null,
       site_id: site || null, site_prev: site && Array.isArray(input.site_prev) ? input.site_prev.map(clean).filter(isDay).sort() : [],
       site_radius_m: site && Number.isFinite(num(input.site_radius_m)) ? num(input.site_radius_m) : null, prev_photos: prevPhotos,
       // 기록할 때 쓴 자료 묶음(A3). 새 묶음을 받아도 이 기록의 숫자는 그대로다
@@ -163,7 +214,7 @@
 
   function exportDoc(records, now) {
     return {
-      kind: "현장 확인 기록(원장 셀 아님 — 사람이 검토해 확인 이력으로 올린다)", app_version: "0.2.0",
+      kind: "현장 확인 기록(원장 셀 아님 — 사람이 검토해 확인 이력으로 올린다)", app_version: "0.3.0",
       exported_at: now.toISOString(), count: records.length, goal: GOAL,
       personal_data: "없음(소유자·거주자 항목 미수집). 사진은 EXIF를 지우고 가림 확인을 거친 것만 포함", records,
     };
@@ -238,7 +289,8 @@
         const rec = makeRecord({ pnu: r.pnu, jibun: r.jibun, target: r.target, item: r.item, observed: r.observed, status: r.status, memo: r.memo,
           photos: own, photo_sha256: sha, photo_sha256_source: shaSource, photoSafe: true, lat: r.lat, lng: r.lng, accuracy: r.accuracy_m, corrected: r.corrected === true, gps: { lat: g.lat, lng: g.lng, accuracy: g.accuracy_m },
           dong: r.dong, indicators: r.indicators, site_id: r.site_id, site_prev: r.site_prev, site_radius_m: r.site_radius_m,
-          prev_photos: Array.isArray(r.prev_photos) ? r.prev_photos.filter((id) => isJpeg(got(id))) : [], snapshot: r.data_snapshot, checks: r.checks, building: r.building, checker: r.checker }, new Date(r.recorded_at), String(r.id));
+          prev_photos: Array.isArray(r.prev_photos) ? r.prev_photos.filter((id) => isJpeg(got(id))) : [], snapshot: r.data_snapshot, checks: r.checks, building: r.building, checker: r.checker,
+          facility: r.facility, visit: r.visit, visit_previous_id: r.visit_previous_id }, new Date(r.recorded_at), String(r.id));
         rec.imported = true; rec.imported_at = now.toISOString();
         for (const id of [...rec.photos, ...rec.prev_photos]) photos.set(id, got(id));
         records.push(rec);
@@ -277,6 +329,9 @@
     ["checker", "확인자(소속·직위)", (r) => r.checker],
     ["photos", "사진 파일 이름(함께 내보낸 ZIP 안). ' | '로 구분", (r) => (r.photos || []).map(photoFile).join(" | ")],
     ["site_id", "같은 지점 묶음 번호", (r) => r.site_id],
+    ["visit_prev", "재방문 비교 대상으로 선택한 기록 번호", (r) => r.visit_previous_id],
+    ...[...FACILITY_FIELDS, ["source_date", "안내자료 확인일"], ["observed_state", "방문 당시 상태"]].map(([k, label]) => ["fac_" + k, label, (r) => r.facility && r.facility[k]]),
+    ...[...VISIT_FIELDS, ["date", "관찰 날짜(한국시간)"], ["start", "시작 시각(한국시간)"], ["end", "종료 시각(한국시간)"], ["weather", "날씨"], ["passages", "관찰 중 통행 횟수(동일인 중복 가능)"], ["staying", "관찰 종료 시 머무는 인원"]].map(([k, label]) => ["visit_" + k, label, (r) => r.visit && r.visit[k]]),
   ];
   const gisProps = (r) => Object.fromEntries(GIS_FIELDS.map(([k, , f]) => { const v = f(r); return [k, v === undefined || v === "" ? null : v]; }));
   function toGeoJSON(records, now) {
@@ -407,6 +462,6 @@
     return { text: lines.length ? lines.join("\n") + "\n" : "", n: lines.length };
   }
 
-  const api = { sha256Hex, blockSnapshot, blockEdits, hwpxText, exemplarOf, dice, OUTCOME_STATUS, REASON_CODES, NEEDS_REASON, docKind, setOutcome, outcomeRecord, outcomesJSONL, stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
+  const api = { FACILITY_FIELDS, FACILITY_STATES, VISIT_FIELDS, WEATHER, sha256Hex, blockSnapshot, blockEdits, hwpxText, exemplarOf, dice, OUTCOME_STATUS, REASON_CODES, NEEDS_REASON, docKind, setOutcome, outcomeRecord, outcomesJSONL, stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.FieldRecord = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
