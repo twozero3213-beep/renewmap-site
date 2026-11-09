@@ -12,7 +12,7 @@
   const pm = v => (v < 0 ? '−' + M.fmt(Math.abs(v)) : M.fmt(v));
   // 공식 기준이 없는 조건의 참고 구간(화면 눈금, 판정 기준 아님). 대표 지시(2026-10-25) 값
   const REF = { LIB_M: 1000, HOSP_PER10K: 10, BUS_PER_KM2: 20, MIG_PER1K: 5, FORE_PCT: 10, DEAL_PCT: 20 };
-  const GROUPS = [['aging', '정비 신호'], ['pop', '인구 변화'], ['estate', '부동산 거래'], ['life', '생활 여건'], ['fore', '전망']];
+  const GROUPS = [['aging', '쇠퇴·노후'], ['pop', '인구 변화'], ['estate', '부동산 거래'], ['life', '생활 여건'], ['fore', '전망']];
   // 조건·업무 카드의 e는 아이콘 이름(map.js ICONS). 지도와 같은 선 아이콘을 쓰고, map.js가 없으면(노드 시험) 아이콘 없이 글자만
   const ico = k => (typeof window !== 'undefined' && window.RenewMap && window.RenewMap.icon ? window.RenewMap.icon(k) : '');
   const NOTE = '조건 필터 · 순위 아님';
@@ -221,6 +221,8 @@
     { id: 'yearend', e: 'bldg', n: '연말 소규모 정비 검토', ask: '연말에 남은 예산, 근거 있는 소규모 정비 사업을 찾을 때', give: '노후·쇠퇴·생활 기준에 해당하는 동 목록과 첨부용 근거서', conds: ['aging', 'met', ['parkLow', 'libFar']], law: '지방재정법 제37조(투자심사)·제50조(이월)' },
     { id: 'depop', e: 'flag', n: '지방소멸대응기금 현황표', ask: '지방소멸대응기금 투자계획서에 현황표가 필요할 때', give: '인구감소·고령·청년 변화 표', conds: [['depop', 'concern'], 'pop30'], condsEmd: ['aged'], law: '지방소멸대응기금(행안부), 인구감소지역 지원 특별법' },
     { id: 'housing', e: 'bldg', n: '노후주거지 후보 추리기', ask: '노후주거지 정비·도시재생 공모 전에 후보 동을 추릴 때', give: '쇠퇴 요건과 노후 건축물 기준을 함께 충족하는 동 목록', conds: ['aging', 'met', 'pop30', 'biz10'], law: '노후주거지정비 지원사업(국토부), 도시재생 활성화 및 지원에 관한 특별법' },
+    { id: 'renewal', e: 'sum', n: '도시재생 사업 후보 찾기', ask: '인정사업·지역특화재생에 넣을 쇠퇴 동을 추릴 때', give: '쇠퇴 요건을 갖춘 동 목록과 사업별 요건 대조', conds: ['met'], law: '도시재생 활성화 및 지원에 관한 특별법 제13조 제4항' },
+    { id: 'shop', e: 'shop', n: '상권 쇠퇴 동 찾기', ask: '사업체가 줄어든 동을 상권 활성화 검토용으로 추릴 때', give: '사업체 감소 동 목록과 근거 문서', conds: ['biz10'], law: '도시재생 활성화 및 지원에 관한 특별법 제13조 제4항' },
     { id: 'soc', e: 'tree', n: '공원·도서관 민원 회신', ask: "'우리 동네는 왜 공원·도서관이 없나' 민원에 회신할 때", give: '기준 대비 현황과 출처', conds: [['parkLow', 'libFar', 'hospLow']], law: '도시공원 및 녹지 등에 관한 법률 시행규칙 제4조, 생활SOC 최저기준' },
     { id: 'brief', e: 'book', n: '의회·감사 근거 문서', ask: "의회·감사에서 '근거가 뭐냐'고 물을 때", give: '출처·기준일·계산식이 붙은 근거 문서', conds: [], note: '조건 없음 · 동을 고르면 사업 근거서로', action: 'brief', law: '지방자치법 제49조·제142조·제150조' },
   ];
@@ -234,7 +236,7 @@
       `<ul class="gov-cards">${PRESETS.map(p => `<li><button type="button" class="gov-card" data-gov-preset="${esc(p.id)}" aria-label="${esc(p.n)}"><span class="gov-e" aria-hidden="true">${ico(p.e)}</span><span class="gov-n">${esc(p.n)}</span><b>${esc(p.ask)}</b><span class="gov-why">→ ${esc(p.give)}</span><span class="gov-d">${esc(DECIDE)}</span></button><details class="gov-more"><summary>조건·근거 법령</summary><span class="gov-c">${esc(condText(p))}</span><span class="gov-law">${esc(p.law)}</span></details></li>`).join('')}</ul>`;
   }
   // 홈에서 넘어온 기본 보고서(?report=onepage 등). 모르는 값은 무시한다(심사 06, 2026-11-08)
-  const entryReportMode = search => { const m = new URLSearchParams(search || '').get('report'); return ['report', 'brief', 'onepage'].includes(m) ? m : null; };
+  const entryReportMode = search => { const m = new URLSearchParams(search || '').get('report'); return ['report', 'brief', 'onepage', 'programs'].includes(m) ? m : null; };
   const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, entryReportMode, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
   if (node) module.exports = api;
   if (typeof document === 'undefined') return;

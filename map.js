@@ -26,7 +26,7 @@
   const MIG = ['#6a4c93', '#b3a2d1', '#e9ecea', '#8fcfc3', '#0b7f6f']; // 기준 없는 변화·청년 순이동: 줄어듦(유출) 보라 ↔ 늘어남(유입) 청록, 가운데 중성(기준선 0). 주황은 '기준 넘음' 전용
   // 지표 묶음: '정비가 필요한 신호'와 '생활 여건'을 각각 고를 수 있게 묶는다. 치안 점수·기피·순위는 만들지 않는다(D8·D13)
   // 아이콘은 이모지 대신 지표 칩과 같은 선 아이콘(ICONS) 한 벌을 쓴다(UI 검수 2026-10-28: 3D 이모지·선 아이콘·글자 기호가 섞여 있었다)
-  const GROUPS = [['aging', '정비 신호'], ['pop', '인구 변화'], ['estate', '부동산 거래'], ['life', '생활 여건'], ['safe', '안전 인프라'], ['fore', '추세 전망'], ['sum', '종합']];
+  const GROUPS = [['aging', '쇠퇴·노후'], ['pop', '인구 변화'], ['estate', '부동산 거래'], ['life', '생활 여건'], ['safe', '안전 인프라'], ['fore', '추세 전망'], ['sum', '종합']];
   const GROUP_ICON = { aging: 'bldg', pop: 'people', estate: 'home', life: 'tree', safe: 'cctv', fore: 'fore', sum: 'sum' };
   const gIco = g => icon(GROUP_ICON[g]);
   const safeUrl = u => (/^https?:\/\//i.test(u || '') ? u : null);
@@ -120,7 +120,7 @@
   // 공식 기준이 없는 생활 지표의 고정 참고 구간(화면 표시용 눈금, 분위 아님). 자료가 ref_edges를 주면 그것을 쓴다
   const REF_EDGES = { POP_YOUTH_PCT: [10, 15, 20, 25], HOSP_CLINIC_COUNT: [1, 5, 10, 30], HOSP_PER10K: [2, 5, 10, 20], PARK_COUNT: [1, 3, 5, 10], BUS_STOP_DENSITY: [5, 10, 20, 40] };
   // living/index.json의 group은 키(life) 또는 이름(생활 인프라)이다. '교통'은 대표 결정대로 생활 인프라에 둔다
-  const GROUP_ALIAS = { 노후: 'aging', '부동산 거래': 'estate', 부동산: 'estate', 정비: 'aging', '노후·정비': 'aging', '정비 신호': 'aging', 경제: 'aging', 인구: 'pop', '인구 변화': 'pop', '생활 인프라': 'life', '생활 여건': 'life', 생활: 'life', 교통: 'life', '안전 인프라': 'safe', 안전: 'safe', '건축·정비': 'aging', 복지: 'pop', 전망: 'fore', '추세 전망': 'fore', 종합: 'sum' };
+  const GROUP_ALIAS = { '쇠퇴·노후': 'aging', 노후: 'aging', '부동산 거래': 'estate', 부동산: 'estate', 정비: 'aging', '노후·정비': 'aging', '정비 신호': 'aging', 경제: 'aging', 인구: 'pop', '인구 변화': 'pop', '생활 인프라': 'life', '생활 여건': 'life', 생활: 'life', 교통: 'life', '안전 인프라': 'safe', 안전: 'safe', '건축·정비': 'aging', 복지: 'pop', 전망: 'fore', '추세 전망': 'fore', 종합: 'sum' };
   const groupKey = g => (GROUPS.some(x => x[0] === g) ? g : GROUP_ALIAS[String(g || '').trim()] || 'life');
   const r3 = x => Number(x.toPrecision(3));
   // 기준값에 고정한 구간. 양수 기준은 0.25~2배 눈금, 0 이하 기준은 기준선 한 곳에서만 나눈다
@@ -786,7 +786,7 @@
   const BRIEF_HEAD = '예산 요구·사업계획·민원 회신 첨부용 근거 자료 · 리뉴맵 원장 기반 · 판정 아님 · 결정은 담당자가';
   const BRIEF_FOOT = '판정 아님 · 숫자마다 출처 · 결정은 담당자가';
   const BRIEF_MAIL = 'renewmapteam@gmail.com';
-  const REPORT_MODES = [['report', '동네 보고서'], ['brief', '사업 근거서'], ['onepage', '1쪽 요약']];
+  const REPORT_MODES = [['report', '동네 보고서'], ['brief', '사업 근거서'], ['onepage', '1쪽 요약'], ['programs', '재생 사업']];
   const reportModeHTML = mode => `<div class="dash-seg rp-mode" role="group" aria-label="보고서 용도">${REPORT_MODES.map(([k, l]) => `<button type="button" data-rp-mode="${k}" aria-pressed="${k === mode}">${l}</button>`).join('')}</div>`;
   // 파일(HWPX·XLSX)은 이 브라우저에서 바로 만든다(docgen.js). 메일 요청은 내부망에서 파일 생성이 막힐 때를 위한 보조 경로로만 남긴다
   function briefMailto(it, year, what = '근거서') {
@@ -1115,7 +1115,7 @@
     const rows = rowsFor(v, m, it), D = window.RenewDashboard, dy = rows.find(r => r.ind.series && r.year)?.year;
     return `<div class="map-panel-head"><h3 class="map-h3">${esc(it.name)} <small>${esc(it.kind || '행정동')} · ${esc(it.code)}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` +
       `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>${reorgNote(v)}` +
-      `<p class="map-report-link"><a href="#report">${icon('book')}동네 보고서 보기</a></p>` +
+      `<p class="map-report-link"><a href="#report">${icon('book')}동네 보고서 보기</a><a href="#report" data-set-mode="programs">${icon('flag')}맞는 재생 사업 보기</a></p>` +
       forecastChart(ind, m.ext, v.gu || v.sigungu, m.json.dongs.find(d => codeOf(d) === it.code) || null) + scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist + hubHTML(v);
   }
   const rowsFor = (v, m, it) => dongRows(inds(), m.json.dongs.find(d => codeOf(d) === it.code), livingMap(m.living).get(it.code), m.selYear, m.ext);
@@ -1123,6 +1123,7 @@
   const report = document.getElementById('reportApp');
   let reportKey = '', polished = null, reportMode = 'report'; // polished: { key, text } 검증을 통과한 AI 문장만. reportMode: 동네 보고서 | 사업 근거서
   api.download = k => download(k);
+  document.addEventListener('click', e => { const a = e.target.closest('[data-set-mode]'); if (a) api.setReportMode(a.dataset.setMode); });
   api.setReportMode = m => { reportMode = REPORT_MODES.some(x => x[0] === m) ? m : 'report'; if (state.index !== undefined) render(); }; // find.js 프리셋이 쓴다
   function reportHTML(v, it, rows) {
     const D = window.RenewDashboard, sents = reportSentences(it.name, rows), here = v.crumbs.map(c => c.label).join(' › ');
@@ -1142,6 +1143,7 @@
     return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 보고서</h3><p class="rp-tools">${fileTools(it, rows.find(r => r.ind.series && r.year)?.year ?? null, '동네 보고서', false)}</p></div>` +
       `<p class="rp-intro rp-src-line">${esc(srcHead('출처표'))}</p><p class="rp-intro">카드의 숫자와 문장은 원장 셀의 값과 출처만 옮긴 것입니다.<br>평가나 판정은 하지 않습니다.</p>${typeof localStorage !== 'undefined' ? snapHTML(snapGet(it.code), snapshotOf(it, rows, new Date())) : ''}${byG}${src}${ai}<p class="rp-foot">${esc(REPORT_FOOT)}</p>`;
   }
+  const socText = r => fmt(r.value, r.ind.unit);
   function renderReport(v, m, it) {
     if (!report) return;
     // 생활·전망 파일이 늦게 도착하면 키가 바뀌어 다시 그린다
@@ -1154,6 +1156,9 @@
     if (reportMode === 'onepage') {
       const built = docFor(v, m, it);
       report.innerHTML = reportModeHTML(reportMode) + (built.error ? `<div class="rp-empty" role="status"><h3>1쪽 요약을 아직 만들 수 없습니다</h3><p>${esc(built.error)}</p></div>` : onepageHTML(v, it, built.one, fragChoice));
+    } else if (reportMode === 'programs' && window.RenewPrograms) {
+      report.innerHTML = reportModeHTML(reportMode) + window.RenewPrograms.dongHTML(it.name, rows) + window.RenewPrograms.socHTML(rows, socText);
+      report.querySelector('[data-soc-csv]').addEventListener('click', () => { if (DG) DG.saveBytes(`기반편의시설현황_${DG.safeName(it.name)}.csv`, new TextEncoder().encode(window.RenewPrograms.socCSV(it.name, rows, socText)), 'text/csv;charset=utf-8'); });
     } else report.innerHTML = reportModeHTML(reportMode) + (reportMode === 'brief' ? briefHTML(v, it, rows, fragChoice) : reportHTML(v, it, rows));
     paintFrag();
   }
