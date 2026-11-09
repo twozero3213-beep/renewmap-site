@@ -164,7 +164,8 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 .settings label:first-of-type { margin-top: 4px; }
 .near-list .meta { white-space: pre-line; overflow-wrap: anywhere; }
 /* N1 가까운 건물 · 현장 확인 항목 · N2 GIS 내보내기 고르기 */
-#bldNote, .bld-list li, .site-line { white-space: pre-line; }
+#bldNote, .bld-list li, .site-line, #visitPrevious { white-space: pre-line; }
+#visitPrevious { overflow-wrap: anywhere; }
 .bld-list, .check-list { list-style: none; margin: 4px 0 0; padding: 0; }
 .bld-list li { margin-top: 8px; font-size: 14px; line-height: 20px; }
 .field .bld-list button { margin: 0; text-align: left; white-space: pre-line; font-weight: 600; line-height: 22px; }

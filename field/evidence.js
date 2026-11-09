@@ -166,6 +166,17 @@
     return { status: reasons.length ? "관찰 조건 다름" : "기록한 조건 일치", reasons };
   }
   const surveyValue = (v) => v === null || v === undefined || v === "" ? "미확인" : String(v);
+  function revisitText(prev) {
+    if (!prev) return "연결한 이전 기록 없음";
+    const lines = [`비교할 이전 기록: ${localTime(prev.recorded_at)}`, `대상: ${surveyValue(prev.target)}${prev.facility ? " · " + prev.facility.name : ""}`];
+    const v = prev.visit;
+    if (!v) return lines.concat("관찰 조건 없음 — 이번 관찰부터 기록해 주세요.").join("\n");
+    const day = new Date(v.date + "T00:00:00Z").toLocaleDateString("ko-KR", { weekday: "long", timeZone: "UTC" });
+    lines.push(`이전 관찰: ${v.date} (${day}) ${v.start}~${v.end} (한국시간)`);
+    for (const [key, label] of [["weather", "날씨"], ["area", "관찰 구간"], ["method", "관찰 방식"], ["context", "특이사항"]])
+      lines.push(`${label}: ${surveyValue(v[key])}`);
+    return lines.concat("이전 조건은 참고용입니다.\n이번 관찰은 직접 입력해 주세요.").join("\n");
+  }
   const facilityRows = (r, prev) => !r.facility ? [] : [...R.FACILITY_FIELDS, ["source_date", "안내자료 확인일"], ["observed_state", "방문 당시 상태"]].map(([k, label]) => [label, surveyValue(prev && prev.facility && prev.facility[k]), surveyValue(r.facility[k])]);
   const visitRows = (r, prev) => !r.visit ? [] : [["date", "관찰 날짜(한국시간)"], ["start", "시작 시각"], ["end", "종료 시각"], ["weather", "날씨"], ...R.VISIT_FIELDS,
     ["passages", "관찰 중 통행 횟수(동일인 중복 가능)"], ["staying", "관찰 종료 시 머무는 인원"]].map(([k, label]) => [label, surveyValue(prev && prev.visit && prev.visit[k]), surveyValue(r.visit[k])]);
@@ -366,5 +377,5 @@
     const ok = (pt) => Array.isArray(pt) && Number.isFinite(pt[0]) && Number.isFinite(pt[1]);
     return (Array.isArray(polys) ? polys : []).flat().filter((r) => Array.isArray(r) && r.length <= 2000 && r.every(ok)).slice(0, 20).map((r) => r.map(([x, y]) => [x, y]));
   }
-  return { compareVisits, facilityRows, visitRows, comparisonText, LEGAL, buildExplainer, srcKind, prevAtSite, compareRows, buildPhotoSheet, parcelFrom, ringsFrom, bjdongCandidates, findBuildings, buildingFill, lic, PAGE_LIMIT_MM, inRing, contains, findFeature, plane, distanceM, nearby, makeLocator, PICK, pickIndicators, localTime, localDay, shortSrc, oldestDate, summaryRows, buildFieldDoc, fileName, siteOf, nearbyRecords, isNewData };
+  return { revisitText, compareVisits, facilityRows, visitRows, comparisonText, LEGAL, buildExplainer, srcKind, prevAtSite, compareRows, buildPhotoSheet, parcelFrom, ringsFrom, bjdongCandidates, findBuildings, buildingFill, lic, PAGE_LIMIT_MM, inRing, contains, findFeature, plane, distanceM, nearby, makeLocator, PICK, pickIndicators, localTime, localDay, shortSrc, oldestDate, summaryRows, buildFieldDoc, fileName, siteOf, nearbyRecords, isNewData };
 });

@@ -198,7 +198,7 @@
   function siteText() {
     $("siteLine").hidden = !site;
     $("unlinkVisit").hidden = !site;
-    $("visitPrevious").textContent = site ? `비교할 이전 기록: ${E.localTime(site.from.recorded_at)} · ${site.from.visit ? `${site.from.visit.date} ${site.from.visit.start}~${site.from.visit.end} 관찰` : "관찰 조건 없음"}` : "연결한 이전 기록 없음";
+    $("visitPrevious").textContent = E.revisitText(site && site.from);
     if (site) $("siteLine").textContent = `같은 지점으로 묶었습니다.\n이전 기록 ${E.localTime(site.from.recorded_at)}${site.photos.size ? ` · 이전 사진 ${site.photos.size}장을 1쪽에 넣습니다` : ""}`;
   }
   async function drawNear() {
