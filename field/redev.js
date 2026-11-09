@@ -110,6 +110,54 @@
     const m = pts.map(toM(pts));
     return Math.abs(m.reduce((s, [x, y], i) => { const [x2, y2] = m[(i + 1) % m.length]; return s + x * y2 - x2 * y; }, 0)) / 2;
   }
+  // 위경도(WGS84) → EPSG:5174(Korean 1985 보정 중부원점) x,y. 2027 가이드라인 p.30이 사업구역 경계 SHP에 요구하는 좌표계.
+  // 측지계 변환은 +towgs84=-115.80,474.99,674.11,1.16,-2.31,-1.63,6.43의 역변환. pyproj 기본 변환과 부산에서 약 7cm 차이(시험에 고정)
+  function to5174(lat, lng) {
+    const rad = Math.PI / 180, sec = rad / 3600;
+    const wf = 1 / 298.257223563, we2 = wf * (2 - wf), wN = 6378137 / Math.sqrt(1 - we2 * Math.sin(lat * rad) ** 2);
+    const X = wN * Math.cos(lat * rad) * Math.cos(lng * rad) + 115.8, Y = wN * Math.cos(lat * rad) * Math.sin(lng * rad) - 474.99, Z = wN * (1 - we2) * Math.sin(lat * rad) - 674.11;
+    const rx = 1.16 * sec, ry = -2.31 * sec, rz = -1.63 * sec, s = 1 + 6.43e-6;
+    const x0 = (X + rz * Y - ry * Z) / s, y0 = (-rz * X + Y + rx * Z) / s, z0 = (ry * X - rx * Y + Z) / s;
+    const a = 6377397.155, f = 1 / 299.1528128, e2 = f * (2 - f), ep2 = e2 / (1 - e2), p = Math.hypot(x0, y0);
+    let phi = Math.atan2(z0, p * (1 - e2));
+    for (let i = 0; i < 6; i++) { const N = a / Math.sqrt(1 - e2 * Math.sin(phi) ** 2); phi = Math.atan2(z0 + e2 * N * Math.sin(phi), p); }
+    const arc = (v) => a * ((1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256) * v - (3 * e2 / 8 + 3 * e2 ** 2 / 32 + 45 * e2 ** 3 / 1024) * Math.sin(2 * v) + (15 * e2 ** 2 / 256 + 45 * e2 ** 3 / 1024) * Math.sin(4 * v) - (35 * e2 ** 3 / 3072) * Math.sin(6 * v));
+    const N = a / Math.sqrt(1 - e2 * Math.sin(phi) ** 2), T = Math.tan(phi) ** 2, C = ep2 * Math.cos(phi) ** 2, A = (Math.atan2(y0, x0) - 127.0028902777778 * rad) * Math.cos(phi);
+    return [200000 + N * (A + (1 - T + C) * A ** 3 / 6 + (5 - 18 * T + T ** 2 + 72 * C - 58 * ep2) * A ** 5 / 120),
+      500000 + arc(phi) - arc(38 * rad) + N * Math.tan(phi) * (A ** 2 / 2 + (5 - T + 9 * C + 4 * C ** 2) * A ** 4 / 24 + (61 - 58 * T + T ** 2 + 600 * C - 330 * ep2) * A ** 6 / 720)];
+  }
+  // 변끼리 교차하면 SHP 다각형으로 쓸 수 없다
+  function ringCrosses(p) {
+    const turn = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), n = p.length;
+    for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++) {
+      if (i === 0 && j === n - 1) continue;
+      const a = p[i], b = p[i + 1], c = p[j], d = p[(j + 1) % n];
+      if (turn(a, b, c) * turn(a, b, d) < 0 && turn(c, d, a) * turn(c, d, b) < 0) return true;
+    }
+    return false;
+  }
+  const PRJ_5174 = 'PROJCS["Korean_1985_Modified_Korea_Central_Belt",GEOGCS["GCS_Korean_Datum_1985",DATUM["D_Korean_Datum_1985",SPHEROID["Bessel_1841",6377397.155,299.1528128]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",200000.0],PARAMETER["False_Northing",500000.0],PARAMETER["Central_Meridian",127.002890277778],PARAMETER["Scale_Factor",1.0],PARAMETER["Latitude_Of_Origin",38.0],UNIT["Meter",1.0]]';
+  // 그린 영역 → shp·shx·dbf·prj를 묶은 zip(다각형 1개). 잘못된 영역이면 null. when은 YYYY-MM-DD
+  function boundaryShpZip(pts, when) {
+    if (!polygonWKT(pts) || ringCrosses(pts)) return null;
+    const xy = pts.map(([la, ln]) => to5174(la, ln));
+    if (xy.reduce((s, [x, y], i) => { const [x2, y2] = xy[(i + 1) % xy.length]; return s + x * y2 - x2 * y; }, 0) > 0) xy.reverse();   // SHP 바깥 고리는 시계 방향
+    const ring = [...xy, xy[0]], len = 48 + 16 * ring.length, xs = ring.map((q) => q[0]), ys = ring.map((q) => q[1]);
+    const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+    const head = (size) => { const v = new DataView(new ArrayBuffer(size)); v.setInt32(0, 9994); v.setInt32(24, size / 2); v.setInt32(28, 1000, true); v.setInt32(32, 5, true); box.forEach((b, i) => v.setFloat64(36 + i * 8, b, true)); return v; };
+    const shp = head(108 + len);
+    shp.setInt32(100, 1); shp.setInt32(104, len / 2); shp.setInt32(108, 5, true);
+    box.forEach((b, i) => shp.setFloat64(112 + i * 8, b, true));
+    shp.setInt32(144, 1, true); shp.setInt32(148, ring.length, true); shp.setInt32(152, 0, true);
+    ring.forEach(([x, y], i) => { shp.setFloat64(156 + i * 16, x, true); shp.setFloat64(164 + i * 16, y, true); });
+    const shx = head(108);
+    shx.setInt32(100, 50); shx.setInt32(104, len / 2);
+    const [yy, mm, dd] = when.slice(0, 10).split("-").map(Number), dbf = new Uint8Array(71), dv = new DataView(dbf.buffer);
+    dbf.set([3, yy - 1900, mm, dd]); dv.setUint32(4, 1, true); dv.setUint16(8, 65, true); dv.setUint16(10, 5, true);
+    dbf.set([73, 68], 32); dbf[43] = 78; dbf[48] = 4; dbf[64] = 13;   // 필드 ID, 숫자 4자리. 한글 필드는 인코딩 문제가 있어 넣지 않는다
+    dbf.set([32, 32, 32, 32, 49], 65); dbf[70] = 26;
+    return D.zipStore([{ name: "boundary.shp", data: new Uint8Array(shp.buffer) }, { name: "boundary.shx", data: new Uint8Array(shx.buffer) }, { name: "boundary.dbf", data: dbf }, { name: "boundary.prj", data: PRJ_5174 }], when);
+  }
   // 점이 다각형 안이거나 변에서 buffer(m) 안인지. 2027 가이드라인 p.42의 '구역 반경 500m'에 쓴다
   function nearPolygon(lat, lng, pts, buffer) {
     if (inPolygon(lat, lng, pts)) return true;
@@ -578,5 +626,5 @@
     return "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   }
 
-  return { polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

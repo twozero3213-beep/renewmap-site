@@ -196,6 +196,13 @@
     say(`영역 안 ${r.pnus.length}필지를 넣었습니다.${r.total > r.pnus.length ? `\n전체 ${r.total}필지 중 1,000필지까지만 넣었습니다. 영역을 나눠 주세요.` : ""}\n경계에 걸친 필지도 들어가니 목록을 확인해 주세요.`);
   });
 
+  $("shpSave").addEventListener("click", () => {
+    const zip = R.boundaryShpZip(drawPts, today());
+    if (!zip) return say("꼭짓점을 3개 이상 찍고, 선이 서로 겹치지 않게 그려 주세요.", true);
+    D.saveBytes(`사업구역경계_EPSG5174_${today()}.zip`, zip, "application/zip");
+    say("구역 경계 SHP를 받았습니다.\n제출 전에 GIS에서 연속지적도와 겹쳐 맞춰 주세요.");
+  });
+
   // 지역 SOC 현황표(흡수 6번). 그린 꼭짓점과 시설 점은 이 기기에서만 맞대 본다. 브이월드는 부르지 않는다
   let soc = null;
   const socReady = () => soc || (soc = getJson("soc_busan.json").catch((err) => { soc = null; throw err; }));
