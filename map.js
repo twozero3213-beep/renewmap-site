@@ -1505,7 +1505,9 @@
   function followWithNaver(map, el, nv) {
     const N = window.naver.maps, nmap = new N.Map(nv, { center: new N.LatLng(36.3, 127.8), zoom: 7, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
       disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
-    const sync = () => { const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); };
+    let ready = false;
+    const sync = () => { if (!ready) return; const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); };
+    map.whenReady(() => { ready = true; sync(); });
     map.on('move zoom moveend zoomend viewreset resize', sync);
     if ('ResizeObserver' in window) new ResizeObserver(() => { nmap.autoResize && nmap.autoResize(); sync(); }).observe(el);
     // 링크는 지도가 그려진 뒤 늦게 생기고 'idle'보다 늦을 수 있다(배포 화면에서 이름 없음 확인). 생길 때마다 이름을 붙인다
