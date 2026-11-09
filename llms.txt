@@ -6,7 +6,7 @@
 
 ## 핵심 페이지
 
-- [리뉴맵 | 이 동네, 무엇으로 되살릴까](https://twozero3213-beep.github.io/renewmap-site/): 리뉴맵은 인구, 상권, 주거, 생활시설, 안전을 공식 통계로 진단해 도시재생 사업별 요건과 맞대 보고, 출처가 붙은 근거 문서를 만드는 서비스입니다.
+- [리뉴맵 | 동네의 변화를, 근거부터](https://twozero3213-beep.github.io/renewmap-site/): 리뉴맵은 도시재생 기초조사를 위한 지도 탐색, 현장 기록, 요건 확인과 근거 문서 작성을 돕는 서비스입니다.
 - [동네 찾기·지도 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/explore.html): 전국 3,559개 행정동을 지도와 조건으로 찾아보세요. 공공데이터 값과 출처·기준일이 붙은 문서를 한글·워드·엑셀·PDF로 받습니다.
 - [현장 기록 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/field/): 현장 사진을 찍으면 위치와 정확도, 그 행정동의 공식 현황 숫자(출처·기준일)를 붙여 결재용 1쪽 문서(한글·PDF)로 만듭니다. 기록과 사진은 이 휴대폰에만 저장됩니다.
 - [신청요건 확인(노후주거지정비·재개발) | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/field/redev.html): 지번 목록을 붙여 넣으면 부산 254개 법정동 건축물대장으로 노후주거지정비 신청요건(저층 주거 3분의 2, 20년 경과)과 재개발 입안요건(노후·불량 비율)을 조문과 함께 계산해 1쪽 문서와 건물별 근거 CSV로 만듭니다. 목록은 이 기기 밖으로 보내지 않습니다.
@@ -22,6 +22,7 @@
 - [AI 윤리·데이터 원칙 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/ethics.html): 리뉴맵이 AI와 데이터를 다루는 8가지 원칙입니다. 판정은 사람이 내리고, 점수와 순위는 계산식과 함께 공개하며, 모든 숫자에 출처와 기준일을 붙입니다.
 - [동네 점수·순위 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/rank.html): 전국 행정동 3,559곳의 동네 점수·치안 점수·재생 필요 점수와 순위. 점수마다 입력 지표·무게·출처를 공개합니다.
 - [사업성 간이 계산 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/biz.html): 정비사업 비례율을 입력값으로 간이 추정합니다. 분양가 기본값은 시·군·구 아파트 매매 실거래 ㎡당 중위가입니다. 감정평가가 아닙니다.
+- [근거를 읽는 방법 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/evidence.html): 리뉴맵의 숫자·현장 기록·공간 비교를 읽는 방법. 출처와 기준일, 법정 기준과 참고 분석, 실제 관측과 가상 시나리오를 구분합니다.
 
 ## 동네별 페이지
 
