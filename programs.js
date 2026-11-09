@@ -6,7 +6,9 @@
   const SOURCES = {
     g2027: { name: '2027년 도시재생 신규사업 평가 가이드라인(국토교통부, 2026.9.)', url: 'https://www.krihs.re.kr/board.es?mid=a60504000000&bid=0077&list_no=398642&act=view' },
     n2026: { name: '국토교통부 도시재생 신규사업 공모 안내(2026.2.)', url: 'https://www.korea.kr/news/policyNewsView.do?newsId=148959125' },
-    fund: { name: '행정안전부 지방소멸대응기금 안내', url: 'https://www.mois.go.kr/frt/sub/a06/b06/localextinctionFund/screen.do' },
+    fund: { name: '행정안전부 지방소멸대응기금 평가·배분체계 개편(2026.4.)', url: 'https://www.korea.kr/news/policyNewsView.do?newsId=148962676' },
+    mss: { name: '중소벤처기업부 공고 제2026-199호 지역상권육성 사업', url: 'https://www.mss.go.kr/site/smba/ex/bbs/View.do?bcIdx=1066882&cbIdx=310&parentSeq=1066882' },
+    rural: { name: '농림축산식품부 농촌공간계획 활성화 방안(2025.2.)', url: 'https://www.mafra.go.kr/home/5109/subview.do' },
   };
   const SCHEDULE = [['1차 사전컨설팅', '2026년 11월까지'], ['2차 사전컨설팅', '접수 전까지'], ['신청서 접수', '2026.12.28~12.30'], ['사업 평가', '2027년 1~3월'], ['결과 발표', '2027년 4월 이후']];
   const ZONE = { kind: 'human', t: '전략계획상 도시재생활성화지역(접수 마감일 기준)', how: '전략계획 고시에서 확인' };
@@ -19,7 +21,9 @@
     { id: 'oldres', name: '노후주거지정비 일반정비형', owner: '국토교통부', aim: '노후 저층 주거지에 기반·편의시설을 공급하고 민간 주택정비를 지원합니다.', money: '5년, 국비 최대 150억원', src: 'g2027', page: 36, needs: [ZONE, LOWRISE, OLD2, { kind: 'human', t: '5만~10만㎡(권장)', how: '사업 구역으로 계산' }], tool: REDEV, use: '구역 건축물로 저층 주거·노후 요건을 계산합니다.' },
     { id: 'vacant', name: '노후주거지정비 빈집정비형', owner: '국토교통부', aim: '빈집이 밀집한 노후 저층 주거지의 정주환경을 개선합니다.', money: '4년, 국비 최대 50억원', src: 'g2027', page: 36, needs: [ZONE, LOWRISE, OLD2, { kind: 'human', t: '1만㎡ 미만 구역에 빈집 10호 이상 또는 빈집 면적 20% 이상, 다른 법령의 정비사업 없음', how: '빈집 실태조사로 확인' }, { kind: 'human', t: '5만㎡ 내외(권장)', how: '사업 구역으로 계산' }], tool: REDEV, use: '구역 건축물을 계산하고 현장 기록으로 빈집을 남깁니다.' },
     { id: 'innovation', name: '도시재생 혁신지구', owner: '국토교통부', aim: '쇠퇴지역에 주거·상업·복지·행정 기능을 모으고 산업과 기업을 유치합니다.', money: '5년, 국비 최대 250억원(2026 공고)', src: 'n2026', needs: [{ kind: 'human', t: '2027 신규사업 가이드라인 대상 3종에는 없음. 공고문의 요건 확인', how: '해당 연도 공고문으로 확인' }], use: '후보 지역의 쇠퇴·인구·상권 현황을 근거로 냅니다.' },
-    { id: 'fund', name: '지방소멸대응기금', owner: '행정안전부', aim: '인구감소지역과 관심지역의 투자계획에 기금을 배분합니다.', money: '연 1조원 규모, 배분액은 평가에 따름', src: 'fund', needs: [{ kind: 'desig', t: '인구감소지역 또는 관심지역(시·군·구 지정)' }], use: '인구·고령·청년 변화 현황표를 만듭니다.' },
+    { id: 'fund', name: '지방소멸대응기금', owner: '행정안전부', aim: '일자리, 주거, 돌봄처럼 인구 유입과 정주 여건을 바꾸는 투자계획에 기금을 배분합니다.<br>2027년 투자계획은 지방정부가 6~7월에 냈고, 다음 기회는 2028년 계획입니다.', money: '연 1조원 규모, 2027년부터 평가에 따라 평균의 최대 2배~2분의 1', src: 'fund', needs: [{ kind: 'desig', t: '인구감소지역 또는 관심지역(시·군·구 지정)' }], use: '인구·고령·청년 변화 현황표를 만듭니다.' },
+    { id: 'shop', name: '지역상권 육성사업', owner: '중소벤처기업부', aim: '지역 자원을 살린 상권을 글로컬, 로컬테마, 유망골목 유형으로 키웁니다.<br>2026년 접수는 5월에 끝났고, 2030년까지 추가 선정 계획이 있습니다.', money: '2026 공고 1곳당 글로컬 최대 50억원, 로컬테마 최대 40억원, 유망골목 최대 5억원', src: 'mss', needs: [{ kind: 'human', t: '광역 지방정부가 신청, 지방정부·상인조직·상권기획자 컨소시엄', how: '해당 연도 공고문으로 확인' }, { kind: 'human', t: '글로컬·로컬테마는 서울 외, 유망골목은 로컬창업기업 집적지 또는 골목형상점가', how: '상권 지정 현황으로 확인' }, { kind: 'human', t: '로컬테마·유망골목은 신청 구역 상인 50% 이상 동의', how: '상인 동의서로 확인' }], use: '사업체 증감과 상가 업소 수로 후보 상권을 추립니다.' },
+    { id: 'rural', name: '농촌공간 재구조화·재생 계획', owner: '농림축산식품부', aim: '농촌을 포함한 시·군이 10년 단위 기본계획으로 농촌재생활성화지역과 농촌특화지구를 정합니다.', money: '기본계획 수립 대상 139개 시·군, 농촌협약 통합지원 최대 400억원(2026년 확대 계획)', src: 'rural', needs: [{ kind: 'human', t: '농촌을 포함한 시·군(광역시의 군 포함)', how: '관할 구역으로 확인' }, { kind: 'human', t: '2027년부터 기본계획 수립을 전제로 농촌사업 지원', how: '해당 시·군 계획 상태로 확인' }], use: '읍·면 단위 인구와 생활시설 현황을 기초조사 표로 모읍니다. 농촌 전용 지표는 아직 없습니다.' },
   ];
   // 2027 가이드라인 p.42 기반·편의시설 현황. 없는 자료는 없다고 적는다
   const SOC = [
@@ -70,7 +74,7 @@
 
   // 사업 목록 화면(programs.html)
   function listHTML(base) {
-    return PROGRAMS.map(p => `<section class="pg-item" id="${esc(p.id)}"><h2>${esc(p.name)}</h2><p class="pg-meta">${esc(p.owner)}, ${esc(p.money)}</p><p>${esc(p.aim)}</p>` +
+    return PROGRAMS.map(p => `<section class="pg-item" id="${esc(p.id)}"><h2>${esc(p.name)}</h2><p class="pg-meta">${esc(p.owner)}, ${esc(p.money)}</p><p>${esc(p.aim).replace('&lt;br&gt;', '<br>')}</p>` +
       `<h3>신청 요건</h3><ul>${p.needs.map(n => `<li>${esc(n.t)}</li>`).join('')}</ul><h3>리뉴맵에서 하는 일</h3><p>${esc(p.use)}</p>` +
       `<p class="pg-acts"><a class="btn ghost" href="${esc(base)}explore.html">동네로 맞춰 보기</a>${p.tool ? `<a class="btn ghost" href="${esc(base)}${esc(p.tool[0])}">${esc(p.tool[1])}</a>` : ''}</p><p class="pg-src">출처 ${srcLine(p)}</p></section>`).join('');
   }
@@ -90,7 +94,7 @@
   function socHTML(rows, format) {
     const list = socRows(rows, format), have = list.filter(r => r.value).length;
     return `<section class="pg-dong"><h3>기반·편의시설 현황 초안</h3><p class="pg-warn">2027 가이드라인 p.42 항목 ${list.length}개 중 ${have}개에 행정동 값이 있습니다. 시설명과 위치, 구역 단위 조사는 담당자가 채웁니다.</p>` +
-      `<p><button type="button" class="btn ghost" data-soc-csv>CSV 받기</button></p><div class="table-wrap" tabindex="0" role="region" aria-label="기반·편의시설 현황"><table><thead><tr><th scope="col">시설</th><th scope="col">조사 범위</th><th scope="col">행정동 값</th><th scope="col">상태</th></tr></thead><tbody>` +
+      `<p class="pg-acts"><button type="button" class="btn ghost" data-soc-csv>CSV 받기</button><a class="btn ghost" href="field/redev.html">구역을 그려 시설 세기(부산)</a></p><div class="table-wrap" tabindex="0" role="region" aria-label="기반·편의시설 현황"><table><thead><tr><th scope="col">시설</th><th scope="col">조사 범위</th><th scope="col">행정동 값</th><th scope="col">상태</th></tr></thead><tbody>` +
       list.map(r => `<tr><th scope="row">${esc(r.item)}</th><td class="nw">${esc(r.scope)}</td><td>${r.value ? `${esc(r.label)} ${esc(r.value)}` : '–'}</td><td>${esc(r.status)}</td></tr>`).join('') + `</tbody></table></div></section>`;
   }
   function socCSV(name, rows, format) {
@@ -98,7 +102,29 @@
     return '﻿' + [['행정동', '시설', '조사 범위', '지표', '행정동 값', '출처', '상태'].map(q).join(','), ...socRows(rows, format).map(r => [name, r.item, r.scope, r.label, r.value, r.source, r.status].map(q).join(','))].join('\r\n');
   }
 
-  const api = { PROGRAMS, SOURCES, SCHEDULE, SOC, factsOf, checkNeed, checkProgram, checkAll, scheduleHTML, listHTML, dongHTML, socRows, socHTML, socCSV };
+  // 시·군·구 안 동을 나란히(코드 순, 순위·배분 아님). 자료로 갈리는 요건만 칸으로 둔다
+  function districtRows(items) {
+    return items.map(({ name, rows }) => {
+      const f = factsOf(rows), val = c => { const r = rows.find(x => x.ind.code === c); return r ? r.value : null; };
+      const state = (id, kind) => checkNeed(PROGRAMS.find(p => p.id === id).needs.find(n => n.kind === kind), f).state;
+      return { name, met: f.met, aging: f.aging, biz: val('DECLINE_BIZ_DROP10Y_PCT'), pop: val('DECLINE_POP_DROP30Y_PCT'), shortfall: f.shortfall, recognize: state('recognize', 'infraOrDecline'), oldres: state('oldres', 'oldDecline') };
+    });
+  }
+  const pct = v => (num(v) ? `${Math.round(v * 10) / 10}%` : '–'), cnt = v => (num(v) ? `${v}개` : '–');
+  const DISTRICT_HEAD = ['읍·면·동', '쇠퇴요건(하한)', '노후 건축물', '사업체 10년 감소', '인구 30년 감소', '생활 기준 해당(초안)', '인정사업 쇠퇴·기반 요건', '노후주거지 쇠퇴 요건'];
+  const districtCells = r => [r.name, cnt(r.met), pct(r.aging), pct(r.biz), pct(r.pop), cnt(r.shortfall), STATE[r.recognize], STATE[r.oldres]];
+  function districtHTML(place, items) {
+    const list = districtRows(items);
+    return `<section class="pg-dong"><h3>${esc(place)} 동별 사업 요건 비교</h3><p class="pg-warn">동을 행정동 코드 순으로 나란히 둔 표입니다. 순위나 사업 배분 추천이 아닙니다.<br>활성화지역, 면적, 저층 주거 비율은 동 자료로 정할 수 없어 각 사업 구역에서 확인합니다.</p>` +
+      `<p class="pg-acts"><button type="button" class="btn ghost" data-district-csv>CSV 받기</button></p><div class="table-wrap" tabindex="0" role="region" aria-label="동별 사업 요건 비교"><table><thead><tr>${DISTRICT_HEAD.map(h => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>` +
+      list.map(r => { const c = districtCells(r); return `<tr><th scope="row">${esc(c[0])}</th>${c.slice(1).map(x => `<td class="nw">${esc(x)}</td>`).join('')}</tr>`; }).join('') + `</tbody></table></div></section>`;
+  }
+  function districtCSV(items) {
+    const q = s => `"${String(s).replace(/"/g, '""')}"`;
+    return '\uFEFF' + [DISTRICT_HEAD.map(q).join(','), ...districtRows(items).map(r => districtCells(r).map(q).join(','))].join('\r\n');
+  }
+
+  const api = { districtRows, districtHTML, districtCSV, PROGRAMS, SOURCES, SCHEDULE, SOC, factsOf, checkNeed, checkProgram, checkAll, scheduleHTML, listHTML, dongHTML, socRows, socHTML, socCSV };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   root.RenewPrograms = api;

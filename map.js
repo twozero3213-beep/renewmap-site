@@ -1111,7 +1111,7 @@
     if (m.kind === 'noemd' || m.nodata) return emptyHTML(`${here} · 읍·면·동 자료 준비 중`, [m.kind === 'noemd' ? '이 지역의 읍·면·동 자료가 아직 없습니다.' : '경계는 있지만 지표 시계열이 아직 없습니다.', '준비되기 전에는 숫자를 보여 드리지 않습니다.']);
     const it = m.items.find(x => x.code === v.dong), dist = ind.level === 'sg' ? `<p class="map-note">${esc(ind.label)}은(는) 시·군·구 단위 자료라 읍·면·동 분포가 없습니다.</p>`
       : `<h4 class="map-h4">${esc(here)} 읍·면·동 분포 · ${esc(ind.label)} <small>순위 아님${m.year ? ` · ${esc(m.year)}년` : ''}</small></h4>${strip(m.items, it ? it.code : null, ind, scale)}`;
-    if (!it) return `<h3 class="map-h3">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3><p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.</p>${reorgNote(v)}${forecastChart(ind, m.ext, v.gu || v.sigungu, null)}${dist}${hubHTML(v)}`;
+    if (!it) return `<h3 class="map-h3">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3><p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}동별 사업 요건 비교 보기</a></p>${reorgNote(v)}${forecastChart(ind, m.ext, v.gu || v.sigungu, null)}${dist}${hubHTML(v)}`;
     const rows = rowsFor(v, m, it), D = window.RenewDashboard, dy = rows.find(r => r.ind.series && r.year)?.year;
     return `<div class="map-panel-head"><h3 class="map-h3">${esc(it.name)} <small>${esc(it.kind || '행정동')} · ${esc(it.code)}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` +
       `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>${reorgNote(v)}` +
@@ -1151,6 +1151,12 @@
     if (key === reportKey) return;
     reportKey = key;
     document.body.classList.toggle('print-onepage', reportMode === 'onepage' && !!it); // 인쇄 때 1쪽 요약만 A4 한 쪽에 맞춘다
+    if (!it && reportMode === 'programs' && window.RenewPrograms && m.kind === 'emd' && m.items && m.items.length) {
+      const here = v.crumbs[v.crumbs.length - 1].label, items = m.items.map(x => ({ name: x.name, rows: rowsFor(v, m, x) }));
+      report.innerHTML = reportModeHTML(reportMode) + window.RenewPrograms.districtHTML(here, items);
+      report.querySelector('[data-district-csv]').addEventListener('click', () => { if (DG) DG.saveBytes(`동별사업요건비교_${DG.safeName(here)}.csv`, new TextEncoder().encode(window.RenewPrograms.districtCSV(items)), 'text/csv;charset=utf-8'); });
+      return;
+    }
     if (!it) { report.innerHTML = reportModeHTML(reportMode) + `<div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 ${esc(REPORT_MODES.find(x => x[0] === reportMode)[1])}가 생깁니다</h3><p><a href="${esc(toHash({ sido: v.sido && v.sido.code2, sigungu: v.sigungu && v.sigungu.code5, gu: v.gu && v.gu.code5 }))}">지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p></div>`; return; }
     const rows = rowsFor(v, m, it);
     if (reportMode === 'onepage') {

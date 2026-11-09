@@ -102,16 +102,35 @@
     return inside;
   }
 
+  // 위경도 → 첫 꼭짓점 기준 m 평면(구역 크기에서는 오차가 작다)
+  const toM = (pts) => { const lat0 = pts[0][0], k = Math.cos(lat0 * Math.PI / 180) * 111320; return ([a, o]) => [(o - pts[0][1]) * k, (a - lat0) * 110540]; };
+  // 그린 다각형 면적(㎡). 사용자가 그린 선 기준이라 고시 면적이 아니다
+  function polygonAreaM2(pts) {
+    if (!Array.isArray(pts) || pts.length < 3) return 0;
+    const m = pts.map(toM(pts));
+    return Math.abs(m.reduce((s, [x, y], i) => { const [x2, y2] = m[(i + 1) % m.length]; return s + x * y2 - x2 * y; }, 0)) / 2;
+  }
+  // 점이 다각형 안이거나 변에서 buffer(m) 안인지. 2027 가이드라인 p.42의 '구역 반경 500m'에 쓴다
+  function nearPolygon(lat, lng, pts, buffer) {
+    if (inPolygon(lat, lng, pts)) return true;
+    const f = toM(pts), [px, py] = f([lat, lng]), m = pts.map(f);
+    return m.some(([ax, ay], i) => {
+      const [bx, by] = m[(i + 1) % m.length], dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy || 1)));
+      return Math.hypot(px - ax - t * dx, py - ay - t * dy) <= buffer;
+    });
+  }
+  const NEAR_M = 500;
   // 지역 SOC 현황표(경쟁·흡수 보고서 6번). soc: data/soc_busan.json, pts: 그린 꼭짓점. 원자료 행을 그대로 센다(값을 고치지 않는다)
   function socCount(soc, pts) {
     const inside = soc.points.filter(([, , , la, ln]) => inPolygon(la, ln, pts));
+    const near = soc.points.filter(([, , , la, ln]) => nearPolygon(la, ln, pts, NEAR_M));
     const rows = soc.sources.map((s, i) => {
       const mine = inside.filter((p) => p[0] === i), types = {};
       for (const p of mine) types[p[2] || "구분 없음"] = (types[p[2] || "구분 없음"] || 0) + 1;
       const dates = mine.map((p) => p[5]).filter(Boolean).sort();
-      return { kind: s.kind, n: mine.length, types, dates: dates.length ? [dates[0], dates[dates.length - 1]] : null, source: s };
+      return { kind: s.kind, n: mine.length, near: near.filter((p) => p[0] === i).length, types, dates: dates.length ? [dates[0], dates[dates.length - 1]] : null, source: s };
     });
-    return { rows, inside };
+    return { rows, inside, near };
   }
   const socTypes = (r) => Object.entries(r.types).sort((a, b) => b[1] - a[1]).map(([t, n]) => `${t} ${n}`).join(" · ");
   const socDates = (r) => !r.dates ? "" : r.dates[0] === r.dates[1] ? r.dates[0] : `${r.dates[0]}~${r.dates[1]}`;
@@ -119,13 +138,13 @@
   // 원자료에는 이름·종류·좌표·기준일이 같고 관리번호만 다른 행이 있다(부산 2026-11-07: 공원 1쌍·주차장 3쌍). 기관이 따로 올린 행이라 지우지 않고 CSV에 표시만 한다
   const socKey = (p) => p.slice(0, 6).join("|");
   function socCSV(soc, pts, today) {
-    const { rows, inside } = socCount(soc, pts), same = new Map();
-    for (const p of inside) same.set(socKey(p), (same.get(socKey(p)) || 0) + 1);
+    const { rows, near } = socCount(soc, pts), same = new Map();
+    for (const p of near) same.set(socKey(p), (same.get(socKey(p)) || 0) + 1);
     const out = [[`리뉴맵 지역 SOC 현황표 · ${today} · 그린 영역 안 시설 점 수 · 경계 도형은 담지 않음 · ${soc.license_type}`],
-      ["시설", "영역 안 수", "종류별", "데이터기준일자", "자료", "받은 날"],
-      ...rows.map((r) => [r.kind, r.n, socTypes(r), socDates(r), `${r.source.name}(공공데이터포털 ${r.source.id}) ${r.source.url}`, r.source.retrieved_at.slice(0, 10)]),
-      [], ["시설", "이름", "종류", "위도", "경도", "데이터기준일자", "관리번호", "같은 이름·위치 행"],
-      ...inside.map((p) => [soc.sources[p[0]].kind, p[1], p[2], p[3], p[4], p[5], p[6] || "", same.get(socKey(p)) > 1 ? `${same.get(socKey(p))}행(관리번호로 구분)` : ""])];
+      ["시설", "영역 안 수", "영역과 반경 500m 수", "영역 안 종류별", "데이터기준일자", "자료", "받은 날"],
+      ...rows.map((r) => [r.kind, r.n, r.near, socTypes(r), socDates(r), `${r.source.name}(공공데이터포털 ${r.source.id}) ${r.source.url}`, r.source.retrieved_at.slice(0, 10)]),
+      [], ["시설", "이름", "종류", "위치 구분", "위도", "경도", "데이터기준일자", "관리번호", "같은 이름·위치 행"],
+      ...near.map((p) => [soc.sources[p[0]].kind, p[1], p[2], inPolygon(p[3], p[4], pts) ? "영역 안" : "반경 500m", p[3], p[4], p[5], p[6] || "", same.get(socKey(p)) > 1 ? `${same.get(socKey(p))}행(관리번호로 구분)` : ""])];
     return "﻿" + out.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   }
 
@@ -559,5 +578,5 @@
     return "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   }
 
-  return { polygonWKT, inPolygon, socCount, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

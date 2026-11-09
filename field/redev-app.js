@@ -191,6 +191,7 @@
     if (r.error) return say(`필지를 찾지 못했습니다(${r.error}).\n인터넷 연결을 확인해 주세요.`, true);
     if (!r.pnus.length) return say("영역 안에서 필지를 찾지 못했습니다.", true);
     $("list").value = r.pnus.join("\n");
+    $("area").value = Math.round(R.polygonAreaM2(drawPts));   // 그린 선 기준 면적. 고시 면적이 있으면 사람이 고친다
     saveDraft();
     say(`영역 안 ${r.pnus.length}필지를 넣었습니다.${r.total > r.pnus.length ? `\n전체 ${r.total}필지 중 1,000필지까지만 넣었습니다. 영역을 나눠 주세요.` : ""}\n경계에 걸친 필지도 들어가니 목록을 확인해 주세요.`);
   });
@@ -205,7 +206,7 @@
     const { rows } = R.socCount(data, drawPts);
     $("socBody").replaceChildren(...rows.map((r) => {
       const tr = document.createElement("tr");
-      for (const [i, v] of [r.kind, r.n.toLocaleString("ko-KR"), R.socTypes(r) || "-", R.socDates(r) || "-"].entries()) {
+      for (const [i, v] of [r.kind, r.n.toLocaleString("ko-KR"), r.near.toLocaleString("ko-KR"), R.socTypes(r) || "-", R.socDates(r) || "-"].entries()) {
         const c = document.createElement(i ? "td" : "th");
         if (!i) c.scope = "row";
         c.textContent = v;
