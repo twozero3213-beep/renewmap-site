@@ -328,6 +328,15 @@
     const status = ind.pending ? '수집 중' : v === null ? (extra && extra.held ? '보류' : '자료 없음') : ind.src === 'forecast' ? '추세 전망' : !ind.standard ? '공식 기준 없음' : isPending(ind.standard) ? '기준 승인 대기' : c ? '기준 넘음' : '기준 안';
     return { ind, value: v, crossed: c, status, ...extra };
   }
+  // 생활 지표의 시·군·구 대표값(living/summary.json, 그 안 동 값의 중앙값)을 index의 summary에 넣는다. 이미 있는 지표는 덮지 않는다
+  function mergeLivingSummary(index, sum) {
+    if (!index || !sum || !sum.items) return;
+    for (const sg of index.sigungu) {
+      const row = sum.items[String(sg.code5)]; if (!row) continue;
+      sg.summary = sg.summary || {};
+      for (const [code, [value, year, n]] of Object.entries(row)) if (!sg.summary[code]) sg.summary[code] = { value, year, n, status: null, dongMedian: true };
+    }
+  }
   // 시군구 단위 추가 자료(청년 순이동·인구감소지역 지정). 코드는 index.json code5 또는 행안부 code5(mois_code5) 어느 쪽이든 맞춘다
   const sgMatch = (list, sg) => (Array.isArray(list) ? list : []).find(x => x && (String(x.code5) === String(sg.code5) || (sg.mois_code5 && String(x.code5) === String(sg.mois_code5)))) || null;
   function sgExtra(ind, sg, ext) {
@@ -424,7 +433,7 @@
         const parts = lawInds(inds).map(i => ({ i, s: summaryOf(sg, i.code) })), ys = parts.map(p => p.s.year).filter(isNum);
         s = { value: sumValue(parts.map(p => rowOf(p.i, p.s.value))), year: ys.length ? Math.max(...ys) : null, status: null };
       }
-      return { code: String(sg.code5), name: sg.name, kind: sg.kind || null, value: s.value, year: s.year, status: s.status, text: fmt(s.value, scale.unit) || '자료 없음', color: colorOf(s.value, scale), bbox: sg.bbox || null,
+      return { code: String(sg.code5), name: sg.name, kind: sg.kind || null, value: s.value, year: s.year, status: s.status, text: s.dongMedian && isNum(s.value) ? `${fmt(s.value, scale.unit)} · 동 중앙값` : fmt(s.value, scale.unit) || '자료 없음', color: colorOf(s.value, scale), bbox: sg.bbox || null,
         over: r ? r.over : null, n: r ? r.n : null };
     });
   }
@@ -998,7 +1007,7 @@
     return lines;
   }
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
-  const api = { outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
+  const api = { mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
@@ -1719,6 +1728,7 @@
   Promise.all([
     fetchJson('data/report_templates.json', true).then(j => { state.templates = j && typeof j === 'object' && j.onepage && j.summary ? j : null; if (DG && state.templates) DG.setTemplates(j); }),
     fetchJson('data/national/living/index.json').then(li => { state.living = li && Array.isArray(li.indicators) ? li : null; }),
+    fetchJson('data/national/living/summary.json', true).then(j => { mergeLivingSummary(state.index, j); coverMemo.clear(); }),
     // 다른 직원이 만드는 중인 파일. 없으면 null → 해당 칩은 '수집 중'
     fetchJson('data/national/migration.json', true).then(j => { state.migration = j && Array.isArray(j.sigungu) ? j : null; }),
     fetchJson('data/national/designations.json', true).then(j => { state.designations = j && Array.isArray(j.items) ? j : null; }),
