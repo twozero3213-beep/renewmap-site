@@ -105,7 +105,7 @@
 .sr-group h4 { margin: 16px 0 4px; font-size: 14px; color: var(--green); letter-spacing: .02em; }
 .sr-group ul { list-style: none; margin: 0; padding: 0; }
 .sr { border-top: 1px solid var(--line); padding: 8px 0 6px; }
-.sr.is-cur { background: linear-gradient(90deg, var(--soft), transparent 80%); margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: 8px; }
+.sr.is-cur { background: var(--soft); margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: 8px; }
 .sr-h { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .sr-h .map-ico { color: var(--dim); }
 .sr-l { font-size: 15px; font-weight: 600; flex: 1; min-width: 7em; }
@@ -306,7 +306,7 @@
 .workspace-intro .sub { max-width: 680px; margin-bottom: 0; }
 .workspace-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 24px; }
 .workspace-steps a { display: grid; grid-template-columns: 36px minmax(0, 1fr); column-gap: 10px; align-items: center; min-height: 76px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); color: var(--ink); text-decoration: none; transition: transform .2s ease, border-color .2s ease, background .2s ease; }
-.workspace-steps a:hover { transform: translateY(-2px); border-color: var(--green); background: var(--hover-tint); }
+.workspace-steps a:hover { border-color: var(--green); background: var(--hover-tint); }
 .workspace-steps a > span { grid-row: span 2; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: var(--lime); font-size: 14px; font-weight: 700; }
 .workspace-steps b { font-size: 15px; line-height: 1.35; }
 .workspace-steps small { color: var(--dim); font-size: 12px; line-height: 1.4; }
@@ -336,7 +336,7 @@
 .gov-more { font-size: 12px; padding: 0 4px; } .gov-more summary { cursor: pointer; color: var(--dim); font-weight: 600; } .gov-more .gov-c, .gov-more .gov-law { display: block; margin-top: 4px; }
 .gov-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
 .gov-card { width: 100%; height: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--card); border: 1.5px solid var(--line-mid); border-radius: var(--radius-card); padding: 12px 14px; cursor: pointer; display: grid; gap: 4px; align-content: start; transition: border-color .15s ease, transform .15s ease; }
-.gov-card:hover { border-color: var(--green); transform: translateY(-2px); }
+.gov-card:hover { border-color: var(--green); }
 .gov-card:focus-visible { outline: 3px solid var(--focus-ink); outline-offset: 2px; }
 .gov-e { font-size: 24px; line-height: 1; }
 .gov-card b { font-size: 16px; line-height: 1.35; }

@@ -54,15 +54,6 @@
         count(cap.querySelector('[data-count]'), 2200);
       }
       requestAnimationFrame(() => host.classList.add('on'));
-      // 마우스를 따라 지도가 살짝 기운다(태블릿·폰은 그대로)
-      if (!still && window.matchMedia('(pointer: fine)').matches) {
-        const hero = host.closest('.h-hero');
-        hero && hero.addEventListener('pointermove', (e) => {
-          const r = hero.getBoundingClientRect();
-          host.style.setProperty('--rx', (((e.clientY - r.top) / r.height) - 0.5).toFixed(3));
-          host.style.setProperty('--ry', (((e.clientX - r.left) / r.width) - 0.5).toFixed(3));
-        });
-      }
     }).catch(() => { /* 지도 파일을 못 받으면 글만 남는다 */ });
   }
 
@@ -130,13 +121,4 @@
   };
   window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
   onScroll();
-
-  // ── 5. 카드 조명: 포인터 자리를 밝힌다(누를 수 있는 카드라는 신호) ──
-  if (!still && window.matchMedia('(pointer: fine)').matches) {
-    doc.querySelectorAll('.h-prod').forEach((card) => card.addEventListener('pointermove', (e) => {
-      const r = card.getBoundingClientRect();
-      card.style.setProperty('--mx', `${e.clientX - r.left}px`);
-      card.style.setProperty('--my', `${e.clientY - r.top}px`);
-    }));
-  }
 })();

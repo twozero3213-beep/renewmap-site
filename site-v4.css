@@ -2,19 +2,15 @@
    첫 화면과 같은 어두운 띠·연두 강조·지도 색(D22)을 쓰고, 움직임은 html.motion(site-motion.js·home-motion.js, 동작 줄이기 아님)일 때만 켠다.
    도구 화면(지도 탐색·현장·신청요건)은 머리띠·버튼·표만 바뀌고 내용 배치는 그대로다. */
 :root {
-  --hero-bg: #062823; --hero-bg-2: #0b3b33; --hero-ink: #f1faf6; --hero-dim: #b8d3c9; --hero-line: rgba(241,250,246,.16);
+  --hero-bg: #062823; --hero-ink: #f1faf6; --hero-dim: #b8d3c9; --hero-line: rgba(241,250,246,.16);
   --map-o1: #f2ad6f; --map-o3: #b4521d;
-  --glow: rgba(215,249,136,.35);
-  --spring: cubic-bezier(.22, 1.2, .36, 1);
   --out: cubic-bezier(.16, 1, .3, 1);
 }
 html, body { overflow-x: clip; }
 
-/* 머리띠: 붙어 있다가 스크롤하면 반투명 판 */
+/* 머리띠: 붙어 있다가 스크롤하면 아래선이 생긴다 */
 header.top { position: sticky; top: 0; z-index: 40; transition: background-color .2s var(--ease), box-shadow .2s var(--ease); }
-body.scrolled header.top { background: var(--veil); box-shadow: 0 1px 0 var(--line), 0 8px 24px var(--shade-06); backdrop-filter: saturate(1.4) blur(10px); }
-header.top .logo { transition: letter-spacing .3s var(--out); }
-header.top .logo:hover { letter-spacing: .02em; }
+body.scrolled header.top { background: var(--bg); box-shadow: 0 1px 0 var(--line); }
 header.top .menu a { position: relative; }
 header.top .menu a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px; background: var(--green); transform: scaleX(0); transform-origin: 0 50%; transition: transform .3s var(--out); }
 header.top .menu a:hover::after, header.top .menu a[aria-current]::after { transform: scaleX(1); }
@@ -22,10 +18,9 @@ header.top .menu a:hover::after, header.top .menu a[aria-current]::after { trans
 /* 읽은 만큼 차는 맨 위 선(긴 문서 화면) */
 .read-prog { position: fixed; inset: 0 0 auto 0; height: 3px; z-index: 60; background: var(--lime); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); pointer-events: none; }
 
-/* 버튼: 손을 대면 떠오르고 누르면 눌린다 */
-.btn { transition: transform .18s var(--spring), box-shadow .25s var(--ease), background-color .15s var(--ease), border-color .15s var(--ease); }
-.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px var(--shade-16); }
-.btn:active { transform: translateY(0) scale(.98); box-shadow: none; }
+/* 버튼: 손을 대면 색이 바뀌고 누르면 눌린다 */
+.btn { transition: transform .15s var(--ease), background-color .15s var(--ease), border-color .15s var(--ease); }
+.btn:active { transform: scale(.98); }
 .btn:focus-visible, .menu a:focus-visible, .h-band-btn:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; box-shadow: 0 0 0 5px var(--green); }
 
 /* 표: 줄에 손을 대면 밝아지고, 머리 칸은 표를 내려도 붙어 있다 */
@@ -35,36 +30,25 @@ header.top .menu a:hover::after, header.top .menu a[aria-current]::after { trans
 
 /* ── 문서 화면 첫 띠(site-motion.js가 제목 묶음을 .pg-band로 감싼다. 스크립트가 없으면 예전 모습 그대로) ── */
 .pg-band { position: relative; isolation: isolate; color: var(--hero-ink); padding: 48px 0 40px; margin-bottom: 40px; }
-.pg-band::before { content: ""; position: absolute; z-index: -2; top: 0; bottom: 0; left: calc(50% - 50vw); right: calc(50% - 50vw);
-  background: radial-gradient(90% 120% at 85% 20%, var(--hero-bg-2) 0%, var(--hero-bg) 65%); }
-.pg-band::after { content: ""; position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(50% - 50vw); right: calc(50% - 50vw); opacity: .55; pointer-events: none;
-  background-image: linear-gradient(var(--hero-line) 1px, transparent 1px), linear-gradient(90deg, var(--hero-line) 1px, transparent 1px);
-  background-size: 40px 40px; mask-image: radial-gradient(70% 90% at 80% 30%, #000 0%, transparent 75%); }
+.pg-band::before { content: ""; position: absolute; z-index: -2; top: 0; bottom: 0; left: calc(50% - 50vw); right: calc(50% - 50vw); background: var(--hero-bg); }
 .pg-band h1 { color: var(--hero-ink); font-size: clamp(30px, 4vw, 48px); line-height: 1.15; letter-spacing: -.02em; text-wrap: balance; margin: 8px 0 12px; }
 .pg-band p, .pg-band .sub { color: var(--hero-dim); max-width: 46em; }
 .pg-band a { color: var(--lime); }
 .pg-band .breadcrumb, .pg-band .breadcrumb a { color: var(--hero-dim); }
 .pg-band .breadcrumb a:hover { color: var(--lime); }
 .pg-band .label-scenario { color: var(--navy); background: var(--lime); border-color: var(--lime); }
-/* 띠 안을 천천히 지나가는 빛(지도 위를 훑는 느낌) */
-.pg-scan { position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(50% - 50vw); width: 40vw; pointer-events: none; opacity: 0;
-  background: linear-gradient(90deg, transparent, rgba(215,249,136,.10), transparent); }
 
 /* 서비스 소개 첫 단락도 같은 어두운 띠 */
-.about-top { position: relative; isolation: isolate; color: var(--hero-ink); background: radial-gradient(90% 110% at 85% 20%, var(--hero-bg-2) 0%, var(--hero-bg) 65%); }
-.about-top::after { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .5; pointer-events: none;
-  background-image: linear-gradient(var(--hero-line) 1px, transparent 1px), linear-gradient(90deg, var(--hero-line) 1px, transparent 1px);
-  background-size: 48px 48px; mask-image: radial-gradient(70% 80% at 75% 35%, #000 0%, transparent 75%); }
+.about-top { position: relative; isolation: isolate; color: var(--hero-ink); background: var(--hero-bg); }
 .about-top h1, .about-top h2, .about-top h3 { color: var(--hero-ink); }
 .about-top h1 { font-size: clamp(32px, 4.4vw, 56px); line-height: 1.12; letter-spacing: -.02em; text-wrap: balance; }
 .about-top p, .about-top .about-vl { color: var(--hero-dim); }
 .about-top .about-vn { color: var(--lime); }
 .about-top .btn:not(.ghost) { background: var(--lime); color: var(--navy); border-color: var(--lime); }
-.about-top .btn:not(.ghost):hover { box-shadow: 0 10px 30px var(--glow); }
+.about-top .btn:not(.ghost):hover { background: var(--hero-ink); border-color: var(--hero-ink); }
 .about-top .btn.ghost { background: transparent; color: var(--hero-ink); border-color: var(--hero-line); }
 .about-top .btn.ghost:hover { background: rgba(255,255,255,.08); }
-.about-top .about-values li { border-color: var(--hero-line); transition: transform .25s var(--spring), box-shadow .25s var(--ease); }
-.about-top .about-values li:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(0,0,0,.3); }
+.about-top .about-values li { border-color: var(--hero-line); }
 /* 네 가지 원칙은 흰 카드라 글자는 원래 진한 색으로 */
 .about-top .about-values li h3 { color: var(--ink); }
 .about-top .about-values li p { color: var(--dim); }
@@ -74,8 +58,6 @@ header.top .menu a:hover::after, header.top .menu a[aria-current]::after { trans
 /* ── 움직임 ── */
 .motion .pg-band h1 { animation: v4-rise .8s var(--out) both; }
 .motion .pg-band > :not(h1) { animation: v4-rise .8s var(--out) .1s both; }
-.motion .pg-scan { opacity: 1; animation: v4-scan 9s ease-in-out infinite; }
-@keyframes v4-scan { 0% { transform: translateX(-40vw); } 60%, 100% { transform: translateX(140vw); } }
 .motion .about-top h1 { animation: v4-rise .9s var(--out) both; }
 .motion .about-top .about-def, .motion .about-top .about-cta { animation: v4-rise .9s var(--out) .12s both; }
 @keyframes v4-rise { from { opacity: 0; transform: translateY(22px); } }
@@ -84,17 +66,16 @@ header.top .menu a:hover::after, header.top .menu a[aria-current]::after { trans
 
 @media (prefers-reduced-motion: reduce) {
   .btn, header.top, .table-wrap tbody tr { transition: none; }
-  .btn:hover { transform: none; }
-  .read-prog, .pg-scan { display: none; }
+  .read-prog { display: none; }
 }
-@media print { .motion .rv { opacity: 1; transform: none; } .read-prog, .pg-scan { display: none; } .pg-band, .about-top { color: var(--print-ink); background: none; } .pg-band::before, .pg-band::after, .about-top::after { display: none; } .pg-band h1, .pg-band p { color: var(--print-ink); } }
+@media print { .motion .rv { opacity: 1; transform: none; } .read-prog { display: none; } .pg-band, .about-top { color: var(--print-ink); background: none; } .pg-band::before { display: none; } .pg-band h1, .pg-band p { color: var(--print-ink); } }
 /* 첫 띠는 머리띠 바로 아래에 붙인다(문서 화면 main.page의 위 여백만큼 올림) */
 main.page:has(> .pg-band:first-child) { padding-top: 0; }
 
 /* 도구 화면(현장·신청요건·창고 목록) 머리띠: 첫 화면과 같은 어두운 녹색에 연두 밑줄. 움직임은 없다(일하는 화면) */
 body.field header.top { background: var(--hero-bg); border-bottom: 0; box-shadow: inset 0 -3px 0 var(--lime); }
 body.field header.top h1, body.field header.top .today { color: var(--hero-ink); }
-body.field.scrolled header.top { background: var(--hero-bg); backdrop-filter: none; box-shadow: inset 0 -3px 0 var(--lime), 0 8px 24px var(--shade-16); }
+body.field.scrolled header.top { background: var(--hero-bg); box-shadow: inset 0 -3px 0 var(--lime); }
 
 /* 공통 머리글 메뉴(심사 06, 2026-11-08): 모든 화면에 같은 5개. 스크립트 없이 동작하고, 좁은 화면에서는 로고 옆에서 가로로 민다 */
 .site-nav { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
@@ -109,3 +90,6 @@ body.field .site-nav a:hover { color: var(--lime); background: rgba(255,255,255,
 body.field .site-nav a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--lime); }
 body.field header.top .wrap:has(.site-nav) { min-height: 44px; padding-top: 4px; }
 @media (max-width: 720px) { .site-nav a { padding: 8px 7px; font-size: 13px; } }
+
+/* 어두운 첫 단락 안의 글자 링크는 연두로(녹색은 어두운 바탕에서 안 읽힌다) */
+.about-top a:not(.btn) { color: var(--lime); }

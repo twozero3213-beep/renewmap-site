@@ -24,10 +24,6 @@
       while (el && el.tagName === 'P' && parts.length < 5) { parts.push(el); el = el.nextElementSibling; }
       main.insertBefore(band, parts[0]);
       parts.forEach((p) => band.appendChild(p));
-      const scan = doc.createElement('span');
-      scan.className = 'pg-scan';
-      scan.setAttribute('aria-hidden', 'true');
-      band.appendChild(scan);
     }
   }
 

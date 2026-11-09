@@ -33,7 +33,7 @@
 /* 큰 숫자 카드 */
 .dash-bigs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .dash-big { font: inherit; text-align: left; color: var(--ink); background: var(--bg); border: 1px solid transparent; border-radius: var(--radius-card); padding: 14px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; min-width: 0; transition: transform .2s, border-color .2s, background .2s; }
-.dash-big:hover { border-color: var(--green); transform: translateY(-2px); }
+.dash-big:hover { border-color: var(--green); }
 .dash-big[aria-expanded="true"] { background: var(--soft); border-color: var(--green); }
 .dash-big .k { font-size: 14px; font-weight: 600; color: var(--dim); }
 .dash-big .n { display: flex; align-items: baseline; gap: 2px; }
