@@ -142,7 +142,7 @@
     for (const p of near) same.set(socKey(p), (same.get(socKey(p)) || 0) + 1);
     const out = [[`리뉴맵 지역 SOC 현황표 · ${today} · 그린 영역 안 시설 점 수 · 경계 도형은 담지 않음 · ${soc.license_type}`],
       ["시설", "영역 안 수", "영역과 반경 500m 수", "영역 안 종류별", "데이터기준일자", "자료", "받은 날"],
-      ...rows.map((r) => [r.kind, r.n, r.near, socTypes(r), socDates(r), `${r.source.name}(공공데이터포털 ${r.source.id}) ${r.source.url}`, r.source.retrieved_at.slice(0, 10)]),
+      ...rows.map((r) => [r.kind, r.n, r.near, socTypes(r), socDates(r), `${r.source.name}(공공데이터포털 ${r.source.id}, ${r.source.license_type}) ${r.source.url}`, r.source.retrieved_at.slice(0, 10)]),
       [], ["시설", "이름", "종류", "위치 구분", "위도", "경도", "데이터기준일자", "관리번호", "같은 이름·위치 행"],
       ...near.map((p) => [soc.sources[p[0]].kind, p[1], p[2], inPolygon(p[3], p[4], pts) ? "영역 안" : "반경 500m", p[3], p[4], p[5], p[6] || "", same.get(socKey(p)) > 1 ? `${same.get(socKey(p))}행(관리번호로 구분)` : ""])];
     return "﻿" + out.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
