@@ -979,8 +979,9 @@
 
   function docxBytes(doc) {
     const FONT = '나눔고딕';
-    // 1쪽 요약은 글자·간격·여백을 줄여 Word에서도 1쪽에 담는다(HWPX는 sizesFor로 같은 일을 한다)
-    const OP = !!doc.onepage, PT = OP ? { body: 9.5, tbl: 8.5, h1: 11, h2: 10, title: 16, small: 7.5, strong: 10.5, line: 270, gap: 70, margin: 850 } : { body: 11, tbl: 9.5, h1: 14, h2: 12, title: 20, small: 8.5, strong: 12.5, line: 340, gap: 120, margin: 1134 };
+    // 한글과 워드의 1쪽 글자·문단 간격이 서식 판본을 따라 함께 바뀌어야 한다.
+    const z = sizesFor(doc);
+    const OP = !!doc.onepage, PT = OP ? { body: z.body, tbl: z.table, h1: z.h1, h2: z.h2, title: z.title, small: z.small, strong: z.lead, line: 270, gap: z.after / 5, margin: 850 } : { body: 11, tbl: 9.5, h1: 14, h2: 12, title: 20, small: 8.5, strong: 12.5, line: 340, gap: 120, margin: 1134 };
     const run = (t, look, pt, bold, color) => `<w:r><w:rPr>${bold || look === 'b' ? '<w:b/>' : ''}${color ? `<w:color w:val="${color}"/>` : ''}${pt ? `<w:sz w:val="${Math.round(pt * 2)}"/>` : ''}${look === 'sup' ? '<w:vertAlign w:val="superscript"/>' : ''}</w:rPr><w:t xml:space="preserve">${xe(t)}</w:t></w:r>`;
     const p = (runs, o = {}) => `<w:p><w:pPr>${o.style ? `<w:pStyle w:val="${o.style}"/>` : ''}${o.keep ? '<w:keepNext/>' : ''}<w:spacing w:before="${o.before || 0}" w:after="${o.after == null ? PT.gap : o.after}" w:line="${o.line || PT.line}" w:lineRule="auto"/>${o.ind ? `<w:ind w:left="${o.ind}" w:hanging="200"/>` : ''}${o.center ? '<w:jc w:val="center"/>' : ''}</w:pPr>${runs}</w:p>`;
     const W = 11906 - 2 * PT.margin;   // A4 본문 폭(여백 2cm), 1/20pt
