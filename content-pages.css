@@ -1,0 +1,53 @@
+[data-content-book] { scroll-margin-top: calc(var(--site-header-h, 64px) + 24px); }
+.content-pager { display: grid; grid-template-columns: auto minmax(160px, 1fr) auto; align-items: center; gap: 12px; max-width: 1080px; margin: 24px auto; padding: 16px 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); scroll-margin-top: calc(var(--site-header-h, 64px) + 24px); }
+.content-pager label { font-size: 14px; font-weight: 700; color: var(--dim); }
+.content-pager select { width: 100%; min-width: 0; min-height: 48px; font: inherit; font-size: 16px; color: var(--ink); background: var(--card); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 32px 8px 12px; }
+.content-pager-controls { display: flex; gap: 12px; align-items: center; }
+.content-pager-controls button { min-height: 48px; min-width: 58px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--green); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+.content-pager-controls button:hover:not(:disabled) { background: var(--soft); }
+.content-pager-controls button:disabled { color: var(--off-ink); background: var(--off-bg); cursor: not-allowed; }
+.content-pager-controls [role=status] { min-width: 48px; text-align: center; white-space: nowrap; font-size: 14px; font-variant-numeric: tabular-nums; }
+.content-pager :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.content-book-ready > .content-page { margin-top: 0; padding-top: 16px; padding-bottom: 32px; }
+.content-book-ready .content-page[hidden] { display: none !important; }
+.content-book-ready > .content-page > :first-child { margin-top: 0; }
+.content-book-ready [data-reveal] { opacity: 1; transform: none; }
+.content-page .table-wrap { width: 100%; overflow: auto; }
+.content-page th, .content-page td { overflow-wrap: anywhere; }
+.content-page .nw { white-space: normal; }
+.content-page .eth-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.content-page .qa { margin-top: 16px; }
+.about-principles { border-top: 1px solid var(--line); margin-top: 24px; }
+.about-principles > summary { padding: 16px 0; cursor: pointer; }
+.about-principles > summary h2 { display: inline; font-size: 20px; }
+.evidence-head { display: flex; justify-content: space-between; gap: 24px; align-items: center; }
+.evidence-head img { width: 112px; height: 112px; }
+.evidence-head h1 { margin-bottom: 12px; }
+.method-lead { font-size: 20px; max-width: 42em; line-height: 1.6; }
+.method-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; margin: 24px 0; }
+.method-grid article { padding: 24px; border: 1px solid var(--line); background: var(--card); border-radius: 12px; }
+.method-grid h3 { margin: 0 0 12px; font-size: 20px; }
+.method-grid p { margin: 8px 0; }
+.method-note { padding: 16px 20px; background: var(--soft); color: var(--soft-ink); border-radius: 8px; }
+.method-source { font-size: 14px; color: var(--dim); }
+.method-source a { text-underline-offset: 3px; }
+.method-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.method-checks { padding-left: 24px; }
+.method-checks li { padding: 8px 0; }
+@media (max-width: 720px) {
+  .content-pager { grid-template-columns: auto minmax(0,1fr); gap: 8px 12px; margin: 16px; padding: 12px; }
+  .wrap.page > .content-pager { margin-left: 0; margin-right: 0; }
+  .content-pager-controls { grid-column: 1 / -1; justify-content: space-between; }
+  .content-pager-controls button { min-width: 80px; }
+  .content-page .eth-grid, .method-grid { grid-template-columns: 1fr; gap: 16px; }
+  .evidence-head { align-items: flex-start; gap: 12px; }
+  .evidence-head img { width: 64px; height: 64px; }
+  .method-lead { font-size: 18px; }
+  .method-grid article { padding: 20px; }
+}
+@media print {
+  .content-pager { display: none !important; }
+  .content-book-ready .content-page[hidden], .content-book-ready .content-page { display: block !important; break-before: auto; }
+  .content-page .table-wrap { overflow: visible; }
+  .method-actions { display: none; }
+}

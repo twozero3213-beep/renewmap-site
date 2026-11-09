@@ -7,15 +7,15 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; form-action 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
 <script src="frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>리뉴맵 | 이 동네, 무엇으로 되살릴까</title>
-<meta name="description" content="리뉴맵은 인구, 상권, 주거, 생활시설, 안전을 공식 통계로 진단해 도시재생 사업별 요건과 맞대 보고, 출처가 붙은 근거 문서를 만드는 서비스입니다.">
+<title>리뉴맵 | 동네의 변화를, 근거부터</title>
+<meta name="description" content="리뉴맵은 도시재생 기초조사를 위한 지도 탐색, 현장 기록, 요건 확인과 근거 문서 작성을 돕는 서비스입니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/">
 <meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="리뉴맵 RENEWMAP">
-<meta property="og:title" content="리뉴맵 | 이 동네, 무엇으로 되살릴까">
-<meta property="og:description" content="인구, 상권, 주거, 생활시설, 안전을 공식 통계로 진단하고 도시재생 사업별 요건과 맞대 봅니다. 출처가 붙은 근거 문서까지 받습니다.">
+<meta property="og:title" content="리뉴맵 | 동네의 변화를, 근거부터">
+<meta property="og:description" content="동네의 자료와 출처·기준일을 살펴보고, 현장 확인 내용을 근거 문서로 연결합니다.">
 <meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -30,7 +30,6 @@
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="site-v4.css">
 <link rel="stylesheet" href="home.css">
-<link rel="stylesheet" href="home-v4.css">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"WebApplication","@id":"https://twozero3213-beep.github.io/renewmap-site/#app","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","inLanguage":"ko","applicationCategory":"BusinessApplication","operatingSystem":"웹 브라우저","isAccessibleForFree":true,"description":"리뉴맵은 도시재생 담당자가 동 이름만 넣으면 인구, 상권, 주거, 생활시설, 안전을 공식 통계로 진단해 사업별 요건과 맞대 보고, 숫자마다 출처와 기준일이 붙은 한글 근거 문서를 받는 서비스입니다.","offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"publisher":{"@id":"https://twozero3213-beep.github.io/renewmap-site/#org"}},
@@ -38,142 +37,55 @@
 </script>
 <script src="site.js" defer></script>
 <script src="home.js" defer></script>
-<script src="home-motion.js" defer></script>
 </head>
 <body class="app-home">
-<div id="readProg" class="read-prog"></div>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="field/">현장 기록</a><a href="programs.html">재생 사업</a><a href="data.html">데이터 출처</a><a href="about.html#contact">시범 상담</a></nav></div></header>
 
-<!-- 문장 원본: docs/design/site_v5_copy_2026-11-07.md(2026-11-07 문구 전면 개편). 시안: Figma ieUP8NdrjuCow9holCrElx 'v3 웹사이트 2026-10-28' -->
-<main id="main" class="v3">
-  <section class="h-hero" aria-labelledby="heroTitle">
-    <div id="heroMap" class="h-map"></div>
-    <div class="wrap h-hero-grid">
-      <div class="h-hero-copy">
-        <h1 id="heroTitle">이 동네,<br>무엇으로 되살릴까요?</h1>
-        <p class="h-sub">인구, 상권, 주거, 생활시설, 안전을 공식 통계로 진단합니다.<br>도시재생 사업별 요건과 맞대 보고, 출처와 기준일이 붙은 한글(HWPX)·워드·엑셀 근거 문서를 바로 받습니다.</p>
-        <p class="h-cta"><a class="btn" href="explore.html?report=onepage#map/21/21090/21090700">반여1동 예시 문서 보기</a></p>
-        <form id="homeSearch" class="home-search" role="search" autocomplete="off">
-          <label for="homeQ" class="h-label">동네 찾기</label>
-          <div class="home-search-row">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5L21 21"/></svg>
-            <input id="homeQ" name="q" type="search" placeholder="동 이름이나 구 이름 (예: 반여1동)" enterkeyhint="search" aria-describedby="homeMsg">
-          </div>
-          <p class="h-note">가입도 설치도 필요 없습니다.<br>계산은 이 브라우저 안에서 끝납니다.</p>
-          <ul id="homeHits" class="home-hits"></ul>
-          <p id="homeMsg" class="home-msg" aria-live="polite"></p>
-        </form>
-        <p id="heroMapCap" class="h-map-cap"></p>
-      </div>
-      <!-- 문서가 채워지는 순서: 사진 → 위치 → 숫자 → 출처. 항목 이름은 field/evidence.js의 실제 1쪽과 같다. 숫자는 dong/21090700.html의 실제 값(site.test.cjs가 대조). 진짜 사진이 없어 그림을 지어 넣지 않는다 -->
-      <figure id="heroDoc" class="h-doc" aria-label="현장 기록 1쪽 예시">
-        <div class="h-page">
-          <p class="h-page-run"><span>현장 기록 1쪽</span><span class="h-ex">예시</span></p>
-          <p class="h-page-t">반여1동 현장 확인 결과</p>
-          <p class="h-page-s">부산광역시 해운대구</p>
-          <dl class="h-box">
-            <div class="layer" data-step="1"><dt>사진</dt><dd>얼굴·번호판을 가린 뒤 첨부</dd></div>
-            <div class="layer" data-step="2"><dt>위치</dt><dd>반여1동, 오차 범위(±m) 함께 기록</dd></div>
-          </dl>
-          <dl class="h-nums">
-            <div class="layer" data-step="3"><dt>준공 20년 이상 건축물</dt><dd>82.96%<sup><span class="sr-only">출처 </span>1</sup></dd></div>
-            <div class="layer" data-step="3"><dt>30년 최대 대비 인구 감소율</dt><dd>34.81%<sup><span class="sr-only">출처 </span>1</sup></dd></div>
-            <div class="layer" data-step="3"><dt>노후·불량 연한</dt><dd class="h-art">제3조②<sup><span class="sr-only">출처 </span>2</sup></dd></div>
-          </dl>
-          <ol class="h-notes layer" data-step="4">
-            <li>국토교통부 쇠퇴진단지표, 2025. 12. 31. 기준</li>
-            <li>부산광역시 도시 및 주거환경정비 조례 원문</li>
-          </ol>
+<main id="main" class="start-home wrap">
+  <section class="start-hero" aria-labelledby="heroTitle">
+    <div class="start-copy">
+      <h1 id="heroTitle">동네의 변화를,<br>근거부터.</h1>
+      <p class="start-intro">도시재생 기초조사부터 현장 기록까지.<br>자료를 찾고, 확인하고, 문서로 연결하세요.</p>
+      <form id="homeSearch" class="home-search" role="search" autocomplete="off">
+        <label for="homeQ">어느 동네를 살펴볼까요?</label>
+        <div class="home-search-row">
+          <input id="homeQ" name="q" type="search" placeholder="동·구 이름 (예: 반여1동)" enterkeyhint="search" aria-describedby="homeMsg">
+          <button class="btn" type="submit">찾기</button>
         </div>
-      </figure>
+        <ul id="homeHits" class="home-hits" aria-label="동네 검색 결과"></ul>
+        <p id="homeMsg" class="home-msg" aria-live="polite"></p>
+      </form>
+      <div class="start-shortcuts"><a href="explore.html?report=onepage#map/21/21090/21090700">반여1동 예시 문서 보기 <span aria-hidden="true">↗</span></a><a href="programs.html">도시재생 사업 찾기</a><a href="dong/index.html">행정동 목록</a></div>
+      <noscript><p>검색에는 자바스크립트가 필요합니다.<br><a href="dong/index.html">행정동 목록에서 동네를 찾아 주세요.</a></p></noscript>
     </div>
-    <div class="h-band"><div id="srcBand" class="h-band-track"></div><button id="srcBandBtn" class="h-band-btn" type="button" aria-pressed="false" hidden>출처 띠 멈춤</button></div>
-  </section>
-
-  <section class="h-sec h-alt" aria-labelledby="whoTitle">
-    <div class="wrap h-split">
-      <h2 id="whoTitle">누가 씁니까</h2>
-      <ul class="h-rows">
-        <li><h3>도시계획·재생 용역사</h3><p>구역 경계를 바꿀 때마다 건물을 다시 세던 일을 버튼 한 번으로 끝냅니다.</p></li>
-        <li><h3>시·군·구 재생 부서</h3><p>"그 숫자 어디서 나왔어요?"라는 질문에 출처와 조문을 바로 보여 줍니다.</p></li>
-        <li><h3>지역균형·인구 부서</h3><p>인구감소지역과 지방소멸대응기금 사업의 요건을 공식 자료와 맞대 봅니다.</p></li>
-        <li><h3>도시재생지원센터</h3><p>해마다 같은 동네를 다시 재고, 작년과 달라진 숫자를 남깁니다.</p></li>
-        <li><h3>주민협의체·마을기업</h3><p>동네의 인구·상권·생활시설을 공식 통계로 보고, 되살릴 빈 창고·공장을 찾습니다(부산).</p></li>
-        <li><h3>재개발·재건축 추진위</h3><p>노후도와 입안 요건을 부산 조례 기준으로 미리 계산해 봅니다.</p></li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="h-sec" aria-labelledby="howTitle">
-    <div class="wrap">
-      <h2 id="howTitle">현장에서 결재까지 세 걸음</h2>
-      <p class="h-lede">현장 사진과 공식 통계를 한 장에 묶습니다.<br>같은 자료로 다시 만들면 언제나 같은 문서가 나옵니다.</p>
-      <ol id="steps" class="h-steps">
-        <li><div class="h-step-t"><h3>찍기</h3><p>사진을 찍으면 위치와 오차 범위(±m)가 함께 기록됩니다.<br>얼굴과 번호판은 자동으로 가려집니다.</p></div></li>
-        <li><div class="h-step-t"><h3>잇기</h3><p>사진을 찍은 자리의 행정동과 필지를 찾아 공식 통계와 조례 조문을 잇습니다.</p></div></li>
-        <li><div class="h-step-t"><h3>받기</h3><p>결재에 올릴 한글 1쪽과 PDF, 근거 표를 내려받습니다.</p></div></li>
+    <aside class="start-note" aria-label="리뉴맵의 조사 흐름">
+      <div class="start-note-head"><span>동네를 이해하는 세 가지 기록</span><img src="mascot/crew/taggy-default.svg" width="88" height="88" alt="" aria-hidden="true"></div>
+      <ol class="start-flow">
+        <li><span class="flow-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16M15 5v16"/></svg></span><div><strong>자료의 출처</strong><span>지역·기준일을 함께 살펴봅니다.</span></div></li>
+        <li><span class="flow-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h4l2-3h4l2 3h4v14H4V6Z"/><circle cx="12" cy="12" r="4"/></svg></span><div><strong>현장에서 확인한 내용</strong><span>사진·위치와 확인 이력을 남깁니다.</span></div></li>
+        <li><span class="flow-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h9l5 5v13H5V3Zm9 0v6h5M8 13h8M8 17h6"/></svg></span><div><strong>설명할 수 있는 문서</strong><span>수치와 근거를 함께 전달합니다.</span></div></li>
       </ol>
-    </div>
+      <a class="start-method" href="evidence.html">조사 방법과 학술 근거 <span aria-hidden="true">→</span></a>
+    </aside>
   </section>
-
-  <section class="h-sec h-alt" aria-labelledby="productsTitle">
-    <div class="wrap">
-      <h2 id="productsTitle">지금 바로 써 볼 수 있습니다</h2>
-      <ul class="h-prods">
-        <li><a class="h-prod is-main" href="field/"><img class="h-shot" src="img/field-record.webp" width="390" height="640" loading="lazy" alt="현장 기록 화면: 사진 찍기, 현재 위치 받기, 무엇을 봤나요 고르기"><h3>현장 기록 1쪽</h3><p>사진 한 장이 결재 문서가 됩니다.<br>같은 기록으로 사진대지도 함께 만듭니다.</p><span class="h-go">써 보기</span></a></li>
-        <li><a class="h-prod" href="programs.html"><h3>도시재생 사업 찾기</h3><p>지역특화재생, 인정사업, 노후주거지정비, 지방소멸대응기금의 요건과 일정을 봅니다.<br>동을 고르면 공식 자료와 맞대 볼 수 있습니다.</p><span class="h-go">써 보기</span></a></li>
-        <li><a class="h-prod" href="dong/index.html"><h3>동네 근거 페이지</h3><p>전국 3,559개 행정동의 쇠퇴 지표와 동네 점수·순위를 출처와 함께 봅니다.</p><span class="h-go">써 보기</span></a></li>
-      </ul>
-      <p id="tools" class="h-tools"><b>참고 도구</b><a href="field/redev.html">구역 신청요건 계산(부산)</a> · <a href="field/twin.html">3D·4D 비교(PC)</a> · <a href="rank.html">동네 점수·순위</a> · <a href="biz.html">사업성 간이 계산</a> · <a href="field/oa.html">집계구(통계청 최소 통계 구역)로 다시 보기</a> · <a href="field/idle.html">오래된 창고·공장</a> · <a href="field/shop.html">음식점 상권 변화</a></p>
-    </div>
+  <section id="tools" class="start-tools" aria-labelledby="toolsTitle">
+    <div class="start-section-head"><h2 id="toolsTitle">지금 할 일을 선택하세요</h2><a href="about.html">서비스 알아보기</a></div>
+    <ul class="start-tool-grid">
+      <li><a href="explore.html"><span class="tool-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16M15 5v16"/></svg></span><h3>동네 탐색</h3><p>지도에서 자료를 비교하고<br>근거 문서를 받습니다.</p><span class="tool-go" aria-hidden="true">↗</span></a></li>
+      <li><a href="field/"><span class="tool-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h4l2-3h4l2 3h4v14H4V6Z"/><circle cx="12" cy="12" r="4"/></svg></span><h3>현장 기록</h3><p>사진과 위치를 기록하고<br>확인 내용을 정리합니다.</p><span class="tool-go" aria-hidden="true">↗</span></a></li>
+      <li><a href="field/redev.html"><span class="tool-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5V3Zm3 5 1 1 2-2M13 8h3M8 13l1 1 2-2M13 13h3M8 18h8"/></svg></span><h3>신청요건 확인</h3><p>부지의 요건과 조문을 봅니다.<br>승인 전 참고용입니다.</p><span class="tool-go" aria-hidden="true">↗</span></a></li>
+      <li><a href="field/twin.html"><span class="tool-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm-9 5 9 5 9-5M12 12v10"/></svg></span><h3>3D·4D 비교</h3><p>모델을 배치하고<br>날짜별 계획 단계를 봅니다.</p><span class="tool-go" aria-hidden="true">↗</span></a></li>
+    </ul>
+    <details class="start-more">
+      <summary>다른 조사 도구</summary>
+      <div><a href="field/oa.html">집계구로 다시 보기</a><a href="field/idle.html">오래된 창고·공장</a><a href="field/shop.html">음식점 상권 변화</a><a href="rank.html">동네 점수·순위</a><a href="biz.html">사업성 간이 계산</a></div>
+    </details>
   </section>
-
-  <section class="h-sec" aria-labelledby="valuesTitle">
-    <div class="wrap">
-      <h2 id="valuesTitle">숫자를 어떻게 다룹니까</h2>
-      <div class="h-values">
-        <details class="h-val" open><summary><h3>숫자에는 출처를</h3><span class="h-val-l">모든 숫자에 출처·기준일·계산식을 붙입니다.</span></summary><p>따라가서 확인할 수 있어야 근거입니다.<br>같은 자료로 다시 만들면 같은 문서가 나옵니다.</p></details>
-        <details class="h-val"><summary><h3>모르면 모른다고</h3><span class="h-val-l">자료로 정할 수 없는 건물은 '현장 확인'으로 남깁니다.</span></summary><p>빈칸을 추정으로 채우지 않습니다.<br>확인하지 못한 것은 범위와 이유로 보여 드립니다.</p></details>
-        <details class="h-val"><summary><h3>판단은 사람이</h3><span class="h-val-l">점수·순위·사업성은 계산식과 함께 공개합니다.</span></summary><p>점수는 공개한 지표를 같은 무게로 더한 값입니다.<br>최종 결정은 담당자와 주민이 내립니다.<br><a href="rank.html">동네 점수·순위</a> · <a href="biz.html">사업성 간이 계산</a></p></details>
-        <details class="h-val"><summary><h3>사람을 먼저</h3><span class="h-val-l">현장 사진과 위치는 내 기기 밖으로 나가지 않습니다.</span></summary><p>얼굴, 번호판, 건물 이름 속 개인 이름을 가립니다.<br>필요한 정보만 다룹니다.</p></details>
-      </div>
-    </div>
-  </section>
-
-  <section class="h-sec h-alt" aria-labelledby="notTitle">
-    <div class="wrap">
-      <h2 id="notTitle">하지 않는 일</h2>
-      <ul class="h-nots">
-        <li>감정평가·투자 권유</li>
-        <li>매물 중개</li>
-        <li>성범죄자 공개정보 활용(법으로 금지)</li>
-      </ul>
-      <p class="h-not-end">근거를 만드는 쪽이 거래로 돈을 벌지 않아야 그 근거를 믿을 수 있습니다.</p>
-    </div>
-  </section>
-
-  <section class="h-sec" aria-labelledby="statsTitle">
-    <div class="wrap">
-      <h2 id="statsTitle">지금 있는 자료</h2>
-      <ul id="stats" class="h-stats">
-        <li><p class="h-stat-n"><span data-count="3559" aria-hidden="true">3,559</span><span class="sr">3,559</span></p><p>전국 행정동 근거 페이지(2025 경계, 통합 전 옛 동 51곳은 따로)</p></li>
-        <li><p class="h-stat-n"><span data-count="26" aria-hidden="true">26</span><small aria-hidden="true">년</small><span class="sr">26년</span></p><p>2000~2025년 쇠퇴 지표를 해마다 기록</p></li>
-        <li><p class="h-stat-n"><span data-count="10" aria-hidden="true">10</span><small aria-hidden="true">개</small><span class="sr">10개</span></p><p>원문과 대조해 공개한 기준 판본</p></li>
-      </ul>
-      <p class="h-stat-src">모든 숫자의 원천은 <a href="data.html">'데이터 출처' 페이지</a>에서 확인할 수 있습니다.</p>
-    </div>
-  </section>
-
-  <section class="h-sec h-end" aria-labelledby="ctaTitle">
-    <div class="wrap">
-      <div class="h-cta-box">
-        <h2 id="ctaTitle">끝낸 과업 한 건으로 시간을 재 보세요</h2>
-        <p>이미 납품한 기초조사 한 건을 리뉴맵으로 다시 만들고, 걸린 시간을 나란히 비교해 드립니다.</p>
-        <a class="btn" href="about.html#contact">시범 상담하기</a>
-      </div>
-    </div>
-  </section>
+  <aside class="start-evidence" aria-label="자료 이용 안내">
+    <p><strong>관측한 사실과 계획의 가정을 구분합니다.</strong><br>출처·기준일과 확인이 필요한 항목을 함께 살펴보세요.</p>
+    <div><a href="data.html">데이터 출처</a><a href="about.html#contact">시범 납품 상담 <span aria-hidden="true">↗</span></a></div>
+  </aside>
 </main>
 
 <footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="rules.html">기준 원문 대조</a><a href="data.html">데이터 출처</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="rank.html">동네 점수·순위</a><a href="biz.html">사업성 간이 계산</a><a href="index.html#tools">참고 도구</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>

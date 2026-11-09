@@ -237,7 +237,13 @@
   }
   // 홈에서 넘어온 기본 보고서(?report=onepage 등). 모르는 값은 무시한다(심사 06, 2026-11-08)
   const entryReportMode = search => { const m = new URLSearchParams(search || '').get('report'); return ['report', 'brief', 'onepage', 'programs'].includes(m) ? m : null; };
-  const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, entryReportMode, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
+  function entryReportURL(href) {
+    const url = new URL(href);
+    if (!entryReportMode(url.search) || !M.parseHash(url.hash)?.dong) return null;
+    if (!url.searchParams.has('panel')) url.searchParams.set('panel', 'evidence');
+    return url.pathname + url.search + url.hash;
+  }
+  const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, entryReportMode, entryReportURL, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
   if (node) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewFind = api;
@@ -306,13 +312,17 @@
     if (s) st.lastSg = { sido: String(s.sido2), sg: String(s.code5) };
     st.lastDong = r.dong || null;
   }
-  // 지도 해시로 보낸다. 같은 해시면 hashchange를 직접 내서 workspace.js가 지도 패널을 열게 한다
-  function goMap(hash) { if (location.hash !== hash) location.hash = hash; else dispatchEvent(new HashChangeEvent('hashchange')); }
+  // 업무 이동에서도 동 코드와 패널을 같은 주소에 남겨 새로고침으로 복원한다.
+  function goMap(hash, panel = 'map', reportMode) {
+    if (window.RenewWorkspace?.navigate) { window.RenewWorkspace.navigate(panel, hash, reportMode); return; }
+    if (location.hash !== hash) location.hash = hash; else dispatchEvent(new HashChangeEvent('hashchange'));
+  }
   function applyPreset(id) {
     const p = presetOf(id); if (!p) return;
+    trackHash();
     const sg = st.scope.sg || (st.lastSg && st.lastSg.sg), r = sg ? M.leafRoute(st.ctx.index, sg) : null, mapHash = r ? M.toHash({ ...r, dong: st.lastDong }) : '#map';
     if (p.action === 'safe') { if (M.showGroup) M.showGroup('safe'); goMap(mapHash); return; }
-    if (p.action === 'brief') { if (M.setReportMode) M.setReportMode('brief'); if (st.lastDong) location.hash = '#report'; else goMap(mapHash); return; } // 동이 이미 골라져 있으면 근거서로 바로
+    if (p.action === 'brief') { if (M.setReportMode) M.setReportMode('brief'); goMap(mapHash, st.lastDong ? 'evidence' : 'map', 'brief'); return; } // 동이 이미 골라져 있으면 근거서로 바로
     if (!st.scope.sg && st.lastSg) st.scope = { ...st.lastSg };
     st.sel = presetConds(p, unit()); st.page = 1;
     st.hint = st.scope.sg ? '' : '시·도와 시·군·구를 고르면 그 안 읍·면·동에서 찾습니다.';
@@ -326,9 +336,9 @@
   more?.addEventListener('toggle', () => { if (more.open) render(); });
   document.addEventListener('renew-docgen', () => render());
   if (/^#find/.test(location.hash)) openMore();
-  // 홈 예시 단추·검색(?report=onepage): 그 보고서를 기본으로 하고, 동까지 정해져 있으면 문서 패널로 바로 간다. map.js는 이미 #map 해시로 동을 잡았다
+  // 문서 진입에서도 동 코드 해시는 보존한다. 이미 고른 패널은 새로고침 때 바꾸지 않는다.
   const entry = entryReportMode(location.search), entryRoute = M.parseHash(location.hash);
-  if (entry && M.setReportMode) { M.setReportMode(entry); if (entryRoute && entryRoute.dong) { st.lastDong = entryRoute.dong; location.hash = '#report'; } }
+  if (entry && M.setReportMode) { M.setReportMode(entry); const target = entryReportURL(location.href); if (target) { st.lastDong = entryRoute.dong; history.replaceState(history.state, '', target); } }
   if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) { openMore(); applyPreset(b.dataset.govPreset); } });
   addEventListener('hashchange', trackHash);
   // 지금 화면의 조건·범위 그대로 XLSX를 만든다(이 브라우저 안에서만)
@@ -364,7 +374,7 @@
     }
     const shape = ev.target.closest('path[data-code]');
     if (shape && !st.scope.sg) { const sg = (st.ctx.index.sigungu || []).find(x => String(x.code5) === shape.dataset.code); if (sg) { st.scope = { sido: String(sg.sido2), sg: String(sg.code5) }; st.page = 1; render(); } return; }
-    if (shape && st.scope.sg) { const r = M.leafRoute(st.ctx.index, st.scope.sg); if (r) location.hash = M.toHash({ ...r, dong: shape.dataset.code }); return; }
+    if (shape && st.scope.sg) { const r = M.leafRoute(st.ctx.index, st.scope.sg); if (r) goMap(M.toHash({ ...r, dong: shape.dataset.code })); return; }
     // 해시를 바꾸면 map.js가 그 단계로 그리고 workspace.js가 지도 패널을 연다.
     if (ev.target.closest('[data-fd-go]')) return;
   });

@@ -14,11 +14,81 @@
     if (value === 'report') return 'evidence';
     return 'map';
   }
+  function panelFromLocation(hash, search) {
+    const legacy = panelFromHash(hash);
+    return legacy !== 'map' ? legacy : normalizePanel(new URLSearchParams(search || '').get('panel'));
+  }
+  function panelURL(href, panel, mapHash, reportMode) {
+    const url = new URL(href), name = normalizePanel(panel);
+    if (['report', 'brief', 'onepage', 'programs'].includes(reportMode)) url.searchParams.set('report', reportMode);
+    if (name === 'map' && !url.searchParams.has('report')) url.searchParams.delete('panel');
+    else url.searchParams.set('panel', name);
+    url.hash = /^#map(?:\/\d+)*$/.test(mapHash || '') ? mapHash : '#map';
+    return url.pathname + url.search + url.hash;
+  }
+  function initReportPages(workspace) {
+    const report = document.getElementById('reportApp'), pager = workspace.querySelector('[data-report-pages]');
+    if (!report || !pager) return;
+    const select = pager.querySelector('[data-report-topic]'), previous = pager.querySelector('[data-report-prev]'), next = pager.querySelector('[data-report-next]'), position = pager.querySelector('[data-report-position]');
+    let parts = [], page = 0;
+    function show(index, focus) {
+      page = Math.max(0, Math.min(index, parts.length - 1));
+      parts.forEach((part, i) => part.classList.toggle('workspace-report-hidden', parts.length > 1 && i !== page));
+      select.value = String(page);
+      previous.disabled = page === 0;
+      next.disabled = page >= parts.length - 1;
+      position.textContent = parts.length ? `${page + 1} / ${parts.length}` : '';
+      if (parts[page]?.matches('details.rp-src')) parts[page].open = true;
+      if (focus) {
+        const heading = parts[page]?.querySelector('h3, summary, .rp-ai-head');
+        if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
+        pager.scrollIntoView({ block: 'start', behavior: 'instant' });
+      }
+    }
+    function sync() {
+      const current = [...report.children].filter(element => element.matches('.rp-g, .rp-src, .rp-ai'));
+      if (current.length === parts.length && current.every((element, i) => element === parts[i])) return;
+      const label = select.selectedOptions[0]?.textContent;
+      parts = current;
+      select.replaceChildren(...parts.map((part, i) => {
+        const option = document.createElement('option');
+        option.value = String(i);
+        option.textContent = part.matches('.rp-ai') ? '문장 다듬기' : part.querySelector('h3, summary')?.textContent.trim() || `주제 ${i + 1}`;
+        return option;
+      }));
+      pager.hidden = parts.length < 2;
+      const remembered = [...select.options].findIndex(option => option.textContent === label);
+      const firstFacts = parts.findIndex(part => !part.matches('.rp-snap, .rp-frag, .rp-src, .rp-ai'));
+      show(remembered >= 0 ? remembered : Math.max(0, firstFacts), false);
+    }
+    previous.addEventListener('click', () => show(page - 1, true));
+    next.addEventListener('click', () => show(page + 1, true));
+    select.addEventListener('change', () => show(Number(select.value), true));
+    let closedBeforePrint = null;
+    window.addEventListener('beforeprint', () => {
+      if (closedBeforePrint) return;
+      closedBeforePrint = [...report.querySelectorAll('details:not([open])')];
+      closedBeforePrint.forEach(detail => { detail.open = true; });
+    });
+    window.addEventListener('afterprint', () => {
+      closedBeforePrint?.forEach(detail => { detail.open = false; });
+      closedBeforePrint = null;
+    });
+    new MutationObserver(sync).observe(report, { childList: true, subtree: true });
+    sync();
+  }
   function init() {
     const workspace = document.querySelector('[data-workspace]');
     if (!workspace) return;
     const tabs = [...workspace.querySelectorAll('[data-workspace-tab]')];
     let active = normalizePanel(workspace.dataset.activePanel);
+    let mapHash = /^#map(?:\/\d+)*$/.test(location.hash) ? location.hash : '#map';
+    workspace.dataset.workspaceReady = '';
+    workspace.querySelectorAll('[data-workspace-panel]').forEach(panel => {
+      panel.setAttribute('role', 'tabpanel');
+      panel.setAttribute('aria-labelledby', `workspace-${panel.dataset.workspacePanel}-tab`);
+      panel.tabIndex = 0;
+    });
     function syncStates() {
       workspace.querySelectorAll('.map-empty, .map-panel-wait, .map-canvas').forEach(element => {
         const failed = element.classList.contains('map-empty') && /못했습니다/.test(element.textContent);
@@ -31,37 +101,68 @@
     function show(name, focusTab) {
       active = normalizePanel(name);
       workspace.dataset.activePanel = active;
-      if (active === 'filters') workspace.dataset.filtersOpen = ''; // 데스크톱은 '업무별'을 한 번 연 뒤부터 업무 패널을 지도 옆에 둔다
-      tabs.forEach(tab => tab.setAttribute('aria-pressed', String(tab.dataset.workspaceTab === active)));
+      workspace.querySelectorAll('[data-workspace-panel]').forEach(panel => { panel.hidden = panel.dataset.workspacePanel !== active; });
+      tabs.forEach(tab => {
+        const selected = tab.dataset.workspaceTab === active;
+        tab.setAttribute('aria-pressed', String(selected));
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+      });
       if (focusTab) tabs.find(tab => tab.dataset.workspaceTab === active)?.focus();
+      if (active === 'map') requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
     }
-    // 데스크톱에서 한 번 연 업무 패널을 다시 접는다(감사 김봉진4). 휴대폰은 하단 탭으로 바꾸므로 단추를 숨긴다(v4.css)
+    function navigate(name, focusTab, routeHash, reportMode) {
+      if (/^#map(?:\/\d+)*$/.test(routeHash || '')) mapHash = routeHash;
+      else if (/^#map(?:\/\d+)*$/.test(location.hash)) mapHash = location.hash;
+      const previousURL = location.href, previousHash = location.hash;
+      const target = panelURL(location.href, name, mapHash, reportMode);
+      if (target !== location.pathname + location.search + location.hash) history.pushState(null, '', target);
+      show(name, focusTab);
+      if (previousHash !== location.hash) window.dispatchEvent(new HashChangeEvent('hashchange', { oldURL: previousURL, newURL: location.href }));
+    }
+    api.navigate = (name, hash, reportMode) => navigate(name, false, hash, reportMode);
     workspace.querySelector('[data-filters-close]')?.addEventListener('click', () => {
-      delete workspace.dataset.filtersOpen;
-      show('map', true);
-      history.replaceState(null, '', '#map');
+      navigate('map', true);
     });
-    tabs.forEach(tab => tab.addEventListener('click', () => {
-      const name = normalizePanel(tab.dataset.workspaceTab);
-      show(name);
-      const target = name === 'filters' ? 'find' : name === 'evidence' ? 'report' : 'map';
-      history.replaceState(null, '', `#${target}`);
-    }));
-    document.querySelectorAll('a[href^="#"]').forEach(link => link.addEventListener('click', () => {
-      const name = link.getAttribute('href');
-      if (/^#(map(?:\/|$)|find$|gov$|report$)/.test(name)) show(panelFromHash(name));
-    }));
-    window.addEventListener('hashchange', () => show(panelFromHash(location.hash)));
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => navigate(tab.dataset.workspaceTab));
+      tab.addEventListener('keydown', event => {
+        const target = event.key === 'ArrowRight' ? (index + 1) % tabs.length : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : -1;
+        if (target < 0) return;
+        event.preventDefault();
+        navigate(tabs[target].dataset.workspaceTab, true);
+      });
+    });
+    document.addEventListener('click', event => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const mode = event.target.closest('[data-rp-mode]');
+      if (mode) { navigate('evidence', false, undefined, mode.dataset.rpMode); return; }
+      const link = event.target.closest('a[href^="#"]');
+      if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+      const hash = link.getAttribute('href');
+      if (!/^#(map(?:\/|$)|find$|gov$|report$)/.test(hash)) return;
+      event.preventDefault();
+      if (hash === '#find') document.getElementById('findMore')?.setAttribute('open', '');
+      navigate(panelFromHash(hash), false, hash, link.dataset.setMode);
+    });
+    const restore = () => {
+      if (/^#map(?:\/\d+)*$/.test(location.hash)) mapHash = location.hash;
+      show(panelFromLocation(location.hash, location.search));
+    };
+    window.addEventListener('hashchange', restore);
+    window.addEventListener('popstate', restore);
     document.addEventListener('keydown', event => {
       // Escape는 패널을 숨기지 않고 지금 탭으로 초점만 돌린다(지도 시트 닫기는 map.js가 한다)
-      if (event.key !== 'Escape' || !window.matchMedia('(max-width: 1099px)').matches) return;
+      if (event.key !== 'Escape') return;
       tabs.find(tab => tab.dataset.workspaceTab === active)?.focus();
     });
-    show(panelFromHash(location.hash));
+    initReportPages(workspace);
+    restore();
   }
+  const api = { normalizePanel, panelFromHash, panelFromLocation, panelURL };
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
     else init();
   }
-  return { normalizePanel, panelFromHash };
+  return api;
 });

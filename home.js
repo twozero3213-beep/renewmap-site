@@ -33,40 +33,8 @@
     fail: '동네 목록을 불러오지 못했습니다.\n인터넷 연결을 확인하고 다시 시도해 주세요.',
   };
 
-  // 숫자 올리기: 진행률 p(0~1)에서 보일 값(ease-out). 끝은 항상 최종값
-  const countAt = (n, p) => Math.round(n * (1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 3)));
-
-  // 움직임 2곳(문서 쌓기·숫자 올리기). 화면에 들어올 때 한 번만. 감속 설정·IO 없음이면 완성 상태 그대로 둔다(home.css)
-  function motion(win) {
-    const doc = win.document;
-    if (typeof win.IntersectionObserver !== 'function' || win.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const once = (el, threshold, fn) => {
-      if (!el) return;
-      const io = new win.IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); fn(); } }, { threshold });
-      io.observe(el);
-    };
-    const hero = doc.getElementById('heroDoc'), stats = doc.getElementById('stats');
-    if (hero) hero.classList.add('is-anim');
-    once(hero, 0.3, () => hero.classList.add('is-play'));
-    // 숫자는 화면 아래에 있을 때만 0으로 두고 올린다. 이미 보이는 자리·인쇄·스크립트 실패에서는 HTML의 실제 값이 그대로 남는다(UX 정비 2026-10-30: 전체 캡처에 0이 찍혔다)
-    const nums = stats && stats.getBoundingClientRect().top > win.innerHeight ? [...stats.querySelectorAll('[data-count]')] : [];
-    const final = () => nums.forEach(el => { el.textContent = (+el.dataset.count).toLocaleString('ko-KR'); });
-    nums.forEach(el => { el.textContent = '0'; });
-    win.addEventListener('beforeprint', final);
-    once(stats, 0.5, () => {
-      const t0 = win.performance.now();
-      const tick = now => {
-        const p = (now - t0) / 800;
-        nums.forEach(el => { el.textContent = countAt(+el.dataset.count, p).toLocaleString('ko-KR'); });
-        if (p < 1) win.requestAnimationFrame(tick);
-      };
-      win.requestAnimationFrame(tick);
-    });
-  }
-
   function init(win) {
     const doc = win.document, form = doc.getElementById('homeSearch');
-    motion(win);
     if (!form) return;
     const input = doc.getElementById('homeQ'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg');
     let index = null, loading = null;
@@ -100,5 +68,5 @@
       show(rows); msg.textContent = MSG.many(rows.length);
     });
   }
-  return { find, route, norm, init, MSG, countAt };
+  return { find, route, norm, init, MSG };
 });

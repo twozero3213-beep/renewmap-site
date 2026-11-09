@@ -90,6 +90,16 @@ header.top { position: sticky; top: 0; z-index: 20; background: var(--bg); borde
 header.top .wrap { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; }
 .logo { font-weight: 700; font-size: 20px; color: var(--ink); text-decoration: none; letter-spacing: .02em; }
 .logo span { color: var(--green); }
+.quick-menu { display: flex; gap: 4px; flex-wrap: wrap; }
+.quick-menu a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px; color: var(--dim); font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px; }
+.quick-menu a:hover, .quick-menu a[aria-current] { background: var(--soft); color: var(--green); }
+.quick-menu a:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+@media (max-width: 540px) {
+  header.top .wrap:has(.quick-menu) { flex-wrap: wrap; gap: 0; padding-top: 8px; padding-bottom: 4px; }
+  .quick-menu { width: 100%; justify-content: space-between; }
+  .quick-menu a { padding: 6px 8px; }
+}
+@media print { .tabbar, .quick-menu, .menu-toggle, header.top { display: none !important; } body { padding: 0 !important; } }
 nav.menu { display: flex; gap: 4px; flex-wrap: wrap; }
 nav.menu a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 10px; border-radius: 8px; color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; }
 nav.menu a:hover { color: var(--green); background: var(--soft); }
@@ -218,14 +228,6 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
   .tabbar a { min-height: 80px; }
   .tab-ind { top: 20%; bottom: 20%; left: 0; right: auto; width: 3px; height: auto; border-radius: 0 3px 3px 0; }
   body { padding: 0 0 0 88px; }
-}
-/* 화면 이동: 같은 사이트 안 이동은 200ms 페이드, 탭 막대는 제자리, 표시 막대만 미끄러진다(redesign 6.4). 지원 안 하는 브라우저는 그냥 바뀐다 */
-@media (prefers-reduced-motion: no-preference) {
-  @view-transition { navigation: auto; }
-  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .2s; animation-timing-function: ease-out; }
-  .tabbar { view-transition-name: tabbar; }
-  .tab-ind { view-transition-name: tab-ind; }
-  ::view-transition-group(tab-ind) { animation-duration: .24s; animation-timing-function: cubic-bezier(.2, 0, 0, 1); }
 }
 /* 뼈대: 불러오는 동안 빈칸 대신 자리를 보여 준다. 반짝임은 감속 설정에서 끈다 */
 .skel, .map-canvas.is-wait, .dash-map.is-wait, .map-panel-wait, .fd-wait[data-state="loading"] { position: relative; overflow: hidden; }

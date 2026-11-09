@@ -58,19 +58,21 @@
 <script src="hero.js" defer></script>
 <script src="dashboard.js" defer></script>
 <script src="map.js" defer></script>
+<link rel="stylesheet" href="content-pages.css">
+<script src="content-pages.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="field/">현장 기록</a><a href="programs.html">재생 사업</a><a href="data.html">데이터 출처</a><a href="about.html#contact">시범 상담</a></nav></div></header>
 
-<main id="main">
+<main id="main" data-content-book>
   <!-- 정의·가치관 4: docs/design/site_v3_copy_2026-10-28.md 1·2·4장. 시안: Figma 'v3 웹사이트 2026-10-28' About top -->
   <section id="intro" class="about-top" aria-labelledby="heroTitle">
     <div class="wrap">
       <h1 id="heroTitle">동네를 고치는 일에<br>믿을 수 있는 숫자를</h1>
       <p class="about-def">리뉴맵은 도시재생 담당자가 동 이름만 넣으면 인구, 상권, 주거, 생활시설, 안전을 공식 통계로 진단해 사업별 요건과 맞대 보고, 숫자마다 출처와 기준일이 붙은 한글 근거 문서를 받는 서비스입니다.</p>
       <div class="about-cta"><a class="btn" href="explore.html#map" data-track="cta_hero">지도로 근거 살펴보기</a><a class="btn ghost" href="#contact">시범 상담</a></div>
-      <p>숫자를 어떻게 다루는지와 하지 않는 일은 <a href="index.html#valuesTitle">첫 화면</a>에 한 번만 적었습니다.</p>
+      <p><a href="#howTitle">현장에서 결재까지 세 걸음</a> · <a href="#valuesTitle">숫자를 다루는 약속</a> · <a href="#notTitle">하지 않는 일</a>을 주제별로 살펴보세요.</p>
     </div>
   </section>
 
@@ -123,8 +125,37 @@
 
   <section class="alt" id="how" aria-labelledby="howTitle">
     <div class="wrap">
-      <h2 id="howTitle" data-reveal>일하는 방식</h2>
-      <p class="sub" data-reveal>현장에서 결재까지 세 걸음, 숫자를 다루는 약속, 하지 않는 일은 첫 화면에 한 번만 적었습니다.<br><a href="index.html#howTitle">세 걸음</a> · <a href="index.html#valuesTitle">숫자를 어떻게 다룹니까</a> · <a id="scope" href="index.html#notTitle">하지 않는 일</a></p>
+      <h2 id="howTitle">현장에서 결재까지 세 걸음</h2>
+      <p class="sub">현장 사진과 공식 통계를 한 장에 묶습니다.<br>같은 자료로 다시 만들면 언제나 같은 문서가 나옵니다.</p>
+      <ol id="steps" class="method-checks">
+        <li><div><h3>찍기</h3><p>사진을 찍으면 위치와 오차 범위(±m)가 함께 기록됩니다.<br>얼굴과 번호판은 자동으로 가려집니다.</p></div></li>
+        <li><div><h3>잇기</h3><p>사진을 찍은 자리의 행정동과 필지를 찾아 공식 통계와 조례 조문을 잇습니다.</p></div></li>
+        <li><div><h3>받기</h3><p>결재에 올릴 한글 1쪽과 PDF, 근거 표를 내려받습니다.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="values" aria-labelledby="valuesTitle">
+    <div class="wrap">
+      <h2 id="valuesTitle">숫자를 어떻게 다룹니까</h2>
+      <div class="h-values">
+        <details class="h-val" open><summary><h3>숫자에는 출처를</h3><span class="h-val-l">모든 숫자에 출처·기준일·계산식을 붙입니다.</span></summary><p>따라가서 확인할 수 있어야 근거입니다.<br>같은 자료로 다시 만들면 같은 문서가 나옵니다.</p></details>
+        <details class="h-val"><summary><h3>모르면 모른다고</h3><span class="h-val-l">자료로 정할 수 없는 건물은 '현장 확인'으로 남깁니다.</span></summary><p>빈칸을 추정으로 채우지 않습니다.<br>확인하지 못한 것은 범위와 이유로 보여 드립니다.</p></details>
+        <details class="h-val"><summary><h3>판단은 사람이</h3><span class="h-val-l">점수·순위·사업성은 계산식과 함께 공개합니다.</span></summary><p>점수는 공개한 지표를 같은 무게로 더한 값입니다.<br>최종 결정은 담당자와 주민이 내립니다.<br><a href="rank.html">동네 점수·순위</a> · <a href="biz.html">사업성 간이 계산</a></p></details>
+        <details class="h-val"><summary><h3>사람을 먼저</h3><span class="h-val-l">현장 사진과 위치는 내 기기 밖으로 나가지 않습니다.</span></summary><p>얼굴, 번호판, 건물 이름 속 개인 이름을 가립니다.<br>필요한 정보만 다룹니다.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt" id="scope" aria-labelledby="notTitle">
+    <div class="wrap">
+      <h2 id="notTitle">하지 않는 일</h2>
+      <ul class="method-checks">
+        <li>감정평가·투자 권유</li>
+        <li>매물 중개</li>
+        <li>성범죄자 공개정보 활용(법으로 금지)</li>
+      </ul>
+      <p class="h-not-end">근거를 만드는 쪽이 거래로 돈을 벌지 않아야 그 근거를 믿을 수 있습니다.</p>
     </div>
   </section>
 

@@ -28,9 +28,9 @@
 <link rel="stylesheet" href="hero.css">
 <link rel="stylesheet" href="map.css">
 <link rel="stylesheet" href="programs.css">
-<link rel="stylesheet" href="workspace.css">
 <link rel="stylesheet" href="overlay.css">
 <link rel="stylesheet" href="v4.css">
+<link rel="stylesheet" href="workspace.css">
 <script src="app.js" defer></script>
 <script src="site.js" defer></script>
 <script src="site-motion.js" defer></script>
@@ -53,17 +53,18 @@
 <main id="main">
 <h1 class="sr-only">동네 찾기: 조건으로 고르고, 지도로 보고, 문서로 받기</h1>
   <div class="evidence-workspace" data-workspace data-active-panel="map">
-    <nav class="workspace-tabs" aria-label="작업공간 패널">
-      <button type="button" data-workspace-tab="filters" aria-controls="find" aria-pressed="false">조건</button>
-      <button type="button" data-workspace-tab="map" aria-controls="map" aria-pressed="true">지도</button>
-      <button type="button" data-workspace-tab="evidence" aria-controls="report" aria-pressed="false">문서</button>
+    <nav class="workspace-tabs" aria-label="작업공간 패널" role="tablist">
+      <button id="workspace-filters-tab" type="button" role="tab" data-workspace-tab="filters" aria-controls="find" aria-selected="false" aria-pressed="false" tabindex="-1">조건</button>
+      <button id="workspace-map-tab" type="button" role="tab" data-workspace-tab="map" aria-controls="map" aria-selected="true" aria-pressed="true">지도</button>
+      <button id="workspace-evidence-tab" type="button" role="tab" data-workspace-tab="evidence" aria-controls="report" aria-selected="false" aria-pressed="false" tabindex="-1">문서</button>
     </nav>
+    <p class="workspace-context">동네를 고르고, 필요한 근거를 확인하세요. <a href="evidence.html">분석·확인 기준</a></p>
     <div class="workspace-panels">
       <section class="workspace-panel" id="find" data-workspace-panel="filters" aria-labelledby="findTitle">
         <div class="workspace-panel-inner">
-          <button type="button" class="btn ghost ws-close" data-filters-close aria-label="업무 패널 닫기">닫기</button>
+          <button type="button" class="btn ghost ws-close" data-filters-close aria-label="조건을 닫고 지도 보기">지도 보기</button>
           <div id="gov" class="gov" aria-labelledby="govTitle">
-            <div class="section-head"><div><h2 id="govTitle">어떤 일 때문에 오셨나요?</h2></div><p>하려는 일을 고르면 맞는 조건이 미리 걸린 채로 열립니다.<br>동을 고르고 근거 문서를 받으세요.</p></div>
+            <div class="section-head"><div><h2 id="govTitle">어떤 일 때문에 오셨나요?</h2></div><p>업무를 선택하면 관련 조건으로 지역을 찾습니다.<br>지역을 고른 뒤 문서에서 출처와 기준일을 확인하세요.</p></div>
             <div data-gov><p class="fd-wait">자료를 불러오는 중입니다.</p></div>
           </div>
           <details id="findMore" class="find-more">
@@ -77,7 +78,7 @@
         <div class="workspace-panel-inner">
           <div class="hero-head">
             <h2 id="heroTitle">지도</h2>
-            <p class="lead">동을 누르면 값과 출처, 기준일이 함께 열립니다.<br>지도의 색은 값의 크기이고 판정이 아닙니다.</p>
+            <p class="lead">동을 선택하면 지역 현황과 자료의 기준일을 확인할 수 있습니다.<br>지도의 색은 값의 크기이고 판정이 아닙니다.</p>
           </div>
           <form id="heroSearch" class="hero-search" role="search" autocomplete="off">
             <label for="heroQ">동네 찾기</label>
@@ -93,8 +94,9 @@
       </section>
       <section id="report" class="workspace-panel" data-workspace-panel="evidence" aria-labelledby="reportTitle">
         <div class="workspace-panel-inner">
-          <div class="section-head"><div><h2 id="reportTitle">근거 문서로 받기</h2></div><p>아래 문장은 공공데이터 값과 출처를 그대로 옮긴 것입니다.<br>평가하는 말은 넣지 않았습니다.</p></div>
-          <div class="export-tools" data-export-tools role="group" aria-label="근거 문서 형식">
+          <div class="section-head"><div><h2 id="reportTitle">동네 근거 문서</h2></div><p>주제별로 확인하고, 전체 내용을 파일로 받으세요.</p></div>
+          <details class="workspace-method"><summary>문서를 사용하기 전에 확인할 것</summary><p>지표마다 출처·기준일·공간 단위를 확인하세요.<br>행정동 통계를 개별 건물이나 임의 구역의 값으로 해석하지 않습니다.<br>공공데이터와 현장 확인은 구분하며, 기준 비교는 승인된 법정 판정을 대신하지 않습니다.</p><a href="evidence.html">근거와 분석 방법 보기</a></details>
+          <div class="export-tools" data-export-tools role="group" aria-label="보고서 납품 형식">
             <div class="export-buttons">
               <button type="button" class="btn" data-export-format="hwpx" disabled>한글 받기</button>
               <button type="button" class="btn" data-export-format="xlsx" disabled>엑셀 받기</button>
@@ -104,6 +106,12 @@
             </div>
             <div data-export-status aria-live="polite"><p class="export-state" role="status">문서는 이 휴대폰에서 만듭니다.<br>서버로 보내지 않습니다.</p></div>
           </div>
+          <nav class="report-pages" data-report-pages aria-label="문서 주제 페이지" hidden>
+            <button type="button" data-report-prev aria-label="이전 문서 주제">이전</button>
+            <label for="reportTopic">주제<select id="reportTopic" data-report-topic aria-controls="reportApp"></select></label>
+            <span data-report-position role="status" aria-live="polite"></span>
+            <button type="button" data-report-next aria-label="다음 문서 주제">다음</button>
+          </nav>
           <div id="reportApp"><div class="rp-empty" role="status"><img src="mascot/crew/taggy-default.svg" width="120" height="120" alt="" aria-hidden="true"><h3>동네를 먼저 찾아 주세요.</h3><p><a href="index.html">동네 찾기</a></p></div></div>
           <noscript><p>근거 문서는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
         </div>

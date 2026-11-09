@@ -1,27 +1,28 @@
 /* 공통 반응형 메뉴. 링크는 자바스크립트 없이도 그대로 동작한다. */
 (function () {
   'use strict';
-  const inField = /\/field\/(?:index\.html)?$/.test(location.pathname);
-  const atHome = !inField && /(?:\/|\/index\.html)$/.test(location.pathname);
+  const inField = /\/field\//.test(location.pathname);
+  const nested = inField || /\/dong\//.test(location.pathname);
+  const atHome = !nested && /(?:\/|\/index\.html)$/.test(location.pathname);
   if (atHome && /^#(?:find|gov|report|map(?:\/|$))/.test(location.hash)) {
     location.replace('explore.html' + location.hash);
     return;
   }
   // 홈이 한 화면으로 줄면서 긴 소개는 about.html로 옮겼다. 이미 공유된 #how 같은 주소를 그대로 연결한다
-  if (atHome && /^#(?:evidence-demo|verdict|problem|how|ledger|case|dashboard|scope|faq|contact)$/.test(location.hash)) {
+  if (atHome && /^#(?:evidence-demo|verdict|problem|how|howTitle|valuesTitle|notTitle|ledger|case|dashboard(?:\/.*)?|scope|faq|contact)$/.test(location.hash)) {
     location.replace('about.html' + location.hash);
     return;
   }
   // 주 메뉴 4개(redesign 4장): 찾기·업무별·현장·보관함. 모든 화면에서 같은 이름·순서. 현장 화면은 한 단계 아래 폴더라 앞에 ../를 붙인다
   if (typeof document.createElement === 'function' && document.body && !document.querySelector('.tabbar')) {
-    const base = inField ? '../' : '';
+    const base = nested ? '../' : '';
     const ico = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
     const here = location.pathname + location.hash;
-    const tabs = [['index.html', '찾기', 'M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5L21 21', /\/(?:index\.html)?$|explore\.html(?!#(?:gov|find))/],
-      ['explore.html#gov', '업무별', 'M4 7h16v12H4zM9 7V5h6v2M4 12h16', /explore\.html#(?:gov|find)/],
-      ['field/', '현장', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],
+    const tabs = [['index.html', '홈', 'M3 10L12 3l9 7M5 9v12h5v-7h4v7h5V9', /\/(?:index\.html)?$/],
+      ['explore.html#map', '지도', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html/],
+      ['field/', '현장', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\//],
       ['box.html', '보관함', 'M4 5h16v4H4zM5 9v10h14V9M10 13h4', /box\.html$/]];
-    const current = tabs.findIndex(t => t[3].test(here) && (t[0] !== 'index.html' || !inField));
+    const current = tabs.findIndex(t => t[3].test(here) && (t[0] !== 'index.html' || !nested));
     const nav = document.createElement('nav');
     nav.className = 'tabbar';
     nav.setAttribute('aria-label', '주 메뉴');
@@ -29,9 +30,22 @@
     document.body.appendChild(nav);
     // 같은 화면 안에서 #gov ↔ #map으로 옮겨도 현재 탭 표시를 맞춘다
     if (typeof window !== 'undefined') window.addEventListener('hashchange', () => {
-      const now = tabs.findIndex(t => t[3].test(location.pathname + location.hash) && (t[0] !== 'index.html' || !inField));
+      const now = tabs.findIndex(t => t[3].test(location.pathname + location.hash) && (t[0] !== 'index.html' || !nested));
       nav.querySelectorAll('a').forEach((a, i) => { a.toggleAttribute('aria-current', i === now); if (i === now) a.setAttribute('aria-current', 'page'); a.querySelector('.tab-ind')?.remove(); if (i === now) a.insertAdjacentHTML('afterbegin', '<i class="tab-ind" aria-hidden="true"></i>'); });
     });
+  }
+  const header = document.querySelector('header.top .wrap');
+  if (header && !header.querySelector('nav')) {
+    const base = nested ? '../' : '';
+    const links = document.createElement('nav');
+    links.className = 'quick-menu';
+    links.setAttribute('aria-label', '서비스 안내');
+    links.innerHTML = [['about.html', '서비스 소개'], ['evidence.html', '근거와 방법'], ['data.html', '데이터 출처']].map(([href, text]) => '<a href="' + base + href + '"' + (location.pathname.endsWith('/' + href) ? ' aria-current="page"' : '') + '>' + text + '</a>').join('');
+    header.appendChild(links);
+  }
+  if (header && typeof ResizeObserver === 'function') {
+    const top = header.closest('header');
+    new ResizeObserver(() => document.documentElement.style.setProperty('--site-header-h', top.getBoundingClientRect().height + 'px')).observe(top);
   }
   const toggle = document.querySelector('.menu-toggle');
   const menu = document.getElementById('site-menu');
