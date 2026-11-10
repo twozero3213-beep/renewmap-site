@@ -1744,7 +1744,7 @@
   document.addEventListener('visibilitychange', () => (document.hidden ? stopAuto(false) : startAuto()));
   if ('IntersectionObserver' in window) new IntersectionObserver(es => { visible = es[0].isIntersecting; visible ? startAuto() : stopAuto(false); }, { threshold: 0.25 }).observe(app);
 
-  app.addEventListener('click', e => {
+  app.addEventListener('click', async e => {
     const a = e.target.closest('a[href^="#map"]');
     if (a) { e.preventDefault(); go(parseHash(a.getAttribute('href')) || {}); return; }
     const b = e.target.closest('button'); if (!b) return;
@@ -1757,10 +1757,13 @@
     else if (b.dataset.dong) go({ ...state.route, dong: b.dataset.dong }, `.map-list [data-dong="${b.dataset.dong}"]`);
     else if (b.hasAttribute('data-candidate-save')) {
       const c = currentDong(), msg = panel.querySelector('[data-candidate-status]'); if (!c || !msg) return;
+      b.disabled = true;
       try {
+        if (!window.RenewCandidates) await import('./candidates.js');
         const rows = rowsFor(c.v, c.m, c.it), saved = window.RenewCandidates.save(localStorage, snapshotOf(c.it, rows, new Date()), toHash(state.route), rows);
         msg.textContent = saved ? '저장한 후보 보기에서 단계·메모와 근거를 확인하세요.' : '이미 저장한 후보입니다. 기존 근거와 메모를 보존했습니다.';
       } catch (err) { msg.textContent = '저장하지 못했습니다. ' + err.message; }
+      finally { b.disabled = false; }
     }
     else if (b.hasAttribute('data-close')) go({ ...state.route, dong: null }, `.map-list [data-dong]`);
     else if (b.hasAttribute('data-play')) { play(); app.querySelector('[data-play]')?.focus({ preventScroll: true }); }
