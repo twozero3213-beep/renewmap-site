@@ -67,8 +67,9 @@
   const withOutcome = (d, li) => { li.append(outcomeBox(d)); return li; };
   let lastDocs = [], lastRecs = [];
   const refresh = () => render().catch(() => say("기록을 다시 불러오지 못했습니다. 새로고침해 주세요."));
-  const docPages = window.RenewListPages.create($("docs"), "받은 문서", refresh);
-  const recPages = window.RenewListPages.create($("recs"), "현장 기록", refresh);
+  // 배포 직후 예전 HTML 캐시에 페이지 스크립트가 없어도 저장한 목록은 계속 연다.
+  const docPages = window.RenewListPages?.create($("docs"), "받은 문서", refresh) || { slice: rows => rows };
+  const recPages = window.RenewListPages?.create($("recs"), "현장 기록", refresh) || { slice: rows => rows };
   function tally() {
     const n = (k) => lastDocs.filter((d) => d.outcome && d.outcome.status === k).length, rec = lastDocs.filter((d) => d.outcome).length;
     $("outcomeSum").textContent = rec ? `결과 기록 ${rec}건 · 채택 ${n("approved")} · 고쳐서 씀 ${n("edited")} · 반려 ${n("rejected")} · 개선 동의 ${lastDocs.filter((d) => d.outcome && d.outcome.consent).length}` : "1쪽을 결재에 올린 뒤 결과를 고르면 여기에 모입니다.";

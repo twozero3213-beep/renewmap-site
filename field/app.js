@@ -641,7 +641,8 @@
     }
     return detail;
   }
-  const recordPages = window.RenewListPages.create($("list"), "현장 기록", () => render().catch(() => say("기록을 다시 불러오지 못했습니다. 새로고침해 주세요.", true)));
+  // 배포 직후 예전 HTML 캐시에 페이지 스크립트가 없어도 기록·내보내기를 유지한다.
+  const recordPages = window.RenewListPages?.create($("list"), "현장 기록", () => render().catch(() => say("기록을 다시 불러오지 못했습니다. 새로고침해 주세요.", true))) || { reset() {}, slice: rows => rows };
   async function render() {
     let rows = await S.records();
     $("stats").innerHTML = R.statsHTML(R.stats(rows, new Date()));   // 개수 요약(순위 아님)
