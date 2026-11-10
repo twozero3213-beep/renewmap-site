@@ -66,6 +66,9 @@
   }
   const withOutcome = (d, li) => { li.append(outcomeBox(d)); return li; };
   let lastDocs = [], lastRecs = [];
+  const refresh = () => render().catch(() => say("기록을 다시 불러오지 못했습니다. 새로고침해 주세요."));
+  const docPages = window.RenewListPages.create($("docs"), "받은 문서", refresh);
+  const recPages = window.RenewListPages.create($("recs"), "현장 기록", refresh);
   function tally() {
     const n = (k) => lastDocs.filter((d) => d.outcome && d.outcome.status === k).length, rec = lastDocs.filter((d) => d.outcome).length;
     $("outcomeSum").textContent = rec ? `결과 기록 ${rec}건 · 채택 ${n("approved")} · 고쳐서 씀 ${n("edited")} · 반려 ${n("rejected")} · 개선 동의 ${lastDocs.filter((d) => d.outcome && d.outcome.consent).length}` : "1쪽을 결재에 올린 뒤 결과를 고르면 여기에 모입니다.";
@@ -83,13 +86,13 @@
     $("boxStats").innerHTML = R.statsHTML(R.stats(recs, new Date()), [["받은 문서", docs.length]]);   // 개수 요약(순위 아님)
     du.textContent = ""; ru.textContent = "";
     if (!docs.length) empty(du, "아직 받은 문서가 없습니다.\n현장 기록을 저장하고 1쪽 문서를 받아 보세요.", "field/", "현장 기록하기");
-    for (const d of docs) du.append(withOutcome(d, row(d.name, `${day(d.created_at)} 받음`, [
+    for (const d of docPages.slice(docs)) du.append(withOutcome(d, row(d.name, `${day(d.created_at)} 받음`, [
       ["다시 받기", () => D.saveBytes(d.name, d.blob, MIME[d.kind] || "application/octet-stream"), "", `${d.name} 다시 받기`],
       ["지우기", async () => { if (!confirm(`${d.name} 문서를 지울까요?\n지운 문서는 되살릴 수 없습니다.`)) return; await S.deleteDoc(d.id); say("문서를 지웠습니다."); render(); }, "del", `${d.name} 지우기`],
     ])));
     tally();
     if (!recs.length) empty(ru, "아직 저장한 현장 기록이 없습니다.", "field/", "현장 기록하기");
-    for (const r of recs) {
+    for (const r of recPages.slice(recs)) {
       const where = r.dong ? `${r.dong.sgName} ${r.dong.name}` : r.jibun || r.pnu || R.NO_PARCEL;
       ru.append(row(`${where} · ${r.target || r.item || "기록"}`, `${day(r.recorded_at)}${r.photos && r.photos.length ? ` · 사진 ${r.photos.length}장` : ""}${r.corrected ? " · 위치 보정됨" : ""}`, [
         ["원본 ZIP 받기", async () => D.saveBytes(`renewmap-field-${r.recorded_at.slice(0, 10)}-${r.id.slice(0, 8)}.zip`, await recordZip(r), MIME.zip), "", `${where} 기록 원본 받기`],

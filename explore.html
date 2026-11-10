@@ -21,6 +21,10 @@
 <link rel="manifest" href="site.webmanifest">
 <link rel="preload" as="fetch" href="data/national/index_core.json" crossorigin="anonymous">
 <link rel="preconnect" href="https://oapi.map.naver.com">
+<link rel="preconnect" href="https://nrbe.pstatic.net">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" crossorigin="anonymous" integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==">
+<link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" crossorigin="anonymous" integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==">
 <link rel="stylesheet" href="pretendard.css">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="site-v4.css">
@@ -54,9 +58,9 @@
 <h1 class="sr-only">동네 찾기: 조건으로 고르고, 지도로 보고, 문서로 받기</h1>
   <div class="evidence-workspace" data-workspace data-active-panel="map">
     <nav class="workspace-tabs" aria-label="작업공간 패널" role="tablist">
-      <button id="workspace-filters-tab" type="button" role="tab" data-workspace-tab="filters" aria-controls="find" aria-selected="false" aria-pressed="false" tabindex="-1">조건</button>
-      <button id="workspace-map-tab" type="button" role="tab" data-workspace-tab="map" aria-controls="map" aria-selected="true" aria-pressed="true">지도</button>
-      <button id="workspace-evidence-tab" type="button" role="tab" data-workspace-tab="evidence" aria-controls="report" aria-selected="false" aria-pressed="false" tabindex="-1">문서</button>
+      <button id="workspace-filters-tab" type="button" role="tab" data-workspace-tab="filters" aria-controls="find" aria-selected="false" tabindex="-1">조건</button>
+      <button id="workspace-map-tab" type="button" role="tab" data-workspace-tab="map" aria-controls="map" aria-selected="true">지도</button>
+      <button id="workspace-evidence-tab" type="button" role="tab" data-workspace-tab="evidence" aria-controls="report" aria-selected="false" tabindex="-1">문서</button>
     </nav>
     <p class="workspace-context">동네를 고르고, 필요한 근거를 확인하세요. <a href="evidence.html">분석·확인 기준</a></p>
     <div class="workspace-panels">

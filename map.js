@@ -889,10 +889,29 @@
   // ── 기준일 스냅샷 비교(경쟁·시장 보고서 학습 2026-10-29): 1차 초안 때 값을 이 기기에 저장해 두고, 보완 때 바뀐 항목만 표로 ──
   // 용역은 착수~납품 12개월 안팎이라 그사이 통계가 갱신된다. 값·기준일·판정을 함께 남겨 '무엇이 바뀌어 판정이 달라졌는지'를 보인다. 전망은 넣지 않는다
   const SNAP_KEY = 'renewmap.snap.v1.';
-  const refOf = r => (r.cell && r.cell.reference_date) || (r.year ? `${r.year}년` : null);
+  const refOf = r => (r.ind.series && r.year !== r.cell?.base_year ? (r.year ? `${r.year}년` : null) : r.cell?.reference_date) || (r.year ? `${r.year}년` : null);
+  const SNAP_BASIS = [['unit', '단위'], ['rule_version', '규칙 버전'], ['formula_id', '산식 ID'], ['formula_text', '산식'],
+    ['spatial_unit', '공간단위'], ['area_code', '지역 코드'], ['data_source_system', '원천 시스템'], ['source_url', '출처 URL']];
   function snapshotOf(it, rows, now) {
-    return { v: 1, code: it.code, name: it.name, saved_at: now.toISOString(),
-      items: rows.filter(r => r.ind.group !== 'fore' && !r.ind.pending).map(r => ({ c: r.ind.code, l: r.ind.label, u: r.ind.unit || '', v: r.value ?? null, t: rowText(r), s: stLabel(r.status), d: refOf(r) })) };
+    return { v: 2, code: it.code, name: it.name, saved_at: now.toISOString(),
+      items: rows.filter(r => r.ind.group !== 'fore' && !r.ind.pending).map(r => {
+        const c = r.cell, matched = c && c.value === r.value && (!r.ind.series || c.base_year === r.year);
+        // 과거 시계열 값에 최신 셀의 산식·출처를 붙여 비교 가능하다고 만들지 않는다.
+        return { c: r.ind.code, l: r.ind.label, u: r.ind.unit || '', v: r.value ?? null, t: rowText(r), s: stLabel(r.status), d: refOf(r),
+          basis: matched ? Object.fromEntries(SNAP_BASIS.map(([k]) => [k, c[k] ?? null])) : null };
+      }) };
+  }
+  function snapComparisonReason(prev, cur) {
+    if (!prev.basis || !cur.basis) return '원장 비교 근거 없음';
+    const reasons = [];
+    if (!prev.u || !cur.u) reasons.push('표시 단위 누락');
+    else if (prev.u !== cur.u) reasons.push('표시 단위 변경');
+    for (const [key, label] of SNAP_BASIS) {
+      const before = prev.basis[key], now = cur.basis[key];
+      if (typeof before !== 'string' || !before.trim() || typeof now !== 'string' || !now.trim()) reasons.push(`${label} 누락`);
+      else if (before !== now) reasons.push(`${label} 변경`);
+    }
+    return reasons.join(' · ');
   }
   // 반환 { rows: [{ kind: 'new'|'changed'|'gone', flip, prev, cur }], same }. flip = 판정(기준 미달·기준 안 등)이 바뀜
   function diffSnap(prev, cur) {
@@ -901,13 +920,17 @@
     for (const x of cur.items) {
       const p = before.get(x.c), flip = !!p && p.s !== x.s;
       if (!p) out.push({ kind: 'new', flip: false, prev: null, cur: x });
-      else if (p.v !== x.v || p.d !== x.d || flip) out.push({ kind: 'changed', flip, prev: p, cur: x });
+      else if (p.v !== x.v || p.d !== x.d || p.u !== x.u || flip || SNAP_BASIS.some(([k]) => p.basis?.[k] !== x.basis?.[k])) {
+        out.push({ kind: 'changed', flip, prev: p, cur: x, reason: snapComparisonReason(p, x) });
+      }
       else same++;
     }
     for (const p of prev.items || []) if (!now.has(p.c)) out.push({ kind: 'gone', flip: false, prev: p, cur: null });
     return { rows: out, same };
   }
-  const deltaText = d => (d.prev && d.cur && isNum(d.prev.v) && isNum(d.cur.v) ? `${d.cur.v - d.prev.v >= 0 ? '+' : ''}${fmt(Math.round((d.cur.v - d.prev.v) * 100) / 100, d.cur.u === '%' ? '%p' : d.cur.u)}` : d.kind === 'new' ? '새 항목' : d.kind === 'gone' ? '빠짐' : '');
+  const deltaText = d => (d.prev && d.cur && isNum(d.prev.v) && isNum(d.cur.v)
+    ? d.reason ? `수치 비교 보류: ${d.reason}` : `${d.cur.v - d.prev.v >= 0 ? '+' : ''}${fmt(Math.round((d.cur.v - d.prev.v) * 100) / 100, d.cur.u === '%' ? '%p' : d.cur.u)}`
+    : d.kind === 'new' ? '새 항목' : d.kind === 'gone' ? '빠짐' : '자료 없음');
   function snapHTML(prev, cur) {
     const head = `<section class="rp-g rp-snap"><h3>${icon('fore')}기준일 비교</h3>`;
     if (!prev) return head + '<p class="rp-intro">지금 값을 이 기기에 저장해 두면, 사전컨설팅·보완 때 다시 열어 바뀐 항목만 표로 볼 수 있습니다.<br>서버로 보내지 않습니다.<br>같은 기기·같은 브라우저에서만 보이고, 방문 기록을 지우면 함께 지워집니다.<br>남겨 둘 값은 문서 받기로 파일에 넣어 두세요.</p><p class="rp-tools"><button type="button" class="btn ghost" data-snap-save>지금 값 저장</button></p></section>';
@@ -1009,7 +1032,7 @@
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
   const api = { mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
-    livingIndicators, allIndicators, isAvailable, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
+    livingIndicators, allIndicators, isAvailable, provenanceHTML, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
     reportSentences, verifyPolished, stdTextOf, olsFit, trendSVG, donutSVG, coverLabel, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
     gapRows, gapsHTML, reorgNote, REORG, ageText, WATER_GRADES, WATER_EDGES, waterGrade, waterStyle, waterTipHTML, waterNoteHTML, waterAutoHTML, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
@@ -1098,12 +1121,44 @@
   // 일부 시·도에만 값이 있는 지표(부산만 등)는 그 시·도 밖(전국 포함)에서 칩을 숨기고, 수집 중·보류 칩도 숨긴다. 지금 고른 지표는 남긴다
   const coverSidos = i => { const k = `S:${i.code}:${!!state.index}`; if (!coverMemo.has(k)) coverMemo.set(k, cover(i) && cover(i) !== '동 단위' ? new Set(leavesOf(state.index).filter(sg => isNum(summaryOf(sg, i.code).value)).map(sg => String(sg.sido2))) : null); return coverMemo.get(k); };
   const chipShown = (i, cur, v) => i.code === cur || (avail(i) && !(coverSidos(i) && !(v && v.sido && coverSidos(i).has(String(v.sido.code2)))));
-  function indCtlHTML(ind) {
+  function provenanceHTML(ind, m, source, mode = 'now', open = false) {
+    if (!ind || ind.hidden_until_decision) return '';
+    const district = ind.level === 'sg', ready = m && (m.kind === 'sg' || m.kind === 'emd'), ext = m && m.ext;
+    const items = !ready ? [] : district && m.kind === 'emd'
+      ? [ext && ext.sg ? sgExtra(ind, ext.sg, ext) : { value: null }] : m.items || [];
+    const lm = livingMap(m && m.living), key = keyOf(ind, mode);
+    const hasValue = x => !ind.pending && !ind.held && (ind.categorical ? typeof x.value === 'string' && !!x.value.trim() : isNum(x.value));
+    const rows = items.filter(hasValue), cells = rows.map(x => {
+      if (x.cell) return x.cell;
+      if (!m || m.kind !== 'emd' || district) return null;
+      if (ind.src === 'forecast') return (fcOf(ext, x.code, ind.fc) || {}).cell || null;
+      const d = ind.series ? ((m.json && m.json.dongs) || []).find(d => codeOf(d) === x.code) : lm.get(x.code);
+      return livingCell(d, key);
+    });
+    const sources = [...new Set(cells.map(c => c && c.source_name).filter(Boolean))];
+    if (!sources.length) sources.push(ind.source || ((ind.series || ind.computed) && (srcName(source) || SOURCE_DEFAULT)) || '추가확인');
+    const dates = cells.map((c, i) => {
+      const date = c && typeof c.reference_date === 'string' ? c.reference_date.slice(0, 10) : null;
+      // 과거 연도 조회에 최신 셀의 기준일을 붙이지 않는다.
+      return date && c.value === rows[i].value && /^\d{4}-\d{2}-\d{2}$/.test(date) && (ind.src === 'forecast' || !isNum(rows[i].year) || Number(date.slice(0, 4)) === rows[i].year) ? date : null;
+    });
+    const knownDates = [...new Set(dates.filter(Boolean))].sort(), years = [...new Set(rows.map(x => x.year).filter(isNum))].sort((a, b) => a - b);
+    const period = knownDates.length === 1 ? knownDates[0] : knownDates.length ? `지역별 ${knownDates[0]}~${knownDates[knownDates.length - 1]}` : '추가확인';
+    const dateText = period + (knownDates.length && dates.some(d => !d) ? ' · 일부 기준일 추가확인' : '')
+      + (years.length ? ` · ${ind.src === 'forecast' ? '전망' : '표시'} 연도 ${years.length === 1 ? years[0] : `${years[0]}~${years[years.length - 1]}`}` : '');
+    const unit = district ? '시·군·구' : m && m.kind === 'emd' ? '읍·면·동(행정구역)' : '시·군·구 요약 · 읍·면·동 원자료';
+    const status = !ready ? (m && m.kind === 'wait' ? '자료를 불러오는 중' : '자료 없음 · 추가확인')
+      : `값 있음 ${rows.length}곳 · 자료 없음 ${items.length - rows.length}곳${ind.held ? ' · 보류' : ind.pending ? ' · 수집 중' : ''}`;
+    return `<details class="map-hint map-provenance"${open ? ' open' : ''}><summary>현재 지도 자료 · ${esc(ind.label)}${mode === 'trend' && hasTrend(ind) ? ' · 5년 변화' : ''}</summary><dl>`
+      + `<dt>공간 단위</dt><dd>${esc(unit)}</dd><dt>출처·방법</dt><dd>${esc(sources.join(' · '))}</dd><dt>기준일</dt><dd>${esc(dateText)}</dd><dt>현재 범위</dt><dd>${esc(status)}</dd></dl>`
+      + `<p>${district && m && m.kind === 'emd' ? '같은 시·군·구 값을 여러 동 경계에 표시하며, 한 곳으로 셉니다.' : '현재 지도 범위의 지역 수입니다.'}<br>법정동·개별 건물 자료와 구분해서 봅니다.${ind.src === 'forecast' ? '<br>추세 전망은 관측값이 아닙니다.' : ''}</p><a href="data.html">전체 데이터 출처·확인 방법</a></details>`;
+  }
+  function indCtlHTML(ind, m, source, mode) {
     const v = state.index && resolve(state.index, state.route), list = inds().filter(i => chipShown(i, ind.code, v)), g = ind.group;
     const tabs = `<div class="map-groups" role="group" aria-label="지표 묶음">${GROUPS.filter(([k]) => k === g || list.some(i => i.group === k)).map(([k, l]) => `<button type="button" data-group="${k}" aria-pressed="${k === g}">${gIco(k)}${esc(l)}</button>`).join('')}</div>`;
     const chips = `<div class="dash-chips map-inds" role="group" aria-label="${esc(GROUPS.find(x => x[0] === g)[1])} 지표">${list.filter(i => i.group === g).map(i => { const ok = avail(i);
       return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(i.label)}${ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; }).join('')}</div>`;
-    return tabs + chips;
+    return tabs + chips + provenanceHTML(ind, m, source, mode, !!top.querySelector('.map-provenance[open]'));
   }
   function panelHTML(v, m) {
     const ind = curInd(), mode = effMode(ind), scale = scaleFor(ind, mode), here = v.crumbs[v.crumbs.length - 1].label;
@@ -1373,8 +1428,12 @@
     const hzCtl = ind.src === 'forecast' && horizons().length ? seg('horizon', horizons().map(h => [h, `${h}년`]), horizon(), base !== null ? `전망 연도(기준 ${base}년)` : '전망 연도') : '';
     // 연도 막대를 끄는 중이면 막대를 다시 만들지 않는다(다시 만들면 끌기가 한 칸에서 끊긴다)
     const sliding = top.contains(document.activeElement) && document.activeElement.matches('[data-year]');
-    if (sliding) { const yb = top.querySelector('.map-year b'); if (yb) yb.textContent = m.year ?? ''; }
-    else top.innerHTML = crumbs + indCtlHTML(ind) + `<div class="map-ctl">${hasTrend(ind) ? seg('mode', MODES, state.mode, '현재 또는 5년 변화') : ''}${hzCtl}${yearCtl}</div>`;
+    if (sliding) {
+      const yb = top.querySelector('.map-year b'); if (yb) yb.textContent = m.year ?? '';
+      const provenance = top.querySelector('.map-provenance');
+      if (provenance) provenance.outerHTML = provenanceHTML(ind, m, src, mode, provenance.open);
+    }
+    else top.innerHTML = crumbs + indCtlHTML(ind, m, src, mode) + `<div class="map-ctl">${hasTrend(ind) ? seg('mode', MODES, state.mode, '현재 또는 5년 변화') : ''}${hzCtl}${yearCtl}</div>`;
     const lkey = ind.code + mode, median = ok && !ind.pending && m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind), legend = legendHTML(ind, mode, src, m.year, ok).replace('class="map-legend"', `class="map-legend${lkey !== lastLegend && !reduced ? ' is-new' : ''}"`); lastLegend = lkey;
     const opts = (list, key) => list.map(x => ({ code: x[key], name: x.name }));
     const kids = v.sido ? childrenOf(state.index, v.sido.code2) : [];
@@ -1740,7 +1799,7 @@
   // 2026-11-08: dashboard.json(2.5MB, 정밀 사례 칸 전용)은 여기서 빼고 읍·면·동 단계에서 받는다(hubHTML의 loadDash)
   Promise.all([
     fetchJson('data/report_templates.json', true).then(j => { state.templates = j && typeof j === 'object' && j.onepage && j.summary ? j : null; if (DG && state.templates) DG.setTemplates(j); }),
-    fetchJson('data/national/living/index.json').then(li => { state.living = li && Array.isArray(li.indicators) ? li : null; }),
+    fetchJson('data/national/living/index.json', true).then(li => { state.living = li && Array.isArray(li.indicators) ? li : null; }),
     fetchJson('data/national/living/summary.json', true).then(j => { mergeLivingSummary(state.index, j); coverMemo.clear(); }),
     // 다른 직원이 만드는 중인 파일. 없으면 null → 해당 칩은 '수집 중'
     fetchJson('data/national/migration.json', true).then(j => { state.migration = j && Array.isArray(j.sigungu) ? j : null; }),

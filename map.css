@@ -47,6 +47,11 @@
 #map a.map-3d { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; background: var(--card, #fff); color: var(--ink); font-size: 14px; font-weight: 700; text-decoration: none; }
 #map a.map-3d:hover, #map a.map-3d:focus-visible { background: var(--ink); color: #fff; }
 .map-hint { font-size: 14px; color: var(--dim); margin: 6px 0 8px; }
+.map-provenance summary { min-height: 44px; padding: 10px 0; cursor: pointer; color: var(--ink); }
+.map-provenance dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 4px 0 8px; }
+.map-provenance dt { font-weight: 700; }
+.map-provenance dd { margin: 0; overflow-wrap: anywhere; }
+.map-provenance p { margin: 8px 0; }
 
 /* 범례: 지표별 고정 구간 + 빗금(자료 없음) + 기준선·상태 + 상시 문구. 지표를 바꾸면 한 칸씩 나타난다 */
 .map-legend { margin: 10px 0 4px; }

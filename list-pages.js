@@ -1,0 +1,39 @@
+// 화면에 보이는 목록만 나눈다. 저장된 전체 기록과 내보내기는 그대로 둔다.
+(function (root) {
+  "use strict";
+  function windowOf(total, page) {
+    const pages = Math.max(1, Math.ceil(total / 5));
+    page = Math.max(1, Math.min(pages, page));
+    const start = (page - 1) * 5;
+    return { page, pages, start, end: Math.min(total, start + 5) };
+  }
+  function create(list, label, changed) {
+    let page = 1;
+    const nav = document.createElement("nav"), prev = document.createElement("button"), next = document.createElement("button"), select = document.createElement("select"), status = document.createElement("span");
+    nav.className = "list-pages"; nav.setAttribute("aria-label", label + " 페이지");
+    for (const button of [prev, next]) { button.type = "button"; button.className = "ghost"; button.setAttribute("aria-controls", list.id); }
+    prev.textContent = "이전"; next.textContent = "다음";
+    select.setAttribute("aria-label", label + " 페이지 선택"); select.setAttribute("aria-controls", list.id);
+    status.setAttribute("role", "status");
+    nav.append(prev, select, next, status); list.before(nav);
+    function move(value) { page = value; changed(); select.focus({ preventScroll: true }); nav.scrollIntoView({ block: "nearest" }); }
+    prev.addEventListener("click", () => move(page - 1));
+    next.addEventListener("click", () => move(page + 1));
+    select.addEventListener("change", () => move(Number(select.value)));
+    return {
+      reset() { page = 1; },
+      slice(rows) {
+        const range = windowOf(rows.length, page); page = range.page;
+        select.textContent = "";
+        for (let n = 1; n <= range.pages; n++) { const option = document.createElement("option"); option.value = n; option.textContent = `${n} / ${range.pages}쪽`; option.selected = n === page; select.append(option); }
+        prev.disabled = page === 1; next.disabled = page === range.pages;
+        status.textContent = rows.length ? `전체 ${rows.length}건 중 ${range.start + 1}–${range.end}건` : "기록 없음";
+        nav.hidden = range.pages === 1;
+        return rows.slice(range.start, range.end);
+      }
+    };
+  }
+  const api = { windowOf, create };
+  if (typeof module === "object" && module.exports) module.exports = api;
+  else root.RenewListPages = api;
+})(typeof window === "object" ? window : globalThis);

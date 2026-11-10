@@ -1,0 +1,5 @@
+.list-pages { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1rem 0; scroll-margin-top: calc(var(--site-header-h, 8rem) + 1rem); }
+.list-pages[hidden] { display: none; }
+.list-pages button, .list-pages select { min-height: 44px; width: auto; margin: 0; }
+.list-pages select { max-width: 10rem; }
+.list-pages [role="status"] { flex-basis: 100%; font-size: .875rem; color: var(--muted, #53625d); }

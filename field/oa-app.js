@@ -54,18 +54,26 @@
 
   async function show(code) {
     dong = data.dongs.find((d) => d.code === code);
-    if (!dong) return;
+    $("map").replaceChildren();
+    if (!dong) { $("out").hidden = true; return say(""); }
     if (!dong.oas.length) { $("out").hidden = true; return say(`${dong.name}은 SGIS에서 집계구 값을 받지 못했습니다.`, true); }
     say("집계구 경계를 여는 중입니다.");
     draw();
-    try { drawMap(await getJson(`oa/${code}.json`)); say(""); } catch (err) { $("map").replaceChildren(); say("집계구 경계를 열지 못했습니다.\n표는 그대로 볼 수 있습니다.", true); }
+    try {
+      const shapes = await getJson(`oa/${code}.json`);
+      if (dong?.code !== code) return;
+      drawMap(shapes); say("");
+    } catch (err) {
+      if (dong?.code !== code) return;
+      $("map").replaceChildren(); say("집계구 경계를 열지 못했습니다.\n표는 그대로 볼 수 있습니다.", true);
+    }
   }
 
   getJson("oa_decline_busan.json").then((d) => {
     data = d;
-    $("dong").replaceChildren(...data.dongs.map((x) => new Option(`${x.sigungu_name} ${x.name} (충족 ${x.met_count ?? "값 없음"}개)`.trim(), x.code)));
+    $("dong").replaceChildren(new Option("행정동을 고르세요", ""), ...data.dongs.map((x) => new Option(`${x.sigungu_name} ${x.name} (충족 ${x.met_count ?? "값 없음"}개)`.trim(), x.code)));
+    $("dong").disabled = false;
     $("dong").addEventListener("change", () => show($("dong").value));
-    show(data.dongs[0].code);
   }).catch(() => say("집계구 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true));
 
   $("csv").addEventListener("click", () => {

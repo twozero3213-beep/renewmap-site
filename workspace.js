@@ -104,7 +104,6 @@
       workspace.querySelectorAll('[data-workspace-panel]').forEach(panel => { panel.hidden = panel.dataset.workspacePanel !== active; });
       tabs.forEach(tab => {
         const selected = tab.dataset.workspaceTab === active;
-        tab.setAttribute('aria-pressed', String(selected));
         tab.setAttribute('aria-selected', String(selected));
         tab.tabIndex = selected ? 0 : -1;
       });

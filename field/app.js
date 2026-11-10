@@ -558,7 +558,7 @@
       site = null; siteText(); drawNear();
       say("");
       toast("저장했습니다.", "되돌리기", async () => { await S.deleteRecord(rec); toast("저장을 되돌렸습니다."); render(); }, true);
-      await render();
+      recordPages.reset(); await render();
     } catch (err) { say(err.message, true); }
   });
 
@@ -641,6 +641,7 @@
     }
     return detail;
   }
+  const recordPages = window.RenewListPages.create($("list"), "현장 기록", () => render().catch(() => say("기록을 다시 불러오지 못했습니다. 새로고침해 주세요.", true)));
   async function render() {
     let rows = await S.records();
     $("stats").innerHTML = R.statsHTML(R.stats(rows, new Date()));   // 개수 요약(순위 아님)
@@ -650,7 +651,7 @@
     if ($("bySite").checked) rows = [...group.values()].flatMap((g) => g.slice().reverse());
     $("today").textContent = `오늘 ${rows.filter((r) => isToday(r.recorded_at)).length}건`;
     const ul = $("list"); ul.textContent = "";
-    for (const r of rows) {
+    for (const r of recordPages.slice(rows)) {
       const li = document.createElement("li"), b = document.createElement("b"), m = document.createElement("div"), acts = document.createElement("div");
       b.textContent = `${r.dong ? `${r.dong.sgName} ${r.dong.name}` : r.jibun || r.pnu || R.NO_PARCEL} · ${r.target || r.item || "기록"}`;
       m.className = "meta";
@@ -742,7 +743,7 @@
     });
   }
 
-  $("bySite").addEventListener("change", () => render());
+  $("bySite").addEventListener("change", () => { recordPages.reset(); render(); });
 
   // ── ZIP 가져오기(A4): 같은 id는 건너뛰고, 이미 있는 사진도 덮어쓰지 않는다. 가져온 기록에는 '가져옴'이 붙는다
   $("importZip").addEventListener("change", async (e) => {
@@ -767,7 +768,6 @@
     } catch (err) { toast(err.message); }
   });
 
-  if (!store("renewmap-field-intro")) { $("intro").hidden = false; store("renewmap-field-intro", "1"); }
   // 위치 권한이 이미 있으면 바로 받는다. 처음이면 사진 찍기·'현재 위치 받기'를 누를 때 한 번 묻는다
   if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: "geolocation" }).then((s) => { if (s.state === "granted") locate(); }).catch(() => {});
   render().catch(() => say("이 브라우저에서는 기기 저장소를 쓸 수 없습니다.", true));
@@ -801,13 +801,13 @@
   const goodNet = () => !!conn && conn.saveData === false && (conn.type === "wifi" || conn.type === "ethernet" || conn.effectiveType === "4g");
   const whenIdle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 20000 }) : setTimeout(fn, 4000));
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    navigator.serviceWorker.register("sw.js").catch(() => { $("ready").textContent = "오프라인 준비를 마치지 못했습니다.\n인터넷 연결과 브라우저 설정을 확인해 주세요."; });
     // 이미 옛 판이 있던 기기에서만 알린다(첫 설치는 알릴 것이 없다). 쓰던 기록은 기기 저장소에 남아 새로고침해도 그대로다
     let hadCtrl = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadCtrl) toast("새 판을 받았습니다.\n새로고침하면 반영됩니다.", "새로고침", () => location.reload()); hadCtrl = true; });
     // ready는 앱 셸을 다 저장한 서비스 워커가 켜져야 풀린다. 현장에 나가기 전에 오프라인으로 열리는지 보이게 한다(감사 이수진2)
-    navigator.serviceWorker.ready.then(() => { $("ready").hidden = false; if (goodNet()) whenIdle(() => prefetchTools(true)); });
-  }
+    navigator.serviceWorker.ready.then(() => { $("ready").textContent = "오프라인 준비됨.\n인터넷이 끊겨도 이 화면이 열립니다."; if (goodNet()) whenIdle(() => prefetchTools(true)); });
+  } else { $("ready").textContent = "이 브라우저에서는 오프라인으로 열 수 없습니다.\n인터넷에 연결한 상태로 사용해 주세요."; }
   // 홈 화면 추가(감사 이수진3). 크롬·삼성 인터넷은 beforeinstallprompt를 주고, iOS 사파리는 주지 않아 공유 메뉴를 한 번 안내한다
   let installAsk = null;
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installAsk = e; $("install").hidden = false; });
