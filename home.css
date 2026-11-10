@@ -1,4 +1,14 @@
 /* 동네 검색·보관함과 리뉴맵 작업 시작 화면. */
+[data-candidates] { margin-bottom: 28px; }
+[data-candidates] form, [data-candidates] form label { display: grid; gap: 8px; }
+[data-candidates] form { margin-top: 12px; }
+[data-candidates] select, [data-candidates] textarea { width: 100%; min-height: 44px; padding: 10px; font: inherit; font-size: 16px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); color: var(--ink); background: var(--card); }
+[data-candidates] textarea { resize: vertical; }
+[data-candidates] li > label { min-height: 44px; display: flex; align-items: center; gap: 8px; }
+[data-candidates] summary { min-height: 44px; padding: 10px 0; cursor: pointer; }
+[data-candidates] .table-wrap { max-width: 100%; overflow-x: auto; }
+[data-candidates] table { width: 100%; border-collapse: collapse; }
+[data-candidates] th, [data-candidates] td { min-width: 140px; padding: 10px; border: 1px solid var(--line); vertical-align: top; text-align: left; overflow-wrap: anywhere; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .app-home header.top .wrap { min-height: 56px; }
 .home { max-width: 640px; margin: 0 auto; padding: 16px 16px 24px; word-break: keep-all; overflow-wrap: break-word; }

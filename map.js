@@ -1177,6 +1177,7 @@
     return `<div class="map-panel-head"><h3 class="map-h3">${esc(it.name)} <small>${esc(it.kind || '행정동')} · ${esc(it.code)}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` +
       `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>${reorgNote(v)}` +
       `<p class="map-report-link"><a href="#report">${icon('book')}동네 보고서 보기</a><a href="#report" data-set-mode="programs">${icon('flag')}맞는 재생 사업 보기</a></p>` +
+      '<p><button type="button" class="btn ghost" data-candidate-save>검토 후보 저장</button> <a href="box.html#candidatesTitle">저장한 후보 보기</a></p><p data-candidate-status role="status"></p>' +
       forecastChart(ind, m.ext, v.gu || v.sigungu, m.json.dongs.find(d => codeOf(d) === it.code) || null) + scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist + hubHTML(v);
   }
   const rowsFor = (v, m, it) => dongRows(inds(), m.json.dongs.find(d => codeOf(d) === it.code), livingMap(m.living).get(it.code), m.selYear, m.ext);
@@ -1754,6 +1755,13 @@
     else if (b.dataset.mode) { state.mode = b.dataset.mode; state.year = null; render(); app.querySelector(`[data-mode="${b.dataset.mode}"]`)?.focus({ preventScroll: true }); }
     else if (b.dataset.horizon) { state.horizon = +b.dataset.horizon; render(); app.querySelector(`[data-horizon="${b.dataset.horizon}"]`)?.focus({ preventScroll: true }); }
     else if (b.dataset.dong) go({ ...state.route, dong: b.dataset.dong }, `.map-list [data-dong="${b.dataset.dong}"]`);
+    else if (b.hasAttribute('data-candidate-save')) {
+      const c = currentDong(), msg = panel.querySelector('[data-candidate-status]'); if (!c || !msg) return;
+      try {
+        const rows = rowsFor(c.v, c.m, c.it), saved = window.RenewCandidates.save(localStorage, snapshotOf(c.it, rows, new Date()), toHash(state.route), rows);
+        msg.textContent = saved ? '저장한 후보 보기에서 단계·메모와 근거를 확인하세요.' : '이미 저장한 후보입니다. 기존 근거와 메모를 보존했습니다.';
+      } catch (err) { msg.textContent = '저장하지 못했습니다. ' + err.message; }
+    }
     else if (b.hasAttribute('data-close')) go({ ...state.route, dong: null }, `.map-list [data-dong]`);
     else if (b.hasAttribute('data-play')) { play(); app.querySelector('[data-play]')?.focus({ preventScroll: true }); }
     else if (b.hasAttribute('data-map-png')) mapPng();

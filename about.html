@@ -241,10 +241,19 @@
   <section class="alt" id="contact">
     <div class="wrap">
       <h2 data-reveal>시범 상담하기</h2>
-      <p class="sub" data-reveal>준비 중인 공모나 용역을 알려 주세요.<br>끝낸 과업 한 건을 리뉴맵으로 다시 만들어 걸린 시간을 비교해 드립니다.</p>
-      <p class="reply-time"><strong>답변 시간</strong><br><span data-reply-time>영업일 기준 1일 안에 이메일로 답변드립니다.</span></p>
-      <!-- data-endpoint: 폼 수신 주소(예: Google Apps Script). 비어 있으면 메일 앱으로 보낸 뒤 감사 페이지로 이동한다. -->
-      <form class="contact" data-endpoint="" data-mailto="renewmapteam@gmail.com" novalidate>
+      <p class="sub" data-reveal>도시재생·정비 용역사와 지자체 담당자를 위한 유료 파일럿을 제안합니다.<br>준비 중인 공모·용역과 보유 자료를 알려 주세요.</p>
+      <h3>신청요건 근거 패키지</h3>
+      <p><strong>시범 제안가 99만원(VAT 별도)</strong><br>과업 1건, 행정동 1곳을 기준으로 하며 최종 금액은 계약 전에 확정합니다.</p>
+      <ul>
+        <li>신청요건 근거 1쪽과 출처·추가확인 조서를 HWPX·PDF·XLSX로 제공합니다.</li>
+        <li>초안 검토 후 고객 요청을 한 번에 모아 보완 1회를 진행합니다.<br>공급자 오류 정정은 별도로 처리합니다.</li>
+        <li>검수·수락 기준: 합의한 기준일과 출처를 표기하고, 자료가 없거나 판단이 남은 항목은 추가확인 조서에 빠짐없이 남깁니다.</li>
+        <li>추가 동·새 기준일·새 지표·경계안 3종, 신규 현장조사·출장·전문가 승인은 별도 범위입니다.</li>
+      </ul>
+      <p class="reply-time">현재 산출물은 승인 전 검토용 참고 자료입니다.<br>원장·규칙 승인 등 납품 준비 상태와 제공 가능한 범위를 확인한 뒤 금액·일정·검수 기준을 계약 전에 협의합니다.<br>현재 화면의 산출 예시는 유료 납품 완료나 공모 선정·기관 승인을 뜻하지 않습니다.</p>
+      <p><a class="btn ghost" href="#contact-form" data-pilot-inquiry>99만원 유료 파일럿 견적 요청</a></p>
+      <!-- data-endpoint가 비어 있으면 초안만 열며 사용자가 메일 앱에서 직접 전송한다. -->
+      <form class="contact" id="contact-form" data-endpoint="" data-mailto="renewmapteam@gmail.com" novalidate>
         <label>소속(회사·기관)<input name="org" autocomplete="organization" required></label>
         <label>담당자 이름<input name="name" autocomplete="name" required></label>
         <label>이메일 <small class="form-hint">회사·기관 대표 메일을 권합니다.</small><input name="email" type="email" autocomplete="email" required></label>
@@ -252,6 +261,7 @@
         <label>문의 유형
           <select name="type">
             <option>공모 기초조사 시범 납품</option>
+            <option>99만원 유료 파일럿 견적 요청</option>
             <option>지자체·센터 모니터링</option>
             <option>제휴</option>
             <option>기타</option>
@@ -274,7 +284,17 @@
         <label class="agree"><input type="checkbox" name="optin" data-consent="C5-v1"><span>[선택] 리뉴맵 서비스 개선을 위한 의견 요청 이메일을 받는 데 동의합니다. (광고 아님 · 언제든 철회 가능 · 거부해도 상담에 불이익 없음)</span></label>
         <p class="form-note">인터뷰 녹음이나 설문은 그때마다 따로 동의를 받습니다. 녹음에 동의하지 않아도 인터뷰에 참여할 수 있습니다.<br>AI가 어떻게 쓰이는지는 <a href="ethics.html">AI 윤리·데이터 원칙</a>에 있습니다.</p>
         <p class="form-error" role="alert" hidden></p>
-        <button class="btn" type="submit" data-track="cta_submit">시범 상담 보내기</button>
+        <button class="btn" type="submit" data-track="cta_submit" disabled>메일 초안 열기(직접 전송 필요)</button>
+        <noscript><p class="form-note">문의 초안을 만들려면 자바스크립트를 켜 주세요.<br>직접 문의하실 때는 <a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a>으로 보내 주세요.</p></noscript>
+        <div data-contact-fallback>
+          <p class="form-note">문의 초안은 자동 전송되지 않습니다.<br>메일 앱에서 내용을 확인하고 직접 보내 주세요.<br>메일 앱이 열리지 않거나 내용이 빠지면 초안을 복사하거나 TXT로 저장해 <a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a>으로 보내실 수 있습니다.<br>이 화면에서는 실제 발송·접수 여부를 확인할 수 없습니다.</p>
+          <div class="actions">
+            <button class="btn ghost" type="button" data-copy-inquiry disabled>문의 초안 복사</button>
+            <button class="btn ghost" type="button" data-download-inquiry disabled>문의 초안 TXT 저장</button>
+          </div>
+        </div>
+        <p class="form-status form-note" role="status" aria-live="polite"></p>
+        <textarea rows="10" readonly data-contact-draft aria-label="직접 복사할 문의 초안" hidden></textarea>
       </form>
     </div>
   </section>
