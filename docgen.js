@@ -508,8 +508,16 @@
   function withSnap(doc, snap) {
     if (!snap) return doc;
     const at = doc.blocks.findIndex(b => b.kind === 'h1' && /^붙임 1/.test(b.text)), n = doc.blocks.filter(b => b.kind === 'h1' && /^\d+\./.test(b.text)).length + 1;
+    const reasons = [], rows = snap.rows.map((row, i) => row.map((value, col) => {
+      if (!i || col !== 3 || !String(value).startsWith('수치 비교 보류:')) return value;
+      let reason = reasons.indexOf(value);
+      if (reason < 0) { reason = reasons.length; reasons.push(value); }
+      return `수치 비교 보류 [${reason + 1}]`;
+    }));
+    // 긴 사유를 좁은 변동 칸에 넣으면 한글·슬라이드에서 표가 페이지 밖으로 밀린다.
     const add = finish([block('h1', `${n}. 기준일 비교`), block('para', snap.summary),
-      ...(snap.rows.length > 1 ? [block('table', '', { rows: snap.rows, widths: [28, 21, 21, 12, 18], caption: `표. 기준일 비교(${snap.when} 저장분 대비)` })] : [])]);
+      ...(rows.length > 1 ? [block('table', '', { rows, widths: [28, 21, 21, 12, 18], caption: `표. 기준일 비교(${snap.when} 저장분 대비)` })] : []),
+      ...(reasons.length ? [block('h2', '수치 비교 보류 사유'), ...reasons.map((reason, i) => block('para', `사유 ${i + 1}. ${reason}`))] : [])]);
     const blocks = [...doc.blocks]; blocks.splice(at < 0 ? blocks.length : at, 0, ...add);
     return { ...doc, blocks, snap };
   }

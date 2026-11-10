@@ -1495,6 +1495,7 @@
   // 네이버 지도(배경만). 키(field/naver-map-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작. 실패·5초 초과면 브이월드로
   // SDK가 NAVER 로고 img에 style 속성을 넣는다. explore.html CSP style-src에 그 문자열 해시만 허용했다('unsafe-hashes', 2026-11-07). SDK가 문구를 바꾸면 콘솔 오류로 다시 드러난다
   function loadNaver() {
+    if (window.renewNaverReady) return window.renewNaverReady;
     const key = window.RENEWMAP_NAVER_KEY;
     if (!/^[A-Za-z0-9]{6,40}$/.test(key || '')) return Promise.resolve(false);
     return new Promise(res => {
@@ -1562,13 +1563,17 @@
   }
   // 네이버 배경(nv)을 Leaflet 지도와 같은 중심·확대로 따라 움직인다. 네이버 지도는 스스로 움직이지 않는다
   function followWithNaver(map, el, nv) {
-    const N = window.naver.maps, nmap = new N.Map(nv, { center: new N.LatLng(36.3, 127.8), zoom: 7, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
-      disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
-    let ready = false;
-    const sync = () => { if (!ready) return; const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); };
-    map.whenReady(() => { ready = true; sync(); });
+    const N = window.naver.maps;
+    let nmap = null;
+    const sync = () => { if (!nmap) return; const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); };
+    // 임시 중심·확대의 타일을 받은 뒤 버리지 않도록 첫 맞춤 위치에서 시작한다.
+    map.whenReady(() => {
+      const c = map.getCenter();
+      nmap = new N.Map(nv, { center: new N.LatLng(c.lat, c.lng), zoom: map.getZoom(), draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
+        disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
+    });
     map.on('move zoom moveend zoomend viewreset resize', sync);
-    if ('ResizeObserver' in window) new ResizeObserver(() => { nmap.autoResize && nmap.autoResize(); sync(); }).observe(el);
+    if ('ResizeObserver' in window) new ResizeObserver(() => { if (nmap) { nmap.autoResize && nmap.autoResize(); sync(); } }).observe(el);
     // 링크는 지도가 그려진 뒤 늦게 생기고 'idle'보다 늦을 수 있다(배포 화면에서 이름 없음 확인). 생길 때마다 이름을 붙인다
     new MutationObserver(() => api.nameMapLinks(nv)).observe(nv, { childList: true, subtree: true });
   }

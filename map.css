@@ -229,10 +229,13 @@
 @media (prefers-reduced-motion: reduce) { .gl-dots i, .sr-why summary::after { animation: none; transition: none; } }
 /* 인쇄: 동네 보고서만 */
 @media print {
+  .dg-h1, .dg-h2 { break-after: avoid; }
   header.top, .hero, #verdict, #problem, #how, #ledger, #case, #dashboard, #scope, #faq, #contact, footer, .sticky-cta, .rp-tools, .rp-ai, .skip { display: none !important; }
   body { background: var(--card); color: var(--print-ink); font-size: 12pt; }
   #report { padding: 0; } #report .wrap { max-width: none; padding: 0; }
   .rp-g, .rp-src, .rp-empty { border: 1px solid var(--rule-gray); break-inside: avoid; }
+  .rp-snap { break-inside: auto; } .rp-snap h3 { break-after: avoid; }
+  .rp-snap tr { break-inside: avoid; }
   .rp-src details, .rp-src[open] { display: block; } .rp-src summary { display: none; } .rp-src .table-wrap { display: block; }
   a { color: var(--print-ink); text-decoration: none; } a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; }
   .map-spark path { stroke: var(--print-ink); }
