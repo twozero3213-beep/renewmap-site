@@ -1782,7 +1782,8 @@
     if (window.RenewDashboard) window.RenewDashboard.loadLeaflet().catch(() => {});
     state.naver = null; loadNaver().then(ok => { state.naver = ok; render(); });
   }
-  // 목록과 경계를 동시에 받는다(전에는 목록을 다 받은 뒤 경계를 받아 첫 지도가 한 번 더 기다렸다). 보조 자료(낮은 우선순위)는 이 둘이 온 뒤에 받는다(util.js fetchJson)
+  // 큰 경계 파일이 타일 다운로드·첫 표시를 막지 않게, 목록의 bbox로 배경부터 맞춘 뒤 경계를 받는다.
+  window.renewAfter = firstMap;
   const geoP = fetchJson('data/national/sigungu.geojson', true);
   // 첫 지도는 index_core.json(연도 요약·미연결 목록을 뺀 36KB)만 기다린다. 없으면 전체 index.json
   const indexP = fetchJson('data/national/index_core.json').then(c => (c && Array.isArray(c.sigungu) ? c : fetchJson('data/national/index.json')));
