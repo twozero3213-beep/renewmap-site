@@ -6,6 +6,7 @@
     const done = ok => { ended = true; clearTimeout(timer); resolve(ok); };
     const timer = setTimeout(() => done(false), 5000);
     const config = document.createElement('script');
+    config.fetchPriority = 'high';
     config.src = 'field/naver-map-key.js';
     config.onerror = () => done(false);
     config.onload = () => {
@@ -14,6 +15,7 @@
       if (!/^[A-Za-z0-9]{6,40}$/.test(key || '')) { done(false); return; }
       window.navermap_authFailure = () => done(false);
       const sdk = document.createElement('script');
+      sdk.fetchPriority = 'high';
       sdk.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${key}`;
       sdk.onload = () => done(!!window.naver?.maps?.Map);
       sdk.onerror = () => done(false);

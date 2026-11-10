@@ -1052,6 +1052,12 @@
   const app = document.getElementById('mapApp'); if (!app) return;
   // low: 첫 지도에 필요 없는 자료. 경계·지도 라이브러리가 먼저 받히도록 낮은 우선순위로 받는다
   const fetchJson = window.RenewUtil.fetchJson;
+  // 배경 타일까지 보인 뒤 보조 자료를 받는다. 외부 지도가 막혀도 문서·조건 검색은 8초 뒤 계속한다.
+  let mapPainted;
+  const firstMap = new Promise(resolve => {
+    const timeout = setTimeout(resolve, 8000);
+    mapPainted = () => { clearTimeout(timeout); resolve(); };
+  });
   // 외부 AI 서버 주소는 비워 둔다(서버로 문장을 보내지 않는다). 다듬기는 기기 안 AI(detectDeviceAI)로만 한다(docs/legal/ai_ethics.md ⑤)
   const AI_POLISH_ENDPOINT = '';
   const state = { route: parseHash(location.hash) || {}, ind: INDICATORS[0].code, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, dash: undefined, mapErr: false, touched: false,
@@ -1571,6 +1577,7 @@
       const c = map.getCenter();
       nmap = new N.Map(nv, { center: new N.LatLng(c.lat, c.lng), zoom: map.getZoom(), draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
         disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
+      N.Event.once(nmap, 'tilesloaded', mapPainted);
     });
     map.on('move zoom moveend zoomend viewreset resize', sync);
     if ('ResizeObserver' in window) new ResizeObserver(() => { if (nmap) { nmap.autoResize && nmap.autoResize(); sync(); } }).observe(el);
@@ -1580,8 +1587,9 @@
   // 네이버가 없을 때 배경지도: 브이월드(국토교통부 공식 지도, 한국 지명·도로). 키(field/vworld-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작 → 없으면 OSM
   function addBaseTiles(map) {
     const vw = /^[A-Za-z0-9-]+$/.test(window.RENEWMAP_VWORLD_KEY || '') ? window.RENEWMAP_VWORLD_KEY : '';
-    if (vw) window.L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${vw}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: '&copy; <a href="https://www.vworld.kr">국토교통부 브이월드</a>' }).addTo(map);
-    else window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
+    const tiles = vw ? window.L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${vw}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: '&copy; <a href="https://www.vworld.kr">국토교통부 브이월드</a>' })
+      : window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+    tiles.once('load', mapPainted).addTo(map);
   }
   const lineLatLngs = lines => lines.map(l => l.map(([x, y]) => [y, x]));
   // 시군구·시도 경계층: 경계 자료가 오면 한 번만 만든다
@@ -1775,10 +1783,10 @@
     state.naver = null; loadNaver().then(ok => { state.naver = ok; render(); });
   }
   // 목록과 경계를 동시에 받는다(전에는 목록을 다 받은 뒤 경계를 받아 첫 지도가 한 번 더 기다렸다). 보조 자료(낮은 우선순위)는 이 둘이 온 뒤에 받는다(util.js fetchJson)
-  const geoP = fetchJson('data/national/sigungu.geojson');
+  const geoP = fetchJson('data/national/sigungu.geojson', true);
   // 첫 지도는 index_core.json(연도 요약·미연결 목록을 뺀 36KB)만 기다린다. 없으면 전체 index.json
   const indexP = fetchJson('data/national/index_core.json').then(c => (c && Array.isArray(c.sigungu) ? c : fetchJson('data/national/index.json')));
-  window.renewAfter = Promise.all([indexP, geoP]).then(() => {}, () => {});
+  window.renewAfter = Promise.all([indexP, geoP, firstMap]).then(() => {}, () => {});
   if (DG === undefined) window.renewAfter.then(loadDocgen);
   indexP.then(index => {
     state.index = index && Array.isArray(index.sigungu) ? index : null;
