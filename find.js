@@ -393,6 +393,7 @@
       st.ctx = { index: ok(index, 'sigungu'), living: ok(li, 'indicators'), designations: ok(des, 'items'), migration: ok(mig, 'sigungu'), forecastIdx: ok(fi, 'horizons'), realestate: ok(re, 'sigungu') };
       if (!st.ctx.index) { root.innerHTML = '<div class="fd-empty" data-state="error" role="alert"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>전국 자료 원본을 불러오지 못했습니다.<br>네트워크를 확인한 뒤 다시 열어 주세요.</p></div>'; return; }
       st.sgGeo = undefined; trackHash(); render();
-      fetchJson('data/national/sigungu.geojson').then(g => { st.sgGeo = g && Array.isArray(g.features) ? g : null; st.svgKey = ''; render(); });
+    fetchJson('data/national/sigungu-overview.geojson').then(g => g && Array.isArray(g.features) ? g : fetchJson('data/national/sigungu.geojson'))
+      .then(g => { st.sgGeo = g && Array.isArray(g.features) ? g : null; st.svgKey = ''; render(); });
     });
 })();

@@ -1061,7 +1061,7 @@
   // 외부 AI 서버 주소는 비워 둔다(서버로 문장을 보내지 않는다). 다듬기는 기기 안 AI(detectDeviceAI)로만 한다(docs/legal/ai_ethics.md ⑤)
   const AI_POLISH_ENDPOINT = '';
   const state = { route: parseHash(location.hash) || {}, ind: INDICATORS[0].code, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, dash: undefined, mapErr: false, touched: false,
-    migration: undefined, designations: undefined, forecastIdx: undefined, realestate: undefined, templates: undefined };
+    migration: undefined, designations: undefined, forecastIdx: undefined, realestate: undefined, templates: undefined, sgGeoDetailed: false };
   const inds = () => allIndicators(state.living, { migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate });
   const curInd = () => indOf(state.ind, inds());
   const effMode = ind => (hasTrend(ind) ? state.mode : 'now');
@@ -1279,10 +1279,14 @@
     } catch (err) { notify({ format: kind, status: 'error', message: err.message }); }
   }
   // 지도 이미지(PNG): 배경 타일(CORS로 캔버스에 못 그림)을 빼고 경계·색·범례·출처·기준연도만 그린다
-  function mapPng() {
-    const msg = app.querySelector('[data-png-msg]'), say = t => { if (msg) msg.textContent = t; };
+  async function mapPng() {
+    const say = t => { const msg = app.querySelector('[data-png-msg]'); if (msg) msg.textContent = t; };
     if (!DG || !state.index) return;
     const v = resolve(state.index, state.route), m = model(v), ind = curInd(), mode = effMode(ind), ok = avail(ind), off = !ok || ind.pending;
+    if (m.kind === 'sg' && !state.sgGeoDetailed) {
+      say('상세 경계를 불러오는 중입니다.');
+      if (!(await loadSgDetail())) { say('상세 경계를 불러오지 못해 이미지 저장을 보류했습니다. 다시 열어 주세요.'); return; }
+    }
     const feats = m.kind === 'emd' ? (m.geo && m.geo.features) || [] : m.kind === 'sg' && state.sgGeo ? state.sgGeo.features.filter(f => m.items.some(i => i.code === String((f.properties || {}).code))) : [];
     if (!feats.length) { say('경계 자료가 아직 없어 이미지를 만들 수 없습니다.'); return; }
     const byCode = new Map(m.items.map(i => [i.code, i])), crumbs = v.crumbs.map(c => c.label).join(' › ');
@@ -1428,7 +1432,8 @@
     const crumbs = `<nav class="map-crumbs" aria-label="현재 위치"><ol>${v.crumbs.map((c, i) => i === v.crumbs.length - 1 && !it ? `<li aria-current="page">${esc(c.label)}</li>` : `<li><a href="${esc(c.hash)}">${esc(c.label)}</a></li>`).join('')}${it ? `<li aria-current="page">${esc(it.name)}</li>` : ''}</ol><span class="map-step">${esc(v.step)} 단계</span></nav>`;
     const py = m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind) && !ind.noPlay ? playYears(state.index, ind.code) : null, sgOn = v.level === 'nation' && !reduced ? !!autoT : state.playing;
     const yearCtl = py && py.years.length ? `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${sgOn}" aria-label="${sgOn ? '재생 멈춤' : `${py.years[0]}년부터 ${py.years[py.years.length - 1]}년까지 재생`}">${icon(sgOn ? 'pause' : 'play')}</button><label>연도 <b>${esc(m.year ?? '')}</b><input type="range" data-year min="${py.years[0]}" max="${py.years[py.years.length - 1]}" step="1" value="${m.year ?? py.years[py.years.length - 1]}"></label></div>`
-      : m.kind === 'emd' && m.years && (ind.series || ind.computed) ? `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${state.playing}" aria-label="${state.playing ? '재생 멈춤' : `${m.years.min}년부터 ${m.years.max}년까지 재생`}">${icon(state.playing ? 'pause' : 'play')}</button><label>연도 <b>${esc(m.year ?? '')}</b><input type="range" data-year min="${m.years.min}" max="${m.years.max}" step="1" value="${m.year ?? m.years.max}"></label></div>` : '';
+      : m.kind === 'emd' && m.years && (ind.series || ind.computed) ? `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${state.playing}" aria-label="${state.playing ? '재생 멈춤' : `${m.years.min}년부터 ${m.years.max}년까지 재생`}">${icon(state.playing ? 'pause' : 'play')}</button><label>연도 <b>${esc(m.year ?? '')}</b><input type="range" data-year min="${m.years.min}" max="${m.years.max}" step="1" value="${m.year ?? m.years.max}"></label></div>`
+      : m.kind === 'sg' && state.index.seriesPending && ind.series && !ind.noPlay && mode === 'now' ? '<div class="map-year" aria-busy="true"><span class="map-year-wait">연도 자료를 불러오는 중입니다.</span></div>' : '';
     const base = state.index.source && isNum(state.index.source.base_year) ? state.index.source.base_year : null;
     // 휴대폰 폭에서 네 칸이 한 줄에 들어가게 '(+1년)'은 뺐다. 기준연도는 지표 이름(○○년 대비)에 있다
     const hzCtl = ind.src === 'forecast' && horizons().length ? seg('horizon', horizons().map(h => [h, `${h}년`]), horizon(), base !== null ? `전망 연도(기준 ${base}년)` : '전망 연도') : '';
@@ -1540,6 +1545,7 @@
     const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false }); // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
     // 확대는 17(골목·건물 단위)까지. 두 번 누르기를 거듭해도 그 이상 커지지 않는다. 휠 확대는 지도를 한 번 누른 뒤에만 켠다(페이지를 내리다 지도에 걸려 확대되지 않게). 지도 밖으로 나가면 다시 끈다(2026-11-07 대표 지시)
     map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => map.scrollWheelZoom.disable());
+    map.on('zoomend', () => { if (map.getZoom() > 8) loadSgDetail(); });
     L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
     add3dControl(map);
     if (nv) followWithNaver(map, el, nv);
@@ -1592,16 +1598,29 @@
     tiles.once('load', mapPainted).addTo(map);
   }
   const lineLatLngs = lines => lines.map(l => l.map(([x, y]) => [y, x]));
-  // 시군구·시도 경계층: 경계 자료가 오면 한 번만 만든다
+  let sgDetailWait = null;
+  function loadSgDetail() {
+    if (state.sgGeoDetailed) return Promise.resolve(true);
+    return sgDetailWait || (sgDetailWait = fetchJson('data/national/sigungu.geojson').then(geo => {
+      if (!geo || !Array.isArray(geo.features)) return false;
+      state.sgGeo = geo; state.sgGeoDetailed = true;
+      render();
+      return true;
+    }));
+  }
+  // 전국 개요를 먼저 그리고, 확대·지역 선택 때 상세 경계로 교체한다. 값·색은 같은 원장이다.
   function addSgLayers() {
-    if (M.sg || !state.sgGeo) return;
+    if (!state.sgGeo || M.sgGeo === state.sgGeo) return;
+    const updating = !!M.sg;
+    if (updating) { M.map.removeLayer(M.sg); M.map.removeLayer(M.sido); }
     const L = window.L;
     M.sg = L.geoJSON(state.sgGeo, { pane: 'sg', style: { weight: 1, color: '#fff' }, onEachFeature: (f, layer) => {
       layer.bindTooltip(() => { const it = M.sgItems.get(String(f.properties.code)); return it ? tooltipHTML(it, curInd(), effMode(curInd()), null, M.src()) : `<b>${esc(f.properties.name)}</b>`; }, { sticky: true });
       layer.on('click', () => { const r = leafRoute(state.index, String(f.properties.code)); if (r) go(r); });
     } }).addTo(M.map);
     M.sido = L.featureGroup([L.polyline(lineLatLngs(outerLines(state.sgGeo.features, f => String(f.properties.code).slice(0, 2))), { pane: 'sg', interactive: false, color: '#153c39', weight: 1.5, smoothFactor: 0 })]).addTo(M.map); // 묶음이라야 첫 시점이 잡히기 전 bringToFront가 오류 없이 지나간다
-    M.order = null; M.fitKey = null; // 새 층이라 앞뒤 순서와 화면 맞춤을 다시 한다
+    M.sgGeo = state.sgGeo; M.order = null;
+    if (!updating) M.fitKey = null; // 상세 경계 도착 때 사용자가 맞춘 중심·확대를 되돌리지 않는다.
   }
   // 시군구 레이어 색: 현재 단계의 항목만 색, 나머지는 옅게. 칸 구성이 바뀌었는지(reorder)와 색칠한 코드(active)를 돌려준다
   function paintSg(v, m) {
@@ -1663,6 +1682,7 @@
     paintEmd(v, m, reorder);
     syncWater();
     fitView(v, m, active);
+    if (v.level !== 'nation') loadSgDetail();
   }
   function go(route, focusSel) {
     stopPlay(); stopAuto(true);
@@ -1784,7 +1804,8 @@
   }
   // 큰 경계 파일이 타일 다운로드·첫 표시를 막지 않게, 목록의 bbox로 배경부터 맞춘 뒤 경계를 받는다.
   window.renewAfter = firstMap;
-  const geoP = fetchJson('data/national/sigungu.geojson', true);
+  const geoP = fetchJson('data/national/sigungu-overview.geojson', true).then(geo => geo && Array.isArray(geo.features)
+    ? { geo, detailed: false } : fetchJson('data/national/sigungu.geojson').then(geo => ({ geo, detailed: true })));
   // 첫 지도는 index_core.json(연도 요약·미연결 목록을 뺀 36KB)만 기다린다. 없으면 전체 index.json
   const indexP = fetchJson('data/national/index_core.json').then(c => (c && Array.isArray(c.sigungu) ? c : fetchJson('data/national/index.json')));
   window.renewAfter = Promise.all([indexP, geoP, firstMap]).then(() => {}, () => {});
@@ -1805,8 +1826,9 @@
       });
     }
     render();
-    geoP.then(sg => {
-      state.sgGeo = sg && Array.isArray(sg.features) ? sg : null; render(); startAuto();
+    geoP.then(({ geo, detailed }) => {
+      if (!state.sgGeoDetailed) { state.sgGeo = geo && Array.isArray(geo.features) ? geo : null; state.sgGeoDetailed = !!state.sgGeo && detailed; }
+      render(); startAuto();
     });
   });
   // 보조 자료 여섯 개는 다 받은 뒤 한 번만 다시 그린다(하나 올 때마다 지도·문서를 새로 그리면 휴대폰에서 1초 넘게 멈췄다, 2026-11-07 라이트하우스)

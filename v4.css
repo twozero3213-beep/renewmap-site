@@ -192,7 +192,7 @@ body.field .card { border-radius: var(--radius-card); }
 /* 네이버 배경지도: Leaflet 경계 층 아래, 누르기·끌기는 Leaflet이 받는다 */
 .map-canvas .map-naver { position: absolute !important; top: 0; left: 0; width: 100% !important; height: 100% !important; z-index: 0; pointer-events: none; } /* 네이버가 컨테이너 style을 다시 써서 inset이 풀린다 */
 #map .map-canvas.has-naver.leaflet-container { background: transparent; }
-.map-canvas.has-naver .leaflet-control-container { position: relative; z-index: 2; }
+.map-canvas.has-naver .leaflet-control-container { position: relative; z-index: 1000; } /* 경계 pane(400)이 확대 버튼을 가리지 않게 한다. 지도 밖은 isolation으로 차단한다 */
 
 /* v5.1 더 단순하게: 조건 칸은 접어 두고(업무를 고르면 열림), 준비 중 단추는 감추고, 연도 줄은 한 줄로 */
 .find-more { border-top: 1px solid var(--line); padding-top: 12px; }

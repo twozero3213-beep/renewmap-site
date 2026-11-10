@@ -1,4 +1,2 @@
-/* Pretendard v1.3.9 부분 글꼴(SIL Open Font License 1.1, github.com/orioncactus/pretendard). make_font.py가 만든다 */
-@font-face{font-family:"Pretendard";font-weight:400;font-style:normal;font-display:swap;src:url(fonts/pretendard-400.woff2) format("woff2")}
-@font-face{font-family:"Pretendard";font-weight:600;font-style:normal;font-display:swap;src:url(fonts/pretendard-600.woff2) format("woff2")}
-@font-face{font-family:"Pretendard";font-weight:700;font-style:normal;font-display:swap;src:url(fonts/pretendard-700.woff2) format("woff2")}
+/* Pretendard v1.3.9 기반 Renewmap Sans Subset(SIL OFL 1.1, fonts/OFL.txt). make_font.py가 만든다 */
+@font-face{font-family:"Pretendard";font-weight:400 700;font-style:normal;font-display:swap;src:url(fonts/pretendard-variable.woff2) format("woff2")}

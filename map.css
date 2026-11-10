@@ -26,7 +26,8 @@
 .map-seg button[aria-pressed="true"] { border: 1px solid var(--ink); } /* DESIGN 1.4: 활성 알약은 그림자만으로 구분하지 않는다 */
 .map-seg { max-width: 100%; overflow-x: auto; scrollbar-width: thin; }
 .map-seg button { padding: 6px 10px; white-space: nowrap; }
-.map-year { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 220px; }
+.map-year { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 220px; min-height: 40px; }
+.map-year-wait { font-size: 14px; color: var(--dim); }
 .map-year label { display: flex; align-items: center; gap: 8px; flex: 1; font-size: 14px; font-weight: 600; color: var(--dim); }
 .map-year label b { color: var(--ink); font-variant-numeric: tabular-nums; min-width: 3em; }
 .map-year input[type="range"] { flex: 1; min-width: 120px; accent-color: var(--green); height: 28px; }
