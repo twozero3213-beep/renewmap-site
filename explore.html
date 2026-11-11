@@ -20,6 +20,8 @@
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="manifest" href="site.webmanifest">
 <link rel="preload" as="fetch" href="data/national/index_core.json" crossorigin="anonymous">
+<link rel="preload" as="script" href="field/naver-map-key.js" fetchpriority="high">
+<link rel="preload" as="script" href="map.js" fetchpriority="high">
 <link rel="preload" as="font" href="fonts/pretendard-variable.woff2" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://oapi.map.naver.com">
 <link rel="preconnect" href="https://nrbe.pstatic.net">
@@ -37,12 +39,10 @@
 <link rel="stylesheet" href="overlay.css">
 <link rel="stylesheet" href="v4.css">
 <link rel="stylesheet" href="workspace.css">
-<script src="app.js" defer></script>
 <script src="site.js" defer></script>
 <script src="site-motion.js" defer></script>
 <script src="cellpack.js" defer></script><!-- 2026-11-08: 줄여 저장한 원장 셀을 util.js fetchJson이 되돌릴 때 쓴다. util.js보다 먼저 -->
 <script src="util.js" defer></script>
-<script src="hero.js" defer></script>
 <script src="dashboard.js" defer></script>
 <script src="overlay.js" defer></script>
 <script src="field/vworld-key.js" defer></script>

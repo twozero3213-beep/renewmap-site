@@ -1621,7 +1621,6 @@
     } }).addTo(M.map);
     M.sido = L.featureGroup([L.polyline(lineLatLngs(outerLines(state.sgGeo.features, f => String(f.properties.code).slice(0, 2))), { pane: 'sg', interactive: false, color: '#153c39', weight: 1.5, smoothFactor: 0 })]).addTo(M.map); // 묶음이라야 첫 시점이 잡히기 전 bringToFront가 오류 없이 지나간다
     M.sgGeo = state.sgGeo; M.order = null;
-    if (!updating) M.fitKey = null; // 상세 경계 도착 때 사용자가 맞춘 중심·확대를 되돌리지 않는다.
   }
   // 시군구 레이어 색: 현재 단계의 항목만 색, 나머지는 옅게. 칸 구성이 바뀌었는지(reorder)와 색칠한 코드(active)를 돌려준다
   function paintSg(v, m) {
@@ -1671,9 +1670,11 @@
     else { const fg = L.featureGroup(); M.sg.eachLayer(l => { if (active.has(String((l.feature.properties || {}).code))) fg.addLayer(l); }); b = fg.getLayers().length ? fg.getBounds() : M.sg.getBounds(); }
     const right = inEmd && wide.matches && !panel.hidden && getComputedStyle(panel).position !== 'static' ? panel.offsetWidth + 28 : 12; // 지도 위에 겹친 패널일 때만 비운다
     const opt = { paddingTopLeft: [12, 12], paddingBottomRight: [right, 12], maxZoom: 14 };
-    if (b && b.isValid()) { if (reduced || !M.ready || state.naver) M.map.fitBounds(b, opt); else M.map.flyToBounds(b, { ...opt, duration: 0.9 }); }
-    // 첫 맞춤은 시점이 없어 flyTo를 못 쓴다. 경계 전 bbox 맞춤은 임시라 끝난 것으로 치지 않는다(경계가 오면 애니메이션 없이 다시 맞춘다)
-    if (M.sg || (m.kind === 'emd' && M.emd)) { M.fitKey = key; M.ready = true; }
+    if (b && b.isValid()) {
+      if (reduced || !M.ready || state.naver) M.map.fitBounds(b, opt); else M.map.flyToBounds(b, { ...opt, duration: 0.9 });
+      // 목록 bbox로 이미 맞춘 화면은 경계 도착 때 다시 옮기지 않는다. 배경 타일 재요청과 사용자 위치 초기화를 막는다.
+      M.fitKey = key; M.ready = true;
+    }
   }
   function drawMap(v, m) {
     if (!M && !mapReady(stage.querySelector('[data-map-slot]'))) return;

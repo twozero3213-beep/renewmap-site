@@ -198,6 +198,7 @@
     }).catch(e => { leafletP = null; throw e; }));
   }
   api.loadLeaflet = loadLeaflet; // 탐색 전용 페이지의 map.js도 같은 로더를 쓴다
+  if (document.getElementById('mapApp')) loadLeaflet().catch(() => {}); // 큰 map.js의 다운로드·실행을 기다리지 않고 미리 받은 라이브러리를 시작한다.
 
   const root = document.getElementById('dashboard'), app = root && root.querySelector('#dashApp');
   if (!app) return;
