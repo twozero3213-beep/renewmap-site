@@ -607,6 +607,8 @@
   const AI_FOOT = 'AI 생성 문장입니다. 공모·계획에 쓰기 전에 원장 화면과 출처를 사람이 확인하세요.';
   const REPORT_FOOT = '판정 아님 · 숫자마다 출처 · AI 문장은 참고용 · 사람 검토 권고';
   // 항목마다 기준·단위 설명 한 줄
+  const ACCESS_METHOD_NOTE = '동 대표점의 직선거리 · 주민별 보행·도로망 이동시간이나 시설 수용력 분석이 아닙니다';
+  const accessMethod = ind => ['LIB_NEAREST_M', 'ER_NEAREST_M', 'POLICE_NEAREST_M', 'ELEM_SCHOOL_NEAREST_M', 'SUBWAY_NEAREST_M'].includes(ind.code) ? ACCESS_METHOD_NOTE + (ind.group === 'safe' ? ` · ${SAFE_NOTE}` : '') : '';
   function stdTextOf(r) {
     const ind = r.ind;
     if (ind.pending) return '자료를 모으는 중입니다. 숫자를 만들지 않습니다.';
@@ -615,6 +617,8 @@
     if (ind.code === 'DECLINE_POP_DROP30Y_PCT' && r.value === null && r.cell) return `계산 안 함 · 1996~2025년 인구 기록이 다 있지 않음(대부분 지금 행정동 코드가 1995년 뒤에 생김) · 요건 ①은 '최근 5년 중 3년 연속 감소' 길로 볼 수 있음${ind.standard ? ` · 기준 ${ind.standard.text}` : ''}`;
     if (ind.src === 'forecast') return `${r.held ? `보류 · ${r.held} · ` : ''}${foreLine(ind)}${isNum(r.lo) && isNum(r.hi) ? ` · 80% 구간 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}` : ''}${ind.level === 'sg' ? ' · 시·군·구 단위' : ''}`;
     if (ind.level === 'sg') return `시·군·구 단위 자료 · 읍·면·동 값이 아닙니다${ind.group === 'estate' ? ` · ${ESTATE_NOTE}` : ''}${r.since ? ` · 지정 ${r.since}` : ''}${isNum(r.abs) ? ` · 순이동 ${fmt(r.abs, '명')}` : ''}`;
+    const method = accessMethod(ind);
+    if (method) return `${method}${ind.standard ? ` · 기준 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · ${ind.standard.status}${r.crossed ? ' · 기준선 넘은 쪽' : r.crossed === false ? ' · 기준선 안쪽' : ''}` : ''}` : ''}`;
     if (ind.standard) return `기준 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · ${ind.standard.status}${r.crossed ? ' · 기준선 넘은 쪽' : r.crossed === false ? ' · 기준선 안쪽' : ''}` : ''}`;
     if (ind.group === 'safe') return SAFE_NOTE;
     return ind.note || (ind.ref ? '공식 기준 없음 · 참고 구간' : '공식 기준 없음');
@@ -675,6 +679,8 @@
   }
   // 범례 아래 기준선 한 줄. 지도 이미지(PNG)도 같은 글을 쓴다
   function stdLineOf(ind, off) {
+    const method = accessMethod(ind);
+    if (!off && method) return `${method}${ind.standard ? ` · 기준선 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · 기준 ${ind.standard.status}` : ''}` : ''}`;
     return off ? (ind.held ? `보류 · ${ind.held} · 숫자를 만들지 않습니다` : '수집 중 · 자료가 오기 전에는 숫자를 만들지 않습니다')
       : ind.src === 'forecast' ? foreLine(ind) : ind.group === 'safe' ? SAFE_NOTE : ind.group === 'estate' ? '공식 기준 없음 · 참고 구간' /* 실거래 고정 문구는 바로 아래 줄에 상시 */
         : ind.standard ? `기준선 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · 기준 ${ind.standard.status}` : ''}`
@@ -811,7 +817,12 @@
       (cur && cur.variants.length > 1 ? `<label class="map-select">내용<select data-frag-variant>${cur.variants.map(v => `<option value="${esc(v.id)}"${v.id === sel.variant ? ' selected' : ''}>${esc(v.title)}</option>`).join('')}</select></label>` : '') + `</div>` +
       `<p class="map-note">고른 양식의 항목 순서대로 문장과 표를 만들고, 복사해 한글·엑셀 양식에 붙여 넣습니다.<br>값이 없는 항목은 '자료 없음'으로 남기고, 출처 번호는 이 조각 안에서 1부터 다시 매깁니다.</p><div data-frag-out aria-live="polite"></div></section>`;
   }
-  function briefHTML(v, it, rows, sel) {
+  function deliveryReviewHTML(brief) {
+    if (!DG || !brief) return '';
+    const review = DG.deliveryReview(brief);
+    return `<details class="map-detail rp-review"><summary>내려받기 전 자료 점검</summary><p class="map-note">${esc(review.note)} XLSX의 '자료 점검' 시트에는 전망 항목도 포함합니다.</p><dl>${review.rows.slice(1).map(r => `<dt>${esc(r[0])} · ${esc(r[1])}</dt><dd>${esc(r[2])}</dd>`).join('')}</dl></details>`;
+  }
+  function briefHTML(v, it, rows, sel, brief) {
     const here = v.crumbs.map(c => c.label).join(' › '), dy = rows.find(r => r.ind.series && r.year)?.year ?? null;
     const facts = rows.filter(r => r.value !== null && !r.ind.composite && r.ind.group !== 'sum');
     const srcOf = r => { const c = r.cell || {}; return { name: c.source_name || (r.evidenceMissing ? SERIES_NO_CELL : r.ind.source || SOURCE_DEFAULT), url: safeUrl(c.source_url), ref: c.reference_date ? String(c.reference_date).slice(0, 10) : null, formula: c.formula_text || null, rule: c.rule_version || null }; };
@@ -825,13 +836,13 @@
     const sec4 = `<section class="rp-g"><h3>4. 출처·계산식 표</h3><div class="dg-tbl">${copyHead('출처·계산식')}<div class="table-wrap"><table class="rp-tbl"><thead><tr><th>항목</th><th>값</th><th>출처</th><th>기준일</th><th>계산식</th><th>규칙 버전</th></tr></thead><tbody>${facts.map(r => { const s = srcOf(r);
       return `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name)}</td><td>${esc(s.ref || (r.year ? `${r.year}년` : '기록 없음'))}${ageSmall(s.ref)}</td><td>${esc(s.formula || '기록 없음')}</td><td>${esc(s.rule || '기록 없음')}</td></tr>`; }).join('')}</tbody></table></div></div></section>`;
     return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 사업 근거서</h3><p class="rp-tools">${fileTools(it, dy, '근거서', false)}</p></div>` +
-      `<p class="rp-intro rp-src-line">${esc(srcHead('4. 출처·계산식 표'))}</p><p class="rp-intro rp-brief-head">${esc(BRIEF_HEAD)}</p><p class="rp-intro">${esc(here)} · ${esc(it.kind || '행정동')} ${esc(it.code)} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'} · 생활 지표는 항목별 기준연도</p>${fragPanelHTML(sel || '')}${sec1}${sec2}${sec3}${sec4}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
+      `${deliveryReviewHTML(brief)}<p class="rp-intro rp-src-line">${esc(srcHead('4. 출처·계산식 표'))}</p><p class="rp-intro rp-brief-head">${esc(BRIEF_HEAD)}</p><p class="rp-intro">${esc(here)} · ${esc(it.kind || '행정동')} ${esc(it.code)} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'} · 생활 지표는 항목별 기준연도</p>${fragPanelHTML(sel || '')}${sec1}${sec2}${sec3}${sec4}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
   // 1쪽 요약: 제목·개요 4줄·요약 문장 5개·기준 대비 표(8행 이하)·출처 번호·끝. one = DG.buildOnepage(...) 결과. 인쇄하면 A4 한 쪽
   function onepageHTML(v, it, one, sel) {
     const here = v.crumbs.map(c => c.label).join(' › ');
     return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><p class="rp-tools">${fileTools(it, one.brief.year, '1쪽 요약', true)}</p></div>` +
-      `<div class="dg-doc dg-onepage">${DG.docHTML(one, { copy: true }).html}</div>${fragPanelHTML(sel)}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
+      `${deliveryReviewHTML(one.brief)}<div class="dg-doc dg-onepage">${DG.docHTML(one, { copy: true }).html}</div>${fragPanelHTML(sel)}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
   // ── 기기 안 AI(Chrome 내장 AI의 Rewriter·Summarizer 전역 API). 문장을 서버로 보내지 않는다 ──
   // developer.chrome.com/docs/ai 확인(2026-10-24): availability()는 'unavailable'|'downloadable'|'downloading'|'available', create()는 사용자 클릭(활성화) 뒤에만,
@@ -1234,7 +1245,10 @@
     } else if (reportMode === 'programs' && window.RenewPrograms) {
       report.innerHTML = reportModeHTML(reportMode) + window.RenewPrograms.dongHTML(it.name, rows) + window.RenewPrograms.socHTML(rows, socText);
       report.querySelector('[data-soc-csv]').addEventListener('click', () => { if (DG) DG.saveBytes(`기반편의시설현황_${DG.safeName(it.name)}.csv`, new TextEncoder().encode(window.RenewPrograms.socCSV(it.name, rows, socText)), 'text/csv;charset=utf-8'); });
-    } else report.innerHTML = reportModeHTML(reportMode) + (reportMode === 'brief' ? briefHTML(v, it, rows, fragChoice) : reportHTML(v, it, rows));
+    } else if (reportMode === 'brief') {
+      const built = docFor(v, m, it);
+      report.innerHTML = reportModeHTML(reportMode) + briefHTML(v, it, rows, fragChoice, built.error ? null : built.brief);
+    } else report.innerHTML = reportModeHTML(reportMode) + reportHTML(v, it, rows);
     paintFrag();
   }
   // ── 파일 만들기(docgen.js): 선택한 동의 원장 셀로 근거서(HWPX·XLSX)와 1쪽 요약을 이 브라우저에서 바로 만든다. 서버로 보내지 않는다 ──
@@ -1245,7 +1259,7 @@
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261111-audit2'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261112-research'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
@@ -1807,7 +1821,7 @@
       const rows = rowsFor(c.v, c.m, c.it), snapshot = snapshotOf(c.it, rows, new Date()), route = toHash(state.route);
       b.disabled = true;
       try {
-        if (!window.RenewCandidates) await import('./candidates.js');
+        if (!window.RenewCandidates) await import('./candidates.js?v=20261112-research');
         const saved = window.RenewCandidates.save(localStorage, snapshot, route, rows);
         msg.textContent = saved ? '저장한 후보 보기에서 단계·메모와 근거를 확인하세요.' : '이미 저장한 후보입니다. 기존 근거와 메모를 보존했습니다.';
       } catch (err) { msg.textContent = '저장하지 못했습니다. ' + err.message; }

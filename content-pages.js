@@ -47,7 +47,8 @@
       old.forEach(node => node.remove());
       items.slice(start, start + size).forEach(node => holder.insertBefore(node, marker));
       marker.remove();
-      part.dataset.pageLabel = title + ' '  + (start / size + 1);
+      const question = !table && !grid && items[start].querySelector('h3')?.textContent.trim();
+      part.dataset.pageLabel = question || title + ' '  + (start / size + 1);
       if (start) pages[pages.length - 1].after(part);
       pages.push(part);
     }

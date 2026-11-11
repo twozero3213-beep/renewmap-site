@@ -12,7 +12,7 @@
       || !STAGES.some(([key]) => key === row.stage) || !text(row.note) || row.note.length > 1000
       || !/^\d{4}-\d\d-\d\dT/.test(row.saved_at) || !Number.isFinite(Date.parse(row.saved_at)) || !Array.isArray(row.items) || row.items.length > 200
       || row.items.some(x => !x || !['c', 'l', 'u', 't', 's'].every(k => text(x[k])) || (x.v !== null && !U.isNum(x.v) && !text(x.v) && typeof x.v !== 'boolean')
-        || (x.d !== null && !text(x.d)) || [x.basis, x.evidence].some(b => b !== null && (!b || Array.isArray(b) || typeof b !== 'object' || Object.values(b).some(v => v !== null && !text(v)))))) {
+        || (x.d !== null && !text(x.d)) || [x.basis, x.evidence].some(b => b != null && (Array.isArray(b) || typeof b !== 'object' || Object.values(b).some(v => v !== null && !text(v)))))) {
       throw new Error('후보 기록 형식을 확인하지 못했습니다. 기존 기록은 그대로 보존했습니다.');
     }
     return row;
@@ -43,22 +43,42 @@
   }
   const valueText = item => !item || item.v === null ? '자료 없음' : item.t;
   const cell = value => '"' + String(value ?? '').replace(/^[\s\uFEFF]*[=+@-]/, "'$&").replace(/"/g, '""') + '"';
+  const COMPARISON_FIELDS = [
+    ['출처', x => [x.evidence?.source_name, x.basis.source_url]],
+    ['기준일', x => [x.d]], ['단위', x => [x.u]],
+    ['산식', x => [x.basis.formula_id, x.basis.formula_text]],
+    ['규칙 버전', x => [x.basis.rule_version]], ['공간 단위', x => [x.basis.spatial_unit]],
+  ];
+  function comparisonConditions(rows, code) {
+    const items = rows.map(r => r.items.find(x => x.c === code));
+    return COMPARISON_FIELDS.map(([label, read]) => {
+      const values = items.map(x => {
+        const parts = x?.basis ? read(x) : [];
+        return parts.length && parts.every(v => typeof v === 'string' && v.trim()) ? JSON.stringify(parts.map(v => v.trim())) : null;
+      });
+      const different = new Set(values.filter(v => v !== null)).size > 1;
+      const unknown = rows.length < 2 || values.some(v => v === null);
+      return [label, different ? (unknown ? '차이 · 미확인 포함' : '차이') : unknown ? '미확인' : '같음'];
+    });
+  }
   function csv(rows) {
-    const out = [['지역 코드', '후보 동', '검토 단계', '메모', '저장 시각', '지도 경로', '항목', '값', '단위', '표시값', '기준일', '상태', '출처', '출처 URL', '조회시각', '산식 ID', '산식', '규칙 버전', '공간 단위', '원장 지역 코드', '이용조건', '셀 ID', 'snapshot_id']];
+    const conditions = new Map(rows.flatMap(r => r.items.map(x => [x.c, null])));
+    for (const code of conditions.keys()) conditions.set(code, comparisonConditions(rows, code).map(([, status]) => status));
+    const out = [['지역 코드', '후보 동', '검토 단계', '메모', '저장 시각', '지도 경로', '항목', '값', '단위', '표시값', '기준일', '상태', '출처', '출처 URL', '조회시각', '산식 ID', '산식', '규칙 버전', '공간 단위', '원장 지역 코드', '이용조건', '셀 ID', 'snapshot_id', ...COMPARISON_FIELDS.map(([label]) => `비교 ${label}`)]];
     for (const r of rows) for (const x of r.items) out.push([r.code, r.name, STAGES.find(([k]) => k === r.stage)[1], r.note, r.saved_at, r.route,
       x.l, x.v, x.u, valueText(x), x.d, x.s, x.evidence?.source_name, x.basis?.source_url, x.evidence?.retrieved_at, x.basis?.formula_id,
-      x.basis?.formula_text, x.basis?.rule_version, x.basis?.spatial_unit, x.basis?.area_code, x.evidence?.license_type, x.evidence?.cell_id, x.evidence?.snapshot_id]);
+      x.basis?.formula_text, x.basis?.rule_version, x.basis?.spatial_unit, x.basis?.area_code, x.evidence?.license_type, x.evidence?.cell_id, x.evidence?.snapshot_id,
+      ...conditions.get(x.c)]);
     return '\uFEFF' + out.map(r => r.map(cell).join(',')).join('\r\n');
   }
-  function comparisonHTML(rows) {
+  function comparisonHTML(rows, indicators = [...new Map(rows.flatMap(r => r.items.map(x => [x.c, x.l]))).entries()]) {
     if (rows.length < 2) return '<p>후보 2~3곳을 골라 같은 항목을 나란히 확인하세요.</p>';
-    const indicators = [...new Map(rows.flatMap(r => r.items.map(x => [x.c, x.l]))).entries()];
-    return '<p>저장 당시 값을 보여 줍니다.<br>기준일·산식·공간 단위가 다를 수 있어 차이·순위는 계산하지 않습니다.</p><div class="table-wrap" tabindex="0" role="region" aria-label="후보별 근거 비교"><table class="rp-tbl"><thead><tr><th scope="col">항목</th>'
-      + rows.map(r => `<th scope="col">${U.esc(r.name)}<br><small>${U.esc(r.saved_at.slice(0, 10))} 저장</small></th>`).join('') + '</tr></thead><tbody>'
+    return '<p>저장 당시 값을 보여 줍니다.<br>기준일·산식·공간 단위가 다를 수 있어 차이·순위는 계산하지 않습니다.<br>조건 메타의 같음은 정확도·승인을 보장하지 않습니다.</p><div class="table-wrap" tabindex="0" role="region" aria-label="후보별 근거 비교"><table class="rp-tbl"><thead><tr><th scope="col">항목</th>'
+      + rows.map(r => `<th scope="col">${U.esc(r.name)}<br><small>${U.esc(r.saved_at.slice(0, 10))} 저장</small></th>`).join('') + '<th scope="col">비교 조건</th></tr></thead><tbody>'
       + indicators.map(([code, label]) => '<tr><th scope="row">' + U.esc(label) + '</th>' + rows.map(r => {
         const x = r.items.find(i => i.c === code);
         return `<td>${U.esc(valueText(x))}<br><small>${U.esc(x?.d || '기준일 추가확인')}<br>${U.esc(x?.s || '미확인')}<br>${U.esc(x?.basis?.spatial_unit || '공간 단위 추가확인')}<br>${U.esc(x?.evidence?.source_name || '출처 추가확인')}</small></td>`;
-      }).join('') + '</tr>').join('') + '</tbody></table></div>';
+      }).join('') + '<td><small>' + comparisonConditions(rows, code).map(([name, status]) => U.esc(`${name}: ${status}`)).join('<br>') + '</small></td></tr>').join('') + '</tbody></table></div>';
   }
   function init(root) {
     const host = root.document.querySelector('[data-candidates]');
@@ -66,7 +86,17 @@
     const list = host.querySelector('[data-candidate-list]'), msg = host.querySelector('[data-candidate-msg]'), out = host.querySelector('[data-candidate-compare]');
     const selected = new Set();
     const pager = root.RenewListPages.create(list, '검토 후보', render);
+    if (!out.id) out.id = 'candidateComparison';
+    const comparisonPager = root.RenewListPages.create(out, '비교 지표', renderComparison);
     const say = t => { msg.textContent = t; };
+    function renderComparison(rows) {
+      try {
+        const chosen = (rows || load(root.localStorage)).filter(r => selected.has(r.code));
+        const indicators = chosen.length < 2 ? [] : [...new Map(chosen.flatMap(r => r.items.map(x => [x.c, x.l]))).entries()];
+        out.innerHTML = comparisonHTML(chosen, comparisonPager.slice(indicators));
+        return true;
+      } catch (e) { say('비교를 열지 못했습니다. ' + e.message); return false; }
+    }
     function render() {
       try {
         const rows = load(root.localStorage);
@@ -74,7 +104,7 @@
           + `<p class="meta">${U.esc(r.saved_at.slice(0, 10))} UTC 고정 · ${r.items.length}개 항목 · ${STAGES.find(([k]) => k === r.stage)[1]}</p><a href="explore.html${r.route}">지도에서 다시 보기</a>`
           + `<details><summary>단계·메모 편집</summary><form data-candidate-edit="${r.code}"><label>검토 단계<select name="stage">${STAGES.map(([k, v]) => `<option value="${k}"${r.stage === k ? ' selected' : ''}>${v}</option>`).join('')}</select></label>`
           + `<label>검토 메모<textarea name="note" maxlength="1000" rows="2">${U.esc(r.note)}</textarea></label><button type="submit">단계·메모 저장</button></form></details></li>`).join('') || '<li>지도에서 동을 고르고 ‘검토 후보 저장’을 눌러 주세요.</li>';
-        out.innerHTML = comparisonHTML(rows.filter(r => selected.has(r.code)));
+        renderComparison(rows);
         host.querySelector('[data-candidate-csv]').disabled = !rows.length;
       } catch (e) { say('후보를 열지 못했습니다. ' + e.message); }
     }
@@ -83,7 +113,8 @@
       if (!code) return;
       if (e.target.checked && selected.size >= 3) { e.target.checked = false; say('비교는 한 번에 3곳까지 선택합니다.'); return; }
       e.target.checked ? selected.add(code) : selected.delete(code);
-      try { out.innerHTML = comparisonHTML(load(root.localStorage).filter(r => selected.has(r.code))); say(`${selected.size}곳 선택`); } catch (err) { say(err.message); }
+      comparisonPager.reset();
+      if (renderComparison()) say(`${selected.size}곳 선택`);
     });
     list.addEventListener('submit', e => {
       const form = e.target.closest('[data-candidate-edit]'); if (!form) return;

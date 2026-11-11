@@ -27,12 +27,12 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="site.webmanifest">
 <link rel="stylesheet" href="pretendard.css">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=20261112-research">
 <link rel="stylesheet" href="site-v4.css">
 <link rel="stylesheet" href="home.css">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
-{"@type":"WebApplication","@id":"https://twozero3213-beep.github.io/renewmap-site/#app","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","inLanguage":"ko","applicationCategory":"BusinessApplication","operatingSystem":"웹 브라우저","isAccessibleForFree":true,"description":"리뉴맵은 도시재생 담당자가 동 이름만 넣으면 인구, 상권, 주거, 생활시설, 안전을 공식 통계로 진단해 사업별 요건과 맞대 보고, 숫자마다 출처와 기준일이 붙은 한글 근거 문서를 받는 서비스입니다.","offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"publisher":{"@id":"https://twozero3213-beep.github.io/renewmap-site/#org"}},
+{"@type":"WebApplication","@id":"https://twozero3213-beep.github.io/renewmap-site/#app","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","inLanguage":"ko","applicationCategory":"BusinessApplication","operatingSystem":"웹 브라우저","isAccessibleForFree":true,"description":"리뉴맵은 도시재생·정비 용역사와 지자체 담당자가 공개 자료와 현장 기록을 출처와 기준일이 붙은 근거 문서로 정리하는 도구입니다.","offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"publisher":{"@id":"https://twozero3213-beep.github.io/renewmap-site/#org"}},
 {"@type":"Organization","@id":"https://twozero3213-beep.github.io/renewmap-site/#org","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","logo":"https://twozero3213-beep.github.io/renewmap-site/icon-512.png","email":"renewmapteam@gmail.com","areaServed":"KR"}]}
 </script>
 <script src="site.js" defer></script>
@@ -45,10 +45,12 @@
 <main id="main" class="start-home wrap">
   <section class="start-hero" aria-labelledby="heroTitle">
     <div class="start-copy">
+      <p class="start-audience">도시재생·정비 용역사와 지자체를 위한 기초조사</p>
       <h1 id="heroTitle">동네의 변화를,<br>근거부터.</h1>
-      <p class="start-intro">도시재생 기초조사부터 현장 기록까지.<br>자료를 찾고, 확인하고, 문서로 연결하세요.</p>
+      <p class="start-intro">공개 자료와 현장 기록을<br>출처·기준일이 붙은 한글·PDF·엑셀로 정리합니다.</p>
+      <p class="start-status">현재 산출물은 규칙 승인 전 검토용 참고 자료입니다.</p>
       <form id="homeSearch" class="home-search" role="search" autocomplete="off">
-        <label for="homeQ">어느 동네를 살펴볼까요?</label>
+        <label for="homeQ">문서로 살펴볼 동네를 찾아보세요</label>
         <div class="home-search-row">
           <input id="homeQ" name="q" type="search" placeholder="동·구 이름 (예: 반여1동)" enterkeyhint="search" aria-describedby="homeMsg">
           <button class="btn" type="submit">찾기</button>
@@ -56,15 +58,15 @@
         <ul id="homeHits" class="home-hits" aria-label="동네 검색 결과"></ul>
         <p id="homeMsg" class="home-msg" aria-live="polite"></p>
       </form>
-      <div class="start-shortcuts"><a href="explore.html?report=onepage#map/21/21090/21090700">반여1동 예시 문서 보기 <span aria-hidden="true">↗</span></a><a href="programs.html">도시재생 사업 찾기</a><a href="dong/index.html">행정동 목록</a></div>
+      <div class="start-shortcuts"><a href="explore.html?report=onepage#map/21/21090/21090700">무료 1쪽 예시 문서 보기 <span aria-hidden="true">↗</span></a><a href="programs.html">도시재생 사업 찾기</a><a href="dong/index.html">행정동 목록</a></div>
       <noscript><p>검색에는 자바스크립트가 필요합니다.<br><a href="dong/index.html">행정동 목록에서 동네를 찾아 주세요.</a></p></noscript>
     </div>
     <aside class="start-note" aria-label="리뉴맵의 조사 흐름">
       <div class="start-note-head"><span>동네를 이해하는 세 가지 기록</span><img src="mascot/crew/taggy-default.svg" width="88" height="88" alt="" aria-hidden="true"></div>
       <ol class="start-flow">
-        <li><span class="flow-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16M15 5v16"/></svg></span><div><strong>자료의 출처</strong><span>지역·기준일을 함께 살펴봅니다.</span></div></li>
-        <li><span class="flow-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h4l2-3h4l2 3h4v14H4V6Z"/><circle cx="12" cy="12" r="4"/></svg></span><div><strong>현장에서 확인한 내용</strong><span>사진·위치와 확인 이력을 남깁니다.</span></div></li>
-        <li><span class="flow-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h9l5 5v13H5V3Zm9 0v6h5M8 13h8M8 17h6"/></svg></span><div><strong>설명할 수 있는 문서</strong><span>수치와 근거를 함께 전달합니다.</span></div></li>
+        <li><span class="flow-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16M15 5v16"/></svg></span><div><strong>자료의 출처</strong><span>공개 자료·기준일</span></div></li>
+        <li><span class="flow-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h4l2-3h4l2 3h4v14H4V6Z"/><circle cx="12" cy="12" r="4"/></svg></span><div><strong>현장에서 확인한 내용</strong><span>사진·위치·확인 이력</span></div></li>
+        <li><span class="flow-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h9l5 5v13H5V3Zm9 0v6h5M8 13h8M8 17h6"/></svg></span><div><strong>설명할 수 있는 문서</strong><span>한글·PDF·근거 표</span></div></li>
       </ol>
       <a class="start-method" href="evidence.html">조사 방법과 학술 근거 <span aria-hidden="true">→</span></a>
     </aside>
@@ -75,7 +77,7 @@
       <li><a href="explore.html"><span class="tool-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16M15 5v16"/></svg></span><h3>동네 탐색</h3><p>지도에서 자료를 비교하고<br>근거 문서를 받습니다.</p><span class="tool-go" aria-hidden="true">↗</span></a></li>
       <li><a href="field/"><span class="tool-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h4l2-3h4l2 3h4v14H4V6Z"/><circle cx="12" cy="12" r="4"/></svg></span><h3>현장 기록</h3><p>사진과 위치를 기록하고<br>확인 내용을 정리합니다.</p><span class="tool-go" aria-hidden="true">↗</span></a></li>
       <li><a href="field/redev.html"><span class="tool-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5V3Zm3 5 1 1 2-2M13 8h3M8 13l1 1 2-2M13 13h3M8 18h8"/></svg></span><h3>신청요건 확인</h3><p>부지의 요건과 조문을 봅니다.<br>승인 전 참고용입니다.</p><span class="tool-go" aria-hidden="true">↗</span></a></li>
-      <li><a href="field/twin.html"><span class="tool-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm-9 5 9 5 9-5M12 12v10"/></svg></span><h3>3D·4D 비교</h3><p>모델을 배치하고<br>날짜별 계획 단계를 봅니다.</p><span class="tool-go" aria-hidden="true">↗</span></a></li>
+      <li><a href="field/twin.html"><span class="tool-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm-9 5 9 5 9-5M12 12v10"/></svg></span><h3>3D·4D 비교</h3><p>준비한 GLB 모델과<br>직접 입력한 계획 단계를 비교합니다.</p><span class="tool-go" aria-hidden="true">↗</span></a></li>
     </ul>
     <details class="start-more">
       <summary>다른 조사 도구</summary>
@@ -83,8 +85,8 @@
     </details>
   </section>
   <aside class="start-evidence" aria-label="자료 이용 안내">
-    <p><strong>관측한 사실과 계획의 가정을 구분합니다.</strong><br>출처·기준일과 확인이 필요한 항목을 함께 살펴보세요.</p>
-    <div><a href="data.html">데이터 출처</a><a href="about.html#contact">시범 납품 상담 <span aria-hidden="true">↗</span></a></div>
+    <p><strong>공개 자료의 자동 문서는 무료입니다.</strong><br>공모·용역에 맞춘 시범 과업은 범위·검수 기준을 계약 전에 협의합니다.</p>
+    <div><a href="data.html">데이터 출처</a><a href="about.html#contact">99만원 시범 과업 범위 <span aria-hidden="true">↗</span></a></div>
   </aside>
 </main>
 

@@ -273,3 +273,23 @@ table.wide { min-width: 680px; }   /* 좁은 화면에서 낱말마다 줄이 �
 .page table.grid th, .page table.grid td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .page table.grid td.num { text-align: right; }
 .page table.grid { min-width: 480px; }
+
+/* 업무 대상·문서 범위를 첫 화면에 두고, 모바일에서도 세 흐름의 근거를 남긴다. */
+.app-home .start-audience { margin: 0 0 12px; color: var(--green); font-size: 14px; font-weight: 700; line-height: 1.5; }
+.app-home .start-status { margin: -12px 0 20px; color: var(--dim); font-size: 14px; line-height: 1.5; }
+#intro .about-cta { margin-bottom: 20px; }
+#intro .about-stage { max-width: 760px; font-size: 16px; }
+.about-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin: 20px 0; }
+.about-options > div { min-width: 0; border-top: 1px solid var(--hero-line, var(--line)); padding-top: 14px; }
+.about-options dt { margin-bottom: 8px; font-size: 18px; font-weight: 700; }
+.about-options dd { margin: 0; font-size: 16px; line-height: 1.6; color: var(--hero-dim, var(--dim)); }
+.about-options dd + dd { margin-top: 8px; }
+.rp-review { min-width: 0; overflow-wrap: anywhere; word-break: normal; }
+.rp-review dl { margin: 12px 0 0; }
+.rp-review dt { margin-top: 12px; font-weight: 700; }
+.rp-review dd { margin: 4px 0 0; }
+@media print { .rp-review { display: none !important; } }
+@media (max-width: 600px) {
+  .app-home .start-flow li div > span { display: block; margin-top: 4px; font-size: 13px; line-height: 1.5; }
+  .about-options { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+}

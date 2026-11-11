@@ -360,6 +360,30 @@
     return { rows };
   }
 
+  function deliveryReview(brief, forecast = false) {
+    const items = brief.items.filter(i => forecast || i.group !== '전망'), cells = items.filter(i => i.cell), rows = [['점검 항목', '현황', '확인할 내용']];
+    const count = (title, list, action) => rows.push([title, `${list.length}건`, list.length ? `${list.map(i => i.label).join(', ')} · ${action}` : '해당 항목 없음']);
+    count('자료 없음', items.filter(i => !i.cell && !i.fact || i.cell && !hidden(i.cell) && i.cell.value == null), '원천 자료와 수집 범위 확인');
+    count('이용조건으로 비공개', cells.filter(i => hidden(i.cell)), '재배포 허용 범위 확인');
+    count('출처·계산 충돌', cells.filter(i => i.cell.status === '충돌'), '원천 값과 계산식 대조');
+    count('사람 확인 전·진행 중', cells.filter(i => ['미확인', '확인중', '추가확인'].includes(i.cell.status)), '원장의 상태·확인 이력 검토');
+    count('폐기된 셀', cells.filter(i => i.cell.status === '폐기'), '현재 근거로 사용하지 않고 대체 버전 확인');
+    const required = [['cell_id', '셀 식별자'], ['snapshot_id', '원장 스냅샷 식별자'], ['source_name', '출처명'], ['source_url', '출처 주소'], ['retrieved_at', '조회시각'], ['reference_date', '기준일'], ['formula_id', '산식 식별자'], ['formula_text', '산식 설명'], ['rule_version', '규칙 버전'], ['spatial_unit', '공간 단위'], ['unit', '단위'], ['status', '상태']];
+    const missingMeta = cells.filter(i => required.some(([k]) => !String(i.cell[k] ?? '').trim()));
+    const metaFields = required.map(([key, label]) => [label, cells.filter(i => !String(i.cell[key] ?? '').trim()).length]).filter(([, n]) => n);
+    rows.push(['공개 셀의 근거 미기록', `${missingMeta.length}건`, metaFields.length ? metaFields.map(([label, n]) => `${label} ${n}건`).join(', ') + ' · 공개 자료에서 확인되지 않은 항목을 원장 보관본과 대조' : '해당 항목 없음']);
+    count('원장 셀 외 지정 사실', items.filter(i => i.fact), '지정 목록의 출처와 적용 범위 확인');
+    const dates = [...new Set(items.map(i => (i.cell || i.fact || {}).reference_date).filter(Boolean))].sort();
+    const grains = [...new Set(items.filter(i => i.cell || i.fact).map(i => i.cell ? i.cell.spatial_unit || '미기록' : '시군구'))].sort();
+    rows.push(['기준일 구성', `${dates.length}개`, dates.length ? dates.map(govDate).join(', ') + ' · 기준일 차이를 해석에 반영' : '기준일 기록 없음']);
+    rows.push(['공간 단위 구성', `${grains.length}개`, grains.length ? grains.join(', ') + ' · 상위 단위 값을 개별 건물·필지 값으로 해석하지 않음' : '공간 단위 기록 없음']);
+    const pending = brief.crit.rows.slice(1).filter(r => r[4].includes('승인 대기')).map(r => r[0]);
+    if (forecast && items.some(i => i.group === '전망' && i.cell) && !(brief.fidx || {}).approved) pending.push('추세 전망 산식');
+    rows.push(['규칙·산식 승인 대기', `${pending.length}건`, pending.length ? pending.join(', ') : '표시된 승인 대기 항목 없음 · 법정 적합 판정 아님']);
+    rows.push(['문서 입력묶음 지문', brief.inputHash ? '기록 있음' : '미기록', brief.inputHash ? `${brief.inputHashScheme} · ${brief.inputHash}` : '이전 문서는 원천 색인 지문만 있을 수 있음']);
+    return { rows, note: '건수는 중복될 수 있습니다. 이 표는 자료 점검 목록이며 정확성·현장 확인·담당자 승인을 보증하지 않습니다.' };
+  }
+
   // ══════════════════════════════════════ 공문서 구조(dong_brief.build_doc·build_onepage 옮김)
   // 출처 번호: 같은 출처·기준일·조회일·이용조건이면 같은 번호. 전망 셀의 reference_date는 전망 대상일. 표시 이름은 원본 기관명이 앞
   class Sources {
@@ -776,7 +800,7 @@
 
   // 한 동 근거서 통합표(XLSX): 현황·기준 대비·시계열·출처. 모든 시트 첫 열에 code8
   function workbookSheets(doc) {
-    const b = doc.brief, src = doc.src, rp = b.geo ? repPoint(b.geo) : null, kind = '행정동';
+    const b = doc.brief, src = doc.src, rp = b.geo ? repPoint(b.geo) : null, kind = '행정동', review = deliveryReview(b, true);
     const head = ['code8', '동'];
     const status = [[...head, '행정구역 구분(법정동/행정동)', '대표점 위도(EPSG:4326)', '대표점 경도(EPSG:4326)', '지표 묶음', '지표', '값', '단위', '값의 공간 단위', '기준일', '상태', '출처 번호', '출처', '라이선스']];
     for (const it of b.items) {
@@ -803,6 +827,7 @@
       { name: '기준 대비', rows: crit, widths: [11, 12, 38, 14, 14, 44, 18, 20] },
       { name: '시계열', rows: ser, widths: [11, 12, 34, ...Array(SERIES_YEARS).fill(10)] },
       { name: '출처', rows: so, widths: [11, 12, 8, 34, 40, 50, 12, 12, 16, 50, 16, 26] },
+      { name: '자료 점검', rows: [[...head, ...review.rows[0]], ...review.rows.slice(1).map(r => [b.code8, b.dongName, ...r]), [b.code8, b.dongName, review.note]], widths: [11, 12, 27, 15, 90] },
       ...(doc.snap ? [{ name: '기준일 비교', rows: [[...head, ...doc.snap.rows[0]], ...doc.snap.rows.slice(1).map(r => [b.code8, b.dongName, ...r.map(clean)])], widths: [11, 12, 34, 24, 24, 14, 26] }] : []),
     ];
   }
@@ -1127,7 +1152,7 @@
 
   return {
     crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, fmtNum, roundD, govDate, josa, valueWithUnit, fmtCell, hidden, usable, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
-    setTemplates, getTemplates, displayName, BriefError, Sources, sourceLine, buildBrief, buildDoc, buildOnepage, estimateHeightMm, basisDate, FIXED_NOTICE, docText, sentenceText, sizesFor, textRuns, withSnap, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
+    setTemplates, getTemplates, displayName, BriefError, Sources, sourceLine, buildBrief, buildDoc, buildOnepage, deliveryReview, estimateHeightMm, basisDate, FIXED_NOTICE, docText, sentenceText, sizesFor, textRuns, withSnap, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
     tablePayload, sentencePayload, copyToClipboard, buildFragments, fragmentChoices, fragmentPayload, fragmentHTML, docHTML, COPY_TABLE, COPY_SENT, projectFeatures, mapSvg, safeName, saveBytes, svgToPng, xe,
   };
 });

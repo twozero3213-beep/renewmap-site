@@ -42,11 +42,11 @@
     const head = `<thead><tr><th scope="col">순위</th><th scope="col">무게를 바꾼<br><small>순위 범위</small></th><th scope="col">행정동</th><th scope="col">${esc(KINDS[kind].label)}</th><th scope="col">생활 편의</th><th scope="col">인구 활력</th><th scope="col">주거 노후도</th><th scope="col">치안</th><th scope="col">범죄 발생률<br><small>1,000명당·시군구</small></th></tr></thead>`;
     const body = list.slice(0, limit).map((r, i) => {
       const s = r.d.sub, sp = r.d.safety_parts || {};
-      return `<tr><td class="num">${i + 1}</td><td class="num nw">${rangeText(range, r.code7, kind, scope || 'all')}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td>`
+      return `<tr><td class="num">${i + 1}</td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td>`
         + `<td class="num">${fmt(s.living)}</td><td class="num">${fmt(s.vitality)}</td><td class="num">${fmt(s.housing)}</td><td class="num">${fmt(s.safety)}</td>`
         + `<td class="num">${sp.crime_rate_per_1k === null || sp.crime_rate_per_1k === undefined ? '없음' : esc(sp.crime_rate_per_1k)}</td></tr>`;
     }).join('');
-    return `<table class="grid rank-table">${head}<tbody>${body}</tbody></table>`;
+    return `<table class="grid rank-table"><caption>순위 범위는 가중치 변동만 반영합니다. 데이터·경계·계산 방법의 오차는 포함하지 않으며 통계적 신뢰구간이 아닙니다.</caption>${head}<tbody>${body}</tbody></table>`;
   }
 
   function init() {
