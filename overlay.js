@@ -184,7 +184,7 @@
     });
     return found;
   }
-  // 표시·집계에서 빼고, 값도 메모리에서 비운다
+  // 표시·집계에 쓰는 표에서 개인정보 가능 열을 비운다.
   function excludeColumns(table, found) {
     found.forEach(f => { table.excluded.add(f.c); table.rows.forEach(r => { r[f.c] = ''; }); });
     return table;
@@ -346,7 +346,7 @@
   const visibleCols = table => table.headers.map((_, c) => c).filter(c => !table.excluded.has(c));
   const optionsHtml = (headers, cols, sel, blank) => (blank ? '<option value="-1">선택 안 함</option>' : '') + cols.map(c => `<option value="${c}"${c === sel ? ' selected' : ''}>${esc(headers[c])}</option>`).join('');
   const fileInfo = (fileName, table, encoding) => `${fileName} · ${table.rows.length.toLocaleString('ko-KR')}행 · ${table.headers.length}열 · ${encoding === 'XLSX' ? '엑셀 통합 문서' : '글자 ' + encoding}`;
-  const piiHtml = pii => (pii.length ? `<p><strong>개인정보일 수 있는 열을 제외했습니다.</strong></p><ul>${pii.map(f => `<li>‘${esc(f.header)}’ — ${esc(f.reason)}</li>`).join('')}</ul><p>이 열은 미리보기·지도·집계·내려받기에서 빠지고, 값도 메모리에서 지웠습니다.</p><p>시설 이름 열이라면 제목을 ‘시설명’처럼 바꿔 다시 올려 주세요.</p>` : '');
+  const piiHtml = pii => (pii.length ? `<p><strong>개인정보일 수 있는 열을 제외했습니다.</strong></p><ul>${pii.map(f => `<li>‘${esc(f.header)}’ — ${esc(f.reason)}</li>`).join('')}</ul><p>이 열은 미리보기·지도·집계·내려받기에서 제외했습니다.</p><p>시설 이름 열이라면 제목을 ‘시설명’처럼 바꿔 다시 올려 주세요.</p>` : '');
   function locFormHtml(headers, cols, d) {
     const opts = sel => optionsHtml(headers, cols, sel, true);
     const radio = (v, t, note) => `<label class="ov-radio"><input type="radio" name="ovMethod" value="${v}"${d.method === v ? ' checked' : ''}> <span><b>${t}</b><small>${note}</small></span></label>`;

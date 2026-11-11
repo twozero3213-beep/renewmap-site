@@ -12,6 +12,7 @@
   const digitsOf = v => (Math.round(v * 10) % 10 === 0 ? 0 : 1);
   const fmt = (v, unit) => (isNum(v) ? nf(digitsOf(v)).format(v) + (unit || '') : null);
   const SOURCE_DEFAULT = '도시재생종합정보체계 쇠퇴진단지표';
+  const SERIES_NO_CELL = '해당 연도 원장 셀 없음 · 근거 상세 추가확인';
 
   // ── 지표·색 ──
   // 기준이 있는 지표는 기준선 안쪽(옅은 회색)·넘은 쪽(주황→갈색, 넘을수록 진함) 두 계열로 나누고, 경계는 기준값에 고정한다(값 순·분위 금지, D13).
@@ -44,7 +45,8 @@
     { code: 'DECLINE_POP_DROP30Y_PCT', group: 'pop', icon: 'popdown', label: '인구 감소율(30년)', unit: '%', edges: [0, 10, 20, 30], colors: [BELOW[0], BELOW[1], BELOW[2], ABOVE[1], ABOVE[2]],
       title: '주민등록 인구 30년 최대 대비 감소율 · KOSIS', worseUp: true, domain: [-20, 60], series: true, standard: lawStd(20, 'above_bad', '30년 최대 대비 20% 이상 감소') },
     { code: 'DECLINE_POP_CHANGE_PCT', group: 'pop', icon: 'people', label: '인구변화율', unit: '%', edges: [-20, -10, 0, 10], colors: [ABOVE[2], BELOW[3], BELOW[2], BELOW[1], BELOW[0]],
-      title: '주민등록 인구 변화율', worseUp: false, domain: [-50, 50], series: true, standard: lawStd(-20, 'below_bad', '인구변화율 −20% 미만') },
+      title: '주민등록 인구 변화율 · 원천 참고값', worseUp: false, domain: [-50, 50], series: true, standard: null, ref: true,
+      note: '공식 기준 없음 · 원천 CSV 인구변화율의 비교 기간·산식 미확인 · 참고값' },
     { code: 'DECLINE_BIZ_DROP10Y_PCT', group: 'aging', icon: 'shop', label: '사업체 감소율', unit: '%', edges: [0, 5, 10, 20], colors: [BELOW[0], BELOW[2], ...ABOVE],
       title: '사업체 10년 최대 대비 감소율', worseUp: true, domain: [-20, 40], series: true, breakSource: 'biz_source', standard: lawStd(5, 'above_bad', '10년 최대 대비 5% 이상 감소') },
     { code: SUM, group: 'sum', icon: 'sum', label: '기준 미달 항목 수', unit: '개', edges: [1, 2, 3, 4], colors: SUMC, labels: ['0개', '1개', '2개', '3개', '4개 이상'],
@@ -455,7 +457,8 @@
     return (inds || INDICATORS).filter(i => !i.computed).map(ind => {
       if (ind.series) {
         const s = seriesOf(dong, ind.code), y = year ?? latestYear(s), d5 = seriesOf(dong, ind.code + '_DELTA5Y');
-        return rowOf(ind, y === null ? null : valueAt(s, y), { year: y, series: s, delta: y === null ? null : valueAt(d5, y), cell: ((dong && dong.cells) || []).find(c => c.indicator_code === ind.code) || null });
+        const value = y === null ? null : valueAt(s, y), cell = ((dong && dong.cells) || []).find(c => c.indicator_code === ind.code && c.base_year === y && c.value === value) || null;
+        return rowOf(ind, value, { year: y, series: s, delta: y === null ? null : valueAt(d5, y), cell, evidenceMissing: isNum(value) && !cell });
       }
       if (ind.src === 'forecast') {
         const f = ind.pending ? null : fcOf(ext, ind.level === 'sg' ? null : codeOf(dong || {}), ind.fc), ok = f && !f.held;
@@ -607,13 +610,14 @@
   function stdTextOf(r) {
     const ind = r.ind;
     if (ind.pending) return '자료를 모으는 중입니다. 숫자를 만들지 않습니다.';
+    if (r.evidenceMissing) return SERIES_NO_CELL + (ind.standard ? ` · 기준 ${ind.standard.text}` : ind.note ? ` · ${ind.note}` : '');
     // 30년 감소율 셀이 비면 까닭을 적는다(docs/quality/pop_drop30_missing_2026-11-06.md: 98%가 지금 행정동 코드 기록이 1995년 뒤 시작). 값을 지어 채우지 않는다
     if (ind.code === 'DECLINE_POP_DROP30Y_PCT' && r.value === null && r.cell) return `계산 안 함 · 1996~2025년 인구 기록이 다 있지 않음(대부분 지금 행정동 코드가 1995년 뒤에 생김) · 요건 ①은 '최근 5년 중 3년 연속 감소' 길로 볼 수 있음${ind.standard ? ` · 기준 ${ind.standard.text}` : ''}`;
     if (ind.src === 'forecast') return `${r.held ? `보류 · ${r.held} · ` : ''}${foreLine(ind)}${isNum(r.lo) && isNum(r.hi) ? ` · 80% 구간 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}` : ''}${ind.level === 'sg' ? ' · 시·군·구 단위' : ''}`;
     if (ind.level === 'sg') return `시·군·구 단위 자료 · 읍·면·동 값이 아닙니다${ind.group === 'estate' ? ` · ${ESTATE_NOTE}` : ''}${r.since ? ` · 지정 ${r.since}` : ''}${isNum(r.abs) ? ` · 순이동 ${fmt(r.abs, '명')}` : ''}`;
     if (ind.standard) return `기준 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · ${ind.standard.status}${r.crossed ? ' · 기준선 넘은 쪽' : r.crossed === false ? ' · 기준선 안쪽' : ''}` : ''}`;
     if (ind.group === 'safe') return SAFE_NOTE;
-    return ind.ref ? '공식 기준 없음 · 참고 구간' : '공식 기준 없음';
+    return ind.note || (ind.ref ? '공식 기준 없음 · 참고 구간' : '공식 기준 없음');
   }
   const rowText = r => r.text || fmt(r.value, r.ind.unit) || '–';
   // 한눈 요약: 항목마다 점 하나를 묶음별로 늘어놓는다. 도넛(비율)이 아니라 개수만 — 순위·점수 아님
@@ -674,7 +678,7 @@
     return off ? (ind.held ? `보류 · ${ind.held} · 숫자를 만들지 않습니다` : '수집 중 · 자료가 오기 전에는 숫자를 만들지 않습니다')
       : ind.src === 'forecast' ? foreLine(ind) : ind.group === 'safe' ? SAFE_NOTE : ind.group === 'estate' ? '공식 기준 없음 · 참고 구간' /* 실거래 고정 문구는 바로 아래 줄에 상시 */
         : ind.standard ? `기준선 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · 기준 ${ind.standard.status}` : ''}`
-          : ind.composite ? '자료 없는 항목·승인 대기 기준은 세지 않음(하한)' : ind.ref ? '공식 기준 없음 · 참고 구간' : ind.categorical ? '행정 지정 상태 · 좋고 나쁨 축 아님' : '공식 기준 없음 · 값 있는 곳만 한 색';
+          : ind.composite ? '자료 없는 항목·승인 대기 기준은 세지 않음(하한)' : ind.note || (ind.ref ? '공식 기준 없음 · 참고 구간' : ind.categorical ? '행정 지정 상태 · 좋고 나쁨 축 아님' : '공식 기준 없음 · 값 있는 곳만 한 색');
   }
   function legendHTML(ind, mode, source, year, avail) {
     const s = scaleFor(ind, mode), off = avail === false || ind.pending, stdLine = stdLineOf(ind, off);
@@ -689,7 +693,7 @@
   function reportSentences(name, rows) {
     return rows.filter(r => r.value !== null && !r.ind.composite && r.ind.group !== 'sum').map(r => {
       const ind = r.ind, c = r.cell || {}, v = rowText(r), y = r.year ? `${r.year}년` : null;
-      const src = c.source_name || ind.source || SOURCE_DEFAULT, ref = c.reference_date ? String(c.reference_date).slice(0, 10) : null;
+      const src = c.source_name || (r.evidenceMissing ? '추가확인' : ind.source || SOURCE_DEFAULT), ref = c.reference_date ? String(c.reference_date).slice(0, 10) : null;
       const where = r.sgLevel ? `이 동이 속한 시·군·구의 ${ind.label}` : `${name}의 ${ind.label}`;
       const std = validStd(ind.standard) ? `${isPending(ind.standard) ? '승인 대기 중인 기준' : '기준'}(${ind.standard.text}) ${r.crossed ? '선을 넘습니다' : '안에 있습니다'}` : null;
       const fore = ind.src === 'forecast' && isNum(r.lo) && isNum(r.hi) ? `80% 구간은 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}이며 ${foreNote(ind)}` : null;
@@ -698,7 +702,7 @@
       // stdText: 기준 문구("1만 명당 10곳 미만" 등). 문구 안의 '미만'·'이상'을 방향 표현으로 오인하지 않게 검증 때 떼어 낸다
       return { code: ind.code, group: ind.group, label: ind.label, value: v, year: r.year ?? null, source: src, ref, url: safeUrl(c.source_url),
         crossed: std ? !!r.crossed : null, stdText: std ? ind.standard.text : null,
-        text: `${where}${josa(ind.label)} ${v}${y ? `(${y})` : ''}${tail} 출처 ${src}${ref ? `, 기준일 ${ref}` : ''}.` };
+        text: `${where}${josa(ind.label)} ${v}${y ? `(${y})` : ''}${tail} 출처 ${src}${ref ? `, 기준일 ${ref}` : ''}.${r.evidenceMissing ? ` ${SERIES_NO_CELL}.` : ''}` };
     });
   }
   // AI가 다듬은 문장: 원래 문장에 없는 숫자가 하나라도 있으면 거부한다(숫자를 만들거나 반올림하지 않는다)
@@ -810,7 +814,7 @@
   function briefHTML(v, it, rows, sel) {
     const here = v.crumbs.map(c => c.label).join(' › '), dy = rows.find(r => r.ind.series && r.year)?.year ?? null;
     const facts = rows.filter(r => r.value !== null && !r.ind.composite && r.ind.group !== 'sum');
-    const srcOf = r => { const c = r.cell || {}; return { name: c.source_name || r.ind.source || SOURCE_DEFAULT, url: safeUrl(c.source_url), ref: c.reference_date ? String(c.reference_date).slice(0, 10) : null, formula: c.formula_text || null, rule: c.rule_version || null }; };
+    const srcOf = r => { const c = r.cell || {}; return { name: c.source_name || (r.evidenceMissing ? SERIES_NO_CELL : r.ind.source || SOURCE_DEFAULT), url: safeUrl(c.source_url), ref: c.reference_date ? String(c.reference_date).slice(0, 10) : null, formula: c.formula_text || null, rule: c.rule_version || null }; };
     const fact = r => { const s = srcOf(r); return `<tr><td>${esc(r.ind.label)}${r.sgLevel ? ' <small>시·군·구</small>' : ''}</td><td>${esc(rowText(r))}</td><td>${r.year ? `${esc(r.year)}년` : esc(s.ref || '기록 없음')}</td><td>${esc(s.name)}${s.ref ? ` · 기준일 ${esc(s.ref)}` : ''}</td></tr>`; };
     const sec1 = `<section class="rp-g"><h3>1. 현황</h3>${GROUPS.filter(([g]) => facts.some(r => r.ind.group === g)).map(([g, gl]) => `<h4 class="map-h4">${gIco(g)}${esc(gl)}</h4>${g === 'safe' ? `<p class="rp-fixed">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="rp-fixed">${esc(FORE_FIXED)}</p>` : ''}` +
       `<div class="dg-tbl">${copyHead(gl)}<div class="table-wrap"><table class="rp-tbl rp-facts"><thead><tr><th>항목</th><th>값</th><th>기준연도</th><th>출처</th></tr></thead><tbody>${facts.filter(r => r.ind.group === g).map(fact).join('')}</tbody></table></div></div>`).join('')}</section>`;
@@ -1184,7 +1188,7 @@
   // ── 동네 보고서(#report): 원장 문장 + 그래프 + 출처표. 인쇄는 브라우저 인쇄(@media print), HWPX·XLSX는 메일 요청 ──
   const report = document.getElementById('reportApp');
   const initialReportMode = new URLSearchParams(location.search).get('report');
-  let reportKey = '', polished = null, reportMode = REPORT_MODES.some(([key]) => key === initialReportMode) ? initialReportMode : 'report'; // polished: 검증을 통과한 AI 문장만
+  let reportKey = '', reportInputs = [], polished = null, reportMode = REPORT_MODES.some(([key]) => key === initialReportMode) ? initialReportMode : 'report'; // polished: 검증을 통과한 AI 문장만
   api.download = k => download(k);
   document.addEventListener('click', e => { const a = e.target.closest('[data-set-mode]'); if (a) api.setReportMode(a.dataset.setMode); });
   api.setReportMode = m => { const next = REPORT_MODES.some(x => x[0] === m) ? m : 'report'; if (next === reportMode) return; reportMode = next; if (state.index !== undefined) render(); }; // find.js 프리셋이 쓴다
@@ -1211,7 +1215,9 @@
     if (!report) return;
     // 생활·전망 파일이 늦게 도착하면 키가 바뀌어 다시 그린다
     const key = it ? `${reportMode}:${it.code}:${m.selYear}:${horizon()}:${m.living ? 'L' : ''}${m.ext && m.ext.forecast ? 'F' : ''}${state.migration ? 'M' : ''}${state.designations ? 'D' : ''}${state.living ? 'I' : ''}${state.forecastIdx ? 'X' : ''}${state.realestate ? 'R' : ''}` : 'empty:' + reportMode;
-    if (key === reportKey) return;
+    const inputs = [state.index, m.json, m.living, state.living, m.ext && m.ext.forecast, state.forecastIdx, state.designations, state.migration, state.realestate, m.geo, state.templates];
+    if (key === reportKey && inputs.every((x, i) => x === reportInputs[i])) return;
+    reportInputs = inputs;
     reportKey = key;
     document.body.classList.toggle('print-onepage', reportMode === 'onepage' && !!it); // 인쇄 때 1쪽 요약만 A4 한 쪽에 맞춘다
     if (!it && reportMode === 'programs' && window.RenewPrograms && m.kind === 'emd' && m.items && m.items.length) {
@@ -1239,7 +1245,7 @@
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261111-audit2'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
@@ -1251,17 +1257,34 @@
     if (!DG) return { error: '이 브라우저에서 문서 생성기를 불러오지 못했습니다.' };
     if (state.templates === null) return { error: '문서 양식 파일(data/report_templates.json)을 불러오지 못했습니다. 페이지를 새로 고쳐 주세요.' };
     if (filesLoading(v)) return { error: '생활·전망 자료를 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요.' };
-    const key = [v.emdCode, it.code, state.living ? 'I' : '', m.living ? 'L' : '', m.ext && m.ext.forecast ? 'F' : '', state.forecastIdx ? 'X' : '', state.migration ? 'M' : '', state.designations ? 'D' : '', state.realestate ? 'R' : ''].join(':');
-    if (docMemo.key === key) return docMemo.val;
-    let val;
+    const writtenOn = todayISO(), key = [v.emdCode, it.code, m.selYear, writtenOn].join(':');
+    const refsFor = m => [state.index, m.json, m.living, state.living, m.ext && m.ext.forecast, state.forecastIdx, state.designations, state.migration, state.realestate, m.geo, state.templates];
+    const refs = refsFor(m);
+    if (docMemo.key === key && refs.every((x, i) => x === docMemo.refs[i])) return docMemo.val;
+    const memo = { key, refs, val: { error: '문서 입력묶음 SHA-256을 계산하는 중입니다. 잠시 뒤 다시 눌러 주세요.' } };
+    docMemo = memo;
     try {
       const geo = m.geo && Array.isArray(m.geo.features) ? m.geo.features.find(f => String((f.properties || {}).code) === it.code) || null : null;
-      const brief = DG.buildBrief(it.code, { index: state.index, emd: m.json, living: m.living, livingIdx: state.living, forecast: m.ext && m.ext.forecast, forecastIdx: state.forecastIdx,
-        designations: state.designations, migration: state.migration, realestate: state.realestate }, { writtenOn: todayISO(), geo });
-      val = { brief, doc: DG.buildDoc(brief), one: DG.buildOnepage(brief) };
-    } catch (err) { val = { error: `문서를 만들지 못했습니다: ${err.message}` }; }
-    docMemo = { key, val };
-    return val;
+      // 해시를 기다리는 사이 선택·파일이 바뀌어도 해시와 본문은 이 고정 입력 하나에서 만든다.
+      const fixed = JSON.stringify({ scheme: 'browser-brief-input-v1', code: it.code, year: m.selYear ?? null, writtenOn, geo, templates: state.templates,
+        src: { index: state.index, emd: m.json, living: m.living, livingIdx: state.living, forecast: m.ext && m.ext.forecast, forecastIdx: state.forecastIdx,
+          designations: state.designations, migration: state.migration, realestate: state.realestate } });
+      const current = () => {
+        const cur = currentDong();
+        return docMemo === memo && cur && [cur.v.emdCode, cur.it.code, cur.m.selYear, todayISO()].join(':') === key && refsFor(cur.m).every((x, i) => x === refs[i]);
+      };
+      memo.ready = Promise.resolve().then(() => crypto.subtle.digest('SHA-256', new TextEncoder().encode(fixed))).then(digest => {
+        if (!current()) return;
+        const inputHash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join(''), input = JSON.parse(fixed);
+        DG.setTemplates(input.templates);
+        const brief = DG.buildBrief(input.code, input.src, { year: input.year ?? undefined, writtenOn: input.writtenOn, geo: input.geo, inputHash });
+        memo.val = { brief, doc: DG.buildDoc(brief), one: DG.buildOnepage(brief) };
+      }).catch(err => { if (current()) memo.val = { error: `문서를 만들지 못했습니다: ${err.message}` }; }).then(() => {
+        if (current()) { reportKey = ''; render(); }
+        else if (docMemo === memo) docMemo = { key: '', val: null };
+      });
+    } catch (err) { memo.val = { error: `문서를 만들지 못했습니다: ${err.message}` }; }
+    return memo.val;
   }
   const currentDong = () => { if (!state.index) return null; const v = resolve(state.index, state.route), m = model(v), it = m.kind === 'emd' && v.dong ? m.items.find(x => x.code === v.dong) : null; return it ? { v, m, it } : null; };
   const notify = detail => document.dispatchEvent(new CustomEvent('renew-export', { detail })); // report.js가 상태 문구를 바꾼다
@@ -1279,6 +1302,15 @@
         : [`${stem}.xlsx`, DG.workbookBytes(full), OOXML + 'spreadsheetml.sheet'];
       notify({ format: kind, status: 'done', file: file[0], size: DG.saveBytes(...file), year: built.doc.brief.year, one });
     } catch (err) { notify({ format: kind, status: 'error', message: err.message }); }
+  }
+  function printReport() {
+    const cur = currentDong(); if (!cur) { notify({ format: 'pdf', status: 'empty' }); return; }
+    const built = docFor(cur.v, cur.m, cur.it); if (built.error) { notify({ format: 'pdf', status: 'error', message: built.error }); return; }
+    reportKey = ''; renderReport(cur.v, cur.m, cur.it);
+    if (!report.querySelector('[data-input-hash]')) {
+      const footer = document.createElement('p'); footer.className = 'dg-small'; footer.setAttribute('data-input-hash', ''); footer.textContent = built.doc.footer; report.appendChild(footer);
+    }
+    report.querySelectorAll('details').forEach(d => { d.open = true; }); window.print();
   }
   // 지도 이미지(PNG): 배경 타일(CORS로 캔버스에 못 그림)을 빼고 경계·색·범례·출처·기준연도만 그린다
   async function mapPng() {
@@ -1360,7 +1392,7 @@
     const b = e.target.closest('button'); if (!b) return;
     const confirm = report.querySelector('[data-ai-confirm]');
     if (b.dataset.rpMode) { api.setReportMode(b.dataset.rpMode); report.querySelector(`[data-rp-mode="${b.dataset.rpMode}"]`)?.focus({ preventScroll: true }); }
-    else if (b.hasAttribute('data-print')) { report.querySelectorAll('details').forEach(d => { d.open = true; }); window.print(); }
+    else if (b.hasAttribute('data-print')) printReport();
     else if (b.dataset.dl) download(b.dataset.dl);
     else if (b.hasAttribute('data-copy-table')) copyTable(b);
     else if (b.hasAttribute('data-snap-save') || b.hasAttribute('data-snap-clear')) {

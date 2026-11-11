@@ -32,8 +32,16 @@
     doc: (id) => tx(["docs"], "readonly", (s) => s.get(id)),
     addDoc: (d) => tx(["docs"], "readwrite", (s) => s.put(d)),
     deleteDoc: (id) => tx(["docs"], "readwrite", (s) => s.delete(id)),
-    // 기록을 지우면 그 사진도 지운다. 이미 만든 문서는 보관함에 따로 남는다
-    deleteRecord: (rec) => tx(["records", "photos"], "readwrite", (rs, ps) => { for (const p of rec.photos || []) ps.delete(p); return rs.delete(rec.id); }),
+    // 같은 사진을 가져온 기록·재방문이 참조할 수 있어 미참조 사진만 지운다. 만든 문서는 보관함에 남는다.
+    deleteRecord: (rec) => tx(["records", "photos"], "readwrite", (rs, ps) => {
+      const q = rs.getAll();
+      q.onsuccess = () => {
+        const used = new Set(q.result.filter((r) => r.id !== rec.id).flatMap((r) => [...(r.photos || []), ...(r.prev_photos || [])]));
+        for (const p of rec.photos || []) if (!used.has(p)) ps.delete(p);
+        rs.delete(rec.id);
+      };
+      return q;
+    }),
   };
   root.FieldStore = api;
 })(typeof window !== "undefined" ? window : this);

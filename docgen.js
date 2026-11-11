@@ -205,6 +205,7 @@
     tpl();
     const o = opt || {}, idx = src.index;
     if (!idx) throw new BriefError('index.json이 없다');
+    if (o.inputHash != null && !/^[0-9a-f]{64}$/.test(o.inputHash)) throw new BriefError('브라우저 입력묶음 SHA-256은 소문자 64자리여야 한다');
     if (o.purpose && !PURPOSES[o.purpose]) throw new BriefError(`purpose는 ${Object.keys(PURPOSES).join('|')} 중 하나: ${o.purpose}`);
     const code5 = String(code8).slice(0, 5), sg = (idx.sigungu || []).find(s => s.code5 === code5), emd = src.emd;
     if (!sg || !emd) throw new BriefError(`시군구 ${code5}(${code8})의 index/emd 자료가 없다`);
@@ -277,7 +278,8 @@
     path.push(dong.name);
     const subject = o.purpose ? PURPOSES[o.purpose] : '사실 자료와 기준 대비';
     return { code8: String(code8), dongName: dong.name, dongKind: dong.kind || null, year, region: path.slice(1).join(' '), sgName: sg.name, sido: sido.name, items, missing, fidx, cells,
-      crit, ser, todo, subject, writtenOn: o.writtenOn || '', snapshot: idx.snapshot_hash, geo: o.geo || null, series: dong.series || {} };
+      crit, ser, todo, subject, writtenOn: o.writtenOn || '', snapshot: idx.snapshot_hash, inputHash: o.inputHash || null, inputHashScheme: o.inputHash ? 'browser-brief-input-v1' : null,
+      geo: o.geo || null, series: dong.series || {} };
   }
 
   function judge(cell, op, thr) {
@@ -393,7 +395,8 @@
   const finish = blocks => { for (const b of blocks) { b.text = clean(b.text); b.rows = b.rows.map(r => r.map(x => clean(String(x)))); b.caption = clean(b.caption); } return blocks; };
   // 바닥글: 자료 기준일은 전망(FORECAST_*, 기준일이 대상일)을 뺀 셀의 가장 늦은 reference_date. dong_brief.basis_date·FOOTER와 같다
   const basisDate = cells => { const ds = (cells || []).filter(c => c.reference_date && !String(c.indicator_code || '').startsWith('FORECAST_')).map(c => c.reference_date); return ds.length ? govDate(ds.reduce((a, b) => (b > a ? b : a))) : ''; };
-  const footerOf = brief => `작성 리뉴맵 · 자료 기준일 ${basisDate(brief.cells) || '-'} · 재현 번호 ${String(brief.snapshot).slice(0, 8)} · `;
+  const inputHashLine = brief => brief.inputHash ? `브라우저 문서 입력묶음 SHA-256 [${brief.inputHashScheme}] ${brief.inputHash}` : '';
+  const footerOf = brief => brief.inputHash ? inputHashLine(brief) + ' · ' : `작성 리뉴맵 · 자료 기준일 ${basisDate(brief.cells) || '-'} · 원천 색인 지문 ${String(brief.snapshot).slice(0, 8)} · `;
   const sourceLine = (n, s) => `[${n}] ${s.name}. ${s.forecast ? '전망 대상일' : '기준일'} ${govDate(s.reference_date)} 조회일 ${govDate(s.retrieved_at)} 이용조건 ${s.license}.`;
 
   // 요약 문장 3~5개(템플릿 순서 고정). 셀이 없으면 그 문장은 건너뛴다. 근거서와 1쪽 요약이 같이 쓴다
@@ -550,6 +553,8 @@
         h += 'gap' in z ? z.gap * 1.6 * MM + 2 * MM : ln.body + 6 * MM;      // 표 뒤 빈 문단
       } else { const k = b.small ? 'small' : b.strong ? 'lead' : 'body'; h += linesOf(b.text, PAGE_W_MM, z[k]) * ln[k] + (z.after ?? 6) * MM; }   // 문단 뒤 간격(pt): 1쪽은 onepage.sizes.after
     }
+    // HTML 인쇄는 별도 꼬리말 영역이 없어 본문 끝에 입력 지문을 함께 싣는다.
+    if (doc.brief && doc.brief.inputHash) h += linesOf(inputHashLine(doc.brief), PAGE_W_MM, z.small) * ln.small + (z.after ?? 6) * MM;
     return h;
   }
   function buildOnepage(brief) {
@@ -664,7 +669,7 @@
       const t = String(text).replace(/\s*\n\s*/g, ' ');
       return `<hp:p paraPrIDRef="${PR[center ? 'cell_c' : 'cell']}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0" id="${nid()}">${refs ? textRuns(t).map(([x, look]) => runXml(charKey('table', look), x)).join('') : runXml(bold ? 'table_b' : 'table', t)}</hp:p>`;
     };
-    const footer = `<hp:footer id="9813498" applyPageType="BOTH"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="BOTTOM" linkListIDRef="0" linkListNextIDRef="0" textWidth="${TEXT_W}" textHeight="4252" hasTextRef="0" hasNumRef="0"><hp:p paraPrIDRef="${PR.footer}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0" id="516765611"><hp:run charPrIDRef="${CH.table}"><hp:t>${xe(doc.footer)}</hp:t></hp:run><hp:run charPrIDRef="${CH.table}"><hp:ctrl><hp:autoNum num="1" numType="PAGE"><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar="" supscript="0"/></hp:autoNum></hp:ctrl></hp:run><hp:run charPrIDRef="${CH.table}"><hp:ctrl><hp:pageNum pos="BOTTOM_CENTER" formatType="DIGIT" sideChar="-"/></hp:ctrl></hp:run></hp:p></hp:subList></hp:footer>`;
+    const footer = `<hp:footer id="9813498" applyPageType="BOTH"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="BOTTOM" linkListIDRef="0" linkListNextIDRef="0" textWidth="${TEXT_W}" textHeight="4252" hasTextRef="0" hasNumRef="0"><hp:p paraPrIDRef="${PR.footer}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0" id="516765611"><hp:run charPrIDRef="${doc.brief && doc.brief.inputHash ? CH.small : CH.table}"><hp:t>${xe(doc.footer)}</hp:t></hp:run><hp:run charPrIDRef="${CH.table}"><hp:ctrl><hp:autoNum num="1" numType="PAGE"><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar="" supscript="0"/></hp:autoNum></hp:ctrl></hp:run><hp:run charPrIDRef="${CH.table}"><hp:ctrl><hp:pageNum pos="BOTTOM_CENTER" formatType="DIGIT" sideChar="-"/></hp:ctrl></hp:run></hp:p></hp:subList></hp:footer>`;
     const secPr = `<hp:secPr id="" textDirection="HORIZONTAL" spaceColumns="1134" tabStop="8000" tabStopVal="4000" tabStopUnit="HWPUNIT" outlineShapeIDRef="1" memoShapeIDRef="0" textVerticalWidthHead="0" masterPageCnt="0"><hp:grid lineGrid="0" charGrid="0" wonggojiFormat="0"/><hp:startNum pageStartsOn="BOTH" page="0" pic="0" tbl="0" equation="0"/><hp:visibility hideFirstHeader="0" hideFirstFooter="0" hideFirstMasterPage="0" border="SHOW_ALL" fill="SHOW_ALL" hideFirstPageNum="0" hideFirstEmptyLine="0" showLineNumber="0"/><hp:lineNumberShape restartType="0" countBy="0" distance="0" startNumber="0"/><hp:pagePr landscape="WIDELY" width="59528" height="84186" gutterType="LEFT_ONLY"><hp:margin header="4252" footer="4252" gutter="0" left="8504" right="8504" top="${S.top}" bottom="4252"/></hp:pagePr>` +
       `<hp:footNotePr><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar=")" supscript="0"/><hp:noteLine length="-1" type="SOLID" width="0.12 mm" color="#000000"/><hp:noteSpacing betweenNotes="283" belowLine="567" aboveLine="850"/><hp:numbering type="CONTINUOUS" newNum="1"/><hp:placement place="EACH_COLUMN" beneathText="0"/></hp:footNotePr>` +
       `<hp:endNotePr><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar=")" supscript="0"/><hp:noteLine length="14692344" type="SOLID" width="0.12 mm" color="#000000"/><hp:noteSpacing betweenNotes="0" belowLine="567" aboveLine="850"/><hp:numbering type="CONTINUOUS" newNum="1"/><hp:placement place="END_OF_DOCUMENT" beneathText="0"/></hp:endNotePr>` +
@@ -791,7 +796,8 @@
       so.push([b.code8, b.dongName, src.number(d, it.group === '전망'), clean(it.label), d.source_name, d.source_url, govDate(d.reference_date), govDate((d.retrieved_at || '').slice(0, 10)), c ? licenseOf(c) : f.license,
         c ? `${c.formula_id}: ${c.formula_text}` : f.formula, c ? c.rule_version : f.rule_version, c ? c.cell_id : '']);
     }
-    so.push([]); so.push([b.code8, b.dongName, 'snapshot_hash', b.snapshot]);
+    so.push([]); so.push([b.code8, b.dongName, 'snapshot_hash', b.snapshot, '원천 색인 지문']);
+    if (b.inputHash) { so.push([b.code8, b.dongName, 'input_hash_scheme', b.inputHashScheme]); so.push([b.code8, b.dongName, 'input_hash', b.inputHash, '브라우저 문서 입력묶음 SHA-256']); }
     return [
       { name: '현황', rows: status, widths: [11, 12, 12, 13, 13, 12, 34, 14, 8, 12, 12, 9, 8, 40, 16] },
       { name: '기준 대비', rows: crit, widths: [11, 12, 38, 14, 14, 44, 18, 20] },
@@ -938,6 +944,7 @@
       else out += `<p class="${b.cls === 'src' ? 'dg-src' : b.small ? 'dg-small' : b.strong ? 'dg-p dg-key' : 'dg-p'}">${b.small || b.cls === 'src' ? he(b.text) : runsHTML(b.text, b.emph)}${opt.copy && doc.parts && doc.parts.summary && doc.parts.summary.includes(b) ? `<button type="button" class="dg-copy-s" data-copy-sentence="${doc.parts.summary.indexOf(b)}">${COPY_SENT}</button>` : ''}</p>`;
     }
     flush();
+    if (doc.brief && doc.brief.inputHash) out += `<p class="dg-small" data-input-hash>${he(inputHashLine(doc.brief))}</p>`;
     return { html: out, tables };
   }
 

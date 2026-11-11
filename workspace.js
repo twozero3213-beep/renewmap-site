@@ -87,7 +87,7 @@
       overlayButton.disabled = true;
       overlayButton.textContent = '파일 도구를 불러오는 중입니다.';
       try {
-        await import('./overlay.js?v=20261111-tools');
+        await import('./overlay.js?v=20261111-audit2');
         const overlay = document.getElementById('overlay'); overlay.open = true;
         overlay.querySelector('summary').focus({ preventScroll: true });
       } catch (error) {

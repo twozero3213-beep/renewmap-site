@@ -4,7 +4,7 @@
   const R = window.Redev, D = window.RenewDocgen;
   const $ = (id) => document.getElementById(id);
   const DATA = "../data/";
-  const getJson = (p) => fetch(DATA + p).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); });
+  const getJson = (p) => fetch(DATA + p).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }).then((j) => window.RenewCellPack.unpack(j));
   const templates = getJson("report_templates.json").then((t) => D.setTemplates(t));
   // 법정동 건물 파일은 큰 동이 2.8MB(연산동 12,474동)라 계산마다 다시 받아 풀면 경계안 비교가 느려진다. 계산 함수는 파일을 고치지 않으므로
   // 풀어 둔 것을 다시 쓴다. ponytail: 최근 8개만 두고 오래된 것부터 버린다(전 동을 다 열어도 메모리가 계속 늘지 않게)

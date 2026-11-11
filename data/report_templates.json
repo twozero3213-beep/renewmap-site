@@ -1,6 +1,6 @@
 {
   "_doc": "생성 파일. 원본은 backend/scripts/export_templates.py. 직접 고치지 않는다. 사용법은 docs/gov/form_fragments.md",
-  "version": "TPL-2026-10-27.2",
+  "version": "TPL-2026-11-11.1",
   "consts": {
     "min_met": 2,
     "n_req": 3,

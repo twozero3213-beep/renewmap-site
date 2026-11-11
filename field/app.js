@@ -46,7 +46,10 @@
     $("fix").disabled = false;
   }
   async function lookup() {
+    const filled = chosen || parcel;
+    if (filled) for (const id of ["jibun", "pnu"]) if ($(id).value === (filled[id] || "")) $(id).value = "";
     clearParcel();
+    place = null; drawBld(null); $("facts").hidden = true;
     const at = pos;
     $("dongLine").textContent = "행정동을 찾는 중입니다.";
     try {
@@ -62,7 +65,7 @@
       drawBld(E.bjdongCandidates(r.code, r.name, living));
       $("dongLine").textContent = `${place.sido} ${r.sgName} ${r.name}${r.nearby.length ? `\n경계 근처입니다. ${r.nearby.map((x) => x.name).join("·")}일 수도 있습니다.` : ""}`.trim();
       drawFacts();
-    } catch (e) { drawBld(null); $("dongLine").textContent = "행정동 자료를 불러오지 못했습니다.\n인터넷에 한 번 연결되면 다음부터는 오프라인에서도 찾습니다."; }
+    } catch (e) { if (at !== pos) return; drawBld(null); $("dongLine").textContent = "행정동 자료를 불러오지 못했습니다.\n인터넷에 한 번 연결되면 다음부터는 오프라인에서도 찾습니다."; }
   }
   function drawFacts() {
     const ul = $("factList"); ul.textContent = "";
@@ -149,8 +152,9 @@
     if (!pos) return;
     const btn = $("parcelFind"), out = $("parcelLine");
     btn.disabled = true; out.hidden = false; out.textContent = "브이월드에 묻는 중입니다.";
-    const r = await vwAsk(pos.lng, pos.lat), p = r.props ? E.parcelFrom(r.props) : null;
+    const at = pos, r = await vwAsk(at.lng, at.lat), p = r.props ? E.parcelFrom(r.props) : null;
     btn.disabled = false;
+    if (at !== pos) return;
     if (!p) { parcel = null; out.textContent = r.error === "필지 없음" ? "이 위치에서 필지를 찾지 못했습니다.\n지번을 직접 적어 주세요." : "필지를 찾지 못했습니다.\n인터넷 연결을 확인하거나 지번을 직접 적어 주세요."; return; }
     parcel = { ...p, rings: E.ringsFrom(r.geometry) };
     out.textContent = `${p.addr || p.jibun} · PNU ${p.pnu}\n브이월드 연속지적도에서 찾았습니다.\n위치 오차만큼 옆 필지일 수 있으니 확인해 주세요.`;
@@ -181,6 +185,7 @@
     $("newDataGet").disabled = true;
     try {
       for (const k of await caches.keys()) {
+        if (!k.startsWith("renewmap-field-")) continue;
         const c = await caches.open(k);
         for (const q of await c.keys()) if (/\/data\/national\//.test(q.url)) await c.delete(q);
       }
@@ -753,18 +758,33 @@
     try {
       if (f.size > R.LIMITS.zip) throw new Error("파일이 너무 큽니다.\n100MB 이하만 가져올 수 있습니다.");
       const got = R.parseImport(new Uint8Array(await f.arrayBuffer()), new Date()), have = new Set((await S.records()).map((r) => r.id));
-      let added = 0, same = 0, failed = 0;
+      let added = 0, same = 0, failed = 0, conflicts = 0;
       for (const rec of got.records) {
         if (have.has(rec.id)) { same++; continue; }
+        let photoChanged = false;
         try {
+          let conflict = false;
+          const checked = new Set();
+          for (const id of new Set([...rec.photos, ...rec.prev_photos])) {
+            const existing = await S.photo(id);
+            if (existing && R.sha256Hex(new Uint8Array(await existing.arrayBuffer())) !== R.sha256Hex(got.photos.get(id))) { conflict = true; break; }
+            if (existing) checked.add(id);
+          }
+          if (conflict) { conflicts++; continue; }
           await S.tx(["records", "photos"], "readwrite", (rs, ps) => {
-            for (const id of [...rec.photos, ...rec.prev_photos]) { const q = ps.count(id); q.onsuccess = () => { if (!q.result) ps.add({ id, blob: new Blob([got.photos.get(id)], { type: "image/jpeg" }) }); }; }
+            for (const id of new Set([...rec.photos, ...rec.prev_photos])) {
+              const q = ps.count(id);
+              q.onsuccess = () => {
+                if (q.result && !checked.has(id)) { photoChanged = true; q.transaction.abort(); return; }
+                if (!q.result) ps.add({ id, blob: new Blob([got.photos.get(id)], { type: "image/jpeg" }) });
+              };
+            }
             return rs.add(rec);
           });
           added++;
-        } catch (err) { if (err.name === "ConstraintError") same++; else failed++; }
+        } catch (err) { if (photoChanged) conflicts++; else if (err.name === "ConstraintError") same++; else failed++; }
       }
-      toast(`${added}건을 가져왔습니다.${same ? `\n이미 있는 ${same}건은 건너뛰었습니다.` : ""}${failed ? `\n저장에 실패한 ${failed}건은 가져오지 못했습니다. 저장 공간·기기 저장소를 확인한 뒤 ZIP을 다시 가져오세요.` : ""}${got.skipped ? `\n형식이 맞지 않는 ${got.skipped}건은 받지 않았습니다.` : ""}`);
+      toast(`${added}건을 가져왔습니다.${same ? `\n이미 있는 ${same}건은 건너뛰었습니다.` : ""}${conflicts ? `\n사진 ID 충돌로 ${conflicts}건은 가져오지 못했습니다. 기존 사진은 보존했습니다. ZIP을 확인한 뒤 다시 가져오세요.` : ""}${failed ? `\n저장에 실패한 ${failed}건은 가져오지 못했습니다. 저장 공간·기기 저장소를 확인한 뒤 ZIP을 다시 가져오세요.` : ""}${got.skipped ? `\n형식이 맞지 않는 ${got.skipped}건은 받지 않았습니다.` : ""}`);
       await render(); drawNear();
     } catch (err) { toast(err.message); }
   });

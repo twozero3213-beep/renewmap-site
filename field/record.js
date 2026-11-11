@@ -151,6 +151,7 @@
     if (!TARGETS.includes(target)) throw new Error("무엇을 봤는지 목록에서 골라 주세요.");
     const pnu = clean(input.pnu);
     const jibun = clean(input.jibun);
+    rejectPersonal(jibun);
     if (pnu && !/^\d{19}$/.test(pnu)) throw new Error("필지 번호(PNU)는 19자리 숫자입니다.");
     const lat = num(input.lat), lng = num(input.lng);
     if ((lat === null) !== (lng === null) || [lat, lng].some((x) => x !== null && !Number.isFinite(x))) throw new Error("위치는 위도·경도를 함께 적습니다.");
