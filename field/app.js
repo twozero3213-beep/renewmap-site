@@ -381,8 +381,8 @@
       cur.boxes.push(...r.faces, ...r.plates); paint(false);
       const none = !r.faces.length && !r.plates.length;
       say(`얼굴·번호판으로 보이는 곳 ${r.faces.length + r.plates.length}곳을 가렸습니다.\n놓친 곳은 손가락으로 문질러 가리세요.${r.errors.length ? "\n(" + r.errors.join(" / ") + ")" : ""}`, none && r.errors.length > 0);
-    } catch (e) { say("자동 찾기를 쓰지 못했습니다.\n직접 가려 주세요.", true); }
-    $("auto").disabled = false;
+    } catch (e) { if (edit === cur) say("자동 찾기를 쓰지 못했습니다.\n직접 가려 주세요.", true); }
+    finally { $("auto").disabled = false; }
   });
   $("undo").addEventListener("click", () => { if (edit) { edit.boxes.pop(); paint(false); } });
   $("cancel").addEventListener("click", () => { linkNext = null; closeEdit(); });
@@ -753,7 +753,7 @@
     try {
       if (f.size > R.LIMITS.zip) throw new Error("파일이 너무 큽니다.\n100MB 이하만 가져올 수 있습니다.");
       const got = R.parseImport(new Uint8Array(await f.arrayBuffer()), new Date()), have = new Set((await S.records()).map((r) => r.id));
-      let added = 0, same = 0;
+      let added = 0, same = 0, failed = 0;
       for (const rec of got.records) {
         if (have.has(rec.id)) { same++; continue; }
         try {
@@ -762,9 +762,9 @@
             return rs.add(rec);
           });
           added++;
-        } catch (err) { same++; }
+        } catch (err) { if (err.name === "ConstraintError") same++; else failed++; }
       }
-      toast(`${added}건을 가져왔습니다.${same ? `\n이미 있는 ${same}건은 건너뛰었습니다.` : ""}${got.skipped ? `\n형식이 맞지 않는 ${got.skipped}건은 받지 않았습니다.` : ""}`);
+      toast(`${added}건을 가져왔습니다.${same ? `\n이미 있는 ${same}건은 건너뛰었습니다.` : ""}${failed ? `\n저장에 실패한 ${failed}건은 가져오지 못했습니다. 저장 공간·기기 저장소를 확인한 뒤 ZIP을 다시 가져오세요.` : ""}${got.skipped ? `\n형식이 맞지 않는 ${got.skipped}건은 받지 않았습니다.` : ""}`);
       await render(); drawNear();
     } catch (err) { toast(err.message); }
   });

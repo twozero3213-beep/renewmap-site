@@ -31,32 +31,45 @@
     const input = $('docFile'), stage = $('docStage'), bar = $('docBar'), status = $('docStatus'), drop = $('docDrop');
     const loaded = {};
     const loadScript = src => loaded[src] || (loaded[src] = new Promise((ok, no) => { const s = doc.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error(src + ' 불러오기 실패')); doc.head.append(s); }));
-    let cur = null; // {file, text: () => Promise<string>}
+    let cur = null, epoch = 0; // {file, text: () => Promise<string>, canPrint}
+    const syncPrint = () => {
+      const ready = !!cur && (!cur.canPrint || cur.canPrint());
+      $('docPrint').disabled = !ready;
+      stage.classList.toggle('doc-print-incomplete', !ready);
+    };
     const say = (t, err) => { status.textContent = t; status.className = err ? 'doc-status err' : 'doc-status'; };
     const el = (tag, cls, text) => { const e = doc.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
     const save = (name, data, mime) => { const u = URL.createObjectURL(new Blob([data], { type: mime })), a = el('a'); a.href = u; a.download = name; doc.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); };
-    const more = (n, total, draw) => { // 쪽·줄이 많으면 PAGE_STEP씩 이어서 그린다
-      let shown = 0; const btn = el('button', 'btn ghost', ''); btn.type = 'button';
-      const next = () => { for (let i = shown; i < Math.min(shown + PAGE_STEP, n); i++) draw(i); shown = Math.min(shown + PAGE_STEP, n); btn.textContent = `다음 ${PAGE_STEP}쪽 더 보기 (${shown}/${total})`; btn.hidden = shown >= n; };
-      btn.addEventListener('click', next); stage.append(btn); next();
+    const more = (stage, n, total, draw) => { // 비동기 렌더도 쪽 순서·완료 상태를 보존한다
+      let shown = 0, pending = false; const btn = el('button', 'btn ghost', ''); btn.type = 'button';
+      const next = async () => {
+        if (pending) return;
+        pending = true; btn.disabled = true; syncPrint();
+        try { const end = Math.min(shown + PAGE_STEP, n); while (shown < end) { await draw(shown); shown++; } }
+        finally { pending = false; btn.disabled = false; btn.textContent = `다음 ${PAGE_STEP}쪽 더 보기 (${shown}/${total})`; btn.hidden = shown >= n; syncPrint(); }
+      };
+      btn.addEventListener('click', () => next().catch(() => { if (cur?.stage === stage) say('다음 쪽을 그리지 못했습니다. 원본을 받아 문서 편집기에서 인쇄하세요.', true); }));
+      stage.append(btn);
+      return { ready: next(), canPrint: () => shown >= n && !pending };
     };
 
     const openers = {
-      async hwp(bytes) {
+      async hwp(bytes, file, stage) {
         const mod = await import('./vendor/rhwp/rhwp.js'); let ctx = null, last = '';
         win.measureTextWidth = (font, text) => { ctx = ctx || doc.createElement('canvas').getContext('2d'); if (font !== last) { ctx.font = font; last = font; } return ctx.measureText(text).width; };
         await mod.default({ module_or_path: 'vendor/rhwp/rhwp_bg.wasm' });
         const d = new mod.HwpDocument(new Uint8Array(bytes)), n = d.pageCount(), svgs = [];
-        more(n, n, i => { const svg = d.renderPageSvg(i); svgs[i] = svg; const img = el('img', 'doc-page'); img.alt = `${i + 1}쪽`; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); stage.insertBefore(img, stage.lastChild); });
-        return { pages: n, text: async () => { const out = []; for (let i = 0; i < n; i++) out.push(xmlTexts(svgs[i] || d.renderPageSvg(i), 'text').join('')); return out.join('\n\n'); } };
+        const pager = more(stage, n, n, async i => { const svg = d.renderPageSvg(i); svgs[i] = svg; const img = el('img', 'doc-page'); img.alt = `${i + 1}쪽`; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); stage.insertBefore(img, stage.lastChild); await img.decode(); });
+        await pager.ready;
+        return { pages: n, canPrint: pager.canPrint, text: async () => { const out = []; for (let i = 0; i < n; i++) out.push(xmlTexts(svgs[i] || d.renderPageSvg(i), 'text').join('')); return out.join('\n\n'); } };
       },
-      async docx(bytes) {
+      async docx(bytes, file, stage) {
         await loadScript('vendor/office/jszip.min.js'); await loadScript('vendor/office/docx-preview.min.js');
         const box = el('div', 'doc-docx'); stage.append(box);
         await win.docx.renderAsync(bytes, box, null, { inWrapper: true, ignoreLastRenderedPageBreak: true });
         return { text: async () => box.textContent };
       },
-      async sheet(bytes, file) {
+      async sheet(bytes, file, stage) {
         await loadScript('vendor/office/xlsx.mini.min.js');
         const wb = /\.csv$/i.test(file.name) ? win.XLSX.read(decodeText(bytes), { type: 'string' }) : win.XLSX.read(bytes, { type: 'array', cellDates: true }), tabs = el('div', 'doc-tabs'), body = el('div', 'doc-sheet');
         const show = name => {
@@ -68,30 +81,31 @@
         };
         for (const name of wb.SheetNames) { const b = el('button', 'doc-tab', name); b.type = 'button'; b.dataset.s = name; b.addEventListener('click', () => show(name)); tabs.append(b); }
         stage.append(tabs, body); show(wb.SheetNames[0]);
-        return { pages: wb.SheetNames.length, text: async () => wb.SheetNames.map(n => `# ${n}\n${win.XLSX.utils.sheet_to_csv(wb.Sheets[n])}`).join('\n') };
+        return { pages: wb.SheetNames.length, canPrint: () => wb.SheetNames.length === 1 && win.XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 }).length <= ROW_CAP, text: async () => wb.SheetNames.map(n => `# ${n}\n${win.XLSX.utils.sheet_to_csv(wb.Sheets[n])}`).join('\n') };
       },
-      async pptx(bytes) {
+      async pptx(bytes, file, stage) {
         await loadScript('vendor/office/jszip.min.js');
         const zip = await win.JSZip.loadAsync(bytes), names = slideOrder(Object.keys(zip.files)), texts = [];
         for (const n of names) texts.push(xmlTexts(await zip.files[n].async('string'), 't'));
         stage.append(el('p', 'doc-note', '파워포인트는 슬라이드별 글자만 보여 줍니다. 배치와 그림까지 보려면 원본을 받아 파워포인트나 이음오피스에서 여세요.'));
         texts.forEach((t, i) => { const c = el('section', 'doc-slide'); c.append(el('h3', '', `슬라이드 ${i + 1}`)); for (const line of t.filter(Boolean)) c.append(el('p', '', line)); stage.append(c); });
-        return { pages: names.length, text: async () => texts.map((t, i) => `[슬라이드 ${i + 1}]\n${t.join('\n')}`).join('\n\n') };
+        return { pages: names.length, canPrint: () => false, text: async () => texts.map((t, i) => `[슬라이드 ${i + 1}]\n${t.join('\n')}`).join('\n\n') };
       },
-      async pdf(bytes) {
+      async pdf(bytes, file, stage) {
         await loadScript('vendor/pdfjs/pdf.min.js'); // isEvalSupported:false: pdf.js 3.x 글꼴 처리의 코드 실행 취약점(CVE-2024-4367) 완화. 이 페이지 CSP도 unsafe-eval을 허용하지 않는다
         win.pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
         const pdf = await win.pdfjsLib.getDocument({ data: new Uint8Array(bytes), isEvalSupported: false }).promise, n = pdf.numPages, width = Math.min(stage.clientWidth || 360, 900);
-        more(n, n, async i => {
+        const pager = more(stage, n, n, async i => {
           const page = await pdf.getPage(i + 1), vp0 = page.getViewport({ scale: 1 }), scale = width / vp0.width, vp = page.getViewport({ scale }), dpr = win.devicePixelRatio || 1;
           const cv = el('canvas', 'doc-page'); cv.width = Math.floor(vp.width * dpr); cv.height = Math.floor(vp.height * dpr); cv.style.width = '100%'; cv.setAttribute('aria-label', `${i + 1}쪽`);
           stage.insertBefore(cv, stage.lastChild); await page.render({ canvasContext: cv.getContext('2d'), viewport: page.getViewport({ scale: scale * dpr }) }).promise;
         });
-        return { pages: n, text: async () => { const out = []; for (let i = 1; i <= n; i++) out.push((await (await pdf.getPage(i)).getTextContent()).items.map(x => x.str).join(' ')); return out.join('\n\n'); } };
+        await pager.ready;
+        return { pages: n, canPrint: pager.canPrint, text: async () => { const out = []; for (let i = 1; i <= n; i++) out.push((await (await pdf.getPage(i)).getTextContent()).items.map(x => x.str).join(' ')); return out.join('\n\n'); } };
       },
-      async img(bytes, file) { const i = el('img', 'doc-page'); i.alt = file.name; i.src = URL.createObjectURL(new Blob([bytes], { type: file.type || 'image/*' })); stage.append(i); return { text: null }; },
-      async text(bytes) { const t = decodeText(bytes); stage.append(el('pre', 'doc-text', t.length > 200000 ? t.slice(0, 200000) + '\n…(이하 생략)' : t)); return { text: async () => t }; },
-      async odt(bytes) {
+      async img(bytes, file, stage) { const i = el('img', 'doc-page'); i.alt = file.name; i.src = URL.createObjectURL(new Blob([bytes], { type: file.type || 'image/*' })); stage.append(i); try { await i.decode(); } finally { URL.revokeObjectURL(i.src); } return { text: null }; },
+      async text(bytes, file, stage) { const t = decodeText(bytes); stage.append(el('pre', 'doc-text', t.length > 200000 ? t.slice(0, 200000) + '\n…(이하 생략)' : t)); return { canPrint: () => t.length <= 200000, text: async () => t }; },
+      async odt(bytes, file, stage) {
         await loadScript('vendor/office/jszip.min.js'); const zip = await win.JSZip.loadAsync(bytes), xml = await zip.files['content.xml'].async('string');
         const t = xml.replace(/<\/text:(?:p|h)>/g, '\n').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
         stage.append(el('pre', 'doc-text', t)); return { text: async () => t };
@@ -99,24 +113,29 @@
     };
 
     async function open(file) {
-      const kind = kindOf(file.name); stage.textContent = ''; bar.hidden = true; cur = null;
+      const token = ++epoch, kind = kindOf(file.name), content = el('div', 'doc-content');
+      stage.replaceChildren(content); bar.hidden = true; cur = null; syncPrint();
       if (!kind) { say(`${file.name}: 이 형식은 아직 열지 못합니다. 한글·워드·엑셀·파워포인트·PDF·그림·글 파일을 고르세요.`, true); return; }
       if (file.size > 60 * 1024 * 1024) { say('60MB가 넘는 파일은 열지 않습니다. 이음오피스 앱에서 여세요.', true); return; }
       say(`${file.name} 여는 중…`);
       try {
-        const res = await openers[kind](await file.arrayBuffer(), file);
-        cur = { file, text: res.text };
+        const bytes = await file.arrayBuffer();
+        if (token !== epoch) return;
+        const res = await openers[kind](bytes, file, content);
+        if (token !== epoch) return;
+        cur = { file, text: res.text, canPrint: res.canPrint, stage: content }; syncPrint();
         say(`${file.name} · ${(file.size / 1024).toFixed(0)}KB${res.pages ? ` · ${res.pages}${kind === 'sheet' ? '시트' : kind === 'pptx' ? '장' : '쪽'}` : ''}`);
         bar.hidden = false; $('docText').hidden = !res.text;
-      } catch (err) { stage.textContent = ''; say(`${file.name}: 열지 못했습니다(${err && err.message ? err.message : '파일이 손상됐거나 암호가 걸려 있습니다'}). 암호가 있으면 풀어서 다시 고르세요.`, true); }
+      } catch (err) { if (token !== epoch) return; stage.textContent = ''; say(`${file.name}: 열지 못했습니다(${err && err.message ? err.message : '파일이 손상됐거나 암호가 걸려 있습니다'}). 암호가 있으면 풀어서 다시 고르세요.`, true); }
     }
     input.addEventListener('change', () => { if (input.files[0]) open(input.files[0]); });
     drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('is-over'); });
     drop.addEventListener('dragleave', () => drop.classList.remove('is-over'));
     drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('is-over'); if (e.dataTransfer.files[0]) open(e.dataTransfer.files[0]); });
     $('docOrig').addEventListener('click', () => cur && save(cur.file.name, cur.file, cur.file.type || 'application/octet-stream'));
-    $('docText').addEventListener('click', async () => { if (!cur || !cur.text) return; save(cur.file.name.replace(/\.[^.]+$/, '') + '.txt', '﻿' + (await cur.text()), 'text/plain;charset=utf-8'); });
-    $('docPrint').addEventListener('click', () => win.print());
+    $('docText').addEventListener('click', async () => { const selected = cur; if (!selected?.text) return; save(selected.file.name.replace(/\.[^.]+$/, '') + '.txt', '﻿' + (await selected.text()), 'text/plain;charset=utf-8'); });
+    $('docPrint').addEventListener('click', () => { syncPrint(); if (!$('docPrint').disabled) win.print(); });
+    syncPrint();
   }
   return { kindOf, xmlTexts, slideOrder, decodeText, init };
 });

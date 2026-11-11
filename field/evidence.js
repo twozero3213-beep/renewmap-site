@@ -110,7 +110,7 @@
     return { hits: all.slice(0, max).map(({ b, f }) => ({ b, f, exact: b.jibun === j })), total: all.length };
   }
   // 고른 건물을 기록 칸으로. 표제부의 정해진 칸만 옮긴다(소유자 등 개인 항목은 읽지 않는다)
-  const buildingFill = (b, f) => ({ pnu: b.pnu, jibun: b.jibun, bjd10: f.bjd10, bjd_name: f.name, use_apr_day: b.use_apr_day, main_use: b.main_use, structure: b.structure, floors: b.floors,
+  const buildingFill = (b, f) => ({ ...(R.buildingId(b.mgm_bld_pk) !== null ? { mgm_bld_pk: R.buildingId(b.mgm_bld_pk) } : {}), pnu: b.pnu, jibun: b.jibun, bjd10: f.bjd10, bjd_name: f.name, use_apr_day: b.use_apr_day, main_use: b.main_use, structure: b.structure, floors: b.floors,
     reference_date: f.hub_reference_date, src: { source_name: f.source, source_url: f.source_url, retrieved_at: f.retrieved_at, license_type: f.license } });
   // 이용조건(N3): 파일에 있는 값만. 없거나 '미표시'면 '미확인'(추정해서 채우지 않는다)
   const lic = (v) => (!v || v === "미표시" ? "미확인" : String(v));

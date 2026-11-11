@@ -24,6 +24,16 @@
     return hits.length ? hits.reduce((a, b) => (area(b[5]) < area(a[5]) ? b : a)) : null;
   }
   const MATCH = { 1: "필지·사용승인일·연면적이 대장 한 건과 일치", 2: "필지·연면적이 대장 한 건과 일치", 3: "필지·사용승인일이 대장 한 건과 일치" };
+  function findBuilding(buildings, pk) {
+    const id = (v) => {
+      const text = typeof v === "string" ? v.trim() : Number.isSafeInteger(v) && v >= 0 ? String(v) : "";
+      return /^[0-9]{1,22}$/.test(text) ? text : null;
+    };
+    const key = id(pk);
+    if (key === null) return null;
+    const rows = buildings.filter((b) => id(b.mgm_bld_pk) === key);
+    return rows.length === 1 ? rows[0] : null;
+  }
   // 화면에 보일 줄 [이름, 값]. 대장을 못 찾으면 외곽선 자료의 값만 보인다
   function describe(item, bld, outline) {
     const [pk, match, h, floors, pnu] = item;
@@ -61,7 +71,7 @@
         const it = pickItem(file, lng, lat);
         if (!it) continue;
         let bld = null;
-        if (it[0]) bld = ((await get(`buildings/${code}.json`)).buildings || []).find((b) => b.mgm_bld_pk === it[0]) || null;
+        if (it[0] !== null && it[0] !== undefined) bld = findBuilding((await get(`buildings/${code}.json`)).buildings || [], it[0]);
         return show(bld ? `${bld.jibun} ${bld.name || bld.main_use || "건물"}` : "대장과 잇지 못한 건물", describe(it, bld, file));
       }
       show("누른 자리의 건물 외곽선이 없습니다", [["안내", "건물 정보는 부산광역시만 준비돼 있습니다. 건물 지붕 가운데를 눌러 보세요."]]);
@@ -80,5 +90,5 @@
       }, C.ScreenSpaceEventType.LEFT_CLICK);
     }, 500);
   }
-  return { inRing, candidates, pickItem, describe };
+  return { inRing, candidates, pickItem, describe, findBuilding };
 });

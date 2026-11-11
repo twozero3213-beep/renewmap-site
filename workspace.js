@@ -166,6 +166,7 @@
     });
     const restore = () => {
       if (/^#map(?:\/\d+)*$/.test(location.hash)) mapHash = location.hash;
+      window.RenewMap?.setReportMode(new URLSearchParams(location.search).get('report') || 'report');
       show(panelFromLocation(location.hash, location.search));
       if (location.hash === '#overlay') {
         const overlay = document.getElementById('overlay');

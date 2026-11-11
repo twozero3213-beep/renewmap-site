@@ -110,15 +110,18 @@
   });
   // 개인정보처리방침 '변경 7일 전 공지'를 지킨다: 2026-11-07 공지, 11-14 시행(로폼 AI 법무질의 2026-11-06 기록, docs/legal)
   if (Date.now() < Date.parse('2026-11-14T00:00:00+09:00')) return;
-  if (off() || navigator.globalPrivacyControl === true || navigator.doNotTrack === '1') return;
+  const disabled = () => off() || navigator.globalPrivacyControl === true || navigator.doNotTrack === '1';
+  if (disabled()) return;
   const load = (src, then) => { const s = document.createElement('script'); s.src = src; s.onload = then; document.head.appendChild(s); };
   load(base + 'hackle-key.js', () => {
+    if (disabled()) return;
     const key = window.RENEWMAP_HACKLE_KEY;
     if (!key) return;
     load(base + 'vendor/hackle-12.2.1.min.js', () => {
+      if (disabled()) return;
       const client = window.Hackle && window.Hackle.createInstance(key);
       if (!client) return;
-      const track = (k, props) => client.track({ key: k, properties: Object.assign({ page: page() }, props) });
+      const track = (k, props) => { if (!disabled()) client.track({ key: k, properties: Object.assign({ page: page() }, props) }); };
       // 내려받기는 모두 <a download>를 눌러서 일어난다(docgen·overlay·viewer·현장 앱). 형식만 남기고 파일 이름은 보내지 않는다
       document.addEventListener('click', ev => {
         const a = ev.target.closest && ev.target.closest('a');

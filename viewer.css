@@ -18,7 +18,8 @@
 .doc-status.err { color: var(--doc-err); }
 .doc-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 .doc-bar .btn { min-height: 44px; padding: 10px 14px; cursor: pointer; }
-.doc-stage { display: grid; gap: 12px; margin-top: 8px; }
+.doc-stage, .doc-content { display: grid; gap: 12px; }
+.doc-stage { margin-top: 8px; }
 .doc-page { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: var(--card); }
 .doc-docx { overflow-x: auto; background: var(--docx-bg); padding: 8px; }
 .doc-text { white-space: pre-wrap; word-break: break-word; max-height: 70vh; overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: 14px/1.6 Pretendard, sans-serif; }
@@ -33,4 +34,9 @@
 .doc-slide p { margin: 0 0 4px; }
 .doc-note { color: var(--dim); font-size: 14px; margin: 0; }
 .vendor-note { font-size: 13px; }
+@media print {
+  .doc-print-incomplete > * { display: none !important; }
+  .doc-print-incomplete::before { content: "문서 전체가 표시되지 않아 인쇄를 막았습니다. 모든 쪽을 펼치거나 원본을 받아 문서 편집기에서 인쇄하세요."; }
+  .doc-text, .doc-scroll, .doc-docx { max-height: none; overflow: visible; }
+}
 @media print { header.top, .tabbar, .docs-card:first-of-type, .doc-drop, .doc-bar, .docs-formats, footer, .home-note { display: none !important; } .doc-page { border: 0; break-inside: avoid; } }

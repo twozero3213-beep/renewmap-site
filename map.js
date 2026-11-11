@@ -1187,7 +1187,7 @@
   let reportKey = '', polished = null, reportMode = REPORT_MODES.some(([key]) => key === initialReportMode) ? initialReportMode : 'report'; // polished: 검증을 통과한 AI 문장만
   api.download = k => download(k);
   document.addEventListener('click', e => { const a = e.target.closest('[data-set-mode]'); if (a) api.setReportMode(a.dataset.setMode); });
-  api.setReportMode = m => { reportMode = REPORT_MODES.some(x => x[0] === m) ? m : 'report'; if (state.index !== undefined) render(); }; // find.js 프리셋이 쓴다
+  api.setReportMode = m => { const next = REPORT_MODES.some(x => x[0] === m) ? m : 'report'; if (next === reportMode) return; reportMode = next; if (state.index !== undefined) render(); }; // find.js 프리셋이 쓴다
   function reportHTML(v, it, rows) {
     const D = window.RenewDashboard, sents = reportSentences(it.name, rows), here = v.crumbs.map(c => c.label).join(' › ');
     const byG = GROUPS.filter(([g]) => sents.some(s => s.group === g)).map(([g, gl]) => `<section class="rp-g"><h3>${gIco(g)}${esc(gl)}</h3>${g === 'safe' ? `<p class="rp-fixed">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="rp-fixed">${esc(FORE_FIXED)}</p>` : ''}` +

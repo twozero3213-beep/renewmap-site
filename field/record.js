@@ -77,6 +77,13 @@
 
   function clean(v) { return String(v == null ? "" : v).trim(); }
   const num = (v) => (v == null || v === "" ? null : Number(v));
+  const validPoint = (lat, lng) => Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  // 큰 관리번호를 Number로 왕복하면 다른 건물과 같아질 수 있다. 옛 숫자는 정밀한 정수일 때만 받는다.
+  const buildingId = (v) => {
+    const id = typeof v === "string" ? v.trim() : Number.isSafeInteger(v) && v >= 0 ? String(v) : "";
+    // 공개 ID 전수의 최대 22자에 맞춘 지원 범위다. 원천 API 전체 규격을 뜻하지 않는다.
+    return /^[0-9]{1,22}$/.test(id) ? id : null;
+  };
   // 공식 현황 한 행. 가져온 파일에서 온 값도 이 칸만 글자로 남긴다
   const cleanInd = (i) => {
     const s = (i && i.src) || {};
@@ -147,6 +154,7 @@
     if (pnu && !/^\d{19}$/.test(pnu)) throw new Error("필지 번호(PNU)는 19자리 숫자입니다.");
     const lat = num(input.lat), lng = num(input.lng);
     if ((lat === null) !== (lng === null) || [lat, lng].some((x) => x !== null && !Number.isFinite(x))) throw new Error("위치는 위도·경도를 함께 적습니다.");
+    if (lat !== null && !validPoint(lat, lng)) throw new Error("위도는 -90~90, 경도는 -180~180 범위여야 합니다.");
     if (lat === null && !pnu && !jibun) throw new Error("위치를 켜거나 지번을 적어 주세요.");
     const observed = clean(input.observed);
     if (status !== "추가확인" && !observed) throw new Error("본 값을 적어 주세요.\n모르면 '모름'을 고르세요.");
@@ -180,15 +188,26 @@
     });
     // 작성자가 고른 건물(N1). 건물 파일의 표제부 칸만 옮긴다(소유자 항목은 원천 파일에도 없다)
     const b = input.building, bs = (b && b.src) || {};
+    if (b && b.mgm_bld_pk != null) {
+      const pk = clean(b.mgm_bld_pk);
+      if (pk.length > 22) throw new Error("건물 ID는 숫자 1~22자리만 지원합니다.");
+      rejectPersonal(pk);
+      if (typeof b.mgm_bld_pk === "string" && pk && buildingId(pk) === null) throw new Error("건물 ID는 숫자 1~22자리만 지원합니다.");
+    }
     const building = b && /^\d{10}$/.test(clean(b.bjd10)) && (!clean(b.pnu) || /^\d{19}$/.test(clean(b.pnu))) ? {
+      ...(buildingId(b.mgm_bld_pk) !== null ? { mgm_bld_pk: buildingId(b.mgm_bld_pk) } : {}),
       pnu: clean(b.pnu) || null, jibun: clean(b.jibun) || null, bjd10: clean(b.bjd10), bjd_name: clean(b.bjd_name), use_apr_day: isDay(clean(b.use_apr_day)) ? clean(b.use_apr_day).slice(0, 10) : null,
       main_use: clean(b.main_use) || null, structure: clean(b.structure) || null, floors: Number.isInteger(num(b.floors)) ? num(b.floors) : null, reference_date: isDay(clean(b.reference_date)) ? clean(b.reference_date).slice(0, 10) : null,
       src: { source_name: clean(bs.source_name), source_url: clean(bs.source_url), reference_date: isDay(clean(b.reference_date)) ? clean(b.reference_date).slice(0, 10) : "", retrieved_at: clean(bs.retrieved_at), license_type: clean(bs.license_type) || "미표시" },
     } : null;
     const accuracy = lat === null ? null : num(input.accuracy);
+    if (accuracy !== null && (!Number.isFinite(accuracy) || accuracy < 0)) throw new Error("GPS 정확도는 0 이상의 유한한 수로 적어 주세요.");
     // 손으로 옮긴 위치는 '보정됨'으로 남기고 기기가 처음 준 좌표를 함께 둔다(바꾼 이력을 지우지 않는다)
     const corrected = lat !== null && input.corrected === true;
     const g = input.gps || {};
+    const glat = num(g.lat), glng = num(g.lng), gaccuracy = num(g.accuracy);
+    if (corrected && ((glat !== null || glng !== null) && !validPoint(glat, glng))) throw new Error("원래 GPS 위도·경도의 범위를 확인해 주세요.");
+    if (corrected && gaccuracy !== null && (!Number.isFinite(gaccuracy) || gaccuracy < 0)) throw new Error("원래 GPS 정확도는 0 이상의 유한한 수로 적어 주세요.");
     const dong = input.dong && /^\d{8}$/.test(clean(input.dong.code)) ? {
       code: clean(input.dong.code), name: clean(input.dong.name), sgName: clean(input.dong.sgName), sido: clean(input.dong.sido),
       nearby: Array.isArray(input.dong.nearby) ? input.dong.nearby.map(clean).filter(Boolean) : [],
@@ -201,7 +220,7 @@
       // photo_sha256_source: 해시를 언제 계산했는지. '촬영 시'가 FR-45 원칙이고, 해시 없이 가져온 이전 기록만 '가져올 때 계산'
       photo_sha256: photoSha, photo_sha256_source: Object.keys(photoSha).length ? (input.photo_sha256_source === "가져올 때 계산" ? "가져올 때 계산" : "촬영 시") : null,
       accuracy_m: Number.isFinite(accuracy) ? accuracy : null, corrected,
-      gps_original: corrected && Number.isFinite(num(g.lat)) && Number.isFinite(num(g.lng)) ? { lat: num(g.lat), lng: num(g.lng), accuracy_m: num(g.accuracy) } : null,
+      gps_original: corrected && validPoint(glat, glng) ? { lat: glat, lng: glng, accuracy_m: gaccuracy } : null,
       dong, indicators: lat !== null && dong && Array.isArray(input.indicators) ? input.indicators.slice(0, 8).map(cleanInd) : [],
       checks, building, checker: checker || null,
       facility: facilityRecord(input.facility), visit: visitRecord(input.visit), visit_previous_id: previous || null,
@@ -339,7 +358,7 @@
       type: "FeatureCollection", name: "renewmap_field",
       description: "리뉴맵 현장 확인 기록. 좌표계 WGS84(EPSG:4326, 경도·위도 순). 판정이 아니다. 위치가 없는 기록은 geometry가 null이다. 사진은 넣지 않고 파일 이름만 적었다",
       exported_at: now.toISOString(), fields: Object.fromEntries(GIS_FIELDS.map(([k, d]) => [k, d])),
-      features: (records || []).map((r) => ({ type: "Feature", id: r.id, geometry: Number.isFinite(r.lat) && Number.isFinite(r.lng) ? { type: "Point", coordinates: [r.lng, r.lat] } : null, properties: gisProps(r) })),
+      features: (records || []).map((r) => ({ type: "Feature", id: r.id, geometry: validPoint(r.lat, r.lng) ? { type: "Point", coordinates: [r.lng, r.lat] } : null, properties: gisProps(r) })),
     };
   }
   // 엑셀에서 수식으로 읽히는 글(=, +, -, @로 시작)은 앞에 '를 붙인다. 쉼표·따옴표·줄바꿈이 있으면 따옴표로 감싼다
@@ -352,7 +371,7 @@
   // CSV(UTF-8 BOM): 엑셀에서 한글이 깨지지 않게 BOM을 붙인다. 줄 끝은 CRLF
   function toCSV(records) {
     const head = ["lng", "lat", ...GIS_FIELDS.map(([k]) => k)];
-    const rows = (records || []).map((r) => { const p = gisProps(r); return [Number.isFinite(r.lng) ? r.lng : null, Number.isFinite(r.lat) ? r.lat : null, ...GIS_FIELDS.map(([k]) => p[k])].map(csvCell).join(","); });
+    const rows = (records || []).map((r) => { const p = gisProps(r); return [validPoint(r.lat, r.lng) ? r.lng : null, validPoint(r.lat, r.lng) ? r.lat : null, ...GIS_FIELDS.map(([k]) => p[k])].map(csvCell).join(","); });
     return "﻿" + [head.join(","), ...rows].join("\r\n") + "\r\n";
   }
 
@@ -462,6 +481,6 @@
     return { text: lines.length ? lines.join("\n") + "\n" : "", n: lines.length };
   }
 
-  const api = { FACILITY_FIELDS, FACILITY_STATES, VISIT_FIELDS, WEATHER, sha256Hex, blockSnapshot, blockEdits, hwpxText, exemplarOf, dice, OUTCOME_STATUS, REASON_CODES, NEEDS_REASON, docKind, setOutcome, outcomeRecord, outcomesJSONL, stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
+  const api = { buildingId, FACILITY_FIELDS, FACILITY_STATES, VISIT_FIELDS, WEATHER, sha256Hex, blockSnapshot, blockEdits, hwpxText, exemplarOf, dice, OUTCOME_STATUS, REASON_CODES, NEEDS_REASON, docKind, setOutcome, outcomeRecord, outcomesJSONL, stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.FieldRecord = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

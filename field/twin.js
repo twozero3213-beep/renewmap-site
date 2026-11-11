@@ -65,7 +65,8 @@
   const modelKey=m=>R.sha256Hex(new TextEncoder().encode(JSON.stringify([m.sha256,placement(m.placement),m.pnu,m.building_id,m.origin,m.reference_date,m.kind])));
   function recordMatch(m,r) {
     if(!m.pnu || m.pnu!==(r.pnu || r.building?.pnu)) return '대응 미확인';
-    return m.building_id && m.building_id===r.building?.mgm_bld_pk ? '건물 ID 일치' : '필지만 일치';
+    const id=R.buildingId(m.building_id);
+    return id !== null && id===R.buildingId(r.building?.mgm_bld_pk) ? '건물 ID 일치' : '필지만 일치';
   }
   function verification(m,v,now=new Date().toISOString()) {
     if(!v.record_id || !Array.isArray(v.photo_sha256) || !v.photo_sha256.length || v.photo_sha256.some(h=>!/^[a-f0-9]{64}$/.test(h))) throw Error('사진 해시가 있는 현장 기록을 먼저 선택하세요.');
