@@ -1183,7 +1183,8 @@
   const rowsFor = (v, m, it) => dongRows(inds(), m.json.dongs.find(d => codeOf(d) === it.code), livingMap(m.living).get(it.code), m.selYear, m.ext);
   // ── 동네 보고서(#report): 원장 문장 + 그래프 + 출처표. 인쇄는 브라우저 인쇄(@media print), HWPX·XLSX는 메일 요청 ──
   const report = document.getElementById('reportApp');
-  let reportKey = '', polished = null, reportMode = 'report'; // polished: { key, text } 검증을 통과한 AI 문장만. reportMode: 동네 보고서 | 사업 근거서
+  const initialReportMode = new URLSearchParams(location.search).get('report');
+  let reportKey = '', polished = null, reportMode = REPORT_MODES.some(([key]) => key === initialReportMode) ? initialReportMode : 'report'; // polished: 검증을 통과한 AI 문장만
   api.download = k => download(k);
   document.addEventListener('click', e => { const a = e.target.closest('[data-set-mode]'); if (a) api.setReportMode(a.dataset.setMode); });
   api.setReportMode = m => { reportMode = REPORT_MODES.some(x => x[0] === m) ? m : 'report'; if (state.index !== undefined) render(); }; // find.js 프리셋이 쓴다
@@ -1504,6 +1505,7 @@
   }
   // Leaflet 지도는 한 번 만들어 무대(stage)에 두고, render()는 색·선택만 바꾼다
   let M = null;
+  api.getMap = () => M && M.map;
   // 네이버 지도(배경만). 키(field/naver-map-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작. 실패·5초 초과면 브이월드로
   // SDK가 NAVER 로고 img에 style 속성을 넣는다. explore.html CSP style-src에 그 문자열 해시만 허용했다('unsafe-hashes', 2026-11-07). SDK가 문구를 바꾸면 콘솔 오류로 다시 드러난다
   function loadNaver() {

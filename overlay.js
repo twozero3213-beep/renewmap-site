@@ -434,16 +434,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
   if (typeof document === 'undefined') return api;
 
   // ── 8. 브라우저 ──
-  // map.js가 만든 Leaflet 지도를 얻으려고 Leaflet이 실릴 때 init hook을 건다(map.js는 지도 객체를 내보내지 않는다)
-  const maps = [];
-  (function hookLeaflet() {
-    let hooked = false;
-    const hook = () => { if (window.L && window.L.Map && !hooked) { hooked = true; window.L.Map.addInitHook(function () { maps.push(this); }); } };
-    const D = window.RenewDashboard;
-    if (window.L) hook();
-    else if (D && typeof D.loadLeaflet === 'function') { const orig = D.loadLeaflet; D.loadLeaflet = function () { return orig.apply(this, arguments).then(v => { hook(); return v; }); }; }
-  })();
-  const liveMap = () => maps.filter(m => m._container && m._container.isConnected).pop() || null;
+  const liveMap = () => window.RenewMap?.getMap?.() || null;
   // 지도에 보이는 경계 중 코드 길이가 len인 것(8 = 행정동, 5 = 시군구)
   function visibleFeatures(map, len) {
     const seen = new Map(); if (!map) return [];

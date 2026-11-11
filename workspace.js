@@ -15,8 +15,10 @@
     return 'map';
   }
   function panelFromLocation(hash, search) {
-    const legacy = panelFromHash(hash);
-    return legacy !== 'map' ? legacy : normalizePanel(new URLSearchParams(search || '').get('panel'));
+    const legacy = panelFromHash(hash), params = new URLSearchParams(search || '');
+    if (legacy !== 'map') return legacy;
+    if (!params.has('panel') && ['report', 'brief', 'onepage', 'programs'].includes(params.get('report')) && /^#map\/\d{2}\/\d{5}(?:\/\d{5})?\/\d{8}$/.test(hash || '')) return 'evidence';
+    return normalizePanel(params.get('panel'));
   }
   function panelURL(href, panel, mapHash, reportMode) {
     const url = new URL(href), name = normalizePanel(panel);
@@ -80,6 +82,19 @@
   function init() {
     const workspace = document.querySelector('[data-workspace]');
     if (!workspace) return;
+    const overlayButton = workspace.querySelector('[data-overlay-load]');
+    overlayButton?.addEventListener('click', async () => {
+      overlayButton.disabled = true;
+      overlayButton.textContent = '파일 도구를 불러오는 중입니다.';
+      try {
+        await import('./overlay.js?v=20261111-tools');
+        const overlay = document.getElementById('overlay'); overlay.open = true;
+        overlay.querySelector('summary').focus({ preventScroll: true });
+      } catch (error) {
+        const slot = document.getElementById('overlayApp'); slot.setAttribute('role', 'alert');
+        slot.textContent = '파일 도구를 불러오지 못했습니다. 새로고침한 뒤 다시 열어 주세요.';
+      }
+    });
     const tabs = [...workspace.querySelectorAll('[data-workspace-tab]')];
     let active = normalizePanel(workspace.dataset.activePanel);
     let mapHash = /^#map(?:\/\d+)*$/.test(location.hash) ? location.hash : '#map';
@@ -100,6 +115,11 @@
     syncStates();
     function show(name, focusTab) {
       active = normalizePanel(name);
+      if (active === 'filters' && !window.RenewFind) import('./find.js').catch(() => {
+        document.getElementById('findMore').open = true;
+        const slot = document.getElementById('findApp'); slot.setAttribute('role', 'alert');
+        slot.textContent = '조건 도구를 불러오지 못했습니다. 새로고침한 뒤 다시 열어 주세요.';
+      });
       workspace.dataset.activePanel = active;
       workspace.querySelectorAll('[data-workspace-panel]').forEach(panel => { panel.hidden = panel.dataset.workspacePanel !== active; });
       tabs.forEach(tab => {
@@ -147,6 +167,10 @@
     const restore = () => {
       if (/^#map(?:\/\d+)*$/.test(location.hash)) mapHash = location.hash;
       show(panelFromLocation(location.hash, location.search));
+      if (location.hash === '#overlay') {
+        const overlay = document.getElementById('overlay');
+        if (overlay) overlay.open = true; else overlayButton?.click();
+      }
     };
     window.addEventListener('hashchange', restore);
     window.addEventListener('popstate', restore);

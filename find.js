@@ -336,9 +336,6 @@
   more?.addEventListener('toggle', () => { if (more.open) render(); });
   document.addEventListener('renew-docgen', () => render());
   if (/^#find/.test(location.hash)) openMore();
-  // 문서 진입에서도 동 코드 해시는 보존한다. 이미 고른 패널은 새로고침 때 바꾸지 않는다.
-  const entry = entryReportMode(location.search), entryRoute = M.parseHash(location.hash);
-  if (entry && M.setReportMode) { M.setReportMode(entry); const target = entryReportURL(location.href); if (target) { st.lastDong = entryRoute.dong; history.replaceState(history.state, '', target); } }
   if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) { openMore(); applyPreset(b.dataset.govPreset); } });
   addEventListener('hashchange', trackHash);
   // 지금 화면의 조건·범위 그대로 XLSX를 만든다(이 브라우저 안에서만)
