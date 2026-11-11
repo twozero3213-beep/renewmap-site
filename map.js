@@ -1534,6 +1534,16 @@
     createMap(slot);
     return true;
   }
+  function boundaryHatch() {
+    if (!window.L.Browser.canvas) return 'url(#rmHatch)';
+    const tile = document.createElement('canvas'); tile.width = tile.height = 6;
+    const ctx = tile.getContext('2d');
+    if (!ctx) return 'url(#rmHatch)';
+    ctx.fillStyle = '#d4dbd8'; ctx.fillRect(0, 0, 6, 6);
+    ctx.strokeStyle = '#6b7a75'; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.moveTo(0, 6); ctx.lineTo(6, 0); ctx.moveTo(-3, 3); ctx.lineTo(3, -3); ctx.moveTo(3, 9); ctx.lineTo(9, 3); ctx.stroke();
+    return ctx.createPattern(tile, 'repeat') || 'url(#rmHatch)';
+  }
   function createMap(slot) {
     const L = window.L, el = document.createElement('div'); el.className = 'map-canvas'; el.setAttribute('role', 'region');
     el.insertAdjacentHTML('beforeend', '<svg class="map-defs" width="0" height="0" aria-hidden="true"><defs><pattern id="rmHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" fill="#d4dbd8"/><line x1="0" y1="0" x2="0" y2="6" stroke="#6b7a75" stroke-width="2"/></pattern></defs></svg>');
@@ -1545,6 +1555,7 @@
     const nv = state.naver ? document.createElement('div') : null;
     // aria-hidden을 두지 않는다: 안의 법적 고지 링크가 키보드 초점을 받으므로 숨기면 이름 없는 초점이 된다(2026-10-30 배포 화면 확인)
     if (nv) { nv.className = 'map-naver'; el.appendChild(nv); el.classList.add('has-naver'); }
+    const hatch = boundaryHatch();
     const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false }); // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
     // 확대는 17(골목·건물 단위)까지. 두 번 누르기를 거듭해도 그 이상 커지지 않는다. 휠 확대는 지도를 한 번 누른 뒤에만 켠다(페이지를 내리다 지도에 걸려 확대되지 않게). 지도 밖으로 나가면 다시 끈다(2026-11-07 대표 지시)
     map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => map.scrollWheelZoom.disable());
@@ -1558,7 +1569,8 @@
     const src = () => state.index.source && state.index.source.name;
     map.createPane('water').style.zIndex = 450; // 수질 점은 경계층(overlayPane 400) 위. 동 층을 다시 만들어도 덮이지 않는다
     map.createPane('sg').style.zIndex = 395; // 시군구·시도 경계는 동 층(overlayPane 400) 아래. 경계가 동 층보다 늦게 와도 동을 덮지 않는다
-    M = { el, map, sg: null, sido: null, emd: null, emdCode: null, water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
+    // 상위 동·수질 pane은 SVG를 유지한다. 별도 Canvas가 빈 영역의 아래 경계 클릭까지 가로막지 않게 한다.
+    M = { el, map, hatch, sgRenderer: typeof hatch === 'string' ? null : L.canvas({ pane: 'sg' }), sg: null, sido: null, emd: null, emdCode: null, water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
     setTimeout(startAuto, 1500);
   }
   // 지금 보는 곳의 현재 건물을 브이월드 3D 지도(field/city3d.html, 저장 없음)로 연다. 주소에는 지도 중심 좌표만 싣는다
@@ -1617,11 +1629,11 @@
     const updating = !!M.sg;
     if (updating) { M.map.removeLayer(M.sg); M.map.removeLayer(M.sido); }
     const L = window.L;
-    M.sg = L.geoJSON(state.sgGeo, { pane: 'sg', style: { weight: 1, color: '#fff' }, onEachFeature: (f, layer) => {
+    M.sg = L.geoJSON(state.sgGeo, { pane: 'sg', renderer: M.sgRenderer, style: { weight: 1, color: '#fff' }, onEachFeature: (f, layer) => {
       layer.bindTooltip(() => { const it = M.sgItems.get(String(f.properties.code)); return it ? tooltipHTML(it, curInd(), effMode(curInd()), null, M.src()) : `<b>${esc(f.properties.name)}</b>`; }, { sticky: true });
       layer.on('click', () => { const r = leafRoute(state.index, String(f.properties.code)); if (r) go(r); });
     } }).addTo(M.map);
-    M.sido = L.featureGroup([L.polyline(lineLatLngs(outerLines(state.sgGeo.features, f => String(f.properties.code).slice(0, 2))), { pane: 'sg', interactive: false, color: '#153c39', weight: 1.5, smoothFactor: 0 })]).addTo(M.map); // 묶음이라야 첫 시점이 잡히기 전 bringToFront가 오류 없이 지나간다
+    M.sido = L.featureGroup([L.polyline(lineLatLngs(outerLines(state.sgGeo.features, f => String(f.properties.code).slice(0, 2))), { pane: 'sg', renderer: M.sgRenderer, interactive: false, color: '#153c39', weight: 1.5, smoothFactor: 0 })]).addTo(M.map); // 묶음이라야 첫 시점이 잡히기 전 bringToFront가 오류 없이 지나간다
     M.sgGeo = state.sgGeo; M.order = null;
   }
   // 시군구 레이어 색: 현재 단계의 항목만 색, 나머지는 옅게. 칸 구성이 바뀌었는지(reorder)와 색칠한 코드(active)를 돌려준다
@@ -1631,7 +1643,7 @@
     // 앞으로 올리기(bringToFront)는 DOM에서 path를 다시 붙인다. 누르는 도중에 하면 click이 사라지므로 칸 구성이 바뀔 때만 한다
     const order = [...active].join() + '|' + v.emdCode + '|' + v.dong, reorder = M.order !== order; M.order = order;
     if (M.sg) M.sg.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.sgItems.get(code), on = active.has(code);
-      l.setStyle(on ? { fillColor: it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: 0.7, color: '#fff', weight: 0.8, dashArray: it.value === null ? '4 3' : null }
+      l.setStyle(on ? { fillColor: it.value === null ? M.hatch : it.color, fillOpacity: 0.7, color: '#fff', weight: 0.8, dashArray: it.value === null ? '4 3' : null }
         : { fillColor: '#c9d3cf', fillOpacity: inEmd ? 0.08 : 0.15, color: '#fff', weight: 0.5, dashArray: null });
       if (on && reorder) l.bringToFront(); });
     if (M.sido) { M.sido.setStyle({ opacity: inEmd ? 0 : 1 }); if (reorder) M.sido.bringToFront(); } // 동 단계에서는 고른 구의 굵은 테두리가 대신한다
