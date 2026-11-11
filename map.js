@@ -1596,7 +1596,7 @@
     // 임시 중심·확대의 타일을 받은 뒤 버리지 않도록 첫 맞춤 위치에서 시작한다.
     map.whenReady(() => {
       const c = map.getCenter();
-      nmap = new N.Map(nv, { center: new N.LatLng(c.lat, c.lng), zoom: map.getZoom(), draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
+      nmap = new N.Map(nv, { center: new N.LatLng(c.lat, c.lng), zoom: map.getZoom(), tileTransition: false, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
         disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
       N.Event.once(nmap, 'tilesloaded', mapPainted);
     });
