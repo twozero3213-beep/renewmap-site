@@ -272,7 +272,7 @@ table.wide { min-width: 680px; }   /* 좁은 화면에서 낱말마다 줄이 �
 /* 여러 칸 표(점수·두 길·민감도): 카드로 쌓지 않고 표 감싸개 안에서 가로로 민다(kv 모바일 규칙은 기준일 칸 전용) */
 .page table.grid th, .page table.grid td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .page table.grid td.num { text-align: right; }
-.page table.grid { min-width: 480px; }
+.page table.grid { display: table; min-width: 480px; }
 
 /* 업무 대상·문서 범위를 첫 화면에 두고, 모바일에서도 세 흐름의 근거를 남긴다. */
 .app-home .start-audience { margin: 0 0 12px; color: var(--green); font-size: 14px; font-weight: 700; line-height: 1.5; }

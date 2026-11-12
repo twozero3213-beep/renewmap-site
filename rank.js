@@ -38,28 +38,29 @@
     return r ? `${r[0].toLocaleString('ko-KR')}~${r[1].toLocaleString('ko-KR')}` : '–';
   }
 
-  function tableHTML(list, kind, names, limit, range, scope) {
-    const head = `<thead><tr><th scope="col">순위</th><th scope="col">무게를 바꾼<br><small>순위 범위</small></th><th scope="col">행정동</th><th scope="col">${esc(KINDS[kind].label)}</th><th scope="col">생활 편의</th><th scope="col">인구 활력</th><th scope="col">주거 노후도</th><th scope="col">치안</th><th scope="col">범죄 발생률<br><small>1,000명당·시군구</small></th></tr></thead>`;
+  function tableHTML(list, kind, names, limit, range, scope, offset = 0) {
+    const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th><th scope="col">${esc(KINDS[kind].label)}</th><th scope="col">무게를 바꾼<br><small>순위 범위</small></th><th scope="col">생활 편의</th><th scope="col">인구 활력</th><th scope="col">주거 노후도</th><th scope="col">치안</th><th scope="col">범죄 발생률<br><small>1,000명당·시군구</small></th></tr></thead>`;
     const body = list.slice(0, limit).map((r, i) => {
       const s = r.d.sub, sp = r.d.safety_parts || {};
-      return `<tr><td class="num">${i + 1}</td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td>`
+      return `<tr><td class="num">${offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
         + `<td class="num">${fmt(s.living)}</td><td class="num">${fmt(s.vitality)}</td><td class="num">${fmt(s.housing)}</td><td class="num">${fmt(s.safety)}</td>`
         + `<td class="num">${sp.crime_rate_per_1k === null || sp.crime_rate_per_1k === undefined ? '없음' : esc(sp.crime_rate_per_1k)}</td></tr>`;
     }).join('');
-    return `<table class="grid rank-table"><caption>순위 범위는 가중치 변동만 반영합니다. 데이터·경계·계산 방법의 오차는 포함하지 않으며 통계적 신뢰구간이 아닙니다.</caption>${head}<tbody>${body}</tbody></table>`;
+    return `<table class="grid rank-table"><caption>선택한 범위의 행정동 순위</caption>${head}<tbody>${body}</tbody></table>`;
   }
 
   function init() {
     const $ = id => document.getElementById(id);
     const kindSel = $('rankKind'), sidoSel = $('rankSido'), sgSel = $('rankSg'), out = $('rankOut'), msg = $('rankMsg'), sens = $('rankSens');
-    let scores = null, idx = null, range;   // range: undefined=받는 중, null=없음
+    let scores = null, idx = null, range, pager;   // range: undefined=받는 중, null=없음
     const sgName = code5 => (idx.sigungu.find(s => s.code5 === code5) || {}).name || code5;
     const names = r => `${sgName(r.d.code5)} ${r.d.name}`;
     function draw() {
       const scope = sgSel.value || sidoSel.value || 'all';
       const list = rows(scores, kindSel.value, scope);
-      msg.textContent = `${list.length.toLocaleString('ko-KR')}개 동 중 상위 ${Math.min(list.length, 300)}개를 보입니다.`;
-      out.innerHTML = tableHTML(list, kindSel.value, names, 300, range, scope);
+      const page = pager.slice(list), offset = page.length ? list.indexOf(page[0]) : 0;
+      msg.textContent = page.length ? `점수가 있는 ${list.length.toLocaleString('ko-KR')}개 동 중 ${(offset + 1).toLocaleString('ko-KR')}–${(offset + page.length).toLocaleString('ko-KR')}위를 보입니다.` : '선택한 범위에 점수가 있는 동이 없습니다.';
+      out.innerHTML = tableHTML(page, kindSel.value, names, page.length, range, scope, offset);
       const sm = range && range.sensitivity && range.sensitivity.summary && range.sensitivity.summary[kindSel.value];
       sens.textContent = sm ? `${KINDS[kindSel.value].label} 전국 순위는 무게만 바꿔도 범위 폭이 중앙값 ${sm.median_width_nat.toLocaleString('ko-KR')}위입니다. 기준 상위 10곳 중 무게를 바꿔도 95% 이상 상위 10 안에 남는 곳은 ${sm.top10_stay}곳입니다.` : kindSel.value === 'housing' ? '주거 노후도는 지표가 하나라 바꿀 무게가 없습니다.' : '';
     }
@@ -77,12 +78,14 @@
         scores = s; idx = i;
         sidoSel.innerHTML = '<option value="">전국</option>' + i.sido.map(x => `<option value="${esc(x.code2)}">${esc(x.name)}</option>`).join('');
         const q = new URLSearchParams(location.search);
-        if (q.get('kind') in KINDS) kindSel.value = q.get('kind');
+        if (Object.hasOwn(KINDS, q.get('kind'))) kindSel.value = q.get('kind');
         if (q.get('sido')) sidoSel.value = q.get('sido');
         fillSg();
         if (q.get('sg')) sgSel.value = q.get('sg');
-        kindSel.onchange = draw; sgSel.onchange = draw;
-        sidoSel.onchange = () => { fillSg(); draw(); };
+        pager = window.RenewListPages.create(out, '동네 순위', draw);
+        const reset = () => { pager.reset(); draw(); };
+        kindSel.onchange = reset; sgSel.onchange = reset;
+        sidoSel.onchange = () => { fillSg(); reset(); };
         draw();
         rangeP.then(g => { range = g; draw(); });
       })

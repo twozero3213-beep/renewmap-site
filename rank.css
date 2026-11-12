@@ -1,0 +1,53 @@
+/* 순위는 탐색 도구라 제목보다 조건과 표를 먼저 읽도록 공통 문서 띠의 여백만 줄인다. */
+.rank-page .page { min-width: 0; }
+.rank-page .pg-band { padding: 20px 0 16px; margin-bottom: 20px; }
+.rank-page .pg-band h1 { font-size: clamp(26px, 3vw, 34px); line-height: 1.2; margin: 8px 0 12px; }
+.rank-page .pg-band .breadcrumb { font-size: 14px; }
+.rank-page .pg-band .label-scenario { max-width: 100%; margin: 0; padding: 4px 8px; line-height: 1.5; }
+.rank-page .pg-band .rank-intro { margin: 8px 0 0; font-size: 16px; line-height: 1.6; }
+.rank-page .rank-form { grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); margin: 0 0 12px; }
+.rank-page .rank-form label, .rank-page .rank-form select { min-width: 0; }
+.rank-page .rank-form select { font-size: 16px; }
+.rank-page #rankMsg { margin: 12px 0 4px; font-weight: 600; }
+.rank-page #rankSens { margin: 8px 0 12px; font-size: 14px; line-height: 1.6; }
+.rank-page #rankSens:empty { display: none; }
+.rank-page .rank-table-help { margin: 8px 0; color: var(--dim); font-size: 14px; line-height: 1.6; }
+.rank-page .rank-table-note { margin: 12px 0 0; color: var(--dim); font-size: 14px; line-height: 1.6; }
+.rank-page #rankOut { min-width: 0; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.rank-page table.rank-table { min-width: 63rem; table-layout: fixed; font-size: 15px; }
+.rank-page table.rank-table caption { caption-side: top; padding: 0 0 12px; color: var(--dim); font-size: 14px; line-height: 1.6; text-align: left; white-space: normal; }
+.rank-page table.rank-table th, .rank-page table.rank-table td { padding: 8px 10px; }
+.rank-page table.rank-table th { vertical-align: bottom; line-height: 1.4; white-space: normal; overflow-wrap: break-word; }
+.rank-page table.rank-table th:not(:nth-child(2)), .rank-page table.rank-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.rank-page table.rank-table th:nth-child(1) { width: 4rem; }
+.rank-page table.rank-table th:nth-child(2) { width: 13rem; text-align: left; }
+.rank-page table.rank-table th:nth-child(3) { width: 7rem; }
+.rank-page table.rank-table th:nth-child(4) { width: 10rem; }
+.rank-page table.rank-table th:nth-child(n+5):nth-child(-n+8) { width: 5rem; }
+.rank-page table.rank-table th:nth-child(9) { width: 9rem; }
+.rank-page table.rank-table th small { font-size: 13px; font-weight: 400; }
+.rank-page table.rank-table td { vertical-align: middle; }
+.rank-page table.rank-table td:nth-child(2) { white-space: normal; overflow-wrap: anywhere; }
+.rank-page table.rank-table td:nth-child(2) a { display: flex; align-items: center; min-height: 44px; line-height: 1.5; }
+.rank-page .list-pages { margin: 8px 0 12px; }
+.rank-page .list-pages button, .rank-page .list-pages select { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); background: var(--card); color: var(--ink); font: inherit; font-size: 16px; }
+.rank-page .list-pages button:not(:disabled):hover { background: var(--soft); color: var(--green); }
+.rank-page .list-pages button:disabled { background: var(--off-bg); color: var(--off-ink); cursor: not-allowed; }
+.rank-page .list-pages [role="status"] { color: var(--dim); }
+.rank-page .rank-methods { margin: 24px 0 0; padding: 4px 16px; font-size: 16px; line-height: 1.7; }
+.rank-page .rank-methods summary { min-height: 44px; padding: 10px 0; }
+.rank-page .rank-methods h2 { margin: 20px 0 8px; font-size: 19px; }
+.rank-page .rank-methods p { margin: 8px 0; }
+.rank-page .rank-methods .sub { margin: 16px 0 12px; font-size: 14px; }
+.rank-page .rank-methods code { overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .rank-page .rank-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rank-page .rank-form label:first-child { grid-column: 1 / -1; }
+  .rank-page table.rank-table { min-width: 56rem; }
+  .rank-page table.rank-table th:nth-child(1) { width: 3.25rem; }
+  .rank-page table.rank-table th:nth-child(2) { width: 8.5rem; }
+  .rank-page table.rank-table th:nth-child(3) { width: 5.5rem; }
+}
+@media (min-width: 1160px) {
+  .rank-page .rank-table-help { display: none; }
+}
