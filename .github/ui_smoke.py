@@ -63,7 +63,7 @@ def main():
             page = context.new_page()
             errors = []
             missing = []
-            page.on('pageerror', lambda error: errors.append(str(error)))
+            page.on('pageerror', lambda error: errors.append(error.stack or str(error)))
             page.on('response', lambda res: missing.append(res.url) if res.status>=400 and res.url.startswith(base) and not res.url.endswith(('/field/naver-map-key.js','/field/vworld-key.js')) else None)
 
             def check(route, width, topic=None):
