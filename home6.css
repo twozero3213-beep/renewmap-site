@@ -20,7 +20,7 @@
 .h6-search .home-hits small { color: var(--dim); }
 .h6-try { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 0; font-weight: 600; color: var(--dim); }
 .h6-chip { min-height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
-.h6-chip[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.h6-chip[aria-pressed="true"] { background: var(--green); color: #fff; border-color: var(--green); }   /* v7.16: 선택 표시는 모든 화면에서 청록 한 가지(10회차) */
 .h6-free { font-size: 15px; color: var(--dim); margin: 18px 0 0; }
 
 /* 지금 이 동네 카드: 원장 셀 그대로 */
@@ -106,7 +106,7 @@
 .h6-diff-list dd { margin: 0; }
 /* 요건 '해당'은 좋고 나쁨이 아니다(11-13 2차: 빨강=해당·초록=아님이 거꾸로 읽힘). 해당은 먹색, 아님은 회색 */
 .h6-live-rows .is-over i { background: var(--ink); color: #fff; }
-.h6-live-rows .is-under i { background: #e7ecea; color: #3f524d; }
+.h6-live-rows .is-under i { background: var(--off-bg); color: var(--neutral-ink); }
 .h6-live-rule { margin: 0 0 4px; font-size: 14px; color: var(--dim); }
 
 /* 근거 영수증(11-13): 세 칸 표어 대신 실제 원장 셀 한 장. 인쇄된 계산서처럼 점선과 고정폭 숫자로 */
