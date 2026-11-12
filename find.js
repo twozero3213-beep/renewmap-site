@@ -200,7 +200,7 @@
       const v = sts[i].ok ? c.get(a, ctx) : null, has = v !== null && v !== undefined;
       return [has ? v : '', !sts[i].ok || !has ? '자료 없음' : TEST[c.op](v, sts[i].th) ? '해당' : '해당 안 함']; }), JUDGE[ev.res.get(a.code)] || '', [...new Set(nums)].sort((x, y) => x - y).join(', ')];
     const byCode = list => sortAreas(list, 'code').map(row);
-    const cond = [['출처 번호', '조건', '조건 문구(기준)', '값의 단위', '출처', 'URL', '기준일', '이용조건', '비고']];
+    const cond = [['출처 번호', '조건', '조건 문구(기준)', '공간 단위', '출처', 'URL', '기준일', '이용조건', '비고']];
     conds.forEach((c, i) => cond.push([nums[i], c.n, chipLabel(c, ctx, sts[i]), UNIT[unit], srcs[i].name, srcs[i].url, srcs[i].date, srcs[i].license, [c.ref ? '참고 구간(공식 기준 아님)' : '', c.sgLevel ? '시·군·구 단위 값' : '', c.src === 'forecast' ? '추세 외삽(판정 아님)' : ''].filter(Boolean).join(' · ')]));
     cond.push([]); cond.push(['', NOTE, '결과는 조건에 해당하는 곳을 행정코드 순으로 적은 것이며 순위·점수가 아닙니다. 결정은 담당자가 합니다.']);
     return [{ name: '해당 지역', rows: [head, ...byCode(ev.hits)], widths: [14, 18, 12, 14, ...conds.flatMap(() => [14, 12]), 14, 10] },

@@ -1249,6 +1249,15 @@
       const built = docFor(v, m, it);
       report.innerHTML = reportModeHTML(reportMode) + briefHTML(v, it, rows, fragChoice, built.error ? null : built.brief);
     } else report.innerHTML = reportModeHTML(reportMode) + reportHTML(v, it, rows);
+    const exportMessage = DG === undefined ? '문서 도구를 불러오는 중입니다. 준비가 끝나면 출력 버튼이 활성화됩니다.'
+      : !DG ? '문서 도구를 불러오지 못했습니다. 새로고침한 뒤 다시 시도해 주세요.'
+      : state.templates === null ? '문서 양식을 불러오지 못했습니다. 새로고침한 뒤 다시 시도해 주세요.'
+      : filesLoading(v) ? '문서에 필요한 자료를 불러오는 중입니다. 준비가 끝나면 출력 버튼이 활성화됩니다.' : '';
+    report.querySelectorAll('[data-print], [data-dl]').forEach(button => { button.disabled = !!exportMessage; });
+    if (exportMessage) {
+      const note = document.createElement('p'); note.className = 'rp-intro'; note.dataset.exportWait = ''; note.setAttribute('role', 'status'); note.textContent = exportMessage;
+      report.querySelector('.rp-head')?.after(note);
+    }
     paintFrag();
   }
   // ── 파일 만들기(docgen.js): 선택한 동의 원장 셀로 근거서(HWPX·XLSX)와 1쪽 요약을 이 브라우저에서 바로 만든다. 서버로 보내지 않는다 ──
@@ -1264,7 +1273,7 @@
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
     document.dispatchEvent(new Event('renew-docgen')); // find.js가 XLSX 단추를 다시 그린다
-    if (state.index) render();
+    if (state.index) { reportKey = ''; render(); }
   }));
   function docFor(v, m, it) {
     if (DG === undefined) { loadDocgen(); return { error: '문서 생성기를 불러오는 중입니다.' }; }
@@ -1302,9 +1311,22 @@
   }
   const currentDong = () => { if (!state.index) return null; const v = resolve(state.index, state.route), m = model(v), it = m.kind === 'emd' && v.dong ? m.items.find(x => x.code === v.dong) : null; return it ? { v, m, it } : null; };
   const notify = detail => document.dispatchEvent(new CustomEvent('renew-export', { detail })); // report.js가 상태 문구를 바꾼다
-  function download(kind) {
-    const cur = currentDong(); if (!cur) { notify({ format: kind, status: 'empty' }); return; }
-    const built = docFor(cur.v, cur.m, cur.it); if (built.error) { notify({ format: kind, status: 'error', message: built.error }); return; }
+  async function exportInput(format) {
+    const cur = currentDong(), mode = reportMode;
+    if (!cur) { notify({ format, status: 'empty' }); return null; }
+    let built = docFor(cur.v, cur.m, cur.it);
+    if (built.error && docMemo.ready) {
+      const pending = docMemo;
+      await pending.ready;
+      if (docMemo !== pending || reportMode !== mode) { notify({ format, status: 'error', message: '문서 준비 중 선택이나 입력이 바뀌었습니다. 현재 문서에서 다시 눌러 주세요.' }); return null; }
+      built = docFor(cur.v, cur.m, cur.it);
+    }
+    if (built.error) { notify({ format, status: 'error', message: built.error }); return null; }
+    return { cur, built };
+  }
+  async function download(kind) {
+    const prepared = await exportInput(kind); if (!prepared) return;
+    const { cur, built } = prepared;
     const one = reportMode === 'onepage', stem = `${cur.it.code}_${DG.safeName(cur.it.name)}_${one ? '요약' : '근거서'}`;
     try {
       // 동 보고서에서 '지금 값 저장'을 했으면 본문·엑셀에 기준일 비교를 붙인다(1쪽 요약은 분량 때문에 넣지 않는다)
@@ -1317,9 +1339,9 @@
       notify({ format: kind, status: 'done', file: file[0], size: DG.saveBytes(...file), year: built.doc.brief.year, one });
     } catch (err) { notify({ format: kind, status: 'error', message: err.message }); }
   }
-  function printReport() {
-    const cur = currentDong(); if (!cur) { notify({ format: 'pdf', status: 'empty' }); return; }
-    const built = docFor(cur.v, cur.m, cur.it); if (built.error) { notify({ format: 'pdf', status: 'error', message: built.error }); return; }
+  async function printReport() {
+    const prepared = await exportInput('pdf'); if (!prepared) return;
+    const { cur, built } = prepared;
     reportKey = ''; renderReport(cur.v, cur.m, cur.it);
     if (!report.querySelector('[data-input-hash]')) {
       const footer = document.createElement('p'); footer.className = 'dg-small'; footer.setAttribute('data-input-hash', ''); footer.textContent = built.doc.footer; report.appendChild(footer);

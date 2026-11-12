@@ -714,12 +714,13 @@
   async function buildZip() {
     const rows = await S.records(), entries = [{ name: "records.json", data: JSON.stringify(R.exportDoc(rows, new Date()), null, 2) }];
     let changed = 0;
-    for (const r of rows) for (const id of r.photos || []) {
+    const sent = new Set();
+    for (const r of rows) for (const id of new Set([...(r.photos || []), ...(r.prev_photos || [])])) {
       const b = await S.photo(id); if (!b) continue;
       const data = new Uint8Array(await b.arrayBuffer());
       // 기기에 저장된 사진이 촬영 때와 같은지 내보내기 전에 대조한다(FR-45). 달라도 내보내되 알린다(받는 쪽 가져오기가 그 기록을 거절한다)
       if (r.photo_sha256 && r.photo_sha256[id] && R.sha256Hex(data) !== r.photo_sha256[id]) changed++;
-      entries.push({ name: `photos/${id}.jpg`, data });
+      if (!sent.has(id)) { sent.add(id); entries.push({ name: `photos/${id}.jpg`, data }); }
     }
     if (changed) toast(`사진 ${changed}장이 촬영 때와 다릅니다.\n기기 저장 공간을 확인해 주세요.`);
     const day = new Date().toISOString();

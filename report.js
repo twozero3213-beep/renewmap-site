@@ -30,9 +30,9 @@
     const pdf = button('pdf'), hwpx = button('hwpx'), xlsx = button('xlsx'), docx = button('docx'), pptx = button('pptx');
     let anchor = null, shown = false;
     function sync() {
-      const ready = Boolean(report.querySelector('[data-print]')), dl = report.querySelector('[data-dl]');
-      pdf.disabled = !ready;
-      [hwpx, xlsx, docx, pptx].forEach(b => { if (b) b.disabled = !dl; });
+      const print = report.querySelector('[data-print]'), dl = report.querySelector('[data-dl]');
+      pdf.disabled = !print || print.disabled;
+      [hwpx, xlsx, docx, pptx].forEach(b => { if (b) b.disabled = !dl || dl.disabled; });
       // 보고서가 다시 그려질 때만 알림을 지운다(복사 버튼 글자가 바뀔 때마다 지우지 않는다). 형식별 안내 줄은 보고서 머리 단추와 겹쳐 쓰지 않는다
       if (dl !== anchor || !shown) { anchor = dl; shown = true; status.innerHTML = ''; }
     }

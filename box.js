@@ -77,7 +77,7 @@
   // 기록 한 건의 원본 ZIP(records.json + 가린 사진)
   async function recordZip(rec) {
     const entries = [{ name: "records.json", data: JSON.stringify(R.exportDoc([rec], new Date()), null, 2) }];
-    for (const id of rec.photos || []) { const b = await S.photo(id); if (b) entries.push({ name: `photos/${id}.jpg`, data: new Uint8Array(await b.arrayBuffer()) }); }
+    for (const id of new Set([...(rec.photos || []), ...(rec.prev_photos || [])])) { const b = await S.photo(id); if (b) entries.push({ name: `photos/${id}.jpg`, data: new Uint8Array(await b.arrayBuffer()) }); }
     return D.zipStore(entries, new Date().toISOString());
   }
   async function render() {

@@ -5,6 +5,7 @@
 /* Hallmark · dismissed 63 · the consent sentence in the about.html contact form is legal text and is never reworded */
 /* Hallmark · waive 7b · --card and --on-green stay #ffffff · DESIGN.md 1.1 measured every RenewMap text pair on this white, ink 12.09:1 */
 /* 리뉴맵 랜딩 공통 스타일. 색은 V23 시제품(reference/v23) 값을 따른다. */
+[hidden] { display: none !important; }
 :root {
   /* 색 토큰: docs/design/redesign_2026-10-27.md 6.1(대비는 그 표의 계산값). 이름은 기존 것을 그대로 쓴다 */
   --bg: #f5f7f6;

@@ -11,10 +11,13 @@
 
   // 금액 단위: 만원. 면적: ㎡. 비율 입력은 %
   function feasibility(x) {
-    const n = k => Number(x[k]);
-    for (const k of ['area', 'far', 'netRatio', 'price', 'cost', 'underRatio', 'otherRatio']) {
-      if (!Number.isFinite(n(k)) || n(k) < 0) return { error: `${k} 값이 숫자가 아닙니다` };
+    const n = k => Number(x[k]), blank = v => v === null || v === undefined || String(v).trim() === '';
+    for (const [k, label] of [['area', '구역 면적'], ['far', '계획 용적률'], ['netRatio', '전용률'], ['price', '분양가'], ['cost', '공사비'], ['underRatio', '지하 연면적 비율'], ['otherRatio', '기타 사업비 비율']]) {
+      if (blank(x[k])) return { error: `${label} 값을 입력해 주세요.` };
+      if (!Number.isFinite(n(k)) || n(k) < 0) return { error: `${label} 값은 0 이상의 숫자여야 합니다.` };
     }
+    const beforeValue = blank(x.before) ? null : Number(x.before);
+    if (beforeValue !== null && (!Number.isFinite(beforeValue) || beforeValue < 0)) return { error: '종전자산 총액은 0 이상의 숫자여야 합니다.' };
     const above = n('area') * n('far') / 100;                     // 지상 연면적
     const total = above * (1 + n('underRatio') / 100);            // 공사 연면적(지하 포함)
     const net = above * n('netRatio') / 100;                      // 분양 전용면적 합
@@ -23,12 +26,15 @@
     const other = build * n('otherRatio') / 100;
     const cost = build + other;
     const profit = after - cost;                                  // 종전자산에 돌아갈 몫
-    const before = x.before === '' || x.before === null || x.before === undefined ? null : Number(x.before) * 10000;   // 억원 → 만원
+    const before = beforeValue === null ? null : beforeValue * 10000;   // 억원 → 만원
     const ratio = before && before > 0 ? (profit / before) * 100 : null;
     const sens = [-10, 0, 10].map(p => {
       const a = net * n('price') * (1 + p / 100);
       return { pct: p, ratio: before && before > 0 ? ((a - cost) / before) * 100 : null, profit: a - cost };
     });
+    if ([above, total, net, after, build, other, cost, profit, before, ratio, ...sens.flatMap(s => [s.profit, s.ratio])].some(v => v !== null && !Number.isFinite(v))) {
+      return { error: '계산 범위를 넘었습니다. 입력값의 단위와 자릿수를 확인해 주세요.' };
+    }
     return { above, total, net, after, build, other, cost, profit, before, ratio, sens };
   }
 
@@ -49,20 +55,23 @@
   function init() {
     const form = document.getElementById('bizForm'), out = document.getElementById('bizOut'), note = document.getElementById('bizPriceNote');
     const read = () => Object.fromEntries(Object.keys(DEFAULTS).map(k => [k, form.elements[k].value]));
+    let priceEdited = false;
+    const keptPrice = () => priceEdited ? '직접 입력한 분양가를 유지합니다.' : '가정값을 그대로 둡니다.';
     const draw = () => { out.innerHTML = resultHTML(feasibility(read())); };
     for (const [k, v] of Object.entries(DEFAULTS)) form.elements[k].value = v;
-    form.addEventListener('input', draw);
+    form.addEventListener('input', e => { if (e.target === form.elements.price) priceEdited = true; draw(); });
     form.addEventListener('submit', e => { e.preventDefault(); draw(); });
     draw();
     const code7 = new URLSearchParams(location.search).get('dong');
     if (!code7 || !/^\d{8}$/.test(code7)) return;
     fetch('data/national/scores.json').then(r => r.json()).then(s => {
       const d = s.dongs[code7], p = d && d.price;
-      if (!p || p.apt_m2_median === null || p.apt_m2_median === undefined) { note.textContent = `${d ? d.name : code7}: 시·군·구 아파트 실거래 ㎡당 중위가가 없어 가정값을 그대로 둡니다.`; return; }
+      if (!p || p.apt_m2_median === null || p.apt_m2_median === undefined) { note.textContent = `${d ? d.name : code7}: 시·군·구 아파트 실거래 ㎡당 중위가가 없어 ${keptPrice()}`; return; }
+      if (priceEdited) { note.textContent = `${d.name}이 속한 시·군·구 아파트 실거래 ㎡당 중위가는 참고 자료입니다. ${keptPrice()}`; return; }
       form.elements.price.value = Math.round(p.apt_m2_median);
       note.textContent = `${d.name}이 속한 시·군·구 아파트 매매 실거래 ㎡당 중위가 ${p.apt_m2_median.toLocaleString('ko-KR')}만원(${p.apt_ref}, 전용면적 기준${p.apt_pooled ? ', 시 전체' : ''})을 분양가 기본값으로 넣었습니다. 새 아파트 분양가는 보통 이보다 높거나 낮을 수 있습니다.`;
       draw();
-    }).catch(() => { note.textContent = '실거래 자료를 불러오지 못해 가정값을 그대로 둡니다.'; });
+    }).catch(() => { note.textContent = `실거래 자료를 불러오지 못해 ${keptPrice()}`; });
   }
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });

@@ -7,8 +7,8 @@
     const start = (page - 1) * 5;
     return { page, pages, start, end: Math.min(total, start + 5) };
   }
-  function create(list, label, changed) {
-    let page = 1;
+  function create(list, label, changed, initialPage = 1) {
+    let page = initialPage;
     const nav = document.createElement("nav"), prev = document.createElement("button"), next = document.createElement("button"), select = document.createElement("select"), status = document.createElement("span");
     nav.className = "list-pages"; nav.setAttribute("aria-label", label + " 페이지");
     for (const button of [prev, next]) { button.type = "button"; button.className = "ghost"; button.setAttribute("aria-controls", list.id); }

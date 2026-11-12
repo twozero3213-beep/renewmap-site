@@ -320,12 +320,19 @@
         `<div id="dashDetail" class="dash-detail"${cell || state.open ? '' : ' hidden'}>${state.open ? (cell ? detailHTML(cell, `${d.name} · ${openLabel}`) : detailHTML(null, `${d.name} · ${openLabel} · 셀 없음`)) : ''}</div></div>` +
         `<div class="dash-panel"><div class="dash-panel-head"><h3>20년·30년 × 3기준</h3><p class="dash-legend"><i class="y20"></i>20년 <i class="y30"></i>30년</p></div>${barsSVG(d)}</div></div>` +
         `<div class="dash-panel dash-cmp-wrap"><div class="dash-panel-head"><h3>${esc(v.sigungu.name)} 동별 나란히 보기 <small>법정동 코드 순</small></h3>${yearSeg('s')}</div>` +
-        `<p class="dash-legend"><i class="b-COUNT"></i>동수 <i class="b-AREA"></i>연면적 <i class="b-HH"></i>세대</p><ul class="dash-cmp">${compareHTML(v.dongs, state.year, d.code)}</ul></div>`;
+        `<p class="dash-legend"><i class="b-COUNT"></i>동수 <i class="b-AREA"></i>연면적 <i class="b-HH"></i>세대</p><ul class="dash-cmp" id="dashCompare"></ul></div>`;
     }
     const viewSeg = `<div class="dash-seg dash-view" role="group" aria-label="보기 방식">${[['map', '지도'], ['card', '카드']].map(([k, t]) =>
       `<button type="button" data-view="${k}" aria-pressed="${state.view === k}">${t}</button>`).join('')}</div>`;
     if (mapState.el) mapState.el.remove(); // 다시 그리는 동안 Leaflet 지도를 떼어 두었다가 drawMap()에서 붙인다
     app.innerHTML = `<div class="dash-chips dash-gus" role="group" aria-label="부산 구·군">${chips}</div>${viewSeg}${body}`;
+    const comparisons = app.querySelector('#dashCompare');
+    if (comparisons) {
+      const draw = () => { comparisons.innerHTML = compareHTML(pager.slice(v.dongs), state.year, v.dong.code); };
+      const selectedPage = Math.floor(v.dongs.findIndex(d => d.code === v.dong.code) / 5) + 1;
+      const pager = window.RenewListPages.create(comparisons, '법정동 비교', draw, selectedPage);
+      draw();
+    }
     // CSP(style-src에 'unsafe-inline' 없음): 인라인 style 대신 data-*를 CSSOM으로 옮긴다
     app.querySelectorAll('[data-delay]').forEach(x => { x.style.transitionDelay = x.dataset.delay + 'ms'; });
     app.querySelectorAll('[data-bg]').forEach(x => { x.style.background = x.dataset.bg; });

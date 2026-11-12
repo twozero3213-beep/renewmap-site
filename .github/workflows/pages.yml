@@ -15,7 +15,10 @@ concurrency:
   group: pages
   cancel-in-progress: false
 jobs:
+  ui:
+    uses: ./.github/workflows/ui.yml
   deploy:
+    needs: ui
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     environment:
