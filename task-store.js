@@ -34,17 +34,41 @@
     const rows=await read('revisions',s=>s.index('by_task').getAll(id));
     return rows.sort((a,b)=>a.revision-b.revision).map(freeze);
   }
-  async function write(candidate,records,expected,restore) {
+  async function write(candidate,records,expected,restore,prefix) {
     const d=await db();
     return new Promise((resolve,reject)=>{
       const t=d.transaction(['heads','revisions'],'readwrite'), heads=t.objectStore('heads'), revisions=t.objectStore('revisions');
       let failure=null;
-      const stop=message=>{ failure=new Error(message); t.abort(); };
+      const abort=error=>{ failure=error; t.abort(); };
+      const stop=message=>abort(new Error(message));
+      const save=head=>{
+        try {
+          for(const record of records) revisions.add(record);
+          if(restore || !head) heads.add(candidate); else heads.put(candidate);
+        } catch(error) { abort(error); }
+      };
       t.oncomplete=()=>resolve(freeze(candidate));
       t.onerror=t.onabort=()=>reject(failure || t.error || new Error('과업 저장에 실패했습니다.'));
       const q=heads.get(candidate.id);
       q.onsuccess=()=>{
         const head=q.result;
+        if(prefix!==undefined) {
+          try {
+            const last=prefix.at(-1);
+            if((head?head.hash:null)!==expected || (head?T.canonical(head):null)!==(last?T.canonical(last):null)) {
+              stop('다른 창에서 과업이 변경되었습니다. 최신 이력을 다시 불러오세요.'); return;
+            }
+            const current=revisions.index('by_task').getAll(candidate.id);
+            current.onsuccess=()=>{
+              try {
+                const rows=current.result.sort((a,b)=>a.revision-b.revision);
+                if(T.canonical(rows)!==T.canonical(prefix)) { stop('기기 과업 이력이 변경되었거나 손상되었습니다. 기존 기록은 보존합니다.'); return; }
+                if(records.length) save(head);
+              } catch(error) { abort(error); }
+            };
+          } catch(error) { abort(error); }
+          return;
+        }
         if(restore) {
           if(head) {
             if(head.hash===candidate.hash && head.revision===candidate.revision) return;
@@ -53,10 +77,7 @@
         } else if((head?head.hash:null)!==expected || candidate.previous_hash!==expected || candidate.revision!==(head?head.revision+1:1)) {
           stop('다른 창에서 과업이 변경되었습니다. 최신 이력을 다시 불러오세요.'); return;
         }
-        try {
-          for(const record of records) revisions.add(record);
-          if(restore || !head) heads.add(candidate); else heads.put(candidate);
-        } catch(error) { failure=error; t.abort(); }
+        save(head);
       };
     });
   }
@@ -72,6 +93,13 @@
     restore:async(historyValue)=>{
       const h=snapshot(historyValue); await T.verify(h);
       return write(h[h.length-1],h,null,true);
+    },
+    fastForward:async(historyValue)=>{
+      const incoming=snapshot(historyValue); await T.verify(incoming);
+      const local=await history(incoming[0].id);
+      if(local.length) await T.verify(local);
+      if(local.length>incoming.length || local.some((r,i)=>T.canonical(r)!==T.canonical(incoming[i]))) throw new Error('서버 이력이 기기 기록의 다음 버전이 아닙니다. 분기·과거 이력은 덮어쓰지 않습니다.');
+      return write(incoming.at(-1),incoming.slice(local.length),local.at(-1)?.hash || null,false,local);
     },
   };
   if(typeof module==='object' && module.exports) module.exports=api;

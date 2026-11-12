@@ -496,26 +496,43 @@
       const f = $("restoreFile").files[0];
       if (!f || f.size > 40 * 1024 * 1024)
         throw new Error("40MB 이하의 JSON 백업을 선택해 주세요.");
-      const b = await B.read(await f.text());
-      const existing = await S.history(b.manifest.id);
+      await restoreBackup(await f.text());
+    }),
+  );
+  async function restoreBackup(value, forward = false) {
+    const b = await B.read(
+      typeof value === "string" ? value : JSON.stringify(value),
+    );
+    const existing = await S.history(b.manifest.id),
+      incoming = b.manifest.history;
+    if (existing.length && T.canonical(existing) !== T.canonical(incoming)) {
       if (
-        existing.length &&
-        T.canonical(existing) !== T.canonical(b.manifest.history)
+        !forward ||
+        existing.length > incoming.length ||
+        existing.some((r, i) => r.hash !== incoming[i]?.hash)
       )
         throw new Error(
           "같은 과업의 다른 이력이 있어 복원을 중단했습니다. 기존 과업은 유지됩니다.",
         );
-      for (const f of b.files)
-        await storeFile(new File([f.bytes], f.name), b.manifest.id);
-      await S.restore(b.manifest.history);
-      await select(b.manifest.id);
-      say(
-        "이력·파일 지문 검사를 통과한 백업을 복원했습니다. 이 검사는 작성자 신원·기관 승인 진위를 인증하지 않습니다.",
-      );
-    }),
-  );
+    }
+    for (const f of b.files)
+      await storeFile(new File([f.bytes], f.name), b.manifest.id);
+    if (forward) await S.fastForward(incoming);
+    else await S.restore(incoming);
+    await select(b.manifest.id);
+    say(
+      "이력·파일 지문 검사를 통과한 기록을 보관했습니다. 작성자 신원·기관 승인 진위는 별도 확인 대상입니다.",
+    );
+  }
   action(async () => {
     await select(new URL(location.href).searchParams.get("id") || "");
     await loadPackets();
+    if (window.RenewTaskCloudUI)
+      window.RenewTaskCloudUI.mount({
+        getBackup: backup,
+        restoreBackup: (b) => restoreBackup(b, true),
+        run: action,
+        notify: say,
+      });
   });
 })();

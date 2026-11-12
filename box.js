@@ -52,13 +52,13 @@
       });
       box.append(up, info);
     }
-    const ex = document.createElement("button"); ex.type = "button"; ex.className = "ghost exemplar"; ex.textContent = "승인 사례로 내보내기";
+    const ex = document.createElement("button"); ex.type = "button"; ex.className = "ghost exemplar"; ex.textContent = "채택 자가 기록 내보내기";
     ex.addEventListener("click", () => {   // 6단계: 본문이 들어가므로 매번 묻는다
-      if (!confirm("이 문서의 본문을 승인 사례 파일로 받습니다.\n리뉴맵 문장 개선에 쓰입니다.\n개인정보가 없는지 확인했나요?")) return;
+      if (!confirm("이 문서의 본문을 채택 자가 기록 파일로 받습니다.\n기관 승인이나 검토자 신원을 증명하는 파일이 아닙니다.\n개인정보가 없는지 확인했나요?")) return;
       try {
         const rec = lastRecs.find((r) => r.id === d.record_id), x = R.exemplarOf(d, rec, rec && rec.checker, new Date());
-        D.saveBytes(`exemplar_${x.emd || "nodong"}_${x.approved_on.replace(/-/g, "")}_${String(d.id).slice(0, 6)}.json`, JSON.stringify(x, null, 1), "application/json");
-        say("승인 사례 파일을 받았습니다.");
+        D.saveBytes(`feedback_${x.emd || "nodong"}_${x.exported_on.replace(/-/g, "")}_${String(d.id).slice(0, 6)}.json`, JSON.stringify(x, null, 1), "application/json");
+        say("채택 자가 기록 파일을 받았습니다. 승인 사례로 등록된 것은 아닙니다.");
       } catch (e) { say(e.message); }
     });
     box.append(ex);

@@ -465,15 +465,17 @@
     }
     return out.join("\n");
   }
-  // ── 학습 고리 6단계: 채택된 1쪽을 승인 사례(report_quality/distill.py 형식)로. 본문이 들어가므로 따로 동의하고, 개인정보 꼴이 있으면 만들지 않는다 ──
+  // 채택 여부는 이용자의 자가 기록이다. 승인자·결정일·기관 승인 증거를 만들어 넣지 않는다.
   function exemplarOf(doc, rec, approvedBy, now) {
-    if (!doc || !doc.outcome || doc.outcome.status !== "approved") throw new Error("'채택'으로 기록한 문서만 승인 사례가 됩니다.");
+    if (!doc || !doc.outcome || doc.outcome.status !== "approved") throw new Error("'채택'으로 기록한 문서만 자가 기록으로 내보낼 수 있습니다.");
     const text = doc.edited_text || (doc.blocks || []).map((b) => b.text).join("\n");
-    if (!text) throw new Error("문서 본문 기록이 없어 승인 사례를 만들 수 없습니다.");
+    if (!text) throw new Error("문서 본문 기록이 없어 자가 기록을 만들 수 없습니다.");
     const pii = personalKinds(`${text}\n${approvedBy || ""}`);
     if (pii.length) throw new Error(`개인정보로 보이는 글(${pii.join(", ")})이 있어 만들지 않았습니다.`);
-    return { emd: rec && rec.dong && /^\d{8}$/.test(rec.dong.code) ? rec.dong.code : null, approved_by: String(approvedBy || "담당자(소속·직위 미기재)").slice(0, 40),
-      approved_on: now.toISOString().slice(0, 10), note: "보관함에서 담당자 동의로 내보냄", kind: docKind(doc.name), text };
+    return { schema: "renewmap-adoption-feedback-v1", verification_status: "self_reported",
+      reported_by: String(approvedBy || "").trim().slice(0, 40) || null, exported_on: now.toISOString().slice(0, 10),
+      emd: rec && rec.dong && /^\d{8}$/.test(rec.dong.code) ? rec.dong.code : null,
+      note: "이용자의 채택 자가 기록이며 기관 승인·검토자 신원은 확인하지 않음", kind: docKind(doc.name), text };
   }
   // 동의한 결과만 JSONL로. 반환 {text, n}
   function outcomesJSONL(docs, recs) {
