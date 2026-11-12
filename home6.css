@@ -72,10 +72,10 @@
 .h6-trust-grid p { color: var(--dim); margin: 0 0 12px; }
 
 
-.h6-price { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; margin-top: 64px; padding-top: 32px; padding-bottom: 32px; border-top: 3px solid var(--ink); }
-.h6-price h2 { margin: 0 0 6px; font-size: 24px; }
-.h6-price p { margin: 0; color: var(--dim); }
-.h6-price-go { display: flex; gap: 8px; }
+.h6-price { margin-top: 64px; padding-top: 24px; padding-bottom: 40px; border-top: 1px solid var(--line); }   /* v7.12: 띠·단추 둘 대신 글 한 단락과 링크 하나(8회차: 흔한 SaaS 마무리 띠) */
+.h6-price h2 { margin: 0 0 8px; font-size: 20px; }
+.h6-price p { margin: 0; color: var(--ink); max-width: 720px; }
+.h6-price a { font-weight: 700; }
 .h6-more { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 15px; color: var(--dim); padding-top: 8px; }
 .h6-more a { color: var(--ink); }
 
@@ -90,9 +90,7 @@
   .h6-search .home-search-row { flex-direction: column; }
   .h6-live { padding: 18px 16px; }
   .h6-live-head h2 { font-size: 26px; }
-  .h6-price-go { width: 100%; }
-  .h6-price-go .btn { flex: 1; justify-content: center; }
-}
+  }
 
 .h6 h1, .h6 h2:not(#h6LiveName) { font-weight: 700; letter-spacing: -0.03em; }
 .h6-hero h1 { font-size: clamp(38px, 5vw, 64px); line-height: 1.18; }
