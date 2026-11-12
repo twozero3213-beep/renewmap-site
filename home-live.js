@@ -27,12 +27,13 @@
         const noBase = !!(base && base.value === null);
         const viaConsec = q.via && /DECL3IN5$/.test(q.via.code);
         // 해당하지 않았는데 바탕 총수가 없으면 감소율 숫자를 앞세우지 않는다(11-13 4차: '0%'가 '0으로 채우지 않는다'와 부딪힘)
-        // 글자는 상태 표(오른쪽 꼬리표)와 부딪히지 않게: 확정 못 함 → '추가확인', 비해당인데 바탕 총수가 없음 → '–'(0%를 앞세우지 않는다)
-        const text = viaConsec ? '3년 연속 감소' : q.status === 'none' ? '추가확인' : q.rate === null || (noBase && q.status !== 'over') ? '–' : `${fmt(q.rate)}%`;
+        // 바탕 총수가 없는데 해당도 아니면 '해당 안 함'이라 단정하지 않고 '추가확인'(v7 7회차: 결재 문서에 '해당 안 함'으로 들어간다). 머리 숫자(하한)와는 그대로 맞는다
+        const unsure = q.status === 'none' || (noBase && q.status !== 'over');
+        const text = viaConsec ? '3년 연속 감소' : unsure ? '추가확인' : q.rate === null ? '–' : `${fmt(q.rate)}%`;
         const who = label.replace(' 감소', '');
         const baseNote = !noBase ? '' : q.status !== 'over' && q.rate !== null ? `원천 감소율 ${fmt(q.rate)}% · ${who} 총수는 자료 없음(추가확인)` : `${who} 총수는 자료 없음`;
         const notes = [viaConsec ? '최근 5년 중 3년 연속 감소로 해당' : '', baseNote].filter(Boolean);
-        return { code, label, std, value: q.rate, text, over: q.status === 'none' ? null : q.status === 'over', cell: c, note: notes.join(' · ') };
+        return { code, label, std, value: q.rate, text, over: unsure ? null : q.status === 'over', cell: c, note: notes.join(' · ') };
       }),
       ref: met ? met.reference_date : null,
     };
@@ -65,7 +66,7 @@
     const c = cells.find((x) => x.indicator_code === 'DECLINE_AGING_20Y_PCT');
     if (!c) { const d = doc.createElement('div'); d.textContent = '이 동은 원장 기록이 없습니다.'; dl.append(d); return; }
     // 사람에게 보이는 줄과 내부 식별자(셀 번호·규칙 판본)를 나눈다. 상태·[미확인]은 무엇이 아직인지 말로 푼다(11-13 3차)
-    const state = { 미확인: '공식 통계 원값 그대로 · 리뉴맵 담당자 대조 전', 확인: '리뉴맵 담당자가 원천과 대조함', 추가확인: '자료가 모자라 확인이 더 필요함' }[c.status] || c.status;
+    const state = { 미확인: '공식 통계 원값 그대로(사람 검토 전)', 확인: '리뉴맵 담당자가 원천과 대조함', 추가확인: '자료가 모자라 확인이 더 필요함' }[c.status] || c.status;
     const formula = String(c.formula_text || '').replace(/\s*\[미확인\]/g, '(원천 문서에서 확인하지 못함)');
     const rows = [['값', c.value === null ? '추가확인' : `${fmt(c.value)}${c.unit || ''}`], ['원천', c.source_name], ['원천 주소', c.source_url],
       ['기준일', c.reference_date], ['조회 시각', String(c.retrieved_at || '').slice(0, 16).replace('T', ' ')], ['계산식', formula],

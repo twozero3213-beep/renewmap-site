@@ -77,7 +77,8 @@
   // 사업 목록 화면(programs.html)
   // 2026-11-13: 9개 사업을 한 표로(11-13 평가: 한 장씩 넘겨서는 사업끼리 비교할 수 없다). 요건 문구는 아래 카드와 같은 원문 옮김이다
   function compareHTML() {
-    const row = p => `<tr><th scope="row"><a href="#${esc(p.id)}">${esc(p.name)}</a></th><td>${esc(p.owner)}</td><td>${esc(p.money)}</td><td><ul>${p.needs.map(n => `<li>${esc(n.t)}</li>`).join('')}</ul></td></tr>`;
+    // data-label: 휴대폰에서 표를 카드처럼 쌓을 때 칸 이름을 앞에 붙인다(v7 7회차: 표가 옆으로 잘려 '신청 요건' 열이 안 보였다)
+    const row = p => `<tr><th scope="row"><a href="#${esc(p.id)}">${esc(p.name)}</a></th><td data-label="맡는 곳">${esc(p.owner)}</td><td data-label="지원 규모·기간">${esc(p.money)}</td><td data-label="신청 요건"><ul>${p.needs.map(n => `<li>${esc(n.t)}</li>`).join('')}</ul></td></tr>`;
     return `<section class="pg-compare" id="compare" data-page-label="9개 사업 한눈에"><h2>사업 ${PROGRAMS.length}종 한눈에</h2>` +
       `<div class="table-wrap" tabindex="0" role="region" aria-label="재생 사업 비교 표"><table><thead><tr><th scope="col">사업</th><th scope="col">맡는 곳</th><th scope="col">지원 규모·기간</th><th scope="col">신청 요건(공식 문서 옮김)</th></tr></thead>` +
       `<tbody>${PROGRAMS.map(row).join('')}</tbody></table></div></section>`;

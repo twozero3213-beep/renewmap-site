@@ -29,7 +29,11 @@
   max-width: 980px; margin: 0 auto; padding: 8px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 18px var(--shade-16); }
 .t4-slider input { width: 100%; accent-color: var(--green); min-height: 44px; }
 .t4-time output { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 22px; min-width: 4.5em; text-align: right; }
-.t4-map2, .t4-tag { display: none; }
+.t4-map2, .t4-tag, .t4-cmp-note { display: none; }
+.t4-ends { display: block; margin-top: -6px; font-size: 12px; color: var(--dim); }
+.is-compare .t4-cmp-note { display: block; margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--soft); color: var(--green-press); font-weight: 700; font-variant-numeric: tabular-nums; }
+/* 나란히 볼 때 왼쪽 지도의 확대 단추가 두 지도 경계에 걸렸다 → 숨기고 휠·두 손가락으로 */
+.is-compare #t4Map .maplibregl-ctrl-top-right { display: none; }
 /* 올해와 나란히: 왼쪽 = 막대의 해, 오른쪽 = 올해. 두 지도 시점은 time4d.js가 같이 움직인다 */
 .is-compare #t4Map { right: 50%; border-right: 2px solid var(--card); }
 .is-compare .t4-map2 { display: block; left: 50%; }

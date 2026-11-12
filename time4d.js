@@ -5,7 +5,8 @@
   'use strict';
   const YEAR_FROM = 1960;
   // v7: 동네 찾기 지도와 같은 따뜻한 단계색(새 건물은 옅은 크림, 오래될수록 벽돌색). 날짜 없는 건물은 차가운 회색으로 따로 구분한다
-  const BANDS = [[0, '#f0e3c4', '20년 미만'], [20, '#e09a4c', '20~29년'], [30, '#9b3b22', '30년 이상']];
+  // v7 7회차: 30년 이상 한 단계면 원도심이 다 같은 적갈색이라 올해 화면에서 차이가 안 보였다 → 40년 이상을 더 짙게 나눈다
+  const BANDS = [[0, '#f0e3c4', '20년 미만'], [20, '#e09a4c', '20~29년'], [30, '#a8452a', '30~39년'], [40, '#5c2214', '40년 이상']];
   const NO_DATE = '#b9bec5';
 
   // 사용승인 연도. 날짜가 없거나 1900년 전으로 적힌 것은 0(날짜 없음)
@@ -56,7 +57,7 @@
   // 그해 색. MapLibre 식으로 만든다(연도를 바꿀 때마다 다시 넣는다)
   function colorExpr(year) {
     const age = ['-', year, ['get', 'y']];
-    return ['case', ['<', ['get', 'y'], 1], NO_DATE, ['step', age, BANDS[0][1], 20, BANDS[1][1], 30, BANDS[2][1]]];
+    return ['case', ['<', ['get', 'y'], 1], NO_DATE, ['step', age, BANDS[0][1], ...BANDS.slice(1).flatMap(([edge, color]) => [edge, color])]];
   }
   // 그해까지 지어진 건물과 날짜 없는 건물만 보인다
   const filterExpr = (year) => ['<=', ['get', 'y'], year];
@@ -87,6 +88,7 @@
 
   const slider = $('t4Year');
   slider.min = String(YEAR_FROM); slider.max = String(TO); slider.value = String(NOW);
+  $('t4Ends').textContent = `${YEAR_FROM}년 ~ ${TO}년 · 올해 뒤는 지금 건물 그대로일 때`;
   // 색 칸은 CSSOM으로 칠한다(style 속성은 CSP가 막는다)
   $('t4Legend').replaceChildren(...[...BANDS.map(([, c, t]) => [c, t]), [NO_DATE, '사용승인일 없음']].map(([c, t]) => {
     const li = document.createElement('li'), i = document.createElement('i');
@@ -96,16 +98,25 @@
   function paint() {
     $('t4YearOut').textContent = `${year}년`;
     $('t4TagL').textContent = `${year}년`;
+    const sn = stats(blds, NOW);
+    $('t4CmpNote').textContent = s0Line(year, sn);
     slider.setAttribute('aria-valuetext', `${year}년`);
     const s = stats(blds, year);
     $('t4Built').textContent = fmt(s.built);
     $('t4P20').textContent = s.pct20 === null ? '-' : `${s.pct20}%`;
     $('t4P30').textContent = s.pct30 === null ? '-' : `${s.pct30}%`;
     $('t4Future').hidden = year <= NOW;
+    // 동 목록·구역 계산의 대장 건물 수와 여기 숫자의 차이(사용승인일 없는 건물)를 그 자리에서 밝힌다(v7 평가: 5,207과 5,144가 왜 다른지 몰랐다)
+    $('t4NoDate').textContent = s.noDate ? `사용승인일이 없는 ${fmt(s.noDate)}동은 회색으로 세우고 비율에서 뺍니다.` : '';
     if (map && map.getLayer('b3d')) {
       map.setPaintProperty('b3d', 'fill-extrusion-color', colorExpr(year));
       map.setFilter('b3d', filterExpr(year));
     }
+  }
+  // 나란히 볼 때 왼쪽 패널에 두 해의 20년 이상 비율 변화를 한 줄로(v7 7회차: 고른 해 숫자만 있어 변화량이 없었다)
+  function s0Line(y, sn) {
+    const s = stats(blds, y);
+    return s.pct20 === null || sn.pct20 === null ? '' : `20년 이상: ${y}년 ${s.pct20}% → 올해 ${sn.pct20}%`;
   }
   function marks() {
     const y50 = crossYear(blds, 50, YEAR_FROM, TO), y67 = crossYear(blds, 66.7, YEAR_FROM, TO);

@@ -42,6 +42,8 @@
         <div><dt>20년 이상</dt><dd id="t4P20">-</dd></div>
         <div><dt>30년 이상</dt><dd id="t4P30">-</dd></div>
       </dl>
+      <p id="t4NoDate" class="t4-basis"></p>
+      <p id="t4CmpNote" class="t4-cmp-note" aria-live="polite"></p>
       <p id="t4Future" class="t4-future" hidden>올해 뒤는 지금 건물이 그대로 있다고 보고 셈한 달력 계산입니다.<br>철거나 새 건물은 넣지 않았습니다.</p>
       <h3>기준선에 닿는 해</h3>
       <ul id="t4Marks" class="t4-marks"></ul>
@@ -56,7 +58,7 @@
       <span class="t4-tag t4-tag-l" id="t4TagL" aria-hidden="true"></span><span class="t4-tag t4-tag-r" aria-hidden="true">올해</span>
       <div class="t4-time">
         <button type="button" id="t4Play" class="btn" aria-pressed="false">연도 돌려 보기</button>
-        <label class="t4-slider"><span class="sr-only">연도</span><input type="range" id="t4Year" step="1"></label>
+        <label class="t4-slider"><span class="sr-only">연도</span><input type="range" id="t4Year" step="1"><small id="t4Ends" class="t4-ends"></small></label>
         <output id="t4YearOut" for="t4Year" aria-live="polite"></output>
         <button type="button" id="t4Now" class="btn ghost">올해로</button>
         <button type="button" id="t4Cmp" class="btn ghost" aria-pressed="false">올해와 나란히</button>
