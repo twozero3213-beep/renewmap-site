@@ -7,7 +7,7 @@
   const REQS = [
     { key: 'pop', name: '인구 감소', paths: [['DECLINE_POP_DROP30Y_PCT', 'ge', 20, '30년 최대 대비 20% 이상 감소'], ['DECLINE_POP_DECL3IN5', 'eq', 1, '최근 5년 중 3년 연속 감소']] },
     { key: 'biz', name: '사업체 감소', paths: [['DECLINE_BIZ_DROP10Y_PCT', 'ge', 5, '10년 최대 대비 5% 이상 감소'], ['DECLINE_BIZ_DECL3IN5', 'eq', 1, '최근 5년 중 3년 연속 감소']] },
-    { key: 'aging', name: '20년 넘은 건물', paths: [['DECLINE_AGING_20Y_PCT', 'ge', 50, '준공 20년 이상 건축물 50% 이상']] },
+    { key: 'aging', name: '20년 이상 건축물', paths: [['DECLINE_AGING_20Y_PCT', 'ge', 50, '준공 20년 이상 건축물 50% 이상']] },
   ];
   const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
   // value(지표 코드) → 숫자 또는 null. 돌려주는 것: 요건마다 { key, name, status: 'over'|'in'|'none', via: 해당한 길(없으면 null), rate: 첫 길(감소율·비율) 값 }

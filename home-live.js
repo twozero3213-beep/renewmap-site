@@ -6,7 +6,7 @@
   const ROWS = [
     ['DECLINE_POP_DROP30Y_PCT', '인구 감소', 20, '기준 30년 최대 대비 20% 이상 감소'],
     ['DECLINE_BIZ_DROP10Y_PCT', '사업체 감소', 5, '기준 10년 최대 대비 5% 이상 감소'],
-    ['DECLINE_AGING_20Y_PCT', '20년 넘은 건축물', 50, '기준 50% 이상'],
+    ['DECLINE_AGING_20Y_PCT', '20년 이상 건축물', 50, '기준 50% 이상'],
   ];
   const MET = 'DECLINE_MET_COUNT';
   // 1쪽 문서·동 페이지와 같은 자릿수(소수 둘째 자리)로 보인다(11-13 3차: 홈 83%, 문서 82.96%로 달라 보임)
@@ -68,7 +68,8 @@
     if (!c) { const d = doc.createElement('div'); d.textContent = '이 동은 원장 기록이 없습니다.'; dl.append(d); return; }
     // 사람에게 보이는 줄과 내부 식별자(셀 번호·규칙 판본)를 나눈다. 상태·[미확인]은 무엇이 아직인지 말로 푼다(11-13 3차)
     const state = { 미확인: '공식 통계 원값 그대로(사람 검토 전)', 확인: '리뉴맵 담당자가 원천과 대조함', 추가확인: '자료가 모자라 확인이 더 필요함' }[c.status] || c.status;
-    const formula = String(c.formula_text || '').replace(/\s*\[미확인\]/g, '(원천 문서에서 확인하지 못함)');
+    // 9회차: '확인하지 못함'이 신뢰를 깎는 대표 예시로 읽혔다. 사실대로 '원천 기관이 계산해 공표한 값'임을 말한다(리뉴맵이 다시 계산하지 않는다)
+    const formula = String(c.formula_text || '').replace(/\s*\[미확인\]/g, '(원천 기관이 계산해 공표한 값, 리뉴맵은 다시 계산하지 않음)');
     const rows = [['값', c.value === null ? '추가확인' : `${fmt(c.value)}${c.unit || ''}`], ['원천', c.source_name], ['원천 주소', c.source_url],
       ['기준일', c.reference_date], ['조회 시각', String(c.retrieved_at || '').slice(0, 16).replace('T', ' ')], ['계산식', formula],
       ['공간 단위', c.spatial_unit], ['이용 조건', c.license_type], ['상태', state]];

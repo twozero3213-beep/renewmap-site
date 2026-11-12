@@ -392,4 +392,5 @@ header.top > .wrap:first-child { min-height: 64px !important; }
 @media (max-width: 1099px) {
   .explore-page #mapApp { display: flex; flex-direction: column; }
   .explore-page #mapApp > .map-stage { order: -1; margin-bottom: 12px; }
+  .explore-page .workspace-panel .map-canvas { height: clamp(260px, 42dvh, 480px) !important; }   /* 고른 동 결과가 첫 화면에 걸치게(9회차) */
 }

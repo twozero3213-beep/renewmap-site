@@ -1322,8 +1322,8 @@
     return `<div class="map-panel-head"><h3 class="map-h3" data-code="${esc(it.code)}">${esc(it.name)} <small>${esc(it.kind || '행정동')}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` +
       reqLineHTML(rows, m.json.dongs.find(d => codeOf(d) === it.code)) + // 2026-11-13: 동 이름 바로 아래에 신청요건 한 줄(첫 약속 D23의 답을 맨 먼저)
       `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>${reorgNote(v)}` +
-      `<p class="map-report-link"><a href="#report">${icon('book')}동네 보고서 보기</a><a href="#report" data-set-mode="programs">${icon('flag')}맞는 재생 사업 보기</a></p>` +
-      '<p><button type="button" class="btn ghost" data-candidate-save>검토 후보 저장</button> <a href="box.html#candidatesTitle">저장한 후보 보기</a></p><p data-candidate-status role="status"></p>' +
+      `<p class="map-report-link"><a href="#report">${icon('book')}여러 쪽 보고서</a><a href="#report" data-set-mode="programs">${icon('flag')}맞는 재생 사업 보기</a></p>` +
+      '<p><button type="button" class="btn ghost" data-candidate-save>검토 후보 저장</button></p><p data-candidate-status role="status"></p>' +
       // v7.10(8회차): 카드가 길어 안에서 스크롤이 생겼다 → 3요건·문서·저장 아래의 세부 지표(전망·척도표·분포)는 접어 둔다. 내용·순서는 그대로
       `<details class="map-more"><summary>세부 지표 모두 보기</summary>` +
       forecastChart(ind, m.ext, v.gu || v.sigungu, m.json.dongs.find(d => codeOf(d) === it.code) || null) + scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist + `</details>` + hubHTML(v);
@@ -2138,7 +2138,7 @@
       try {
         if (!window.RenewCandidates) await import('./candidates.js?v=20261112-research');
         const saved = window.RenewCandidates.save(localStorage, snapshot, route, rows);
-        msg.textContent = saved ? '저장한 후보 보기에서 단계·메모와 근거를 확인하세요.' : '이미 저장한 후보입니다. 기존 근거와 메모를 보존했습니다.';
+        msg.textContent = saved ? '보관함(아래 탭·바닥글)에서 단계·메모와 근거를 확인하세요.' : '이미 저장한 후보입니다. 기존 근거와 메모를 보존했습니다.';
       } catch (err) { msg.textContent = '저장하지 못했습니다. ' + err.message; }
       finally { b.disabled = false; }
     }
