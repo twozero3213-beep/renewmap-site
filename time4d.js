@@ -106,6 +106,7 @@
     $('t4P20').textContent = s.pct20 === null ? '-' : `${s.pct20}%`;
     $('t4P30').textContent = s.pct30 === null ? '-' : `${s.pct30}%`;
     $('t4Future').hidden = year <= NOW;
+    $('t4App').classList.toggle('is-future', year > NOW);   // 올해 뒤는 지도 위에도 '가정' 표시(10회차: 미래 캡처가 사실처럼 돌 수 있다)
     // 동 목록·구역 계산의 대장 건물 수와 여기 숫자의 차이(사용승인일 없는 건물)를 그 자리에서 밝힌다(v7 평가: 5,207과 5,144가 왜 다른지 몰랐다)
     $('t4NoDate').textContent = s.noDate ? `사용승인일이 없는 ${fmt(s.noDate)}동은 회색으로 세우고 비율에서 뺍니다.` : '';
     if (map && map.getLayer('b3d')) {

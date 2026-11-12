@@ -33,6 +33,9 @@
 /* v7.10 색 설명은 지도 위 오른쪽 아래(왼쪽 패널 첫 화면 아래로 밀려 40년 단계가 안 보였다, 휴대폰에서도 지도와 같이 보인다) */
 .t4-key { position: absolute; right: 12px; bottom: 112px; z-index: 2; padding: 8px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 14px var(--shade-16); }
 .t4-key .t4-legend { gap: 4px; font-size: 13px; }
+.t4-future-tag { display: none; }
+.is-future .t4-future-tag { display: block; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 3; margin: 0; padding: 6px 12px; border-radius: 8px; background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber); font-weight: 700; font-size: 14px; }
+.is-compare.is-future .t4-future-tag { left: 25%; }
 .t4-key-note { margin: 0 0 6px; font-size: 12px; line-height: 1.4; color: var(--dim); }
 .t4-ends { display: block; margin-top: -6px; font-size: 13px; color: var(--ink); }
 .is-compare .t4-cmp-note { display: block; margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--soft); color: var(--green-press); font-weight: 700; font-variant-numeric: tabular-nums; }

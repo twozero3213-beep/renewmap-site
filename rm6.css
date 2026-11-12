@@ -383,7 +383,7 @@ header.top > .wrap:first-child { min-height: 64px !important; }
   body.mx-on .mx { position: relative; }
   body.mx-on .mx-side .map-legend { position: absolute; left: 400px; bottom: 44px; z-index: 3; width: max-content; max-width: 340px; margin: 0;
     padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 14px var(--shade-16); }
-  body.mx-on .mx-side .map-legend .map-legend-note { display: none; }   /* 출처·기준연도 줄은 패널 아래 '자료 기준'과 같아 지도 위에서는 뺀다 */
+  body.mx-on .mx-side .map-legend .map-legend-note { font-size: 12px; }   /* 출처·기준연도는 지도 캡처에도 찍히게 범례 안에 둔다(10회차) */
 }
 .map-more { margin-top: 12px; border-top: 1px solid var(--line); }
 .map-more > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--green); }
