@@ -1230,6 +1230,7 @@
   const extOf = v => ({ migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate, horizon: horizon(), forecastSg: forecastSgOf(),
     forecast: v && v.level === 'emd' ? forecastOf(v.emdCode) || null : null, sg: v ? (v.gu || v.sigungu || null) : null });
   let timer = null, autoT = null, lastLegend = '', lastLive = '', lastDong = null;
+  const fold = { tools: false, list: false };   // 지도 아래 접힌 칸(받기·목록)의 펼침 상태. 다시 그려도 지킨다
 
   app.innerHTML = `<div class="map-top" data-top></div><div class="map-stage" data-stage><div class="map-canvas is-wait" data-map-slot>전국 자료를 불러오는 중입니다.</div>` +
     `<section class="map-panel" data-panel hidden aria-label="선택한 지역의 세부항목 척도표"></section></div><div class="map-bottom" data-bottom></div>`;
@@ -1727,8 +1728,10 @@
     const chips = m.kind === 'emd' ? `<div class="dash-chips dash-dongs map-list" role="group" aria-label="읍·면·동">${m.items.map(x => `<button type="button" class="dash-chip" data-dong="${esc(x.code)}" aria-pressed="${x.code === v.dong}">${esc(x.name)}</button>`).join('')}</div>` : '';
     const water = `<p class="map-png"><button type="button" class="btn ghost" data-water aria-pressed="${!!state.water}">수변 수질 측정지점 ${state.water ? '끄기' : '보기'}</button></p>` +
       (state.water && state.waterData !== undefined ? waterNoteHTML(state.waterData) : '') + (state.water ? waterAutoHTML(state.waterAuto) : '');
-    bottom.innerHTML = legend + (DG ? `<p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><button type="button" class="btn ghost" data-map-geojson>지도 자료(GeoJSON)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + water + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, + − 버튼으로 확대합니다.'} 지도의 칸을 누르면 바로 아래 단계로 내려갑니다.<br>지도 대신 아래 목록으로도 고를 수 있습니다.</p></details>` +
-      `<div class="map-selects">${sidoSel}${sgSel}${guSel}</div>${chips}<p class="map-live" aria-live="polite">${esc(liveText(v, it, ind, mode))}</p>`;
+    // v7.14(9회차): 받기·수질·쓰는 법과 동 이름 목록은 접어 둔다(왼쪽 패널이 일곱 겹이라는 지적). 펼침 상태는 다시 그려도 지킨다(fold)
+    bottom.innerHTML = legend + `<details class="map-tools" data-fold="tools"${fold.tools ? ' open' : ''}><summary>지도 받기·더 보기</summary>` + (DG ? `<p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><button type="button" class="btn ghost" data-map-geojson>지도 자료(GeoJSON)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + water + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, 휠이나 + − 버튼으로 확대합니다.'} 지도의 칸을 누르면 바로 아래 단계로 내려갑니다.<br>지도 대신 아래 목록으로도 고를 수 있습니다.</p></details>` +
+      `</details>` +
+      `<div class="map-selects">${sidoSel}${sgSel}${guSel}</div><details class="map-dong-list" data-fold="list"${fold.list ? ' open' : ''}><summary>읍·면·동 목록</summary>${chips}</details><p class="map-live" aria-live="polite">${esc(liveText(v, it, ind, mode))}</p>`;
     styleData(bottom);
     const inEmd = v.level === 'emd';
     panel.hidden = !inEmd;
@@ -2118,6 +2121,7 @@
   document.addEventListener('visibilitychange', () => (document.hidden ? stopAuto(false) : startAuto()));
   if ('IntersectionObserver' in window) new IntersectionObserver(es => { visible = es[0].isIntersecting; visible ? startAuto() : stopAuto(false); }, { threshold: 0.25 }).observe(app);
 
+  app.addEventListener('toggle', e => { const d = e.target; if (d && d.dataset && d.dataset.fold) fold[d.dataset.fold] = d.open; }, true);
   app.addEventListener('click', async e => {
     const a = e.target.closest('a[href^="#map"]');
     if (a) { e.preventDefault(); go(parseHash(a.getAttribute('href')) || {}); return; }
