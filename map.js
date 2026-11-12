@@ -40,7 +40,8 @@
   const lawStd = (value, direction, text) => ({ value, direction, text, source: LAW, status: '법정' });
   const SUM = 'SUM_STD_CROSSED';
   const INDICATORS = [
-    { code: 'DECLINE_AGING_20Y_PCT', group: 'aging', icon: 'bldg', label: '노후건축물비율', unit: '%', edges: [30, 50, 60, 70], colors: [BELOW[0], BELOW[2], ...ABOVE],
+    // chip: 화면 칩 이름(11회차까지 세 번 지적: 칩·범례·카드 이름이 달랐다). label은 원천(도시재생종합정보체계) 지표 이름이라 문서·원장에서 그대로
+    { code: 'DECLINE_AGING_20Y_PCT', group: 'aging', icon: 'bldg', label: '노후건축물비율', chip: '20년 이상 건축물', unit: '%', edges: [30, 50, 60, 70], colors: [BELOW[0], BELOW[2], ...ABOVE],
       title: '준공 20년 이상 건축물 비율', worseUp: true, domain: [0, 100], series: true, standard: lawStd(50, 'above_bad', '준공 20년 이상 건축물 50% 이상') },
     { code: 'DECLINE_MET_COUNT', group: 'aging', icon: 'check', label: '요건 충족 수(하한)', unit: '개', edges: [1, 2, 3], colors: MET, labels: ['0개', '1개', '2개', '3개'],
       title: '시행령 제17조 요건 충족 수 · 결측으로 확정 못 한 요건은 세지 않은 하한 · 판정 아님', worseUp: true, domain: [0, 3], series: true, composite: true, noPlay: true, yearNote: '해마다 확정된 요건 수가 달라 연도 비교는 하지 않습니다',
@@ -736,13 +737,14 @@
     const go = `<a class="btn sr-req-go" href="#report" data-set-mode="onepage">${icon('book')}1쪽 근거 문서 보기</a>`;
     // 2026-11-13: 가운뎃점 사슬(하한·승인 전·판정 아님)을 누가 무엇을 하는지 두 문장으로(11-13 평가: 승인 주체가 없고 사슬이 AI 티)
     // v7 7회차: 맺음말 두 문장(하한·담당자 승인 전)을 실무자가 못 읽었다 → 한 줄. 승인 상태는 기준 원문 대조 쪽(rules.html)에 그대로 있다
-    const foot = `<p class="sr-req-note">자료가 없는 요건은 빼고 셌습니다${r.year ? `(${esc(r.year)}년 기준)` : ''}. 법정 판정이 아닌 참고 계산이며, 판정은 담당 기관이 합니다.</p>`;
+    const rowsHtml = reqRowsHTML(rows, dong), allKnown = rowsHtml && !rowsHtml.includes('class="is-none"');   // 세 요건이 다 정해졌으면 '빼고 셌다'는 말이 맞지 않는다(11회차)
+    const foot = `<p class="sr-req-note">${allKnown ? `${r.year ? `${esc(r.year)}년 기준. ` : ''}` : `자료가 없는 요건은 빼고 셌습니다${r.year ? `(${esc(r.year)}년 기준)` : ''}. `}법정 판정이 아닌 참고 계산이며, 판정은 담당 기관이 합니다.</p>`;
     if (r.value === null) {
       return `<section class="sr-req is-none" aria-label="쇠퇴 3요건 요약"><p class="sr-req-k">쇠퇴 3요건</p><p class="sr-req-n">추가확인 <small>자료가 모자라 아직 셀 수 없습니다</small></p>${go}${foot}</section>`;
     }
     const std = validStd(r.ind.standard) ? r.ind.standard.text : null;
     return `<section class="sr-req is-${ROW_CLASS[r.status] || 'none'}" aria-label="쇠퇴 3요건 요약"><p class="sr-req-k">쇠퇴 3요건 중</p>` +
-      `<p class="sr-req-n"><b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(r.status))}</small>` : ''}</p>${reqRowsHTML(rows, dong)}${go}${foot}</section>`;
+      `<p class="sr-req-n"><b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(r.status))}</small>` : ''}</p>${rowsHtml}${go}${foot}</section>`;
   }
   // v7(2026-11-13): 3요건 각각의 값·상태를 홈 카드처럼 세 줄로. 평가: 카드의 세는 법이 넷(해당 수·확인할 항목·확정/추가확인·묶음별 수)이라
   // 무엇을 봐야 할지 몰랐다 → 맨 위는 '몇 개 해당'과 그 세 줄만 두고, 나머지 셈은 아래 접힌 칸으로 옮긴다. 값은 rows(원장 셀) 그대로
@@ -1295,7 +1297,7 @@
     const unit = district ? '시·군·구' : m && m.kind === 'emd' ? '읍·면·동(행정구역)' : '시·군·구 요약 · 읍·면·동 원자료';
     const status = !ready ? (m && m.kind === 'wait' ? '자료를 불러오는 중' : '자료 없음 · 추가확인')
       : `값 있음 ${rows.length}곳 · 자료 없음 ${items.length - rows.length}곳${ind.held ? ' · 보류' : ind.pending ? ' · 수집 중' : ''}`;
-    return `<details class="map-hint map-provenance"${open ? ' open' : ''}><summary>현재 지도 자료 · ${esc(ind.label)}${mode === 'trend' && hasTrend(ind) ? ' · 5년 변화' : ''}</summary><dl>`
+    return `<details class="map-hint map-provenance"${open ? ' open' : ''}><summary>현재 지도 자료 · ${esc(ind.chip || ind.label)}${mode === 'trend' && hasTrend(ind) ? ' · 5년 변화' : ''}</summary><dl>`
       + `<dt>공간 단위</dt><dd>${esc(unit)}</dd><dt>출처·방법</dt><dd>${esc(sources.join(' · '))}</dd><dt>기준일</dt><dd>${esc(dateText)}</dd><dt>현재 범위</dt><dd>${esc(status)}</dd></dl>`
       + `<p>${district && m && m.kind === 'emd' ? '같은 시·군·구 값을 여러 동 경계에 표시하며, 한 곳으로 셉니다.' : '현재 지도 범위의 지역 수입니다.'}<br>법정동·개별 건물 자료와 구분해서 봅니다.${ind.src === 'forecast' ? '<br>추세 전망은 관측값이 아닙니다.' : ''}</p><a href="data.html">전체 데이터 출처·확인 방법</a></details>`;
   }
@@ -1305,11 +1307,11 @@
     const inBundle = bundleList(state.bundle, list), bkey = inBundle && inBundle.some(i => i.code === ind.code) ? state.bundle : BUNDLE_ALL;
     const bundles = `<div class="map-bundles" role="group" aria-label="무엇을 볼지 고르기">${[...BUNDLES.map(b => [b.key, b.label]), [BUNDLE_ALL, '모든 지표']].map(([k, l]) => `<button type="button" data-bundle="${k}" aria-pressed="${k === bkey}">${esc(l)}</button>`).join('')}</div>`;
     const chipOf = i => { const ok = !i.pending && avail(i);
-      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(i.label)}${ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; };
+      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(i.chip || i.label)}${ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; };
     if (bkey !== BUNDLE_ALL) return bundles + `<div class="dash-chips map-inds" role="group" aria-label="${esc(BUNDLES.find(b => b.key === bkey).label)} 지표">${inBundle.map(chipOf).join('')}</div>` + provenanceHTML(ind, m, source, mode, !!top.querySelector('.map-provenance[open]'));
     const tabs = `<div class="map-groups" role="group" aria-label="지표 묶음">${GROUPS.filter(([k]) => k === g || list.some(i => i.group === k)).map(([k, l]) => `<button type="button" data-group="${k}" aria-pressed="${k === g}">${gIco(k)}${esc(l)}</button>`).join('')}</div>`;
     const chips = `<div class="dash-chips map-inds" role="group" aria-label="${esc(GROUPS.find(x => x[0] === g)[1])} 지표">${list.filter(i => i.group === g).map(i => { const ok = avail(i);
-      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(i.label)}${ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; }).join('')}</div>`;
+      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(i.chip || i.label)}${ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; }).join('')}</div>`;
     return bundles + tabs + chips + provenanceHTML(ind, m, source, mode, !!top.querySelector('.map-provenance[open]'));
   }
   function panelHTML(v, m) {
@@ -1999,7 +2001,7 @@
       M.emdItems = new Map(m.items.map(it => [it.code, it]));
       M.emd.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.emdItems.get(code), sel = code === v.dong;
         // v7: 고른 동은 색을 옅게 빼지 않고 더 진하게 + 굵은 검은 테두리(평가: 옅어진 고른 동이 회색 바탕지도처럼 보였다)
-        l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: sel ? 0.8 : 0.6, color: sel ? '#17191c' : '#fff', weight: sel ? 4 : 1.5, dashArray: !it || it.value === null ? '4 3' : null });
+        l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: sel ? 0.88 : 0.74, color: sel ? '#17191c' : '#fff', weight: sel ? 4 : 1.5, dashArray: !it || it.value === null ? '4 3' : null });
         if (sel && reorder) l.bringToFront(); });
       if (reorder) M.emdLine.bringToFront();
       placeDongLabels(v.dong);
