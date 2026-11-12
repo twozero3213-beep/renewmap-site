@@ -193,11 +193,13 @@
   }
 
   function stop() { if (timer) { clearInterval(timer); timer = null; } $('t4Play').setAttribute('aria-pressed', 'false'); $('t4Play').textContent = '연도 돌려 보기'; }
+  // 올해(처음 화면)에서 누르면 1960년부터 올해까지 동네가 지어지는 모습을 돌린다. 미래(올해 뒤)는 막대를 옮긴 뒤 누를 때만 돌린다(v7: 처음 누르면 미래만 돌아 '지어지는 모습'이 안 보였다)
   $('t4Play').addEventListener('click', () => {
     if (timer) return stop();
-    if (year >= TO) year = YEAR_FROM;
+    if (year >= TO || year === NOW) year = YEAR_FROM;
+    const end = year < NOW ? NOW : TO;
     $('t4Play').setAttribute('aria-pressed', 'true'); $('t4Play').textContent = '멈춤';
-    timer = setInterval(() => { year += 1; slider.value = String(year); paint(); if (year >= TO) stop(); }, 140);
+    timer = setInterval(() => { year += 1; slider.value = String(year); paint(); if (year >= end) stop(); }, 140);
   });
   slider.addEventListener('input', () => { stop(); year = Number(slider.value); paint(); });
   $('t4Now').addEventListener('click', () => { stop(); year = NOW; slider.value = String(year); paint(); });

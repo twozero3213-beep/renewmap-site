@@ -150,3 +150,7 @@
   .h6-steps p { font-size: 15px; line-height: 1.6; }
   .h6-steps .h6-out { margin-top: auto; padding-top: 8px; font-size: 13px; }
 }
+
+/* v7 시연(2026-11-13 다시 찍음: 옛 화면·숫자 불일치로 내렸던 영상을 지금 화면으로) */
+.h6-demo { padding-top: 64px; }
+.h6-video { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); background: var(--ink); }

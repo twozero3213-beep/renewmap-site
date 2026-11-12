@@ -86,6 +86,7 @@
     lastDocs = docs; lastRecs = recs;
     const du = $("docs"), ru = $("recs");
     $("boxStats").innerHTML = R.statsHTML(R.stats(recs, new Date()), [["받은 문서", docs.length]]);   // 개수 요약(순위 아님)
+    $("boxStats").hidden = !recs.length && !docs.length;   // v7: 다 0일 때 0·0·0·0 상자를 숨긴다(평가: 내용 없는 큰 칸)
     du.textContent = ""; ru.textContent = "";
     if (!docs.length) empty(du, "아직 받은 문서가 없습니다.\n현장 기록을 저장하고 1쪽 문서를 받아 보세요.", "field/", "현장 기록하기");
     for (const d of docPages.slice(docs)) du.append(withOutcome(d, row(d.name, `${day(d.created_at)} 받음`, [

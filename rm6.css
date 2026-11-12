@@ -129,11 +129,10 @@ footer .links a { color: var(--ink); }
 
 /* ── 긴 화면 차례(content-pages.js v6): 넘기기 대신 펼친 본문 + 맨 위 차례 ── */
 .cp-toc { margin: 8px 0 32px; padding: 16px 20px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
-.cp-toc ol { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 8px; counter-reset: t; }
-.cp-toc li { counter-increment: t; }
-.cp-toc a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 999px; background: #eef2ef; color: var(--ink); text-decoration: none; font-weight: 600; font-size: 15px; }
-.cp-toc a::before { content: counter(t) "."; color: var(--green); margin-right: 6px; font-variant-numeric: tabular-nums; }
-.cp-toc a:hover { background: #dcefe7; }
+.cp-toc ol { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 24px; }
+/* v7: 번호 붙은 알약 칩 대신 밑줄 글자 링크(평가: 알약이 화면마다 4~10개라 AI 티, 재생 사업은 9종인데 번호가 1~10) */
+.cp-toc a { display: inline-flex; align-items: center; min-height: 40px; color: var(--green); text-decoration: underline; text-underline-offset: 4px; font-weight: 600; font-size: 15px; }
+.cp-toc a:hover { color: var(--green-press); }
 [data-content-book] > section { scroll-margin-top: 88px; }
 .content-pager { display: none !important; }
 
@@ -311,3 +310,9 @@ header.top > .wrap:first-child { max-width: none !important; padding-left: 24px;
 .sr-req-rows em { font-style: normal; font-size: 13px; font-weight: 600; color: var(--dim); }
 .sr-req-rows li.is-over em { color: var(--ink); }
 .sr-req-rows li.is-none em { color: var(--amber); }
+
+/* v7: 동 페이지처럼 site.js 없이 그린 옛 메뉴에서도 '시범 상담'은 단추로(머리 메뉴 한 벌과 같은 모양) */
+header.top .site-nav a[href$="about.html#contact"] { background: var(--green); color: #fff; border-radius: 8px; padding: 8px 14px; font-weight: 700; }
+
+/* v7: 동네 찾기를 열 때 workspace.js가 탭을 고르기 전 잠깐 '조건' 패널이 지도 위에 보였다(시연 녹화에서 발견). 스크립트가 켜진 화면은 처음부터 지도 패널만 */
+html.js .explore-page .evidence-workspace:not([data-workspace-ready]) .workspace-panel:not(#map) { display: none; }
