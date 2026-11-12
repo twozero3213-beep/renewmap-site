@@ -52,11 +52,14 @@
     </aside>
     <div class="t4-stage">
       <div id="t4Map" class="t4-map" role="img" aria-label="법정동 건물 입체 모형. 왼쪽 숫자판과 아래 연도가 같은 내용을 글로 알려 줍니다."></div>
+      <div id="t4Map2" class="t4-map t4-map2" role="img" aria-label="올해 건물 입체 모형(비교)"></div>
+      <span class="t4-tag t4-tag-l" id="t4TagL" aria-hidden="true"></span><span class="t4-tag t4-tag-r" aria-hidden="true">올해</span>
       <div class="t4-time">
         <button type="button" id="t4Play" class="btn" aria-pressed="false">연도 돌려 보기</button>
         <label class="t4-slider"><span class="sr-only">연도</span><input type="range" id="t4Year" step="1"></label>
         <output id="t4YearOut" for="t4Year" aria-live="polite"></output>
         <button type="button" id="t4Now" class="btn ghost">올해로</button>
+        <button type="button" id="t4Cmp" class="btn ghost" aria-pressed="false">올해와 나란히</button>
       </div>
     </div>
   </div>

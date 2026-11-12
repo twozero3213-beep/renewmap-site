@@ -95,6 +95,7 @@
 
   function paint() {
     $('t4YearOut').textContent = `${year}년`;
+    $('t4TagL').textContent = `${year}년`;
     slider.setAttribute('aria-valuetext', `${year}년`);
     const s = stats(blds, year);
     $('t4Built').textContent = fmt(s.built);
@@ -125,6 +126,8 @@
       const bbox = bboxOf(gj);
       await ready();
       map.getSource('b').setData(gj);
+      lastGj = gj;
+      if (map2) map2.getSource('b').setData(gj);
       map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 0, pitch: 55, bearing: -20, duration: 0 });
       map.setZoom(map.getZoom() + 0.6);   // 기울여 보면 화면 아래쪽이 비어 한 단계 당겨 본다
       $('t4Status').textContent = `${bf.name} 건물을 세웠습니다. 부속 건물까지 모두 세우고, 숫자는 날짜 있는 주건축물로 셉니다.`;
@@ -146,21 +149,18 @@
   }
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  let readyP = null;
-  function ready() {
-    if (readyP) return readyP;
-    readyP = new Promise((ok, fail) => {
-      if (!window.maplibregl) return fail(new Error('maplibre'));
-      maplibregl.setWorkerUrl('vendor/maplibre/maplibre-gl-csp-worker.js');
+  // 지도 하나를 세운다. yearOf: 이 지도가 보여 줄 해(본 지도 = 막대의 해, 비교 지도 = 올해)
+  function buildMap(container, yearOf, nav) {
+    return new Promise((ok) => {
       // v7(2026-11-13): 빈 바탕 대신 OpenFreeMap 배경 지도(키·사용량 제한 없음, 상용 가능)에 한국어 이름을 먼저 싣고(vendor/openfreemap/positron.json),
       // Mapterhorn 지형으로 산자락 음영을 깐다. 부산은 산이 많아 음영이 없으면 건물이 어디에 붙어 있는지 읽히지 않았다.
       // 한글은 배경 지도 글꼴 파일에 없어 화면 글꼴(Pretendard)로 그린다(localIdeographFontFamily)
-      map = new maplibregl.Map({
-        container: 't4Map', style: 'vendor/openfreemap/positron.json', attributionControl: false,
+      const map = new maplibregl.Map({
+        container, style: 'vendor/openfreemap/positron.json', attributionControl: false,
         pitch: 55, bearing: -20, center: [129.13, 35.2], zoom: 15, maxPitch: 75,
         localIdeographFontFamily: '"Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
       });
-      map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+      if (nav) map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
       map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: '국토교통부 GIS건물통합정보 · 건축물대장' }));
       // 'load'는 배경 타일·지형까지 다 받은 뒤라 첫 화면이 7초 넘게 비었다. 모양(style)만 오면 건물을 바로 세운다
       map.once('style.load', () => {
@@ -169,14 +169,15 @@
           attribution: '<a href="https://mapterhorn.com/attribution">© Mapterhorn</a>' });
         map.addLayer({ id: 'relief', type: 'hillshade', source: 'dem', paint: { 'hillshade-exaggeration': 0.4, 'hillshade-shadow-color': '#7d828a', 'hillshade-highlight-color': '#ffffff', 'hillshade-accent-color': '#5b6068' } }, 'building');
         map.addSource('b', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-        map.addLayer({ id: 'b3d', type: 'fill-extrusion', source: 'b', filter: filterExpr(year),
-          paint: { 'fill-extrusion-color': colorExpr(year), 'fill-extrusion-height': ['get', 'h'], 'fill-extrusion-opacity': 0.96, 'fill-extrusion-vertical-gradient': true } }, firstLabel);
+        map.addLayer({ id: 'b3d', type: 'fill-extrusion', source: 'b', filter: filterExpr(yearOf()),
+          paint: { 'fill-extrusion-color': colorExpr(yearOf()), 'fill-extrusion-height': ['get', 'h'], 'fill-extrusion-opacity': 0.96, 'fill-extrusion-vertical-gradient': true } }, firstLabel);
         // 건물을 누르면 사용승인 연도·고른 해 기준 연수·용도·높이. 글은 DOM으로 넣는다(대장 값이 HTML로 해석되지 않게)
         map.on('click', 'b3d', (e) => {
           const p = e.features[0].properties, box = document.createElement('div');
           box.className = 't4-pop';
           const line = (k, v) => { const r = document.createElement('p'), b = document.createElement('b'); b.textContent = k; r.append(b, ` ${v}`); return r; };
-          box.append(line('사용승인', p.y > 0 ? `${p.y}년 · ${year}년에 ${year - p.y}년째` : p.y === 0 ? '날짜 없음' : '건축물대장과 잇지 못함'),
+          const yr = yearOf();
+          box.append(line('사용승인', p.y > 0 ? `${p.y}년 · ${yr}년에 ${yr - p.y}년째` : p.y === 0 ? '날짜 없음' : '건축물대장과 잇지 못함'),
             line('용도', p.use || '-'), line('높이', `${Math.round(p.h)}m`));
           new maplibregl.Popup({ maxWidth: '260px' }).setLngLat(e.lngLat).setDOMContent(box).addTo(map);
         });
@@ -187,12 +188,36 @@
         map.setSky({ 'sky-color': '#dde6ec', 'horizon-color': '#f6f5f2', 'sky-horizon-blend': 0.6, 'fog-color': '#f6f5f2', 'horizon-fog-blend': 0.7, 'fog-ground-blend': 0.85 });
         // 출처 글은 접은 채로 시작한다(평가: 휴대폰에서 연도 막대를 덮었다). (i)를 누르면 펼쳐진다
         map.once('load', () => map.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show'));
-        ok();
+        ok(map);
       });
       map.on('error', () => {});
     });
+  }
+  let readyP = null;
+  function ready() {
+    if (readyP) return readyP;
+    if (!window.maplibregl) return Promise.reject(new Error('maplibre'));
+    maplibregl.setWorkerUrl('vendor/maplibre/maplibre-gl-csp-worker.js');
+    readyP = buildMap('t4Map', () => year, true).then((m) => { map = m; });
     return readyP;
   }
+  // 올해와 비교(v7, S-Map 연도 비교처럼): 오른쪽에 올해 모형을 하나 더 세우고 두 지도의 시점을 같이 움직인다. 왼쪽은 막대의 해
+  let map2 = null, map2P = null, lastGj = null, syncing = false;
+  const camOf = (m) => ({ center: m.getCenter(), zoom: m.getZoom(), bearing: m.getBearing(), pitch: m.getPitch() });
+  const sync = (a, b) => a.on('move', () => { if (syncing) return; syncing = true; b.jumpTo(camOf(a)); syncing = false; });
+  $('t4Cmp').addEventListener('click', async () => {
+    const on = $('t4Cmp').getAttribute('aria-pressed') !== 'true';
+    $('t4Cmp').setAttribute('aria-pressed', String(on));
+    $('t4App').classList.toggle('is-compare', on);
+    await ready();
+    map.resize();
+    if (!on) return;
+    if (!map2P) map2P = buildMap('t4Map2', () => NOW, false).then((m) => { map2 = m; sync(map, m); sync(m, map); });
+    await map2P;
+    map2.resize();
+    if (lastGj) map2.getSource('b').setData(lastGj);
+    map2.jumpTo(camOf(map));
+  });
 
   function stop() { if (timer) { clearInterval(timer); timer = null; } $('t4Play').setAttribute('aria-pressed', 'false'); $('t4Play').textContent = '연도 돌려 보기'; }
   // 올해(처음 화면)에서 누르면 1960년부터 올해까지 동네가 지어지는 모습을 돌린다. 미래(올해 뒤)는 막대를 옮긴 뒤 누를 때만 돌린다(v7: 처음 누르면 미래만 돌아 '지어지는 모습'이 안 보였다)

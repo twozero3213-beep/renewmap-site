@@ -33,7 +33,6 @@
 <main id="main">
   <p class="note">부산 구역의 지번을 넣거나 지도에 구역을 그리면, 노후주거지정비 신청요건(저층 주거 3분의 2, 20년 넘은 건물 비율)과 재개발 노후·불량 비율을 조문과 함께 계산합니다.<br>결과는 1쪽 한글 문서, CSV, 구역 경계 SHP로 받습니다. 지번과 구역은 이 기기 안에서만 계산합니다.</p>
 
-  <figure class="redev-sample"><a href="../img/v6/redev-sample.jpg" target="_blank" rel="noopener"><img src="../img/v6/redev-sample.jpg" width="640" height="711" alt="반여동 지번 60개로 실제 계산한 결과 화면 견본. 분모, 기준시점, 현장 확인할 건물, 노후·불량 동수, 도시재생 노후 요건이 차례로 나온다." loading="lazy"></a><figcaption>계산하면 이렇게 나옵니다.<br>반여동 지번 60개로 실제 계산한 견본입니다. 그림을 누르면 크게 봅니다.</figcaption></figure>
   <form id="f" class="card" novalidate>
     <label for="gu">구·군(부산)</label>
     <select id="gu"><option value="26350" selected>해운대구</option></select>
@@ -78,6 +77,8 @@
     <button type="submit" class="save">계산하기</button>
     <p id="msg" class="msg" role="status" aria-live="polite"></p>
   </form>
+  <!-- 견본은 입력 뒤(휴대폰에서 읽을 수 없는 그림이 첫 화면을 차지하던 것, v7 6회차). 넓은 화면은 rm6.css가 오른쪽 칸에 둔다 -->
+  <figure class="redev-sample"><a href="../img/v6/redev-sample.jpg" target="_blank" rel="noopener"><img src="../img/v6/redev-sample.jpg" width="640" height="711" alt="반여동 지번 60개로 실제 계산한 결과 화면 견본. 분모, 기준시점, 현장 확인할 건물, 노후·불량 동수, 도시재생 노후 요건이 차례로 나온다." loading="lazy"></a><figcaption>계산하면 이렇게 나옵니다.<br>반여동 지번 60개로 실제 계산한 견본입니다. 그림을 누르면 크게 봅니다.</figcaption></figure>
 
   <section id="out" class="card" aria-labelledby="outTitle" hidden>
     <h2 id="outTitle">줄마다 따로 본 결과</h2>
