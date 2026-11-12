@@ -228,3 +228,9 @@ html:has(body.explore-page) { scroll-padding-top: 140px; }
 .sr-req-n b { color: var(--ink) !important; }
 .redev-sample details { margin-top: 8px; }
 .redev-sample details summary { cursor: pointer; color: var(--green); font-weight: 700; min-height: 40px; display: flex; align-items: center; }
+
+/* 행정동 목록: 시·도별 접기 */
+.dong-sido { border-top: 1px solid var(--line); padding: 4px 0; }
+.dong-sido > summary { cursor: pointer; font-size: 20px; font-weight: 700; min-height: 52px; display: flex; align-items: center; gap: 10px; }
+.dong-sido > summary small { font-size: 15px; color: var(--dim); font-weight: 400; }
+.dong-sido section h2 { font-size: 18px; margin: 16px 0 8px; }

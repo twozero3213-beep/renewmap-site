@@ -18,7 +18,7 @@ def geometry(page):
       const ids=[...document.querySelectorAll('[id]')].map(e=>e.id);
       const tables=[...document.querySelectorAll('table')].filter(visible);
       return {width:innerWidth, scroll:document.documentElement.scrollWidth,
-        height:document.documentElement.scrollHeight,
+        height:document.documentElement.scrollHeight, longPage:!!document.querySelector('.cp-toc'),
         duplicateIds:ids.filter((id,i)=>ids.indexOf(id)!==i),
         crampedNav:[...document.querySelectorAll('header .site-nav a')].filter(visible).filter(e=>e.getBoundingClientRect().height<44).map(e=>e.textContent),
         exposedHidden:[...document.querySelectorAll('[hidden]')].filter(visible).map(e=>e.id||e.className),
@@ -80,7 +80,8 @@ def main():
                 results.append(row)
                 assert row['scroll']<=width+1, row
                 assert not any(row[k] for k in ['duplicateIds','crampedNav','exposedHidden','gridTables','misaligned']), row
-                assert row['height'] < (5000 if topic is not None else 10000), row
+                # 2026-11-13 v6: 한 장씩 넘기기를 없애고 본문을 펼친 쪽(맨 위 차례 .cp-toc)은 길어도 된다
+                assert row['height'] < (60000 if row.get('longPage') else 5000 if topic is not None else 10000), row
                 assert not errors, errors
                 assert not missing, missing
 
@@ -113,13 +114,15 @@ def main():
                                 page.wait_for_timeout(30)
                                 check(route, width, i)
                         if route=='rank.html':
+                            # v6: 기본은 부산·재생 필요 점수, 한 쪽 20줄. 전국 줄 수는 ?kind=total&sido= 로 검사한다
+                            page.goto(base+'rank.html?kind=total&sido=', wait_until='load')
                             page.wait_for_selector('#rankOut tbody tr')
-                            assert page.locator('#rankOut tbody tr').count()==5
+                            assert page.locator('#rankOut tbody tr').count()==20
                             selector=page.get_by_role('navigation', name='동네 순위 페이지', exact=True).locator('select')
                             last=selector.locator('option').last.get_attribute('value')
-                            assert int(last)==(ranked+4)//5
+                            assert int(last)==(ranked+19)//20
                             selector.select_option(last)
-                            assert 1<=page.locator('#rankOut tbody tr').count()<=5
+                            assert 1<=page.locator('#rankOut tbody tr').count()<=20
                             assert page.locator('#rankOut tbody tr').last.locator('td').first.inner_text()==str(ranked)
                             check(route, width)
                         if route=='about.html':
