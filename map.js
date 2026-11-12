@@ -1577,12 +1577,17 @@
   // 네이버 지도(배경만). 키(field/naver-map-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작. 실패·5초 초과면 브이월드로
   // SDK가 NAVER 로고 img에 style 속성을 넣는다. explore.html CSP style-src에 그 문자열 해시만 허용했다('unsafe-hashes', 2026-11-07). SDK가 문구를 바꾸면 콘솔 오류로 다시 드러난다
   function loadNaver() {
+    if (window.renewNaverAuthFailed) return Promise.resolve(false);
     if (window.renewNaverReady) return window.renewNaverReady;
     const key = window.RENEWMAP_NAVER_KEY;
     if (!/^[A-Za-z0-9]{6,40}$/.test(key || '')) return Promise.resolve(false);
     return new Promise(res => {
       const done = ok => { clearTimeout(t); res(ok); }, t = setTimeout(() => done(false), 5000);
-      window.navermap_authFailure = () => done(false);   // 네이버가 인증 실패 때 부르는 전역 함수
+      window.navermap_authFailure = () => {
+        window.renewNaverAuthFailed = true;
+        done(false);
+        window.dispatchEvent(new Event('renew-navermap-auth-failed')); // 준비 Promise가 끝난 뒤의 실패도 지도에 알린다
+      };
       const s = document.createElement('script');
       s.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${key}`;
       s.onload = () => done(!!(window.naver && window.naver.maps && window.naver.maps.Map));
@@ -1597,7 +1602,7 @@
     if (state.sgGeo === null) { if (slot) slot.outerHTML = emptyHTML('경계 자료 준비 중', ['시군구 경계가 아직 없습니다.', '아래 목록으로 숫자는 볼 수 있습니다.']); return false; }
     const D = window.RenewDashboard;
     if (!window.L) { wait('지도를 불러오는 중입니다.'); (D ? D.loadLeaflet() : Promise.reject()).then(render, () => { state.mapErr = true; render(); }); return false; }
-    if (state.naver === undefined) { state.naver = null; wait('지도를 불러오는 중입니다.'); loadNaver().then(ok => { state.naver = ok; render(); }); return false; }
+    if (state.naver === undefined) { state.naver = null; wait('지도를 불러오는 중입니다.'); loadNaver().then(ok => { state.naver = ok && !window.renewNaverAuthFailed; render(); }); return false; }
     if (state.naver === null) return false;
     createMap(slot);
     return true;
@@ -1658,27 +1663,74 @@
   }
   // 네이버 배경(nv)을 Leaflet 지도와 같은 중심·확대로 따라 움직인다. 네이버 지도는 스스로 움직이지 않는다
   function followWithNaver(map, el, nv) {
-    const N = window.naver.maps;
-    let nmap = null;
-    const sync = () => { if (!nmap) return; const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); };
+    let N, nmap = null, stopped = false, resizeObserver = null, linkObserver = null;
+    const events = 'move zoom moveend zoomend viewreset resize';
+    const destroy = target => {
+      if (!target || typeof target.destroy !== 'function') return;
+      try { target.destroy(); }
+      catch { console.warn('네이버 배경 정리 중 SDK 오류가 발생했습니다.'); }
+    };
+    const dispose = () => {
+      stopped = true;
+      window.removeEventListener('renew-navermap-auth-failed', fallback);
+      map.off(events, sync); map.off('unload', dispose);
+      if (resizeObserver) resizeObserver.disconnect();
+      if (linkObserver) linkObserver.disconnect();
+      const previous = nmap; nmap = null; destroy(previous);
+    };
+    const fallback = () => {
+      if (stopped) return;
+      dispose(); state.naver = false;
+      nv.remove(); el.classList.remove('has-naver');
+      map.options.zoomSnap = 0.25; map.setMinZoom(0);
+      addBaseTiles(map);
+    };
+    const sync = () => {
+      if (!nmap || stopped) return;
+      try { const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); }
+      catch { fallback(); }
+    };
+    // 인증 실패 콜백과 달리 이 이벤트는 이미 열린 배경을 회복하는 앱 내부 신호다.
+    window.addEventListener('renew-navermap-auth-failed', fallback);
+    map.on(events, sync); map.on('unload', dispose);
+    if ('ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver(() => {
+        if (!nmap || stopped) return;
+        try { if (nmap.autoResize) nmap.autoResize(); sync(); } catch { fallback(); }
+      });
+      resizeObserver.observe(el);
+    }
+    // 링크는 지도가 그려진 뒤 늦게 생기고 'idle'보다 늦을 수 있다(배포 화면에서 이름 없음 확인).
+    linkObserver = new MutationObserver(() => api.nameMapLinks(nv));
+    linkObserver.observe(nv, { childList: true, subtree: true });
+    if (window.renewNaverAuthFailed) { fallback(); return; }
     // 임시 중심·확대의 타일을 받은 뒤 버리지 않도록 첫 맞춤 위치에서 시작한다.
     map.whenReady(() => {
-      const c = map.getCenter();
-      nmap = new N.Map(nv, { center: new N.LatLng(c.lat, c.lng), zoom: map.getZoom(), tileTransition: false, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
-        disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
-      N.Event.once(nmap, 'tilesloaded', mapPainted);
+      if (stopped) return;
+      try {
+        N = window.naver.maps;
+        const c = map.getCenter();
+        nmap = new N.Map(nv, { center: new N.LatLng(c.lat, c.lng), zoom: map.getZoom(), tileTransition: false, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
+          disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
+        if (stopped) { const previous = nmap; nmap = null; destroy(previous); return; }
+        N.Event.once(nmap, 'tilesloaded', () => { if (!stopped) mapPainted(); });
+      } catch { fallback(); }
     });
-    map.on('move zoom moveend zoomend viewreset resize', sync);
-    if ('ResizeObserver' in window) new ResizeObserver(() => { if (nmap) { nmap.autoResize && nmap.autoResize(); sync(); } }).observe(el);
-    // 링크는 지도가 그려진 뒤 늦게 생기고 'idle'보다 늦을 수 있다(배포 화면에서 이름 없음 확인). 생길 때마다 이름을 붙인다
-    new MutationObserver(() => api.nameMapLinks(nv)).observe(nv, { childList: true, subtree: true });
   }
   // 네이버가 없을 때 배경지도: 브이월드(국토교통부 공식 지도, 한국 지명·도로). 키(field/vworld-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작 → 없으면 OSM
   function addBaseTiles(map) {
+    const osm = () => {
+      const layer = window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+      layer.once('load', () => { if (map.hasLayer(layer)) mapPainted(); }).addTo(map);
+    };
     const vw = /^[A-Za-z0-9-]+$/.test(window.RENEWMAP_VWORLD_KEY || '') ? window.RENEWMAP_VWORLD_KEY : '';
-    const tiles = vw ? window.L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${vw}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: '&copy; <a href="https://www.vworld.kr">국토교통부 브이월드</a>' })
-      : window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
-    tiles.once('load', mapPainted).addTo(map);
+    if (!vw) { osm(); return; }
+    const tiles = window.L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${vw}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: '&copy; <a href="https://www.vworld.kr">국토교통부 브이월드</a>' });
+    tiles.once('tileerror', () => {
+      if (!map.hasLayer(tiles)) return;
+      map.removeLayer(tiles); osm();
+    });
+    tiles.once('load', () => { if (map.hasLayer(tiles)) mapPainted(); }).addTo(map);
   }
   const lineLatLngs = lines => lines.map(l => l.map(([x, y]) => [y, x]));
   let sgDetailWait = null;
@@ -1895,7 +1947,7 @@
   // 지도 라이브러리(리플렛·네이버 배경)는 경계 자료를 기다리지 않고 지금 받기 시작한다. 전에는 목록→경계→리플렛→네이버→타일이 한 줄로 이어져 휴대폰 첫 지도가 11초 걸렸다
   if (stage.querySelector('[data-map-slot]')) {
     if (window.RenewDashboard) window.RenewDashboard.loadLeaflet().catch(() => {});
-    state.naver = null; loadNaver().then(ok => { state.naver = ok; render(); });
+    state.naver = null; loadNaver().then(ok => { state.naver = ok && !window.renewNaverAuthFailed; render(); });
   }
   // 큰 경계 파일이 타일 다운로드·첫 표시를 막지 않게, 목록의 bbox로 배경부터 맞춘 뒤 경계를 받는다.
   window.renewAfter = firstMap;

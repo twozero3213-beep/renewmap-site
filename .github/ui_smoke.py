@@ -1,7 +1,9 @@
 """공개 화면의 실제 배치·주제 이동·목록 길이를 배포 전에 검사한다."""
 import argparse
+import base64
 import functools
 import json
+import re
 import tempfile
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -60,10 +62,16 @@ def main():
         with sync_playwright() as p:
             browser = p.chromium.launch(channel=args.channel, headless=True)
             context = browser.new_context(reduced_motion='reduce')
+            if not args.base:
+                # 검사 주소는 외부 지도 키의 허용 도메인이 아니다. 실패 복구를 모의하고 실주소 검사는 그대로 연결한다.
+                context.route('https://oapi.map.naver.com/openapi/v3/maps.js**', lambda route: route.abort())
+                context.route('https://api.vworld.kr/req/wmts/**', lambda route: route.abort())
+                tile = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/bJ8AAAAASUVORK5CYII=')
+                context.route('https://tile.openstreetmap.org/**', lambda route: route.fulfill(content_type='image/png', body=tile))
             page = context.new_page()
             errors = []
             missing = []
-            page.on('pageerror', lambda error: errors.append(error.stack or str(error)))
+            page.on('pageerror', lambda error: errors.append(re.sub(r'\?[^\s)]*', '?[query omitted]', error.stack or str(error))))
             page.on('response', lambda res: missing.append(res.url) if res.status>=400 and res.url.startswith(base) and not res.url.endswith(('/field/naver-map-key.js','/field/vworld-key.js')) else None)
 
             def check(route, width, topic=None):
@@ -91,6 +99,10 @@ def main():
                             page.wait_for_selector('#dashCompare li', state='attached')
                         if route=='rank.html':
                             page.wait_for_selector('#rankOut tbody tr')
+                        if route=='explore.html' and not args.base:
+                            page.wait_for_selector('#mapApp .leaflet-tile-pane img[src*="tile.openstreetmap.org"]',state='attached')
+                            page.wait_for_function('() => [...document.querySelectorAll("#mapApp .leaflet-tile-pane img")].some(img => img.complete && img.naturalWidth>0)')
+                            assert not page.locator('#mapApp .map-naver').count()
                         check(route, width)
                         topic = page.locator('#contentTopic')
                         if topic.count():
@@ -130,7 +142,7 @@ def main():
         if server:
             server.shutdown()
             server.server_close()
-        (args.output/'result.json').write_text(json.dumps({'base':base,'checks':results,'failures':failures},ensure_ascii=False,indent=2),encoding='utf-8')
+        (args.output/'result.json').write_text(json.dumps({'base':base,'map_fixture':None if args.base else 'Naver SDK/VWorld tile failure; OSM image fixture','checks':results,'failures':failures},ensure_ascii=False,indent=2),encoding='utf-8')
     assert not failures, f'{len(failures)}건 실패: {args.output / "result.json"}'
 
 

@@ -13,7 +13,11 @@
       if (ended) return;
       const key = window.RENEWMAP_NAVER_KEY;
       if (!/^[A-Za-z0-9]{6,40}$/.test(key || '')) { done(false); return; }
-      window.navermap_authFailure = () => done(false);
+      window.navermap_authFailure = () => {
+        window.renewNaverAuthFailed = true;
+        done(false);
+        window.dispatchEvent(new Event('renew-navermap-auth-failed'));
+      };
       const sdk = document.createElement('script');
       sdk.fetchPriority = 'high';
       sdk.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${key}`;
