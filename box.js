@@ -81,7 +81,8 @@
     return D.zipStore(entries, new Date().toISOString());
   }
   async function render() {
-    const [docs, recs] = await Promise.all([S.docs(), S.records()]);
+    const [allDocs, recs] = await Promise.all([S.docs(), S.records()]);
+    const docs = allDocs.filter(d => d.kind !== 'task-file' && d.kind !== 'task-packet');
     lastDocs = docs; lastRecs = recs;
     const du = $("docs"), ru = $("recs");
     $("boxStats").innerHTML = R.statsHTML(R.stats(recs, new Date()), [["받은 문서", docs.length]]);   // 개수 요약(순위 아님)

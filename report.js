@@ -9,6 +9,10 @@
   const FORMATS = ['hwpx', 'pdf', 'xlsx', 'docx', 'pptx'];
   // detail: { file, size, message } (done·error일 때)
   function exportStateHTML(format, status, detail) {
+    if (format === 'task') {
+      const message = esc((detail || {}).message || '보고서 묶음을 준비하고 있습니다.');
+      return `<p class="export-state${status === 'error' ? ' is-error' : ''}" role="${status === 'error' ? 'alert' : 'status'}"><strong>과업 연결${status === 'error' ? ' 실패' : ''}</strong> ${message}</p>`;
+    }
     const supported = FORMATS.includes(format), d = detail || {};
     const label = supported ? format.toUpperCase() : esc(format);
     const state = supported ? status : 'unavailable';

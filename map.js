@@ -807,7 +807,7 @@
   const srcHead = where => (DG ? DG.SRC_HEAD(where) : '');
   const copyHead = caption => `<div class="dg-tbl-h" aria-live="polite"><b>${esc(caption)}</b>${DG ? `<button type="button" class="btn ghost dg-copy" data-copy-table>${esc(DG.COPY_TABLE)}</button>` : ''}</div>`;
   // 내려받기·인쇄·보조 메일 요청. 1쪽 요약에서는 HWPX가 1쪽 문서다
-  const fileTools = (it, year, what, one) => `<button type="button" class="btn ghost" data-print>인쇄·PDF</button>` + (DG ? `<button type="button" class="btn" data-dl="hwpx">HWPX 받기${one ? '(1쪽)' : ''}</button><button type="button" class="btn" data-dl="xlsx">XLSX 받기</button><button type="button" class="btn" data-dl="docx">DOCX 받기</button><button type="button" class="btn" data-dl="pptx">PPTX 받기</button>` : '') +
+  const fileTools = (it, year, what, one) => `<button type="button" class="btn ghost" data-print>인쇄·PDF</button>` + (DG ? `<button type="button" class="btn" data-dl="hwpx">HWPX 받기${one ? '(1쪽)' : ''}</button><button type="button" class="btn" data-dl="xlsx">XLSX 받기</button><button type="button" class="btn" data-dl="docx">DOCX 받기</button><button type="button" class="btn" data-dl="pptx">PPTX 받기</button><button type="button" class="btn ghost" data-task-package>과업에 연결</button>` : '') +
     `<a class="btn ghost rp-mail" href="${esc(briefMailto(it, year, what))}">HWPX·XLSX 요청(무료 · 1영업일)</a>`;
   // 양식에 붙일 조각(문장 5개 이하 + 표 1개 + 출처 줄): 양식을 고르면 그 양식 항목 순서대로 만든다(data-frag-out). 양식 정의는 data/report_templates.json
   function fragPanelHTML(sel) {
@@ -1253,7 +1253,7 @@
       : !DG ? '문서 도구를 불러오지 못했습니다. 새로고침한 뒤 다시 시도해 주세요.'
       : state.templates === null ? '문서 양식을 불러오지 못했습니다. 새로고침한 뒤 다시 시도해 주세요.'
       : filesLoading(v) ? '문서에 필요한 자료를 불러오는 중입니다. 준비가 끝나면 출력 버튼이 활성화됩니다.' : '';
-    report.querySelectorAll('[data-print], [data-dl]').forEach(button => { button.disabled = !!exportMessage; });
+    report.querySelectorAll('[data-print], [data-dl], [data-task-package]').forEach(button => { button.disabled = !!exportMessage || (button.hasAttribute('data-task-package') && taskLinkBusy); });
     if (exportMessage) {
       const note = document.createElement('p'); note.className = 'rp-intro'; note.dataset.exportWait = ''; note.setAttribute('role', 'status'); note.textContent = exportMessage;
       report.querySelector('.rp-head')?.after(note);
@@ -1262,6 +1262,7 @@
   }
   // ── 파일 만들기(docgen.js): 선택한 동의 원장 셀로 근거서(HWPX·XLSX)와 1쪽 요약을 이 브라우저에서 바로 만든다. 서버로 보내지 않는다 ──
   const todayISO = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+  let taskLinkBusy = false;
   let docMemo = { key: '', val: null }, fragChoice = { id: '', variant: '' };
   // 생활·전망·순이동 자료가 아직 오는 중이면 '파일 없음'으로 적히지 않게 만들기를 미룬다
   const filesLoading = v => [state.templates, state.living, state.migration, state.designations, state.realestate, state.forecastIdx].some(x => x === undefined) || (!!state.living && livingOf(v.emdCode) === undefined) || (!!state.forecastIdx && forecastOf(v.emdCode) === undefined);
@@ -1301,7 +1302,7 @@
         const inputHash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join(''), input = JSON.parse(fixed);
         DG.setTemplates(input.templates);
         const brief = DG.buildBrief(input.code, input.src, { year: input.year ?? undefined, writtenOn: input.writtenOn, geo: input.geo, inputHash });
-        memo.val = { brief, doc: DG.buildDoc(brief), one: DG.buildOnepage(brief) };
+        memo.val = { brief, doc: DG.buildDoc(brief), one: DG.buildOnepage(brief), inputJSON: fixed };
       }).catch(err => { if (current()) memo.val = { error: `문서를 만들지 못했습니다: ${err.message}` }; }).then(() => {
         if (current()) { reportKey = ''; render(); }
         else if (docMemo === memo) docMemo = { key: '', val: null };
@@ -1347,6 +1348,39 @@
       const footer = document.createElement('p'); footer.className = 'dg-small'; footer.setAttribute('data-input-hash', ''); footer.textContent = built.doc.footer; report.appendChild(footer);
     }
     report.querySelectorAll('details').forEach(d => { d.open = true; }); window.print();
+  }
+  async function connectTask(button) {
+    if (taskLinkBusy) return;
+    taskLinkBusy = true; button.disabled = true; button.textContent = '파일 묶음을 보관하는 중';
+    const mode = reportMode;
+    try {
+      const prepared = await exportInput('task'); if (!prepared) return;
+      const { cur, built } = prepared;
+      const current = () => {
+        const now = currentDong();
+        return now && reportMode === mode && now.it.code === cur.it.code && docFor(now.v, now.m, now.it) === built;
+      };
+      const comparison = typeof localStorage !== 'undefined' ? snapDoc(snapGet(cur.it.code), snapshotOf(cur.it, rowsFor(cur.v, cur.m, cur.it), new Date())) : null;
+      const full = DG.withSnap(built.doc, comparison), one = mode === 'onepage', pick = one ? built.one : full;
+      const stem = `${cur.it.code}_${DG.safeName(cur.it.name)}_${one ? '요약' : '근거서'}`;
+      const request = {files:[
+        {name:`${stem}.hwpx`,kind:'hwpx',bytes:DG.hwpxBytes(pick)},
+        {name:`${stem}.docx`,kind:'docx',bytes:DG.docxBytes(pick)},
+        {name:`${stem}.pptx`,kind:'pptx',bytes:DG.pptxBytes(pick)},
+        {name:`${stem}.xlsx`,kind:'xlsx',bytes:DG.workbookBytes(full)},
+      ],inputJSON:built.inputJSON,comparison,templateVersion:JSON.parse(built.inputJSON).templates.version,
+      reviewRows:DG.deliveryReview(built.brief,true).rows,context:{code:cur.it.code,region:built.brief.region,year:built.brief.year}};
+      if (!window.RenewTaskLink) await import('./task-link.js?v=20261112-tasks');
+      if (!current()) throw new Error('파일 준비 중 선택이나 입력이 바뀌었습니다. 현재 문서에서 다시 눌러 주세요.');
+      const packet = await window.RenewTaskLink.capture(request);
+      if (!current()) throw new Error('선택이 바뀌어 화면 이동을 멈췄습니다. 보관한 파일 묶음은 보관함에서 다시 열 수 있습니다.');
+      location.assign(`tasks.html?packet=${encodeURIComponent(packet.id)}`);
+    } catch (error) { notify({format:'task',status:'error',message:error.message || '과업 파일을 보관하지 못했습니다.'}); }
+    finally {
+      taskLinkBusy = false;
+      const now = currentDong();
+      report.querySelectorAll('[data-task-package]').forEach(b => { b.disabled = !now || !DG || state.templates === null || filesLoading(now.v); b.textContent = '과업에 연결'; });
+    }
   }
   // 지도 이미지(PNG): 배경 타일(CORS로 캔버스에 못 그림)을 빼고 경계·색·범례·출처·기준연도만 그린다
   async function mapPng() {
@@ -1430,6 +1464,7 @@
     if (b.dataset.rpMode) { api.setReportMode(b.dataset.rpMode); report.querySelector(`[data-rp-mode="${b.dataset.rpMode}"]`)?.focus({ preventScroll: true }); }
     else if (b.hasAttribute('data-print')) printReport();
     else if (b.dataset.dl) download(b.dataset.dl);
+    else if (b.hasAttribute('data-task-package')) connectTask(b);
     else if (b.hasAttribute('data-copy-table')) copyTable(b);
     else if (b.hasAttribute('data-snap-save') || b.hasAttribute('data-snap-clear')) {
       const c = currentDong(); if (!c) return;

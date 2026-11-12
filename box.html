@@ -34,6 +34,7 @@
 <main id="main" class="home box-v4">
   <h1>보관함</h1>
   <p class="home-sub">이 휴대폰에만 저장됩니다.<br>서버로 보내지 않습니다.</p>
+  <p><a href="tasks.html">과업별 근거 대조·납품·최종 검토 이력 열기</a></p>
   <div id="boxStats" class="v4-stats" aria-live="polite"></div>
   <section data-candidates aria-labelledby="candidatesTitle">
     <h2 id="candidatesTitle">검토 후보</h2>
@@ -51,9 +52,9 @@
     <ul id="recs" class="box-list" aria-live="polite"><li class="skel" aria-hidden="true"></li></ul></section>
   </div>
   <section class="outcome-sum" aria-labelledby="outcomeTitle">
-    <h2 id="outcomeTitle">결재 결과</h2>
+    <h2 id="outcomeTitle">결재 결과 자가 기록</h2>
     <p id="outcomeSum" aria-live="polite"></p>
-    <p class="hint">결과는 이 기기에만 저장됩니다.<br>동의한 결과만, 문서 내용·위치 없이 아래 단추로 받아 리뉴맵에 직접 보낼 수 있습니다.</p>
+    <p class="hint">결과는 이 기기에만 저장되며 담당자 신원·실제 결정일·전자서명 인증을 대신하지 않습니다.<br>정확한 파일 버전과 검토 증빙은 <a href="tasks.html">과업·납품</a>에서 연결하세요.<br>동의한 결과만, 문서 내용·위치 없이 아래 단추로 받아 리뉴맵에 직접 보낼 수 있습니다.</p>
     <button type="button" id="outcomeExp" class="ghost">개선용 결과 내보내기(<abbr title="한 줄에 기록 하나씩 담은 JSON">JSONL</abbr>)</button>
   </section>
   <p id="boxMsg" class="home-msg" role="status"></p>

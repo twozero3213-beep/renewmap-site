@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+    <meta name="robots" content="noindex" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>과업·납품 | 리뉴맵</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="pretendard.css" />
+    <link rel="stylesheet" href="styles.css?v=20261112-audit" />
+    <link rel="stylesheet" href="tasks.css?v=20261112-tasks" />
+    <script src="frame-guard.js"></script>
+    <link rel="stylesheet" href="list-pages.css" />
+    <script src="list-pages.js" defer></script>
+    <script src="tasks.js?v=20261112-tasks" defer></script>
+    <script src="task-store.js?v=20261112-tasks" defer></script>
+    <script src="field/store.js" defer></script>
+    <script src="docgen.js?v=20261112-guideline" defer></script>
+    <script src="tasks-files.js?v=20261112-tasks" defer></script>
+    <script src="tasks-app.js?v=20261112-tasks" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">본문으로 건너뛰기</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="logo" href="index.html">RENEW<span>MAP</span></a>
+        <nav aria-label="과업 메뉴">
+          <a href="explore.html">동네 찾기</a><a href="box.html">보관함</a>
+        </nav>
+      </div>
+    </header>
+    <main id="main" class="wrap task-page">
+      <h1>과업·납품</h1>
+      <p>
+        적용 지침과 요구 자료를 정하고, 근거 대조부터 납품 파일·검토 이력까지
+        함께 보관합니다.
+      </p>
+      <p class="task-notice">
+        이 기기에 저장하는 검토 기록입니다.<br />담당자의 신원·전자서명·기관의
+        공식 승인을 인증하지 않습니다.<br />백업 파일을 받아 별도로 보관해
+        주세요. 소유자·거주자 정보는 입력하지 마세요.
+      </p>
+      <div class="task-toolbar">
+        <label for="taskPick"
+          >저장한 과업<select id="taskPick">
+            <option value="">새 과업</option>
+          </select></label
+        ><button id="newTask" type="button">새 과업</button
+        ><label for="taskActor"
+          >이번 기록 작성자<input
+            id="taskActor"
+            maxlength="80"
+            autocomplete="name"
+            placeholder="성명 또는 팀 내부 식별자"
+        /></label>
+      </div>
+      <p id="taskState" class="task-state" aria-live="polite">
+        새 과업을 설정하세요.
+      </p>
+      <nav class="task-steps" aria-label="과업 단계">
+        <button type="button" data-step="0" aria-current="step">
+          1 과업 설정</button
+        ><button type="button" data-step="1">2 근거 대조</button
+        ><button type="button" data-step="2">3 납품·이력</button>
+      </nav>
+      <p id="taskMsg" role="status" aria-live="polite"></p>
+      <section data-panel="0" aria-labelledby="planTitle">
+        <h2 id="planTitle">과업과 검증 계획</h2>
+        <form id="planForm">
+          <div class="task-grid">
+            <label
+              >과업명<input id="taskTitle" required maxlength="160" /></label
+            ><label
+              >사업 유형·공모연도<input
+                id="taskProgram"
+                required
+                maxlength="200" /></label
+            ><label
+              >지침명·판본·공식 원문 주소<textarea
+                id="taskGuideline"
+                required
+                maxlength="2000"
+                rows="3"
+              ></textarea></label
+            ><label
+              >대상 코드·구역 경계·분석 범위<textarea
+                id="taskScope"
+                required
+                maxlength="2000"
+                rows="3"
+              ></textarea>
+            </label>
+          </div>
+          <label
+            >요구 항목 · 지정 출처 · 공간 단위<textarea
+              id="taskRequirements"
+              required
+              rows="5"
+              maxlength="12000"
+              placeholder="한 줄에 한 항목을 적습니다.&#10;인구 현황 | 지침에서 지정한 자료 | 행정동"
+            ></textarea>
+          </label>
+          <p class="task-help">
+            각 줄을 <b>항목명 | 지정 출처 | 공간 단위</b> 순서로 구분해
+            주세요.<br />계획을 실제로 바꾸면 새 검증 회차가 시작되고, 이전
+            검증·납품·결정은 과거 버전에 남습니다.
+          </p>
+          <button type="submit">계획 저장</button>
+        </form>
+      </section>
+      <section data-panel="1" hidden aria-labelledby="checkTitle">
+        <h2 id="checkTitle">요구 항목별 근거 대조</h2>
+        <p>
+          공식 원문의 쪽·조문과 실제 자료를 확인해 기록합니다.<br />‘대조
+          일치’는 사용자가 기록한 결과이며 자동 법정 판정이 아닙니다.
+        </p>
+        <form id="checkForm">
+          <label>요구 항목<select id="checkPick"></select></label>
+          <p id="checkExpected" class="task-help"></p>
+          <div class="task-grid">
+            <label
+              >대조 결과<select id="checkResult">
+                <option value="pending">추가확인</option>
+                <option value="match">대조 일치</option>
+                <option value="conflict">근거 충돌</option>
+                <option value="invalid">입력 오류</option>
+              </select></label
+            ><label
+              >실제 자료 출처<input id="checkSource" maxlength="2000" /></label
+            ><label>원문 쪽·조문<input id="checkPage" maxlength="240" /></label
+            ><label
+              >실제 공간 단위<input id="checkUnit" maxlength="240"
+            /></label>
+          </div>
+          <label>대조한 근거 파일<input type="file" id="checkFile" /></label>
+          <p id="checkHash" class="task-hash"></p>
+          <label
+            >확인 내용·미해결 사유<textarea
+              id="checkNote"
+              rows="3"
+              maxlength="2000"
+            ></textarea>
+          </label>
+          <p class="task-help">
+            항목을 바꾸면 입력한 대조 내용은 화면에 유지됩니다.<br />아래 단추는
+            모든 요구 항목을 함께 검증합니다. 한 회차는 최대 3번 검증하며 같은
+            계획을 다시 저장해 횟수를 초기화할 수 없습니다.
+          </p>
+          <button type="submit">전체 항목 검증·기록</button>
+        </form>
+        <p id="checkSummary"></p>
+      </section>
+      <section data-panel="2" hidden aria-labelledby="deliveryTitle">
+        <h2 id="deliveryTitle">납품 파일과 최종 검토</h2>
+        <p>
+          지도에서 <b>과업에 연결</b>을 누르면 생성 파일·고정 입력·기준일 비교를
+          함께 가져옵니다.<br /><a
+            href="explore.html?report=brief&amp;panel=evidence"
+            >지도에서 보고서 준비하기</a
+          >
+        </p>
+        <form id="packetForm">
+          <label
+            >연결할 보고서 묶음<select id="packetPick">
+              <option value="">보고서 묶음을 선택하세요</option>
+            </select></label
+          ><button type="submit">보고서 묶음 연결</button>
+        </form>
+        <form id="fileForm">
+          <label
+            >외부에서 완성한 납품 파일<input
+              id="deliveryFiles"
+              type="file"
+              multiple
+              required
+          /></label>
+          <p class="task-help">
+            현재 대조 결과가 완료되기 전 첨부한 파일은 초안으로 보관됩니다.<br />규칙
+            승인 대기·결측 자료가 있는 자동 보고서는 승인 완료로 바꾸지
+            않습니다.
+          </p>
+          <button type="submit">파일 연결</button>
+        </form>
+        <ul id="artifactList" class="task-files"></ul>
+        <details id="decisionDetails">
+          <summary>최종 검토 결과 기록</summary>
+          <p>
+            실제 결정일과 검토 증빙을 연결합니다.<br />이 기록은 전자서명
+            인증이나 기관의 공식 확인을 대신하지 않습니다.
+          </p>
+          <form id="decisionForm">
+            <div class="task-grid">
+              <label
+                >결정<select id="decisionKind">
+                  <option value="approve">승인 기록</option>
+                  <option value="reject">반려 기록</option>
+                </select></label
+              ><label
+                >실제 검토자<input
+                  id="decisionReviewer"
+                  required
+                  maxlength="80" /></label
+              ><label
+                >검토자 직책·역할<input
+                  id="decisionRole"
+                  required
+                  maxlength="80" /></label
+              ><label
+                >실제 결정일<input id="decisionDate" type="date" required
+              /></label>
+            </div>
+            <label
+              >검토·결정 증빙 파일<input
+                id="decisionFile"
+                type="file"
+                required /></label
+            ><label
+              >결정 사유<textarea
+                id="decisionNote"
+                rows="3"
+                required
+                maxlength="2000"
+              ></textarea></label
+            ><button type="submit">결정과 파일 버전 기록</button>
+          </form>
+        </details>
+        <div class="task-actions">
+          <button type="button" id="backupTask">백업 받기(JSON)</button
+          ><button type="button" id="zipTask">납품 묶음 받기(ZIP)</button>
+        </div>
+        <details>
+          <summary>백업 복원</summary>
+          <p>
+            이 서비스에서 받은 JSON 백업의 이력·파일 해시를 검사한 뒤
+            복원합니다.<br />같은 과업의 다른 이력을 덮어쓰지 않습니다.
+          </p>
+          <label
+            >백업 파일<input
+              id="restoreFile"
+              type="file"
+              accept=".json,application/json" /></label
+          ><button type="button" id="restoreTask">검사 후 복원</button>
+        </details>
+        <details>
+          <summary>버전·검증·납품·결정 이력</summary>
+          <ol id="taskHistory"></ol>
+        </details>
+      </section>
+    </main>
+  </body>
+</html>
