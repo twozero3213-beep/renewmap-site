@@ -42,6 +42,9 @@
     "과업 이력",
     renderHistory,
   );
+  const survey = window.RenewSurveyChangeUI.mount({
+    run: action, task: () => current, versions: () => history, attach: attachSurvey, notify: say,
+  });
   function step(n) {
     document.querySelectorAll("[data-panel]").forEach((e) => {
       e.hidden = e.dataset.panel !== String(n);
@@ -217,6 +220,7 @@
     showSpec();
     render();
     await refreshList();
+    await survey.refresh();
     if (current) historyReplace(current.id);
   }
   function historyReplace(id) {
@@ -225,9 +229,10 @@
     u.searchParams.delete("packet");
     window.history.replaceState(null, "", u);
   }
-  async function commit(type, payload, base = current) {
+  async function commit(type, payload, base = current, beforeAppend) {
     if (!base) throw new Error("과업 계획을 먼저 저장해 주세요.");
     const next = await T.revise(base, { type, payload }, options());
+    if (beforeAppend) await beforeAppend();
     await S.append(next, base.hash);
     await select(base.id);
     return next;
@@ -275,25 +280,35 @@
     blockers: e.blockers || blockers,
   });
   function mergeArtifacts(old, added) {
-    const by = new Map(old.map((x) => [x.sha256, x]));
+    const result = old.slice();
     for (const a of added) {
-      const previous = by.get(a.sha256);
-      by.set(
-        a.sha256,
-        previous
-          ? {
-              ...previous,
-              blockers: [
-                ...new Set([
-                  ...(previous.blockers || []),
-                  ...(a.blockers || []),
-                ]),
-              ],
-            }
-          : a,
-      );
+      const index = result.findIndex(x => x.sha256 === a.sha256 && !window.RenewSurveyChangeUI.isSurvey(x));
+      if (index < 0) result.push(a);
+      else {
+        const previous = result[index];
+        result[index] = {...previous, blockers:[...new Set([...previous.blockers,...a.blockers])]};
+      }
     }
-    return [...by.values()];
+    return result;
+  }
+  async function attachSurvey(base, files) {
+    if (base.hash !== current?.hash) throw new Error("편집 중 과업이 바뀌었습니다. 근거표를 다시 불러오세요.");
+    const kept = base.artifacts.filter(a => !window.RenewSurveyChangeUI.isSurvey(a));
+    if (files.some(file => kept.some(a => a.name === file.name)))
+      throw new Error("기존 일반 납품 파일과 근거표 파일 이름이 겹칩니다. 기존 파일을 다른 이름으로 연결하세요.");
+    // 같은 바이트를 일반 첨부와 조사 증빙에 쓸 수 있다. 승인 보류와 이름은 각 납품 항목에 속한다.
+    const next = [...kept, ...files.map(file => artifact(file))];
+    const held = (await F.docs()).filter(d => d.task_id === base.id && d.kind === "task-file");
+    const sizes = new Map(held.map(d => [d.sha256,d.size]));
+    for (const f of files) sizes.set(f.sha256,f.size);
+    if (sizes.size > 500 || [...sizes.values()].reduce((sum,size) => sum+size,0) > B.MAX)
+      throw new Error("과업의 기존 파일을 포함하여 500개·20MB를 넘습니다.");
+    await commit("attach", {artifacts:next}, base, async () => {
+      for (const f of files) {
+        const entry = await storeFile(new File([f.blob],f.name,{type:f.blob.type}),base.id);
+        if (entry.sha256 !== f.sha256) throw new Error("저장할 조사 파일의 지문이 다릅니다.");
+      }
+    });
   }
   async function loadPackets() {
     packets = (await F.docs()).filter((d) => d.kind === "task-packet");
@@ -377,7 +392,14 @@
     e.preventDefault();
     action(async () => {
       keepCheck();
-      await commit("check", { checks });
+      const retained = current?.artifacts.filter(window.RenewSurveyChangeUI.isSurvey) || [];
+      if (retained.length) {
+        // 같은 계획의 재검증에서도 조사 보류와 제출서식 연결을 함께 보존한다.
+        const checked = await T.revise(current, {type:"check",payload:{checks}}, options());
+        const next = await T.revise(checked, {type:"attach",payload:{artifacts:retained}}, options());
+        await S.fastForward([...history,checked,next]);
+        await select(next.id);
+      } else await commit("check", { checks });
       say(`${labels[current.state]}로 기록했습니다. 미해결 항목을 확인하세요.`);
     });
   });

@@ -14,6 +14,7 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: python .github/ui_smoke.py --output "$RUNNER_TEMP/ui-results"
       - run: python .github/task_flow_smoke.py --output "$RUNNER_TEMP/ui-results/task-flow"
+      - run: python .github/survey_change_smoke.py --output "$RUNNER_TEMP/ui-results/survey-change"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: ${{ always() }}
         with:

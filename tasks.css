@@ -219,4 +219,15 @@
   word-break: break-word;
 }
 
+#surveyChanges fieldset {
+  min-width: 0;
+  border: 0;
+  border-top: 1px solid #bdcfc7;
+  margin: 18px 0;
+  padding: 12px 0 0;
+}
+#surveyChanges legend { font-weight: 700; padding-right: 8px; }
+#surveyChanges button[type="button"] { color: #006f5b; background: white; }
+#changeMsg { white-space: pre-line; }
+
 .top nav a{display:inline-flex;align-items:center;min-height:44px}.task-page input,.task-page select{min-height:44px}

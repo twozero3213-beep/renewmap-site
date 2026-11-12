@@ -13,7 +13,7 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="pretendard.css" />
     <link rel="stylesheet" href="styles.css?v=20261112-audit" />
-    <link rel="stylesheet" href="tasks.css?v=20261112-tasks" />
+    <link rel="stylesheet" href="tasks.css?v=20261113-survey" />
     <script src="frame-guard.js"></script>
     <link rel="stylesheet" href="list-pages.css" />
     <script src="list-pages.js" defer></script>
@@ -25,7 +25,10 @@
     <script src="task-cloud-config.js?v=20261112-cloud" defer></script>
     <script src="task-cloud.js?v=20261112-cloud" defer></script>
     <script src="task-cloud-ui.js?v=20261112-cloud" defer></script>
-    <script src="tasks-app.js?v=20261112-taskreview" defer></script>
+    <script src="survey-change.js?v=20261113-survey" defer></script>
+    <script src="survey-template.js?v=20261113-survey" defer></script>
+    <script src="survey-change-ui.js?v=20261113-survey" defer></script>
+    <script src="tasks-app.js?v=20261113-survey" defer></script>
   </head>
   <body>
     <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -118,6 +121,57 @@
       </section>
       <section data-panel="1" hidden aria-labelledby="checkTitle">
         <h2 id="checkTitle">요구 항목별 근거 대조</h2>
+        <details id="surveyChanges">
+          <summary>조사 변경·보완 근거표</summary>
+          <p id="changeSummary" aria-live="polite">과업 계획을 먼저 저장하세요.</p>
+          <form id="changeForm">
+            <label>편집할 행<select id="changePick"></select></label>
+            <fieldset>
+              <legend>기존 조사 자료</legend>
+              <div class="task-grid">
+                <label>과업 요구 항목<select id="changeRequirement" required></select></label>
+                <label>조사 대상·관리번호<input id="changeSite" maxlength="160" required></label>
+                <label>원자료 출처·목록명<input id="changeSource" maxlength="1000" required></label>
+                <label>원자료 기준일<input id="changeCutoff" type="date" required></label>
+              </div>
+              <label>기존 자료 내용<input id="changeBefore" maxlength="1000" required placeholder="신규 발견 건은 기존 목록에 없음을 기재"></label>
+              <label>이 행의 기준 원본 파일 (선택)<input id="changeBaselineFile" type="file"></label>
+              <p id="changeBaselineInfo" class="task-help"></p>
+            </fieldset>
+            <fieldset>
+              <legend>현장 확인과 변경 사유</legend>
+              <label>기기에 저장한 현장 기록<select id="changeRecord"><option value="">기록 선택</option></select></label>
+              <button type="button" id="changeImport">현장 결과·사진 가져오기</button>
+              <div class="task-grid">
+                <label>변경 구분<select id="changeKind"><option value="hold">보류</option><option value="add">추가</option><option value="exclude">제외</option></select></label>
+                <label>현장 확인·시도일<input id="changeObserved" type="date" required></label>
+              </div>
+              <label>현장 결과<input id="changeAfter" maxlength="1000" required></label>
+              <label>추가·제외·보류 사유<textarea id="changeReason" rows="2" maxlength="1000" required></textarea></label>
+              <label>사진 추가<input id="changePhotos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+              <p class="task-help">얼굴·차량번호를 가린 사진을 선택하세요. 선택한 파일이 납품 묶음에 포함됩니다.</p>
+              <p id="changePhotoList" class="task-help"></p>
+              <button type="button" id="changeClearPhotos">이 행의 사진 연결 해제</button>
+            </fieldset>
+            <fieldset>
+              <legend>제출서식에 연결</legend>
+              <label>서식명·판본<input id="changeFormName" maxlength="200" required></label>
+              <label>지정 서식 원본 XLSX (선택)<input id="changeTemplate" type="file" accept=".xlsx"></label>
+              <p id="changeTemplateInfo" class="task-help"></p>
+              <div class="task-grid">
+                <label>시트명<input id="changeSheet" maxlength="31" placeholder="원본 XLSX에 기입할 때 입력"></label>
+                <label>제출 칸<input id="changeCell" maxlength="240" required placeholder="예: B3 또는 서식의 항목명"></label>
+              </div>
+              <label>제출 칸에 넣을 문구<textarea id="changeSubmitText" rows="2" maxlength="2000" placeholder="비워 두면 구분·현장 결과·사유를 기입합니다."></textarea></label>
+              <p class="task-help">원본 XLSX를 선택하면 모든 행에 시트명과 셀 주소가 필요합니다.
+                원본과 작성본을 함께 보관합니다. 자체 근거표만 만들 때는 제출 칸 이름을 적으세요.</p>
+            </fieldset>
+            <button type="submit" id="changeSave">이 행과 근거표를 납품 파일에 저장</button>
+          </form>
+          <button type="button" id="changeDownload">저장한 근거표 XLSX 받기</button>
+          <button type="button" id="changeDownloadForm">작성한 제출서식 XLSX 받기</button>
+          <p id="changeMsg" role="status" aria-live="polite"></p>
+        </details>
         <p>
           공식 원문의 쪽·조문과 실제 자료를 확인해 기록합니다.<br />‘대조
           일치’는 사용자가 기록한 결과이며 자동 법정 판정이 아닙니다.
