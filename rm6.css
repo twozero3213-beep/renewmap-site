@@ -387,3 +387,9 @@ header.top > .wrap:first-child { min-height: 64px !important; }
 }
 .map-more { margin-top: 12px; border-top: 1px solid var(--line); }
 .map-more > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--green); }
+
+/* v7.11 휴대폰·태블릿 동네 찾기: 검색 바로 아래 지도(주제·지표 단추는 지도 아래). 8회차: 지도가 화면 가운데(약 485px)부터 나왔다 */
+@media (max-width: 1099px) {
+  .explore-page #mapApp { display: flex; flex-direction: column; }
+  .explore-page #mapApp > .map-stage { order: -1; margin-bottom: 12px; }
+}
