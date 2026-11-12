@@ -91,6 +91,14 @@ header.top { position: sticky; top: 0; z-index: 20; background: var(--bg); borde
 header.top .wrap { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; }
 .logo { font-weight: 700; font-size: 20px; color: var(--ink); text-decoration: none; letter-spacing: .02em; }
 .logo span { color: var(--green); }
+/* site-v4.css를 쓰지 않는 정적 동 페이지에도 메뉴 배치와 클릭 영역을 보장한다. */
+.site-nav { display: flex; gap: 2px; min-width: 0; overflow-x: auto; }
+.site-nav a { display: inline-flex; align-items: center; flex: none; min-height: 44px; padding: 8px 10px; font-size: 14px; font-weight: 600; white-space: nowrap; text-decoration: none; }
+@media (max-width: 720px) {
+  header.top .wrap:has(.site-nav) { flex-wrap: wrap; gap: 0; padding-top: 8px; padding-bottom: 0; }
+  .site-nav { flex: 1 0 100%; justify-content: space-between; gap: 4px; }
+  .site-nav a { min-width: 44px; padding: 8px 0; font-size: 12px; }
+}
 .quick-menu { display: flex; gap: 4px; flex-wrap: wrap; }
 .quick-menu a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px; color: var(--dim); font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px; }
 .quick-menu a:hover, .quick-menu a[aria-current] { background: var(--soft); color: var(--green); }

@@ -20,6 +20,7 @@ def geometry(page):
       return {width:innerWidth, scroll:document.documentElement.scrollWidth,
         height:document.documentElement.scrollHeight,
         duplicateIds:ids.filter((id,i)=>ids.indexOf(id)!==i),
+        crampedNav:[...document.querySelectorAll('header .site-nav a')].filter(visible).filter(e=>e.getBoundingClientRect().height<44).map(e=>e.textContent),
         exposedHidden:[...document.querySelectorAll('[hidden]')].filter(visible).map(e=>e.id||e.className),
         gridTables:tables.filter(t=>getComputedStyle(t).display==='grid').map(t=>t.className),
         misaligned:tables.filter(t=>{
@@ -78,7 +79,7 @@ def main():
                 row = {'route': route, 'width': width, 'topic': topic, **geometry(page)}
                 results.append(row)
                 assert row['scroll']<=width+1, row
-                assert not any(row[k] for k in ['duplicateIds','exposedHidden','gridTables','misaligned']), row
+                assert not any(row[k] for k in ['duplicateIds','crampedNav','exposedHidden','gridTables','misaligned']), row
                 assert row['height'] < (5000 if topic is not None else 10000), row
                 assert not errors, errors
                 assert not missing, missing
