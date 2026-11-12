@@ -21,8 +21,9 @@
     // 브이월드는 이 함수를 부른 '뒤'에 자기 방식으로 initPosition으로 옮긴다(VWViewerStartup.v30: ws3dInitCallBack → lookat.moveTo).
     // 그 결과가 요청 위치와 달랐다(2026-11-07 공개 사이트: 3km 남쪽 2km 높이, 산만 보임). 그 이동이 끝난 다음 차례에 카메라를 직접 옮긴다
     setTimeout(() => {
-      const C = window.Cesium, cam = window.ws3d && ws3d.viewer && ws3d.viewer.camera;
-      if (!C || !cam) return;
+      const C = window.Cesium, v = window.ws3d && ws3d.viewer;
+      if (!C || !v || v.isDestroyed?.() || !v.cesiumWidget?.scene) return;
+      const cam = v.camera; if (!cam) return;
       cam.cancelFlight();
       cam.setView({ destination: C.Cartesian3.fromDegrees(at[0], at[1] - 0.012, 800), orientation: { heading: 0, pitch: C.Math.toRadians(-45), roll: 0 } });
     }, 0);

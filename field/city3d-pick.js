@@ -76,19 +76,30 @@
       }
       show("누른 자리의 건물 외곽선이 없습니다", [["안내", "건물 정보는 부산광역시만 준비돼 있습니다. 건물 지붕 가운데를 눌러 보세요."]]);
     }
-    let tries = 0;
+    let tries = 0, handler = null;
     const timer = setInterval(() => {
+      if (++tries > 120) { clearInterval(timer); return; }
       const v = window.ws3d && window.ws3d.viewer, C = window.Cesium;
-      if (++tries > 120) clearInterval(timer);
-      if (!v || !C) return;
+      if (!v || !C || v.isDestroyed?.()) return;
+      // SDK의 viewer.scene getter는 내부 위젯 준비 전·파기 후 예외를 던진다.
+      const scene = v.cesiumWidget?.scene;
+      if (!scene?.canvas || !scene.globe || !scene.camera) return;
       clearInterval(timer);
-      new C.ScreenSpaceEventHandler(v.scene.canvas).setInputAction((e) => {
-        const p = (v.scene.pickPositionSupported && v.scene.pickPosition(e.position)) || v.camera.pickEllipsoid(e.position, v.scene.globe.ellipsoid);
+      handler = new C.ScreenSpaceEventHandler(scene.canvas);
+      handler.setInputAction((e) => {
+        if (!handler || handler.isDestroyed() || v.isDestroyed?.() || v.cesiumWidget?.scene !== scene) return;
+        const p = (scene.pickPositionSupported && scene.pickPosition(e.position)) || scene.camera.pickEllipsoid(e.position, scene.globe.ellipsoid);
         if (!p) return;
         const c = C.Cartographic.fromCartesian(p);
         lookup(C.Math.toDegrees(c.longitude), C.Math.toDegrees(c.latitude));
       }, C.ScreenSpaceEventType.LEFT_CLICK);
     }, 500);
+    window.addEventListener('pagehide', (e) => {
+      if (e.persisted) return;
+      clearInterval(timer);
+      if (handler && !handler.isDestroyed()) handler.destroy();
+      handler = null;
+    });
   }
   return { inRing, candidates, pickItem, describe, findBuilding };
 });

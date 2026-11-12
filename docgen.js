@@ -362,6 +362,8 @@
 
   function deliveryReview(brief, forecast = false) {
     const items = brief.items.filter(i => forecast || i.group !== '전망'), cells = items.filter(i => i.cell), rows = [['점검 항목', '현황', '확인할 내용']];
+    rows.push(['적용 지침 판본', '추가확인', '적용할 사업·공모연도·가이드라인 명칭·발행일·판본을 원문과 대조합니다. 리뉴맵 문서 양식 버전은 해당 사업지침의 적합 승인과 다릅니다.']);
+    rows.push(['지침 요구항목·조사출처', '추가확인', '지침에 지정된 조사 항목·출처·조사범위를 현황·출처표와 대조합니다. 셀에 자료가 있거나 확인 상태여도 제출요건 충족으로 처리하지 않습니다.']);
     const count = (title, list, action) => rows.push([title, `${list.length}건`, list.length ? `${list.map(i => i.label).join(', ')} · ${action}` : '해당 항목 없음']);
     count('자료 없음', items.filter(i => !i.cell && !i.fact || i.cell && !hidden(i.cell) && i.cell.value == null), '원천 자료와 수집 범위 확인');
     count('이용조건으로 비공개', cells.filter(i => hidden(i.cell)), '재배포 허용 범위 확인');
@@ -376,7 +378,7 @@
     const dates = [...new Set(items.map(i => (i.cell || i.fact || {}).reference_date).filter(Boolean))].sort();
     const grains = [...new Set(items.filter(i => i.cell || i.fact).map(i => i.cell ? i.cell.spatial_unit || '미기록' : '시군구'))].sort();
     rows.push(['기준일 구성', `${dates.length}개`, dates.length ? dates.map(govDate).join(', ') + ' · 기준일 차이를 해석에 반영' : '기준일 기록 없음']);
-    rows.push(['공간 단위 구성', `${grains.length}개`, grains.length ? grains.join(', ') + ' · 상위 단위 값을 개별 건물·필지 값으로 해석하지 않음' : '공간 단위 기록 없음']);
+    rows.push(['공간 단위 구성', `${grains.length}개`, `${grains.length ? grains.join(', ') : '공간 단위 기록 없음'} · 해당 지침이 정한 통계단위·통합분석 범위·사업구역 경계는 추가확인입니다. 구·동 통계의 이름만 바꾸어 사업구역·개별 건물·필지 자체의 값으로 쓰지 않습니다. 현장 기록도 별도로 대조합니다.`]);
     const pending = brief.crit.rows.slice(1).filter(r => r[4].includes('승인 대기')).map(r => r[0]);
     if (forecast && items.some(i => i.group === '전망' && i.cell) && !(brief.fidx || {}).approved) pending.push('추세 전망 산식');
     rows.push(['규칙·산식 승인 대기', `${pending.length}건`, pending.length ? pending.join(', ') : '표시된 승인 대기 항목 없음 · 법정 적합 판정 아님']);
