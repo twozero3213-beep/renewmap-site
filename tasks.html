@@ -13,7 +13,7 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="pretendard.css" />
     <link rel="stylesheet" href="styles.css?v=20261112-audit" />
-    <link rel="stylesheet" href="tasks.css?v=20261113-survey" />
+    <link rel="stylesheet" href="tasks.css?v=20261113-revisit" />
     <script src="frame-guard.js"></script>
     <link rel="stylesheet" href="list-pages.css" />
     <script src="list-pages.js" defer></script>
@@ -26,9 +26,14 @@
     <script src="task-cloud.js?v=20261112-cloud" defer></script>
     <script src="task-cloud-ui.js?v=20261112-cloud" defer></script>
     <script src="survey-change.js?v=20261113-survey" defer></script>
-    <script src="survey-template.js?v=20261113-survey" defer></script>
+    <script src="survey-template.js?v=20261113-revisit" defer></script>
     <script src="survey-change-ui.js?v=20261113-survey" defer></script>
-    <script src="tasks-app.js?v=20261113-survey" defer></script>
+    <script src="field/record.js?v=20261112-taskreview" defer></script>
+    <script src="field/evidence.js?v=20261113-revisit" defer></script>
+    <script src="revisit-report.js?v=20261113-revisit" defer></script>
+    <script src="revisit-photos.js?v=20261113-revisit" defer></script>
+    <script src="revisit-report-ui.js?v=20261113-revisit" defer></script>
+    <script src="tasks-app.js?v=20261113-revisit" defer></script>
   </head>
   <body>
     <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -171,6 +176,82 @@
           <button type="button" id="changeDownload">저장한 근거표 XLSX 받기</button>
           <button type="button" id="changeDownloadForm">작성한 제출서식 XLSX 받기</button>
           <p id="changeMsg" role="status" aria-live="polite"></p>
+        </details>
+        <details id="revisitReport">
+          <summary>최초 조사·준공 후 재방문 대조표</summary>
+          <p id="rvSummary" role="status">연결할 변경·보완 근거표를 선택하세요.</p>
+          <p id="rvComparison" class="task-help" hidden></p>
+          <form id="rvEditor" novalidate hidden>
+            <label>편집할 재방문<select id="rvPick"></select></label>
+            <nav class="rv-pages" aria-label="재방문 작성 단계">
+              <button type="button" id="rvPageBefore" data-rv-stage="Before" aria-current="step">최초 조사</button>
+              <button type="button" id="rvPageAfter" data-rv-stage="After">재방문</button>
+              <button type="button" id="rvPageReport" data-rv-stage="Report">실적보고</button>
+            </nav>
+            <fieldset data-rv-section="Before">
+              <legend>최초 조사</legend>
+              <label class="rv-check" id="rvRepairPanel" hidden><input id="rvRepairBase" type="checkbox"> 같은 지점의 보완된 최초 조사 판으로 교체</label>
+              <div class="task-grid">
+                <label>최초 조사로 삼을 변경표 버전<select id="rvSource"></select></label>
+                <label>조사 대상·관리번호<select id="rvRow" required></select></label>
+              </div>
+              <p class="task-help">새 비교는 처음 저장한 판부터 선택합니다. 보완판으로 교체할 때는 대상·요구 항목·조사 행이 같은지 검사하고 이전 보고서는 이력에 보존합니다.</p>
+              <p id="rvInitial"></p>
+              <p id="rvConditionSource" class="task-help"></p>
+              <fieldset class="rv-conditions">
+                <legend>최초 관찰 조건</legend>
+                <div class="task-grid">
+                  <label>관찰 구간<input id="rvBeforeArea" type="text" maxlength="160"></label>
+                  <label>시작 시각<input id="rvBeforeStart" type="time"></label>
+                  <label>종료 시각<input id="rvBeforeEnd" type="time"></label>
+                  <label>날씨<input id="rvBeforeWeather" type="text" maxlength="160"></label>
+                  <label>관찰 방법<input id="rvBeforeMethod" type="text" maxlength="160"></label>
+                  <label>행사·특이사항<input id="rvBeforeContext" type="text" maxlength="160"></label>
+                </div>
+              </fieldset>
+            </fieldset>
+            <fieldset data-rv-section="After" hidden>
+              <legend>같은 지점 재방문</legend>
+              <label>기기에 저장한 현장 기록<select id="rvRecord"></select></label>
+              <button type="button" id="rvImport">재방문 기록·사진 가져오기</button>
+              <div class="task-grid">
+                <label>실제 준공일<input id="rvCompletion" type="date" required></label>
+                <label>재방문 조사일<input id="rvDate" type="date" required></label>
+              </div>
+              <label>재방문 관찰 결과<textarea id="rvResult" rows="2" maxlength="1000" required></textarea></label>
+              <label>변경·유지 사유<textarea id="rvReason" rows="2" maxlength="1000" required></textarea></label>
+              <label>재방문 사진<input id="rvPhotos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+              <p id="rvPhotoList" class="task-help"></p>
+              <p class="task-help">얼굴·차량번호를 가린 사진을 선택하세요. 파일을 고르면 이 재방문의 사진을 교체합니다.</p>
+              <fieldset class="rv-conditions">
+                <legend>재방문 관찰 조건</legend>
+                <div class="task-grid">
+                  <label>관찰 구간<input id="rvAfterArea" type="text" maxlength="160"></label>
+                  <label>시작 시각<input id="rvAfterStart" type="time"></label>
+                  <label>종료 시각<input id="rvAfterEnd" type="time"></label>
+                  <label>날씨<input id="rvAfterWeather" type="text" maxlength="160"></label>
+                  <label>관찰 방법<input id="rvAfterMethod" type="text" maxlength="160"></label>
+                  <label>행사·특이사항<input id="rvAfterContext" type="text" maxlength="160"></label>
+                </div>
+              </fieldset>
+              <label class="rv-check"><input id="rvSameSite" type="checkbox" required> 최초 조사와 같은 지점에서 관찰했음을 확인했습니다.</label>
+            </fieldset>
+            <fieldset data-rv-section="Report" hidden>
+              <legend>실적보고서 기입</legend>
+              <label>실적보고 서식명·판본<input id="rvFormName" maxlength="200" required></label>
+              <label>기관 실적서식 XLSX (선택)<input id="rvTemplate" type="file" accept=".xlsx"></label>
+              <p id="rvTemplateInfo" class="task-help"></p>
+              <div class="task-grid">
+                <label>지정 XLSX의 시트명<input id="rvSheet" maxlength="31"></label>
+                <label>보고서 칸·셀 주소<input id="rvCell" required maxlength="200" placeholder="사업 전후 현황 또는 B3"></label>
+              </div>
+              <label>실적보고서에 넣을 문구 (선택)<textarea id="rvText" rows="2" maxlength="2000" placeholder="비워 두면 전후 관찰 결과와 변경 사유를 넣습니다."></textarea></label>
+            </fieldset>
+            <button id="rvSave" type="submit" data-rv-section="Report" hidden>재방문 대조표를 납품 파일에 저장</button>
+          </form>
+          <button id="rvDownload" type="button" hidden>재방문 실적보고서 받기</button>
+          <button id="rvDownloadForm" type="button" hidden>작성한 기관 실적서식 받기</button>
+          <p id="rvMsg" role="status" aria-live="polite"></p>
         </details>
         <p>
           공식 원문의 쪽·조문과 실제 자료를 확인해 기록합니다.<br />‘대조

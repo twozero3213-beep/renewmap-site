@@ -43,8 +43,14 @@
     renderHistory,
   );
   const survey = window.RenewSurveyChangeUI.mount({
-    run: action, task: () => current, versions: () => history, attach: attachSurvey, notify: say,
+    run: action, task: () => current, versions: () => history,
+    attach: (base, files) => attachReport(base, files, window.RenewSurveyChangeUI.isSurvey), notify: say,
   });
+  const revisit = window.RenewRevisitUI.mount({
+    run: action, task: () => current, versions: () => history,
+    attach: (base, files) => attachReport(base, files, window.RenewRevisitUI.isRevisit), notify: say,
+  });
+  const isReport = file => window.RenewSurveyChangeUI.isSurvey(file) || window.RenewRevisitUI.isRevisit(file);
   function step(n) {
     document.querySelectorAll("[data-panel]").forEach((e) => {
       e.hidden = e.dataset.panel !== String(n);
@@ -221,6 +227,7 @@
     render();
     await refreshList();
     await survey.refresh();
+    await revisit.refresh();
     if (current) historyReplace(current.id);
   }
   function historyReplace(id) {
@@ -282,7 +289,7 @@
   function mergeArtifacts(old, added) {
     const result = old.slice();
     for (const a of added) {
-      const index = result.findIndex(x => x.sha256 === a.sha256 && !window.RenewSurveyChangeUI.isSurvey(x));
+      const index = result.findIndex(x => x.sha256 === a.sha256 && !isReport(x));
       if (index < 0) result.push(a);
       else {
         const previous = result[index];
@@ -291,9 +298,9 @@
     }
     return result;
   }
-  async function attachSurvey(base, files) {
+  async function attachReport(base, files, belongsToReport) {
     if (base.hash !== current?.hash) throw new Error("편집 중 과업이 바뀌었습니다. 근거표를 다시 불러오세요.");
-    const kept = base.artifacts.filter(a => !window.RenewSurveyChangeUI.isSurvey(a));
+    const kept = base.artifacts.filter(a => !belongsToReport(a));
     if (files.some(file => kept.some(a => a.name === file.name)))
       throw new Error("기존 일반 납품 파일과 근거표 파일 이름이 겹칩니다. 기존 파일을 다른 이름으로 연결하세요.");
     // 같은 바이트를 일반 첨부와 조사 증빙에 쓸 수 있다. 승인 보류와 이름은 각 납품 항목에 속한다.
@@ -392,7 +399,7 @@
     e.preventDefault();
     action(async () => {
       keepCheck();
-      const retained = current?.artifacts.filter(window.RenewSurveyChangeUI.isSurvey) || [];
+      const retained = current?.artifacts.filter(isReport) || [];
       if (retained.length) {
         // 같은 계획의 재검증에서도 조사 보류와 제출서식 연결을 함께 보존한다.
         const checked = await T.revise(current, {type:"check",payload:{checks}}, options());

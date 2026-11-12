@@ -239,5 +239,5 @@
       throw new Error("기입한 제출서식이 10MB를 넘습니다.");
     return result;
   }
-  window.RenewSurveyTemplate = Object.freeze({ fill });
+  window.RenewSurveyTemplate = Object.freeze({ fill, loadZip });
 })();

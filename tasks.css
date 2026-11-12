@@ -219,15 +219,24 @@
   word-break: break-word;
 }
 
-#surveyChanges fieldset {
+#surveyChanges fieldset,
+#revisitReport fieldset {
   min-width: 0;
   border: 0;
   border-top: 1px solid #bdcfc7;
   margin: 18px 0;
   padding: 12px 0 0;
 }
-#surveyChanges legend { font-weight: 700; padding-right: 8px; }
-#surveyChanges button[type="button"] { color: #006f5b; background: white; }
-#changeMsg { white-space: pre-line; }
+#surveyChanges legend, #revisitReport legend { font-weight: 700; padding-right: 8px; }
+#surveyChanges button[type="button"], #revisitReport button[type="button"] { color: #006f5b; background: white; }
+#changeMsg, #rvMsg, #rvInitial { white-space: pre-line; overflow-wrap: anywhere; }
+#revisitReport .rv-check { display: flex; align-items: center; gap: 10px; }
+#revisitReport .rv-check input { width: 22px; min-height: 22px; }
+#revisitReport .rv-conditions { margin: 8px 0; }
+#revisitReport [hidden] { display: none; }
+.rv-pages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+#revisitReport .rv-pages button { padding: 6px; min-height: 44px; }
+#revisitReport .rv-pages [aria-current="step"] { background: #006f5b; color: white; }
+#revisitReport input[readonly] { background: #edf2ef; }
 
 .top nav a{display:inline-flex;align-items:center;min-height:44px}.task-page input,.task-page select{min-height:44px}
