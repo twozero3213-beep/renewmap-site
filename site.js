@@ -18,11 +18,13 @@
     const base = nested ? '../' : '';
     const ico = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
     const here = location.pathname + location.hash;
-    const tabs = [['index.html', '홈', 'M3 10L12 3l9 7M5 9v12h5v-7h4v7h5V9', /\/(?:index\.html)?$/],
-      ['explore.html#map', '지도', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html/],
-      ['field/', '현장', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],   // 신청요건·3D 화면에서 '현장'에 불이 켜지던 것(11-13 평가) 바로잡음
+    // v7(2026-11-13): 머리 메뉴와 같은 이름·순서(평가: 위는 '동네 찾기·현장 기록', 아래는 '지도·현장'이라 다른 곳인 줄 알았다). 홈은 로고로 간다
+    const tabs = [['explore.html#map', '동네 찾기', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html|\/dong\//],
+      ['programs.html', '재생 사업', 'M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7', /programs\.html$/],
+      ['field/redev.html', '구역 계산', 'M4 8l7-4 9 6-3 10H6zM11 4v16', /\/field\/redev\.html$/],
+      ['field/', '현장 기록', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],
       ['box.html', '보관함', 'M4 5h16v4H4zM5 9v10h14V9M10 13h4', /box\.html$/]];
-    const current = tabs.findIndex(t => t[3].test(here) && (t[0] !== 'index.html' || !nested));
+    const current = tabs.findIndex(t => t[3].test(here));
     const nav = document.createElement('nav');
     nav.className = 'tabbar';
     nav.setAttribute('aria-label', '주 메뉴');
@@ -30,25 +32,24 @@
     document.body.appendChild(nav);
     // 같은 화면 안에서 #gov ↔ #map으로 옮겨도 현재 탭 표시를 맞춘다
     if (typeof window !== 'undefined') window.addEventListener('hashchange', () => {
-      const now = tabs.findIndex(t => t[3].test(location.pathname + location.hash) && (t[0] !== 'index.html' || !nested));
+      const now = tabs.findIndex(t => t[3].test(location.pathname + location.hash));
       nav.querySelectorAll('a').forEach((a, i) => { a.toggleAttribute('aria-current', i === now); if (i === now) a.setAttribute('aria-current', 'page'); a.querySelector('.tab-ind')?.remove(); if (i === now) a.insertAdjacentHTML('afterbegin', '<i class="tab-ind" aria-hidden="true"></i>'); });
     });
   }
-  // 머리 메뉴(2026-11-13 v6): 화면마다 달랐던 메뉴(보관함만 '서비스 소개·근거와 방법·데이터 출처')를 하는 일 순서의 한 벌로 맞춘다.
+  // 머리 메뉴(2026-11-13 v6→v7): 하는 일 순서의 한 벌. v7에서 넷과 상담 하나로 줄였다(정돈된 경쟁 서비스는 3~5개).
+  // 건물 4D·보관함·데이터 출처는 꼬리글(모든 화면)·지도 단추·아래 탭바로 들어간다.
   // HTML에 적힌 옛 메뉴는 자바스크립트가 없을 때를 위해 남기고 rm6.css가 숨긴다
   const header = document.querySelector('header.top .wrap');
   if (header && !header.querySelector('.rm-nav')) {
     const base = nested ? '../' : '';
     const path = location.pathname;
     const items = [['explore.html', '동네 찾기', /explore\.html$|\/dong\//], ['programs.html', '재생 사업', /programs\.html$/],
-      ['field/redev.html', '구역 계산', /\/field\/redev\.html$/], ['field/', '현장 기록', /\/field\/(?:index\.html)?$/],
-      ['time4d.html', '건물 4D', /time4d\.html$|\/field\/(?:city3d|twin)\.html$/], ['data.html', '데이터 출처', /(?:data|rules|evidence)\.html$/]];
+      ['field/redev.html', '구역 계산', /\/field\/redev\.html$/], ['field/', '현장 기록', /\/field\/(?:index\.html)?$/]];
     const nav = document.createElement('nav');
     nav.className = 'rm-nav'; nav.id = 'rm-nav'; nav.setAttribute('aria-label', '주요 메뉴');
     const link = (href, text, on, cls) => { const a = document.createElement('a'); a.href = base + href; a.textContent = text; if (on) a.setAttribute('aria-current', 'page'); if (cls) a.className = cls; return a; };
     for (const [href, text, re] of items) nav.append(link(href, text, re.test(path)));
-    const sep = document.createElement('span'); sep.className = 'rm-sep'; sep.setAttribute('aria-hidden', 'true');
-    nav.append(sep, link('box.html', '보관함', /box\.html$/.test(path)), link('about.html#contact', '시범 상담', false, 'rm-cta'));
+    nav.append(link('about.html#contact', '시범 상담', false, 'rm-cta'));
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'rm-menu-btn'; btn.textContent = '메뉴';
     btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', 'rm-nav');

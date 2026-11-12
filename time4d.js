@@ -4,8 +4,9 @@
 (function (root) {
   'use strict';
   const YEAR_FROM = 1960;
-  const BANDS = [[0, '#b9e2cf', '20년 미만'], [20, '#e3a857', '20~29년'], [30, '#9c3d22', '30년 이상']];
-  const NO_DATE = '#9aa6a1';
+  // v7: 동네 찾기 지도와 같은 따뜻한 단계색(새 건물은 옅은 크림, 오래될수록 벽돌색). 날짜 없는 건물은 차가운 회색으로 따로 구분한다
+  const BANDS = [[0, '#f0e3c4', '20년 미만'], [20, '#e09a4c', '20~29년'], [30, '#9b3b22', '30년 이상']];
+  const NO_DATE = '#b9bec5';
 
   // 사용승인 연도. 날짜가 없거나 1900년 전으로 적힌 것은 0(날짜 없음)
   function aprYear(b) {
@@ -60,7 +61,19 @@
   // 그해까지 지어진 건물과 날짜 없는 건물만 보인다
   const filterExpr = (year) => ['<=', ['get', 'y'], year];
 
-  const api = { YEAR_FROM, BANDS, NO_DATE, aprYear, stats, crossYear, features, colorExpr, filterExpr };
+  // 동네 찾기 지도에서 넘어온 좌표(?lat&lng) → 그 자리를 담은 법정동. 외곽선 색인(bldg_outline/index.json)의 bbox로 고르고, 여럿이면 bbox 중심이 가장 가까운 동
+  function dongAt(index, lng, lat) {
+    let best = null, bestD = Infinity;
+    for (const [code, f] of Object.entries(index.files || {})) {
+      const [x0, y0, x1, y1] = f.bbox;
+      if (lng < x0 || lng > x1 || lat < y0 || lat > y1) continue;
+      const d = (lng - (x0 + x1) / 2) ** 2 + (lat - (y0 + y1) / 2) ** 2;
+      if (d < bestD) { bestD = d; best = code; }
+    }
+    return best;
+  }
+
+  const api = { YEAR_FROM, BANDS, NO_DATE, aprYear, stats, crossYear, features, colorExpr, filterExpr, dongAt };
   if (typeof module === 'object' && module.exports) { module.exports = api; return; }
   root.Time4D = api;
 
@@ -112,7 +125,7 @@
       map.getSource('b').setData(gj);
       map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 0, pitch: 55, bearing: -20, duration: 0 });
       map.setZoom(map.getZoom() + 0.6);   // 기울여 보면 화면 아래쪽이 비어 한 단계 당겨 본다
-      $('t4Status').textContent = `${bf.name} 건물 외곽선 ${fmt(gj.features.length)}개를 세웠습니다(부속 건물 포함).`;
+      $('t4Status').textContent = `${bf.name} 건물을 세웠습니다. 부속 건물까지 모두 세우고, 숫자는 날짜 있는 주건축물로 셉니다.`;
       $('t4Name').textContent = bf.name;
       $('t4Src').innerHTML = `외곽선·높이: ${esc(outline.name)}(기준일 ${esc(outline.base_date)}, ${esc(outline.license_type)}) · 사용승인일: ${esc(bf.source)}(기준일 ${esc(bf.hub_reference_date)})`;
       marks(); paint();
@@ -137,16 +150,43 @@
     readyP = new Promise((ok, fail) => {
       if (!window.maplibregl) return fail(new Error('maplibre'));
       maplibregl.setWorkerUrl('vendor/maplibre/maplibre-gl-csp-worker.js');
+      // v7(2026-11-13): 빈 바탕 대신 OpenFreeMap 배경 지도(키·사용량 제한 없음, 상용 가능)에 한국어 이름을 먼저 싣고(vendor/openfreemap/positron.json),
+      // Mapterhorn 지형으로 산자락 음영을 깐다. 부산은 산이 많아 음영이 없으면 건물이 어디에 붙어 있는지 읽히지 않았다.
+      // 한글은 배경 지도 글꼴 파일에 없어 화면 글꼴(Pretendard)로 그린다(localIdeographFontFamily)
       map = new maplibregl.Map({
-        container: 't4Map', attributionControl: false, pitch: 55, bearing: -20, center: [129.13, 35.2], zoom: 15, maxPitch: 75,
-        style: { version: 8, sources: { b: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } } }, layers: [
-          { id: 'bg', type: 'background', paint: { 'background-color': '#eef1ee' } },
-          { id: 'b3d', type: 'fill-extrusion', source: 'b', paint: { 'fill-extrusion-color': colorExpr(year), 'fill-extrusion-height': ['get', 'h'], 'fill-extrusion-opacity': 0.94, 'fill-extrusion-vertical-gradient': true }, filter: filterExpr(year) },
-        ] },
+        container: 't4Map', style: 'vendor/openfreemap/positron.json', attributionControl: false,
+        pitch: 55, bearing: -20, center: [129.13, 35.2], zoom: 15, maxPitch: 75,
+        localIdeographFontFamily: '"Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
       });
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
       map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: '국토교통부 GIS건물통합정보 · 건축물대장' }));
-      map.on('load', () => ok());
+      // 'load'는 배경 타일·지형까지 다 받은 뒤라 첫 화면이 7초 넘게 비었다. 모양(style)만 오면 건물을 바로 세운다
+      map.once('style.load', () => {
+        const firstLabel = map.getStyle().layers.find((l) => l.type === 'symbol').id;
+        map.addSource('dem', { type: 'raster-dem', tiles: ['https://tiles.mapterhorn.com/{z}/{x}/{y}.webp'], encoding: 'terrarium', tileSize: 512, maxzoom: 12,
+          attribution: '<a href="https://mapterhorn.com/attribution">© Mapterhorn</a>' });
+        map.addLayer({ id: 'relief', type: 'hillshade', source: 'dem', paint: { 'hillshade-exaggeration': 0.4, 'hillshade-shadow-color': '#7d828a', 'hillshade-highlight-color': '#ffffff', 'hillshade-accent-color': '#5b6068' } }, 'building');
+        map.addSource('b', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({ id: 'b3d', type: 'fill-extrusion', source: 'b', filter: filterExpr(year),
+          paint: { 'fill-extrusion-color': colorExpr(year), 'fill-extrusion-height': ['get', 'h'], 'fill-extrusion-opacity': 0.96, 'fill-extrusion-vertical-gradient': true } }, firstLabel);
+        // 건물을 누르면 사용승인 연도·고른 해 기준 연수·용도·높이. 글은 DOM으로 넣는다(대장 값이 HTML로 해석되지 않게)
+        map.on('click', 'b3d', (e) => {
+          const p = e.features[0].properties, box = document.createElement('div');
+          box.className = 't4-pop';
+          const line = (k, v) => { const r = document.createElement('p'), b = document.createElement('b'); b.textContent = k; r.append(b, ` ${v}`); return r; };
+          box.append(line('사용승인', p.y > 0 ? `${p.y}년 · ${year}년에 ${year - p.y}년째` : p.y === 0 ? '날짜 없음' : '건축물대장과 잇지 못함'),
+            line('용도', p.use || '-'), line('높이', `${Math.round(p.h)}m`));
+          new maplibregl.Popup({ maxWidth: '260px' }).setLngLat(e.lngLat).setDOMContent(box).addTo(map);
+        });
+        map.on('mouseenter', 'b3d', () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'b3d', () => { map.getCanvas().style.cursor = ''; });
+        // 해가 남서쪽 높이 떠 있는 빛: 건물 옆면에 명암이 생겨 높낮이가 읽힌다
+        map.setLight({ anchor: 'map', position: [1.4, 210, 35], color: '#ffffff', intensity: 0.5 });
+        map.setSky({ 'sky-color': '#dde6ec', 'horizon-color': '#f6f5f2', 'sky-horizon-blend': 0.6, 'fog-color': '#f6f5f2', 'horizon-fog-blend': 0.7, 'fog-ground-blend': 0.85 });
+        // 출처 글은 접은 채로 시작한다(평가: 휴대폰에서 연도 막대를 덮었다). (i)를 누르면 펼쳐진다
+        map.once('load', () => map.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show'));
+        ok();
+      });
       map.on('error', () => {});
     });
     return readyP;
@@ -162,12 +202,20 @@
   slider.addEventListener('input', () => { stop(); year = Number(slider.value); paint(); });
   $('t4Now').addEventListener('click', () => { stop(); year = NOW; slider.value = String(year); paint(); });
 
-  // 구·군 → 법정동(buildings/index.json, 부산만)
-  getJson('buildings/index.json').then((idx) => {
+  // 구·군 → 법정동(buildings/index.json, 부산만). 지도에서 좌표로 왔으면 그 자리의 동부터
+  const q = new URLSearchParams(location.search);
+  const at = q.has('lat') && q.has('lng') ? [Number(q.get('lng')), Number(q.get('lat'))] : null;
+  Promise.all([getJson('buildings/index.json'), at ? getJson('bldg_outline/index.json') : null]).then(([idx, outlineIdx]) => {
     const gus = idx.sigungu.filter((s) => s.code.startsWith('26') && s.dongs.length);
     const fill = (sel, items, pick) => sel.replaceChildren(...items.map(([v, t]) => { const o = new Option(t, v); o.selected = v === pick; return o; }));
-    const dongs = (gu, pick) => fill($('t4Dong'), gus.find((s) => s.code === gu).dongs.map((d) => [d.code, `${d.name} (건물 ${d.count.toLocaleString("ko-KR")}동)`]), pick);
-    const want = new URLSearchParams(location.search).get('bjd') || '2635010300';
+    const dongs = (gu, pick) => fill($('t4Dong'), gus.find((s) => s.code === gu).dongs.map((d) => [d.code, d.name]), pick);   // v7: 건물 수는 숫자판 하나로만(평가: 한 화면에 건물 수가 셋)
+    const near = outlineIdx ? dongAt(outlineIdx, at[0], at[1]) : null;
+    const want = q.get('bjd') || near || '2635010300';
+    if (at && !near) {
+      $('t4Status').textContent = '지도에서 보던 자리는 아직 4D 자료가 없습니다(부산만 있습니다). 대신 반여동을 보여 줍니다.';
+      const v = document.querySelector('a[href^="field/city3d.html"]');
+      if (v) v.href = `field/city3d.html?lat=${at[1].toFixed(5)}&lng=${at[0].toFixed(5)}`;
+    }
     const gu0 = (gus.find((s) => s.dongs.some((d) => d.code === want)) || gus[0]).code;
     fill($('t4Gu'), gus.map((s) => [s.code, s.name]), gu0);
     dongs(gu0, want);

@@ -29,12 +29,11 @@
 </head>
 <body class="field redev-v4">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" href="../index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 찾기</a><a href="../programs.html">재생 사업</a><a href="redev.html">구역 계산</a><a href="./">현장 기록</a><a href="../time4d.html">건물 4D</a><a href="../data.html">데이터 출처</a><a href="../box.html">보관함</a><a href="../about.html#contact">시범 상담</a></nav></div><div class="wrap"><h1>구역 신청요건 계산</h1></div></header>
+<header class="top"><div class="wrap"><a class="logo" href="../index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 찾기</a><a href="../programs.html">재생 사업</a><a href="redev.html">구역 계산</a><a href="./">현장 기록</a><a href="../about.html#contact">시범 상담</a></nav></div><div class="wrap"><h1>구역 신청요건 계산</h1></div></header>
 <main id="main">
-  <p class="note">부산 구역의 지번을 넣거나 지도에 구역을 그리면, 노후주거지정비 신청요건(저층 주거 3분의 2, 20년 넘은 건물 비율)과 재개발 노후·불량 비율을 조문과 함께 계산합니다.<br>결과는 1쪽 한글 문서, CSV, 구역 경계 SHP로 받습니다. 사업성은 <a href="../biz.html">사업성 간이 계산</a>에서 봅니다.<br>지번과 구역은 이 기기 안에서만 계산하고 어디로도 보내지 않습니다.</p>
-  <p class="warn rm-status"><b>결과는 참고 계산입니다.</b><br>부산 정비조례 제3조②·제5조②2를 옮긴 계산 규칙을 리뉴맵 담당자가 아직 원문과 대조해 승인하지 않았습니다.<br>사업계획서·조합 자료에 쓸 때는 "참고 계산"으로 적고, 제출 전에 담당 기관이 원문과 대조하도록 알려 주세요. <a href="../rules.html#BSN-ORD-2025.10">기준 원문과 판본 보기</a></p>
+  <p class="note">부산 구역의 지번을 넣거나 지도에 구역을 그리면, 노후주거지정비 신청요건(저층 주거 3분의 2, 20년 넘은 건물 비율)과 재개발 노후·불량 비율을 조문과 함께 계산합니다.<br>결과는 1쪽 한글 문서, CSV, 구역 경계 SHP로 받습니다. 지번과 구역은 이 기기 안에서만 계산합니다.</p>
 
-  <figure class="redev-sample"><img class="redev-sample-key" src="../img/v6/redev-sample-key.jpg" width="684" height="245" alt="견본 계산의 핵심 숫자: 건물 수, 노후·불량, 못 정함, 기준과 요건별 도넛·막대 그래프" loading="lazy"><details><summary>결과 화면 전체 보기</summary><img src="../img/v6/redev-sample.jpg" width="640" height="711" alt="반여동 지번 60개로 실제 계산한 결과 화면 견본. 분모, 기준시점, 현장 확인할 건물, 노후·불량 동수, 도시재생 노후 요건이 차례로 나온다." loading="lazy"></details><figcaption>계산하면 이렇게 나옵니다.<br>반여동 지번 60개로 실제 계산한 견본이고, 결과는 1쪽 한글 문서·CSV·구역 경계 SHP로도 받습니다.</figcaption></figure>
+  <figure class="redev-sample"><a href="../img/v6/redev-sample.jpg" target="_blank" rel="noopener"><img src="../img/v6/redev-sample.jpg" width="640" height="711" alt="반여동 지번 60개로 실제 계산한 결과 화면 견본. 분모, 기준시점, 현장 확인할 건물, 노후·불량 동수, 도시재생 노후 요건이 차례로 나온다." loading="lazy"></a><figcaption>계산하면 이렇게 나옵니다.<br>반여동 지번 60개로 실제 계산한 견본입니다. 그림을 누르면 크게 봅니다.</figcaption></figure>
   <form id="f" class="card" novalidate>
     <label for="gu">구·군(부산)</label>
     <select id="gu"><option value="26350" selected>해운대구</option></select>
@@ -82,6 +81,8 @@
 
   <section id="out" class="card" aria-labelledby="outTitle" hidden>
     <h2 id="outTitle">줄마다 따로 본 결과</h2>
+    <!-- v7(2026-11-13): 승인 전 경고는 첫 화면이 아니라 결과 바로 위에 둔다(평가: 입력란보다 노란 상자가 먼저 나와 쓰기 전에 겁을 줬다) -->
+    <p class="warn rm-status"><b>결과는 참고 계산입니다.</b><br>부산 정비조례 제3조②·제5조②2를 옮긴 계산 규칙을 리뉴맵 담당자가 아직 원문과 대조해 승인하지 않았습니다.<br>사업계획서·조합 자료에 쓸 때는 "참고 계산"으로 적고, 제출 전에 담당 기관이 원문과 대조하도록 알려 주세요. <a href="../rules.html#BSN-ORD-2025.10">기준 원문과 판본 보기</a></p>
     <p id="outBase" class="hint"></p>
     <div id="basis" class="facts"></div>
     <div id="viz" class="v4-stats" aria-live="polite"></div>
@@ -124,7 +125,7 @@
     <p id="planMsg" class="msg" role="status" aria-live="polite"></p>
   </section>
 </main>
-<footer><div class="wrap"><div class="links"><a href="../about.html">서비스 소개</a><a href="../rules.html">기준 원문 대조</a><a href="../data.html">데이터 출처</a><a href="../ethics.html">AI 윤리</a><a href="../privacy.html">개인정보 처리방침</a><a href="../index.html#tools">참고 도구</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
+<footer><div class="wrap"><div class="links"><a href="../about.html">서비스 소개</a><a href="../rules.html">기준 원문 대조</a><a href="../data.html">데이터 출처</a><a href="../ethics.html">AI 윤리</a><a href="../privacy.html">개인정보 처리방침</a><a href="../time4d.html">건물 4D</a><a href="../box.html">보관함</a><a href="../index.html#tools">참고 도구</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
 <section id="printDoc" class="print-doc" aria-hidden="true"></section>
 <script src="../site.js"></script>
 <script src="../site-motion.js" defer></script>

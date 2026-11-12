@@ -19,8 +19,10 @@
   // UI 검수(2026-10-28): 초록↔빨강은 좋음·나쁨 판정처럼 읽히고 적록색약이 구분하기 어렵다 → 안쪽은 무채색, 밝기만으로도 순서가 읽히게.
   const NULL_COLOR = '#9aa6a1';
   // v4(D21) 갱신: 기준 넘은 쪽 색은 동 요약 도넛·카드 띠(--over)와 같은 주황·갈색, 공식 기준 없음은 중립 청회색
-  const BELOW = ['#eef1f0', '#dce2df', '#c6cfcb', '#aeb9b4'], ABOVE = ['#f2ad6f', '#b4521d', '#7a3010'];
-  const MET = ['#dce2df', ABOVE[0], ABOVE[1], ABOVE[2]];
+  // v7(2026-11-13): 배경 지도를 회색으로 바꾸자 기준 안쪽(회색)이 바탕과 섞여 '선두구동이 바탕처럼 보인다'(평가). 안쪽은 옅은 청회색(강조색 계열, 채도 낮게)으로,
+  // 넘은 쪽 주황·갈색과는 파랑↔주황 짝이라 색약에도 갈린다. 밝기 순서는 그대로
+  const BELOW = ['#eaf2f3', '#d3e4e6', '#b8d2d5', '#9bbec2'], ABOVE = ['#f2ad6f', '#b4521d', '#7a3010'];
+  const MET = [BELOW[1], ABOVE[0], ABOVE[1], ABOVE[2]];
   const SUMC = [...MET, '#4a1d09'];
   const REF = ['#eef1f4', '#cdd6e0', '#9fb0c3', '#6d84a0', '#3f5677']; // 공식 기준 없는 지표의 참고 구간(중립 청회색 5단계, 좋고 나쁨 없음. 녹색은 '기준 안'에만)
   const DIVERGE = ['#0b7f6f', '#8fcfc3', '#e9ecea', ABOVE[0], ABOVE[1]]; // 개선 청록 ↔ 악화 주황·갈색(기준 넘은 쪽과 같은 계열), 가운데 중성
@@ -595,7 +597,7 @@
   // 상태 개수 도넛(비율 그림). 개수를 글자로 함께 쓴다. 순위·점수 아님
   // 한 동 패널의 세 요약(도넛·기준 해당 항목 수·확인할 항목)은 같은 항목 범위·같은 낱말을 쓴다. '공식 기준 없음'(값만)과 '자료 없음'을 섞지 않는다
   const DONUT = [['r', '기준 해당·지정'], ['g', '기준 안'], ['y', '승인 대기'], ['b', '공식 기준 없음'], ['w', '자료 없음']];
-  const GS_SHORT = { r: '미달', g: '기준 안', y: '승인 대기', b: '기준 없음', w: '자료 없음' };
+  const GS_SHORT = { r: '기준 해당', g: '기준 안', y: '승인 대기', b: '기준 없음', w: '자료 없음' };   // v7: '미달'을 위 3요건과 같은 낱말로
   function donutSVG(n) {
     const tot = DONUT.reduce((a, [k]) => a + (n[k] || 0), 0), R = 42, C = 2 * Math.PI * R;
     let off = 0;
@@ -700,7 +702,8 @@
     }).join('')}</ul></details></li>`).join('');
     // 2026-11-13: 도넛(항목 상태 분류)을 맨 위에서 접힌 칸 안으로 옮김. 맨 위는 지도 패널의 reqLineHTML(쇠퇴 3요건 한 줄)이 맡는다.
     // 왜: 처음 보는 숫자가 '공식 기준 없음 29'라 사용자가 무엇을 봐야 할지 몰랐다(ux_feedback_2026-11-12.md 1절 3번). 내용은 그대로 두고 순서만 바꾼다
-    return gapsHTML(rows) + head + `<ol class="sr-list">${groups}</ol>` + `<details class="sr-glance-more"><summary>항목 상태 한눈에 보기</summary>${glanceHTML(rows)}</details>`;
+    // v7: 확인할 항목·기준 해당 항목 수·한눈 요약은 '항목 수 모아 보기' 한 칸에 접는다(맨 위는 reqLineHTML의 3요건만). 순서(확인할 항목→수→한눈)는 그대로
+    return `<ol class="sr-list">${groups}</ol>` + `<details class="sr-glance-more"><summary>항목 수 모아 보기</summary>${gapsHTML(rows)}${head}${glanceHTML(rows)}</details>`;
   }
   // 기준 해당·참고 구간 밖 항목(2026-10-26, 업무 실무자용): 기준선을 넘은 항목(확정·승인 대기)과 자료가 없어 확인이 필요한 항목. 순서 고정, 순위·점수 없음
   function gapRows(rows) {
@@ -734,7 +737,14 @@
     }
     const std = validStd(r.ind.standard) ? r.ind.standard.text : null;
     return `<section class="sr-req is-${ROW_CLASS[r.status] || 'none'}" aria-label="쇠퇴 3요건 요약"><p class="sr-req-k">쇠퇴 3요건 중</p>` +
-      `<p class="sr-req-n"><b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(r.status))}</small>` : ''}</p>${go}${foot}</section>`;
+      `<p class="sr-req-n"><b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(r.status))}</small>` : ''}</p>${reqRowsHTML(rows)}${go}${foot}</section>`;
+  }
+  // v7(2026-11-13): 3요건 각각의 값·상태를 홈 카드처럼 세 줄로. 평가: 카드의 세는 법이 넷(해당 수·확인할 항목·확정/추가확인·묶음별 수)이라
+  // 무엇을 봐야 할지 몰랐다 → 맨 위는 '몇 개 해당'과 그 세 줄만 두고, 나머지 셈은 아래 접힌 칸으로 옮긴다. 값은 rows(원장 셀) 그대로
+  const REQ_ROWS = [['DECLINE_POP_DROP30Y_PCT', '인구 감소'], ['DECLINE_BIZ_DROP10Y_PCT', '사업체 감소'], ['DECLINE_AGING_20Y_PCT', '20년 넘은 건물']];
+  function reqRowsHTML(rows) {
+    const li = REQ_ROWS.map(([code, name]) => { const r = rows.find(x => x.ind.code === code); return r ? `<li class="is-${ROW_CLASS[r.status] || 'none'}"><span>${esc(name)}</span><b>${esc(rowText(r))}</b><em>${esc(stLabel(r.status))}</em></li>` : ''; }).join('');
+    return li ? `<ul class="sr-req-rows">${li}</ul>` : '';
   }
   function tooltipHTML(it, ind, mode, year, source) {
     const t = mode === 'trend' ? trendText(it.value, ind) : null;
@@ -1296,7 +1306,7 @@
       : `<h4 class="map-h4">${esc(here)} 읍·면·동 분포 · ${esc(ind.label)} <small>순위 아님${m.year ? ` · ${esc(m.year)}년` : ''}</small></h4>${strip(m.items, it ? it.code : null, ind, scale)}`;
     if (!it) return `<h3 class="map-h3">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3><p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}동별 사업 요건 비교 보기</a></p>${reorgNote(v)}${forecastChart(ind, m.ext, v.gu || v.sigungu, null)}${dist}${hubHTML(v)}`;
     const rows = rowsFor(v, m, it), D = window.RenewDashboard, dy = rows.find(r => r.ind.series && r.year)?.year;
-    return `<div class="map-panel-head"><h3 class="map-h3">${esc(it.name)} <small>${esc(it.kind || '행정동')} · ${esc(it.code)}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` +
+    return `<div class="map-panel-head"><h3 class="map-h3" data-code="${esc(it.code)}">${esc(it.name)} <small>${esc(it.kind || '행정동')}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` +
       reqLineHTML(rows) + // 2026-11-13: 동 이름 바로 아래에 신청요건 한 줄(첫 약속 D23의 답을 맨 먼저)
       `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>${reorgNote(v)}` +
       `<p class="map-report-link"><a href="#report">${icon('book')}동네 보고서 보기</a><a href="#report" data-set-mode="programs">${icon('flag')}맞는 재생 사업 보기</a></p>` +
@@ -1788,9 +1798,11 @@
     // aria-hidden을 두지 않는다: 안의 법적 고지 링크가 키보드 초점을 받으므로 숨기면 이름 없는 초점이 된다(2026-10-30 배포 화면 확인)
     if (nv) { nv.className = 'map-naver'; el.appendChild(nv); el.classList.add('has-naver'); }
     const hatch = boundaryHatch();
-    const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false }); // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
+    // 동네 찾기 넓은 화면은 지도가 화면 남은 높이 전체라(explore-layout.js) 페이지 스크롤과 다투지 않으므로 휠 확대를 처음부터 켠다(2026-11-13 v7)
+    const wideApp = document.body.classList.contains('explore-page') && window.matchMedia('(min-width: 1100px)').matches;
+    const map = L.map(el, { dragging: !coarse, scrollWheelZoom: wideApp, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false }); // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
     // 확대는 17(골목·건물 단위)까지. 두 번 누르기를 거듭해도 그 이상 커지지 않는다. 휠 확대는 지도를 한 번 누른 뒤에만 켠다(페이지를 내리다 지도에 걸려 확대되지 않게). 지도 밖으로 나가면 다시 끈다(2026-11-07 대표 지시)
-    map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => map.scrollWheelZoom.disable());
+    map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => { if (!wideApp) map.scrollWheelZoom.disable(); });
     map.on('zoomend', () => { if (map.getZoom() > 8) loadSgDetail(); });
     L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
     add3dControl(map);
@@ -1808,16 +1820,17 @@
     M = { el, map, hatch, sgRenderer: typeof hatch === 'string' ? null : L.canvas({ pane: 'sg' }), sg: null, sido: null, emd: null, emdCode: null, water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
     setTimeout(startAuto, 1500);
   }
-  // 지금 보는 곳의 현재 건물을 브이월드 3D 지도(field/city3d.html, 저장 없음)로 연다. 주소에는 지도 중심 좌표만 싣는다
+  // 지금 보는 곳의 건물을 건물 나이 4D(time4d.html, 연도별 입체)로 연다. 주소에는 지도 중심 좌표만 싣고, 4D 화면이 그 자리의 법정동을 고른다.
+  // v7(2026-11-13): 예전에는 브이월드 3D(새 창)였는데, 우리 자료(사용승인일·높이)로 세운 4D가 근거 문서와 같은 숫자를 보여 준다. 브이월드는 4D 화면에서 잇는다
   function add3dControl(map) {
     const to3d = window.L.control({ position: 'topleft' });
     to3d.onAdd = () => {
       const a = window.L.DomUtil.create('a', 'leaflet-bar map-3d');
-      a.textContent = '3D 건물'; a.target = '_blank'; a.rel = 'noopener';
-      a.title = '지금 보는 곳의 현재 건물을 브이월드 3D 지도로 엽니다(새 창)';
+      a.textContent = '건물 4D';
+      a.title = '지금 보는 곳의 건물을 연도별 입체로 봅니다(부산)';
       // 컨트롤을 붙일 때는 아직 지도 시점이 없어 getCenter가 오류를 낸다. 첫 맞춤(fitBounds) 뒤 moveend부터 좌표를 싣는다
-      a.href = 'field/city3d.html';
-      map.on('moveend', () => { const c = map.getCenter(); a.href = `field/city3d.html?lat=${c.lat.toFixed(5)}&lng=${c.lng.toFixed(5)}`; });
+      a.href = 'time4d.html';
+      map.on('moveend', () => { const c = map.getCenter(); a.href = `time4d.html?lat=${c.lat.toFixed(5)}&lng=${c.lng.toFixed(5)}`; });
       window.L.DomEvent.disableClickPropagation(a);
       return a;
     };
@@ -1942,12 +1955,13 @@
         } }).addTo(M.map);
         M.emdCode = v.emdCode;
         if (M.emdLine) M.emdLine.remove();
-        M.emdLine = window.L.featureGroup([window.L.polyline(lineLatLngs(outerLines(m.geo.features)), { interactive: false, color: '#153c39', weight: 3, smoothFactor: 0 })]).addTo(M.map);
+        M.emdLine = window.L.featureGroup([window.L.polyline(lineLatLngs(outerLines(m.geo.features)), { interactive: false, color: '#17191c', weight: 3, smoothFactor: 0 })]).addTo(M.map);
         makeDongLabels(m.geo);
       }
       M.emdItems = new Map(m.items.map(it => [it.code, it]));
       M.emd.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.emdItems.get(code), sel = code === v.dong;
-        l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: sel ? 0.25 : 0.6, color: sel ? '#153c39' : '#fff', weight: sel ? 4 : 1.5, dashArray: !it || it.value === null ? '4 3' : null });
+        // v7: 고른 동은 색을 옅게 빼지 않고 더 진하게 + 굵은 검은 테두리(평가: 옅어진 고른 동이 회색 바탕지도처럼 보였다)
+        l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: sel ? 0.8 : 0.6, color: sel ? '#17191c' : '#fff', weight: sel ? 4 : 1.5, dashArray: !it || it.value === null ? '4 3' : null });
         if (sel && reorder) l.bringToFront(); });
       if (reorder) M.emdLine.bringToFront();
       placeDongLabels(v.dong);

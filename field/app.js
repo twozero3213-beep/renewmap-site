@@ -651,6 +651,7 @@
   async function render() {
     let rows = await S.records();
     $("stats").innerHTML = R.statsHTML(R.stats(rows, new Date()));   // 개수 요약(순위 아님)
+    $("stats").hidden = rows.length === 0;   // v7: 기록이 없을 때 0·0·0 상자가 크게 뜨던 것(평가: 내용 없는 큰 칸)을 숨긴다
     // 같은 지점끼리 모아 보기: 지점은 최근 기록 순, 지점 안은 날짜 순(전·후 비교의 바탕). 순위·점수는 없다
     const group = new Map();
     for (const r of rows) { const k = E.siteOf(r); if (!group.has(k)) group.set(k, []); group.get(k).push(r); }

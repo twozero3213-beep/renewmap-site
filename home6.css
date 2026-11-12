@@ -64,8 +64,6 @@
 .h6-steps .h6-out { grid-area: o; font-size: 15px; color: var(--dim); }
 .h6-steps img { grid-area: img; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
 
-.h6-demo { padding-top: 64px; }
-.h6-video { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); background: #0f2b27; }
 
 .h6-trust { padding-top: 64px; }
 .h6-trust-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; margin-top: 24px; }
@@ -73,14 +71,6 @@
 .h6-trust-grid h3 { font-size: 20px; margin: 0 0 8px; }
 .h6-trust-grid p { color: var(--dim); margin: 0 0 12px; }
 
-.h6-who { padding-top: 64px; }
-.h6-who-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; }
-.h6-who-list a { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding: 18px 0; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; min-height: 48px; }
-.h6-who-list b { font-size: 18px; }
-.h6-who-list span { grid-column: 1; color: var(--dim); }
-.h6-who-list em { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-style: normal; font-weight: 700; color: var(--green); white-space: nowrap; }
-.h6-who-list em::after { content: " →"; }
-.h6-who-list a:hover b { color: var(--green); }
 
 .h6-price { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; margin-top: 64px; padding-top: 32px; padding-bottom: 32px; border-top: 3px solid var(--ink); }
 .h6-price h2 { margin: 0 0 6px; font-size: 24px; }
@@ -94,7 +84,7 @@
   .h6-steps a { grid-template-columns: 44px minmax(0, 1fr); grid-template-areas: "n h" "n p" "n o" "img img"; }
   .h6-steps img { margin-top: 12px; }
   .h6-n { font-size: 30px; }
-  .h6-trust-grid, .h6-who-list { grid-template-columns: minmax(0, 1fr); }
+  .h6-trust-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 520px) {
   .h6-search .home-search-row { flex-direction: column; }
@@ -104,8 +94,7 @@
   .h6-price-go .btn { flex: 1; justify-content: center; }
 }
 
-/* 제목 글꼴: 마루 부리 기반 Renewmap Serif(make_font.py가 이 화면 h1·h2 글자만 싣는다). 동 이름처럼 바뀌는 제목(#h6LiveName)은 산세리프 그대로 */
-.h6 h1, .h6 h2:not(#h6LiveName) { font-family: "Renewmap Serif", "Noto Serif KR", "AppleMyungjo", serif; font-weight: 600; letter-spacing: -0.035em; }
+.h6 h1, .h6 h2:not(#h6LiveName) { font-weight: 700; letter-spacing: -0.03em; }
 .h6-hero h1 { font-size: clamp(38px, 5vw, 64px); line-height: 1.18; }
 .h6 h2:not(#h6LiveName) { line-height: 1.32; }
 .h6-prov, .h6-prov[open] { border: 0; padding: 0; background: none; box-shadow: none; }
@@ -117,12 +106,9 @@
 .h6-diff-list > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .h6-diff-list dt { font-weight: 800; color: var(--green); }
 .h6-diff-list dd { margin: 0; }
-.h6-offer { margin: 24px 0 0; padding: 16px 20px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
-.h6-offer a { font-weight: 700; margin-left: 4px; }
 /* 요건 '해당'은 좋고 나쁨이 아니다(11-13 2차: 빨강=해당·초록=아님이 거꾸로 읽힘). 해당은 먹색, 아님은 회색 */
 .h6-live-rows .is-over i { background: var(--ink); color: #fff; }
 .h6-live-rows .is-under i { background: #e7ecea; color: #3f524d; }
-@media (min-width: 961px) { .h6-steps a { grid-template-columns: 56px minmax(0, 1fr) minmax(0, 520px); } }   /* 휴대폰 2열 규칙을 덮지 않게 넓은 화면에만(11-13 3차: 제목이 세로로 쌓임) */
 .h6-live-rule { margin: 0 0 4px; font-size: 14px; color: var(--dim); }
 
 /* 근거 영수증(11-13): 세 칸 표어 대신 실제 원장 셀 한 장. 인쇄된 계산서처럼 점선과 고정폭 숫자로 */
@@ -147,8 +133,20 @@
 .h6-steps .h6-out { align-self: start; margin-top: 10px; }
 
 /* 첫 화면 눈썹 줄: 고객이 실제로 받는 질문 */
-.h6-ask { font-family: "Renewmap Serif", "Noto Serif KR", serif; font-weight: 600; font-size: clamp(20px, 2vw, 24px); color: var(--green); margin: 0 0 10px; letter-spacing: -0.02em; }
 .h6-hero h1 { font-size: clamp(34px, 4.4vw, 56px); }
 .h6-receipt-ids { padding: 8px 0 0; font-size: 13px; color: var(--dim); }
 .h6-receipt-ids summary { cursor: pointer; }
 .h6-receipt-ids p { margin: 6px 0 0; overflow-wrap: anywhere; }
+
+/* v7(11-13 밤): 다섯 단계를 한 줄로(Giraffe 홈의 단계 열). 세로로 쌓으면 2,200px이라 홈이 길고 어지러웠다.
+   휴대폰(720px 이하)은 위의 목록 모양 그대로 */
+@media (min-width: 721px) {
+  .h6-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 28px 20px; }
+  .h6-steps li, .h6-steps li:last-child { border: 0; }
+  .h6-steps a { display: flex; flex-direction: column; gap: 6px; height: 100%; padding: 0; }
+  .h6-steps img { order: -1; aspect-ratio: 16 / 10; object-fit: cover; margin: 0 0 10px; }
+  .h6-n { font-size: 15px; font-weight: 700; }
+  .h6-steps h3 { font-size: 19px; margin: 0; }
+  .h6-steps p { font-size: 15px; line-height: 1.6; }
+  .h6-steps .h6-out { margin-top: auto; padding-top: 8px; font-size: 13px; }
+}

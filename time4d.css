@@ -1,37 +1,45 @@
-/* 건물 나이 4D(2026-11-13). 지도 모형이 주인공이라 옆 숫자판은 좁게, 연도 막대는 모형 바로 아래에 둔다 */
-.t4-head { padding-top: 32px; }
-.t4-head h1 { margin: 0 0 8px; }
-.t4-lead { color: var(--dim, #4f625d); margin: 0 0 20px; }
-.t4-app { display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-areas: "pick pick" "stage side"; gap: 16px 24px; }
-.t4-pick { grid-area: pick; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
-.t4-pick label { font-weight: 600; }
-.t4-pick select { min-height: 44px; padding: 0 12px; border: 1px solid #7a9089; border-radius: 8px; background: #fff; font: inherit; }
-.t4-stage { grid-area: stage; min-width: 0; }
-.t4-map { height: min(68vh, 620px); border-radius: 12px; overflow: hidden; background: #eef1ee; border: 1px solid #d9e4df; }
-.t4-time { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px; margin-top: 12px; }
-.t4-slider input { width: 100%; accent-color: #0d3b35; min-height: 44px; }
-.t4-time output { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 22px; min-width: 5.5em; text-align: right; }
-.t4-side { grid-area: side; }
-.t4-side h2 { font-size: 22px; margin: 0 0 12px; }
+/* 건물 나이 4D(2026-11-13 v7). 동네 찾기와 같은 틀: 왼쪽 패널 + 화면 남은 높이 전체의 입체 지도, 연도 막대는 지도 아래쪽에 떠 있다.
+   왼쪽 패널은 스크롤이 페이지로 이어지게 둔다(맨 아래 '셈하는 법'으로 내려가야 한다). 지도 위 휠은 지도 확대다 */
+.t4-app { display: grid; grid-template-columns: 340px minmax(0, 1fr); height: calc(100dvh - var(--site-header-h, 64px)); min-height: 560px; border-bottom: 1px solid var(--line); }
+.t4-side { min-width: 0; overflow-y: auto; padding: 20px 20px 28px; background: var(--card); border-right: 1px solid var(--line); }
+.t4-side h1 { font-size: 24px; margin: 0 0 6px; }
+.t4-lead { color: var(--dim); font-size: 15px; line-height: 1.6; margin: 0 0 16px; }
+.t4-pick { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px 10px; margin: 0 0 20px; }
+.t4-pick label { font-weight: 600; font-size: 15px; }
+.t4-pick select { min-height: 44px; min-width: 0; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; font-size: 15px; }
+.t4-side h2 { font-size: 20px; margin: 0 0 10px; padding-top: 16px; border-top: 1px solid var(--line); }
 .t4-side h3 { font-size: 15px; margin: 20px 0 8px; }
-.t4-num { margin: 0; display: grid; gap: 10px; }
-.t4-num div { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #d9e4df; padding-bottom: 8px; }
-.t4-num dt { color: var(--dim, #4f625d); }
-.t4-num dd { margin: 0; font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.t4-future { background: #fff7e8; color: #8a4b00; border-radius: 8px; padding: 10px 12px; margin: 12px 0 0; font-size: 14px; }
+.t4-basis { margin: -4px 0 12px; font-size: 13px; line-height: 1.55; color: var(--dim); }
+.t4-num { margin: 0; display: grid; gap: 8px; }
+.t4-num div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.t4-num dt { color: var(--dim); font-size: 15px; }
+.t4-num dt small { display: block; font-size: 13px; }
+.t4-num dd { margin: 0; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.t4-future { background: var(--amber-bg); color: var(--amber); border-radius: 8px; padding: 10px 12px; margin: 12px 0 0; font-size: 14px; }
 .t4-marks, .t4-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 15px; }
 .t4-legend li { display: flex; align-items: center; gap: 8px; }
-.t4-legend i { width: 18px; height: 12px; border-radius: 3px; display: inline-block; }
-.t4-status { color: var(--dim, #4f625d); font-size: 14px; margin-top: 16px; }
+.t4-legend i { width: 18px; height: 12px; border-radius: 3px; display: inline-block; box-shadow: inset 0 0 0 1px var(--shade-16); }
+.t4-status { color: var(--dim); font-size: 14px; margin-top: 16px; }
+.t4-next { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.t4-stage { position: relative; min-width: 0; }
+.t4-map { position: absolute; inset: 0; background: var(--bg); }
+.t4-time { position: absolute; left: 16px; right: 16px; bottom: 28px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px;
+  max-width: 880px; margin: 0 auto; padding: 8px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 18px var(--shade-16); }
+.t4-slider input { width: 100%; accent-color: var(--green); min-height: 44px; }
+.t4-time output { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 22px; min-width: 4.5em; text-align: right; }
 .t4-how { padding: 40px 20px 56px; }
 .t4-how ul { padding-left: 1.2em; }
 .t4-how li { margin-bottom: 10px; }
-.t4-src { font-size: 14px; color: var(--dim, #4f625d); }
-.t4-next { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.t4-src { font-size: 14px; color: var(--dim); }
+.t4-pop p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink); }
+.t4-pop b { font-weight: 600; color: var(--dim); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* 좁은 화면: 모형이 먼저, 숫자판은 아래 */
 @media (max-width: 860px) {
-  .t4-app { grid-template-columns: minmax(0, 1fr); grid-template-areas: "pick" "stage" "side"; }
-  .t4-map { height: 56vh; }
-  .t4-time { grid-template-columns: auto 1fr auto; }
-  .t4-time #t4Now { grid-column: 1 / -1; justify-self: start; }
+  .t4-app { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .t4-stage { order: -1; height: 62vh; min-height: 360px; }
+  .t4-side { border-right: 0; overflow: visible; }
+  .t4-time { left: 8px; right: 8px; bottom: 36px; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; padding: 6px 10px; }
+  .t4-time #t4Now { display: none; }
+  .t4-time output { font-size: 18px; min-width: 4em; }
 }
