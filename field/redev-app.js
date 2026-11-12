@@ -26,9 +26,12 @@
     const gus = idx.sigungu.filter((s) => s.code.startsWith(BUSAN) && s.dongs.length);
     if (!gus.length) return;
     const fill = (sel, items, pick) => sel.replaceChildren(...items.map(([v, t]) => { const o = new Option(t, v); o.selected = v === pick; return o; }));
-    const showDongs = (gu, pick) => fill($("dong"), gus.find((s) => s.code === gu).dongs.map((d) => [d.code, `${d.name} (${d.count.toLocaleString("ko-KR")}동)`]), pick);
-    fill($("gu"), gus.map((s) => [s.code, s.name]), "26350");
-    showDongs("26350", $("dong").value);
+    const showDongs = (gu, pick) => fill($("dong"), gus.find((s) => s.code === gu).dongs.map((d) => [d.code, `${d.name} (건물 ${d.count.toLocaleString("ko-KR")}동)`]), pick);
+    // 2026-11-13: 건물 나이 4D·동 페이지에서 ?bjd=법정동코드로 오면 그 구·동을 고른 채 연다(11-13 3차: 어디서 와도 동이 이어지지 않음)
+    const want = new URLSearchParams(location.search).get("bjd");
+    const from = want && gus.find((s) => s.dongs.some((d) => d.code === want));
+    fill($("gu"), gus.map((s) => [s.code, s.name]), from ? from.code : "26350");
+    showDongs(from ? from.code : "26350", from ? want : $("dong").value);
     $("gu").addEventListener("change", () => showDongs($("gu").value));
     restoreDraft(gus, showDongs);
     const n = gus.reduce((s, g) => s + g.dongs.length, 0);

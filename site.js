@@ -20,7 +20,7 @@
     const here = location.pathname + location.hash;
     const tabs = [['index.html', '홈', 'M3 10L12 3l9 7M5 9v12h5v-7h4v7h5V9', /\/(?:index\.html)?$/],
       ['explore.html#map', '지도', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html/],
-      ['field/', '현장', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\//],
+      ['field/', '현장', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],   // 신청요건·3D 화면에서 '현장'에 불이 켜지던 것(11-13 평가) 바로잡음
       ['box.html', '보관함', 'M4 5h16v4H4zM5 9v10h14V9M10 13h4', /box\.html$/]];
     const current = tabs.findIndex(t => t[3].test(here) && (t[0] !== 'index.html' || !nested));
     const nav = document.createElement('nav');
@@ -34,14 +34,27 @@
       nav.querySelectorAll('a').forEach((a, i) => { a.toggleAttribute('aria-current', i === now); if (i === now) a.setAttribute('aria-current', 'page'); a.querySelector('.tab-ind')?.remove(); if (i === now) a.insertAdjacentHTML('afterbegin', '<i class="tab-ind" aria-hidden="true"></i>'); });
     });
   }
+  // 머리 메뉴(2026-11-13 v6): 화면마다 달랐던 메뉴(보관함만 '서비스 소개·근거와 방법·데이터 출처')를 하는 일 순서의 한 벌로 맞춘다.
+  // HTML에 적힌 옛 메뉴는 자바스크립트가 없을 때를 위해 남기고 rm6.css가 숨긴다
   const header = document.querySelector('header.top .wrap');
-  if (header && !header.querySelector('nav')) {
+  if (header && !header.querySelector('.rm-nav')) {
     const base = nested ? '../' : '';
-    const links = document.createElement('nav');
-    links.className = 'quick-menu';
-    links.setAttribute('aria-label', '서비스 안내');
-    links.innerHTML = [['about.html', '서비스 소개'], ['evidence.html', '근거와 방법'], ['data.html', '데이터 출처']].map(([href, text]) => '<a href="' + base + href + '"' + (location.pathname.endsWith('/' + href) ? ' aria-current="page"' : '') + '>' + text + '</a>').join('');
-    header.appendChild(links);
+    const path = location.pathname;
+    const items = [['explore.html', '동네 찾기', /explore\.html$|\/dong\//], ['programs.html', '재생 사업', /programs\.html$/],
+      ['field/redev.html', '구역 계산', /\/field\/redev\.html$/], ['field/', '현장 기록', /\/field\/(?:index\.html)?$/],
+      ['time4d.html', '건물 4D', /time4d\.html$|\/field\/(?:city3d|twin)\.html$/], ['data.html', '데이터 출처', /(?:data|rules|evidence)\.html$/]];
+    const nav = document.createElement('nav');
+    nav.className = 'rm-nav'; nav.id = 'rm-nav'; nav.setAttribute('aria-label', '주요 메뉴');
+    const link = (href, text, on, cls) => { const a = document.createElement('a'); a.href = base + href; a.textContent = text; if (on) a.setAttribute('aria-current', 'page'); if (cls) a.className = cls; return a; };
+    for (const [href, text, re] of items) nav.append(link(href, text, re.test(path)));
+    const sep = document.createElement('span'); sep.className = 'rm-sep'; sep.setAttribute('aria-hidden', 'true');
+    nav.append(sep, link('box.html', '보관함', /box\.html$/.test(path)), link('about.html#contact', '시범 상담', false, 'rm-cta'));
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'rm-menu-btn'; btn.textContent = '메뉴';
+    btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', 'rm-nav');
+    btn.addEventListener('click', () => { const open = btn.getAttribute('aria-expanded') !== 'true'; btn.setAttribute('aria-expanded', String(open)); nav.classList.toggle('is-open', open); btn.textContent = open ? '닫기' : '메뉴'; });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && nav.classList.contains('is-open')) { btn.click(); btn.focus(); } });
+    header.append(btn, nav);
   }
   if (header && typeof ResizeObserver === 'function') {
     const top = header.closest('header');

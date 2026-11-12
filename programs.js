@@ -75,6 +75,13 @@
   const scheduleHTML = () => `<dl class="pg-sched">${SCHEDULE.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
 
   // 사업 목록 화면(programs.html)
+  // 2026-11-13: 9개 사업을 한 표로(11-13 평가: 한 장씩 넘겨서는 사업끼리 비교할 수 없다). 요건 문구는 아래 카드와 같은 원문 옮김이다
+  function compareHTML() {
+    const row = p => `<tr><th scope="row"><a href="#${esc(p.id)}">${esc(p.name)}</a></th><td>${esc(p.owner)}</td><td>${esc(p.money)}</td><td><ul>${p.needs.map(n => `<li>${esc(n.t)}</li>`).join('')}</ul></td></tr>`;
+    return `<section class="pg-compare" id="compare" data-page-label="9개 사업 한눈에"><h2>사업 ${PROGRAMS.length}종 한눈에</h2>` +
+      `<div class="table-wrap" tabindex="0" role="region" aria-label="재생 사업 비교 표"><table><thead><tr><th scope="col">사업</th><th scope="col">맡는 곳</th><th scope="col">지원 규모·기간</th><th scope="col">신청 요건(공식 문서 옮김)</th></tr></thead>` +
+      `<tbody>${PROGRAMS.map(row).join('')}</tbody></table></div></section>`;
+  }
   function listHTML(base) {
     return PROGRAMS.map(p => `<section class="pg-item" id="${esc(p.id)}"><h2>${esc(p.name)}</h2><p class="pg-meta">${esc(p.owner)}, ${esc(p.money)}</p><p>${esc(p.aim).replace('&lt;br&gt;', '<br>')}</p>` +
       `<h3>신청 요건</h3><ul>${p.needs.map(n => `<li>${esc(n.t)}</li>`).join('')}</ul><h3>리뉴맵에서 하는 일</h3><p>${esc(p.use)}</p>` +
@@ -126,10 +133,10 @@
     return '\uFEFF' + [DISTRICT_HEAD.map(q).join(','), ...districtRows(items).map(r => districtCells(r).map(q).join(','))].join('\r\n');
   }
 
-  const api = { districtRows, districtHTML, districtCSV, PROGRAMS, SOURCES, SCHEDULE, SOC, factsOf, checkNeed, checkProgram, checkAll, scheduleHTML, listHTML, dongHTML, socRows, socHTML, socCSV };
+  const api = { districtRows, districtHTML, districtCSV, PROGRAMS, SOURCES, SCHEDULE, SOC, factsOf, checkNeed, checkProgram, checkAll, scheduleHTML, listHTML, compareHTML, dongHTML, socRows, socHTML, socCSV };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   root.RenewPrograms = api;
   const box = document.getElementById('programs');
-  if (box) { box.innerHTML = listHTML(''); const s = document.getElementById('schedule'); if (s) s.innerHTML = scheduleHTML(); }
+  if (box) { box.innerHTML = compareHTML() + listHTML(''); const s = document.getElementById('schedule'); if (s) s.innerHTML = scheduleHTML(); }
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -36,6 +36,11 @@
 - `cells[].indicator_code` 규칙: `AGING_{20|30}Y_{COUNT|AREA|HH}` (동수·연면적·세대 기준 노후율, 단위 `%`).
 - `cells[]`는 `export_cell()` 필드를 그대로 둔다: `value`(숨겨지면 null + `value_hidden_reason`), `unit`, `status`, `source_name`, `source_url`, `retrieved_at`, `reference_date`, `formula_text`, `rule_version`, `sample_n`, `coverage`, `spatial_unit`, `base_year`, `license_type`, `derived` 등.
 - 지도(선택 필드, 2026-10-23 추가): `dongs[].center` = `[위도, 경도]`(EPSG:4326), `dongs[].center_source` = 좌표 출처 문자열. 경계 다각형이 있으면 `landing/data/dong_boundaries.geojson`(FeatureCollection, `properties.code` = 법정동 코드, 좌표 EPSG:4326)에 두고, 출처·이용조건은 `properties.source`·`properties.license`와 이 문서에 적는다. 없으면 화면은 중심점 원으로 그린다.
+- 다시 받아 값이 바뀔 때(2026-11-12 추가): `cell_id`(`{법정동 코드}:{지표}`)는 그대로 두고 `version`만 1씩 올린 새 판을 만든다.
+  - 앞 판 파일은 지우지 않는다. `data/versions/dashboard_{앞 판 기준일}.json`에 바이트 그대로 둔다.
+  - 새 파일의 `previous_versions[]`(`file`·`reference_dates`·`generated_at`·`snapshot_hash`·`status: 대체됨`)가 앞 판 위치를 가리킨다.
+  - 실행: `export_dashboard.py --units-from-dashboard --no-collect --new-version`. 이 옵션이 없으면 셀이 하나라도 바뀌었을 때 저장을 거부한다.
+  - 첫 적용: 2026-11-12 부산 재수집으로 10-24판(version 1)을 대체했다.
 - `cells[].spatial_unit`은 `법정동|행정동|시군구|집계구|격자|폴리곤`. `읍면동`은 구 데이터 호환값이며 신규 생성 금지.
 - 이 근거 표의 순서는 법정동 코드 순이다. D24~D27의 참고용 점수·순위는 공모 근거 표와 별도로 제공한다.
 

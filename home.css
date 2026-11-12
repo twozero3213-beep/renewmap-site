@@ -53,6 +53,8 @@
 .start-home { padding-top: 32px; padding-bottom: 28px; }
 .start-home section { padding: 0; }
 .start-hero { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, .9fr); gap: 48px; align-items: center; }
+/* 2026-11-12: 시범 지역 표시(index.html 주석 참고). 정보 표시라 단추처럼 보이지 않게 옅은 바탕의 알약 모양 */
+.start-pilot { display: inline-block; margin: 0 0 12px; padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--soft-ink); font-size: 14px; font-weight: 600; }
 .start-copy h1 { margin: 0 0 16px; font-size: clamp(36px, 4.2vw, 52px); line-height: 1.16; font-weight: 800; letter-spacing: -.035em; }
 .start-intro { margin: 0 0 24px; color: var(--dim); font-size: 18px; line-height: 1.65; }
 .start-home .home-search label { display: block; margin-bottom: 8px; font-size: 16px; font-weight: 600; }
@@ -124,7 +126,47 @@
   .start-evidence { display: block; }
   .start-evidence > div { margin-top: 8px; }
 }
+/* ── 2026-11-12 홈 가독성·순서 (회의 "가독성", PR #33에 이어서) ──
+   근거: 공개 사이트 홈에서 잰 값 — 글자와 바탕 대비는 모두 4.5:1 이상이었지만, 14px 이하 글자가 31곳
+   (메뉴·바로가기·안내·접힌 도구·바닥글), 휴대폰에서 누르는 링크 8개가 36~40px로 손가락 기준 44px보다 작았다.
+   지자체 실무자가 주 사용자라 본문 크기(16px)에 가깝게 올리고, 누르는 곳은 44px로 맞춘다. */
+/* 1) 배치: '세 가지 기록' 상자를 HTML에서 카드 뒤로 옮겼으므로(index.html 주석), 넓은 화면에서는 격자로 오른쪽 위에 둔다 */
+.start-home { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, .9fr); column-gap: 48px; align-items: center; }
+.start-hero { display: block; grid-column: 1; grid-row: 1; }
+.start-home > .start-note { grid-column: 2; grid-row: 1; }
+.start-home > .start-tools, .start-home > .start-evidence { grid-column: 1 / -1; }
+/* 2) 작은 글자 키우기: 14px → 15px(설명·링크), 바닥글 13px → 14px */
+.app-home .start-audience, .app-home .start-status, .start-shortcuts a, .start-flow li div > span, .start-method,
+.start-section-head > a, .start-more, .start-evidence p, .start-evidence a { font-size: 15px; }
+.app-home footer p { font-size: 14px; }
+/* 3) 누르는 곳 44px */
+.start-shortcuts a, .start-section-head > a, .start-method, .start-evidence a { min-height: 44px; }
+@media (min-width: 601px) { .app-home .site-nav a { font-size: 15px; } }
+@media (max-width: 900px) {
+  .start-home { column-gap: 24px; grid-template-columns: minmax(0, 1fr) minmax(260px, .85fr); }
+}
+@media (max-width: 600px) {
+  /* 휴대폰: 한 줄로 쌓고 HTML 순서(소개 → 카드 → 세 가지 기록 → 안내) 그대로 보인다 */
+  .start-home { grid-template-columns: minmax(0, 1fr); }
+  .start-hero, .start-home > .start-note { grid-column: 1; grid-row: auto; }
+  .start-home > .start-note { margin-top: 24px; }
+  /* 세 가지 기록 상자 안 글자(14·13px, styles.css 293행)도 15·14px로 */
+  .start-flow strong { font-size: 15px; }
+  .app-home .start-flow li div > span { font-size: 14px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .home-hits.fresh li { animation: none !important; }
   .home-hits a, .home-search-row input, .box-list button, .start-tool-grid a { transition: none !important; }
 }
+/* 2026-11-12: '누가 쓰나요' 대상 6칸(index.html 주석). 도구 카드(.start-tool-grid)와 같은 카드 모양을 써서 새 디자인 규칙을 늘리지 않는다.
+   넓은 화면 3열 → 900px 이하 2열 → 600px 이하 1열. 글자는 위 2)의 15px 기준, 누르는 곳은 44px 이상 */
+.start-home > .start-who { grid-column: 1 / -1; margin-top: 32px; }
+.start-who h2 { margin: 0 0 12px; font-size: 20px; }
+.start-who-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.start-who-grid a { display: grid; gap: 4px; min-height: 44px; height: 100%; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); color: var(--ink); text-decoration: none; transition: border-color .12s var(--ease); }
+.start-who-grid a:hover, .start-who-grid a:focus-visible { border-color: var(--green); }
+.start-who-grid strong { font-size: 16px; }
+.start-who-grid span { font-size: 15px; line-height: 1.55; color: var(--dim); }
+@media (max-width: 900px) { .start-who-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .start-who-grid { grid-template-columns: minmax(0, 1fr); } .start-home > .start-who { margin-top: 24px; } }
+@media (prefers-reduced-motion: reduce) { .start-who-grid a { transition: none !important; } }

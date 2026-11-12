@@ -1,0 +1,37 @@
+/* 건물 나이 4D(2026-11-13). 지도 모형이 주인공이라 옆 숫자판은 좁게, 연도 막대는 모형 바로 아래에 둔다 */
+.t4-head { padding-top: 32px; }
+.t4-head h1 { margin: 0 0 8px; }
+.t4-lead { color: var(--dim, #4f625d); margin: 0 0 20px; }
+.t4-app { display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-areas: "pick pick" "stage side"; gap: 16px 24px; }
+.t4-pick { grid-area: pick; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.t4-pick label { font-weight: 600; }
+.t4-pick select { min-height: 44px; padding: 0 12px; border: 1px solid #7a9089; border-radius: 8px; background: #fff; font: inherit; }
+.t4-stage { grid-area: stage; min-width: 0; }
+.t4-map { height: min(68vh, 620px); border-radius: 12px; overflow: hidden; background: #eef1ee; border: 1px solid #d9e4df; }
+.t4-time { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px; margin-top: 12px; }
+.t4-slider input { width: 100%; accent-color: #0d3b35; min-height: 44px; }
+.t4-time output { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 22px; min-width: 5.5em; text-align: right; }
+.t4-side { grid-area: side; }
+.t4-side h2 { font-size: 22px; margin: 0 0 12px; }
+.t4-side h3 { font-size: 15px; margin: 20px 0 8px; }
+.t4-num { margin: 0; display: grid; gap: 10px; }
+.t4-num div { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #d9e4df; padding-bottom: 8px; }
+.t4-num dt { color: var(--dim, #4f625d); }
+.t4-num dd { margin: 0; font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.t4-future { background: #fff7e8; color: #8a4b00; border-radius: 8px; padding: 10px 12px; margin: 12px 0 0; font-size: 14px; }
+.t4-marks, .t4-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 15px; }
+.t4-legend li { display: flex; align-items: center; gap: 8px; }
+.t4-legend i { width: 18px; height: 12px; border-radius: 3px; display: inline-block; }
+.t4-status { color: var(--dim, #4f625d); font-size: 14px; margin-top: 16px; }
+.t4-how { padding: 40px 20px 56px; }
+.t4-how ul { padding-left: 1.2em; }
+.t4-how li { margin-bottom: 10px; }
+.t4-src { font-size: 14px; color: var(--dim, #4f625d); }
+.t4-next { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 860px) {
+  .t4-app { grid-template-columns: minmax(0, 1fr); grid-template-areas: "pick" "stage" "side"; }
+  .t4-map { height: 56vh; }
+  .t4-time { grid-template-columns: auto 1fr auto; }
+  .t4-time #t4Now { grid-column: 1 / -1; justify-self: start; }
+}

@@ -31,11 +31,22 @@
       return out;
     } catch(err) { Object.values(out).forEach(p=>p.destroy()); throw Error(`모델을 표시하지 못했습니다. GLB 내용을 확인하세요: ${err.message}`); }
   }
+  // 2026-11-12: 화면을 바꿀 일이 있을 때만 다시 그린다(requestRenderMode, 아래 Viewer 설정 주석). 모델 표시·색을 바꾼 뒤 이것을 부른다
+  const redraw=()=>{ if(viewer && !viewer.isDestroyed()) viewer.scene.requestRender(); };
   function install(next) {
     if(!viewer) return;
     for(const p of Object.values(primitives)) viewer.scene.primitives.remove(p);
     primitives=next;
-    for(const p of Object.values(next)) viewer.scene.primitives.add(p);
+    for(const p of Object.values(next)) { viewer.scene.primitives.add(p); p.readyEvent?.addEventListener(redraw); }
+    redraw();
+  }
+  // 2026-11-12: 조감도·위에서 보기(회의 "조감도가 잘 보이게"). 지금 보던 방향은 두고 각도·거리만 바꾼다.
+  // 거리는 모델 크기(경계 구 반지름)의 배수로 정해 작은 조형물도 큰 단지도 화면에 알맞게 들어오게 한다
+  const VIEWS={bird:{pitch:-35,k:5,min:60},top:{pitch:-89,k:6,min:80}};
+  function view(kind) {
+    const p=primitives[state.selection] || primitives.current, v=VIEWS[kind];
+    if(!p?.ready) return focus();
+    viewer.camera.flyToBoundingSphere(p.boundingSphere,{duration:1,offset:new Cesium.HeadingPitchRange(viewer.camera.heading,Cesium.Math.toRadians(v.pitch),Math.max(v.min,p.boundingSphere.radius*v.k))});
   }
   function focus() {
     const p=primitives[state.selection] || primitives.current;
@@ -54,6 +65,7 @@
       primitives[k].show=state.selection==='current' ? k==='current' : s==='단계 미입력' ? k===state.selection : s==='현재' ? k==='current' : s==='철거' ? false : k===state.selection;
       primitives[k].color=Cesium.Color.WHITE.withAlpha(s==='공사' && k!=='current' ? .45 : 1);
     }
+    redraw();
     const planDates=Object.values(state.phases).filter(Boolean).sort();
     const before=planDates.length ? new Date(Date.parse(planDates[0])-86400000).toISOString().slice(0,10) : state.date;
     const dates=[before,...planDates,...Object.values(state.models).map(m=>m.reference_date),state.date].sort();
@@ -61,7 +73,7 @@
     $('timeline').max=String((hi-lo)/86400000); $('timeline').value=String((Date.parse(state.date)-lo)/86400000);
     $('timeline').dataset.start=dates[0]; $('timeline').disabled=hi===lo;
     $('start').disabled=!!viewer;
-    for(const k of ['focus','rotate','zoom']) $(k).disabled=!viewer;
+    for(const k of ['focus','bird','top','rotate','zoom']) $(k).disabled=!viewer;
     const proofs=selected ? state.verifications.filter(v=>v.model_key===T.modelKey(selected)) : [];
     $('verificationInfo').textContent=`이 모델·배치에 대한 대조 ${proofs.length}건, 다른 판의 대조 ${state.verifications.length-proofs.length}건.\n최종검수 전입니다. 허용오차·측량 기준은 승인되지 않았습니다.${proofs.length ? `\n최근 치수 차이(모델−현장): ${proofs.at(-1).difference_m.toFixed(4)}m` : ''}`;
     $('recordLocation').disabled=!records.find(r=>r.id===$('record').value && Number.isFinite(r.lat) && Number.isFinite(r.lng));
@@ -86,7 +98,9 @@
     }
     Cesium.Ion.defaultAccessToken='';
     try {
-      viewer=new Cesium.Viewer('globe',{baseLayer:false,baseLayerPicker:false,geocoder:false,homeButton:false,sceneModePicker:false,navigationHelpButton:false,animation:false,timeline:false,fullscreenButton:false,infoBox:false,selectionIndicator:false,skyBox:false,terrainProvider:new Cesium.EllipsoidTerrainProvider()});
+      // 2026-11-12: requestRenderMode — 카메라·모델이 바뀔 때만 다시 그린다. 왜: 기본값은 가만히 있어도 1초에 60번 그려
+      // 노트북이 뜨거워지고 다른 입력(날짜 막대·입력 칸)이 버벅였다(회의 "안 끊기게"). 바꾼 뒤에는 redraw()로 알린다
+      viewer=new Cesium.Viewer('globe',{requestRenderMode:true,maximumRenderTimeChange:Infinity,baseLayer:false,baseLayerPicker:false,geocoder:false,homeButton:false,sceneModePicker:false,navigationHelpButton:false,animation:false,timeline:false,fullscreenButton:false,infoBox:false,selectionIndicator:false,skyBox:false,terrainProvider:new Cesium.EllipsoidTerrainProvider()});
       const imagery=new Cesium.OpenStreetMapImageryProvider({url:'https://tile.openstreetmap.org/',maximumLevel:19,credit:new Cesium.Credit('© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',true)});
       imagery.errorEvent.addEventListener(()=>message('배경 지도를 받지 못했습니다. 모델 파일은 유지됩니다. 인터넷 연결을 확인하세요.',true));
       viewer.imageryLayers.addImageryProvider(imagery);
@@ -131,6 +145,8 @@
   $('date').onchange=()=>{try{state.date=T.day($('date').value);dirty=true;sync();}catch(err){message(err.message,true);$('date').value=state.date;}};
   $('timeline').oninput=()=>{state.date=new Date(Date.parse($('timeline').dataset.start)+Number($('timeline').value)*86400000).toISOString().slice(0,10);dirty=true;sync();};
   $('focus').onclick=focus;
+  $('bird').onclick=()=>view('bird');
+  $('top').onclick=()=>view('top');
   $('rotate').onclick=()=>{
     const p=primitives[state.selection] || primitives.current;
     if(p?.ready) viewer.camera.flyToBoundingSphere(p.boundingSphere,{duration:0,offset:new Cesium.HeadingPitchRange(viewer.camera.heading+Cesium.Math.toRadians(15),viewer.camera.pitch,Cesium.Cartesian3.distance(viewer.camera.position,p.boundingSphere.center))});

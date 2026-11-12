@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; form-action 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; manifest-src 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<script src="frame-guard.js"></script>
+<title>건물 나이 4D | 리뉴맵</title>
+<meta name="description" content="부산 법정동 건물을 입체로 세우고 연도를 움직여, 20년 넘은 건물이 절반·3분의 2를 넘는 해를 건축물대장 사용승인일로 계산해 보여 줍니다.">
+<link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/time4d.html">
+<meta property="og:title" content="건물 나이 4D | 리뉴맵">
+<meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
+<meta name="theme-color" content="#0d3b35">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="pretendard.css">
+<link rel="stylesheet" href="serif.css">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="site-v4.css">
+<link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
+<link rel="stylesheet" href="time4d.css">
+<script src="site.js" defer></script>
+<script src="vendor/maplibre/maplibre-gl-csp.js" defer></script>
+<script src="time4d.js" defer></script>
+<link rel="stylesheet" href="rm6.css">
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="time4d.html">건물 4D</a><a href="data.html">데이터 출처</a><a href="box.html">보관함</a><a href="about.html#contact">시범 상담</a></nav></div></header>
+<main id="main" class="t4" >
+  <div class="t4-head wrap">
+    <h1>건물 나이 4D</h1>
+    <p class="t4-lead">연도를 움직이면 동네 건물이 사용승인 순서대로 서고, 해가 갈수록 색이 짙어집니다.<br>20년 넘은 건물이 절반을 넘는 해는 도시재생 쇠퇴 요건③을 처음 채우는 해입니다.</p>
+  </div>
+  <div id="t4App" class="t4-app wrap">
+    <div class="t4-pick">
+      <label for="t4Gu">구·군</label><select id="t4Gu"></select>
+      <label for="t4Dong">법정동</label><select id="t4Dong"></select>
+    </div>
+    <div class="t4-stage">
+      <div id="t4Map" class="t4-map" role="img" aria-label="법정동 건물 입체 모형. 아래 연도와 숫자가 같은 내용을 글로 알려 줍니다."></div>
+      <div class="t4-time">
+        <button type="button" id="t4Play" class="btn" aria-pressed="false">연도 돌려 보기</button>
+        <label class="t4-slider"><span class="sr-only">연도</span><input type="range" id="t4Year" step="1"></label>
+        <output id="t4YearOut" for="t4Year" aria-live="polite"></output>
+        <button type="button" id="t4Now" class="btn ghost">올해로</button>
+      </div>
+    </div>
+    <aside class="t4-side" aria-labelledby="t4Name">
+      <h2 id="t4Name">-</h2>
+      <dl class="t4-num">
+        <div><dt>그해까지 사용승인된 건물<small>날짜 있는 주건축물</small></dt><dd id="t4Built">-</dd></div>
+        <div><dt>20년 이상</dt><dd id="t4P20">-</dd></div>
+        <div><dt>30년 이상</dt><dd id="t4P30">-</dd></div>
+      </dl>
+      <p id="t4Future" class="t4-future" hidden>올해 뒤는 지금 건물이 그대로 있다고 보고 셈한 달력 계산입니다.<br>철거나 새 건물은 넣지 않았습니다.</p>
+      <h3>기준선에 닿는 해</h3>
+      <ul id="t4Marks" class="t4-marks"></ul>
+      <h3>색</h3>
+      <ul id="t4Legend" class="t4-legend"></ul>
+      <p id="t4Status" class="t4-status" role="status"></p>
+    </aside>
+  </div>
+  <section class="t4-how wrap" aria-labelledby="t4How">
+    <h2 id="t4How">이렇게 셉니다</h2>
+    <ul>
+      <li>분모는 그해까지 사용승인된 주건축물 가운데 날짜가 있는 건물입니다.<br>사용승인일이 없는 건물은 회색으로 늘 세워 두고 비율에서는 뺍니다.<br>그래서 동 이름 옆 건물 수(건축물대장 주건축물 전체)와 이 수가 다르고, 모형의 외곽선 수(부속 건물과 대장에 잇지 못한 건물 포함)와도 다릅니다.</li>
+      <li>이 화면은 법정동(예: 반여동) 단위의 건축물대장 계산입니다.<br>홈과 동네 찾기의 노후 비율은 행정동(예: 반여1동) 단위의 도시재생종합정보체계 쇠퇴진단지표라 값이 다를 수 있습니다.</li>
+      <li>연수는 그해에서 사용승인 연도를 뺀 값입니다.<br>도시재생법 시행령 제17조의 노후 요건(20년 이상 건축물 2분의 1)과 노후주거지정비 저층 주거 판단은 구역 계산 화면에서 날짜까지 따집니다.</li>
+      <li>높이는 GIS건물통합정보의 신고 높이를 쓰고, 없으면 층수×3m로 세웠습니다.<br>건축물대장과 이어지지 않은 외곽선은 회색입니다.</li>
+    </ul>
+    <p class="t4-src" id="t4Src"></p>
+    <p class="t4-next"><a class="btn" id="t4Redev" href="field/redev.html">이 동으로 구역 요건 계산하기</a><a class="btn ghost" href="field/city3d.html">실제 3D 지도로 보기</a></p>
+  </section>
+</main>
+<footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="privacy.html">개인정보 처리방침</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
+</body>
+</html>

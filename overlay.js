@@ -1,4 +1,4 @@
-/* 우리 파일 얹기: 부서 엑셀·CSV 대장을 같은 지도에 겹친다. 파일은 이 브라우저 메모리에서만 처리한다(서버 전송·저장 없음).
+/* 내 GIS 파일 겹쳐 보기: 부서 엑셀·CSV 대장을 같은 지도에 겹친다. 파일은 이 브라우저 메모리에서만 처리한다(서버 전송·저장 없음).
    위쪽은 노드 시험용 순수 함수(파일 읽기·열 인식·좌표 변환·집계), 아래쪽은 화면 연결부다.
    외부 라이브러리 없음: XLSX는 ZIP+XML을 직접 읽고, 좌표 변환은 TM 투영 역변환 공식을 직접 구현했다. */
 (function (root, factory) {
@@ -327,7 +327,7 @@
 
   // ── 7. 화면 조각(순수 함수): 양식·미리보기·점 계산·안내·집계 표. 아래 브라우저 연결부가 부르고 노드 시험도 직접 부른다 ──
   const COLORS = { 남색: '#1f4e9c', 주황: '#b45309', 보라: '#6d3fa0', 청록: '#0b7a75', 진회색: '#374151' }, SIZES = { 작게: 4, 보통: 6, 크게: 9 };
-  const SHELL_HTML = `<details class="ov" id="overlay"><summary>우리 파일 얹기<small>부서 엑셀·CSV 대장을 같은 지도에</small></summary>
+  const SHELL_HTML = `<details class="ov" id="overlay"><summary>내 GIS 파일 겹쳐 보기<small>부서 엑셀·CSV 대장을 같은 지도에</small></summary>
 <div class="ov-body">
 <div class="ov-privacy"><p><strong>파일은 이 브라우저 안에서만 처리합니다.</strong></p><p>서버로 보내지 않고, 저장하지 않습니다.</p><p>새로고침하거나 ‘지우기’를 누르면 사라집니다.</p></div>
 <div class="ov-pick"><label for="ovFile">엑셀(.xlsx) 또는 CSV 파일</label><input id="ovFile" type="file" accept=".xlsx,.csv,.txt"><p class="ov-hint">글자 깨짐은 UTF-8·CP949를 자동으로 가립니다.<br>예전 .xls는 엑셀에서 .xlsx로 저장해 올려 주세요.</p></div>

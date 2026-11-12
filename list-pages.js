@@ -1,13 +1,14 @@
 // 화면에 보이는 목록만 나눈다. 저장된 전체 기록과 내보내기는 그대로 둔다.
 (function (root) {
   "use strict";
-  function windowOf(total, page) {
-    const pages = Math.max(1, Math.ceil(total / 5));
+  // size: 한 쪽 줄 수. 현장 기록·보관함은 5줄, 순위는 20줄(11-13 평가: 5줄씩 711쪽은 훑을 수 없다)
+  function windowOf(total, page, size = 5) {
+    const pages = Math.max(1, Math.ceil(total / size));
     page = Math.max(1, Math.min(pages, page));
-    const start = (page - 1) * 5;
-    return { page, pages, start, end: Math.min(total, start + 5) };
+    const start = (page - 1) * size;
+    return { page, pages, start, end: Math.min(total, start + size) };
   }
-  function create(list, label, changed, initialPage = 1) {
+  function create(list, label, changed, initialPage = 1, size = 5) {
     let page = initialPage;
     const nav = document.createElement("nav"), prev = document.createElement("button"), next = document.createElement("button"), select = document.createElement("select"), status = document.createElement("span");
     nav.className = "list-pages"; nav.setAttribute("aria-label", label + " 페이지");
@@ -23,7 +24,7 @@
     return {
       reset() { page = 1; },
       slice(rows) {
-        const range = windowOf(rows.length, page); page = range.page;
+        const range = windowOf(rows.length, page, size); page = range.page;
         select.textContent = "";
         for (let n = 1; n <= range.pages; n++) { const option = document.createElement("option"); option.value = n; option.textContent = `${n} / ${range.pages}쪽`; option.selected = n === page; select.append(option); }
         prev.disabled = page === 1; next.disabled = page === range.pages;

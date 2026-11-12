@@ -14,13 +14,26 @@
 <link rel="stylesheet" href="../site-v4.css">
 <link rel="stylesheet" href="field.css">
 <link rel="stylesheet" href="twin.css">
+<link rel="stylesheet" href="../rm6.css">
 </head>
 <body class="field twin">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" href="../index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 찾기</a><a href="./">현장 기록</a><a href="../programs.html">재생 사업</a><a href="../data.html">데이터 출처</a><a href="../about.html#contact">시범 상담</a></nav></div><div class="wrap"><h1>현재 건물 3D 보기</h1><a href="twin.html">3D 모델 비교</a></div></header>
+<header class="top"><div class="wrap"><a class="logo" href="../index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 찾기</a><a href="../programs.html">재생 사업</a><a href="redev.html">구역 계산</a><a href="./">현장 기록</a><a href="../time4d.html">건물 4D</a><a href="../data.html">데이터 출처</a><a href="../box.html">보관함</a><a href="../about.html#contact">시범 상담</a></nav></div><div class="wrap"><h1>현재 건물 3D 보기</h1><a href="twin.html">3D 모델 비교</a></div></header>
 <main id="main">
 <p class="note">국토교통부 브이월드 3D 지도에 있는 지금 건물을 입체로 봅니다.<br>건물 형상·높이는 브이월드 자료이며, 리뉴맵은 이를 받아 저장하지 않습니다.<br>계획안 모델을 올려 비교하려면 <a href="twin.html">3D 모델 비교</a>를 쓰세요.</p>
+<!-- 2026-11-12: 보기 단추 줄과 불러오는 중 표시를 더함(회의 "조감도 잘 보이게·안 끊기게"). 동작은 city3d.js, 시점 값은 city3d-views.js -->
+<div id="views" class="city3d-views" role="group" aria-label="3D 보기 고르기" hidden>
+  <button type="button" class="ghost" data-view="bird">조감도</button>
+  <button type="button" class="ghost" data-view="top">위에서</button>
+  <button type="button" class="ghost" data-view="near">가까이</button>
+  <button type="button" class="ghost" id="orbit" aria-pressed="false">한 바퀴 돌기</button>
+  <button type="button" data-view="home" class="ghost">처음 자리</button>
+  <label class="city3d-labels"><input type="checkbox" id="labels"> 장소 이름 보기 <small>(켜면 느려질 수 있음)</small></label>
+</div>
+<div class="city3d-stage">
 <div id="vmap" class="city3d-map" role="region" aria-label="브이월드 3D 건물 지도"></div>
+<p id="loading" class="city3d-loading" role="status" aria-live="polite"><span>지도를 여는 중입니다</span></p>
+</div>
 <p id="message" class="msg" role="status" aria-live="polite"></p>
 <section id="pick" class="card" aria-live="polite" hidden><h2>건물 정보</h2><dl class="pick-list"></dl></section>
 <p class="hint">건물을 누르면 같은 자리의 국토교통부 GIS건물통합정보 외곽선으로 리뉴맵 건축물대장 행을 찾아 보여 줍니다.<br>지금은 부산광역시만 준비돼 있습니다.<br>높이는 대장에 신고된 값이며, 신고가 없는 건물은 '없음'으로 둡니다.</p>
@@ -29,6 +42,8 @@
 <footer><div class="wrap"><div class="links"><a href="../about.html">서비스 소개</a><a href="../rules.html">기준 원문 대조</a><a href="../data.html">데이터 출처</a><a href="../ethics.html">AI 윤리</a><a href="../privacy.html">개인정보 처리방침</a><a href="../index.html#tools">참고 도구</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
 <script src="vworld-key.js"></script>
 <script src="city3d-boot.js"></script>
+<script src="city3d-views.js"></script>
+<script src="city3d-controls.js"></script>
 <script src="city3d.js?v=20261112-ready"></script>
 <script src="city3d-pick.js?v=20261112-ready"></script>
 </body>

@@ -39,7 +39,7 @@
   }
 
   function tableHTML(list, kind, names, limit, range, scope, offset = 0) {
-    const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th><th scope="col">${esc(KINDS[kind].label)}</th><th scope="col">무게를 바꾼<br><small>순위 범위</small></th><th scope="col">생활 편의</th><th scope="col">인구 활력</th><th scope="col">주거 노후도</th><th scope="col">치안</th><th scope="col">범죄 발생률<br><small>1,000명당·시군구</small></th></tr></thead>`;
+    const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th><th scope="col">${esc(KINDS[kind].label)}</th><th scope="col">무게를 바꾼<br><small>순위 범위</small></th><th scope="col">생활 편의</th><th scope="col">인구 활력</th><th scope="col">주거 노후도<br><small>낮을수록 낡음</small></th><th scope="col">치안</th><th scope="col">범죄 발생률<br><small>1,000명당·시군구</small></th></tr></thead>`;
     const body = list.slice(0, limit).map((r, i) => {
       const s = r.d.sub, sp = r.d.safety_parts || {};
       return `<tr><td class="num">${offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
@@ -78,11 +78,12 @@
         scores = s; idx = i;
         sidoSel.innerHTML = '<option value="">전국</option>' + i.sido.map(x => `<option value="${esc(x.code2)}">${esc(x.name)}</option>`).join('');
         const q = new URLSearchParams(location.search);
-        if (Object.hasOwn(KINDS, q.get('kind'))) kindSel.value = q.get('kind');
-        if (q.get('sido')) sidoSel.value = q.get('sido');
+        // 2026-11-13: 재생 서비스라 기본은 '재생 필요 점수', 시범 지역 부산(11-13 평가: 전국 '동네 점수' 1위가 과천이라 방향이 반대로 읽힘). ?sido= 로 전국을 본다
+        kindSel.value = Object.hasOwn(KINDS, q.get('kind')) ? q.get('kind') : 'renewal';
+        sidoSel.value = q.has('sido') ? q.get('sido') : (i.sido.some(x => x.code2 === '21') ? '21' : '');
         fillSg();
         if (q.get('sg')) sgSel.value = q.get('sg');
-        pager = window.RenewListPages.create(out, '동네 순위', draw);
+        pager = window.RenewListPages.create(out, '동네 순위', draw, 1, 20);
         const reset = () => { pager.reset(); draw(); };
         kindSel.onchange = reset; sgSel.onchange = reset;
         sidoSel.onchange = () => { fillSg(); reset(); };

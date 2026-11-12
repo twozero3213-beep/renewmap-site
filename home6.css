@@ -1,0 +1,154 @@
+/* v6 홈(2026-11-13). 시각 기준: '도면 위의 근거' — 종이색 바탕, 진한 먹색 글, 녹색은 누를 곳에만.
+   카드는 실제 자료를 담는 곳(지금 이 동네)에만 쓰고, 나머지는 선과 여백으로 나눈다(11-13 평가: 아이콘 카드 반복이 AI 티). */
+.h6 { padding-bottom: 24px; }
+.h6 h2 { font-size: clamp(26px, 3vw, 36px); line-height: 1.3; margin: 0 0 12px; }
+.h6-sec-lead { color: var(--dim); margin: 0 0 32px; max-width: 46em; }
+
+/* 첫 화면 */
+.h6-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 48px; align-items: start; padding-top: 48px; padding-bottom: 56px; }
+.h6-scope { font-size: 15px; font-weight: 700; color: var(--green); margin: 0 0 14px; }
+.h6-hero h1 { font-size: clamp(32px, 4.2vw, 52px); line-height: 1.22; font-weight: 800; margin: 0 0 18px; letter-spacing: -0.03em; }
+.h6-lead { font-size: 18px; color: var(--dim); margin: 0 0 28px; }
+.h6-search label { display: block; font-weight: 700; margin-bottom: 8px; }
+.h6-search .home-search-row { display: flex; gap: 8px; }
+.h6-search input { flex: 1; min-width: 0; min-height: 56px; font: inherit; font-size: 18px; padding: 0 16px; border: 2px solid var(--ink); border-radius: 10px; background: #fff; }
+.h6-search .btn { min-height: 56px; padding: 0 26px; font-size: 18px; }
+.h6-search .home-hits { list-style: none; margin: 8px 0 0; padding: 0; border-radius: 10px; overflow: hidden; }
+.h6-search .home-hits:not(:empty) { border: 1px solid var(--line); background: #fff; }
+.h6-search .home-hits a { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; color: var(--ink); text-decoration: none; border-bottom: 1px solid #eef2ef; min-height: 48px; }
+.h6-search .home-hits a:hover { background: #f1f5f2; }
+.h6-search .home-hits small { color: var(--dim); }
+.h6-try { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 0; font-weight: 600; color: var(--dim); }
+.h6-chip { min-height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.h6-chip[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.h6-free { font-size: 15px; color: var(--dim); margin: 18px 0 0; }
+
+/* 지금 이 동네 카드: 원장 셀 그대로 */
+.h6-live { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 24px 24px 20px; box-shadow: 0 18px 40px -24px rgba(15, 43, 39, .35); }
+.h6-live[aria-busy="true"] { opacity: .6; }
+.h6-live-head { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 0 12px; border-bottom: 2px solid var(--ink); padding-bottom: 12px; }
+.h6-live-k { grid-column: 1 / -1; margin: 0; font-size: 14px; font-weight: 700; color: var(--dim); }
+.h6-live-head h2 { margin: 0; font-size: 30px; }
+.h6-live-where { margin: 0; color: var(--dim); font-size: 15px; }
+.h6-live-big { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 16px 0 8px; }
+.h6-live-big-k { font-weight: 700; }
+.h6-live-big b { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.h6-live-rows { list-style: none; margin: 0; padding: 0; }
+.h6-live-rows li { display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: "k v t" "s s s"; gap: 2px 12px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.h6-live-rows span { grid-area: k; font-weight: 600; }
+.h6-live-rows b { grid-area: v; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.h6-live-rows i { grid-area: t; font-style: normal; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
+.h6-live-rows small { grid-area: s; font-size: 14px; color: var(--dim); }
+.h6-live-rows .is-over i { background: #fbe4dc; color: #8f2f0c; }
+.h6-live-rows .is-under i { background: #dcefe7; color: #0b5a48; }
+.h6-live-rows .is-none i { background: var(--amber-bg); color: var(--amber); }
+.h6-prov { margin: 12px 0 0; }
+.h6-prov summary { cursor: pointer; font-weight: 700; color: var(--green); min-height: 40px; display: flex; align-items: center; }
+.h6-prov dl { display: grid; grid-template-columns: 6em 1fr; gap: 4px 12px; margin: 8px 0 0; font-size: 14px; }
+.h6-prov dt { color: var(--dim); }
+.h6-prov dd { margin: 0; overflow-wrap: anywhere; }
+.h6-live-note { font-size: 14px; color: var(--dim); margin: 12px 0 16px; }
+.h6-live-go { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.h6-live-go .btn { flex: 1 1 auto; justify-content: center; }
+
+/* 다섯 단계: 번호 · 설명 · 실제 화면 */
+.h6-flow { background: #fff; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 64px 0; }
+.h6-steps { list-style: none; margin: 0; padding: 0; }
+.h6-steps li { border-top: 1px solid var(--line); }
+.h6-steps li:last-child { border-bottom: 1px solid var(--line); }
+.h6-steps a { display: grid; grid-template-columns: 56px minmax(0, 1fr) minmax(0, 380px); grid-template-areas: "n h img" "n p img" "n o img"; gap: 4px 28px; padding: 28px 0; color: var(--ink); text-decoration: none; align-items: start; }
+.h6-steps a:hover h3 { color: var(--green); text-decoration: underline; text-underline-offset: 4px; }
+.h6-n { grid-area: n; font-size: 40px; font-weight: 800; line-height: 1; color: var(--green); font-variant-numeric: tabular-nums; }
+.h6-steps h3 { grid-area: h; font-size: 24px; margin: 0; }
+.h6-steps p { grid-area: p; margin: 0; color: var(--ink); }
+.h6-steps .h6-out { grid-area: o; font-size: 15px; color: var(--dim); }
+.h6-steps img { grid-area: img; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
+
+.h6-demo { padding-top: 64px; }
+.h6-video { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); background: #0f2b27; }
+
+.h6-trust { padding-top: 64px; }
+.h6-trust-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; margin-top: 24px; }
+.h6-trust-grid > div { border-top: 3px solid var(--ink); padding-top: 16px; }
+.h6-trust-grid h3 { font-size: 20px; margin: 0 0 8px; }
+.h6-trust-grid p { color: var(--dim); margin: 0 0 12px; }
+
+.h6-who { padding-top: 64px; }
+.h6-who-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; }
+.h6-who-list a { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding: 18px 0; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; min-height: 48px; }
+.h6-who-list b { font-size: 18px; }
+.h6-who-list span { grid-column: 1; color: var(--dim); }
+.h6-who-list em { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-style: normal; font-weight: 700; color: var(--green); white-space: nowrap; }
+.h6-who-list em::after { content: " →"; }
+.h6-who-list a:hover b { color: var(--green); }
+
+.h6-price { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; margin-top: 64px; padding-top: 32px; padding-bottom: 32px; border-top: 3px solid var(--ink); }
+.h6-price h2 { margin: 0 0 6px; font-size: 24px; }
+.h6-price p { margin: 0; color: var(--dim); }
+.h6-price-go { display: flex; gap: 8px; }
+.h6-more { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 15px; color: var(--dim); padding-top: 8px; }
+.h6-more a { color: var(--ink); }
+
+@media (max-width: 960px) {
+  .h6-hero { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-top: 28px; }
+  .h6-steps a { grid-template-columns: 44px minmax(0, 1fr); grid-template-areas: "n h" "n p" "n o" "img img"; }
+  .h6-steps img { margin-top: 12px; }
+  .h6-n { font-size: 30px; }
+  .h6-trust-grid, .h6-who-list { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  .h6-search .home-search-row { flex-direction: column; }
+  .h6-live { padding: 18px 16px; }
+  .h6-live-head h2 { font-size: 26px; }
+  .h6-price-go { width: 100%; }
+  .h6-price-go .btn { flex: 1; justify-content: center; }
+}
+
+/* 제목 글꼴: 마루 부리 기반 Renewmap Serif(make_font.py가 이 화면 h1·h2 글자만 싣는다). 동 이름처럼 바뀌는 제목(#h6LiveName)은 산세리프 그대로 */
+.h6 h1, .h6 h2:not(#h6LiveName) { font-family: "Renewmap Serif", "Noto Serif KR", "AppleMyungjo", serif; font-weight: 600; letter-spacing: -0.035em; }
+.h6-hero h1 { font-size: clamp(38px, 5vw, 64px); line-height: 1.18; }
+.h6 h2:not(#h6LiveName) { line-height: 1.32; }
+.h6-prov, .h6-prov[open] { border: 0; padding: 0; background: none; box-shadow: none; }
+.h6-prov summary { padding: 0; border: 0; background: none; text-decoration: underline; text-underline-offset: 4px; }
+
+/* 공공 시스템과의 차이 + 무엇을 파는지 */
+.h6-diff { padding-top: 8px; padding-bottom: 56px; }
+.h6-diff-list { margin: 0; display: grid; gap: 0; border-top: 1px solid var(--line); }
+.h6-diff-list > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.h6-diff-list dt { font-weight: 800; color: var(--green); }
+.h6-diff-list dd { margin: 0; }
+.h6-offer { margin: 24px 0 0; padding: 16px 20px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+.h6-offer a { font-weight: 700; margin-left: 4px; }
+/* 요건 '해당'은 좋고 나쁨이 아니다(11-13 2차: 빨강=해당·초록=아님이 거꾸로 읽힘). 해당은 먹색, 아님은 회색 */
+.h6-live-rows .is-over i { background: var(--ink); color: #fff; }
+.h6-live-rows .is-under i { background: #e7ecea; color: #3f524d; }
+@media (min-width: 961px) { .h6-steps a { grid-template-columns: 56px minmax(0, 1fr) minmax(0, 520px); } }   /* 휴대폰 2열 규칙을 덮지 않게 넓은 화면에만(11-13 3차: 제목이 세로로 쌓임) */
+.h6-live-rule { margin: 0 0 4px; font-size: 14px; color: var(--dim); }
+
+/* 근거 영수증(11-13): 세 칸 표어 대신 실제 원장 셀 한 장. 인쇄된 계산서처럼 점선과 고정폭 숫자로 */
+.h6-receipt-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: start; margin-top: 8px; }
+.h6-receipt { margin: 0; background: #fffdf8; border: 1px solid #e3dccb; border-radius: 4px; padding: 20px 22px 16px; box-shadow: 0 1px 0 #e3dccb, 0 14px 30px -22px rgba(15, 43, 39, .5); font-variant-numeric: tabular-nums; }
+.h6-receipt figcaption { display: flex; justify-content: space-between; gap: 12px; font-weight: 800; letter-spacing: .02em; padding-bottom: 10px; border-bottom: 2px solid var(--ink); }
+.h6-receipt dl { margin: 0; }
+.h6-receipt dl > div { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px dashed #d8cfba; font-size: 14px; }
+.h6-receipt dt { color: var(--dim); }
+.h6-receipt dd { margin: 0; overflow-wrap: anywhere; }
+.h6-receipt dl > div:first-child dd { font-size: 22px; font-weight: 800; }
+.h6-receipt-foot { margin: 12px 0 0; font-size: 13px; color: var(--dim); }
+.h6-trust-points { list-style: none; margin: 0; padding: 0; }
+.h6-trust-points li { padding: 0 0 20px; margin: 0 0 20px; border-bottom: 1px solid var(--line); color: var(--dim); }
+.h6-trust-points li:last-child { border-bottom: 0; }
+.h6-trust-points b { color: var(--ink); font-size: 18px; }
+.h6-trust-points a { display: inline-block; margin-top: 4px; }
+.h6-prov { margin: 12px 0 0; font-size: 15px; font-weight: 700; }
+@media (max-width: 960px) { .h6-receipt-wrap { grid-template-columns: minmax(0, 1fr); } }
+.h6-steps a { grid-template-rows: auto auto 1fr; align-content: start; }
+.h6-steps h3 { margin-bottom: 6px; }
+.h6-steps .h6-out { align-self: start; margin-top: 10px; }
+
+/* 첫 화면 눈썹 줄: 고객이 실제로 받는 질문 */
+.h6-ask { font-family: "Renewmap Serif", "Noto Serif KR", serif; font-weight: 600; font-size: clamp(20px, 2vw, 24px); color: var(--green); margin: 0 0 10px; letter-spacing: -0.02em; }
+.h6-hero h1 { font-size: clamp(34px, 4.4vw, 56px); }
+.h6-receipt-ids { padding: 8px 0 0; font-size: 13px; color: var(--dim); }
+.h6-receipt-ids summary { cursor: pointer; }
+.h6-receipt-ids p { margin: 6px 0 0; overflow-wrap: anywhere; }
