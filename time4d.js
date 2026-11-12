@@ -108,8 +108,10 @@
   }
   function marks() {
     const y50 = crossYear(blds, 50, YEAR_FROM, TO), y67 = crossYear(blds, 66.7, YEAR_FROM, TO);
-    const line = (y, what) => (y === null ? `${what}: ${TO}년까지 닿지 않음` : `${what}: ${y}년${y > NOW ? '(지금 건물 그대로일 때)' : ''}`);
-    $('t4Marks').innerHTML = `<li>${line(y50, '20년 이상 건물이 절반을 넘는 해')}</li><li>${line(y67, '20년 이상 건물이 3분의 2를 넘는 해')}</li>`;
+    // 닿는 해를 누르면 그해로 옮긴다(v7: 숫자만 있어 그해 모형을 보려면 막대를 손으로 맞춰야 했다)
+    const line = (y, what) => (y === null ? `<li>${what}: ${TO}년까지 닿지 않음</li>`
+      : `<li>${what}: <button type="button" class="t4-jump" data-y="${y}">${y}년${y > NOW ? '(지금 건물 그대로일 때)' : ''}</button></li>`);
+    $('t4Marks').innerHTML = line(y50, '20년 이상 건물이 절반을 넘는 해') + line(y67, '20년 이상 건물이 3분의 2를 넘는 해');
   }
 
   async function load(code) {
@@ -203,6 +205,7 @@
   });
   slider.addEventListener('input', () => { stop(); year = Number(slider.value); paint(); });
   $('t4Now').addEventListener('click', () => { stop(); year = NOW; slider.value = String(year); paint(); });
+  $('t4Marks').addEventListener('click', (e) => { const b = e.target.closest('[data-y]'); if (!b) return; stop(); year = Number(b.dataset.y); slider.value = String(year); paint(); });
 
   // 구·군 → 법정동(buildings/index.json, 부산만). 지도에서 좌표로 왔으면 그 자리의 동부터
   const q = new URLSearchParams(location.search);

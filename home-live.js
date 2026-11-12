@@ -11,20 +11,28 @@
   const MET = 'DECLINE_MET_COUNT';
   // 1쪽 문서·동 페이지와 같은 자릿수(소수 둘째 자리)로 보인다(11-13 3차: 홈 83%, 문서 82.96%로 달라 보임)
   const fmt = (v) => (Math.round(v * 100) / 100).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
-  // 한 동의 셀들 → 카드에 쓸 값(순수 함수, 시험용)
+  // 한 동의 셀들 → 카드에 쓸 값(순수 함수, 시험용). 상태는 요건 단위(decline-req.js: 30년·10년 감소율 또는 '최근 5년 중 3년 연속 감소' 중 하나라도 해당이면 해당).
+  // v7(11-13 6회차): 감소율 한 길만 보고 '추가확인'을 붙여, 연속 감소로 해당한 동은 머리의 'N개 해당'과 줄이 어긋났다
+  const DR = typeof module === 'object' && module.exports ? require('./decline-req.js') : root.DeclineReq;
   function summarize(cells) {
     const by = new Map((cells || []).map((c) => [c.indicator_code, c]));
-    const met = by.get(MET);
+    const met = by.get(MET), val = (code) => { const c = by.get(code); return c && typeof c.value === 'number' ? c.value : null; };
+    const reqs = DR.evaluate(val);
     return {
       met: met && typeof met.value === 'number' ? met.value : null,
-      rows: ROWS.map(([code, label, thr, std]) => {
-        const c = by.get(code);
-        const v = c && typeof c.value === 'number' ? c.value : null;
-        // 감소율 값이 있어도 그 바탕인 총수 셀이 비어 있으면 숨기지 않고 같은 줄에 밝힌다(11-13 2차: 동 페이지는 '사업체 수 자료 없음'인데 홈은 0%만 보였다)
+      rows: ROWS.map(([code, label, , std], i) => {
+        const q = reqs[i], c = by.get(code) || null;
+        // 감소율의 바탕인 총수 셀이 비어 있으면 같은 줄 작은 글에 밝힌다(11-13 2차: 동 페이지는 '사업체 수 자료 없음'인데 홈은 0%만 보였다)
         const base = code === 'DECLINE_BIZ_DROP10Y_PCT' ? by.get('DECLINE_BIZ_TOTAL') : code === 'DECLINE_POP_DROP30Y_PCT' ? by.get('DECLINE_POP_TOTAL') : null;
-        const note = base && base.value === null ? `${label.replace(' 감소', '')} 총수는 자료 없음(추가확인)` : '';
-        // 바탕 총수가 없으면 감소율 숫자를 앞세우지 않는다(11-13 4차: '0%'가 '0으로 채우지 않는다'와 부딪힘). 원천 값은 작은 글에 남긴다
-        return { code, label, std, value: v, text: v === null || note ? '추가확인' : `${fmt(v)}%`, over: v === null || note ? null : v >= thr, cell: c || null, note: note && v !== null ? `원천 감소율 ${fmt(v)}% · ${note}` : note };
+        const noBase = !!(base && base.value === null);
+        const viaConsec = q.via && /DECL3IN5$/.test(q.via.code);
+        // 해당하지 않았는데 바탕 총수가 없으면 감소율 숫자를 앞세우지 않는다(11-13 4차: '0%'가 '0으로 채우지 않는다'와 부딪힘)
+        // 글자는 상태 표(오른쪽 꼬리표)와 부딪히지 않게: 확정 못 함 → '추가확인', 비해당인데 바탕 총수가 없음 → '–'(0%를 앞세우지 않는다)
+        const text = viaConsec ? '3년 연속 감소' : q.status === 'none' ? '추가확인' : q.rate === null || (noBase && q.status !== 'over') ? '–' : `${fmt(q.rate)}%`;
+        const who = label.replace(' 감소', '');
+        const baseNote = !noBase ? '' : q.status !== 'over' && q.rate !== null ? `원천 감소율 ${fmt(q.rate)}% · ${who} 총수는 자료 없음(추가확인)` : `${who} 총수는 자료 없음`;
+        const notes = [viaConsec ? '최근 5년 중 3년 연속 감소로 해당' : '', baseNote].filter(Boolean);
+        return { code, label, std, value: q.rate, text, over: q.status === 'none' ? null : q.status === 'over', cell: c, note: notes.join(' · ') };
       }),
       ref: met ? met.reference_date : null,
     };

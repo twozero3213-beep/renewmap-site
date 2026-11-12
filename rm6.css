@@ -316,3 +316,8 @@ header.top .site-nav a[href$="about.html#contact"] { background: var(--green); c
 
 /* v7: 동네 찾기를 열 때 workspace.js가 탭을 고르기 전 잠깐 '조건' 패널이 지도 위에 보였다(시연 녹화에서 발견). 스크립트가 켜진 화면은 처음부터 지도 패널만 */
 html.js .explore-page .evidence-workspace:not([data-workspace-ready]) .workspace-panel:not(#map) { display: none; }
+
+/* v7 접근성(11-13 6회차): 지도 +/- 단추가 30px쯤이라 누르기 어려웠다 → 40px. 파일 고르기 단추도 다른 단추와 같은 모양 */
+.map-canvas .leaflet-bar a, .map-canvas .leaflet-bar a:hover { width: 40px; height: 40px; line-height: 40px; font-size: 20px; }
+.maplibregl-ctrl-group button { width: 40px !important; height: 40px !important; }
+input[type="file"]::file-selector-button { min-height: 40px; margin-right: 10px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }

@@ -17,6 +17,8 @@
 .t4-num dd { margin: 0; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .t4-future { background: var(--amber-bg); color: var(--amber); border-radius: 8px; padding: 10px 12px; margin: 12px 0 0; font-size: 14px; }
 .t4-marks, .t4-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 15px; }
+.t4-jump { min-height: 32px; padding: 0 4px; border: 0; background: none; color: var(--green); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.t4-jump:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .t4-legend li { display: flex; align-items: center; gap: 8px; }
 .t4-legend i { width: 18px; height: 12px; border-radius: 3px; display: inline-block; box-shadow: inset 0 0 0 1px var(--shade-16); }
 .t4-status { color: var(--dim); font-size: 14px; margin-top: 16px; }
@@ -37,7 +39,7 @@
 /* 좁은 화면: 모형이 먼저, 숫자판은 아래 */
 @media (max-width: 860px) {
   .t4-app { grid-template-columns: minmax(0, 1fr); height: auto; }
-  .t4-stage { order: -1; height: 62vh; min-height: 360px; }
+  .t4-stage { order: -1; height: 52vh; min-height: 340px; }   /* 휴대폰에서 지도가 첫 화면을 다 차지해 스크롤이 지도에 갇히던 것(6회차) */
   .t4-side { border-right: 0; overflow: visible; }
   .t4-time { left: 8px; right: 8px; bottom: 36px; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; padding: 6px 10px; }
   .t4-time #t4Now { display: none; }

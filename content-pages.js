@@ -36,7 +36,8 @@
     const doc = root.ownerDocument;
     const list = topics(root, doc);
     list.forEach((s, i) => { if (!s.id) s.id = 'topic-' + (i + 1); });
-    if (list.length < 3) return null;
+    // 표가 곧 차례인 쪽(재생 사업: 비교표가 사업마다 링크)은 차례를 따로 만들지 않는다(v7 6회차: 밑줄 링크 10개가 표를 770px 아래로 밀었다)
+    if (list.length < 3 || 'noToc' in root.dataset) return null;
     const nav = doc.createElement('nav'), ol = doc.createElement('ol');
     nav.className = 'cp-toc'; nav.setAttribute('aria-label', '이 쪽의 차례');
     list.forEach(s => {

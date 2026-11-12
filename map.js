@@ -5,6 +5,7 @@
 (function () {
   'use strict';
   const { esc, isNum } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
+  const DeclineReq = typeof module !== 'undefined' && module.exports ? require('./decline-req.js') : window.DeclineReq;
   // HWPX·XLSX·복사용 표·1쪽 요약·지도 이미지. 브라우저에서는 첫 지도 뒤에 받는다(아래 loadDocgen): undefined = 아직, null = 못 받음
   let DG = typeof module !== 'undefined' && module.exports ? require('./docgen.js') : (typeof window !== 'undefined' && window.RenewDocgen) || undefined;
   // 서식기는 자릿수마다 한 번만 만든다(호출마다 새로 만들면 휴대폰 첫 지도에서 1초 넘게 썼다, 2026-11-08 프로파일)
@@ -726,7 +727,7 @@
   //     그대로 쓴다(원칙 1). 요건을 묶는 규칙(decline-3req)은 승인 전이라 '참고'·'판정 아님'을 이 줄 아래 한 번 밝힌다.
   //     값이 없으면 0개로 만들지 않고 '추가확인'으로 둔다(원칙 4). 재사용: 지도 패널 외 다른 화면에서도 rows만 있으면 쓸 수 있다
   const REQ_CODE = 'DECLINE_MET_COUNT';
-  function reqLineHTML(rows) {
+  function reqLineHTML(rows, dong) {
     const r = (rows || []).find(x => x.ind && x.ind.code === REQ_CODE);
     if (!r) return '';
     const go = `<a class="btn sr-req-go" href="#report" data-set-mode="onepage">${icon('book')}1쪽 근거 문서 보기</a>`;
@@ -737,14 +738,22 @@
     }
     const std = validStd(r.ind.standard) ? r.ind.standard.text : null;
     return `<section class="sr-req is-${ROW_CLASS[r.status] || 'none'}" aria-label="쇠퇴 3요건 요약"><p class="sr-req-k">쇠퇴 3요건 중</p>` +
-      `<p class="sr-req-n"><b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(r.status))}</small>` : ''}</p>${reqRowsHTML(rows)}${go}${foot}</section>`;
+      `<p class="sr-req-n"><b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(r.status))}</small>` : ''}</p>${reqRowsHTML(rows, dong)}${go}${foot}</section>`;
   }
   // v7(2026-11-13): 3요건 각각의 값·상태를 홈 카드처럼 세 줄로. 평가: 카드의 세는 법이 넷(해당 수·확인할 항목·확정/추가확인·묶음별 수)이라
   // 무엇을 봐야 할지 몰랐다 → 맨 위는 '몇 개 해당'과 그 세 줄만 두고, 나머지 셈은 아래 접힌 칸으로 옮긴다. 값은 rows(원장 셀) 그대로
-  const REQ_ROWS = [['DECLINE_POP_DROP30Y_PCT', '인구 감소'], ['DECLINE_BIZ_DROP10Y_PCT', '사업체 감소'], ['DECLINE_AGING_20Y_PCT', '20년 넘은 건물']];
-  function reqRowsHTML(rows) {
-    const li = REQ_ROWS.map(([code, name]) => { const r = rows.find(x => x.ind.code === code); return r ? `<li class="is-${ROW_CLASS[r.status] || 'none'}"><span>${esc(name)}</span><b>${esc(rowText(r))}</b><em>${esc(stLabel(r.status))}</em></li>` : ''; }).join('');
-    return li ? `<ul class="sr-req-rows">${li}</ul>` : '';
+  // 요건 단위로 센다(decline-req.js: 한 길이라도 해당이면 해당). 30년 감소율이 없어도 '3년 연속 감소'로 해당이면 그 줄에 그렇게 적는다
+  const REQ_ST = { over: '기준 해당', in: '기준 안', none: '추가확인' };
+  function reqRowsHTML(rows, dong) {
+    const rowOf = code => rows.find(x => x.ind && x.ind.code === code);
+    if (!DeclineReq || !rowOf('DECLINE_AGING_20Y_PCT')) return '';
+    const cellVal = code => { const cs = ((dong && dong.cells) || []).filter(c => c && c.indicator_code === code && isNum(c.value)); return cs.length ? cs.reduce((a, b) => (b.base_year > a.base_year ? b : a)).value : null; };
+    const val = code => { const r = rowOf(code); return r && isNum(r.value) ? r.value : cellVal(code); };
+    const li = DeclineReq.evaluate(val).map(q => {
+      const text = q.via && /DECL3IN5$/.test(q.via.code) ? '3년 연속 감소' : q.rate === null ? '–' : fmt(q.rate, '%');
+      return `<li class="is-${q.status}"><span>${esc(q.name)}</span><b>${esc(text)}</b><em>${REQ_ST[q.status]}</em></li>`;
+    }).join('');
+    return `<ul class="sr-req-rows">${li}</ul>`;
   }
   function tooltipHTML(it, ind, mode, year, source) {
     const t = mode === 'trend' ? trendText(it.value, ind) : null;
@@ -1307,7 +1316,7 @@
     if (!it) return `<h3 class="map-h3">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3><p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}동별 사업 요건 비교 보기</a></p>${reorgNote(v)}${forecastChart(ind, m.ext, v.gu || v.sigungu, null)}${dist}${hubHTML(v)}`;
     const rows = rowsFor(v, m, it), D = window.RenewDashboard, dy = rows.find(r => r.ind.series && r.year)?.year;
     return `<div class="map-panel-head"><h3 class="map-h3" data-code="${esc(it.code)}">${esc(it.name)} <small>${esc(it.kind || '행정동')}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` +
-      reqLineHTML(rows) + // 2026-11-13: 동 이름 바로 아래에 신청요건 한 줄(첫 약속 D23의 답을 맨 먼저)
+      reqLineHTML(rows, m.json.dongs.find(d => codeOf(d) === it.code)) + // 2026-11-13: 동 이름 바로 아래에 신청요건 한 줄(첫 약속 D23의 답을 맨 먼저)
       `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>${reorgNote(v)}` +
       `<p class="map-report-link"><a href="#report">${icon('book')}동네 보고서 보기</a><a href="#report" data-set-mode="programs">${icon('flag')}맞는 재생 사업 보기</a></p>` +
       '<p><button type="button" class="btn ghost" data-candidate-save>검토 후보 저장</button> <a href="box.html#candidatesTitle">저장한 후보 보기</a></p><p data-candidate-status role="status"></p>' +
