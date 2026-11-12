@@ -183,6 +183,8 @@
   <section aria-labelledby="listTitle">
     <h2 id="listTitle">저장된 기록</h2>
     <div id="stats" class="v4-stats" aria-live="polite"></div>
+    <p id="listEmpty" class="hint" hidden>아직 저장한 기록이 없습니다.<br>위에서 사진을 찍어 저장하면 여기에 쌓이고, 사진대지·GeoJSON·CSV로 받을 수 있습니다.</p>
+    <div id="listTools">
     <div class="row">
       <button id="sheet" type="button">보고서용 사진대지 받기(한글)</button>
       <button class="ghost" id="exp" type="button">모두 내보내기(ZIP)</button>
@@ -194,6 +196,7 @@
     </div>
     <p class="hint"><abbr title="무료 지리정보 프로그램">QGIS</abbr> 같은 <abbr title="지리정보시스템">GIS</abbr> 프로그램에서 바로 열립니다.<br>고른 기록만 받습니다.<br>고르지 않으면 모두 받습니다.<br>GIS 파일에는 사진이 빠지고 사진 파일 이름만 들어갑니다.<br>사진대지는 가린 사진을 한 줄 2장으로 싣고 사진마다 위치·촬영 시각을 표로 붙입니다.</p>
     <label class="check" for="bySite"><input id="bySite" type="checkbox"><span>같은 지점끼리 모아 보기</span></label>
+    </div>
     <ul id="list" class="list"></ul>
     <details class="settings">
       <summary>설정 · 가져오기</summary>

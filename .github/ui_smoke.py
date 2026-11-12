@@ -72,7 +72,8 @@ def main():
             page = context.new_page()
             errors = []
             missing = []
-            page.on('pageerror', lambda error: errors.append(re.sub(r'\?[^\s)]*', '?[query omitted]', error.stack or str(error))))
+            # 브이월드 3D 뷰어(map.vworld.kr/js/ws3dmap) 안에서 나는 오류는 우리 코드가 아니고 헤드리스 WebGL에서 가끔만 난다(2026-11-13 두 번). 그 스크립트 안의 오류만 뺀다
+            page.on('pageerror', lambda error: None if 'map.vworld.kr/js/ws3dmap/' in (error.stack or '') else errors.append(re.sub(r'\?[^\s)]*', '?[query omitted]', error.stack or str(error))))
             page.on('response', lambda res: missing.append(res.url) if res.status>=400 and res.url.startswith(base) and not res.url.endswith(('/field/naver-map-key.js','/field/vworld-key.js')) else None)
 
             def check(route, width, topic=None):

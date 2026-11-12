@@ -139,7 +139,7 @@ footer .links a { color: var(--ink); }
 /* 재생 사업 비교 표 */
 .pg-compare table { border-collapse: collapse; width: 100%; background: #fff; }
 .pg-compare th, .pg-compare td { text-align: left; vertical-align: top; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 15px; }
-.pg-compare thead th { background: var(--ink); color: #fff; font-size: 14px; }
+.pg-compare thead th { background: var(--bg); color: var(--ink); font-size: 14px; box-shadow: inset 0 -2px 0 var(--ink); }   /* v7.9: 검은 띠만 무게가 튄다(7회차) → 다른 표와 같은 머리 */
 .pg-compare tbody th a { font-weight: 700; color: var(--green); }
 .pg-compare ul { margin: 0; padding-left: 1.1em; }
 .pg-compare .table-wrap table { min-width: 860px; }
@@ -357,3 +357,14 @@ body.mx-on .mx-side .map-inds .dash-chip[aria-pressed="true"] { background: var(
 }
 /* 4D 행정동·법정동 차이 설명은 본문에 가까운 크기로(7회차: 회색 작은 글은 회의에서 못 읽는다) */
 .t4-basis { font-size: 14px !important; }
+
+/* v7.8 지도 카드 묶음 머리: 이름(쇠퇴·노후)이 셈 칩에 밀려 두 줄로 꺾이던 것 → 이름은 한 줄, 칩은 다음 줄로 */
+.sr-group summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.sr-group summary h4 { margin: 0; white-space: nowrap; letter-spacing: 0; }
+.sr-gsum { margin-left: 0; }
+
+/* v7.9 제목 띠가 머리글 안에 있는 화면(구역 계산·현장 기록 등): 머리글은 다른 화면과 같은 흰 줄 하나, 제목은 본문 바탕 위로.
+   평가 6·7회차: 이 두 화면만 제목이 메뉴 밑 흰 띠에 붙어 다른 사이트처럼 보였다. 제목 띠까지 붙어 다니던 고정 머리는 이 화면에서만 풀어 화면을 덜 가린다 */
+header.top:has(> .wrap ~ .wrap) { position: relative !important; background: transparent !important; border-bottom: 0 !important; }
+header.top:has(> .wrap ~ .wrap) > .wrap:first-child { background: var(--card); border-bottom: 1px solid var(--line); }
+header.top:has(> .wrap ~ .wrap) > .wrap ~ .wrap { background: transparent; padding-top: 28px !important; }
