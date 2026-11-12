@@ -598,7 +598,8 @@
   // 상태 개수 도넛(비율 그림). 개수를 글자로 함께 쓴다. 순위·점수 아님
   // 한 동 패널의 세 요약(도넛·기준 해당 항목 수·확인할 항목)은 같은 항목 범위·같은 낱말을 쓴다. '공식 기준 없음'(값만)과 '자료 없음'을 섞지 않는다
   const DONUT = [['r', '기준 해당·지정'], ['g', '기준 안'], ['y', '승인 대기'], ['b', '공식 기준 없음'], ['w', '자료 없음']];
-  const GS_SHORT = { r: '기준 해당', g: '기준 안', y: '승인 대기', b: '기준 없음', w: '자료 없음' };   // v7: '미달'을 위 3요건과 같은 낱말로
+  // v7.9(8회차): 카드 위 3요건과 같은 낱말(기준 해당·해당 안 함·추가확인). 승인 대기·자료 없음은 둘 다 '추가확인'으로 합쳐 세고, 공식 기준이 없는 지표는 '참고값'
+  const GS_SHORT = { r: '기준 해당', g: '해당 안 함', y: '추가확인', b: '참고값', w: '추가확인' };
   function donutSVG(n) {
     const tot = DONUT.reduce((a, [k]) => a + (n[k] || 0), 0), R = 42, C = 2 * Math.PI * R;
     let off = 0;
@@ -692,7 +693,9 @@
       (led && led.cell && detail(led.cell).length ? `<div class="map-detail">${dl(led.cell)}</div>` : '') + `</details></div>`;
     const list = rows.filter(r => r.ind.group !== 'sum');
     const curG = (list.find(r => r.ind.code === o.cur) || list[0] || { ind: {} }).ind.group;
-    const gsum = g => { const rs = list.filter(r => r.ind.group === g), n = k => rs.filter(r => dotOf(r) === k).length; return DONUT.filter(([k]) => n(k)).map(([k]) => `<span class="gs-${k}">${GS_SHORT[k]} ${n(k)}</span>`).join(''); };
+    const gsum = g => { const rs = list.filter(r => r.ind.group === g), cnt = new Map();
+      for (const [k] of DONUT) { const c = rs.filter(r => dotOf(r) === k).length; if (!c) continue; const l = GS_SHORT[k], cur = cnt.get(l); cnt.set(l, cur ? { k: cur.k, c: cur.c + c } : { k, c }); }
+      return [...cnt].map(([l, x]) => `<span class="gs-${x.k}">${l} ${x.c}</span>`).join(''); };
     const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<li class="sr-group"><details${g === curG ? ' open' : ''}><summary><h4>${gIco(g)}${esc(gl)}</h4><span class="sr-gsum">${gsum(g)}</span></summary>${g === 'safe' ? `<p class="sr-group-note">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="sr-group-note">${esc(FORE_FIXED)}</p>` : ''}<ul>${list.filter(r => r.ind.group === g).map(r => {
       const ind = r.ind, tt = trendText(r.delta, ind), cls = ROW_CLASS[r.status];
       const rowsD = r.cell ? detail(r.cell) : [];
@@ -1833,6 +1836,7 @@
     // 확대는 17(골목·건물 단위)까지. 두 번 누르기를 거듭해도 그 이상 커지지 않는다. 휠 확대는 지도를 한 번 누른 뒤에만 켠다(페이지를 내리다 지도에 걸려 확대되지 않게). 지도 밖으로 나가면 다시 끈다(2026-11-07 대표 지시)
     map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => { if (!wideApp) map.scrollWheelZoom.disable(); });
     map.on('zoomend', () => { if (map.getZoom() > 8) loadSgDetail(); });
+    L.control.scale({ position: 'bottomleft', imperial: false, maxWidth: 120 }).addTo(map);   // v7.9: 축척 막대(8회차 GIS 평가)
     L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
     add3dControl(map);
     if (nv) followWithNaver(map, el, nv);

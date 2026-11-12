@@ -368,3 +368,11 @@ body.mx-on .mx-side .map-inds .dash-chip[aria-pressed="true"] { background: var(
 header.top:has(> .wrap ~ .wrap) { position: relative !important; background: transparent !important; border-bottom: 0 !important; }
 header.top:has(> .wrap ~ .wrap) > .wrap:first-child { background: var(--card); border-bottom: 1px solid var(--line); }
 header.top:has(> .wrap ~ .wrap) > .wrap ~ .wrap { background: transparent; padding-top: 28px !important; }
+
+/* v7.9(8회차): 구역 계산·현장 기록 머리글이 다른 화면(64px)보다 낮아 메뉴를 옮길 때 들썩였다 */
+header.top > .wrap:first-child { min-height: 64px !important; }
+/* 파일 칸: 브라우저 언어와 상관없이 '파일 고르기' 단추와 고른 파일 이름(영어 'Choose File'이 보이던 것). 입력은 단추 위에 투명하게 겹쳐 누르기·키보드가 그대로 된다 */
+.file-pick { position: relative; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 12px; }
+.file-pick input[type="file"] { position: absolute; left: 0; top: 0; width: 132px; height: 44px; opacity: 0; cursor: pointer; }
+.file-pick .btn { min-height: 44px; display: inline-flex; align-items: center; }
+.file-pick:focus-within .btn { outline: 3px solid var(--ink); outline-offset: 2px; }

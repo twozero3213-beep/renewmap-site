@@ -116,6 +116,7 @@
   // 파일은 이 기기에서만 읽는다. 한국어 엑셀 CSV는 EUC-KR이 많아 UTF-8로 깨지면 다시 읽는다
   $("listFile").addEventListener("change", async () => {
     const f = $("listFile").files[0];
+    $("listFileName").textContent = f ? f.name : "고른 파일 없음";
     if (!f) return;
     const buf = await f.arrayBuffer();
     let text = new TextDecoder("utf-8").decode(buf);

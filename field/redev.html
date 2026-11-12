@@ -64,7 +64,7 @@
     <label for="list">지번 목록 <small>(한 줄에 하나, 필지 고유번호 19자리도 됩니다)</small></label>
     <textarea id="list" rows="8" placeholder="1291-5&#10;산 12-3&#10;재송동 45(다른 동이면 동 이름을 앞에)&#10;엑셀에서 '지번' 열을 머리와 함께 복사해도 됩니다"></textarea>
     <label for="listFile">또는 GIS·엑셀에서 내보낸 파일 열기(CSV·GeoJSON, PNU나 지번 열)</label>
-    <input id="listFile" type="file" accept=".csv,.txt,.geojson,.json">
+    <span class="file-pick"><input id="listFile" type="file" accept=".csv,.txt,.geojson,.json"><span class="btn ghost" aria-hidden="true">파일 고르기</span><span id="listFileName" class="hint">고른 파일 없음</span></span>
     <button type="button" class="ghost" id="demo">고른 동 전체로 계산해 보기</button>
     <label for="area">구역 면적(㎡, 아는 경우만)</label>
     <input id="area" type="number" inputmode="decimal" min="0" step="any">

@@ -31,7 +31,8 @@
         const unsure = q.status === 'none' || (noBase && q.status !== 'over');
         const text = viaConsec ? '3년 연속 감소' : unsure ? '추가확인' : q.rate === null ? '–' : `${fmt(q.rate)}%`;
         const who = label.replace(' 감소', '');
-        const baseNote = !noBase ? '' : q.status !== 'over' && q.rate !== null ? `원천 감소율 ${fmt(q.rate)}% · ${who} 총수는 자료 없음(추가확인)` : `${who} 총수는 자료 없음`;
+        // 8회차: '원천 감소율 0% · 총수 자료 없음'이 '0으로 채우지 않는다'와 부딪혔다 → 숫자 없이 왜 확정 못 했는지만
+        const baseNote = !noBase ? '' : q.status !== 'over' ? `원천에 ${who} 총수가 없어 확정하지 못했습니다` : `${who} 총수는 원천에 없음`;
         const notes = [viaConsec ? '최근 5년 중 3년 연속 감소로 해당' : '', baseNote].filter(Boolean);
         return { code, label, std, value: q.rate, text, over: unsure ? null : q.status === 'over', cell: c, note: notes.join(' · ') };
       }),
