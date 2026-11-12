@@ -30,6 +30,9 @@
 .t4-slider input { width: 100%; accent-color: var(--green); min-height: 44px; }
 .t4-time output { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 22px; min-width: 4.5em; text-align: right; }
 .t4-map2, .t4-tag, .t4-cmp-note { display: none; }
+/* v7.10 색 설명은 지도 위 오른쪽 아래(왼쪽 패널 첫 화면 아래로 밀려 40년 단계가 안 보였다, 휴대폰에서도 지도와 같이 보인다) */
+.t4-key { position: absolute; right: 12px; bottom: 112px; z-index: 2; padding: 8px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 14px var(--shade-16); }
+.t4-key .t4-legend { gap: 4px; font-size: 13px; }
 .t4-ends { display: block; margin-top: -6px; font-size: 12px; color: var(--dim); }
 .is-compare .t4-cmp-note { display: block; margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--soft); color: var(--green-press); font-weight: 700; font-variant-numeric: tabular-nums; }
 /* 나란히 볼 때 왼쪽 지도의 확대 단추가 두 지도 경계에 걸렸다 → 숨기고 휠·두 손가락으로 */
@@ -54,6 +57,9 @@
   .t4-stage { order: -1; height: 52vh; min-height: 340px; }   /* 휴대폰에서 지도가 첫 화면을 다 차지해 스크롤이 지도에 갇히던 것(6회차) */
   .t4-side { border-right: 0; overflow: visible; }
   .t4-time { left: 8px; right: 8px; bottom: 36px; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; padding: 6px 10px; }
-  .t4-time #t4Now, .t4-time #t4Cmp { display: none; }   /* 좁은 화면은 나란히 보기를 쓰지 않는다 */
+  .t4-time #t4Now, .t4-time #t4Cmp { display: none; }
+  .t4-key { top: 12px; right: auto; left: 12px; bottom: auto; padding: 6px 8px; }
+  .t4-ends { display: none; }   /* 휴대폰에서 세 줄로 꺾여 지도를 가렸다 */
+  .t4-key .t4-legend { font-size: 12px; }   /* 좁은 화면은 나란히 보기를 쓰지 않는다 */
   .t4-time output { font-size: 18px; min-width: 4em; }
 }
