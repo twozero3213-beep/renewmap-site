@@ -1161,7 +1161,7 @@
     return new Set(kept.map(b => b.id));
   }
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
-  const api = { labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
+  const api = { geojsonOf, labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     livingIndicators, allIndicators, isAvailable, provenanceHTML, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
@@ -1509,6 +1509,25 @@
       report.querySelectorAll('[data-task-package]').forEach(b => { b.disabled = !now || !DG || state.templates === null || filesLoading(now.v); b.textContent = '과업에 연결'; });
     }
   }
+  // 지도 자료(GeoJSON, v7 2026-11-13): 지금 보는 경계와 지표 값을 GIS(QGIS 등)에서 바로 열게. 평가 6회차(시청 GIS 담당): 받을 수 있는 게 지도 그림뿐이었다.
+  // 좌표는 경계 파일 그대로(WGS84, EPSG:4326). 값이 없으면 null(0으로 채우지 않음), 판정 아님
+  function geojsonOf(feats, byCode, ind, meta) {
+    return { type: 'FeatureCollection', name: meta.name, note: '좌표계 WGS84(EPSG:4326) · 값이 없으면 null · 색 구간·판정 아님 · 출처와 기준연도는 각 행에',
+      features: feats.map(f => { const code = String((f.properties || {}).code), it = byCode.get(code);
+        return { type: 'Feature', geometry: f.geometry, properties: { code, name: it ? it.name : (f.properties || {}).name || null, indicator: ind.code, label: ind.label,
+          value: it && isNum(it.value) ? it.value : null, unit: ind.unit || '', year: meta.year ?? null, source: meta.source } }; }) };
+  }
+  async function mapGeojson() {
+    const say = t => { const msg = app.querySelector('[data-png-msg]'); if (msg) msg.textContent = t; };
+    if (!DG || !state.index) return;
+    const v = resolve(state.index, state.route), m = model(v), ind = curInd();
+    if (m.kind === 'sg' && !state.sgGeoDetailed && !(await loadSgDetail())) { say('상세 경계를 불러오지 못했습니다. 다시 열어 주세요.'); return; }
+    const feats = m.kind === 'emd' ? (m.geo && m.geo.features) || [] : m.kind === 'sg' && state.sgGeo ? state.sgGeo.features.filter(f => m.items.some(i => i.code === String((f.properties || {}).code))) : [];
+    if (!feats.length) { say('경계 자료가 아직 없어 받을 수 없습니다.'); return; }
+    const where = v.crumbs[v.crumbs.length - 1].label, name = `지도자료_${DG.safeName(ind.label)}_${DG.safeName(where)}.geojson`;
+    const fc = geojsonOf(feats, new Map(m.items.map(i => [i.code, i])), ind, { name: `${where} ${ind.label}`, year: m.year, source: ind.source || (state.index.source && state.index.source.name) || SOURCE_DEFAULT });
+    say(`${name} (${Math.round(DG.saveBytes(name, new TextEncoder().encode(JSON.stringify(fc)), 'application/geo+json') / 1024)}KB)를 내려받았습니다.`);
+  }
   // 지도 이미지(PNG): 배경 타일(CORS로 캔버스에 못 그림)을 빼고 경계·색·범례·출처·기준연도만 그린다
   async function mapPng() {
     const say = t => { const msg = app.querySelector('[data-png-msg]'); if (msg) msg.textContent = t; };
@@ -1702,7 +1721,7 @@
     const chips = m.kind === 'emd' ? `<div class="dash-chips dash-dongs map-list" role="group" aria-label="읍·면·동">${m.items.map(x => `<button type="button" class="dash-chip" data-dong="${esc(x.code)}" aria-pressed="${x.code === v.dong}">${esc(x.name)}</button>`).join('')}</div>` : '';
     const water = `<p class="map-png"><button type="button" class="btn ghost" data-water aria-pressed="${!!state.water}">수변 수질 측정지점 ${state.water ? '끄기' : '보기'}</button></p>` +
       (state.water && state.waterData !== undefined ? waterNoteHTML(state.waterData) : '') + (state.water ? waterAutoHTML(state.waterAuto) : '');
-    bottom.innerHTML = legend + (DG ? `<p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + water + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, + − 버튼으로 확대합니다.'} 지도의 칸을 누르면 바로 아래 단계로 내려갑니다.<br>지도 대신 아래 목록으로도 고를 수 있습니다.</p></details>` +
+    bottom.innerHTML = legend + (DG ? `<p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><button type="button" class="btn ghost" data-map-geojson>지도 자료(GeoJSON)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + water + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, + − 버튼으로 확대합니다.'} 지도의 칸을 누르면 바로 아래 단계로 내려갑니다.<br>지도 대신 아래 목록으로도 고를 수 있습니다.</p></details>` +
       `<div class="map-selects">${sidoSel}${sgSel}${guSel}</div>${chips}<p class="map-live" aria-live="polite">${esc(liveText(v, it, ind, mode))}</p>`;
     styleData(bottom);
     const inEmd = v.level === 'emd';
@@ -2119,6 +2138,7 @@
     else if (b.hasAttribute('data-close')) go({ ...state.route, dong: null }, `.map-list [data-dong]`);
     else if (b.hasAttribute('data-play')) { play(); app.querySelector('[data-play]')?.focus({ preventScroll: true }); }
     else if (b.hasAttribute('data-map-png')) mapPng();
+    else if (b.hasAttribute('data-map-geojson')) mapGeojson();
     else if (b.hasAttribute('data-water')) {
       state.water = !state.water;
       if (state.water && state.waterData === undefined) {

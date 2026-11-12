@@ -276,7 +276,7 @@ html:has(body.explore-page) { scroll-padding-top: 140px; }
   body.mx-on .mx { display: grid; grid-template-columns: 384px minmax(0, 1fr); height: calc(100dvh - var(--mx-top, 112px)); min-height: 560px; }
   body.mx-on .mx-side { min-width: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; padding: 16px 16px 28px; border-right: 1px solid var(--line); background: #fff; }
   body.mx-on .mx-side > * { margin: 0 !important; order: 0 !important; }
-  body.mx-on .mx-side .map-top { display: flex !important; flex-direction: column; gap: 10px; }
+  body.mx-on .mx-side .map-top { display: flex !important; flex-direction: column; align-items: stretch !important; gap: 10px; }   /* v4의 가운데 맞춤(align-items)이 남아 경로·요약이 가운데로 갔다 */
   body.mx-on .mx-side .map-top > * { margin: 0 !important; }
   body.mx-on .mx-side .map-bundles, body.mx-on .mx-side .map-inds { display: flex; flex-wrap: wrap !important; overflow: visible !important; gap: 6px; }
   body.mx-on .mx-map .map-panel, body.mx-on .mx-map .map-panel.is-sheet { position: absolute !important; top: 12px; right: 12px; bottom: auto; left: auto; z-index: 2; width: 360px; height: auto !important; max-height: calc(100% - 24px) !important; overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: 16px; border-radius: 10px; box-shadow: 0 8px 24px rgba(15, 43, 39, .16); }
@@ -321,3 +321,15 @@ html.js .explore-page .evidence-workspace:not([data-workspace-ready]) .workspace
 .map-canvas .leaflet-bar a, .map-canvas .leaflet-bar a:hover { width: 40px; height: 40px; line-height: 40px; font-size: 20px; }
 .maplibregl-ctrl-group button { width: 40px !important; height: 40px !important; }
 input[type="file"]::file-selector-button { min-height: 40px; margin-right: 10px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+
+/* v7.3 동네 찾기 왼쪽 패널(평가 6회차: 알약 단추가 줄줄이라 빽빽하고 AI 티).
+   주제 넷은 2×2 칸 단추(한 덩어리), 지표는 작은 네모 칩, 지표 칩 앞 장식 그림은 넓은 화면 패널에서 뺀다 */
+body.mx-on .mx-side .map-bundles { display: grid !important; grid-template-columns: 1fr 1fr; gap: 0 !important; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+body.mx-on .mx-side .map-bundles button { min-height: 40px; margin: 0; padding: 6px 8px; border: 0; border-radius: 0; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; box-shadow: inset -1px -1px 0 var(--line); }
+body.mx-on .mx-side .map-bundles button[aria-pressed="true"] { background: var(--green); color: #fff; }
+body.mx-on .mx-side .map-bundles button:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
+body.mx-on .mx-side .map-inds .dash-chip { min-height: 34px; padding: 4px 10px; border-radius: 6px; font-size: 13px; }
+body.mx-on .mx-side .map-inds .dash-chip .map-ico { display: none; }
+body.mx-on .mx-side .map-top, body.mx-on .mx-side .map-top summary, body.mx-on .mx-side .map-crumbs ol { text-align: left; justify-content: flex-start !important; margin-left: 0; }
+/* 고른 지표는 주제와 같은 청록 계열 한 가지(평가: 선택 표시가 청록·검정 두 가지였다) */
+body.mx-on .mx-side .map-inds .dash-chip[aria-pressed="true"] { background: var(--soft); color: var(--green-press); border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }

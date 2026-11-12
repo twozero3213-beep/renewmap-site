@@ -52,7 +52,7 @@
   <section class="h6-hero wrap" aria-labelledby="heroTitle">
     <div class="h6-copy">
       <h1 id="heroTitle">숫자마다 출처가 붙은<br>도시재생 기초조사</h1>
-      <p class="h6-lead">동 이름을 넣으면 인구·사업체·건물 노후를 공식 통계로 계산하고 재생 사업 9종의 요건과 맞대 봅니다.<br>모든 값에 원천과 기준일이 붙은 1쪽 근거 문서로 받습니다.</p>
+      <p class="h6-lead">동 이름을 넣으면 인구·사업체·건물 노후를 공식 통계로 계산하고 재생 사업 9종의 요건에 견줘 봅니다.<br>모든 값에 원천과 기준일이 붙은 1쪽 근거 문서로 받습니다.</p>
       <form id="homeSearch" class="home-search h6-search" role="search" autocomplete="off">
         <label for="homeQ">동네 이름</label>
         <div class="home-search-row">
@@ -97,13 +97,16 @@
     <div class="wrap">
       <h2 id="flowTitle">리뉴맵으로 하는 일</h2>
       <p class="h6-sec-lead">한 번 계산한 숫자의 출처와 기준일이 다음 단계로 그대로 넘어갑니다.</p>
+      <div class="h6-flow-body">
       <ol class="h6-steps">
-        <li><a href="explore.html"><span class="h6-n">1</span><h3>동네 진단</h3><p>전국 행정동의 인구·사업체·노후·생활시설·안전을 지도에서 봅니다.</p><p class="h6-out">동 요약, 1쪽 근거 문서, 시·군·구 비교</p><img src="img/v6/step-explore.jpg" width="800" height="500" alt="동네 찾기 지도에서 동을 고른 화면" loading="lazy"></a></li>
-        <li><a href="programs.html"><span class="h6-n">2</span><h3>재생 사업 맞추기</h3><p>지역특화재생부터 지방소멸대응기금, 노후 산업단지까지 9종의 요건과 일정을 한 표로 봅니다.</p><p class="h6-out">동별 사업 요건 비교표(CSV)</p><img src="img/v6/step-programs.jpg" width="800" height="500" alt="재생 사업 요건 비교표 화면" loading="lazy"></a></li>
-        <li><a href="field/redev.html"><span class="h6-n">3</span><h3>구역 계산</h3><p>지도에 구역을 그리면 필지를 모아 저층 주거 3분의 2와 20년 넘은 건물 비율을 셉니다.</p><p class="h6-out">신청요건 근거 1쪽(한글), 구역 경계 SHP, 반경 500m 생활시설표</p><img src="img/v6/step-redev.jpg" width="800" height="500" alt="구역을 그려 신청요건을 계산하는 화면" loading="lazy"></a></li>
-        <li><a href="field/"><span class="h6-n">4</span><h3>현장 기록</h3><p>사진과 위치를 남기고, 찍은 순간의 지문(SHA-256)으로 나중에 바뀌지 않았음을 보입니다.</p><p class="h6-out">사진대지(한글), 위치 파일, 재방문 비교</p><img src="img/v6/step-field.jpg" width="800" height="500" alt="현장 사진을 기록하는 휴대폰 화면" loading="lazy"></a></li>
-        <li><a href="time4d.html"><span class="h6-n">5</span><h3>다시 재기</h3><p>작년과 같은 기준으로 다시 재고, 건물 나이가 해마다 어떻게 바뀌는지 4D 모형으로 봅니다.</p><p class="h6-out">바뀐 칸만 표시한 비교, 준공 후 실적보고서</p><img src="img/v6/step-4d.jpg" width="800" height="500" alt="연도를 움직이는 건물 나이 4D 모형" loading="lazy"></a></li>
+        <li><a href="explore.html"><span class="h6-n">1</span><h3>동네 진단</h3><p>전국 행정동의 인구·사업체·노후·생활시설·안전을 지도에서 봅니다.</p><p class="h6-out">동 요약, 1쪽 근거 문서, 시·군·구 비교</p></a></li>
+        <li><a href="programs.html"><span class="h6-n">2</span><h3>재생 사업 맞추기</h3><p>지역특화재생부터 지방소멸대응기금, 노후 산업단지까지 9종의 요건과 일정을 한 표로 봅니다.</p><p class="h6-out">동별 사업 요건 비교표(CSV)</p></a></li>
+        <li><a href="field/redev.html"><span class="h6-n">3</span><h3>구역 계산</h3><p>지도에 구역을 그리면 필지를 모아 저층 주거 3분의 2와 20년 넘은 건물 비율을 셉니다.</p><p class="h6-out">신청요건 근거 1쪽(한글), 구역 경계 SHP, 반경 500m 생활시설표</p></a></li>
+        <li><a href="field/"><span class="h6-n">4</span><h3>현장 기록</h3><p>사진과 위치를 남기고, 찍은 순간의 지문(SHA-256)으로 나중에 바뀌지 않았음을 보입니다.</p><p class="h6-out">사진대지(한글), 위치 파일, 재방문 비교</p></a></li>
+        <li><a href="time4d.html"><span class="h6-n">5</span><h3>다시 재기</h3><p>작년과 같은 기준으로 다시 재고, 건물 나이가 해마다 어떻게 바뀌는지 4D 모형으로 봅니다.</p><p class="h6-out">바뀐 칸만 표시한 비교, 준공 후 실적보고서</p></a></li>
       </ol>
+      <figure class="h6-flow-shot"><img src="img/v6/step-explore.jpg" width="1280" height="800" alt="동네 찾기 화면: 왼쪽에 검색·주제·지표·범례, 가운데 금정구 지도, 오른쪽에 선두구동의 쇠퇴 3요건 카드" loading="lazy"><figcaption>동네 찾기 화면. 동을 누르면 오른쪽 카드에 요건별 값과 기준이 나옵니다.</figcaption></figure>
+      </div>
     </div>
   </section>
 

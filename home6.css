@@ -132,23 +132,25 @@
 .h6-steps h3 { margin-bottom: 6px; }
 .h6-steps .h6-out { align-self: start; margin-top: 10px; }
 
-/* 첫 화면 눈썹 줄: 고객이 실제로 받는 질문 */
+/* 첫 화면 제목 크기 */
 .h6-hero h1 { font-size: clamp(34px, 4.4vw, 56px); }
 .h6-receipt-ids { padding: 8px 0 0; font-size: 13px; color: var(--dim); }
 .h6-receipt-ids summary { cursor: pointer; }
 .h6-receipt-ids p { margin: 6px 0 0; overflow-wrap: anywhere; }
 
-/* v7(11-13 밤): 다섯 단계를 한 줄로(Giraffe 홈의 단계 열). 세로로 쌓으면 2,200px이라 홈이 길고 어지러웠다.
-   휴대폰(720px 이하)은 위의 목록 모양 그대로 */
-@media (min-width: 721px) {
-  .h6-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 28px 20px; }
-  .h6-steps li, .h6-steps li:last-child { border: 0; }
-  .h6-steps a { display: flex; flex-direction: column; gap: 6px; height: 100%; padding: 0; }
-  .h6-steps img { order: -1; aspect-ratio: 16 / 10; object-fit: cover; margin: 0 0 10px; }
-  .h6-n { font-size: 15px; font-weight: 700; }
-  .h6-steps h3 { font-size: 19px; margin: 0; }
+/* v7.2(11-13): 단계는 글 목록, 옆에 큰 화면 한 장. 평가 6회차: 215px 작은 그림 다섯 칸은 글자가 안 읽히는 흔한 틀이었다(흐름은 시연 영상이 보여 준다) */
+.h6-flow-body { display: grid; gap: 32px; }
+.h6-flow-shot { margin: 0; }
+.h6-flow-shot img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; }
+.h6-flow-shot figcaption { margin-top: 8px; font-size: 14px; color: var(--dim); }
+@media (min-width: 961px) {
+  .h6-flow-body { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: start; }
+  .h6-steps a { grid-template-columns: 40px minmax(0, 1fr); grid-template-areas: "n h" "n p" "n o"; padding: 16px 0; gap: 2px 12px; }
+  .h6-n { font-size: 22px; }
+  .h6-steps h3 { font-size: 18px; }
   .h6-steps p { font-size: 15px; line-height: 1.6; }
-  .h6-steps .h6-out { margin-top: auto; padding-top: 8px; font-size: 13px; }
+  .h6-steps .h6-out { font-size: 13px; }
+  .h6-flow-shot { position: sticky; top: 96px; }
 }
 
 /* v7 시연(2026-11-13 다시 찍음: 옛 화면·숫자 불일치로 내렸던 영상을 지금 화면으로) */
