@@ -61,3 +61,8 @@
   .rank-page table.rank-table th:nth-child(4) { width: 5.5rem; }
   .rank-page table.rank-table th, .rank-page table.rank-table td { padding: 8px 6px; }
 }
+
+/* 2026-11-13 우지예: 찾은 순위 한 줄과 풀이를 줄을 나눠 보이게(rank.js 문구 주석). 첫 줄만 굵게, 풀이는 보통 굵기.
+   rm6.css의 .rank-found(굵게)보다 뒤에 읽혀도 이기도록 선택자를 한 단계 더 쓴다(rm6.css는 현장 앱 캐시 지문 파일이라 건드리지 않음) */
+.rank-find .rank-found { white-space: pre-line; font-weight: 400; }
+.rank-find .rank-found::first-line { font-weight: 700; }

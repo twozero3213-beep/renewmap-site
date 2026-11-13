@@ -198,3 +198,11 @@
 @media (max-width: 960px) { .h6-soon-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* 휴대폰: 두 칸이면 동 이름·구가 꺾였다 → 한 칸 네 줄 */
 @media (max-width: 720px) { .h6-soon-list { grid-template-columns: minmax(0, 1fr); gap: 6px; } .h6-soon-list li:nth-child(n+5) { display: none; } .h6-soon { padding: 14px; } }
+
+/* 2026-11-13 우지예: '다른 조사 도구 보기'를 펼치면 링크 7개가 띄어쓰기 없이 한 줄로 붙어 한 문장처럼 읽혔다
+   ("과업·납품 이력집계구로 다시 보기오래된…"). 왜: 위 .h6-more의 flex·gap은 details 자신에 걸려 있고, 링크는 그 안 <p>에 들어 있어
+   간격이 링크 사이에 닿지 않았다. → 제목은 한 줄 전체, 링크는 <p> 안에서 줄바꿈되는 작은 단추로 띄운다(누름 크기 44px, ui_smoke 기준) */
+.h6-more > summary { flex: 1 0 100%; }
+.h6-more > p { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 2px; }
+.h6-more > p a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; text-decoration: none; font-weight: 600; }
+.h6-more > p a:hover, .h6-more > p a:focus-visible { border-color: var(--green, #006f5b); color: var(--green, #006f5b); }

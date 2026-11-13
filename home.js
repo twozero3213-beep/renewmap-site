@@ -84,5 +84,31 @@
       show(rows); msg.textContent = MSG.many(rows.length, rows.every(r => r.label === rows[0].label));
     });
   }
-  return { find, route, norm, init, MSG };
+  // 2026-11-13 우지예: 재생 사업 화면에서 이름을 몰라도 고를 수 있게 '시·도 → 구·군 → 동' 고르기(form data-pick). 시범 지역 부산을 먼저 고른 채로 연다.
+  // 목록은 같은 dong_index.json에서 만들고, 구·군·동은 가나다순(반여1·2·3동처럼 숫자는 숫자 순). 동을 고르면 찾기와 같은 곳(route)으로 간다
+  const ko = (a, b) => a.localeCompare(b, 'ko', { numeric: true });
+  function pickLists(index, sido, sgg) {
+    const sidos = [...new Map(index.map(r => [r[0].slice(0, 2), r[4]])).entries()].sort((a, b) => ko(a[1], b[1]));
+    const sggs = [...new Map(index.filter(r => r[0].slice(0, 2) === sido).map(r => [r[2], r[3]])).entries()].sort((a, b) => ko(a[1], b[1]));
+    const dongs = index.filter(r => r[2] === sgg).map(r => [r[0], r[1]]).sort((a, b) => ko(a[1], b[1]));
+    return { sidos, sggs, dongs };
+  }
+  function initPick(win) {
+    const doc = win.document, form = doc.getElementById('homeSearch');
+    if (!form || !form.dataset.pick) return;
+    const box = doc.createElement('div'), report = form.dataset.report || 'onepage';
+    box.className = 'pick-row'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', '목록에서 동 고르기');
+    box.innerHTML = '<span class="pick-or">또는 목록에서</span><select aria-label="시·도"></select><select aria-label="구·군"></select><select aria-label="동"></select>';
+    form.querySelector('.home-search-row').after(box);
+    const [sSel, gSel, dSel] = box.querySelectorAll('select');
+    const opt = (list, first) => (first ? `<option value="">${first}</option>` : '') + list.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    let index = null, sido = form.dataset.pick, sgg = '';
+    const paint = () => { const L = pickLists(index, sido, sgg); sSel.innerHTML = opt(L.sidos); sSel.value = sido; gSel.innerHTML = opt(L.sggs, '구·군 고르기'); gSel.value = sgg; dSel.innerHTML = opt(L.dongs, '동 고르기'); dSel.disabled = !sgg; };
+    fetch('data/national/dong_index.json').then(r => r.json()).then(d => { index = d; paint(); }).catch(() => box.remove());
+    sSel.onchange = () => { sido = sSel.value; sgg = ''; paint(); };
+    gSel.onchange = () => { sgg = gSel.value; paint(); dSel.focus(); };
+    dSel.onchange = () => { if (dSel.value) win.location.href = route({ sido, sgg, dong: dSel.value }, report); };
+  }
+  if (typeof window !== 'undefined' && window.document) { const go = () => initPick(window); window.document.readyState === 'loading' ? window.document.addEventListener('DOMContentLoaded', go) : go(); }
+  return { find, route, norm, init, MSG, pickLists };
 });

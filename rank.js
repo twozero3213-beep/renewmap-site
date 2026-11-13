@@ -44,7 +44,7 @@
     const renew = kind === 'renewal' && list.some(r => r.d.renewal_parts);
     const cols = renew ? RENEWAL_COLS.map(([, l]) => `<th scope="col">${esc(l)}<br><small>백분위·클수록 쇠퇴</small></th>`).join('')
       : '<th scope="col">생활 편의</th><th scope="col">인구 활력</th><th scope="col">주거 노후도<br><small>점수가 낮을수록 낡음</small></th><th scope="col">치안</th><th scope="col">범죄 발생률<br><small>1,000명당·시군구</small></th>';
-    const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th><th scope="col">${esc(KINDS[kind].label)}</th><th scope="col">무게를 바꾼<br><small>순위 범위</small></th>${cols}</tr></thead>`;
+    const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th><th scope="col">${esc(KINDS[kind].label)}</th><th scope="col" title="지표 비중을 1,000번 바꿔 다시 계산했을 때 이 동 순위의 90%가 든 범위">비중을 바꿔도<br><small>나오는 순위</small></th>${cols}</tr></thead>`;
     const body = list.slice(0, limit).map((r, i) => {
       const s = r.d.sub, sp = r.d.safety_parts || {}, rp = r.d.renewal_parts || {};
       return `<tr${r.code7 === found ? ' class="is-found" id="rankFoundRow"' : ''}><td class="num">${offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
@@ -118,8 +118,10 @@
           if (at < 0) { found = null; foundMsg.textContent = `지금 고른 범위에서 '${q}'을(를) 찾지 못했습니다. 시·도를 '전국'으로 바꿔 보세요.`; draw(); return; }
           found = list[at].code7; pager.goTo(Math.floor(at / 20) + 1); draw();
           // 순위(여러 지표를 합친 점수)와 쇠퇴 3요건 해당 수는 다른 잣대다. 둘이 엇갈려 보여도 모순이 아니라고 같은 자리에서 밝힌다(v9: 홈 '2개 해당'과 '178위'가 모순으로 읽혔다)
-          foundMsg.textContent = `${names(list[at])}: ${list.length.toLocaleString('ko-KR')}개 동 중 ${(at + 1).toLocaleString('ko-KR')}위 (${KINDS[kindSel.value].label} ${fmt(list[at].score)})
-점수는 여러 지표를 합친 비교값이라 쇠퇴 3요건 해당 수와 순서가 다를 수 있습니다. 요건은 동 페이지에서 따로 봅니다.`;
+          // 2026-11-13 우지예: '점수는 여러 지표를 합친 비교값이라…' 문장이 무슨 뜻인지 어렵다는 지적 → 순위 한 문장, 왜 신청요건과 다른지 한 문장, 어디서 보는지 한 문장으로 풀어 씀
+          const nm = names(list[at]), last = nm.slice(-1);   // 받침 있으면 '은', 없으면 '는'
+          foundMsg.textContent = `${nm}${/[가-힣]/.test(last) && (last.charCodeAt(0) - 0xac00) % 28 ? '은' : '는'} ${list.length.toLocaleString('ko-KR')}개 동 중 ${(at + 1).toLocaleString('ko-KR')}위입니다(${KINDS[kindSel.value].label} ${fmt(list[at].score)}점).
+이 순위는 여러 지표를 합친 점수로 줄 세운 것이라, 공모 신청요건(쇠퇴 3요건)을 몇 개 채우는지와는 다른 기준입니다. 신청요건은 표에서 동 이름을 눌러 확인하세요.`;
           const tr = document.getElementById('rankFoundRow'); if (tr) tr.scrollIntoView({ block: 'center' });
         });
         kindSel.onchange = reset; sgSel.onchange = reset;

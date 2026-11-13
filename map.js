@@ -79,8 +79,11 @@
     // 2026-11-13: 보건소 거리(HEALTH_CENTER_NEAREST_M, 지소·진료소 포함) 셀이 생겨 codes로 옮기고 later에서 뺐다(scripts/export_facilities.py health)
     // 2026-11-13: 어린이집 거리(CHILDCARE_NEAREST_M, 부산 구·군 API 16개) 셀이 생겨 codes 맨 앞으로(최저기준 표 순서), later에서 뺐다.
     //     원천이 부산뿐이라 다른 시·도에서는 이 칩이 자동으로 숨는다(chipShown, '부산만')
-    { key: 'soc', label: '생활 인프라 최저기준', codes: ['CHILDCARE_NEAREST_M', 'LIB_NEAREST_M', 'HEALTH_CENTER_NEAREST_M', 'PARK_AREA_PER_CAPITA', 'PARK_COUNT'],
-      later: ['유치원', '생활체육시설'] },
+    // 2026-11-13: 생활체육시설 거리(SPORTS_CENTER_NEAREST_M, 국민체육진흥공단 15107764, 실내 생활체육 시설만) 셀이 생겨 codes로, later에서 뺐다
+    // 2026-11-13: 유치원 거리(KINDER_NEAREST_M, 부산교육청 명부 + 카카오 주소검색) 셀이 생겨 어린이집 다음에 넣고 later를 비웠다 — 6종이 모두 셀을 가진다.
+    //     생활안전지도 API 키가 승인 뒤에도 거절돼 교육청 파일로 바꿨다(scripts/export_facilities.py kinder). 원천이 부산뿐이라 다른 시·도에서는 칩이 숨는다
+    { key: 'soc', label: '생활 인프라 최저기준', codes: ['CHILDCARE_NEAREST_M', 'KINDER_NEAREST_M', 'SPORTS_CENTER_NEAREST_M', 'LIB_NEAREST_M', 'HEALTH_CENTER_NEAREST_M', 'PARK_AREA_PER_CAPITA', 'PARK_COUNT'],
+      later: [] },
     { key: 'shop', label: '상권 변화', codes: ['STORE_COUNT', 'STORE_RETAIL_COUNT', 'STORE_FOOD_COUNT', 'DECLINE_BIZ_DROP10Y_PCT'], later: [] },
   ];
   const BUNDLE_ALL = 'all';
@@ -923,6 +926,8 @@
   const BRIEF_FOOT = '판정 아님 · 숫자마다 출처 · 결정은 담당자가';
   const BRIEF_MAIL = 'renewmapteam@gmail.com';
   const REPORT_MODES = [['report', '동네 보고서'], ['brief', '사업 근거서'], ['onepage', '1쪽 요약'], ['programs', '재생 사업']];
+  // 2026-11-13 우지예: 빈 화면 문구가 '1쪽 요약가·재생 사업가'로 나왔다. 왜: 이름 뒤에 '가'를 고정으로 붙였다 → 받침이 있으면 '이', 없으면 '가'
+  const iGa = label => { const last = String(label).replace(/[^가-힣]+$/, '').slice(-1); return label + (last && (last.charCodeAt(0) - 0xac00) % 28 ? '이' : '가'); };
   const reportModeHTML = mode => `<div class="dash-seg rp-mode" role="group" aria-label="보고서 용도">${REPORT_MODES.map(([k, l]) => `<button type="button" data-rp-mode="${k}" aria-pressed="${k === mode}">${l}</button>`).join('')}</div>`;
   // 파일(HWPX·XLSX)은 이 브라우저에서 바로 만든다(docgen.js). 메일 요청은 내부망에서 파일 생성이 막힐 때를 위한 보조 경로로만 남긴다
   function briefMailto(it, year, what = '근거서') {
@@ -1346,8 +1351,11 @@
     // 2026-11-13: 시작 묶음(BUNDLES). 지금 고른 지표가 묶음 안에 없으면(주소·검색으로 다른 지표에 왔을 때) '모든 지표'로 보여 고른 칩이 사라지지 않게 한다
     const inBundle = bundleList(state.bundle, list), bkey = inBundle && inBundle.some(i => i.code === ind.code) ? state.bundle : BUNDLE_ALL;
     const bundles = `<div class="map-bundles" role="group" aria-label="무엇을 볼지 고르기">${[...BUNDLES.map(b => [b.key, b.label]), [BUNDLE_ALL, '모든 지표']].map(([k, l]) => `<button type="button" data-bundle="${k}" aria-pressed="${k === bkey}">${esc(l)}</button>`).join('')}</div>`;
+    // 2026-11-13 우지예: '모든 지표' 칩이 '가장 가까운 ○○ 직선거리'처럼 길어 한 줄에 하나씩 쌓여 읽기 어려웠다 →
+    //     칩에는 '○○까지 거리'로 줄여 쓰고, 원래 이름은 마우스를 올리면(title) 보인다. 범례·출처·문서는 원래 이름 그대로
+    const chipName = i => i.chip || String(i.label).replace(/^가장 가까운 (.+?) 직선거리$/, '$1까지 거리');
     const chipOf = i => { const ok = avail(i);   // avail은 수집 중(pending)을 이미 뺀다
-      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(i.chip || i.label)}${ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; };
+      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" title="${esc(i.label)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(chipName(i))}${ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; };
     if (bkey !== BUNDLE_ALL) return bundles + `<div class="dash-chips map-inds" role="group" aria-label="${esc(BUNDLES.find(b => b.key === bkey).label)} 지표">${inBundle.map(chipOf).join('')}</div>` + provenanceHTML(ind, m, source, mode, !!top.querySelector('.map-provenance[open]'));
     const tabs = `<div class="map-groups" role="group" aria-label="지표 묶음">${GROUPS.filter(([k]) => k === g || list.some(i => i.group === k)).map(([k, l]) => `<button type="button" data-group="${k}" aria-pressed="${k === g}">${gIco(k)}${esc(l)}</button>`).join('')}</div>`;
     const chips = `<div class="dash-chips map-inds" role="group" aria-label="${esc(GROUPS.find(x => x[0] === g)[1])} 지표">${list.filter(i => i.group === g).map(chipOf).join('')}</div>`;   // v9: 같은 칩 단추 문자열이 위와 한 벌 더 있었다
@@ -1412,7 +1420,7 @@
       report.querySelector('[data-district-csv]').addEventListener('click', () => { if (DG) DG.saveBytes(`동별사업요건비교_${DG.safeName(here)}.csv`, new TextEncoder().encode(window.RenewPrograms.districtCSV(items)), 'text/csv;charset=utf-8'); });
       return;
     }
-    if (!it) { report.innerHTML = reportModeHTML(reportMode) + `<div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 ${esc(REPORT_MODES.find(x => x[0] === reportMode)[1])}가 생깁니다</h3><p><a href="${esc(toHash({ sido: v.sido && v.sido.code2, sigungu: v.sigungu && v.sigungu.code5, gu: v.gu && v.gu.code5 }))}">지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p></div>`; return; }
+    if (!it) { report.innerHTML = reportModeHTML(reportMode) + `<div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 ${esc(iGa(REPORT_MODES.find(x => x[0] === reportMode)[1]))} 생깁니다</h3><p><a href="${esc(toHash({ sido: v.sido && v.sido.code2, sigungu: v.sigungu && v.sigungu.code5, gu: v.gu && v.gu.code5 }))}">지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p></div>`; return; }
     const rows = rowsFor(v, m, it);
     if (reportMode === 'onepage') {
       const built = docFor(v, m, it);
@@ -1780,10 +1788,11 @@
     const sgSel = kids.length && !(v.sido.kind === '특별자치시' && kids.length === 1) ? selectHTML('sg', '시·군·구', opts(kids, 'code5'), v.sigungu && v.sigungu.code5, '고르기') : '';
     const guSel = v.sigungu && childrenOf(state.index, v.sigungu.code5).length ? selectHTML('gu', '일반구·행정시', opts(childrenOf(state.index, v.sigungu.code5), 'code5'), v.gu && v.gu.code5, '고르기') : '';
     const chips = m.kind === 'emd' ? `<div class="dash-chips dash-dongs map-list" role="group" aria-label="읍·면·동">${m.items.map(x => `<button type="button" class="dash-chip" data-dong="${esc(x.code)}" aria-pressed="${x.code === v.dong}">${esc(x.name)}</button>`).join('')}</div>` : '';
-    const water = `<p class="map-png"><button type="button" class="btn ghost" data-water aria-pressed="${!!state.water}">수변 수질 측정지점 ${state.water ? '끄기' : '보기'}</button></p>` +
+    // 2026-11-13 우지예: '지도 받기·더 보기' 안 단추들이 무엇을 하는지 설명이 없어 이해가 어려웠다 → 단추 위에 한 줄씩 설명, 제목도 하는 일 그대로
+    const water = `<p class="map-tools-note">강·바다 수질 측정 위치를 지도 위에 겹쳐 봅니다.</p><p class="map-png"><button type="button" class="btn ghost" data-water aria-pressed="${!!state.water}">수변 수질 측정지점 ${state.water ? '끄기' : '보기'}</button></p>` +
       (state.water && state.waterData !== undefined ? waterNoteHTML(state.waterData) : '') + (state.water ? waterAutoHTML(state.waterAuto) : '');
     // v7.14(9회차): 받기·수질·쓰는 법과 동 이름 목록은 접어 둔다(왼쪽 패널이 일곱 겹이라는 지적). 펼침 상태는 다시 그려도 지킨다(fold)
-    bottom.innerHTML = legend + `<details class="map-tools" data-fold="tools"${fold.tools ? ' open' : ''}><summary>지도 받기·더 보기</summary>` + (DG ? `<p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><button type="button" class="btn ghost" data-map-geojson>지도 자료(GeoJSON)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + water + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, 휠이나 + − 버튼으로 확대합니다.'} 지도의 칸을 누르면 바로 아래 단계로 내려갑니다.<br>지도 대신 아래 목록으로도 고를 수 있습니다.</p></details>` +
+    bottom.innerHTML = legend + `<details class="map-tools" data-fold="tools"${fold.tools ? ' open' : ''}><summary>지도 저장·수질 겹쳐 보기</summary>` + (DG ? `<p class="map-tools-note">지금 보이는 지도를 그림 파일(PNG)이나 GIS 프로그램용 파일(GeoJSON)로 저장합니다.</p><p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><button type="button" class="btn ghost" data-map-geojson>지도 자료(GeoJSON)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + water + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, 휠이나 + − 버튼으로 확대합니다.'}<br>지도에서 구·군을 누르면 그 안의 읍·면·동이 보이고(시·도 → 구·군 → 읍·면·동), 동을 누르면 그 동의 요약이 열립니다.<br>지도가 불편하면 아래 '읍·면·동 목록'에서 이름으로 고를 수 있습니다.</p></details>` +
       `</details>` +
       `<div class="map-selects">${sidoSel}${sgSel}${guSel}</div><details class="map-dong-list" data-fold="list"${fold.list ? ' open' : ''}><summary>읍·면·동 목록</summary>${chips}</details><p class="map-live" aria-live="polite">${esc(liveText(v, it, ind, mode))}</p>`;
     styleData(bottom);

@@ -25,6 +25,11 @@
 .pg-find { max-width: 640px; margin: 16px 0 24px; }
 .pg-find label { display: block; font-weight: 700; margin-bottom: 6px; }
 .pg-find .home-search-row { display: flex; gap: 8px; }
+/* 2026-11-13 우지예: 이름을 몰라도 고르는 '시·도 → 구·군 → 동' 목록(home.js initPick). 찾기 칸 바로 아래 한 줄, 좁으면 줄바꿈 */
+.pg-find .pick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.pg-find .pick-or { font-size: 14px; color: var(--dim); }
+.pg-find .pick-row select { min-height: 44px; padding: 0 10px; border: 1px solid var(--line-strong, #9aa8a2); border-radius: 8px; background: #fff; font: inherit; max-width: 100%; }
+.pg-find .pick-row select:disabled { opacity: .55; }
 .pg-find input { flex: 1; min-width: 0; min-height: 48px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; font: inherit; font-size: 16px; background: var(--card); color: var(--ink); }
 .pg-find .home-hits { list-style: none; margin: 8px 0 0; padding: 0; border-radius: 10px; overflow: hidden; }
 .pg-find .home-hits:not(:empty) { border: 1px solid var(--line); background: var(--card); }
@@ -41,3 +46,7 @@
 .pg-verdict.is-ok { background: var(--soft); color: var(--green-press, var(--green)); }
 .pg-verdict.is-check { background: var(--amber-bg); color: var(--amber); }
 .pg-verdict.is-no { background: var(--mute-bg, #eee); color: var(--ink); }
+
+/* 2026-11-13 우지예: 사업 비교 표의 묶음 제목 줄(도시재생 공모 / 함께 볼 사업, programs.js compareHTML 주석) */
+.pg-compare tr.pg-group th { background: var(--soft, #eef4f1); text-align: left; font-size: 15px; padding: 10px 12px; }
+.pg-compare tr.pg-group th small { display: block; font-weight: 400; font-size: 13px; color: var(--dim); margin-top: 2px; }

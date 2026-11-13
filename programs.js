@@ -16,6 +16,7 @@
   const LOWRISE = { kind: 'human', t: '저층 주거용 건축물이 전체의 3분의 2 이상', how: '구역 건축물대장으로 계산' };
   const OLD2 = { kind: 'oldDecline', t: '인구·사업체·노후 요건 중 노후 포함 2개 이상' };
   const REDEV = ['field/redev.html', '구역 요건 계산(부산)'];
+  const CORE = ['special', 'oldres', 'vacant', 'recognize'];   // 국토부 2027 도시재생 신규 공모 유형(compareHTML 주석)
   const PROGRAMS = [
     { id: 'special', name: '지역특화재생', owner: '국토교통부', aim: '역사·문화·산업 같은 지역 고유자산으로 도시 브랜드, 상권, 창업을 키웁니다.', money: '4년, 국비 최대 150억원', src: 'g2027', page: 27, needs: [ZONE], use: '지역 자산과 상권 변화를 동 단위로 보고 기초조사 표를 채웁니다.' },
     { id: 'recognize', name: '도시재생 인정사업', owner: '국토교통부', aim: '기반시설 설치·정비, 건축물 리모델링 같은 점 단위 소규모 사업을 빠르게 추진합니다.', money: '3년, 국비 최대 50억원', src: 'g2027', page: 44, needs: [{ kind: 'human', t: '전략계획 수립 지역이면서 활성화계획 미수립 지역', how: '전략계획 고시에서 확인' }, { kind: 'infraOrDecline', t: '기초생활인프라 국가적 최저기준 미달, 또는 쇠퇴요건 2개 이상' }, { kind: 'human', t: '사업 면적 10만㎡ 미만', how: '사업 구역으로 계산' }], use: '쇠퇴요건 값과 생활 시설 현황을 근거 문서로 묶습니다.' },
@@ -30,7 +31,8 @@
   // 2027 가이드라인 p.42 기반·편의시설 현황. 없는 자료는 없다고 적는다
   const SOC = [
     ['도로·접도율', '구역 내', null], ['주차장', '구역 내', null], ['무인택배함·쓰레기처리장', '구역 내', null], ['CCTV', '구역 내', 'CCTV_PER_KM2'],
-    ['유치원', '구역 반경 500m', null], ['초등학교', '구역 반경 500m', 'ELEM_SCHOOL_NEAREST_M'], ['어린이집', '구역 반경 500m', 'CHILDCARE_NEAREST_M'], ['노인복지시설', '구역 반경 500m', 'SENIOR_HALL_COUNT'],
+    // 2026-11-13: 유치원 거리 셀(KINDER_NEAREST_M, 부산만)이 생겨 연결
+    ['유치원', '구역 반경 500m', 'KINDER_NEAREST_M'], ['초등학교', '구역 반경 500m', 'ELEM_SCHOOL_NEAREST_M'], ['어린이집', '구역 반경 500m', 'CHILDCARE_NEAREST_M'], ['노인복지시설', '구역 반경 500m', 'SENIOR_HALL_COUNT'],
     ['건강생활센터', '구역 반경 500m', null], ['도서관(공공·사립·작은)', '구역 반경 500m', 'LIB_NEAREST_M'], ['생활체육시설', '구역 반경 500m', null], ['생활권공원', '구역 반경 500m', 'PARK_COUNT'],
     ['문화예술회관·전시시설', '기초 지자체', null], ['경기장·체육관·수영장', '기초 지자체', null], ['거점공원', '기초 지자체', 'PARK_AREA_PER_CAPITA'], ['사회복지관·노인복지관', '기초 지자체', null],
     ['보건소', '기초 지자체', 'HEALTH_CENTER_NEAREST_M'], ['응급실 운영 의료기관', '기초 지자체', 'ER_NEAREST_M'],
@@ -82,9 +84,15 @@
   function compareHTML() {
     // data-label: 휴대폰에서 표를 카드처럼 쌓을 때 칸 이름을 앞에 붙인다(v7 7회차: 표가 옆으로 잘려 '신청 요건' 열이 안 보였다)
     const row = p => `<tr><th scope="row"><a href="#${esc(p.id)}">${esc(p.name)}</a></th><td data-label="맡는 곳">${esc(p.owner)}</td><td data-label="지원 규모·기간">${esc(p.money)}</td><td data-label="신청 요건"><ul>${p.needs.map(n => `<li>${esc(n.t)}</li>`).join('')}</ul></td></tr>`;
-    return `<section class="pg-compare" id="compare" data-page-label="9개 사업 한눈에"><h2>사업 ${PROGRAMS.length}종 한눈에</h2>` +
+    // 2026-11-13 우지예: '9종이 다 도시재생 사업이 맞나?' 확인 → 국토부 2027 도시재생 신규 공모는 3개 유형(지역특화재생·노후주거지정비(일반·빈집)·인정사업)이다
+    //     [검증 2026-11-13 국토부 2027 신규사업 공모 보도(2026-09-11 착수)]. 혁신지구와 나머지 4개는 따로 신청하는 사업이라 표 안에서 두 묶음으로 나눈다.
+    //     사업 목록·요건 문구는 그대로이고, 줄 순서와 묶음 제목만 바뀐다
+    const core = PROGRAMS.filter(p => CORE.includes(p.id)), rest = PROGRAMS.filter(p => !CORE.includes(p.id));
+    const group = (t, sub) => `<tr class="pg-group"><th colspan="4" scope="colgroup">${esc(t)}<small>${esc(sub)}</small></th></tr>`;
+    return `<section class="pg-compare" id="compare" data-page-label="사업 한눈에"><h2>도시재생 공모 ${core.length}종 + 함께 볼 사업 ${rest.length}종</h2>` +
       `<div class="table-wrap" tabindex="0" role="region" aria-label="재생 사업 비교 표"><table><thead><tr><th scope="col">사업</th><th scope="col">맡는 곳</th><th scope="col">지원 규모·기간</th><th scope="col">신청 요건(공식 문서 옮김)</th></tr></thead>` +
-      `<tbody>${PROGRAMS.map(row).join('')}</tbody></table></div></section>`;
+      `<tbody>${group('국토교통부 2027년 도시재생 신규 공모', '3개 유형(노후주거지정비는 일반정비형·빈집정비형 2가지). 2026년 9월 공모, 연말까지 접수')}${core.map(row).join('')}` +
+      `${group('함께 볼 만한 다른 지원사업', '도시재생 신규 공모와 따로 신청합니다. 맡는 곳·시기가 사업마다 다릅니다')}${rest.map(row).join('')}</tbody></table></div></section>`;
   }
   function listHTML(base) {
     return PROGRAMS.map(p => `<section class="pg-item" id="${esc(p.id)}"><h2>${esc(p.name)}</h2><p class="pg-meta">${esc(p.owner)}, ${esc(p.money)}</p><p>${esc(p.aim).replace('&lt;br&gt;', '<br>')}</p>` +

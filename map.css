@@ -415,6 +415,9 @@
 .rp-frag-ctl { display: flex; flex-wrap: wrap; gap: 10px 14px; margin: 0 0 8px; }
 .rp-frag .dg-frag { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; }
 .map-png { margin: 8px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+/* 2026-11-13 우지예: '지도 저장·수질 겹쳐 보기' 안 단추 설명 한 줄(map.js 주석). 단추 바로 위에 붙여 무엇을 하는지 읽히게 */
+.map-tools-note { margin: 12px 0 0; font-size: 14px; line-height: 1.5; color: var(--dim); }
+.map-tools-note + .map-png { margin-top: 6px; }
 .map-png .btn { padding: 8px 14px; font-size: 14px; min-height: 40px; }
 .map-png-msg { font-size: 13px; color: var(--dim); }
 /* 인쇄: 파일 만들기·복사 도구는 종이에 나오지 않는다. 1쪽 요약은 A4 한 쪽(실측은 docs/design/review_2026-10-27) */
