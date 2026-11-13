@@ -12,6 +12,9 @@
   const NF = new Map(), nf = d => NF.get(d) || NF.set(d, new Intl.NumberFormat('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d })).get(d);
   const digitsOf = v => (Math.round(v * 10) % 10 === 0 ? 0 : 1);
   const fmt = (v, unit) => (isNum(v) ? nf(digitsOf(v)).format(v) + (unit || '') : null);
+  // 쇠퇴 3요건 비율은 홈 카드·동 페이지·문서와 같게 소수 둘째 자리까지(2026-11-14 v9, 같은 동이 34.81%인데 표에서 34.8%로 보였다). 다른 지표는 그대로
+  const REQ2 = new Set(['DECLINE_POP_DROP30Y_PCT', 'DECLINE_BIZ_DROP10Y_PCT', 'DECLINE_AGING_20Y_PCT']);
+  const fmtI = (v, ind, mode, unit) => (isNum(v) && ind && mode !== 'trend' && REQ2.has(ind.code) ? fmt2(v) + (unit || '') : fmt(v, unit));
   const SOURCE_DEFAULT = '도시재생종합정보체계 쇠퇴진단지표';
   const SERIES_NO_CELL = '해당 연도 출처 기록 없음 · 근거 상세 추가확인';
 
@@ -494,7 +497,7 @@
         const parts = lawInds(inds).map(i => ({ i, s: summaryOf(sg, i.code) })), ys = parts.map(p => p.s.year).filter(isNum);
         s = { value: sumValue(parts.map(p => rowOf(p.i, p.s.value))), year: ys.length ? Math.max(...ys) : null, status: null };
       }
-      return { code: String(sg.code5), name: sg.name, kind: sg.kind || null, value: s.value, year: s.year, status: s.status, text: s.dongMedian && isNum(s.value) ? `${fmt(s.value, scale.unit)} · 동 중앙값` : fmt(s.value, scale.unit) || '자료 없음', color: colorOf(s.value, scale), bbox: sg.bbox || null,
+      return { code: String(sg.code5), name: sg.name, kind: sg.kind || null, value: s.value, year: s.year, status: s.status, text: s.dongMedian && isNum(s.value) ? `${fmtI(s.value, ind, mode, scale.unit)} · 동 중앙값` : fmtI(s.value, ind, mode, scale.unit) || '자료 없음', color: colorOf(s.value, scale), bbox: sg.bbox || null,
         over: r ? r.over : null, n: r ? r.n : null };
     });
   }
@@ -552,7 +555,7 @@
       else if (ind.src === 'forecast') { const f = ind.pending || ind.level === 'sg' ? null : fcOf(ext, code, ind.fc); if (f && !f.held) { v = f.point; lo = f.lo; hi = f.hi; y = ext.horizon; } }
       else if (ind.level === 'sg') { v = null; } // 시군구 단위 자료는 읍·면·동 지도에 칠하지 않는다
       else if (!ind.pending) { const c = livingCell(lm.get(code), key); v = c && isNum(c.value) ? c.value : null; y = c ? c.base_year ?? null : null; }
-      return { code, name: d.name, kind: d.kind || null, value: v, year: y, text: fmt(v, scale.unit) || '자료 없음', color: colorOf(v, scale), unmatched: unmatched.has(code), lo, hi };
+      return { code, name: d.name, kind: d.kind || null, value: v, year: y, text: fmtI(v, ind, mode, scale.unit) || '자료 없음', color: colorOf(v, scale), unmatched: unmatched.has(code), lo, hi };
     });
   }
   // 같은 범위에서 기준선을 넘은 곳의 개수(순위 아님). 종합은 1개 이상인 곳
@@ -669,7 +672,7 @@
     const base = X(Math.min(hi, Math.max(lo, 0))), fill = row.value === null ? '' : (() => { const x = X(row.value); return `<rect class="sr-fill" x="${Math.min(base, x).toFixed(1)}" y="4" width="${Math.max(2, Math.abs(x - base)).toFixed(1)}" height="10" rx="3" fill="${colorOf(row.value, scaleFor(ind, 'now'))}"/>`; })();
     const tick = sv === null ? '' : `<line class="sr-tick" x1="${X(sv).toFixed(1)}" x2="${X(sv).toFixed(1)}" y1="0" y2="${H}"/>`;
     const band = isNum(row.lo) && isNum(row.hi) ? `<rect class="sr-band" x="${X(row.lo).toFixed(1)}" y="2" width="${Math.max(2, X(row.hi) - X(row.lo)).toFixed(1)}" height="14" rx="3"/>` : ''; // 전망 80% 구간 띠
-    const label = `${ind.label} ${row.value === null ? '자료 없음' : fmt(row.value, ind.unit)}${band ? `, 80% 구간 ${fmt(row.lo, ind.unit)}~${fmt(row.hi, ind.unit)}` : ''}${sv === null ? ', 공식 기준 없음' : `, 기준 ${pm(sv)}${ind.unit}`}`;
+    const label = `${ind.label} ${row.value === null ? '자료 없음' : fmtI(row.value, ind, 'now', ind.unit)}${band ? `, 80% 구간 ${fmt(row.lo, ind.unit)}~${fmt(row.hi, ind.unit)}` : ''}${sv === null ? ', 공식 기준 없음' : `, 기준 ${pm(sv)}${ind.unit}`}`;
     return `<svg class="sr-bar${row.value === null ? ' is-empty' : ''}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(label)}"><rect class="sr-track" x="0" y="4" width="${W}" height="10" rx="3"/>${band}${fill}${tick}</svg>`;
   }
   // 2026-11-12 화면 낱말 바꿈: '기준 미달' → '기준 해당'. 원장 상태 값('기준 넘음')은 그대로 둔다.
@@ -717,7 +720,7 @@
     if (!['JEONSE_M2_MED', 'WOLSE_MED'].includes(code) || !Number.isInteger(n) || n <= 0 || !m) return '';
     return `계약 ${n.toLocaleString('ko-KR')}건 · ${m[3].split(', ').map(k => k.replace(/ [\d,]+건$/, '')).join('·')} 합산 · 계약월 ${m[1]}~${m[2]}${code === 'WOLSE_MED' ? ' · 보증금 별도' : ''}`;
   }
-  const rowText = r => r.text || fmt(r.value, r.ind.unit) || '–';
+  const rowText = r => r.text || fmtI(r.value, r.ind, 'now', r.ind.unit) || '–';
   // 한눈 요약: 항목마다 점 하나를 묶음별로 늘어놓는다. 도넛(비율)이 아니라 개수만 — 순위·점수 아님
   const dotOf = r => (r.ind.pending ? 'p' : r.status === '기준 넘음' || r.status === '행정 지정' ? 'r' : r.status === '기준 안' || r.status === '미지정' ? 'g' : r.status === '기준 승인 대기' ? 'y' : r.value === null ? 'w' : 'b');
   function glanceHTML(rows) {

@@ -60,6 +60,14 @@
     return `<table class="grid rank-table"><caption>선택한 범위의 행정동 순위 <small>· '비중을 바꿔도 나오는 순위'는 지표 비중을 바꿔 다시 셈한 순위의 90% 구간입니다. ${unit}</small></caption>${head}<tbody>${body}</tbody></table>`;
   }
 
+  // rank_top.json(홈이 쓰는 상위 10곳) → 첫 화면 미리 그림. 표 모양은 tableHTML 그대로, 아직 없는 칸만 '…'. 재생 필요 점수 부산 목록이 없으면 빈 글
+  function previewHTML(top) {
+    const L = top && top.lists && top.lists.renewal_21;
+    if (!L || !Array.isArray(L.rows) || !L.rows.length) return '';
+    const list = L.rows.map(r => ({ code7: r.code7, score: r.score, sgg: r.sgg, d: { name: r.name, code5: r.code5, renewal: r.score, renewal_parts: {} } }));
+    return tableHTML(list, 'renewal', r => `${r.sgg} ${r.d.name}`, list.length, undefined, '21').replace(/<td class="num">없음<\/td>/g, '<td class="num">…</td>');
+  }
+
   // '우리 동네 몇 위?'(2026-11-13 v8): 줄 세운 목록에서 이름으로 찾는다. 띄어쓰기 무시, 이름이 꼭 같은 동을 먼저, 없으면 이름에 든 첫 동. 없으면 -1
   // region(r): 그 동의 시·군·구 이름들. 법정동 이름('우동')·구를 붙인 말('해운대 우동')도 util.js dongHit로 찾는다(v9 페르소나)
   function findRank(list, names, q, region = () => []) {
@@ -107,6 +115,11 @@
     // 범위 열은 '…'로 두었다가 도착하면 다시 그린다. 받는 양은 같고 표가 먼저 보인다
     // R4 10: 그래도 scores.json(296KB gz)과 같은 때 받으면 대역폭을 나눠(느린 4G) 표가 늦었다 → 범위 파일(223KB gz)은 표를 처음 그린 뒤에 받는다
     const loadRange = () => fetch('data/national/scores_range.json').then(r => (r.ok ? r.json() : null)).catch(() => null);
+    // 느린 4G에서 표가 늘 마지막이었다(2.5MB scores.json) → 고른 조건이 없는 첫 화면(재생 필요·부산·1쪽)은 4KB rank_top.json 상위 10줄로 먼저 그린다.
+    // 값·순서는 scores.json과 같다(상위 10곳이 같은 줄 세우기, export 시험이 대조). 나머지 열은 범위 열처럼 '…'. 전체 자료가 오면 같은 표를 20줄로 다시 그린다
+    if (!/[?&](kind|sido|sg|ord|page)=/.test(location.search || '')) {
+      fetch('data/national/rank_top.json').then(r => (r.ok ? r.json() : null)).then(top => { if (!scores && top) { const h = previewHTML(top); if (h) out.innerHTML = h; } }).catch(() => {});
+    }
     Promise.all([fetch('data/national/scores.json').then(r => r.json()), fetch('data/national/index_core.json').then(r => r.json())])
       .then(([s, i]) => {
         scores = s; idx = i;
@@ -149,5 +162,5 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
     else init();
   }
-  return { KINDS, rows, tableHTML, rangeText, findRank };
+  return { KINDS, rows, tableHTML, previewHTML, rangeText, findRank };
 });
