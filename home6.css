@@ -191,3 +191,18 @@
   /* 하는 일: 휴대폰에서는 단계 글만(큰 화면 그림·산출물 줄은 뺀다, 흐름은 시연 영상이 보여 준다) */
   .h6-flow-shot, .h6-steps .h6-out { display: none; }
 }
+
+/* v9 곧 노후 요건에 닿는 동네: 해가 먼저 읽히는 한 줄 칸들 */
+.h6-soon { margin-top: 20px; padding: 16px 18px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.h6-soon-head h3 { margin: 0 0 4px; font-size: 18px; }
+.h6-soon-head p { margin: 0 0 12px; font-size: 14px; color: var(--dim); line-height: 1.6; }
+.h6-soon-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.h6-soon-list a { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "e b" "e s"; column-gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; }
+.h6-soon-list a:hover { border-color: var(--green); }
+.h6-soon-list a:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.h6-soon-list em { grid-area: e; align-self: center; font-style: normal; font-weight: 700; font-size: 17px; color: var(--amber); font-variant-numeric: tabular-nums; }
+.h6-soon-list b { grid-area: b; }
+.h6-soon-list .h6-rank-sg { grid-area: s; }
+@media (max-width: 960px) { .h6-soon-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* 휴대폰: 두 칸이면 동 이름·구가 꺾였다 → 한 칸 네 줄 */
+@media (max-width: 720px) { .h6-soon-list { grid-template-columns: minmax(0, 1fr); gap: 6px; } .h6-soon-list li:nth-child(n+5) { display: none; } .h6-soon { padding: 14px; } }

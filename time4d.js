@@ -36,6 +36,16 @@
     for (let y = from; y <= to; y++) { const s = stats(blds, y); if (s.pct20 !== null && s.pct20 >= thr) return y; }
     return null;
   }
+  // 지금 기준선 위면 그 상태가 이어져 온 첫해, 아래면 앞으로 처음 닿는 해(v9: 건물이 적던 옛날 잠깐 넘은 1973년을 잡아
+  // 홈의 '2028년에 닿음'과 어긋났다). 홈 목록(export_crossing_soon.py)도 같은 규칙
+  function sinceYear(blds, thr, from, now, to) {
+    const p0 = stats(blds, now).pct20;
+    if (p0 === null) return null;
+    if (p0 < thr) return crossYear(blds, thr, now + 1, to);
+    let y = now;
+    while (y > from) { const p = stats(blds, y - 1).pct20; if (p === null || p < thr) break; y--; }
+    return y;
+  }
 
   // 외곽선 파일 + 건축물대장 → GeoJSON. y: 사용승인 연도(0 = 날짜 없음, -1 = 대장과 못 이음), h: 높이(m)
   function features(outline, buildingFile) {
@@ -74,7 +84,7 @@
     return best;
   }
 
-  const api = { YEAR_FROM, BANDS, NO_DATE, aprYear, stats, crossYear, features, colorExpr, filterExpr, dongAt };
+  const api = { YEAR_FROM, BANDS, NO_DATE, aprYear, stats, crossYear, sinceYear, features, colorExpr, filterExpr, dongAt };
   if (typeof module === 'object' && module.exports) { module.exports = api; return; }
   root.Time4D = api;
 
@@ -83,11 +93,13 @@
   if (!document.getElementById('t4App')) return;
   const NOW = new Date().getFullYear(), TO = NOW + 20;
   const getJson = (p) => fetch(`data/${p}`).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
-  let map = null, blds = [], fileMeta = null, year = NOW, timer = null;
+  // ?y=: 홈 '곧 노후 요건에 닿는 동네'에서 오면 그 해부터 연다(범위 밖이면 올해)
+  const y0 = Number(new URLSearchParams(location.search).get('y'));
+  let map = null, blds = [], fileMeta = null, year = y0 >= YEAR_FROM && y0 <= TO ? y0 : NOW, timer = null;
   const fmt = (n) => (n === null ? '-' : n.toLocaleString('ko-KR'));
 
   const slider = $('t4Year');
-  slider.min = String(YEAR_FROM); slider.max = String(TO); slider.value = String(NOW);
+  slider.min = String(YEAR_FROM); slider.max = String(TO); slider.value = String(year);
   $('t4Ends').textContent = `${YEAR_FROM}년 ~ ${TO}년 · 올해 뒤는 지금 건물 그대로일 때`;
   // 색 칸은 CSSOM으로 칠한다(style 속성은 CSP가 막는다)
   $('t4Legend').replaceChildren(...[...BANDS.map(([, c, t]) => [c, t]), [NO_DATE, '사용승인일 없음']].map(([c, t]) => {
@@ -120,11 +132,11 @@
     return s.pct20 === null || sn.pct20 === null ? '' : `20년 이상: ${y}년 ${s.pct20}% → 올해 ${sn.pct20}%`;
   }
   function marks() {
-    const y50 = crossYear(blds, 50, YEAR_FROM, TO), y67 = crossYear(blds, 66.7, YEAR_FROM, TO);
+    const y50 = sinceYear(blds, 50, YEAR_FROM, NOW, TO), y67 = sinceYear(blds, 66.7, YEAR_FROM, NOW, TO);
     // 닿는 해를 누르면 그해로 옮긴다(v7: 숫자만 있어 그해 모형을 보려면 막대를 손으로 맞춰야 했다)
     const line = (y, what) => (y === null ? `<li>${what}: ${TO}년까지 닿지 않음</li>`
-      : `<li>${what}: <button type="button" class="t4-jump" data-y="${y}">${y}년${y > NOW ? '(지금 건물 그대로일 때)' : ''}</button></li>`);
-    $('t4Marks').innerHTML = line(y50, '20년 이상 건물이 절반을 넘는 해') + line(y67, '20년 이상 건물이 3분의 2를 넘는 해');
+      : `<li>${what}: <button type="button" class="t4-jump" data-y="${y}">${y}년${y > NOW ? '' : '부터'}</button>${y > NOW ? ' (지금 건물 그대로일 때)' : ' 지금까지'}</li>`);
+    $('t4Marks').innerHTML = line(y50, '20년 이상 건물 절반 넘음') + line(y67, '20년 이상 건물 3분의 2 넘음');
   }
 
   async function load(code) {

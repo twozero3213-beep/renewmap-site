@@ -6,12 +6,22 @@
   const SHOW = 5;
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // 한 목록 → <li> 줄들(순수 함수, 시험용)
+  // 무게를 바꿔 다시 셈한 순위 구간(rank_top.json rank_range, 출처 scores_range.json). 없으면 빈 글
+  const rangeText = (r) => (Array.isArray(r) && r.length === 2 ? (r[0] === r[1] ? ` · 무게 바꿔도 ${r[0]}위` : ` · 무게 바꾸면 ${r[0]}~${r[1]}위`) : '');
   function itemsHTML(rows, n = SHOW) {
     return (rows || []).slice(0, n).map((r, i) => `<li><a href="explore.html#map/${esc(String(r.code7).slice(0, 2))}/${esc(r.code5)}/${esc(r.code7)}">` +
-      `<span class="h6-rank-n">${i + 1}</span><b>${esc(r.name)}</b><span class="h6-rank-sg">${esc(r.sgg)}</span><em>${Number(r.score).toFixed(1)}</em></a></li>`).join('');
+      `<span class="h6-rank-n">${i + 1}</span><b>${esc(r.name)}</b><span class="h6-rank-sg">${esc(r.sgg)}${esc(rangeText(r.rank_range))}</span><em>${Number(r.score).toFixed(1)}</em></a></li>`).join('');
   }
-  const api = { itemsHTML };
+  // 곧 노후 요건에 닿는 동네(crossing_soon.json, export_crossing_soon.py): 해·동·지금 비율을 4D 주소로 잇는다
+  function soonHTML(rows, n = 8) {
+    return (rows || []).slice(0, n).map((r) => `<li><a href="time4d.html?bjd=${esc(r.bjd)}&amp;y=${esc(r.cross_year)}"><em>${esc(r.cross_year)}년</em>` +
+      `<b>${esc(r.name)}</b><span class="h6-rank-sg">${esc(r.sgg)} · 지금 ${Number(r.now_pct20).toFixed(1)}%</span></a></li>`).join('');
+  }
+  const api = { itemsHTML, soonHTML };
   if (typeof module === 'object' && module.exports) { module.exports = api; return; }
+  const soon = root.document && root.document.querySelector('[data-crossing]');
+  if (soon) fetch('data/national/crossing_soon.json').then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then((d) => { soon.innerHTML = soonHTML(d.rows); }).catch(() => { soon.innerHTML = '<li class="h6-rank-wait">목록을 불러오지 못했습니다.</li>'; });
   const doc = root.document, lists = doc && doc.querySelectorAll('[data-rank]');
   if (!lists || !lists.length) return;
   fetch('data/national/rank_top.json').then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }).then((d) => {
