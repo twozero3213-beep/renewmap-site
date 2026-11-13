@@ -4,7 +4,7 @@
    위쪽은 노드 시험용 순수 함수, 아래쪽은 브라우저 연결부(Leaflet, dashboard.js의 loadLeaflet 재사용). */
 (function () {
   'use strict';
-  const { esc, isNum } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
+  const { esc, isNum, fmt2 } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
   const DeclineReq = typeof module !== 'undefined' && module.exports ? require('./decline-req.js') : window.DeclineReq;
   // HWPX·XLSX·복사용 표·1쪽 요약·지도 이미지. 브라우저에서는 첫 지도 뒤에 받는다(아래 loadDocgen): undefined = 아직, null = 못 받음
   let DG = typeof module !== 'undefined' && module.exports ? require('./docgen.js') : (typeof window !== 'undefined' && window.RenewDocgen) || undefined;
@@ -303,7 +303,14 @@
     // 세종: 기초가 없어 읍면동이 광역 직속. 목록에 항목이 없거나 '세종시' 하나뿐이면 단계를 만들지 않는다
     if (!sgs.length || (sido.kind === '특별자치시' && sgs.length === 1)) { out.level = 'emd'; out.step = STEP.emd; out.emdCode = String(sgs.length ? sgs[0].code5 : sido.code5 || sido.code2 + '110'); out.dong = r.dong || null; out.sigungu = sgs[0] || null; return out; }
     if (!r.sigungu) { out.level = 'sido'; out.step = STEP.sido; out.children = sgs; return out; }
-    const sg = sgOf(index, r.sigungu); if (!sg || !sgs.includes(sg)) { out.level = 'sido'; out.step = STEP.sido; out.children = sgs; return out; }
+    const sg = sgOf(index, r.sigungu);
+    // 일반구를 시 자리에 둔 주소(#map/31/31192/…, 홈·순위·검색이 code5 하나로 만든다)는 상위 시 아래 구로 고쳐 읽는다.
+    // v9: 이 경우 시·도 단계에서 멈춰, 일반구에 속한 동 461곳이 홈에서 눌러도 열리지 않았다
+    if (sg && !r.gu && /^\d{5}$/.test(String(sg.parent || '')) && !sgs.includes(sg)) {
+      const par = sgOf(index, sg.parent);
+      if (par && sgs.includes(par)) return resolve(index, { sido: r.sido, sigungu: par.code5, gu: sg.code5, dong: r.dong });
+    }
+    if (!sg || !sgs.includes(sg)) { out.level = 'sido'; out.step = STEP.sido; out.children = sgs; return out; }
     out.sigungu = sg; out.crumbs.push({ label: sg.name, hash: toHash({ sido: sido.code2, sigungu: sg.code5 }) });
     const gus = childrenOf(index, sg.code5);
     if (gus.length) {
@@ -737,26 +744,33 @@
     const go = `<a class="btn sr-req-go" href="#report" data-set-mode="onepage">${icon('book')}1쪽 근거 문서 보기</a>`;
     // 2026-11-13: 가운뎃점 사슬(하한·승인 전·판정 아님)을 누가 무엇을 하는지 두 문장으로(11-13 평가: 승인 주체가 없고 사슬이 AI 티)
     // v7 7회차: 맺음말 두 문장(하한·담당자 승인 전)을 실무자가 못 읽었다 → 한 줄. 승인 상태는 기준 원문 대조 쪽(rules.html)에 그대로 있다
-    const rowsHtml = reqRowsHTML(rows, dong), allKnown = rowsHtml && !rowsHtml.includes('class="is-none"');   // 세 요건이 다 정해졌으면 '빼고 셌다'는 말이 맞지 않는다(11회차)
+    const rowsHtml = reqRowsHTML(rows, dong, r.year), allKnown = rowsHtml && !rowsHtml.includes('class="is-none"');   // 세 요건이 다 정해졌으면 '빼고 셌다'는 말이 맞지 않는다(11회차)
     const foot = `<p class="sr-req-note">${allKnown ? `${r.year ? `${esc(r.year)}년 기준. ` : ''}` : `자료가 없는 요건은 빼고 셌습니다${r.year ? `(${esc(r.year)}년 기준)` : ''}. `}법정 판정이 아닌 참고 계산이며, 판정은 담당 기관이 합니다.</p>`;
     if (r.value === null) {
       return `<section class="sr-req is-none" aria-label="쇠퇴 3요건 요약"><p class="sr-req-k">쇠퇴 3요건</p><p class="sr-req-n">추가확인 <small>자료가 모자라 아직 셀 수 없습니다</small></p>${go}${foot}</section>`;
     }
     const std = validStd(r.ind.standard) ? r.ind.standard.text : null;
-    return `<section class="sr-req is-${ROW_CLASS[r.status] || 'none'}" aria-label="쇠퇴 3요건 요약"><p class="sr-req-k">쇠퇴 3요건 중</p>` +
-      `<p class="sr-req-n"><b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(r.status))}</small>` : ''}</p>${rowsHtml}${go}${foot}</section>`;
+    // 정해지지 않은 요건이 남아 결과가 바뀔 수 있으면 '기준 안'·'기준 넘음' 대신 추가확인(1쪽 문서 '확정 불가'와 같은 판단)
+    // 그해 셀이 없으면(지난 해) 아래 세 줄에서 정해지지 않은 요건 수를 센다
+    const nUnknown = (rowsHtml.match(/class="is-none"/g) || []).length;
+    const undecided = (r.cell && DeclineReq && DeclineReq.metStatus(r.cell) === 'none' && (r.status === '기준 안' || r.status === '기준 넘음')) || (r.status === '기준 안' && isNum(r.value) && r.value + nUnknown >= 2);
+    const st = undecided ? '추가확인' : r.status;
+    return `<section class="sr-req is-${ROW_CLASS[st] || 'none'}" aria-label="쇠퇴 3요건 요약"><p class="sr-req-k">쇠퇴 3요건 중</p>` +
+      `<p class="sr-req-n"><b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(st))}</small>` : ''}</p>${rowsHtml}${go}${foot}</section>`;
   }
   // v7(2026-11-13): 3요건 각각의 값·상태를 홈 카드처럼 세 줄로. 평가: 카드의 세는 법이 넷(해당 수·확인할 항목·확정/추가확인·묶음별 수)이라
   // 무엇을 봐야 할지 몰랐다 → 맨 위는 '몇 개 해당'과 그 세 줄만 두고, 나머지 셈은 아래 접힌 칸으로 옮긴다. 값은 rows(원장 셀) 그대로
   // 요건 단위로 센다(decline-req.js: 한 길이라도 해당이면 해당). 30년 감소율이 없어도 '3년 연속 감소'로 해당이면 그 줄에 그렇게 적는다
   const REQ_ST = { over: '기준 해당', in: '해당 안 함', none: '추가확인' };   // 홈 카드와 같은 세 낱말(v7 7회차: 화면마다 상태 단어가 달랐다)
-  function reqRowsHTML(rows, dong) {
+  // year: 머리 '몇 개 해당'(요건 충족 수 행)의 해. 연도 막대를 옮겼으면 세 줄도 그 해 값으로 센다
+  // (v9: 3년 연속 감소 줄이 늘 최신 셀을 읽어, 2022년을 고르면 머리는 1개인데 줄은 '해당'이 둘로 어긋났다)
+  function reqRowsHTML(rows, dong, year) {
     const rowOf = code => rows.find(x => x.ind && x.ind.code === code);
     if (!DeclineReq || !rowOf('DECLINE_AGING_20Y_PCT')) return '';
     const cellVal = code => { const cs = ((dong && dong.cells) || []).filter(c => c && c.indicator_code === code && isNum(c.value)); return cs.length ? cs.reduce((a, b) => (b.base_year > a.base_year ? b : a)).value : null; };
-    const val = code => { const r = rowOf(code); return r && isNum(r.value) ? r.value : cellVal(code); };
+    const val = code => { const r = rowOf(code); if (r && isNum(r.value)) return r.cell ? DeclineReq.cellValue(r.cell) : r.value; return isNum(year) ? valueAt(seriesOf(dong, code), year) : cellVal(code); };
     const li = DeclineReq.evaluate(val).map(q => {
-      const text = q.via && /DECL3IN5$/.test(q.via.code) ? '3년 연속 감소' : q.rate === null ? '–' : fmt(q.rate, '%');
+      const text = q.via && /DECL3IN5$/.test(q.via.code) ? '3년 연속 감소' : q.rate === null ? '–' : `${fmt2(q.rate)}%`;   // 홈·문서와 같은 소수 둘째 자리
       return `<li class="is-${q.status}"><span>${esc(q.name)}</span><b>${esc(text)}</b><em>${REQ_ST[q.status]}</em></li>`;
     }).join('');
     return `<ul class="sr-req-rows">${li}</ul>`;
@@ -1195,12 +1209,12 @@
     const timeout = setTimeout(resolve, 8000);
     mapPainted = () => { clearTimeout(timeout); resolve(); };
   });
-  // 외부 AI 서버 주소는 비워 둔다(서버로 문장을 보내지 않는다). 다듬기는 기기 안 AI(detectDeviceAI)로만 한다(docs/legal/ai_ethics.md ⑤)
-  const AI_POLISH_ENDPOINT = '';
+  // 외부 AI 서버로 문장을 보내지 않는다. 다듬기는 기기 안 AI(detectDeviceAI)로만 한다(docs/legal/ai_ethics.md ⑤). 주소 상수도 두지 않는다(v9: 읽는 곳 없는 빈 상수였다)
   // 2026-11-12: 주소에 지도 경로가 없으면 전국이 아니라 부산(시도 코드 21)에서 시작한다.
   // 왜: 회의 결정 "의미는 도시재생으로 넓히되 범위는 부산 고정"[팀]. 전국에서 시작하면 첫 화면이 대부분 '자료 없음'인 전국 지도라
   // 쓰기 어렵다는 인상을 남겼다(docs/design/ux_feedback_2026-11-12.md 1절 1번). 전국은 경로(전국 ›)나 #map 주소로 그대로 갈 수 있다
   const DEFAULT_ROUTE_HASH = '#map/21';
+  const deepLink = !!parseHash(location.hash);   // 경로를 들고 왔을 때만 휴대폰에서 지도로 내린다
   const state = { route: parseHash(location.hash) || parseHash(DEFAULT_ROUTE_HASH), ind: INDICATORS[0].code, bundle: BUNDLES[0].key, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, dash: undefined, mapErr: false, touched: false,
     migration: undefined, designations: undefined, forecastIdx: undefined, realestate: undefined, templates: undefined, sgGeoDetailed: false };
   const inds = () => allIndicators(state.living, { migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate });
@@ -1237,7 +1251,7 @@
   app.innerHTML = `<div class="map-top" data-top></div><div class="map-stage" data-stage><div class="map-canvas is-wait" data-map-slot>전국 자료를 불러오는 중입니다.</div>` +
     `<section class="map-panel" data-panel hidden aria-label="선택한 지역의 세부항목 척도표"></section></div><div class="map-bottom" data-bottom></div>`;
   const $ = s => app.querySelector(s), top = $('[data-top]'), stage = $('[data-stage]'), panel = $('[data-panel]'), bottom = $('[data-bottom]');
-  const heroLive = document.getElementById('heroLive'), heroCount = document.querySelector('[data-emd-count]');
+  const heroLive = document.getElementById('heroLive');
 
   function emptyHTML(title, lines, mascot) {
     return `<div class="map-empty" role="status">${mascot ? '<img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true">' : ''}<h3>${esc(title)}</h3>${lines.map(l => `<p>${esc(l)}</p>`).join('')}</div>`;
@@ -1306,12 +1320,11 @@
     // 2026-11-13: 시작 묶음(BUNDLES). 지금 고른 지표가 묶음 안에 없으면(주소·검색으로 다른 지표에 왔을 때) '모든 지표'로 보여 고른 칩이 사라지지 않게 한다
     const inBundle = bundleList(state.bundle, list), bkey = inBundle && inBundle.some(i => i.code === ind.code) ? state.bundle : BUNDLE_ALL;
     const bundles = `<div class="map-bundles" role="group" aria-label="무엇을 볼지 고르기">${[...BUNDLES.map(b => [b.key, b.label]), [BUNDLE_ALL, '모든 지표']].map(([k, l]) => `<button type="button" data-bundle="${k}" aria-pressed="${k === bkey}">${esc(l)}</button>`).join('')}</div>`;
-    const chipOf = i => { const ok = !i.pending && avail(i);
+    const chipOf = i => { const ok = avail(i);   // avail은 수집 중(pending)을 이미 뺀다
       return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(i.chip || i.label)}${ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; };
     if (bkey !== BUNDLE_ALL) return bundles + `<div class="dash-chips map-inds" role="group" aria-label="${esc(BUNDLES.find(b => b.key === bkey).label)} 지표">${inBundle.map(chipOf).join('')}</div>` + provenanceHTML(ind, m, source, mode, !!top.querySelector('.map-provenance[open]'));
     const tabs = `<div class="map-groups" role="group" aria-label="지표 묶음">${GROUPS.filter(([k]) => k === g || list.some(i => i.group === k)).map(([k, l]) => `<button type="button" data-group="${k}" aria-pressed="${k === g}">${gIco(k)}${esc(l)}</button>`).join('')}</div>`;
-    const chips = `<div class="dash-chips map-inds" role="group" aria-label="${esc(GROUPS.find(x => x[0] === g)[1])} 지표">${list.filter(i => i.group === g).map(i => { const ok = avail(i);
-      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(i.chip || i.label)}${ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; }).join('')}</div>`;
+    const chips = `<div class="dash-chips map-inds" role="group" aria-label="${esc(GROUPS.find(x => x[0] === g)[1])} 지표">${list.filter(i => i.group === g).map(chipOf).join('')}</div>`;   // v9: 같은 칩 단추 문자열이 위와 한 벌 더 있었다
     return bundles + tabs + chips + provenanceHTML(ind, m, source, mode, !!top.querySelector('.map-provenance[open]'));
   }
   function panelHTML(v, m) {
@@ -1361,7 +1374,7 @@
   function renderReport(v, m, it) {
     if (!report) return;
     // 생활·전망 파일이 늦게 도착하면 키가 바뀌어 다시 그린다
-    const key = it ? `${reportMode}:${it.code}:${m.selYear}:${horizon()}:${m.living ? 'L' : ''}${m.ext && m.ext.forecast ? 'F' : ''}${state.migration ? 'M' : ''}${state.designations ? 'D' : ''}${state.living ? 'I' : ''}${state.forecastIdx ? 'X' : ''}${state.realestate ? 'R' : ''}` : 'empty:' + reportMode;
+    const key = it ? `${reportMode}:${it.code}:${m.selYear}:${horizon()}:${m.living ? 'L' : ''}${m.ext && m.ext.forecast ? 'F' : ''}${state.migration ? 'M' : ''}${state.designations ? 'D' : ''}${state.living ? 'I' : ''}${state.forecastIdx ? 'X' : ''}${state.realestate ? 'R' : ''}` : `empty:${reportMode}:${toHash(state.route)}`;   // 빈 안내의 '지도' 링크가 지역을 따라가게(v9: 시·도를 바꿔도 첫 시·도를 가리켰다)
     const inputs = [state.index, m.json, m.living, state.living, m.ext && m.ext.forecast, state.forecastIdx, state.designations, state.migration, state.realestate, m.geo, state.templates];
     if (key === reportKey && inputs.every((x, i) => x === reportInputs[i])) return;
     reportInputs = inputs;
@@ -1526,28 +1539,33 @@
         return { type: 'Feature', geometry: f.geometry, properties: { code, name: it ? it.name : (f.properties || {}).name || null, indicator: ind.code, label: ind.label,
           value: it && isNum(it.value) ? it.value : null, unit: ind.unit || '', year: meta.year ?? null, source: meta.source } }; }) };
   }
+  // 지도 내보내기(GeoJSON·그림) 공통: 알림 줄, 시군구면 상세 경계 받기, 지금 보이는 경계만 고르기. 못 하면 알리고 null
+  // (v9: 두 함수에 같은 코드가 한 벌씩 있었다)
+  const exportSay = t => { const msg = app.querySelector('[data-png-msg]'); if (msg) msg.textContent = t; };
+  async function exportFeats(m, what) {
+    if (m.kind === 'sg' && !state.sgGeoDetailed) {
+      exportSay('상세 경계를 불러오는 중입니다.');
+      if (!(await loadSgDetail())) { exportSay(`상세 경계를 불러오지 못해 ${what}을 보류했습니다. 다시 열어 주세요.`); return null; }
+    }
+    const feats = m.kind === 'emd' ? (m.geo && m.geo.features) || [] : m.kind === 'sg' && state.sgGeo ? state.sgGeo.features.filter(f => m.items.some(i => i.code === String((f.properties || {}).code))) : [];
+    if (!feats.length) { exportSay(`경계 자료가 아직 없어 ${what}을 만들 수 없습니다.`); return null; }
+    return feats;
+  }
   async function mapGeojson() {
-    const say = t => { const msg = app.querySelector('[data-png-msg]'); if (msg) msg.textContent = t; };
+    const say = exportSay;
     if (!DG || !state.index) return;
     const v = resolve(state.index, state.route), m = model(v), ind = curInd();
-    if (m.kind === 'sg' && !state.sgGeoDetailed && !(await loadSgDetail())) { say('상세 경계를 불러오지 못했습니다. 다시 열어 주세요.'); return; }
-    const feats = m.kind === 'emd' ? (m.geo && m.geo.features) || [] : m.kind === 'sg' && state.sgGeo ? state.sgGeo.features.filter(f => m.items.some(i => i.code === String((f.properties || {}).code))) : [];
-    if (!feats.length) { say('경계 자료가 아직 없어 받을 수 없습니다.'); return; }
+    const feats = await exportFeats(m, '지도 자료'); if (!feats) return;
     const where = v.crumbs[v.crumbs.length - 1].label, name = `지도자료_${DG.safeName(ind.label)}_${DG.safeName(where)}.geojson`;
     const fc = geojsonOf(feats, new Map(m.items.map(i => [i.code, i])), ind, { name: `${where} ${ind.label}`, year: m.year, source: ind.source || (state.index.source && state.index.source.name) || SOURCE_DEFAULT });
     say(`${name} (${Math.round(DG.saveBytes(name, new TextEncoder().encode(JSON.stringify(fc)), 'application/geo+json') / 1024)}KB)를 내려받았습니다.`);
   }
   // 지도 이미지(PNG): 배경 타일(CORS로 캔버스에 못 그림)을 빼고 경계·색·범례·출처·기준연도만 그린다
   async function mapPng() {
-    const say = t => { const msg = app.querySelector('[data-png-msg]'); if (msg) msg.textContent = t; };
+    const say = exportSay;
     if (!DG || !state.index) return;
     const v = resolve(state.index, state.route), m = model(v), ind = curInd(), mode = effMode(ind), ok = avail(ind), off = !ok || ind.pending;
-    if (m.kind === 'sg' && !state.sgGeoDetailed) {
-      say('상세 경계를 불러오는 중입니다.');
-      if (!(await loadSgDetail())) { say('상세 경계를 불러오지 못해 이미지 저장을 보류했습니다. 다시 열어 주세요.'); return; }
-    }
-    const feats = m.kind === 'emd' ? (m.geo && m.geo.features) || [] : m.kind === 'sg' && state.sgGeo ? state.sgGeo.features.filter(f => m.items.some(i => i.code === String((f.properties || {}).code))) : [];
-    if (!feats.length) { say('경계 자료가 아직 없어 이미지를 만들 수 없습니다.'); return; }
+    const feats = await exportFeats(m, '이미지'); if (!feats) return;
     const byCode = new Map(m.items.map(i => [i.code, i])), crumbs = v.crumbs.map(c => c.label).join(' › ');
     const base = ind.latest ? `최근 달 ${String(ind.latest).slice(0, 4)}.${String(ind.latest).slice(4, 6)}` : `기준연도 ${m.year ?? '자료 없음'}${m.year ? '년' : ''}`;
     const model_ = { features: feats, paths: feats.length, colorOf: code => { const it = byCode.get(code); return it && it.value !== null ? it.color : null; },
@@ -1653,9 +1671,10 @@
     const node = v.gu || v.sigungu, mois = node ? String(node.mois_code5 || node.code5) : v.emdCode; // dashboard.json은 행안부 코드
     const sg = (dash.sigungu || []).find(s => String(s.code) === mois && s.status === '수집됨'); if (!sg) return '';
     const dongs = (dash.dongs || []).filter(d => d.sigungu_code === sg.code).sort((a, b) => String(a.code).localeCompare(String(b.code)));
+    // 정밀 사례 칸(#dashboard)은 소개 화면에만 있다 → about.html로 보낸다(v9: 같은 화면 해시라 눌러도 아무 일 없었다)
     return `<h4 class="map-h4">정밀 사례 · 건축물대장 3기준 <small>법정동 · 건축HUB</small></h4><p class="map-note">이 구는 건축물대장을 동수·연면적·세대 기준으로 따로 모았습니다.<br>법정동은 행정동과 경계가 달라 따로 보여 줍니다.</p>` +
-      `<ul class="map-hub">${dongs.map(d => { const c = D.cellView(D.cellOf(d, 20, 'COUNT')); return `<li><a href="#dashboard/${esc(sg.code)}/${esc(d.code)}">${esc(d.name)}</a><span>20년 동수 ${esc(c.text)}</span></li>`; }).join('')}</ul>` +
-      `<p><a class="map-hub-more" href="#dashboard/${esc(sg.code)}">정밀 사례 전체 보기</a></p>`;
+      `<ul class="map-hub">${dongs.map(d => { const c = D.cellView(D.cellOf(d, 20, 'COUNT')); return `<li><a href="about.html#dashboard/${esc(sg.code)}/${esc(d.code)}">${esc(d.name)}</a><span>20년 동수 ${esc(c.text)}</span></li>`; }).join('')}</ul>` +
+      `<p><a class="map-hub-more" href="about.html#dashboard/${esc(sg.code)}">정밀 사례 전체 보기</a></p>`;
   }
   // 첫 화면 왼쪽 문구: 지금 보이는 범위에서 기준선을 넘은 곳의 개수(순위 아님)
   // 2026-11-12: 지도 아래 "자료 기준" 한 줄. 화면에 기준연도가 안 보여 자료가 오래됐다는 오해가 있었다.
@@ -1784,24 +1803,11 @@
   api.getMap = () => M && M.map;
   // 네이버 지도(배경만). 키(field/naver-map-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작. 실패·5초 초과면 브이월드로
   // SDK가 NAVER 로고 img에 style 속성을 넣는다. explore.html CSP style-src에 그 문자열 해시만 허용했다('unsafe-hashes', 2026-11-07). SDK가 문구를 바꾸면 콘솔 오류로 다시 드러난다
+  // SDK는 map-start.js가 화면 스크립트보다 먼저 받기 시작한다(#mapApp은 explore.html에만 있고 그 화면이 map-start.js를 싣는다).
+  // v9: 여기에 같은 SDK 로더가 한 벌 더 있었는데 renewNaverReady가 늘 먼저 있어 한 번도 돌지 않았다 → 지웠다
   function loadNaver() {
     if (window.renewNaverAuthFailed) return Promise.resolve(false);
-    if (window.renewNaverReady) return window.renewNaverReady;
-    const key = window.RENEWMAP_NAVER_KEY;
-    if (!/^[A-Za-z0-9]{6,40}$/.test(key || '')) return Promise.resolve(false);
-    return new Promise(res => {
-      const done = ok => { clearTimeout(t); res(ok); }, t = setTimeout(() => done(false), 5000);
-      window.navermap_authFailure = () => {
-        window.renewNaverAuthFailed = true;
-        done(false);
-        window.dispatchEvent(new Event('renew-navermap-auth-failed')); // 준비 Promise가 끝난 뒤의 실패도 지도에 알린다
-      };
-      const s = document.createElement('script');
-      s.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${key}`;
-      s.onload = () => done(!!(window.naver && window.naver.maps && window.naver.maps.Map));
-      s.onerror = () => done(false);
-      document.head.appendChild(s);
-    });
+    return window.renewNaverReady || Promise.resolve(false);
   }
   // 지도를 처음 만들기 전 준비: 경계 자료·Leaflet·네이버 SDK를 차례로 기다린다. 기다리는 동안 false, 지도를 만들면 true
   function mapReady(slot) {
@@ -2005,7 +2011,7 @@
         if (sel && reorder) l.bringToFront(); });
       if (reorder) M.emdLine.bringToFront();
       placeDongLabels(v.dong);
-    } else if (M.emd && v.level !== 'emd') { M.emd.remove(); M.emdLine.remove(); M.emd = null; M.emdLine = null; M.emdCode = null; makeDongLabels(null); }
+    } else if (M.emd && (v.level !== 'emd' || M.emdCode !== v.emdCode)) { M.emd.remove(); M.emdLine.remove(); M.emd = null; M.emdLine = null; M.emdCode = null; M.emdItems = new Map(); makeDongLabels(null); }   // 새 시군구 경계를 못 받았으면 앞 시군구 동을 남기지 않는다(v9: 남은 동을 누르면 다른 구 동 코드로 갔다)
   }
   // 2026-11-12: 동 이름표. 시군구가 바뀔 때만 다시 만들고, 확대·이동·동 고르기마다 겹치는 이름만 숨긴다(labelPoint·pickLabels)
   const LABEL_MIN_ZOOM = 12;   // 이보다 멀면 동이 수십 px라 이름이 서로 덮는다(부산 해운대구 기준 확인)
@@ -2077,7 +2083,7 @@
   function play() {
     const v = resolve(state.index, state.route), m = model(v);
     if (m.kind === 'sg') {
-      if (v.level === 'nation' && !reduced) { if (autoT) { stopAuto(true); render(); } else { state.touched = false; autoAsked = true; startAuto(state.ind); } return; }
+      if (v.level === 'nation' && !reduced && M) { if (autoT) { stopAuto(true); render(); } else { state.touched = false; autoAsked = true; startAuto(state.ind); } return; }
       const ys = playYears(state.index, state.ind).years; if (!ys.length) return;
       if (state.playing) { stopPlay(); render(); return; }
       let i = ys.indexOf(state.year); if (i < 0 || i >= ys.length - 1) i = 0;
@@ -2087,7 +2093,7 @@
     }
     if (m.kind !== 'emd' || !m.years) return;
     if (state.playing) { stopPlay(); render(); return; }
-    state.playing = true; state.year = m.year >= m.years.max ? m.years.min : m.year;
+    state.playing = true; state.year = m.year == null || m.year >= m.years.max ? m.years.min : m.year;   // 값 없는 해면 처음부터(null+1로 돌던 것)
     render();
     timer = setInterval(() => { if (state.year >= m.years.max) { stopPlay(); render(); return; } state.year += 1; render(); }, reduced ? 1000 : 320);
   }
@@ -2116,7 +2122,7 @@
     if (!autoT) return;
     clearTimeout(autoT); autoT = null; if (ybar) ybar.hidden = true;
     if (heroLive) { heroLive.querySelector('.hl-auto')?.remove(); heroLive.setAttribute('aria-live', 'polite'); }
-    const b = app.querySelector('[data-play]'); if (b) { b.textContent = '▶'; b.setAttribute('aria-pressed', 'false'); }
+    const b = app.querySelector('[data-play]'); if (b) { b.innerHTML = icon('play'); b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', '재생'); }
   }
   const touch = e => { if (e && e.target && e.target.closest && e.target.closest('[data-play]')) return; if (!state.touched) stopAuto(true); };
   ['pointerdown', 'wheel', 'keydown'].forEach(t => app.addEventListener(t, touch, { passive: true }));
@@ -2208,9 +2214,8 @@
   indexP.then(index => {
     state.index = index && Array.isArray(index.sigungu) ? index : null;
     heroBasis(index);
-    if (heroCount && index && isNum(index.emd_count)) { heroCount.innerHTML = `<b data-ck="emd" data-count="${index.emd_count}">0</b>개 `; countUp(heroCount.firstChild); }
     if (!state.index) { render(); return; }
-    if (state.route.sido && !matchMedia('(min-width: 1100px)').matches) app.scrollIntoView({ block: 'start' }); // 넓은 화면은 한 화면 배치라 옮기지 않는다
+    if (deepLink && !matchMedia('(min-width: 1100px)').matches) app.scrollIntoView({ block: 'start' }); // 넓은 화면은 한 화면 배치라 옮기지 않는다. 기본 경로(부산)로 열 때도 옮기지 않는다(v9: 검색·탭을 건너뛰었다)
     searchSetup();
     if (index.series_file) { // 시·군·구 연도 요약은 목록·경계 뒤에 받아 붙인다. 오기 전에는 연도 문구를 '불러오는 중'으로 두고 자동 재생을 미룬다
       index.seriesPending = true;
@@ -2219,6 +2224,7 @@
         index.sigungu.forEach(sg => { if (by[sg.code5]) sg.series = by[sg.code5]; });
         index.unmatched = (s && s.unmatched) || [];
         index.seriesPending = false; render(); startAuto();
+        document.dispatchEvent(new Event('renew-series'));   // find.js: 시·군·구 값은 series에서 읽는다. 늦게 오면 다시 센다(v9: 먼저 열면 '0곳'으로 남았다)
       });
     }
     render();

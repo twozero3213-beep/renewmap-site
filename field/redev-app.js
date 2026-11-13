@@ -5,7 +5,8 @@
   const $ = (id) => document.getElementById(id);
   const DATA = "../data/";
   const getJson = (p) => fetch(DATA + p).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }).then((j) => window.RenewCellPack.unpack(j));
-  const templates = getJson("report_templates.json").then((t) => D.setTemplates(t));
+  // 실패해도 계산은 쓸 수 있다. 문서 만들기에서 양식이 없다는 오류로 알린다(app.js와 같음)
+  const templates = getJson("report_templates.json").then((t) => D.setTemplates(t)).catch(() => null);
   // 법정동 건물 파일은 큰 동이 2.8MB(연산동 12,474동)라 계산마다 다시 받아 풀면 경계안 비교가 느려진다. 계산 함수는 파일을 고치지 않으므로
   // 풀어 둔 것을 다시 쓴다. ponytail: 최근 8개만 두고 오래된 것부터 버린다(전 동을 다 열어도 메모리가 계속 늘지 않게)
   const buildingCache = new Map();
@@ -99,8 +100,7 @@
   $("dong").addEventListener("change", saveDraft);
 
   const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };
-  const localDay = (t) => { const p = (n) => String(n).padStart(2, "0"); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; };   // recorded_at은 UTC라 기기 시간대 날짜로
-  const today = () => localDay(new Date());
+  const today = () => D.localDate();
   const opt = () => ({ secret: $("secret").checked });
   const fileName = (ext, file = last.file, options = opt(), day = today()) => `${options.secret ? "대외비_" : ""}${file.name}_입안요건_사전검토_승인전_${day}.${ext}`;
 
@@ -294,7 +294,7 @@
       li.append(s);
       if (it.records.length) {
         const r = document.createElement("b");
-        r.textContent = `현장 기록 ${it.records.length}건(최근 ${D.govDate(localDay(new Date(it.records[0].recorded_at)))})`;
+        r.textContent = `현장 기록 ${it.records.length}건(최근 ${D.govDate(D.localDate(it.records[0].recorded_at))})`;
         li.append(r);
       } else if (it.b.pnu) {
         const a = document.createElement("a");
@@ -373,7 +373,7 @@
   });
   $("pdf").addEventListener("click", async () => {
     const box = $("printDoc");
-    box.innerHTML = D.docHTML(await doc()).html;
+    try { box.innerHTML = D.docHTML(await doc()).html; } catch (err) { return say("문서를 만들지 못했습니다.\n새로고침한 뒤 다시 해 보세요.", true); }
     document.body.classList.add("printing");
     window.addEventListener("afterprint", () => { document.body.classList.remove("printing"); box.textContent = ""; }, { once: true });
     window.print();

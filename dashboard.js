@@ -203,7 +203,7 @@
   const root = document.getElementById('dashboard'), app = root && root.querySelector('#dashApp');
   if (!app) return;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const state = { data: null, route: parseHash(location.hash) || {}, year: 20, open: null, seen: reduced, view: 'card', basis: 'COUNT', geo: undefined, mapErr: false };
+  const state = { data: null, route: parseHash(location.hash) || {}, year: 20, open: null, seen: reduced, view: 'card', basis: 'COUNT', geo: null, mapErr: false };   // 법정동 경계 파일은 만든 적이 없다 → 중심점으로 그린다(v9: 없는 파일을 매번 받아 404가 났다)
   // 손가락이 주 입력인 기기: 한 손가락은 페이지 스크롤, 두 손가락(핀치)으로 지도 이동·확대
   const coarse = matchMedia('(pointer: coarse)').matches;
   let mapState = {};
@@ -226,12 +226,6 @@
     const slot = app.querySelector('[data-map-slot]');
     if (!slot) { dropMap(); return; }
     const wait = msg => { slot.className = 'dash-map is-wait'; slot.textContent = msg; };
-    if (state.geo === undefined) {
-      wait('지도를 불러오는 중입니다.');
-      fetch('data/dong_boundaries.geojson', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null)
-        .then(g => { state.geo = g && Array.isArray(g.features) ? g : null; render(); });
-      return;
-    }
     const model = mapModel(v, state.year, state.basis, state.geo);
     if (!model.drawable) { dropMap(); slot.outerHTML = emptyHTML('지도 데이터 준비 중', ['동 경계와 중심 좌표를 준비하고 있습니다.', '아래 동 이름을 누르면 숫자를 볼 수 있습니다.']); return; }
     if (state.mapErr) { slot.outerHTML = emptyHTML('지도를 불러오지 못했습니다', ['네트워크를 확인한 뒤 다시 열어 주세요.', '아래 동 이름으로는 계속 볼 수 있습니다.']); return; }

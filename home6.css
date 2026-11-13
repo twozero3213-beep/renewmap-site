@@ -6,7 +6,6 @@
 
 /* 첫 화면 */
 .h6-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 48px; align-items: start; padding-top: 48px; padding-bottom: 56px; }
-.h6-scope { font-size: 15px; font-weight: 700; color: var(--green); margin: 0 0 14px; }
 .h6-hero h1 { font-size: clamp(32px, 4.2vw, 52px); line-height: 1.22; font-weight: 800; margin: 0 0 18px; letter-spacing: -0.03em; }
 .h6-lead { font-size: 18px; color: var(--dim); margin: 0 0 28px; }
 .h6-search label { display: block; font-weight: 700; margin-bottom: 8px; }
@@ -64,13 +63,7 @@
 .h6-steps .h6-out { grid-area: o; font-size: 15px; color: var(--dim); }
 .h6-steps img { grid-area: img; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
 
-
 .h6-trust { padding-top: 64px; }
-.h6-trust-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; margin-top: 24px; }
-.h6-trust-grid > div { border-top: 3px solid var(--ink); padding-top: 16px; }
-.h6-trust-grid h3 { font-size: 20px; margin: 0 0 8px; }
-.h6-trust-grid p { color: var(--dim); margin: 0 0 12px; }
-
 
 .h6-price { margin-top: 64px; padding-top: 24px; padding-bottom: 40px; border-top: 1px solid var(--line); }   /* v7.12: 띠·단추 둘 대신 글 한 단락과 링크 하나(8회차: 흔한 SaaS 마무리 띠) */
 .h6-price h2 { margin: 0 0 8px; font-size: 20px; }
@@ -84,7 +77,6 @@
   .h6-steps a { grid-template-columns: 44px minmax(0, 1fr); grid-template-areas: "n h" "n p" "n o" "img img"; }
   .h6-steps img { margin-top: 12px; }
   .h6-n { font-size: 30px; }
-  .h6-trust-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 520px) {
   .h6-search .home-search-row { flex-direction: column; }

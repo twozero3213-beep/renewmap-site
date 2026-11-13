@@ -16,7 +16,7 @@
   // 조건·업무 카드의 e는 아이콘 이름(map.js ICONS). 지도와 같은 선 아이콘을 쓰고, map.js가 없으면(노드 시험) 아이콘 없이 글자만
   const ico = k => (typeof window !== 'undefined' && window.RenewMap && window.RenewMap.icon ? window.RenewMap.icon(k) : '');
   const NOTE = '조건 필터 · 순위 아님';
-  const ESTATE_NOTE = '실거래 신고 사실 · 투자 조언 아님';
+  const ESTATE_NOTE = M.ESTATE_NOTE;   // 고지 문구는 map.js 하나(v9: 두 곳에 따로 적혀 있었다)
   const UNIT = { sg: '시·군·구', emd: '읍·면·동' };
 
   const over = (c, code) => (c.index && c.index.over_std && isNum(c.index.over_std[code]) ? c.index.over_std[code] : null);
@@ -163,7 +163,7 @@
     return `<nav class="fd-pager" aria-label="지역 결과 페이지"><button type="button" data-fd-page="prev" aria-label="이전 페이지"${p.page === 1 ? ' disabled' : ''}>이전</button><div>${pageRange(p.page, p.pages).map(n => typeof n === 'number' ? `<button type="button" data-fd-page="${n}"${n === p.page ? ' aria-current="page"' : ''} aria-label="${n}페이지">${n}</button>` : '<span aria-hidden="true">…</span>').join('')}</div><button type="button" data-fd-page="next" aria-label="다음 페이지"${p.page === p.pages ? ' disabled' : ''}>다음</button></nav>`;
   }
   function resultHTML(ev, areas, ctx, unit, by, page = 1) {
-    const emo = ev.use.map(id => condOf(id).e).join(' ');
+    const emo = ev.use.map(id => ico(condOf(id).e)).join('');   // e는 아이콘 이름(bldg 등). 글자로 찍혀 줄마다 'bldg sum'이 보였다(v9)
     const skip = ev.skipped.length ? `<p class="fd-skip">이 범위에서 쓸 수 없어 빠진 조건 ${ev.skipped.length}개: ${esc(ev.skipped.map(id => chipLabel(condOf(id), ctx, condState(condOf(id), ctx, unit))).join(', '))}</p>` : '';
     const head = `<p class="fd-note">${esc(NOTE)} · ${esc(UNIT[unit])} 단위${unit === 'sg' ? ' · 시·군·구 값은 그 안 읍·면·동 값의 중앙값' : ''}</p>`;
     const groups = ev.groups || ev.use.map(id => [id]), lbl = id => chipLabel(condOf(id), ctx, condState(condOf(id), ctx, unit));
@@ -173,7 +173,7 @@
     return head + skip + conds + `<p class="fd-count" aria-live="polite">조건에 맞는 곳 <b data-ck="fd-n" data-count="${ev.hits.length}">${ev.hits.length}</b>곳 <small>/ 전체 ${esc(M.fmt(areas.length))}곳${ev.nodata ? ` · 자료가 없어 판단하지 않은 곳 ${esc(M.fmt(ev.nodata))}곳` : ''}</small></p>` +
       LIST_MARK + `<div class="dash-seg fd-sort" role="group" aria-label="목록 순서"><button type="button" data-fd-sort="code" aria-pressed="${by !== 'name'}">행정코드 순</button><button type="button" data-fd-sort="name" aria-pressed="${by === 'name'}">가나다 순</button></div>` +
       (dg() ? `<p class="fd-xlsx"><button type="button" class="btn ghost" data-fd-xlsx>XLSX 내려받기</button><small>조건에 맞는 곳 ${ev.hits.length}곳(행정코드 순), 범위 전체의 해당 여부, 조건·출처 시트</small><span class="map-png-msg" data-fd-xlsx-msg role="status"></span></p>` : '') +
-      (list.length ? `<div data-state="ready"><h3 class="fd-list-title" data-fd-list-start tabindex="-1">전체 ${p.total}곳 중 ${p.from}–${p.to}곳</h3><ol class="fd-list">${p.items.map(a => `<li><span class="fd-n"><b>${esc(a.name)}</b><small>${esc(a.sub)} · ${esc(a.code)}</small></span><span class="fd-b" aria-label="맞는 조건">${esc(emo)}</span><a href="${esc(hashOf(a, ctx))}" data-fd-go>${a.dong ? '이 동 보기' : '이 지역 보기'}</a></li>`).join('')}</ol>${pagerHTML(p)}</div>`
+      (list.length ? `<div data-state="ready"><h3 class="fd-list-title" data-fd-list-start tabindex="-1">전체 ${p.total}곳 중 ${p.from}–${p.to}곳</h3><ol class="fd-list">${p.items.map(a => `<li><span class="fd-n"><b>${esc(a.name)}</b><small>${esc(a.sub)} · ${esc(a.code)}</small></span><span class="fd-b" aria-hidden="true">${emo}</span><a href="${esc(hashOf(a, ctx))}" data-fd-go>${a.dong ? '이 동 보기' : '이 지역 보기'}</a></li>`).join('')}</ol>${pagerHTML(p)}</div>`
         : `<div class="fd-empty" data-state="empty" role="status"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>조건을 모두 만족하는 곳이 없습니다.<br>조건을 하나 빼 보세요.</p><button type="button" class="btn ghost" data-fd-relax>마지막 조건 빼기</button></div>`);
   }
   const LIST_MARK = '<!--fd-list-->';
@@ -236,7 +236,7 @@
       `<ul class="gov-cards">${PRESETS.map(p => `<li><button type="button" class="gov-card" data-gov-preset="${esc(p.id)}" aria-label="${esc(p.n)}"><span class="gov-e" aria-hidden="true">${ico(p.e)}</span><span class="gov-n">${esc(p.n)}</span><b>${esc(p.ask)}</b><span class="gov-why">→ ${esc(p.give)}</span><span class="gov-d">${esc(DECIDE)}</span></button><details class="gov-more"><summary>조건·근거 법령</summary><span class="gov-c">${esc(condText(p))}</span><span class="gov-law">${esc(p.law)}</span></details></li>`).join('')}</ul>`;
   }
   // 홈에서 넘어온 기본 보고서(?report=onepage 등). 모르는 값은 무시한다(심사 06, 2026-11-08)
-  const entryReportMode = search => { const m = new URLSearchParams(search || '').get('report'); return ['report', 'brief', 'onepage', 'programs'].includes(m) ? m : null; };
+  const entryReportMode = search => { const m = new URLSearchParams(search || '').get('report'); return M.REPORT_MODES.some(x => x[0] === m) ? m : null; };   // 보고서 종류 목록은 map.js 하나(v9: 네 곳에 따로 적혀 있었다)
   function entryReportURL(href) {
     const url = new URL(href);
     if (!entryReportMode(url.search) || !M.parseHash(url.hash)?.dong) return null;
@@ -334,7 +334,7 @@
   const more = document.getElementById('findMore');
   const openMore = () => more?.setAttribute('open', ''); // 업무를 고르거나 #find로 오면 접힌 조건 칸을 연다
   more?.addEventListener('toggle', () => { if (more.open) render(); });
-  document.addEventListener('renew-docgen', () => render());
+  ['renew-docgen', 'renew-series'].forEach(t => document.addEventListener(t, () => render()));
   if (/^#find/.test(location.hash)) openMore();
   if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) { openMore(); applyPreset(b.dataset.govPreset); } });
   addEventListener('hashchange', trackHash);

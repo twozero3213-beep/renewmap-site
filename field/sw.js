@@ -1,8 +1,8 @@
 // 앱 셸을 캐시해 오프라인에서 연다. 기록은 IndexedDB에만 있고 네트워크로 나가지 않는다.
 // 캐시 이름 = 앱 셸 파일 내용의 지문. 파일이 바뀌면 이름도 바뀌어야 새 판이 설치된다(감사 이수진1: v20을 안 올린 채 7번 바뀜).
 // 셸 파일을 고치면 field/evidence.test.cjs가 실패하며 새 지문을 알려 준다
-const CACHE = "renewmap-field-228bb45366";
-const SHELL = ["./", "index.html", "field.css", "record.js?v=20261112-taskreview", "store.js", "evidence.js", "app.js", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js", "../site-motion.js", "../frame-guard.js", "../docgen.js", "../cellpack.js", "../list-pages.js", "../list-pages.css",
+const CACHE = "renewmap-field-bb8e117fb4";
+const SHELL = ["./", "index.html", "field.css", "record.js?v=20261112-taskreview", "store.js", "evidence.js", "app.js", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js", "../site-motion.js", "../frame-guard.js", "../docgen.js", "../cellpack.js", "../list-pages.js", "../list-pages.css", "../rm6.css",
   "../data/report_templates.json", "upload.js", "upload-config.js", "detect.js", "redev.html", "redev.js", "redev-app.js", "parcel-ref.js", "twin.html", "twin.css", "twin.js", "twin-app.js", "../favicon.svg", "../icon-192.png"];
 // 설치 때는 브라우저 HTTP 캐시(Pages max-age=600)를 건너뛴다. 안 그러면 갱신 직전에 열어 둔 옛 파일이 새 캐시에 들어간다
 // 새 판은 기다리지 않고 바로 자리를 잡는다(skipWaiting·claim). 안 그러면 탭을 모두 닫기 전까지 옛 계산 파일이 나간다(2026-10-30 배포 직후 실측). 화면은 controllerchange로 새로고침을 안내한다
@@ -11,7 +11,7 @@ self.addEventListener("activate", (e) => e.waitUntil(caches.keys().then((ks) => 
 // 처음 쓸 때 받아 두었다가 오프라인 현장에서도 쓰는 것: 자동 가림 도구(vendor/vision, 약 20MB), 행정동 경계·현황(data/national), 건물 자료(data/buildings, N1)
 const KEEP = /\/vendor\/vision\/|\/data\/buildings\/\d{10}\.json|\/data\/national\/(?:sigungu\.geojson|index\.json|ref_lines\.json|emd\/|living\/)/;
 // 새 자료 점검은 캐시를 건너뛴다. 화면 새로고침도 no-cache라 탐색 요청은 제외해야 오프라인에서 다시 열린다.
-self.addEventListener("fetch", (e) => e.request.cache === "no-cache" && e.request.mode !== "navigate" ? undefined : e.respondWith(caches.match(e.request, { cacheName: CACHE }).then((hit) => hit || fetch(e.request).then((res) => {
+self.addEventListener("fetch", (e) => e.request.cache === "no-cache" && e.request.mode !== "navigate" ? undefined : e.respondWith(caches.match(e.request, { cacheName: CACHE, ignoreSearch: e.request.mode === "navigate" }).then((hit) => hit || fetch(e.request).then((res) => {
   if (res.ok && KEEP.test(e.request.url)) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
   return res;
 }))));

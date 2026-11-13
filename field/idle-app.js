@@ -68,7 +68,8 @@
     if (!last) return;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([I.toCSV(last)], { type: "text/csv;charset=utf-8" }));
-    a.download = `${last.name}_창고공장_목록_${new Date().toISOString().slice(0, 10)}.csv`;
+    // 기기 시간대 날짜(sv-SE = YYYY-MM-DD). toISOString은 UTC라 한국 0~9시에 전날이 된다. 이 쪽은 docgen.js(localDate)를 싣지 않는다
+    a.download = `${last.name}_창고공장_목록_${new Date().toLocaleDateString("sv-SE")}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   });

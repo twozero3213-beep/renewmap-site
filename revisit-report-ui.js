@@ -118,9 +118,7 @@
       const d = new Date(record.recorded_at);
       if (!Number.isFinite(d.getTime()))
         throw new Error("현장 기록의 조사일을 확인하세요.");
-      return new Intl.DateTimeFormat("sv-SE", {
-        timeZone: "Asia/Seoul",
-      }).format(d);
+      return root.RenewDocgen.localDate(d);
     }
     function applyConditions(side, values = {}, fixed = false) {
       for (const key of conditions) {
@@ -343,7 +341,8 @@
           (r) =>
             new Option(
               [
-                r.visit?.date || String(r.recorded_at || "").slice(0, 10),
+                r.visit?.date ||
+                  (r.recorded_at && root.RenewDocgen.localDate(r.recorded_at)),
                 r.jibun || r.pnu || r.target || r.id,
               ]
                 .filter(Boolean)

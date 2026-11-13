@@ -91,7 +91,9 @@
   // ── 화면 ──
   const $ = (id) => document.getElementById(id);
   if (!document.getElementById('t4App')) return;
-  const NOW = new Date().getFullYear(), TO = NOW + 20;
+  // '올해'는 자료 기준연도(건축물대장 age_reference_date)다. 파일이 오기 전에는 달력 연도로 두고, 오면 맞춘다
+  // (v9: 달력 연도를 쓰면 해가 바뀐 뒤 자료를 다시 받기 전까지 홈 목록(export_crossing_soon.py, 자료 기준연도)과 한 해씩 어긋난다)
+  let NOW = new Date().getFullYear(), TO = NOW + 20;
   const getJson = (p) => fetch(`data/${p}`).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
   // ?y=: 홈 '곧 노후 요건에 닿는 동네'에서 오면 그 해부터 연다(범위 밖이면 올해)
   const y0 = Number(new URLSearchParams(location.search).get('y'));
@@ -146,6 +148,12 @@
       const [outline, bf] = await Promise.all([getJson(`bldg_outline/${code}.json`), getJson(`buildings/${code}.json`)]);
       blds = bf.buildings || [];
       fileMeta = { outline, bf };
+      const ref = Number(String(bf.age_reference_date || bf.hub_reference_date || '').slice(0, 4));
+      if (ref >= 2000 && ref !== NOW) {
+        const atNow = year === NOW; NOW = ref; TO = NOW + 20; slider.max = String(TO);
+        $('t4Ends').textContent = `${YEAR_FROM}년 ~ ${TO}년 · 올해 뒤는 지금 건물 그대로일 때`;
+        if (atNow || year > TO) { year = Math.min(atNow ? NOW : year, TO); slider.value = String(year); }
+      }
       const gj = features(outline, bf);
       const bbox = bboxOf(gj);
       await ready();
@@ -171,7 +179,7 @@
     const q = (a, p) => a[Math.min(a.length - 1, Math.floor(a.length * p))];
     return [q(xs, 0.1), q(ys, 0.1), q(xs, 0.9), q(ys, 0.9)];
   }
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const { esc } = root.RenewUtil;
 
   // 지도 하나를 세운다. yearOf: 이 지도가 보여 줄 해(본 지도 = 막대의 해, 비교 지도 = 올해)
   function buildMap(container, yearOf, nav) {

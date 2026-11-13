@@ -5,6 +5,9 @@
   if (root && root.document) root.RenewWorkspace = api;
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
+  // 보고서 종류는 map.js REPORT_MODES 하나만 쓴다(v9: map·find·workspace 두 곳에 따로 적혀, 하나만 늘리면 나머지가 조용히 버렸다).
+  // 브라우저에서는 map.js가 먼저 실린다(explore.html defer 순서)
+  const reportKeys = () => ((typeof window !== 'undefined' && window.RenewMap) || require('./map.js')).REPORT_MODES.map(x => x[0]);
   function normalizePanel(name) {
     return ['filters', 'map', 'evidence'].includes(name) ? name : 'map';
   }
@@ -17,12 +20,12 @@
   function panelFromLocation(hash, search) {
     const legacy = panelFromHash(hash), params = new URLSearchParams(search || '');
     if (legacy !== 'map') return legacy;
-    if (!params.has('panel') && ['report', 'brief', 'onepage', 'programs'].includes(params.get('report')) && /^#map\/\d{2}\/\d{5}(?:\/\d{5})?\/\d{8}$/.test(hash || '')) return 'evidence';
+    if (!params.has('panel') && reportKeys().includes(params.get('report')) && /^#map\/\d{2}\/\d{5}(?:\/\d{5})?\/\d{8}$/.test(hash || '')) return 'evidence';
     return normalizePanel(params.get('panel'));
   }
   function panelURL(href, panel, mapHash, reportMode) {
     const url = new URL(href), name = normalizePanel(panel);
-    if (['report', 'brief', 'onepage', 'programs'].includes(reportMode)) url.searchParams.set('report', reportMode);
+    if (reportKeys().includes(reportMode)) url.searchParams.set('report', reportMode);
     if (name === 'map' && !url.searchParams.has('report')) url.searchParams.delete('panel');
     else url.searchParams.set('panel', name);
     url.hash = /^#map(?:\/\d+)*$/.test(mapHash || '') ? mapHash : '#map';

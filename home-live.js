@@ -10,13 +10,13 @@
   ];
   const MET = 'DECLINE_MET_COUNT';
   // 1쪽 문서·동 페이지와 같은 자릿수(소수 둘째 자리)로 보인다(11-13 3차: 홈 83%, 문서 82.96%로 달라 보임)
-  const fmt = (v) => (Math.round(v * 100) / 100).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+  const { fmt2: fmt } = typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil;
   // 한 동의 셀들 → 카드에 쓸 값(순수 함수, 시험용). 상태는 요건 단위(decline-req.js: 30년·10년 감소율 또는 '최근 5년 중 3년 연속 감소' 중 하나라도 해당이면 해당).
   // v7(11-13 6회차): 감소율 한 길만 보고 '추가확인'을 붙여, 연속 감소로 해당한 동은 머리의 'N개 해당'과 줄이 어긋났다
   const DR = typeof module === 'object' && module.exports ? require('./decline-req.js') : root.DeclineReq;
   function summarize(cells) {
     const by = new Map((cells || []).map((c) => [c.indicator_code, c]));
-    const met = by.get(MET), val = (code) => { const c = by.get(code); return c && typeof c.value === 'number' ? c.value : null; };
+    const met = by.get(MET), val = (code) => DR.cellValue(by.get(code));   // 미확정·비공개 셀은 셈에 안 쓴다(문서·동 페이지와 같게)
     const reqs = DR.evaluate(val);
     return {
       met: met && typeof met.value === 'number' ? met.value : null,

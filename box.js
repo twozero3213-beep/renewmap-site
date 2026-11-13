@@ -4,7 +4,7 @@
   const S = window.FieldStore, D = window.RenewDocgen, R = window.FieldRecord;
   const $ = (id) => document.getElementById(id);
   const say = (t) => { $("boxMsg").textContent = t; };
-  const day = (iso) => { const t = new Date(iso); return `${t.getFullYear()}. ${t.getMonth() + 1}. ${t.getDate()}. ${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`; };
+  const day = (iso) => { const s = D.localDate(iso, true); return `${D.govDate(s)} ${s.slice(11)}`; };
   const MIME = { hwpx: "application/hwp+zip", zip: "application/zip" };
   function row(title, meta, acts) {
     const li = document.createElement("li"), b = document.createElement("b"), m = document.createElement("span"), a = document.createElement("div");
@@ -12,7 +12,8 @@
     for (const [label, fn, cls, aria] of acts) {
       const btn = document.createElement("button");
       btn.type = "button"; btn.textContent = label; if (cls) btn.className = cls; if (aria) btn.setAttribute("aria-label", aria);
-      btn.addEventListener("click", fn); a.append(btn);
+      // 지우기·원본 받기는 기기 저장소를 쓰므로 실패하면 조용히 멈추지 않고 알린다
+      btn.addEventListener("click", async () => { try { await fn(); } catch (e) { say("처리하지 못했습니다.\n새로고침한 뒤 다시 해 보세요."); } }); a.append(btn);
     }
     li.append(b, m, a);
     return li;
@@ -34,7 +35,8 @@
     const save = async () => {
       sync();
       const next = R.setOutcome(d, sel.value, [...why.querySelectorAll("input:checked")].map((c) => c.value), cb.checked, new Date());
-      await S.addDoc(next); d.outcome = next.outcome; sync(); say(next.outcome ? "결재 결과를 이 기기에 저장했습니다." : "결재 결과를 지웠습니다."); tally();
+      try { await S.addDoc(next); } catch (e) { say("결재 결과를 저장하지 못했습니다.\n새로고침한 뒤 다시 골라 주세요."); return; }
+      d.outcome = next.outcome; sync(); say(next.outcome ? "결재 결과를 이 기기에 저장했습니다." : "결재 결과를 지웠습니다."); tally();
     };
     sel.addEventListener("change", save); why.addEventListener("change", save); cb.addEventListener("change", save);
     sync(); box.append(sel, why, ok);
@@ -78,7 +80,7 @@
   async function recordZip(rec) {
     const entries = [{ name: "records.json", data: JSON.stringify(R.exportDoc([rec], new Date()), null, 2) }];
     for (const id of new Set([...(rec.photos || []), ...(rec.prev_photos || [])])) { const b = await S.photo(id); if (b) entries.push({ name: `photos/${id}.jpg`, data: new Uint8Array(await b.arrayBuffer()) }); }
-    return D.zipStore(entries, new Date().toISOString());
+    return D.zipStore(entries, D.localDate());
   }
   async function render() {
     const [allDocs, recs] = await Promise.all([S.docs(), S.records()]);
@@ -91,15 +93,15 @@
     if (!docs.length) empty(du, "아직 받은 문서가 없습니다.\n현장 기록을 저장하고 1쪽 문서를 받아 보세요.", "field/", "현장 기록하기");
     for (const d of docPages.slice(docs)) du.append(withOutcome(d, row(d.name, `${day(d.created_at)} 받음`, [
       ["다시 받기", () => D.saveBytes(d.name, d.blob, MIME[d.kind] || "application/octet-stream"), "", `${d.name} 다시 받기`],
-      ["지우기", async () => { if (!confirm(`${d.name} 문서를 지울까요?\n지운 문서는 되살릴 수 없습니다.`)) return; await S.deleteDoc(d.id); say("문서를 지웠습니다."); render(); }, "del", `${d.name} 지우기`],
+      ["지우기", async () => { if (!confirm(`${d.name} 문서를 지울까요?\n지운 문서는 되살릴 수 없습니다.`)) return; await S.deleteDoc(d.id); say("문서를 지웠습니다."); refresh(); }, "del", `${d.name} 지우기`],
     ])));
     tally();
     if (!recs.length) empty(ru, "아직 저장한 현장 기록이 없습니다.", "field/", "현장 기록하기");
     for (const r of recPages.slice(recs)) {
       const where = r.dong ? `${r.dong.sgName} ${r.dong.name}` : r.jibun || r.pnu || R.NO_PARCEL;
       ru.append(row(`${where} · ${r.target || r.item || "기록"}`, `${day(r.recorded_at)}${r.photos && r.photos.length ? ` · 사진 ${r.photos.length}장` : ""}${r.corrected ? " · 위치 보정됨" : ""}`, [
-        ["원본 ZIP 받기", async () => D.saveBytes(`renewmap-field-${r.recorded_at.slice(0, 10)}-${r.id.slice(0, 8)}.zip`, await recordZip(r), MIME.zip), "", `${where} 기록 원본 받기`],
-        ["지우기", async () => { if (!confirm("이 현장 기록과 사진을 지울까요?\n지운 기록은 되살릴 수 없습니다.")) return; await S.deleteRecord(r); say("기록을 지웠습니다."); render(); }, "del", `${where} 기록 지우기`],
+        ["원본 ZIP 받기", async () => D.saveBytes(`renewmap-field-${D.localDate(r.recorded_at)}-${r.id.slice(0, 8)}.zip`, await recordZip(r), MIME.zip), "", `${where} 기록 원본 받기`],
+        ["지우기", async () => { if (!confirm("이 현장 기록과 사진을 지울까요?\n지운 기록은 되살릴 수 없습니다.")) return; await S.deleteRecord(r); say("기록을 지웠습니다."); refresh(); }, "del", `${where} 기록 지우기`],
       ]));
     }
   }
@@ -107,7 +109,7 @@
   $("outcomeExp").addEventListener("click", () => {
     const { text, n } = R.outcomesJSONL(lastDocs, lastRecs);
     if (!n) { say("개선에 동의한 결과가 없습니다."); return; }
-    D.saveBytes(`renewmap-outcomes-${new Date().toISOString().slice(0, 10)}.jsonl`, text, "application/x-ndjson");
+    D.saveBytes(`renewmap-outcomes-${D.localDate()}.jsonl`, text, "application/x-ndjson");
     say(`동의한 결과 ${n}건을 받았습니다.`);
   });
   render().catch(() => { $("docs").textContent = ""; $("recs").textContent = ""; say("이 브라우저에서는 기기 저장소를 쓸 수 없습니다."); });   // 뼈대를 지운다

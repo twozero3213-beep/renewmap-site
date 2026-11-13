@@ -92,7 +92,7 @@
       el('changeRequirement').replaceChildren(...base.spec.requirements.map(r => new Option(r.title, r.id)));
       const records = await root.FieldStore.records();
       el('changeRecord').replaceChildren(new Option('기록 선택', ''), ...records.map(r =>
-        new Option([String(r.recorded_at || '').slice(0,10), r.target, r.pnu || r.jibun || r.id].filter(Boolean).join(' · '), r.id)));
+        new Option([r.recorded_at && root.RenewDocgen.localDate(r.recorded_at), r.target, r.pnu || r.jibun || r.id].filter(Boolean).join(' · '), r.id)));
       el('changePick').replaceChildren(new Option('새 조사 행', ''), ...rows.map(r =>
         new Option(model.labels[r.change] + ' · ' + r.subject, r.id)));
       el('changePick').value = rows.some(r => r.id === keep) ? keep : '';
@@ -120,7 +120,7 @@
       }
       const date = new Date(record.recorded_at);
       if (!Number.isFinite(date.getTime())) throw new Error('현장 기록일을 확인해 주세요.');
-      el('changeObserved').value = record.visit?.date || new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(date);
+      el('changeObserved').value = record.visit?.date || root.RenewDocgen.localDate(date);
       el('changeSite').value = record.pnu || record.jibun || record.facility?.name || record.target;
       el('changeAfter').value = [record.observed, record.memo, record.status].filter(Boolean).join(' · ');
       fieldId = record.id;

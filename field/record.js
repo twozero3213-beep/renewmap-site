@@ -378,6 +378,7 @@
 
   // ── 기록 요약(현장·보관함 v4 공통): 개수만 센다. 대상 막대는 고정 목록 순서(많은 순 아님), 순위·점수 없음
   const pad2 = (n) => String(n).padStart(2, "0");
+  // 기기 시간대 날짜. docgen.localDate와 같지만 twin.html은 docgen 없이 이 파일만 싣는다
   const dayKey = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
   function stats(records, now) {
     const list = (records || []).filter((r) => r && r.recorded_at), today = dayKey(now);
@@ -473,7 +474,7 @@
     const pii = personalKinds(`${text}\n${approvedBy || ""}`);
     if (pii.length) throw new Error(`개인정보로 보이는 글(${pii.join(", ")})이 있어 만들지 않았습니다.`);
     return { schema: "renewmap-adoption-feedback-v1", verification_status: "self_reported",
-      reported_by: String(approvedBy || "").trim().slice(0, 40) || null, exported_on: now.toISOString().slice(0, 10),
+      reported_by: String(approvedBy || "").trim().slice(0, 40) || null, exported_on: dayKey(now),
       emd: rec && rec.dong && /^\d{8}$/.test(rec.dong.code) ? rec.dong.code : null,
       note: "이용자의 채택 자가 기록이며 기관 승인·검토자 신원은 확인하지 않음", kind: docKind(doc.name), text };
   }

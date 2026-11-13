@@ -99,20 +99,10 @@ header.top .wrap { position: relative; display: flex; align-items: center; justi
   .site-nav { flex: 1 0 100%; justify-content: space-between; gap: 4px; }
   .site-nav a { min-width: 44px; padding: 8px 0; font-size: 12px; }
 }
-.quick-menu { display: flex; gap: 4px; flex-wrap: wrap; }
-.quick-menu a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px; color: var(--dim); font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px; }
-.quick-menu a:hover, .quick-menu a[aria-current] { background: var(--soft); color: var(--green); }
-.quick-menu a:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-@media (max-width: 540px) {
-  header.top .wrap:has(.quick-menu) { flex-wrap: wrap; gap: 0; padding-top: 8px; padding-bottom: 4px; }
-  .quick-menu { width: 100%; justify-content: space-between; }
-  .quick-menu a { padding: 6px 8px; }
-}
-@media print { .tabbar, .quick-menu, .menu-toggle, header.top { display: none !important; } body { padding: 0 !important; } }
+@media print { .tabbar, .menu-toggle, header.top { display: none !important; } body { padding: 0 !important; } }
 nav.menu { display: flex; gap: 4px; flex-wrap: wrap; }
 nav.menu a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 10px; border-radius: 8px; color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; }
 nav.menu a:hover { color: var(--green); background: var(--soft); }
-.header-cta { padding: 10px 16px; font-size: 14px; white-space: nowrap; }
 .menu-toggle { display: none; align-items: center; justify-content: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); background: var(--card); color: var(--ink); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .menu-toggle::before { content: ''; width: 16px; height: 12px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; background: linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat; }
 .menu-toggle[aria-expanded="true"] { background: var(--ink); color: var(--card); }
@@ -187,12 +177,10 @@ footer .links a { display: inline-flex; align-items: center; min-height: 44px; }
 @media (max-width: 980px) {
   header.top .wrap { gap: 8px; }
   nav.menu a { padding-inline: 7px; font-size: 13px; }
-  .header-cta { padding-inline: 12px; }
 }
 @media (max-width: 720px) {
   header.top .wrap { min-height: 60px; }
   .menu-toggle { display: inline-flex; }
-  .header-cta { display: none; }
   nav.menu { display: none; position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; z-index: 22; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); box-shadow: 0 16px 36px var(--shade-16); }
   nav.menu.is-open { display: grid; }
   nav.menu a { min-height: 48px; padding: 10px 14px; font-size: 16px; }
@@ -218,7 +206,6 @@ footer .links a { display: inline-flex; align-items: center; min-height: 44px; }
 .eth-flow li b { display: block; font-size: 16px; margin-bottom: 4px; }
 .eth-flow li::before { counter-increment: s; content: counter(s); position: absolute; top: -10px; left: 10px; background: var(--green); color: var(--on-green); font-size: 12px; font-weight: 700; width: 22px; height: 22px; border-radius: 50%; line-height: 22px; }
 .eth-note { font-size: 14px; color: var(--dim); }
-
 
 /* 주 메뉴 4개(찾기·업무별·현장·보관함). 1100px 미만은 하단 탭, 이상은 왼쪽 세로 막대(redesign 4장) */
 .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
@@ -284,8 +271,6 @@ table.wide { min-width: 680px; }   /* 좁은 화면에서 낱말마다 줄이 �
 .page table.grid { display: table; min-width: 480px; }
 
 /* 업무 대상·문서 범위를 첫 화면에 두고, 모바일에서도 세 흐름의 근거를 남긴다. */
-.app-home .start-audience { margin: 0 0 12px; color: var(--green); font-size: 14px; font-weight: 700; line-height: 1.5; }
-.app-home .start-status { margin: -12px 0 20px; color: var(--dim); font-size: 14px; line-height: 1.5; }
 #intro .about-cta { margin-bottom: 20px; }
 #intro .about-stage { max-width: 760px; font-size: 16px; }
 .about-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin: 20px 0; }
@@ -299,6 +284,5 @@ table.wide { min-width: 680px; }   /* 좁은 화면에서 낱말마다 줄이 �
 .rp-review dd { margin: 4px 0 0; }
 @media print { .rp-review { display: none !important; } }
 @media (max-width: 600px) {
-  .app-home .start-flow li div > span { display: block; margin-top: 4px; font-size: 13px; line-height: 1.5; }
   .about-options { grid-template-columns: minmax(0, 1fr); gap: 16px; }
 }

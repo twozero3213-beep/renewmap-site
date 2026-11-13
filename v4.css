@@ -14,7 +14,6 @@
 .sr-glance .gl-n li { display: flex; align-items: center; gap: 8px; }
 .sr-glance .gl-n li > b:last-child { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .gl-sw { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-.sw-r { background: var(--over); } .sw-g { background: var(--within); } .sw-y { background: var(--pending); } .sw-w { background: var(--nodata); } .sw-b { background: var(--bar-empty); }
 .sr-glance .gl-dots { margin: 10px 0 0; font-size: 12px; }
 .sr-glance .gl-dots i.gl-r { background: var(--over); } .sr-glance .gl-dots i.gl-g { background: var(--within); }
 .sr-glance .gl-dots i.gl-y { background: var(--pending); } .sr-glance .gl-dots i.gl-w { background: var(--nodata); } .sr-glance .gl-dots i.gl-b { background: var(--bar-empty); } .sr-glance .gl-dots i.gl-p { background: var(--card); border: 1px dashed var(--nodata); }

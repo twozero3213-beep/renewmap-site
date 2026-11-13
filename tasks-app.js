@@ -108,7 +108,8 @@
       .join("\n");
   }
   function readSpec() {
-    const prior = current?.spec.requirements || [];
+    // 줄을 지우거나 순서를 바꿔도 연결된 근거가 다른 항목으로 옮겨 가지 않게 ID는 줄 위치가 아니라 항목명으로 잇는다(같은 이름은 앞에서부터 한 번씩)
+    const unused = [...(current?.spec.requirements || [])];
     const lines = $("taskRequirements")
       .value.split(/\r?\n/)
       .filter((x) => x.trim());
@@ -120,8 +121,9 @@
         throw new Error(
           `${i + 1}번째 항목을 항목명 | 지정 출처 | 공간 단위 순서로 적어 주세요.`,
         );
+      const hit = unused.findIndex((r) => r.title === parts[0]);
       return {
-        id: prior[i]?.id || crypto.randomUUID(),
+        id: hit >= 0 ? unused.splice(hit, 1)[0].id : crypto.randomUUID(),
         title: parts[0],
         source: parts[1],
         unit: parts[2],
@@ -514,7 +516,7 @@
         ];
       D.saveBytes(
         `renewmap-delivery-${current.id}-v${current.revision}.zip`,
-        D.zipStore(entries, new Date().toISOString()),
+        D.zipStore(entries, D.localDate()),
         "application/zip",
       );
       say("파일 지문·검토 이력이 담긴 납품 묶음을 받았습니다.");

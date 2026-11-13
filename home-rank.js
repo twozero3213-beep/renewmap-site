@@ -4,7 +4,7 @@
 (function (root) {
   'use strict';
   const SHOW = 5;
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const { esc } = typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil;
   // 한 목록 → <li> 줄들(순수 함수, 시험용)
   // 무게를 바꿔 다시 셈한 순위 구간(rank_top.json rank_range, 출처 scores_range.json). 없으면 빈 글
   const rangeText = (r) => (Array.isArray(r) && r.length === 2 ? (r[0] === r[1] ? ` · 무게 바꿔도 ${r[0]}위` : ` · 무게 바꾸면 ${r[0]}~${r[1]}위`) : '');

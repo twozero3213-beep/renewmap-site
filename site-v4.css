@@ -43,17 +43,11 @@ header.top .menu a:hover::after, header.top .menu a[aria-current]::after { trans
 .about-top h1, .about-top h2, .about-top h3 { color: var(--hero-ink); }
 .about-top h1 { font-size: clamp(32px, 4.4vw, 56px); line-height: 1.12; letter-spacing: -.02em; text-wrap: balance; }
 .about-top p, .about-top .about-vl { color: var(--hero-dim); }
-.about-top .about-vn { color: var(--lime); }
 .about-top .btn:not(.ghost) { background: var(--lime); color: var(--navy); border-color: var(--lime); }
 .about-top .btn:not(.ghost):hover { background: var(--hero-ink); border-color: var(--hero-ink); }
 .about-top .btn.ghost { background: transparent; color: var(--hero-ink); border-color: var(--hero-line); }
 .about-top .btn.ghost:hover { background: rgba(255,255,255,.08); }
-.about-top .about-values li { border-color: var(--hero-line); }
 /* 네 가지 원칙은 흰 카드라 글자는 원래 진한 색으로 */
-.about-top .about-values li h3 { color: var(--ink); }
-.about-top .about-values li p { color: var(--dim); }
-.about-top .about-values li .about-vl { color: var(--ink); }
-.about-top .about-values .about-vn { color: var(--green); }
 
 /* ── 움직임 ── */
 .motion .pg-band h1 { animation: v4-rise .8s var(--out) both; }

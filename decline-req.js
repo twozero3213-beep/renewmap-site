@@ -18,6 +18,18 @@
       return { key: r.key, name: r.name, status: hit ? 'over' : res.every((p) => p.hit === false) ? 'in' : 'none', via: hit || null, rate: res[0].v };
     });
   }
-  const api = { REQS, evaluate };
+  // 원장 셀 → 셈에 쓸 값. 비공개이거나 상태가 미확정(추가확인·충돌·폐기)이면 null(dong_brief judge·docgen judge와 같다).
+  // v9: 홈·지도 카드는 값만 보고 '기준 해당'이라 했는데 동 페이지·1쪽 문서는 '확정 불가'였다(박달동·호현동 노후 비율)
+  const UNSETTLED = ['추가확인', '충돌', '폐기'];
+  const cellValue = (c) => (!c || c.value_hidden_reason || UNSETTLED.includes(c.status) ? null : num(c.value));
+  // 요건 충족 수(하한) 셀 → 'over' | 'in' | 'none'. 정해지지 않은 요건(3 − sample_n)을 모두 해당으로 쳐도 2개에 못 미칠 때만 'in'
+  // (dong_brief judge_met_count·docgen judgeMetCount와 같다. v9: 지도는 1개면 바로 '기준 안'이라 523곳이 문서와 달랐다)
+  function metStatus(c) {
+    const v = cellValue(c);
+    if (v === null) return 'none';
+    if (v >= 2) return 'over';
+    return v + (3 - (num(c.sample_n) ?? 0)) >= 2 ? 'none' : 'in';
+  }
+  const api = { REQS, evaluate, cellValue, metStatus };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.DeclineReq = api;
 })(typeof self !== 'undefined' ? self : this);

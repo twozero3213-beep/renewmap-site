@@ -8,9 +8,11 @@
     if (!opening) opening = new Promise((resolve, reject) => {
       const q = indexedDB.open(NAME, VERSION);
       q.onupgradeneeded = () => { for (const s of STORES) if (!q.result.objectStoreNames.contains(s)) q.result.createObjectStore(s, { keyPath: "id" }); };
-      q.onsuccess = () => resolve(q.result);
-      q.onerror = () => { opening = null; reject(q.error); };
-    });
+      // 새 판(VERSION)이 다른 탭에서 열리면 이 연결을 닫아 업그레이드를 막지 않는다(task-store.js와 같음)
+      q.onsuccess = () => { const d = q.result; d.onversionchange = () => { d.close(); opening = null; }; resolve(d); };
+      q.onerror = () => reject(q.error);
+      q.onblocked = () => reject(new Error("다른 창에서 현장 기록 저장소를 쓰고 있습니다. 다른 창을 닫고 다시 시도해 주세요."));
+    }).catch((error) => { opening = null; throw error; });
     return opening;
   }
   async function tx(stores, mode, fn) {

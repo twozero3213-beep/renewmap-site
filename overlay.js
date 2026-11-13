@@ -459,7 +459,10 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
     const pickedMethod = () => { const r = app.querySelector('[name="ovMethod"]:checked'); return r ? r.value : 'latlon'; };
     const styleOf = () => pickStyle(val('ovColor'), val('ovSize'), val('ovNum'), val('ovLabel'));
     const labelOf = st => (st.num >= 0 ? S.table.headers[st.num] : '');
-    const clearLayer = () => { if (group) { group.remove(); group = null; } };
+    // 캔버스 렌더러는 점을 지워도 지도에 남아 아래 동 경계 클릭을 막는다(Leaflet 1.9). 그래서 얹을 때마다 하나 만들고 지울 때 같이 뗀다
+    // (v9: 얹을 때마다 화면 크기 캔버스가 쌓여, '지우기' 뒤에도 동을 누를 수 없었다)
+    let renderer = null;
+    const clearLayer = () => { if (group) { group.remove(); group = null; } if (renderer) { renderer.remove(); renderer = null; } };
     const syncMethod = () => { const m = pickedMethod(); app.querySelectorAll('[data-ov-m]').forEach(el => { el.hidden = el.dataset.ovM !== m; }); };
     function reset() {
       clearLayer(); Object.assign(S, { sheets: null, table: null, pii: [], det: null, pts: null, codes: null, loc: null, agg: null, valueLabel: '' });
@@ -498,7 +501,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       const map = liveMap(), L = window.L; clearLayer();
       if (!map || !L) return;
       if (!map.getPane('rmOverlay')) map.createPane('rmOverlay').style.zIndex = 620;
-      const st = styleOf(), renderer = L.canvas({ pane: 'rmOverlay', padding: 0.5 }); group = L.layerGroup().addTo(map);
+      const st = styleOf(); renderer = L.canvas({ pane: 'rmOverlay', padding: 0.5 }); group = L.layerGroup().addTo(map);
       const p = planDots(toDots(S, st, isCoord(S.method) || !S.codes ? [] : visibleFeatures(map, S.method === 'adm8' ? 8 : 5)), st);
       p.dots.forEach((d, k) => {
         const m = L.circleMarker([d.lat, d.lon], { renderer, radius: d.r, color: '#ffffff', weight: 1.2, fillColor: st.color, fillOpacity: 0.85 }).addTo(group);

@@ -180,14 +180,14 @@
       $("newData").hidden = !E.isNewData(cur, latest);
     } catch (e) { /* 오프라인·일시 오류면 다음 세션에 다시 본다 */ }
   }
-  // 받기: 기기에 받아 둔 행정동 경계·현황 파일만 지우고 다시 연다. 저장한 기록은 숫자를 기록 안에 갖고 있어 바뀌지 않는다
+  // 받기: 기기에 받아 둔 행정동 경계·현황·건물 자료만 지우고 다시 연다(sw.js가 건물 파일도 계속 보관하므로 함께 지운다). 저장한 기록은 숫자를 기록 안에 갖고 있어 바뀌지 않는다
   $("newDataGet").addEventListener("click", async () => {
     $("newDataGet").disabled = true;
     try {
       for (const k of await caches.keys()) {
         if (!k.startsWith("renewmap-field-")) continue;
         const c = await caches.open(k);
-        for (const q of await c.keys()) if (/\/data\/national\//.test(q.url)) await c.delete(q);
+        for (const q of await c.keys()) if (/\/data\/(national|buildings)\//.test(q.url)) await c.delete(q);
       }
       location.reload();
     } catch (e) { $("newDataGet").disabled = false; toast("새 자료를 받지 못했습니다.\n잠시 뒤 다시 해 보세요."); }
@@ -206,18 +206,22 @@
     $("visitPrevious").textContent = E.revisitText(site && site.from);
     if (site) $("siteLine").textContent = `같은 지점으로 묶었습니다.\n이전 기록 ${E.localTime(site.from.recorded_at)}${site.photos.size ? ` · 이전 사진 ${site.photos.size}장을 1쪽에 넣습니다` : ""}`;
   }
+  // 반경 바꾸기·묶기·저장이 겹치면 앞선 호출이 await 뒤에 같은 목록에 이어 붙인다. 마지막 호출만 그린다
+  let nearSeq = 0;
   async function drawNear() {
+    const seq = ++nearSeq;
     nearUrls.forEach((u) => URL.revokeObjectURL(u)); nearUrls = [];
     const ul = $("nearList"); ul.textContent = "";
     if (!pos) { $("near").hidden = true; return; }
     const at = pos, near = E.nearbyRecords(await S.records(), at.lat, at.lng, radius());
-    if (at !== pos) return;
+    if (at !== pos || seq !== nearSeq) return;
     if (site && !near.some((x) => E.siteOf(x.rec) === site.id)) { site = null; siteText(); }
     $("near").hidden = !near.length;
     $("nearSum").textContent = `이 근처 이전 기록 ${near.length}건 (반경 ${radius()}m)`;
     for (const { rec, dist } of near) {
       const li = document.createElement("li"), body = document.createElement("div"), head = document.createElement("b"), meta = document.createElement("div"), btn = document.createElement("button");
       const first = rec.photos && rec.photos[0] && await S.photo(rec.photos[0]);
+      if (seq !== nearSeq) return;
       if (first) { const img = document.createElement("img"), u = URL.createObjectURL(first); nearUrls.push(u); img.src = u; img.alt = `${E.localTime(rec.recorded_at)} 기록 사진`; img.width = 64; img.height = 64; li.append(img); }
       else { const blank = document.createElement("span"); blank.className = "blank"; li.append(blank); }
       head.textContent = `${E.localTime(rec.recorded_at)} · ${rec.target}${rec.imported ? " · 가져옴" : ""}`;
@@ -250,7 +254,11 @@
       wait(false);
       gps ={ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy };
       pos = { ...gps }; corrected = false; locLine(); lookup(); drawNear();
-    }, () => { wait(false); if (!pos) $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '자세히'에 지번을 적어 주세요."; }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
+    }, () => {
+      wait(false);
+      if (!pos) { $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '자세히'에 지번을 적어 주세요."; return; }
+      locLine(); $("locLine").textContent += "\n새 위치를 받지 못해 이전 위치를 그대로 씁니다.";   // '받는 중' 문구가 남지 않게
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
   }
   $("gps").addEventListener("click", locate);
 
@@ -400,14 +408,18 @@
     if (pending.length + (site ? site.photos.size : 0) >= R.MAX_PHOTOS) { say(`사진은 한 기록에 ${R.MAX_PHOTOS}장까지 붙일 수 있습니다.`, true); return; }
     paint(false);
     $("cv").toBlob(async (blob) => {   // 캔버스에서 새로 만든 JPEG라 원본의 위치·기기 정보(EXIF)가 없다
-      const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-      // FR-45: 가림을 마친 이 JPEG 바이트(저장·내보내기되는 그대로)의 SHA-256을 붙이는 순간 계산한다(2026-11-01).
-      // 나중에 ZIP 가져오기·원장 확인 이력에서 사진이 바뀌지 않았는지 대조하는 근거가 된다
-      const sha256 = R.sha256Hex(new Uint8Array(await blob.arrayBuffer()));
-      pending.push({ id, blob, url: URL.createObjectURL(blob), sha256 });
-      const link = linkNext; linkNext = null;
-      closeEdit(); drawThumbs(); say("");
-      if (link) { $(`ck-${link}`).checked = true; $(`ck-${link}`).dispatchEvent(new Event("change")); $(`ckp-${link}`).value = id; }
+      // 메모리가 모자라면 blob이 null로 온다. 편집 창은 그대로 두어 다시 누를 수 있게 한다
+      try {
+        if (!blob) throw new Error("no blob");
+        const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+        // FR-45: 가림을 마친 이 JPEG 바이트(저장·내보내기되는 그대로)의 SHA-256을 붙이는 순간 계산한다(2026-11-01).
+        // 나중에 ZIP 가져오기·원장 확인 이력에서 사진이 바뀌지 않았는지 대조하는 근거가 된다
+        const sha256 = R.sha256Hex(new Uint8Array(await blob.arrayBuffer()));
+        pending.push({ id, blob, url: URL.createObjectURL(blob), sha256 });
+        const link = linkNext; linkNext = null;
+        closeEdit(); drawThumbs(); say("");
+        if (link) { $(`ck-${link}`).checked = true; $(`ck-${link}`).dispatchEvent(new Event("change")); $(`ckp-${link}`).value = id; }
+      } catch (e) { say("사진을 붙이지 못했습니다.\n다시 눌러 보세요.", true); }
     }, "image/jpeg", 0.82);
   });
   function drawThumbs() {
@@ -562,7 +574,9 @@
       document.querySelector('input[name="status"][value="추가확인"]').checked = true; $("item").value = ""; $("keepPhrase").checked = false; clearChecks(); clearSurvey();
       site = null; siteText(); drawNear();
       say("");
-      toast("저장했습니다.", "되돌리기", async () => { await S.deleteRecord(rec); toast("저장을 되돌렸습니다."); render(); }, true);
+      toast("저장했습니다.", "되돌리기", async () => {
+        try { await S.deleteRecord(rec); toast("저장을 되돌렸습니다."); await render(); } catch (e) { toast("저장을 되돌리지 못했습니다.\n목록에서 확인해 주세요."); }
+      }, true);
       recordPages.reset(); await render();
     } catch (err) { say(err.message, true); }
   });
@@ -693,10 +707,15 @@
   // ── GIS 내보내기(N2): 고른 기록(없으면 모두)을 GeoJSON·CSV로. 사진은 빼고 사진 파일 이름만 적는다
   const gisPick = new Set();
   async function gisRows() { const all = await S.records(), some = all.filter((r) => gisPick.has(r.id)); return some.length ? some : all; }
-  const stamp = () => { const t = new Date(); return `${t.getFullYear()}-${pad2(t.getMonth() + 1)}-${pad2(t.getDate())}_${pad2(t.getHours())}${pad2(t.getMinutes())}`; };
-  const pad2 = (n) => String(n).padStart(2, "0");
-  $("geojson").addEventListener("click", async () => { const rows = await gisRows(); D.saveBytes(`renewmap-field-${stamp()}.geojson`, JSON.stringify(R.toGeoJSON(rows, new Date()), null, 2), "application/geo+json"); toast(`${rows.length}건을 GeoJSON으로 받았습니다.`); });
-  $("csv").addEventListener("click", async () => { const rows = await gisRows(); D.saveBytes(`renewmap-field-${stamp()}.csv`, R.toCSV(rows), "text/csv;charset=utf-8"); toast(`${rows.length}건을 CSV로 받았습니다.`); });
+  const stamp = () => D.localDate(new Date(), true).replace(" ", "_").replace(":", "");
+  $("geojson").addEventListener("click", async () => {
+    try { const rows = await gisRows(); D.saveBytes(`renewmap-field-${stamp()}.geojson`, JSON.stringify(R.toGeoJSON(rows, new Date()), null, 2), "application/geo+json"); toast(`${rows.length}건을 GeoJSON으로 받았습니다.`); }
+    catch (e) { toast("GeoJSON을 만들지 못했습니다."); }
+  });
+  $("csv").addEventListener("click", async () => {
+    try { const rows = await gisRows(); D.saveBytes(`renewmap-field-${stamp()}.csv`, R.toCSV(rows), "text/csv;charset=utf-8"); toast(`${rows.length}건을 CSV로 받았습니다.`); }
+    catch (e) { toast("CSV를 만들지 못했습니다."); }
+  });
   // 사진대지: GIS와 같은 고르기(없으면 모두). 오래된 기록부터
   $("sheet").addEventListener("click", async () => {
     try {
@@ -726,13 +745,17 @@
       if (!sent.has(id)) { sent.add(id); entries.push({ name: `photos/${id}.jpg`, data }); }
     }
     if (changed) toast(`사진 ${changed}장이 촬영 때와 다릅니다.\n기기 저장 공간을 확인해 주세요.`);
-    const day = new Date().toISOString();
-    return { name: `renewmap-field-${day.slice(0, 10)}.zip`, bytes: D.zipStore(entries, day) };
+    const day = D.localDate();
+    return { name: `renewmap-field-${day}.zip`, bytes: D.zipStore(entries, day) };
   }
-  $("exp").addEventListener("click", async () => { const z = await buildZip(); D.saveBytes(z.name, z.bytes, "application/zip"); });
+  $("exp").addEventListener("click", async () => {
+    try { const z = await buildZip(); D.saveBytes(z.name, z.bytes, "application/zip"); } catch (e) { toast("ZIP을 만들지 못했습니다.\n잠시 뒤 다시 해 보세요."); }
+  });
   $("share").addEventListener("click", async () => {
-    const z = await buildZip(), file = new File([z.bytes], z.name, { type: "application/zip" });
-    try { await navigator.share({ files: [file], title: "리뉴맵 현장 기록" }); } catch (e) { if (e.name !== "AbortError") toast("공유하지 못했습니다.\n모두 내보내기(ZIP)를 쓰세요."); }
+    try {
+      const z = await buildZip(), file = new File([z.bytes], z.name, { type: "application/zip" });
+      await navigator.share({ files: [file], title: "리뉴맵 현장 기록" });
+    } catch (e) { if (e.name !== "AbortError") toast("공유하지 못했습니다.\n모두 내보내기(ZIP)를 쓰세요."); }
   });
   if (navigator.canShare && navigator.canShare({ files: [new File([""], "a.zip", { type: "application/zip" })] })) $("share").hidden = false;
 

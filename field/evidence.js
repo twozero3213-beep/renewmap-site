@@ -117,9 +117,8 @@
   const bldLine = (bd) => [bd.pnu ? `PNU ${bd.pnu}` : `지번 ${bd.jibun || "-"}`, `사용승인 ${bd.use_apr_day ? D.govDate(bd.use_apr_day) : "자료 없음"}`, bd.main_use || "주용도 자료 없음", bd.structure || "구조 자료 없음",
     bd.floors === null ? "층수 자료 없음" : `지상 ${bd.floors}층`].join(" · ");
 
-  const pad = (n) => String(n).padStart(2, "0");
   // 기기 시각(현지)으로 적는다. 저장값은 UTC ISO
-  const localTime = (iso) => { const t = new Date(iso); return `${t.getFullYear()}. ${t.getMonth() + 1}. ${t.getDate()}. ${pad(t.getHours())}:${pad(t.getMinutes())}`; };
+  const localTime = (iso) => { const s = D.localDate(iso, true); return `${D.govDate(s)} ${s.slice(11)}`; };
   const block = (kind, text = "", extra = {}) => ({ kind, text: D.clean(text), rows: [], widths: [], caption: "", small: false, ...extra });
 
   const localDay = (iso) => localTime(iso).slice(0, -6);
@@ -241,7 +240,7 @@
         // 이용조건(N3): 출처마다 파일에 적힌 공공누리 유형·이용허락범위. 없으면 '미확인'
         src.list.forEach((s, n) => blocks.push(block("para", D.sourceLine(n + 1, { ...s, license: lic(s.license) }), { small: true })));   // '끝' 표시는 쓰지 않는다
       }
-      return { kind: "field", sizes: "onepage", title, blocks, sources: src.list, writtenOn: rec.recorded_at.slice(0, 10), footer: "리뉴맵 현장 확인 · ", rows: rows.length, oldest, checkMemos: memos, photoOneRow: !!oneRow };
+      return { kind: "field", sizes: "onepage", title, blocks, sources: src.list, writtenOn: D.localDate(rec.recorded_at), footer: "리뉴맵 현장 확인 · ", rows: rows.length, oldest, checkMemos: memos, photoOneRow: !!oneRow };
     };
     // 1쪽에 들어갈 때까지 줄이는 순서: ① 현황 행을 뒤에서부터 4행까지 ② 확인 항목 메모를 뺀다(항목 이름·사진 번호는 남김)
     // ③ 사진 5장을 한 줄에 작게 놓는다(4장 이하는 이미 한 줄). ②·③은 그렇게 해서 1쪽에 들어갈 때만 쓴다.
@@ -287,7 +286,7 @@
         [d ? `${d.sgName} ${d.name}` : "행정동 미확인", rec.jibun ? `지번 ${rec.jibun}` : "", rec.accuracy_m === null || rec.accuracy_m === undefined ? "" : `±${Math.round(rec.accuracy_m)}m`].filter(Boolean).join(" · "),
         localTime(rec.recorded_at)].map(D.clean));
     }
-    const recs = (items || []).filter((x) => (x.images || []).length).length, day = now.toISOString().slice(0, 10);
+    const recs = (items || []).filter((x) => (x.images || []).length).length, day = D.localDate(now);
     const blocks = [block("title", "현장 사진대지"), block("para", `판정 아님 · 기록 ${recs}건 · 사진 ${pics.length}장 · 얼굴·번호판 가림 확인 · ${D.govDate(day)} 작성`, { small: true })];
     if (pics.length) blocks.push(block("images", "", { perRow: 2, images: pics }), block("table", "", { rows, widths: [12, 38, 32, 18], caption: "표 1. 사진 설명" }));
     return { kind: "field", title: "현장 사진대지", blocks, sources: [], writtenOn: day, footer: "리뉴맵 사진대지 · ", photos: pics.length };
@@ -336,7 +335,7 @@
     });
     const blocks = [block("title", title),
       block("para", "이 부록은 숫자의 출처와 기준을 설명합니다. 지정·예산·순위 결정이 아닙니다. 기준값을 바꾼 결과는 참고이며 어느 기준이 맞다고 판단하지 않습니다.", { small: true }),
-      block("para", [`대상 기록 ${localTime(rec.recorded_at)}`, d ? `${d.sgName} ${d.name}(행정동 코드 ${d.code})` : "행정동 미확인", `${D.govDate(at.slice(0, 10))} 작성`].join(" · "), { small: true })];
+      block("para", [`대상 기록 ${localTime(rec.recorded_at)}`, d ? `${d.sgName} ${d.name}(행정동 코드 ${d.code})` : "행정동 미확인", `${D.govDate(D.localDate(now))} 작성`].join(" · "), { small: true })];
     if (!rows.length) blocks.push(block("para", "이 기록에는 공식 숫자가 없어 설명할 지표가 없다."));
     else {
       blocks.push(block("table", "", { rows: [["지표", "값·공간 단위", "출처(종류)·이용조건", "기준일·조회일", "기준"], ...rows], widths: [17, 17, 20, 16, 30], caption: "표 1. 지표별 출처와 기준" }));
@@ -355,14 +354,14 @@
     else blocks.push(block("para", "가린 값 없음. 인구 5 미만(SGIS-5)에 해당하는 값이 없다."));
     blocks.push(block("para", "출처가 N/A로 준 값은 처음부터 싣지 않는다. 사업체 종사자 수와 비율의 분자·분모는 이 부록에 싣지 않아 SGIS 사업체 규칙과 비율 가림을 쓸 일이 없다. 2차 가림(역산 방지)은 사람 결정 전이라 적용하지 않았다.", { small: true }));
     if (src.list.length) { blocks.push(block("h1", "출처")); src.list.forEach((s, n) => blocks.push(block("para", D.sourceLine(n + 1, { ...s, license: lic(s.license) }), { small: true }))); }
-    return { kind: "field", title, blocks, sources: src.list, writtenOn: at.slice(0, 10), footer: "리뉴맵 해명서 부록 · ", masking_log: log };
+    return { kind: "field", title, blocks, sources: src.list, writtenOn: D.localDate(now), footer: "리뉴맵 해명서 부록 · ", masking_log: log };
   }
 
   // 새 자료 묶음 알림(A3): 두 해시가 모두 있고 다를 때만
   const isNewData = (cur, latest) => !!(cur && latest && cur.snapshot_hash && latest.snapshot_hash && cur.snapshot_hash !== latest.snapshot_hash);
 
   // 같은 날 여러 건이어도 이름이 겹치지 않게 기기 시각(시분)을 붙인다
-  const fileName = (rec) => { const t = new Date(rec.recorded_at); return D.safeName(`${rec.dong ? rec.dong.name : "현장"}_현장확인_${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}_${pad(t.getHours())}${pad(t.getMinutes())}`); };
+  const fileName = (rec) => D.safeName(`${rec.dong ? rec.dong.name : "현장"}_현장확인_${D.localDate(rec.recorded_at, true).replace(" ", "_").replace(":", "")}`);
 
   // 브이월드 필지 조회 응답(외부, 믿지 않음) → {pnu, jibun, addr}. 지번은 PNU에서 만든다(11번째 자리 2 = 산). 형식이 어긋나면 null
   function parcelFrom(p) {

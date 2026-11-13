@@ -36,8 +36,7 @@
     ['보건소', '기초 지자체', null], ['응급실 운영 의료기관', '기초 지자체', 'ER_NEAREST_M'],
   ];
   const STATE = { ok: '자료상 맞음', no: '자료상 안 맞음', check: '확인 필요' };
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const num = v => typeof v === 'number' && Number.isFinite(v);
+  const { esc, isNum: num } = typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil;
 
   // rows: map.js dongRows 결과 → 사업 요건에 쓰는 값만
   function factsOf(rows) {

@@ -109,6 +109,11 @@
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || '');
     return m ? `${+m[1]}. ${+m[2]}. ${+m[3]}.` : (s || '');
   }
+  // 기기 시간대의 날짜 'YYYY-MM-DD'(time이면 ' HH:MM'까지). toISOString()은 UTC라 한국 0~9시에 전날이 된다
+  function localDate(t = new Date(), time = false) {
+    const d = new Date(t), p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` + (time ? ` ${p(d.getHours())}:${p(d.getMinutes())}` : '');
+  }
   function josa(word, eun = '은', neun = '는') {
     const w = String(word).trim().replace(/\([^)]*\)$/, '').trimEnd(), ch = w ? w[w.length - 1] : '';
     return ch >= '가' && ch <= '힣' ? ((ch.charCodeAt(0) - 0xAC00) % 28 ? eun : neun) : '은(는)';
@@ -1153,7 +1158,7 @@
   }
 
   return {
-    crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, fmtNum, roundD, govDate, josa, valueWithUnit, fmtCell, hidden, usable, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
+    crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, fmtNum, roundD, govDate, localDate, josa, valueWithUnit, fmtCell, hidden, usable, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
     setTemplates, getTemplates, displayName, BriefError, Sources, sourceLine, buildBrief, buildDoc, buildOnepage, deliveryReview, estimateHeightMm, basisDate, FIXED_NOTICE, docText, sentenceText, sizesFor, textRuns, withSnap, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
     tablePayload, sentencePayload, copyToClipboard, buildFragments, fragmentChoices, fragmentPayload, fragmentHTML, docHTML, COPY_TABLE, COPY_SENT, projectFeatures, mapSvg, safeName, saveBytes, svgToPng, xe,
   };
