@@ -109,10 +109,12 @@
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || '');
     return m ? `${+m[1]}. ${+m[2]}. ${+m[3]}.` : (s || '');
   }
-  // 기기 시간대의 날짜 'YYYY-MM-DD'(time이면 ' HH:MM'까지). toISOString()은 UTC라 한국 0~9시에 전날이 된다
+  // 서울 시간의 날짜 'YYYY-MM-DD'(time이면 ' HH:MM'까지). 기기 시간대와 상관없이 한국 날짜로 적는다(현장 기록·공문 날짜).
+  // toISOString()은 UTC라 한국 0~9시에 전날이 된다. 기기 시간을 따르면 외국 시간대 기기·점검 서버에서 하루가 어긋난다(v9.1 배포 점검에서 실패)
+  const SEOUL = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   function localDate(t = new Date(), time = false) {
-    const d = new Date(t), p = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` + (time ? ` ${p(d.getHours())}:${p(d.getMinutes())}` : '');
+    const p = Object.fromEntries(SEOUL.formatToParts(new Date(t)).map(x => [x.type, x.value]));
+    return `${p.year}-${p.month}-${p.day}` + (time ? ` ${p.hour}:${p.minute}` : '');
   }
   function josa(word, eun = '은', neun = '는') {
     const w = String(word).trim().replace(/\([^)]*\)$/, '').trimEnd(), ch = w ? w[w.length - 1] : '';
