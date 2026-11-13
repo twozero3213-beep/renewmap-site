@@ -27,7 +27,7 @@
 <script src="cellpack.js" defer></script><!-- 2026-11-08: 줄여 저장한 원장 셀을 util.js fetchJson이 되돌릴 때 쓴다. util.js보다 먼저 -->
 <script src="util.js?v=20261113-v93" defer></script>
 <script src="list-pages.js?v=20261113-v93" defer></script>
-<script src="rank.js?v=20261113-v93" defer></script>
+<script src="rank.js?v=20261114-px" defer></script>
 <link rel="stylesheet" href="rm6.css">
 </head>
 <body class="rank-page">
@@ -44,6 +44,7 @@
   </select></label>
   <label>시·도 <select id="rankSido" disabled><option value="21">부산광역시</option></select></label>
   <label>시·군·구 <select id="rankSg" disabled><option value="">시·군·구 전체</option></select></label>
+  <label class="rank-asc"><input type="checkbox" id="rankAsc"> 낮은 점수부터 보기</label>
 </form>
 <form id="rankFind" class="rank-find" role="search" autocomplete="off"><label for="rankQ">우리 동네 몇 위?</label><div class="rank-find-row"><input id="rankQ" list="rankNames" placeholder="동 이름 (예: 반여1동)" enterkeyhint="search"><button class="btn" type="submit">찾기</button></div><datalist id="rankNames"></datalist><p id="rankFound" class="rank-found" role="status" aria-live="polite"></p></form>
 <p id="rankMsg" aria-live="polite">불러오는 중입니다.</p>

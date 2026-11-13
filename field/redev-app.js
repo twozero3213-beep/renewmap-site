@@ -177,7 +177,31 @@
     vwFrame.addEventListener("load", send, { once: true });
     document.body.append(vwFrame);
   });
-  const redraw = () => { drawLine.setLatLngs(drawPts.length > 2 ? [...drawPts, drawPts[0]] : drawPts); $("socOut").hidden = true; };   // 영역이 바뀌면 지난 SOC 표는 맞지 않는다
+  // 2026-11-13 우지예: 처음 쓰면 그리기가 어렵다(선만 보여 어디까지가 영역인지, 몇 번째 점인지, 선이 꼬였는지 모름).
+  //     → 3점부터 영역을 옅게 칠하고, 꼭짓점에 번호를 달아 끌어서 고칠 수 있게 하고, 지금 할 일·꼬임 경고를 한 줄로 보인다.
+  //     값 계산(필지·면적·SHP)은 그대로 drawPts를 쓴다
+  let drawFill = null, drawMarks = [];
+  const drawSay = () => {
+    const n = drawPts.length, bad = n > 3 && R.ringCrosses(drawPts), el = $("drawStep");
+    el.textContent = n === 0 ? "① 지도를 확대해 구역을 찾은 뒤, 구역 가장자리 한 곳을 누르세요."
+      : n < 3 ? `② 가장자리를 따라 한 방향으로 계속 누르세요. 지금 꼭짓점 ${n}개(3개부터 영역이 됩니다).`
+      : bad ? `선이 서로 겹칩니다. 번호 점을 끌어 옮기거나 '마지막 점 지우기'를 누르세요. (꼭짓점 ${n}개)`
+      : `③ 꼭짓점 ${n}개. 마지막 점과 1번 점은 자동으로 이어집니다. 다 그렸으면 '영역 안 필지 넣기'를 누르세요.`;
+    el.classList.toggle("is-warn", !!bad);
+    $("drawDone").disabled = n < 3 || bad;
+  };
+  const redraw = () => {
+    drawLine.setLatLngs(drawPts.length > 2 ? [...drawPts, drawPts[0]] : drawPts);
+    drawFill.setLatLngs(drawPts.length > 2 ? drawPts : []);
+    drawMarks.forEach((m) => m.remove());
+    drawMarks = drawPts.map((p, i) => window.L.marker(p, { draggable: true, keyboard: false, title: `${i + 1}번 꼭짓점(끌어서 옮기기)`,
+      icon: window.L.divIcon({ className: "draw-pt" + (i === 0 ? " is-first" : ""), html: String(i + 1), iconSize: [24, 24] }) })
+      .on("drag", (e) => { const ll = e.target.getLatLng(); drawPts[i] = [ll.lat, ll.lng]; drawLine.setLatLngs(drawPts.length > 2 ? [...drawPts, drawPts[0]] : drawPts); drawFill.setLatLngs(drawPts.length > 2 ? drawPts : []); })
+      .on("dragend", () => redraw())
+      .addTo(drawMap));
+    $("socOut").hidden = true;   // 영역이 바뀌면 지난 SOC 표는 맞지 않는다
+    drawSay();
+  };
   // 그리기 지도를 고른 법정동에 맞춘다. 건물 파일에는 좌표가 없어 외곽선 색인(bldg_outline/index.json, 39KB)의 동별 상자만 한 번 받는다.
   // 색인을 못 받으면 처음엔 부산 전체를 보이고, 동을 바꿔도 움직이지 않는다
   let outline = null;
@@ -200,7 +224,9 @@
     drawMap.on("click", () => drawMap.scrollWheelZoom.enable()); drawMap.on("mouseout", () => drawMap.scrollWheelZoom.disable());
     if (VW) L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VW}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: "&copy; 국토교통부 브이월드" }).addTo(drawMap);
     else L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }).addTo(drawMap);
-    drawLine = L.polyline([], { color: "#b45309", weight: 3 }).addTo(drawMap);
+    drawFill = L.polygon([], { stroke: false, fillColor: "#b45309", fillOpacity: 0.15, interactive: false }).addTo(drawMap);   // 영역 옅게(redraw 주석)
+    drawLine = L.polyline([], { color: "#b45309", weight: 3, interactive: false }).addTo(drawMap);
+    drawSay();
     drawMap.on("click", (e) => { if (drawPts.length < 100) { drawPts.push([e.latlng.lat, e.latlng.lng]); redraw(); } });
   });
   $("drawUndo").addEventListener("click", () => { if (drawLine) { drawPts.pop(); redraw(); } });

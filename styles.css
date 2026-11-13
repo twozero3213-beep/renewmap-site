@@ -192,11 +192,11 @@ footer .links a { display: inline-flex; align-items: center; min-height: 44px; }
 /* 원칙 8개: 번호·아이콘·한 줄 제목·짧은 설명. docs/legal/ai_ethics.md 1부 문장을 그대로 쓴다 */
 .eth-lead { font-size: 18px; margin: 0 0 24px; }
 .eth-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin: 0 0 32px; }
-.eth-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 20px; display: grid; grid-template-columns: 44px 1fr; gap: 6px 14px; align-items: start; }
+.eth-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 20px; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 6px 14px; align-items: start; align-content: start; }   /* 칸 높이가 달라도 제목·본문을 위로 붙인다 */
 .eth-card .ico { margin: 0; grid-row: span 3; }
 .eth-card .n { font-size: 14px; font-weight: 700; color: var(--green); }
 .eth-card h2 { margin: 0; font-size: 18px; line-height: 1.35; }
-.eth-card p { margin: 0; font-size: 15px; color: var(--dim); }
+.eth-card p { margin: 0; font-size: 15px; color: var(--dim); overflow-wrap: anywhere; }
 .eth-card.is-no { border-color: var(--no-line); } .eth-card.is-yes { border-color: var(--yes-line); }   /* 뜻은 제목 글자가 전한다. 굵은 왼쪽 띠는 쓰지 않는다 */
 .eth-no { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 32px; padding: 0; list-style: none; }
 .eth-no li { background: var(--worse-bg); color: var(--worse); font-weight: 700; font-size: 14px; border-radius: 999px; padding: 6px 14px; }

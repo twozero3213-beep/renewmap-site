@@ -650,5 +650,6 @@
     return "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   }
 
-  return { dongBounds, oneRange, answerText, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  // 2026-11-13: ringCrosses를 화면(redev-app.js)에서도 써서, 그리는 도중에 선이 겹치면 바로 알린다
+  return { ringCrosses, dongBounds, oneRange, answerText, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

@@ -132,7 +132,7 @@
       const how = b && b.model === 'cohort' && typeof b.model_label === 'string' && b.model_label ? b.model_label : '추세 외삽';
       const common = { code: 'FORECAST_' + c, group: 'fore', icon: 'fore', level: sgScope ? 'sg' : 'emd', src: 'forecast', mape, held, standard: null, pending: !fi, sgFile: !!(fi && typeof fi.sigungu_file === 'string'), empty: !!held || (!!b && isNum(b.n_areas) && b.n_areas === 0),
         disclaimer: fi && typeof fi.disclaimer === 'string' ? fi.disclaimer : null, how, source: how !== '추세 외삽' ? how : fi && typeof fi.method === 'string' ? `추세 외삽(${fi.method})` : '추세 외삽' };
-      const tail = `${sgScope ? ' · 시·군·구 단위' : ''} · ${how} · 판정·투자 조언 아님 · 승인 전 초안${mape === null ? '' : ` · 백테스트 MAPE ${fmt(mape, '%')}`}`;
+      const tail = `${sgScope ? ' · 시·군·구 단위' : ''} · ${how} · 판정·투자 조언 아님 · 승인 전 초안${mape === null ? '' : ` · 백테스트 오차(전국 동 중앙값) MAPE ${fmt(mape, '%')}`}`;
       // 절대량 지표(명·개)는 자료가 주는 변화율 키(change_pct_key, 기준연도 실측 대비 %)로 칠한다 — 고정 참고 구간, 기준 없음. 화면에서 나누지 않는다
       const ck = b && typeof b.change_pct_key === 'string' && b.change_pct_key ? b.change_pct_key : null, by = fi && isNum(fi.base_year) ? fi.base_year : null;
       if (ck) return { ...common, label: `${lbl} 전망 · ${by === null ? '기준연도' : by + '년'} 대비`, unit: '%', fc: ck, worseUp: false, ref: true, domain: [-50, 50],
@@ -157,7 +157,7 @@
   const FORE_NOTE = '추세 외삽 · 판정·투자 조언 아님 · 승인 전 초안';
   // 지표마다 모델 이름(코호트 등)이 있으면 '추세 외삽' 자리에 그것을 쓴다
   const foreNote = ind => (ind && ind.how && ind.how !== '추세 외삽' ? FORE_NOTE.replace('추세 외삽', ind.how) : FORE_NOTE);
-  const foreLine = ind => `${foreNote(ind)}${ind.mape === null || ind.mape === undefined ? '' : ` · 백테스트 MAPE ${fmt(ind.mape, '%')}`}${ind.disclaimer ? ` · ${ind.disclaimer}` : ''}`;
+  const foreLine = ind => `${foreNote(ind)}${ind.mape === null || ind.mape === undefined ? '' : ` · 백테스트 오차(전국 동 중앙값) MAPE ${fmt(ind.mape, '%')}`}${ind.disclaimer ? ` · ${ind.disclaimer}` : ''}`;
   const SAFE_NOTE = '공식 기준 없음 · 점수 아님 · 공식 시설 현황만';
   // 공식 기준이 없는 생활 지표의 고정 참고 구간(화면 표시용 눈금, 분위 아님). 자료가 ref_edges를 주면 그것을 쓴다
   const REF_EDGES = { POP_YOUTH_PCT: [10, 15, 20, 25], HOSP_CLINIC_COUNT: [1, 5, 10, 30], HOSP_PER10K: [2, 5, 10, 20], PARK_COUNT: [1, 3, 5, 10], BUS_STOP_DENSITY: [5, 10, 20, 40] };
@@ -576,7 +576,9 @@
   function trendSVG(series, year, label, std, unit) {
     const W = 300, H = 72, pad = 8, vals = (series || []).filter(p => p[1] !== null);
     if (vals.length < 2) return sparkline(series || [], year, label);
-    const ys = series.map(p => p[0]), y0 = Math.min(...ys), y1 = Math.max(...ys), fit = olsFit(vals);
+    // 비율(%) 시계열에서 앞뒤 3년 중앙값과 15%p 넘게 벗어난 해는 추세 직선에서 뺀다(2026-11-14 페르소나: 광복동 노후 비율 2022·2023만 67%·41%라 추세가 '연 -0.6%p'로 거꾸로 나왔다)
+    const jumps = unit === '%' ? vals.filter(p => seriesJump(series, p[0], 15)) : [];   // 15%p: 광복동 2022(67%)처럼 이웃 해도 함께 떨어진 해까지 잡는다. 카드 경고(20%p)보다 좁게
+    const ys = series.map(p => p[0]), y0 = Math.min(...ys), y1 = Math.max(...ys), fit = olsFit(vals.filter(p => !jumps.includes(p)));
     const pool = [...vals.map(p => p[1]), ...(isNum(std) ? [std] : []), ...(fit ? [fit.at(y0), fit.at(y1)] : [])], lo = Math.min(...pool), hi = Math.max(...pool), span = hi - lo || 1;
     const X = y => pad + (y1 === y0 ? W / 2 - pad : (y - y0) / (y1 - y0) * (W - 2 * pad)), Y = v => H - pad - (v - lo) / span * (H - 2 * pad);
     let d = '', pen = false;
@@ -585,8 +587,10 @@
     const trend = fit ? `<line class="tr-fit" x1="${X(y0).toFixed(1)}" x2="${X(y1).toFixed(1)}" y1="${Y(fit.at(y0)).toFixed(1)}" y2="${Y(fit.at(y1)).toFixed(1)}"/>` : '';
     const cur = series.find(p => p[0] === year && p[1] !== null) || vals[vals.length - 1];
     const u = unit === '%' ? '%p' : unit || '', slope = fit ? `${fit.slope >= 0 ? '+' : ''}${fmt(Math.round(fit.slope * 100) / 100)}${u}` : '';
-    const cap = `${y0}~${y1}년${fit ? ` · 추세 연 ${slope}(선형회귀, 설명용)` : ''}${isNum(std) ? ` · 가로 점선 기준 ${fmt(std)}${unit || ''}` : ''}`;
-    return `<figure class="tr"><svg class="tr-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)} ${esc(cap)}, ${cur[0]}년 ${esc(fmt(cur[1]))}">${stdLine}${trend}<path class="tr-line" d="${d}"/><circle class="tr-dot" cx="${X(cur[0]).toFixed(1)}" cy="${Y(cur[1]).toFixed(1)}" r="4"/></svg><figcaption>${esc(cap)}</figcaption></figure>`;
+    const jumpNote = jumps.length ? ` · ${jumps.map(p => p[0]).join('·')}년은 앞뒤 3년 중앙값과 15%p 넘게 달라 추세에서 뺌(원천 값 그대로)` : '';
+    const cap = `${y0}~${y1}년${fit ? ` · 추세 연 ${slope}(선형회귀, 설명용)` : ''}${jumpNote}${isNum(std) ? ` · 가로 점선 기준 ${fmt(std)}${unit || ''}` : ''}`;
+    const jumpDots = jumps.map(p => `<circle class="tr-jump" cx="${X(p[0]).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="3.5" fill="none" stroke="currentColor"/>`).join('');
+    return `<figure class="tr"><svg class="tr-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)} ${esc(cap)}, ${cur[0]}년 ${esc(fmt(cur[1]))}">${stdLine}${trend}${jumpDots}<path class="tr-line" d="${d}"/><circle class="tr-dot" cx="${X(cur[0]).toFixed(1)}" cy="${Y(cur[1]).toFixed(1)}" r="4"/></svg><figcaption>${esc(cap)}</figcaption></figure>`;
   }
   // 추세 전망 그래프: 실측(실선) + 전망 점추정(점선) + 80% 구간(띠). obs [[연도, 값]], fc {연도: [점, 하한, 상한]}. 구간 없는 해는 그리지 않는다(윤리 원칙 ④)
   function forecastSVG(obs, fc, label, unit) {
@@ -1887,7 +1891,10 @@
     const hatch = boundaryHatch();
     // 동네 찾기 넓은 화면은 지도가 화면 남은 높이 전체라(explore-layout.js) 페이지 스크롤과 다투지 않으므로 휠 확대를 처음부터 켠다(2026-11-13 v7)
     const wideApp = document.body.classList.contains('explore-page') && window.matchMedia('(min-width: 1100px)').matches;
-    const map = L.map(el, { dragging: !coarse, scrollWheelZoom: wideApp, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false, zoomControl: false });
+    const map = L.map(el, { dragging: !coarse, scrollWheelZoom: wideApp, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false, zoomControl: false,
+      // 2026-11-13 우지예: 휠로 확대·축소할 때 조금씩 끊긴다 → 휠 눈금 여러 개를 한 번에 모아(60ms) 덜 자주, 한 번에 조금 더 크게 움직인다.
+      //     왜: 기본값(40ms·60px)에서는 휠 한 번에 0.25단계씩 여러 번 확대되며, 그때마다 전국 시군구 경계·동 경계·동 이름을 다시 그렸다
+      wheelDebounceTime: 60, wheelPxPerZoomLevel: 100 });
     L.control.zoom({ zoomInTitle: '확대', zoomOutTitle: '축소' }).addTo(map);   // 기본 단추 이름이 영어(Zoom in)였다(v9 접근성) // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
     // 확대는 17(골목·건물 단위)까지. 두 번 누르기를 거듭해도 그 이상 커지지 않는다. 휠 확대는 지도를 한 번 누른 뒤에만 켠다(페이지를 내리다 지도에 걸려 확대되지 않게). 지도 밖으로 나가면 다시 끈다(2026-11-07 대표 지시)
     map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => { if (!wideApp) map.scrollWheelZoom.disable(); });
@@ -1904,7 +1911,9 @@
     map.createPane('sg').style.zIndex = 395; // 시군구·시도 경계는 동 층(overlayPane 400) 아래. 경계가 동 층보다 늦게 와도 동을 덮지 않는다
     // 2026-11-12: 동 이름 층. 경계·수질 점 위(460), 누르기는 아래 동으로 통과시킨다(map.css .leaflet-labels-pane)
     map.createPane('labels').style.zIndex = 460;
-    map.on('zoomend moveend', () => placeDongLabels());
+    // 2026-11-13: 확대가 끝나면 zoomend와 moveend가 잇달아 와 동 이름 자리 계산을 두 번 했다 → 한 화면 그리기(requestAnimationFrame)에 한 번만
+    let labelFrame = 0;
+    map.on('zoomend moveend', () => { if (!labelFrame) labelFrame = requestAnimationFrame(() => { labelFrame = 0; cullSg(); placeDongLabels(); }); });
     // 상위 동·수질 pane은 SVG를 유지한다. 별도 Canvas가 빈 영역의 아래 경계 클릭까지 가로막지 않게 한다.
     M = { el, map, hatch, sgRenderer: typeof hatch === 'string' ? null : L.canvas({ pane: 'sg' }), sg: null, sido: null, emd: null, emdCode: null, water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
     setTimeout(startAuto, 1500);
@@ -2007,6 +2016,19 @@
       return true;
     }));
   }
+  // 2026-11-13 우지예: 2D 지도를 휠로 확대·축소하면 조금씩 끊겼다. 잰 결과(1280px, 해운대구, 휠 20번) 자바스크립트 시간의 대부분이
+  //     Leaflet이 전국 시군구 상세 경계(sigungu.geojson)의 모든 점을 확대마다 다시 계산하는 일(project·_projectLatlngs)이었다.
+  //     → 시군구 단계보다 크게 확대했을 때(9 이상)는 화면 둘레(가로·세로 50% 여유) 밖의 시군구·시도 경계 조각을 지도에서 잠시 뺀다.
+  //     빠진 조각은 화면에 안 보이는 곳이라 모양·색·값은 그대로이고, 움직여서 다시 들어오면 붙인다
+  function cullSg() {
+    if (!M || !M.sg || !M.map) return;
+    if (!M.cull) M.cull = [...M.sg.getLayers(), ...(M.sido ? M.sido.getLayers() : [])];   // 경계를 새로 만들면(addSgLayers) 비워 두고 여기서 다시 모은다
+    const all = M.map.getZoom() < 9, view = all ? null : M.map.getBounds().pad(0.5);
+    for (const l of M.cull) {
+      const on = all || view.intersects(l._rmBox || (l._rmBox = l.getBounds()));
+      if (on !== M.map.hasLayer(l)) on ? l.addTo(M.map) : M.map.removeLayer(l);
+    }
+  }
   // 전국 개요를 먼저 그리고, 확대·지역 선택 때 상세 경계로 교체한다. 값·색은 같은 원장이다.
   function addSgLayers() {
     if (!state.sgGeo || M.sgGeo === state.sgGeo) return;
@@ -2018,7 +2040,9 @@
       const pick = () => { const r = leafRoute(state.index, String(f.properties.code)); if (r) go(r); };
       layer.on('click', pick); keyable(layer, f.properties.name, pick);
     } }).addTo(M.map);
-    M.sido = L.featureGroup([L.polyline(lineLatLngs(outerLines(state.sgGeo.features, f => String(f.properties.code).slice(0, 2))), { pane: 'sg', renderer: M.sgRenderer, interactive: false, color: '#153c39', weight: 1.5, smoothFactor: 0 })]).addTo(M.map); // 묶음이라야 첫 시점이 잡히기 전 bringToFront가 오류 없이 지나간다
+    // 2026-11-13: 시도 경계선을 한 덩어리 대신 선 조각마다 따로 둔다 — 화면 밖 조각을 빼고 그릴 수 있게(cullSg 주석)
+    M.sido = L.featureGroup(lineLatLngs(outerLines(state.sgGeo.features, f => String(f.properties.code).slice(0, 2))).map(ll => L.polyline(ll, { pane: 'sg', renderer: M.sgRenderer, interactive: false, color: '#153c39', weight: 1.5, smoothFactor: 0 }))).addTo(M.map); // 묶음이라야 첫 시점이 잡히기 전 bringToFront가 오류 없이 지나간다
+    M.cull = null;   // 다음 확대·이동 때 cullSg가 새 조각으로 다시 모은다
     M.sgGeo = state.sgGeo; M.order = null;
   }
   // 시군구 레이어 색: 현재 단계의 항목만 색, 나머지는 옅게. 칸 구성이 바뀌었는지(reorder)와 색칠한 코드(active)를 돌려준다

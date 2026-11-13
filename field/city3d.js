@@ -27,7 +27,20 @@
       if (!C || !v || v.isDestroyed?.() || !v.cesiumWidget?.scene) return;
       const cam = v.camera; if (!cam) return;
       cam.cancelFlight();
-      cam.setView({ destination: C.Cartesian3.fromDegrees(at[0], at[1] - 0.012, 800), orientation: { heading: 0, pitch: C.Math.toRadians(-45), roll: 0 } });
+      const goStart = () => cam.setView({ destination: C.Cartesian3.fromDegrees(at[0], at[1] - 0.012, 800), orientation: { heading: 0, pitch: C.Math.toRadians(-45), roll: 0 } });
+      goStart();
+      // 2026-11-13 우지예: 공개 사이트에서 첫 화면이 부산이 아니라 대구·포항·울산이 보이는 높은 하늘이었다(화면 확인).
+      //     왜: 브이월드가 자기 시작 이동(lookat.moveTo)을 우리 setView 뒤에 한 번 더 끝내는 경우가 있다(위 주석과 같은 원인, 느린 회선에서 더 늦게 끝남).
+      //     → 처음 8초 동안 카메라 이동이 끝날 때마다, 사람이 아직 손대지 않았고 시작점에서 5km 넘게 떨어져 있으면 시작점으로 되돌린다
+      const start = C.Cartesian3.fromDegrees(at[0], at[1] - 0.012, 800);
+      let touched = false;
+      const el = v.canvas || document.getElementById("vmap");
+      ["pointerdown", "wheel", "touchstart", "keydown"].forEach((ev) => el && el.addEventListener && el.addEventListener(ev, () => { touched = true; }, { once: true, passive: true }));
+      if (document.querySelectorAll) document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => { touched = true; }, { once: true }));
+      const recheck = () => { if (!touched && !v.isDestroyed?.() && C.Cartesian3.distance && cam.positionWC && C.Cartesian3.distance(cam.positionWC, start) > 5000) { cam.cancelFlight(); goStart(); } };
+      const off = cam.moveEnd && cam.moveEnd.addEventListener ? cam.moveEnd.addEventListener(recheck) : null;
+      [600, 1500, 3000].forEach((ms) => setTimeout(recheck, ms));
+      setTimeout(() => off && off(), 8000);
       window.City3dControls.attach(v, C, at, document);
     }, 0);
     say("국토교통부 브이월드 3D 건물입니다.\n마우스로 끌어 옮기고 휠로 확대·축소합니다. 위 단추로 조감도·위에서·가까이·한 바퀴 돌기를 고를 수 있습니다.");

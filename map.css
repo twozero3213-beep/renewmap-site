@@ -477,6 +477,9 @@
 .map-bundles button[data-bundle="all"][aria-pressed="true"] { color: #fff; }
 @media (prefers-reduced-motion: reduce) { .map-bundles button { transition: none; } }
 @media print { .map-bundles { display: none !important; } }
+/* 2026-11-13 우지예: 묶음 단추를 2×2 칸(rm6.css, 테두리 있는 표 모양)으로 바꾼 화면에서 고른 칸의 초록이 위 테두리에 2px 덜 닿고, 아래에 10px 빈 띠가 남았다.
+   왜: 위 .map-bundles의 여백(padding 2px 0 10px)은 옛 가로 스크롤 줄(스크롤 막대 자리)용인데 칸 모양에도 그대로 남았다 → 칸 모양일 때만 여백을 없앤다 */
+.explore-page #mapApp .map-bundles, body.mx-on .mx-side .map-bundles { padding: 0; }
 /* v9 접근성: 키보드로 닿은 지도 도형을 굵은 테두리로 보인다(초점 테두리가 none이었다) */
 .leaflet-container path.leaflet-interactive:focus { outline: none; }
 .leaflet-container path.leaflet-interactive:focus-visible { stroke: var(--ink); stroke-width: 4px; }

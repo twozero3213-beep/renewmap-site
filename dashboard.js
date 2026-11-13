@@ -40,12 +40,15 @@
   // 선택 상태 결정. 순서는 언제나 코드 순(D13: 값으로 줄 세우지 않는다)
   function resolve(data, route) {
     if (!data || !Array.isArray(data.sigungu) || !data.sigungu.length) return { kind: 'empty' };
-    const gus = [...data.sigungu].sort(byCode), r = route || {};
-    const sigungu = gus.find(g => g.code === r.sigungu) || gus.find(g => g.status === '수집됨') || gus[0];
+    // 2026-11-13 우지예: 구·군 16개와 동 수십 개가 코드 순(중구·서구·동구…, 영주동·대창동1가…)이라 찾으려면 하나씩 눌러 봐야 했다 → 칩은 가나다순.
+    //     처음 고르는 구·동은 예전과 같게(코드 순 첫 수집 구·첫 동) 두어, 주소(#dashboard/…)와 첫 화면이 바뀌지 않게 한다
+    const byName = (a, b) => String(a.name).localeCompare(String(b.name), 'ko', { numeric: true });
+    const gusByCode = [...data.sigungu].sort(byCode), gus = [...gusByCode].sort(byName), r = route || {};
+    const sigungu = gus.find(g => g.code === r.sigungu) || gusByCode.find(g => g.status === '수집됨') || gusByCode[0];
     if (sigungu.status !== '수집됨') return { kind: 'planned', gus, sigungu };
-    const dongs = (Array.isArray(data.dongs) ? data.dongs : []).filter(d => d.sigungu_code === sigungu.code).sort(byCode);
+    const dongsByCode = (Array.isArray(data.dongs) ? data.dongs : []).filter(d => d.sigungu_code === sigungu.code).sort(byCode), dongs = [...dongsByCode].sort(byName);
     if (!dongs.length) return { kind: 'nodong', gus, sigungu };
-    return { kind: 'dong', gus, sigungu, dongs, dong: dongs.find(d => d.code === r.dong) || dongs[0] };
+    return { kind: 'dong', gus, sigungu, dongs, dong: dongs.find(d => d.code === r.dong) || dongsByCode[0] };
   }
   function refDates(data) {
     const all = new Set();
@@ -323,8 +326,10 @@
     app.innerHTML = `<div class="dash-chips dash-gus" role="group" aria-label="부산 구·군">${chips}</div>${viewSeg}${body}`;
     const comparisons = app.querySelector('#dashCompare');
     if (comparisons) {
-      const draw = () => { comparisons.innerHTML = compareHTML(pager.slice(v.dongs), state.year, v.dong.code); };
-      const selectedPage = Math.floor(v.dongs.findIndex(d => d.code === v.dong.code) / 5) + 1;
+      // 2026-11-13: 위 칩은 가나다순이 됐지만, 아래 '동별 나란히 보기'는 제목대로 법정동 코드 순 그대로(compareHTML이 코드 순으로 줄 세움). 쪽 나누기도 같은 순서로 해야 쪽이 섞이지 않는다
+      const inCode = [...v.dongs].sort(byCode);
+      const draw = () => { comparisons.innerHTML = compareHTML(pager.slice(inCode), state.year, v.dong.code); };
+      const selectedPage = Math.floor(inCode.findIndex(d => d.code === v.dong.code) / 5) + 1;
       const pager = window.RenewListPages.create(comparisons, '법정동 비교', draw, selectedPage);
       draw();
     }

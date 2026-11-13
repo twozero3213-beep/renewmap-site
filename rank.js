@@ -39,15 +39,16 @@
   }
 
   // 재생 필요 점수의 재료(scores.json renewal_parts, 지표별 백분위). 재생 순위에서는 이 넷을 세부 열로 보인다(v9: 1위인 이유가 표에 없었다)
-  const RENEWAL_COLS = [['DECLINE_AGING_20Y_PCT', '20년 넘은 건물'], ['DECLINE_POP_CHANGE_PCT', '인구 감소'], ['DECLINE_BIZ_DROP10Y_PCT', '사업체 감소'], ['POP_AGED65_PCT', '고령 인구']];
-  function tableHTML(list, kind, names, limit, range, scope, offset = 0, found = null) {
+  const RENEWAL_COLS = [['DECLINE_AGING_20Y_PCT', '20년 넘은 건물'], ['DECLINE_POP_CHANGE_PCT', '인구 변화율(원천, 기간 미확인)'], ['DECLINE_BIZ_DROP10Y_PCT', '사업체 감소'], ['POP_AGED65_PCT', '고령 인구']];
+  // rankAt(i): 화면 i번째 줄의 실제 순위(낮은 점수부터 볼 때). 없으면 offset + i + 1
+  function tableHTML(list, kind, names, limit, range, scope, offset = 0, found = null, rankAt = null) {
     const renew = kind === 'renewal' && list.some(r => r.d.renewal_parts);
     const cols = renew ? RENEWAL_COLS.map(([, l]) => `<th scope="col">${esc(l)}<br><small>백분위·클수록 쇠퇴</small></th>`).join('')
       : '<th scope="col">생활 편의</th><th scope="col">인구 활력</th><th scope="col">주거 노후도<br><small>점수가 낮을수록 낡음</small></th><th scope="col">치안</th><th scope="col">범죄 발생률<br><small>1,000명당·시군구</small></th>';
     const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th><th scope="col">${esc(KINDS[kind].label)}</th><th scope="col" title="지표 비중을 1,000번 바꿔 다시 계산했을 때 이 동 순위의 90%가 든 범위">비중을 바꿔도<br><small>나오는 순위</small></th>${cols}</tr></thead>`;
     const body = list.slice(0, limit).map((r, i) => {
       const s = r.d.sub, sp = r.d.safety_parts || {}, rp = r.d.renewal_parts || {};
-      return `<tr${r.code7 === found ? ' class="is-found" id="rankFoundRow"' : ''}><td class="num">${offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
+      return `<tr${r.code7 === found ? ' class="is-found" id="rankFoundRow"' : ''}><td class="num">${rankAt ? rankAt(offset + i) : offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
         + (renew ? RENEWAL_COLS.map(([c]) => `<td class="num">${fmt(rp[c])}</td>`).join('')
           : `<td class="num">${fmt(s.living)}</td><td class="num">${fmt(s.vitality)}</td><td class="num">${fmt(s.housing)}</td><td class="num">${fmt(s.safety)}</td>`
           + `<td class="num">${sp.crime_rate_per_1k === null || sp.crime_rate_per_1k === undefined ? '없음' : esc(sp.crime_rate_per_1k)}</td>`) + '</tr>';
@@ -68,21 +69,25 @@
   function init() {
     const $ = id => document.getElementById(id);
     const kindSel = $('rankKind'), sidoSel = $('rankSido'), sgSel = $('rankSg'), out = $('rankOut'), msg = $('rankMsg'), sens = $('rankSens');
-    let scores = null, idx = null, range, pager, found = null;   // range: undefined=받는 중, null=없음. found: 찾은 동 코드
+    const ascBox = $('rankAsc');
+    let scores = null, idx = null, range, pager, found = null;
+    // 낮은 점수부터 보기(2026-11-14 페르소나: '주거 노후도'는 점수가 낮을수록 낡았는데 1위가 가장 덜 낡은 동이라 위 3곳만 고르면 거꾸로 됐다).
+    // 줄 순서만 뒤집고 순위 번호·순위 범위는 높은 점수 기준 그대로 둔다
+    const ordered = full => (ascBox && ascBox.checked ? { list: [...full].reverse(), rankAt: j => full.length - j } : { list: full, rankAt: null });   // range: undefined=받는 중, null=없음. found: 찾은 동 코드
     const sgName = code5 => (idx.sigungu.find(s => s.code5 === code5) || {}).name || code5;
     // 전국을 볼 때는 시·도를 앞에 붙인다(같은 '동구'·'서구'가 여러 시·도에 있다)
     const sidoOf = code7 => sidoShort((idx.sido.find(x => x.code2 === String(code7).slice(0, 2)) || {}).name);
     const names = r => `${sidoSel.value ? '' : sidoOf(r.code7) + ' '}${sgName(r.d.code5)} ${r.d.name}`;
     function draw() {
       const scope = sgSel.value || sidoSel.value || 'all';
-      const list = rows(scores, kindSel.value, scope);
-      const page = pager.slice(list), offset = page.length ? list.indexOf(page[0]) : 0;
-      msg.textContent = page.length ? `점수가 있는 ${list.length.toLocaleString('ko-KR')}개 동 중 ${(offset + 1).toLocaleString('ko-KR')}–${(offset + page.length).toLocaleString('ko-KR')}위를 보입니다.` : '선택한 범위에 점수가 있는 동이 없습니다.';
-      out.innerHTML = tableHTML(page, kindSel.value, names, page.length, range, scope, offset, found);
+      const { list, rankAt } = ordered(rows(scores, kindSel.value, scope));
+      const page = pager.slice(list), offset = page.length ? list.indexOf(page[0]) : 0, rk = j => (rankAt ? rankAt(j) : j + 1).toLocaleString('ko-KR');
+      msg.textContent = page.length ? `점수가 있는 ${list.length.toLocaleString('ko-KR')}개 동 중 ${rk(offset)}–${rk(offset + page.length - 1)}위를 ${rankAt ? '낮은 점수부터 ' : ''}보입니다.` : '선택한 범위에 점수가 있는 동이 없습니다.';
+      out.innerHTML = tableHTML(page, kindSel.value, names, page.length, range, scope, offset, found, rankAt);
       // 고른 조건·쪽을 주소에 적는다. 동을 눌렀다 뒤로 오거나 새로 고쳐도 그대로(v9: 늘 '재생 필요·부산·1쪽'으로 돌아갔다)
       if (typeof history !== 'undefined' && history.replaceState && location.href) {   // 시험용 가짜 화면에는 주소가 없다
         const u = new URL(location.href), set = (k, v) => (v ? u.searchParams.set(k, v) : u.searchParams.delete(k));
-        u.searchParams.set('kind', kindSel.value); u.searchParams.set('sido', sidoSel.value); set('sg', sgSel.value); set('page', pager.page > 1 ? pager.page : '');
+        u.searchParams.set('kind', kindSel.value); u.searchParams.set('sido', sidoSel.value); set('sg', sgSel.value); set('ord', ascBox ? (ascBox.checked ? 'asc' : kindSel.value === 'housing' ? 'desc' : '') : ''); set('page', pager.page > 1 ? pager.page : '');
         if (u.href !== location.href) history.replaceState(null, '', u);
       }
       const sm = range && range.sensitivity && range.sensitivity.summary && range.sensitivity.summary[kindSel.value];
@@ -104,6 +109,7 @@
         const q = new URLSearchParams(location.search);
         // 2026-11-13: 재생 서비스라 기본은 '재생 필요 점수', 시범 지역 부산(11-13 평가: 전국 '동네 점수' 1위가 과천이라 방향이 반대로 읽힘). ?sido= 로 전국을 본다
         kindSel.value = Object.hasOwn(KINDS, q.get('kind')) ? q.get('kind') : 'renewal';
+        if (ascBox) ascBox.checked = q.get('ord') === 'asc' || (!q.has('ord') && kindSel.value === 'housing');
         sidoSel.value = q.has('sido') ? q.get('sido') : (i.sido.some(x => x.code2 === '21') ? '21' : '');
         fillSg();
         if (q.get('sg')) sgSel.value = q.get('sg');
@@ -114,17 +120,19 @@
         if (findForm) $('rankNames').innerHTML = Object.values(s.dongs).map(d => `<option value="${esc(d.name)}">`).filter((v, n, a) => a.indexOf(v) === n).join('');
         if (findForm) findForm.addEventListener('submit', e => {
           e.preventDefault();
-          const list = rows(scores, kindSel.value, sgSel.value || sidoSel.value || 'all'), q = $('rankQ').value, at = findRank(list, names, q, r => [sgName(r.d.code5), (idx.sido.find(x => x.code2 === String(r.code7).slice(0, 2)) || {}).name]);   // '부산 우동'처럼 시·도를 붙여 적어도(교차 검토)
+          const { list, rankAt } = ordered(rows(scores, kindSel.value, sgSel.value || sidoSel.value || 'all')), q = $('rankQ').value, at = findRank(list, names, q, r => [sgName(r.d.code5), (idx.sido.find(x => x.code2 === String(r.code7).slice(0, 2)) || {}).name]);   // '부산 우동'처럼 시·도를 붙여 적어도(교차 검토)
           if (at < 0) { found = null; foundMsg.textContent = `지금 고른 범위에서 '${q}'을(를) 찾지 못했습니다. 시·도를 '전국'으로 바꿔 보세요.`; draw(); return; }
           found = list[at].code7; pager.goTo(Math.floor(at / 20) + 1); draw();
           // 순위(여러 지표를 합친 점수)와 쇠퇴 3요건 해당 수는 다른 잣대다. 둘이 엇갈려 보여도 모순이 아니라고 같은 자리에서 밝힌다(v9: 홈 '2개 해당'과 '178위'가 모순으로 읽혔다)
           // 2026-11-13 우지예: '점수는 여러 지표를 합친 비교값이라…' 문장이 무슨 뜻인지 어렵다는 지적 → 순위 한 문장, 왜 신청요건과 다른지 한 문장, 어디서 보는지 한 문장으로 풀어 씀
           const nm = names(list[at]), last = nm.slice(-1);   // 받침 있으면 '은', 없으면 '는'
-          foundMsg.textContent = `${nm}${/[가-힣]/.test(last) && (last.charCodeAt(0) - 0xac00) % 28 ? '은' : '는'} ${list.length.toLocaleString('ko-KR')}개 동 중 ${(at + 1).toLocaleString('ko-KR')}위입니다(${KINDS[kindSel.value].label} ${fmt(list[at].score)}점).
+          foundMsg.textContent = `${nm}${/[가-힣]/.test(last) && (last.charCodeAt(0) - 0xac00) % 28 ? '은' : '는'} ${list.length.toLocaleString('ko-KR')}개 동 중 ${(rankAt ? rankAt(at) : at + 1).toLocaleString('ko-KR')}위입니다(${KINDS[kindSel.value].label} ${fmt(list[at].score)}점).
 이 순위는 여러 지표를 합친 점수로 줄 세운 것이라, 공모 신청요건(쇠퇴 3요건)을 몇 개 채우는지와는 다른 기준입니다. 신청요건은 표에서 동 이름을 눌러 확인하세요.`;
           const tr = document.getElementById('rankFoundRow'); if (tr) tr.scrollIntoView({ block: 'center' });
         });
-        kindSel.onchange = reset; sgSel.onchange = reset;
+        kindSel.onchange = () => { if (ascBox) ascBox.checked = kindSel.value === 'housing'; reset(); };
+        sgSel.onchange = reset;
+        if (ascBox) ascBox.onchange = reset;
         sidoSel.onchange = () => { fillSg(); reset(); };
         draw();
         rangeP.then(g => { range = g; draw(); });
