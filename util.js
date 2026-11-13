@@ -29,7 +29,27 @@
     .then(() => fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' })).then(r => (r.ok ? r.json() : null)).then(unpackCells)
     .catch(e => { if (root.console && e instanceof Error && /cell_pack|cellpack|출처 번호/.test(e.message)) console.error(url, e); return null; })
     .then(v => { if (v === null) delete cache[url]; return v; }));   // 실패는 기억하지 않는다(v9: 한 번 끊기면 새로 고칠 때까지 그 자료가 계속 '없음'이었다)
-  const api = { esc, isNum, roundD, fmt2, fetchJson, unpackCells };
+  // 동 이름 찾기(홈·동네 순위·동네 찾기 공통). 행정동은 법정동 이름에 번호를 붙인 것이 많아('우1동', '광안2동'),
+  // 사람들이 아는 법정동 이름('우동')이나 구 이름을 붙인 말('해운대 우동')로도 찾게 한다(v9 페르소나: 세 화면 모두 못 찾았다)
+  const flat = s => String(s || '').replace(/[\s·]+/g, '').toLowerCase();
+  const dongStem = name => String(name || '').replace(/제?\d+(?:\.\d+)?동$/, '동');
+  const shortName = s => String(s || '').replace(/(특별자치시|특별자치도|특별시|광역시|도|시|군|구)$/, '');
+  // q가 이 동을 가리키나. region: 그 동의 시·도, 시·군·구 이름들(앞에 붙여 적은 지역 이름을 걸러 낸다)
+  function dongHit(q, name, region = []) {
+    const f = flat(q), keys = [flat(name), flat(dongStem(name))];
+    if (!f) return false;
+    if (keys.includes(f)) return true;
+    const toks = region.flatMap(x => [flat(x), flat(shortName(x))]).filter(t => t.length > 1).sort((a, b) => b.length - a.length);
+    return keys.some(k => f.length > k.length && f.endsWith(k) && !toks.reduce((p, t) => p.split(t).join(''), f.slice(0, -k.length)));
+  }
+  // 시·도 짧은 이름(전국 목록에 붙인다. v9: '동구 송림2동'(인천)이 부산 '동구 초량6동' 옆에 시·도 없이 섞였다)
+  const SIDO_SHORT = { 충청북도: '충북', 충청남도: '충남', 전라북도: '전북', 전라남도: '전남', 경상북도: '경북', 경상남도: '경남' };
+  const sidoShort = name => SIDO_SHORT[name] || String(name || '').replace(/(특별자치시|특별자치도|특별시|광역시|도)$/, '');
+  // 출처 문구에서 저장소 경로·내부 판본 번호를 걷어 낸다(생활 지표 원장에 'docs/RULES_VERSIONS.md SOC-2019.01 [대조 필요]'가 들어 있다).
+  // docgen.js plainSource와 같은 식이다(현장 화면은 util.js를 안 실어 거기 한 벌 더 있다. 시험이 둘을 대조한다)
+  const plainSource = s => String(s || '').replace(/,?\s*docs\/\S+\.md(?:\s+[A-Z]+-[\d.]+)?/g, '').replace(/\[대조 필요\]/g, '(기준 원문 대조 필요)')
+    .replace(/\[2차 인용, 원문 문서 미열람\]/g, '(2차 인용, 원문 미확인)').replace(/\[([^\]]+)\]/g, '($1)');
+  const api = { esc, isNum, roundD, fmt2, plainSource, fetchJson, unpackCells, flat, dongStem, dongHit, sidoShort };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root && root.document) { root.RenewUtil = api; root.renewFetch = fetchJson; }
 })(typeof window !== 'undefined' ? window : globalThis);

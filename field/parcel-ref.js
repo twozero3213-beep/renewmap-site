@@ -83,8 +83,8 @@
   const f1 = (v) => (v === null || v === undefined ? "-" : v.toFixed(1));
   function texts({ density, road, lots }) {
     return {
-      density: density ? `${f1(density.lo)}~${f1(density.hi)}동/ha(건물 ${density.n}동, 면적 ${Math.round(density.area).toLocaleString("ko-KR")}㎡). 공동주택 세대층·기존무허가 미반영` : "구역 면적을 넣으면 범위를 계산합니다",
-      road: road.n ? `${f1(road.lo)}~${f1(road.hi)}%(${road.n}동 중 8m 이상 도로 접면 ${road.sure}, 세로(가) ${road.maybe}, 세로(불)·맹지 ${road.none}, 자료 없음 ${road.missing}). 세로의 폭 4m 여부는 현장 확인` : "건물이 없습니다",
+      density: density ? `${f1(density.lo)}~${f1(density.hi)}동/ha(건물 ${density.n.toLocaleString("ko-KR")}동, 면적 ${Math.round(density.area).toLocaleString("ko-KR")}㎡). 공동주택 세대층·기존무허가 미반영` : "구역 면적을 넣으면 범위를 계산합니다",
+      road: road.n ? `${f1(road.lo)}~${f1(road.hi)}%(${road.n.toLocaleString("ko-KR")}동 중 8m 이상 도로 접면 ${road.sure}, 세로(가) ${road.maybe}, 세로(불)·맹지 ${road.none}, 자료 없음 ${road.missing}). 세로의 폭 4m 여부는 현장 확인` : "건물이 없습니다",
       lots: lots.n ? `${f1(lots.lo)}~${f1(lots.hi)}%(대지 ${lots.n}필지 중 분할제한면적 이하 ${lots.small}, 부정형 ${lots.irreg}, 삼각·자루형 ${lots.maybe}). 세장형(폭 3m 미만)은 도면 확인` : "목록에 지목 '대' 필지가 없습니다",
     };
   }

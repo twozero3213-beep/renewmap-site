@@ -123,8 +123,11 @@
   const NO_SPACE_UNITS = () => FMT().no_space_units || ['%', '%p', '㎡', '㎢', 'm', '개', '명', '건', '대'];
   const NO_SPACE_PREFIX = () => FMT().no_space_prefixes || ['%', '㎡', '개/', '대/', '만원'];
   const noSpace = u => NO_SPACE_UNITS().includes(u) || NO_SPACE_PREFIX().some(p => u.startsWith(p));
+  // 고시 표의 구분 → 공식 이름(export_dong_pages.DEPOP_NAME과 같다). 단위 '구분'은 값에 붙이지 않는다
+  const DEPOP_NAME = { 관심지역: '인구감소관심지역', '인구활력+': '인구활력+지역' };
   function valueWithUnit(c) {
     if (!c || hidden(c) || c.value === null || c.value === undefined) return fmtCell(c);
+    if (typeof c.value === 'string') return (c.indicator_code === 'DEPOP_STATUS' && DEPOP_NAME[c.value]) || c.value;   // dong_brief.value_with_unit과 같다
     const u = c.unit || '', flag = FMT().flag || { unit: '여부(1/0)', 1: '있음', 0: '없음' };
     if (u === flag.unit) return c.value === 1 ? flag[1] : flag[0];
     return `${fmtCell(c)}${noSpace(u) ? '' : ' '}${u}`;
@@ -161,8 +164,18 @@
     DECLINE_POP_CHANGE_PCT_DELTA5Y: '인구변화율 5년 차이', DECLINE_POP_DROP30Y_PCT: '30년 최대 대비 인구 감소율', DECLINE_POP_DECL3IN5: '최근 5년 중 3년 연속 인구 감소(1=있음)',
     DECLINE_POP_TOTAL_CHANGE_PCT: '기준연도 대비 인구 변화율', YOUTH_NET_MIGRATION: '청년층 순이동자 수(시군구)', YOUTH_NET_MIGRATION_PER1K: '청년층 순이동률(시군구)',
     APT_TRADE_COUNT: '아파트 매매 신고 건수(시군구·월)', APT_PRICE_M2_MEDIAN: '아파트 ㎡당 중위 거래가(시군구·월)', APT_PRICE_M2_YOY_PCT: '아파트 ㎡당 중위가 전년 동기 대비(시군구)',
-    APT_TRADE_COUNT_YOY_PCT: '아파트 매매 건수 전년 동기 대비(시군구)',
+    APT_TRADE_COUNT_YOY_PCT: '아파트 매매 건수 전년 동기 대비(시군구)', DEMOLITION_COUNT_3Y: '철거멸실 건수(최근 3년)',
   };
+  // 문서에서는 값이 '있음/없음'으로 나오므로 이름의 '(1=있음)'을 뗀다. LABEL은 dong_brief.LABEL(동 페이지)과 같게 둔다
+  const docLabel = s => String(s).replace(/\(1=있음\)$/, '');
+  // 개편으로 옛 구 경계에 이은 지정(인천 동구 → 제물포구)은 고시 표의 새 이름을 한 번 밝힌다(export_dong_pages.depop_section과 같은 규칙)
+  const depopSg = (sg, c) => { const m = /코드 연결: 개편 전 [^.]*? 전체가 (\S+)에 들어감/.exec((c && c.note) || ''); return m ? `${sg}(2026.7.1. ${m[1]})` : sg; };
+  // 기준 설명의 저장소 경로·내부 표기를 사용자 문장으로(XLSX 기준 대비)
+  const plainSource = s => String(s || '').replace(/,?\s*docs\/\S+\.md(?:\s+[A-Z]+-[\d.]+)?/g, '').replace(/\[대조 필요\]/g, '(기준 원문 대조 필요)')
+    .replace(/\[2차 인용, 원문 문서 미열람\]/g, '(2차 인용, 원문 미확인)').replace(/\[([^\]]+)\]/g, '($1)');
+  // 사업체 감소율 셀의 기준일 해(ref)보다 사업체 수 시계열의 마지막 값 해(last)가 이르면 그 사실을 적는다(값·판정은 그대로)
+  const bizShort = b => (b.biz ? `사업체 수는 ${b.biz.last}년 자료(${b.biz.ref}년 사업체 수는 원천에 아직 없음)` : '');
+  const bizNote = b => (b.biz ? `사업체 감소율의 사업체 수는 ${b.biz.last}년 자료다(${b.biz.ref}년 사업체 수는 원천에 아직 없음).` : '');
   // 쇠퇴지역 3요건(도시재생법 시행령 제17조). [지표 코드, 비교, 기준값, 항목 이름]
   const DECLINE_CRITERIA = [
     ['DECLINE_POP_DROP30Y_PCT', 'ge', 20.0, '인구: 30년 최대 대비 감소율'], ['DECLINE_POP_DECL3IN5', 'eq', 1, '인구: 최근 5년 중 3년 연속 감소'],
@@ -181,10 +194,10 @@
     if (livingLabels[code]) return livingLabels[code];
     const m = /^FORECAST_(.+?)_H(\d+)(?:_(LO|HI))?$/.exec(code);
     if (m) {
-      const base = LABEL[m[1]] || m[1], year = ((cell || {}).reference_date || '').slice(0, 4), when = year ? `${year}년` : `${m[2]}년 뒤`;
+      const base = livingLabels[m[1]] || LABEL[m[1]] || m[1], year = ((cell || {}).reference_date || '').slice(0, 4), when = year ? `${year}년` : `${m[2]}년 뒤`;
       return `${base} ${when} 전망` + ({ LO: ' 하한', HI: ' 상한' }[m[3]] || '');
     }
-    return LABEL[code] || code;
+    return docLabel(LABEL[code] || code);
   }
   function forecastKey(code) {
     const m = /^FORECAST_(.+?)_H(\d+)(?:_(LO|HI))?$/.exec(code);
@@ -234,7 +247,11 @@
     const fc = src.forecast || null, fidx = src.forecastIdx || null;
     const fd = ((fc || {}).dongs || []).find(d => String(d.code7 ?? d.code) === String(code8));
     const fcodes = [];
-    ((fd || {}).cells || []).forEach(c => { byCode.set(c.indicator_code, c); fcodes.push(c.indicator_code); });
+    // 전망은 같은 지표를 같은 공간 단위로 이어 본 값이다. 공간 단위가 빈 전망 셀은 원 지표 셀의 단위를 쓴다(원본 셀은 바꾸지 않는다)
+    ((fd || {}).cells || []).forEach(c => {
+      const base = byCode.get(forecastKey(c.indicator_code)[0]);
+      byCode.set(c.indicator_code, c.spatial_unit || !base || !base.spatial_unit ? c : { ...c, spatial_unit: base.spatial_unit }); fcodes.push(c.indicator_code);
+    });
 
     const facts = new Map(), viaNames = new Map(), dep = src.designations || null;
     if (dep) {
@@ -278,6 +295,10 @@
     const ser = seriesTable(dong, byCode, year, idx, missing);
     const todo = todoTable(items, crit, missing, fd, fidx, cells);
 
+    const bizCell = byCode.get('DECLINE_BIZ_DROP10Y_PCT'), bizRef = +String((bizCell || {}).reference_date || '').slice(0, 4);
+    const bizLast = Math.max(0, ...((dong.series || {}).DECLINE_BIZ_TOTAL || []).filter(p => p[1] !== null && p[1] !== undefined).map(p => p[0]));
+    const biz = usable(bizCell) && bizLast && bizLast < bizRef ? { last: bizLast, ref: bizRef } : null;   // dong_brief.build의 biz_years와 같다
+
     const sido = (idx.sido || []).find(s => s.code2 === sg.sido2) || { name: sg.sido2 };
     const path = ['전국', sido.name];
     if (sg.parent && names.has(sg.parent)) path.push(names.get(sg.parent));
@@ -286,7 +307,7 @@
     const subject = o.purpose ? PURPOSES[o.purpose] : '사실 자료와 기준 대비';
     return { code8: String(code8), dongName: dong.name, dongKind: dong.kind || null, year, region: path.slice(1).join(' '), sgName: sg.name, sido: sido.name, items, missing, fidx, cells,
       crit, ser, todo, subject, writtenOn: o.writtenOn || '', snapshot: idx.snapshot_hash, inputHash: o.inputHash || null, inputHashScheme: o.inputHash ? 'browser-brief-input-v1' : null,
-      geo: o.geo || null, series: dong.series || {} };
+      geo: o.geo || null, series: dong.series || {}, biz };
   }
 
   function judge(cell, op, thr) {
@@ -318,11 +339,11 @@
       const std = ind.standard;
       if (!std || std.value === null || std.value === undefined) continue;
       const [c, v] = val(ind.code), ge = std.direction === 'above_bad', cond = `${fmtNum(std.value)}${ind.unit} ${ge ? '이상' : '미만'}`, ver = verdictOf(judge(c, ge ? 'ge' : 'lt', std.value), std.status);
-      rows.push([ind.label, v, cond, `${std.source} — ${std.text}`, std.status, ver]); rule.set(ind.code, { cond, verdict: ver, status: std.status });
+      rows.push([ind.label, v, cond, `${plainSource(std.source)} — ${std.text}`, std.status, ver]); rule.set(ind.code, { cond, verdict: ver, status: std.status });
     }
     for (const code of GROUPS[3][1]) {
       const [, v] = val(code), it = items.find(i => i.code === code);
-      rows.push([`${it ? it.label : code} (안전 인프라)`, v, '기준 없음', '시설 위치의 사실 지표(D17). 범죄·치안 점수가 아니며 비교하지 않는다', '기준 없음', '비교 안 함']);
+      rows.push([`${it ? it.label : code} (안전 인프라)`, v, '기준 없음', '시설 위치의 사실 지표. 범죄·치안 점수가 아니며 비교하지 않는다', '기준 없음', '비교 안 함']);
     }
     return { rows, rule };
   }
@@ -349,7 +370,7 @@
       const c = it.cell;
       if (!c) { if (!it.fact) rows.push([it.group, it.label, `${noData()}: ${missing.get(it.code) || '원장에 셀 없음'}`, '원천 기관 자료 유무와 층 파일 갱신 여부']); continue; }
       const st = c.status;
-      if (hidden(c)) rows.push([it.group, it.label, `비공개: ${c.value_hidden_reason}`, '재배포 허용 범위(D16)']);
+      if (hidden(c)) rows.push([it.group, it.label, `비공개: ${c.value_hidden_reason}`, '재배포 허용 범위']);
       else if (c.value === null || c.value === undefined) rows.push([it.group, it.label, `${noData()}(값 null, 상태 ${st})`, '원천 기관 자료 유무']);
       if (st === '충돌') rows.push([it.group, it.label, '상태 충돌: 두 출처 또는 산식과 지정 결과가 다름', '원천 값 대조']);
       else if (st === '추가확인' && it.group !== '전망') { const extra = checkNote(c); rows.push([it.group, it.label, '상태 추가확인' + (extra ? `: ${extra}` : ''), '원천 자료·산식 대조']); }
@@ -377,10 +398,11 @@
     count('출처·계산 충돌', cells.filter(i => i.cell.status === '충돌'), '원천 값과 계산식 대조');
     count('사람 확인 전·진행 중', cells.filter(i => ['미확인', '확인중', '추가확인'].includes(i.cell.status)), '원장의 상태·확인 이력 검토');
     count('폐기된 셀', cells.filter(i => i.cell.status === '폐기'), '현재 근거로 사용하지 않고 대체 버전 확인');
-    const required = [['cell_id', '셀 식별자'], ['snapshot_id', '원장 스냅샷 식별자'], ['source_name', '출처명'], ['source_url', '출처 주소'], ['retrieved_at', '조회시각'], ['reference_date', '기준일'], ['formula_id', '산식 식별자'], ['formula_text', '산식 설명'], ['rule_version', '규칙 버전'], ['spatial_unit', '공간 단위'], ['unit', '단위'], ['status', '상태']];
+    const required = [['cell_id', '셀 번호'], ['snapshot_id', '원장 스냅샷 번호'], ['source_name', '출처명'], ['source_url', '출처 주소'], ['retrieved_at', '조회시각'], ['reference_date', '기준일'], ['formula_id', '산식 번호'], ['formula_text', '산식 설명'], ['rule_version', '규칙 버전'], ['spatial_unit', '공간 단위'], ['unit', '단위'], ['status', '상태']];
     const missingMeta = cells.filter(i => required.some(([k]) => !String(i.cell[k] ?? '').trim()));
     const metaFields = required.map(([key, label]) => [label, cells.filter(i => !String(i.cell[key] ?? '').trim()).length]).filter(([, n]) => n);
-    rows.push(['공개 셀의 근거 미기록', `${missingMeta.length}건`, metaFields.length ? metaFields.map(([label, n]) => `${label} ${n}건`).join(', ') + ' · 공개 자료에서 확인되지 않은 항목을 원장 보관본과 대조' : '해당 항목 없음']);
+    // 제목·'N건'은 task-link.js BLOCKING이 읽는다. 풀이는 'N건'이 전체 몇 셀 중 무엇이 비었는지로 적는다
+    rows.push(['공개 셀의 근거 미기록', `${missingMeta.length}건`, metaFields.length ? `전체 ${cells.length}개 셀 중 ${missingMeta.length}개 셀에 빈 기록이 있습니다(${metaFields.map(([label, n]) => `${label} ${n}개 셀`).join(', ')}). 공개 파일에 없는 기록이므로 필요하면 원장 보관본에서 확인합니다.` : '해당 항목 없음']);
     count('원장 셀 외 지정 사실', items.filter(i => i.fact), '지정 목록의 출처와 적용 범위 확인');
     const dates = [...new Set(items.map(i => (i.cell || i.fact || {}).reference_date).filter(Boolean))].sort();
     const grains = [...new Set(items.filter(i => i.cell || i.fact).map(i => i.cell ? i.cell.spatial_unit || '미기록' : '시군구'))].sort();
@@ -429,7 +451,11 @@
   // 바닥글: 자료 기준일은 전망(FORECAST_*, 기준일이 대상일)을 뺀 셀의 가장 늦은 reference_date. dong_brief.basis_date·FOOTER와 같다
   const basisDate = cells => { const ds = (cells || []).filter(c => c.reference_date && !String(c.indicator_code || '').startsWith('FORECAST_')).map(c => c.reference_date); return ds.length ? govDate(ds.reduce((a, b) => (b > a ? b : a))) : ''; };
   const inputHashLine = brief => brief.inputHash ? `브라우저 문서 입력묶음 SHA-256 [${brief.inputHashScheme}] ${brief.inputHash}` : '';
+  // doc.footer는 화면 인쇄(map.js printReport)가 끝에 붙이는 지문 줄이다. 파일 꼬리말은 짧게 두고 전체 지문은 본문 맨 끝 문단(hashBlock)·HWPX 메타에 둔다
+  // (꼬리말이 문서 첫 문단 XML에 들어가 글 추출·미리보기에서 64자 지문이 첫 줄로 보였다)
   const footerOf = brief => brief.inputHash ? inputHashLine(brief) + ' · ' : `작성 리뉴맵 · 자료 기준일 ${basisDate(brief.cells) || '-'} · 원천 색인 지문 ${String(brief.snapshot).slice(0, 8)} · `;
+  const fileFooter = doc => (doc.brief && doc.brief.inputHash ? `작성 리뉴맵 · 자료 기준일 ${basisDate(doc.brief.cells) || '-'} · 입력 지문 ${doc.brief.inputHash.slice(0, 8)} · ` : doc.footer || '');
+  const hashBlock = brief => block('para', inputHashLine(brief), { small: true, hash: true });
   const sourceLine = (n, s) => `[${n}] ${s.name}. ${s.forecast ? '전망 대상일' : '기준일'} ${govDate(s.reference_date)} 조회일 ${govDate(s.retrieved_at)} 이용조건 ${s.license}.`;
 
   // 요약 문장 3~5개(템플릿 순서 고정). 셀이 없으면 그 문장은 건너뛴다. 근거서와 1쪽 요약이 같이 쓴다
@@ -441,7 +467,7 @@
       const cs = codes.map(c => byCode.get(c) || null), fact = codes.length === 1 && !cs[0] ? facts.get(codes[0]) || null : null;
       if (!fact && !cs.every(usable)) continue;
       const ref = src.refs(fact ? [fact] : cs), v = fact ? fact.value : valueWithUnit(cs[0]);
-      const s = fill(template, { year, dong, sg, v, v2: cs.length > 1 ? valueWithUnit(cs[1]) : '', thr: `${fmtNum(aging[2])}%`, verdict: S.verdict[agingV.replace(PENDING_SUFFIX, '')], min_met: DECLINE_MIN_MET, ref });
+      const s = fill(template, { year, dong, sg: codes[0] === 'DEPOP_STATUS' ? depopSg(sg, cs[0]) : sg, v, v2: cs.length > 1 ? valueWithUnit(cs[1]) : '', thr: `${fmtNum(aging[2])}%`, verdict: S.verdict[agingV.replace(PENDING_SUFFIX, '')], min_met: DECLINE_MIN_MET, ref });
       if (sentenceLen(s) <= SENTENCE_MAX) lines.push(s);
       if (lines.length >= S.max - (pending ? 1 : 0)) break;
     }
@@ -479,7 +505,8 @@
         const c = it.cell, f = it.fact;
         if (c) {
           const ref = src.ref(c);
-          rows.push([it.label, valueWithUnit(c), govDate(c.reference_date), ref]);
+          // 사업체 감소율은 기준일보다 앞선 해의 사업체 수로 계산된 경우 기준일 칸에 그 해를 적는다(현황 문단은 숫자 대조 대상이라 표 칸에 둔다)
+          rows.push([it.label, valueWithUnit(c), govDate(c.reference_date) + (it.code === 'DECLINE_BIZ_DROP10Y_PCT' && brief.biz ? `(사업체 수 ${brief.biz.last}년)` : ''), ref]);
           if (n < TP.generic_per_group && usable(c)) {
             const s = fill(TP.generic, { label: it.label, josa: josa(it.label), v: valueWithUnit(c), ref });
             if (sentenceLen(s) <= SENTENCE_MAX) { blocks.push(block('para', s)); n++; }
@@ -496,6 +523,7 @@
     const critBlock = block('table', '', { rows: critRows, widths: [33, 12, 16, 17, 22], caption: `표 ${k + 1}. 기준 대비` });
     blocks.push(critBlock); parts.crit = critBlock;
     TP.criteria_notes.forEach(s => blocks.push(block('para', s)));
+    if (brief.biz) blocks.push(block('para', bizNote(brief)));
 
     blocks.push(block('h1', '4. 확인이 필요한 사항'));
     const todoRows = todo.rows.slice(1).filter(r => forecast || r[0] !== '전망');
@@ -534,6 +562,7 @@
     // 붙임 3. 출처 목록: 본문 [n]의 주석. 문서 맨 끝에 작은 글자로 둔다
     blocks.push(block('h1', '붙임 3. 출처 목록'));
     src.list.forEach((s, n) => { blocks.push(block('para', sourceLine(n + 1, s), { small: true })); blocks.push(block('para', s.url, { small: true })); });   // '끝' 표시는 쓰지 않는다
+    if (brief.inputHash) blocks.push(hashBlock(brief));
 
     finish(blocks);
     return { kind: 'full', title: blocks[0].text, blocks, sources: src.list, cells: brief.cells, snapshot: brief.snapshot, templateVersion: TP.version, footer: footerOf(brief),
@@ -586,9 +615,7 @@
         h += 'gap' in z ? z.gap * 1.6 * MM + 2 * MM : ln.body + 6 * MM;      // 표 뒤 빈 문단
       } else { const k = b.small ? 'small' : b.strong ? 'lead' : 'body'; h += linesOf(b.text, PAGE_W_MM, z[k]) * ln[k] + (z.after ?? 6) * MM; }   // 문단 뒤 간격(pt): 1쪽은 onepage.sizes.after
     }
-    // HTML 인쇄는 별도 꼬리말 영역이 없어 본문 끝에 입력 지문을 함께 싣는다.
-    if (doc.brief && doc.brief.inputHash) h += linesOf(inputHashLine(doc.brief), PAGE_W_MM, z.small) * ln.small + (z.after ?? 6) * MM;
-    return h;
+    return h;   // 입력 지문은 본문 끝 문단(hashBlock)이라 위에서 이미 셌다
   }
   function buildOnepage(brief) {
     const TP = tpl(), one = TP.onepage;
@@ -608,7 +635,8 @@
       const k = one.overview_keys.map((key, i) => [key, [brief.region, `${brief.year}년`, govDate(brief.writtenOn), TP.overview_basis][i]]);
       const h1 = one.headings, summary = lines.map((t, i) => block('para', t, { refs: refsIn(t), emph: true, strong: i === 0 })), critBlock = block('table', '', { rows: [head, ...rows], widths, caption: '표 1. 기준 대비' });
       const blocks = [block('title', one.title.replace('{dong}', brief.dongName)), block('box', '', { rows: k, widths: [22, 78] }), block('h1', h1[0]), ...summary, block('h1', h1[1]), critBlock,
-        block('para', one.note.join(' ')), block('para', FIXED_NOTICE), block('h1', h1[2]), ...src.list.map((s, n) => block('para', sourceLine(n + 1, s), { small: true }))];
+        block('para', [...one.note, bizNote(brief)].filter(Boolean).join(' ')), block('para', FIXED_NOTICE), block('h1', h1[2]), ...src.list.map((s, n) => block('para', sourceLine(n + 1, s), { small: true })),
+        ...(brief.inputHash ? [hashBlock(brief)] : [])];
       finish(blocks);
       return { kind: 'onepage', title: blocks[0].text, blocks, sources: src.list, cells: brief.cells, snapshot: brief.snapshot, templateVersion: TP.version, footer: footerOf(brief),
         parts: { box: blocks[1], summary, crit: critBlock }, src, brief, writtenOn: brief.writtenOn, sizes: 'onepage', onepage: true, byCode, facts, rows: nRows };
@@ -702,7 +730,7 @@
       const t = String(text).replace(/\s*\n\s*/g, ' ');
       return `<hp:p paraPrIDRef="${PR[center ? 'cell_c' : 'cell']}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0" id="${nid()}">${refs ? textRuns(t).map(([x, look]) => runXml(charKey('table', look), x)).join('') : runXml(bold ? 'table_b' : 'table', t)}</hp:p>`;
     };
-    const footer = `<hp:footer id="9813498" applyPageType="BOTH"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="BOTTOM" linkListIDRef="0" linkListNextIDRef="0" textWidth="${TEXT_W}" textHeight="4252" hasTextRef="0" hasNumRef="0"><hp:p paraPrIDRef="${PR.footer}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0" id="516765611"><hp:run charPrIDRef="${doc.brief && doc.brief.inputHash ? CH.small : CH.table}"><hp:t>${xe(doc.footer)}</hp:t></hp:run><hp:run charPrIDRef="${CH.table}"><hp:ctrl><hp:autoNum num="1" numType="PAGE"><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar="" supscript="0"/></hp:autoNum></hp:ctrl></hp:run><hp:run charPrIDRef="${CH.table}"><hp:ctrl><hp:pageNum pos="BOTTOM_CENTER" formatType="DIGIT" sideChar="-"/></hp:ctrl></hp:run></hp:p></hp:subList></hp:footer>`;
+    const footer = `<hp:footer id="9813498" applyPageType="BOTH"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="BOTTOM" linkListIDRef="0" linkListNextIDRef="0" textWidth="${TEXT_W}" textHeight="4252" hasTextRef="0" hasNumRef="0"><hp:p paraPrIDRef="${PR.footer}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0" id="516765611"><hp:run charPrIDRef="${CH.table}"><hp:t>${xe(fileFooter(doc))}</hp:t></hp:run><hp:run charPrIDRef="${CH.table}"><hp:ctrl><hp:autoNum num="1" numType="PAGE"><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar="" supscript="0"/></hp:autoNum></hp:ctrl></hp:run><hp:run charPrIDRef="${CH.table}"><hp:ctrl><hp:pageNum pos="BOTTOM_CENTER" formatType="DIGIT" sideChar="-"/></hp:ctrl></hp:run></hp:p></hp:subList></hp:footer>`;
     const secPr = `<hp:secPr id="" textDirection="HORIZONTAL" spaceColumns="1134" tabStop="8000" tabStopVal="4000" tabStopUnit="HWPUNIT" outlineShapeIDRef="1" memoShapeIDRef="0" textVerticalWidthHead="0" masterPageCnt="0"><hp:grid lineGrid="0" charGrid="0" wonggojiFormat="0"/><hp:startNum pageStartsOn="BOTH" page="0" pic="0" tbl="0" equation="0"/><hp:visibility hideFirstHeader="0" hideFirstFooter="0" hideFirstMasterPage="0" border="SHOW_ALL" fill="SHOW_ALL" hideFirstPageNum="0" hideFirstEmptyLine="0" showLineNumber="0"/><hp:lineNumberShape restartType="0" countBy="0" distance="0" startNumber="0"/><hp:pagePr landscape="WIDELY" width="59528" height="84186" gutterType="LEFT_ONLY"><hp:margin header="4252" footer="4252" gutter="0" left="8504" right="8504" top="${S.top}" bottom="4252"/></hp:pagePr>` +
       `<hp:footNotePr><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar=")" supscript="0"/><hp:noteLine length="-1" type="SOLID" width="0.12 mm" color="#000000"/><hp:noteSpacing betweenNotes="283" belowLine="567" aboveLine="850"/><hp:numbering type="CONTINUOUS" newNum="1"/><hp:placement place="EACH_COLUMN" beneathText="0"/></hp:footNotePr>` +
       `<hp:endNotePr><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar=")" supscript="0"/><hp:noteLine length="14692344" type="SOLID" width="0.12 mm" color="#000000"/><hp:noteSpacing betweenNotes="0" belowLine="567" aboveLine="850"/><hp:numbering type="CONTINUOUS" newNum="1"/><hp:placement place="END_OF_DOCUMENT" beneathText="0"/></hp:endNotePr>` +
@@ -744,7 +772,7 @@
     const S = sizesFor(doc), when = doc.writtenOn || '', iso = /^\d{4}-\d{2}-\d{2}/.test(when) ? `${when.slice(0, 10)}T00:00:00Z` : '1980-01-01T00:00:00Z';
     const prv = docText(doc).replace(/\t/g, ' ').slice(0, 1000), imgs = docImages(doc);
     const imgItems = imgs.map((_, i) => `<opf:item id="image${i + 1}" href="BinData/image${i + 1}.jpg" media-type="image/jpg" isEmbeded="1"/>`).join('');
-    const hpf = `${DECL}<opf:package ${NS} version="" unique-identifier="" id=""><opf:metadata><opf:title>${xe(doc.title)}</opf:title><opf:language>ko</opf:language><opf:meta name="creator" content="text">RENEWMAP</opf:meta><opf:meta name="subject" content="text"/><opf:meta name="description" content="text"/><opf:meta name="lastsaveby" content="text">RENEWMAP</opf:meta><opf:meta name="CreatedDate" content="text">${iso}</opf:meta><opf:meta name="ModifiedDate" content="text">${iso}</opf:meta><opf:meta name="keyword" content="text"/></opf:metadata><opf:manifest><opf:item id="header" href="Contents/header.xml" media-type="application/xml"/><opf:item id="section0" href="Contents/section0.xml" media-type="application/xml"/><opf:item id="settings" href="settings.xml" media-type="application/xml"/>${imgItems}</opf:manifest><opf:spine><opf:itemref idref="header" linear="yes"/><opf:itemref idref="section0" linear="yes"/></opf:spine></opf:package>`;
+    const hpf = `${DECL}<opf:package ${NS} version="" unique-identifier="" id=""><opf:metadata><opf:title>${xe(doc.title)}</opf:title><opf:language>ko</opf:language><opf:meta name="creator" content="text">RENEWMAP</opf:meta><opf:meta name="subject" content="text"/>${doc.brief && doc.brief.inputHash ? `<opf:meta name="description" content="text">${xe(inputHashLine(doc.brief))}</opf:meta>` : '<opf:meta name="description" content="text"/>'}<opf:meta name="lastsaveby" content="text">RENEWMAP</opf:meta><opf:meta name="CreatedDate" content="text">${iso}</opf:meta><opf:meta name="ModifiedDate" content="text">${iso}</opf:meta><opf:meta name="keyword" content="text"/></opf:metadata><opf:manifest><opf:item id="header" href="Contents/header.xml" media-type="application/xml"/><opf:item id="section0" href="Contents/section0.xml" media-type="application/xml"/><opf:item id="settings" href="settings.xml" media-type="application/xml"/>${imgItems}</opf:manifest><opf:spine><opf:itemref idref="header" linear="yes"/><opf:itemref idref="section0" linear="yes"/></opf:spine></opf:package>`;
     const rdf = (about, type) => `<rdf:Description rdf:about="${about}"><rdf:type rdf:resource="http://www.hancom.co.kr/hwpml/2016/meta/pkg#${type}"/></rdf:Description>`;
     const part = f => `<rdf:Description rdf:about=""><ns0:hasPart xmlns:ns0="http://www.hancom.co.kr/hwpml/2016/meta/pkg#" rdf:resource="${f}"/></rdf:Description>`;
     return zipStore([
@@ -812,15 +840,19 @@
     const b = doc.brief, src = doc.src, rp = b.geo ? repPoint(b.geo) : null, kind = '행정동', review = deliveryReview(b, true);
     const head = ['code8', '동'];
     const status = [[...head, '행정구역 구분(법정동/행정동)', '대표점 위도(EPSG:4326)', '대표점 경도(EPSG:4326)', '지표 묶음', '지표', '값', '단위', '값의 공간 단위', '기준일', '상태', '출처 번호', '출처', '라이선스']];
+    // 숫자 칸은 숫자로 두되 화면과 같은 소수 자리로 반올림한다(부동소수 꼬리 34.810362154315705 방지). 대표점 좌표는 repPoint가 6자리로 맞춘다
+    const num = v => (isNum(v) ? roundD(v, FMT().max_decimals ?? 2) : v);
+    const bizRow = r => r === `${DECLINE_PREFIX}${DECLINE_CRITERIA.find(x => x[0] === 'DECLINE_BIZ_DROP10Y_PCT')[3]}`;
     for (const it of b.items) {
       const c = it.cell, f = it.fact, g = [b.code8, b.dongName, kind, rp ? rp.lat : null, rp ? rp.lon : null, it.group, clean(it.label)];
-      if (c) status.push([...g, usable(c) && isNum(c.value) ? c.value : fmtCell(c), c.unit, c.spatial_unit || '', govDate(c.reference_date), c.status, src.number(c, it.group === '전망'), c.source_name, licenseOf(c)]);
+      const date = govDate(c ? c.reference_date : '') + (c && it.code === 'DECLINE_BIZ_DROP10Y_PCT' && b.biz ? ` · ${bizShort(b)}` : '');
+      if (c) status.push([...g, usable(c) ? (isNum(c.value) ? num(c.value) : valueWithUnit(c)) : fmtCell(c), c.unit, c.spatial_unit || '', date, c.status, src.number(c, it.group === '전망'), c.source_name, licenseOf(c)]);
       else if (f) status.push([...g, f.value, f.unit, '시군구', govDate(f.reference_date), '-', src.number(f), f.source_name, f.license]);
       else status.push([...g, noData(), '-', '', '-', '-', '', '-', '-']);
     }
     status.push([]); status.push([b.code8, b.dongName, tpl().overview_basis]);
-    const crit = [[...head, ...b.crit.rows[0]], ...b.crit.rows.slice(1).map(r => [b.code8, b.dongName, ...r.map(clean)])];
-    const ser = [[...head, ...b.ser.raw[0]], ...b.ser.raw.slice(1).map(r => [b.code8, b.dongName, ...r])];
+    const crit = [[...head, ...b.crit.rows[0]], ...b.crit.rows.slice(1).map(r => [b.code8, b.dongName, ...r.map((x, i) => clean(i === 3 && b.biz && bizRow(r[0]) ? `${x} · ${bizShort(b)}` : x))])];
+    const ser = [[...head, ...b.ser.raw[0]], ...b.ser.raw.slice(1).map(r => [b.code8, b.dongName, ...r.map(num)])];
     ser.push([]); b.ser.notes.forEach(n => ser.push([b.code8, b.dongName, n]));
     const so = [[...head, '출처 번호', '지표', '출처', 'URL', '기준일(전망은 대상일)', '조회일', '이용조건', '계산식', '규칙 버전', '셀 ID']];
     for (const it of b.items) {
@@ -930,6 +962,7 @@
             const cs = sp.codes.map(c => by.get(c) || null), fact = sp.codes.length === 1 && !cs[0] ? facts.get(sp.codes[0]) || null : null;
             if (!fact && !cs.every(usable)) continue;
             Object.assign(kw, { v: fact ? fact.value : valueWithUnit(cs[0]), v2: cs.length > 1 ? valueWithUnit(cs[1]) : '', ref: refs.refs(fact ? [fact] : cs) });
+            if (sp.codes[0] === 'DEPOP_STATUS') kw.sg = depopSg(kw.sg, cs[0]);
           }
           const s = fill(sp.template, kw);
           if (sentenceLen(s) <= SENTENCE_MAX) { sents.push({ text: s, formItem: sp.form_item || '' }); fcUsed = fcUsed || !!sp.forecast; }
@@ -953,12 +986,14 @@
   function fragmentHTML(fr) {
     const tbl = docHTML({ blocks: [block('table', '', { rows: fr.rows, widths: fr.widths, caption: fr.caption })], parts: {} }, { copy: true }).html;
     return `<div class="dg-frag"><p class="dg-lead">${he(fr.lead)}${fr.verified ? ` · 양식 확인 상태: ${he(fr.verified)}` : ''}</p><p class="dg-small">${he(fr.form)}</p>` +
-      fr.sentences.map((s, i) => `<p class="dg-p">${he(s)}<small class="dg-fi">${fr.formItems[i] ? `양식 항목: ${he(fr.formItems[i])}` : ''}</small><button type="button" class="dg-copy-s" data-frag-sentence="${i}">${COPY_SENT}</button></p>`).join('') +
+      fr.sentences.map((s, i) => `<p class="dg-p">${he(s)}<small class="dg-fi">${fr.formItems[i] ? `양식 항목: ${he(fr.formItems[i])}` : ''}</small>${copySentBtn(`data-frag-sentence="${i}"`, `조각 ${i + 1}번째`, s)}</p>`).join('') +
       tbl + fr.sources.map(s => `<p class="dg-small">${he(s)}</p>`).join('') + `<p><button type="button" class="btn ghost dg-copy" data-frag-all>조각 전체 복사(문장·표·출처)</button></p></div>`;
   }
 
   // ══════════════════════════════════════ 화면용 HTML(1쪽 요약·인쇄). 인라인 style 속성을 쓰지 않는다(CSP)
   const COPY_TABLE = '표 복사(HWP/엑셀 붙여넣기)', COPY_SENT = '문장 복사';
+  // 문장 복사 버튼이 여러 개라 화면 낭독기가 구별하도록 이름에 위치와 문장 앞부분을 넣는다(보이는 글자 '문장 복사'로 시작)
+  const copySentBtn = (attr, where, text) => `<button type="button" class="dg-copy-s" ${attr} aria-label="${he(`${COPY_SENT}: ${where} 문장(${String(text).replace(/\[\d+\]/g, '').slice(0, 20).trim()})`)}">${COPY_SENT}</button>`;
   const runsHTML = (text, emph) => textRuns(text, emph).map(([t, look]) => (look === 'b' ? `<b>${he(t)}</b>` : look === 'sup' ? `<sup class="dg-ref">${he(t)}</sup>` : he(t))).join('');
   function docHTML(doc, o) {
     const opt = o || {}, tables = [];
@@ -975,10 +1010,12 @@
       else if (b.kind === 'h1') out += `<h4 class="dg-h1">${he(b.text)}</h4>`;
       else if (b.kind === 'h2') out += `<h5 class="dg-h2">${he(b.text)}</h5>`;
       else if (b.kind === 'bullet') out += `<p class="dg-bullet">- ${runsHTML(b.text)}</p>`;
-      else out += `<p class="${b.cls === 'src' ? 'dg-src' : b.small ? 'dg-small' : b.strong ? 'dg-p dg-key' : 'dg-p'}">${b.small || b.cls === 'src' ? he(b.text) : runsHTML(b.text, b.emph)}${opt.copy && doc.parts && doc.parts.summary && doc.parts.summary.includes(b) ? `<button type="button" class="dg-copy-s" data-copy-sentence="${doc.parts.summary.indexOf(b)}">${COPY_SENT}</button>` : ''}</p>`;
+      else {
+        const si = opt.copy && doc.parts && doc.parts.summary ? doc.parts.summary.indexOf(b) : -1;
+        out += `<p class="${b.cls === 'src' ? 'dg-src' : b.small ? 'dg-small' : b.strong ? 'dg-p dg-key' : 'dg-p'}"${b.hash ? ' data-input-hash' : ''}>${b.small || b.cls === 'src' ? he(b.text) : runsHTML(b.text, b.emph)}${si >= 0 ? copySentBtn(`data-copy-sentence="${si}"`, `요약 ${si + 1}번째`, b.text) : ''}</p>`;
+      }
     }
     flush();
-    if (doc.brief && doc.brief.inputHash) out += `<p class="dg-small" data-input-hash>${he(inputHashLine(doc.brief))}</p>`;
     return { html: out, tables };
   }
 
@@ -1056,7 +1093,7 @@
     const sect = `<w:sectPr><w:footerReference w:type="default" r:id="rId2"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="${PT.margin}" w:right="${PT.margin}" w:bottom="${PT.margin}" w:left="${PT.margin}" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>`;
     const styles = `${OX}<w:styles ${NS_W}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}" w:eastAsia="${FONT}" w:cs="${FONT}"/><w:sz w:val="22"/><w:lang w:val="ko-KR" w:eastAsia="ko-KR"/></w:rPr></w:rPrDefault></w:docDefaults>`
       + ['Normal|Normal|', 'Title|Title|<w:keepNext/>', 'Heading1|heading 1|<w:keepNext/><w:outlineLvl w:val="0"/>', 'Heading2|heading 2|<w:keepNext/><w:outlineLvl w:val="1"/>'].map(s => { const [id, name, ppr] = s.split('|'); return `<w:style w:type="paragraph" w:styleId="${id}"${id === 'Normal' ? ' w:default="1"' : ''}><w:name w:val="${name}"/>${id === 'Normal' ? '' : '<w:basedOn w:val="Normal"/><w:next w:val="Normal"/>'}${ppr ? `<w:pPr>${ppr}</w:pPr>` : ''}</w:style>`; }).join('') + '</w:styles>';
-    const ftr = `${OX}<w:ftr ${NS_W}>${p(run(doc.footer || '', '', 8, false, '595959'), { center: true, after: 0 })}</w:ftr>`;
+    const ftr = `${OX}<w:ftr ${NS_W}>${p(run(fileFooter(doc), '', 8, false, '595959'), { center: true, after: 0 })}</w:ftr>`;
     const iso = /^\d{4}-\d{2}-\d{2}/.test(doc.writtenOn || '') ? `${doc.writtenOn.slice(0, 10)}T00:00:00Z` : '1980-01-01T00:00:00Z';
     return zipStore([
       { name: '[Content_Types].xml', data: `${OX}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="${CT_OPEN}wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="${CT_OPEN}wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="${CT_OPEN}wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>` },
@@ -1115,7 +1152,7 @@
       const table = s.table ? tableFrame(s.table.rows, s.table.widths) : '';
       const y = s.table ? 1150000 + ROW_H * s.table.rows.length + 150000 : 1200000;
       const lines = s.lines.length ? box('본문', M, y, SW - 2 * M, SH - y - 600000, s.lines.map(l => para(runsOf(l.text, l.size || 16, l.bold, l.color), { bullet: l.bullet, before: l.before || 400 })).join('')) : '';
-      const foot = box('쪽·출처', M, SH - 480000, SW - 2 * M, 380000, para(`<a:r>${rp(9, false, '595959')}<a:t>${xe(`${doc.footer || ''} · ${i + 1}/${total}`)}</a:t></a:r>`));
+      const foot = box('쪽·출처', M, SH - 480000, SW - 2 * M, 380000, para(`<a:r>${rp(9, false, '595959')}<a:t>${xe(`${fileFooter(doc)} · ${i + 1}/${total}`)}</a:t></a:r>`));
       return `${OX}<p:sld ${ns}><p:cSld><p:spTree>${grpXml}${title}${table}${lines}${foot}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
     };
     const clr = ['dk1 000000', 'lt1 FFFFFF', 'dk2 153C39', 'lt2 F2F5F3', 'accent1 006F5B', 'accent2 D7F988', 'accent3 8A4B00', 'accent4 2E7D5E', 'accent5 4F625D', 'accent6 102F2D', 'hlink 006F5B', 'folHlink 4F625D'].map(s => { const [n, v] = s.split(' '); return `<a:${n}><a:srgbClr val="${v}"/></a:${n}>`; }).join('');
@@ -1160,7 +1197,7 @@
   }
 
   return {
-    crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, fmtNum, roundD, govDate, localDate, josa, valueWithUnit, fmtCell, hidden, usable, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
+    crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, fmtNum, roundD, plainSource, govDate, localDate, josa, valueWithUnit, fmtCell, hidden, usable, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
     setTemplates, getTemplates, displayName, BriefError, Sources, sourceLine, buildBrief, buildDoc, buildOnepage, deliveryReview, estimateHeightMm, basisDate, FIXED_NOTICE, docText, sentenceText, sizesFor, textRuns, withSnap, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
     tablePayload, sentencePayload, copyToClipboard, buildFragments, fragmentChoices, fragmentPayload, fragmentHTML, docHTML, COPY_TABLE, COPY_SENT, projectFeatures, mapSvg, safeName, saveBytes, svgToPng, xe,
   };

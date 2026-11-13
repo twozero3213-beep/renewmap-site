@@ -30,10 +30,10 @@
   // 2027 가이드라인 p.42 기반·편의시설 현황. 없는 자료는 없다고 적는다
   const SOC = [
     ['도로·접도율', '구역 내', null], ['주차장', '구역 내', null], ['무인택배함·쓰레기처리장', '구역 내', null], ['CCTV', '구역 내', 'CCTV_PER_KM2'],
-    ['유치원', '구역 반경 500m', null], ['초등학교', '구역 반경 500m', 'ELEM_SCHOOL_NEAREST_M'], ['어린이집', '구역 반경 500m', null], ['노인복지시설', '구역 반경 500m', 'SENIOR_HALL_COUNT'],
+    ['유치원', '구역 반경 500m', null], ['초등학교', '구역 반경 500m', 'ELEM_SCHOOL_NEAREST_M'], ['어린이집', '구역 반경 500m', 'CHILDCARE_NEAREST_M'], ['노인복지시설', '구역 반경 500m', 'SENIOR_HALL_COUNT'],
     ['건강생활센터', '구역 반경 500m', null], ['도서관(공공·사립·작은)', '구역 반경 500m', 'LIB_NEAREST_M'], ['생활체육시설', '구역 반경 500m', null], ['생활권공원', '구역 반경 500m', 'PARK_COUNT'],
     ['문화예술회관·전시시설', '기초 지자체', null], ['경기장·체육관·수영장', '기초 지자체', null], ['거점공원', '기초 지자체', 'PARK_AREA_PER_CAPITA'], ['사회복지관·노인복지관', '기초 지자체', null],
-    ['보건소', '기초 지자체', null], ['응급실 운영 의료기관', '기초 지자체', 'ER_NEAREST_M'],
+    ['보건소', '기초 지자체', 'HEALTH_CENTER_NEAREST_M'], ['응급실 운영 의료기관', '기초 지자체', 'ER_NEAREST_M'],
   ];
   const STATE = { ok: '자료상 맞음', no: '자료상 안 맞음', check: '확인 필요' };
   const { esc, isNum: num } = typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil;

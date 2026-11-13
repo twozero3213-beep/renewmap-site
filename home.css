@@ -13,7 +13,7 @@
 .app-home header.top .wrap { min-height: 56px; }
 .home { max-width: 640px; margin: 0 auto; padding: 16px 16px 24px; word-break: keep-all; overflow-wrap: break-word; }
 .home > section { padding: 0; }
-.home h1 { margin: 0 0 8px; font-size: 28px; line-height: 36px; font-weight: 700; }
+.home h1 { margin: 0 0 8px; font-size: clamp(26px, 3vw, 34px); line-height: 1.2; font-weight: 700; }   /* v9: 도구 화면 제목을 순위·구역 계산(34px)과 같게 */
 .home-sub { margin: 0 0 16px; font-size: 15px; line-height: 22px; color: var(--dim); }
 .home-search-row { position: relative; }
 .home-search-row svg { position: absolute; left: 16px; top: 16px; width: 24px; height: 24px; fill: none; stroke: var(--dim); stroke-width: 2; stroke-linecap: round; pointer-events: none; }

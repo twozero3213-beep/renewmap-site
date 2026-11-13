@@ -51,3 +51,13 @@
 @media (min-width: 1160px) {
   .rank-page .rank-table-help { display: none; }
 }
+/* v9 휴대폰: 넓은 표를 밀어야 '무게를 바꾼 순위 범위'가 보였다 → 순위·동·점수·범위 네 칸만 화면에 맞추고, 세부 점수는 동 페이지에서 본다 */
+@media (max-width: 720px) {
+  .rank-page table.rank-table { min-width: 0; width: 100%; font-size: 15px; }
+  .rank-page table.rank-table th:nth-child(n+5), .rank-page table.rank-table td:nth-child(n+5) { display: none; }
+  .rank-page table.rank-table th:nth-child(1) { width: 3rem; }
+  .rank-page table.rank-table th:nth-child(2) { width: auto; }
+  .rank-page table.rank-table th:nth-child(3) { width: 4.5rem; }
+  .rank-page table.rank-table th:nth-child(4) { width: 5.5rem; }
+  .rank-page table.rank-table th, .rank-page table.rank-table td { padding: 8px 6px; }
+}

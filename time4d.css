@@ -60,7 +60,10 @@
   .t4-app { grid-template-columns: minmax(0, 1fr); height: auto; }
   .t4-stage { order: -1; height: 52vh; min-height: 340px; }   /* 휴대폰에서 지도가 첫 화면을 다 차지해 스크롤이 지도에 갇히던 것(6회차) */
   .t4-side { border-right: 0; overflow: visible; }
-  .t4-time { left: 8px; right: 8px; bottom: 36px; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; padding: 6px 10px; }
+  /* v9: 막대가 126px라 1년이 1.5px였다 → 막대를 한 줄 통째로, 단추·연도는 그 위 줄에 */
+  .t4-time { left: 8px; right: 8px; bottom: 36px; grid-template-columns: auto minmax(0, 1fr); gap: 4px 8px; padding: 6px 10px; }
+  .t4-time .t4-slider { grid-column: 1 / -1; order: 3; }
+  .t4-time output { justify-self: end; }
   .t4-time #t4Now, .t4-time #t4Cmp { display: none; }
   .t4-key { top: 12px; right: auto; left: 12px; bottom: auto; padding: 6px 8px; }
   .t4-ends { display: none; }   /* 휴대폰에서 세 줄로 꺾여 지도를 가렸다 */

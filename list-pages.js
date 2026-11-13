@@ -24,12 +24,13 @@
     return {
       reset() { page = 1; },
       goTo(value) { page = value; },   // 바깥에서 쪽을 옮길 때(순위의 '우리 동네 몇 위' 찾기)
+      get page() { return page; },   // 순위 화면이 주소(?page=)에 적는다
       slice(rows) {
         const range = windowOf(rows.length, page, size); page = range.page;
         select.textContent = "";
         for (let n = 1; n <= range.pages; n++) { const option = document.createElement("option"); option.value = n; option.textContent = `${n} / ${range.pages}쪽`; option.selected = n === page; select.append(option); }
         prev.disabled = page === 1; next.disabled = page === range.pages;
-        status.textContent = rows.length ? `전체 ${rows.length}건 중 ${range.start + 1}–${range.end}건` : "기록 없음";
+        status.textContent = rows.length ? `전체 ${rows.length.toLocaleString("ko-KR")}건 중 ${(range.start + 1).toLocaleString("ko-KR")}–${range.end.toLocaleString("ko-KR")}건` : "기록 없음";   // v9: '3541건'과 '3,541개'가 섞였다
         nav.hidden = range.pages === 1;
         return rows.slice(range.start, range.end);
       }

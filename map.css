@@ -474,3 +474,12 @@
 .map-bundles button[data-bundle="all"][aria-pressed="true"] { color: #fff; }
 @media (prefers-reduced-motion: reduce) { .map-bundles button { transition: none; } }
 @media print { .map-bundles { display: none !important; } }
+/* v9 접근성: 키보드로 닿은 지도 도형을 굵은 테두리로 보인다(초점 테두리가 none이었다) */
+.leaflet-container path.leaflet-interactive:focus { outline: none; }
+.leaflet-container path.leaflet-interactive:focus-visible { stroke: var(--ink); stroke-width: 4px; }
+.rp-mail-note { flex-basis: 100%; margin: 4px 0 0; font-size: 14px; color: var(--dim); }
+/* v9 휴대폰: 1쪽 요약 표가 공통 표 규칙의 최소 폭(640px) 때문에 값 칸이 화면 밖에 잘렸다 → 이 문서 안에서는 칸 안에서 줄을 바꾼다 */
+@media (max-width: 720px) {
+  .dg-onepage .table-wrap .dg-table { min-width: 0; }
+  .dg-onepage .dg-table th, .dg-onepage .dg-table td { overflow-wrap: anywhere; word-break: keep-all; }
+}

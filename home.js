@@ -9,34 +9,38 @@
   const MAX = 8;
   const norm = s => String(s || '').replace(/\s+/g, '').toLowerCase();
   // 홈에서 들어오면 기본 보고서는 '1쪽 요약'(?report=onepage, find.js entryReportMode). 동까지 정해지면 탐색이 문서 패널을 바로 연다(심사 06: 동 이름 → 1쪽 한글 3번 안에)
-  const route = r => `explore.html?report=onepage#map/${r.sido}/${r.sgg}${r.dong ? '/' + r.dong : ''}`;
+  // report: 열 문서 종류. 재생 사업 화면의 같은 찾기 칸은 'programs'(그 동에 맞는 사업 표)로 보낸다(form data-report)
+  const route = (r, report = 'onepage') => `explore.html?report=${report}#map/${r.sido}/${r.sgg}${r.dong ? '/' + r.dong : ''}`;
 
-  // 동 이름이 같거나 포함된 곳, 시군구 이름이 맞는 곳(시군구 화면). 띄어쓰기는 무시한다.
+  // 동 판별은 util.js dongHit(법정동 이름 '우동'·'해운대 우동'도). 화면에서는 util.js가 이 파일 뒤에 실려 부를 때 꺼낸다
+  const U = () => (typeof window !== 'undefined' && window.RenewUtil) || require('./util.js');
+  const byName = (a, b) => a.sgg.localeCompare(b.sgg) || a.label.localeCompare(b.label, 'ko', { numeric: true });   // 반여1·2·3동 순(전에는 코드 순이라 2·3·1·4)
+  // 동 이름이 같거나(법정동 이름 포함) 포함된 곳, 시군구 이름이 맞는 곳(시군구 화면). 띄어쓰기는 무시한다.
   function find(index, query, max = MAX) {
     const q = norm(query);
     if (!q || !Array.isArray(index)) return [];
-    const exact = [], fuzzy = [], seenSgg = new Set();
+    const exact = [], fuzzy = [], seenSgg = new Set(), hit = U().dongHit;
     for (const [code, dong, sgg, sggName, sido] of index) {
       const row = { label: dong, sub: `${sido} ${sggName}`, sido: code.slice(0, 2), sgg, dong: code };
-      if (norm(dong) === q) exact.push(row);
+      if (hit(query, dong, [sido, sggName])) exact.push(row);
       else if (norm(sggName) === q && !seenSgg.has(sgg)) { seenSgg.add(sgg); exact.push({ label: sggName, sub: `${sido} 시군구`, sido: row.sido, sgg, dong: '' }); }   // 시군구 이름은 동 수십 개 대신 한 줄
       else if (norm(sido + sggName + dong).includes(q)) fuzzy.push(row);
     }
-    return (exact.length ? exact : fuzzy).slice(0, max);
+    return (exact.length ? exact : fuzzy).sort(byName).slice(0, max);
   }
 
   // 문구: docs/design/redesign_2026-10-27.md 5.1. 한 문장씩 줄을 바꾼다(.home-msg white-space: pre-line)
   const MSG = {
     empty: '동 이름이나 구 이름을 적어 주세요.',
     none: '찾지 못했습니다.\n동 이름이나 구 이름으로 다시 찾아 보세요.',
-    many: n => `같은 이름이 ${n}곳 있습니다.\n하나를 고르세요.`,
+    many: (n, same) => `${same ? '같은 이름이' : '맞는 곳이'} ${n}곳 있습니다.\n하나를 고르세요.`,   // v9: 우동→국우동·사우동처럼 다른 이름에도 '같은 이름'이라 했다
     fail: '동네 목록을 불러오지 못했습니다.\n인터넷 연결을 확인하고 다시 시도해 주세요.',
   };
 
   function init(win) {
     const doc = win.document, form = doc.getElementById('homeSearch');
     if (!form) return;
-    const input = doc.getElementById('homeQ'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg');
+    const input = doc.getElementById('homeQ'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg'), report = form.dataset.report || 'onepage';
     let index = null, loading = null;
     // 실패하면 다음 입력·검색 때 다시 받는다
     const load = () => loading || (loading = fetch('data/national/dong_index.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -47,7 +51,7 @@
       hits.textContent = '';
       for (const r of rows) {
         const li = doc.createElement('li'), a = doc.createElement('a'), s = doc.createElement('small');
-        a.href = route(r); a.textContent = r.label; s.textContent = r.sub; a.append(s); li.append(a); hits.append(li);
+        a.href = route(r, report); a.textContent = r.label; s.textContent = r.sub; a.append(s); li.append(a); hits.append(li);
       }
     };
     input.addEventListener('input', async () => {
@@ -58,14 +62,26 @@
       show(rows);
       if (rows.length) msg.textContent = `후보 ${rows.length}곳`;
     });
+    // 키보드: ↓로 후보 목록에 들어가 ↑↓로 옮기고, Esc는 목록만 닫는다(v9 접근성: ↓가 안 먹고 Esc가 적은 글을 지웠다)
+    const links = () => [...hits.querySelectorAll('a')];
+    input.addEventListener('keydown', ev => {
+      if (ev.key === 'ArrowDown' && links().length) { ev.preventDefault(); links()[0].focus(); }
+      else if (ev.key === 'Escape' && hits.childElementCount) { ev.preventDefault(); show([]); msg.textContent = ''; }
+    });
+    hits.addEventListener('keydown', ev => {
+      const ls = links(), i = ls.indexOf(doc.activeElement);
+      if (i < 0) return;
+      if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') { ev.preventDefault(); const j = i + (ev.key === 'ArrowDown' ? 1 : -1); (j < 0 ? input : ls[Math.min(j, ls.length - 1)]).focus(); }
+      else if (ev.key === 'Escape') { ev.preventDefault(); input.focus(); }
+    });
     form.addEventListener('submit', async ev => {
       ev.preventDefault();
       if (!input.value.trim()) { msg.textContent = MSG.empty; input.focus(); return; }
       if (!(await load())) { msg.textContent = MSG.fail; return; }
       const rows = find(index, input.value);
       if (!rows.length) { show([]); msg.textContent = MSG.none; return; }
-      if (rows.length === 1) { win.location.href = route(rows[0]); return; }
-      show(rows); msg.textContent = MSG.many(rows.length);
+      if (rows.length === 1) { win.location.href = route(rows[0], report); return; }
+      show(rows); msg.textContent = MSG.many(rows.length, rows.every(r => r.label === rows[0].label));
     });
   }
   return { find, route, norm, init, MSG };

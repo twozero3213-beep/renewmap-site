@@ -26,13 +26,13 @@
         const base = code === 'DECLINE_BIZ_DROP10Y_PCT' ? by.get('DECLINE_BIZ_TOTAL') : code === 'DECLINE_POP_DROP30Y_PCT' ? by.get('DECLINE_POP_TOTAL') : null;
         const noBase = !!(base && base.value === null);
         const viaConsec = q.via && /DECL3IN5$/.test(q.via.code);
-        // 해당하지 않았는데 바탕 총수가 없으면 감소율 숫자를 앞세우지 않는다(11-13 4차: '0%'가 '0으로 채우지 않는다'와 부딪힘)
-        // 바탕 총수가 없는데 해당도 아니면 '해당 안 함'이라 단정하지 않고 '추가확인'(v7 7회차: 결재 문서에 '해당 안 함'으로 들어간다). 머리 숫자(하한)와는 그대로 맞는다
-        const unsure = q.status === 'none' || (noBase && q.status !== 'over');
-        const text = viaConsec ? '3년 연속 감소' : unsure ? '추가확인' : q.rate === null ? '–' : `${fmt(q.rate)}%`;
+        // 감소율은 국토부 쇠퇴진단 원천이 직접 준 값이다. 바탕 총수(2025년 사업체 수 등)가 아직 원천에 없어도 그 값으로 판단한다 —
+        // 동 페이지·지도·1쪽 문서가 모두 그렇게 한다. v9: 홈만 '추가확인'으로 바꿔, 사업체 총수가 빈 2,238개 동에서 화면끼리 어긋났다
+        const unsure = q.status === 'none';
+        const text = viaConsec ? '3년 연속 감소' : q.rate === null ? '–' : `${fmt(q.rate)}%`;   // 상태 칸이 '추가확인'이라 값 칸에 또 쓰지 않는다(v9: 두 번 읽혔다)
         const who = label.replace(' 감소', '');
-        // 8회차: '원천 감소율 0% · 총수 자료 없음'이 '0으로 채우지 않는다'와 부딪혔다 → 숫자 없이 왜 확정 못 했는지만
-        const baseNote = !noBase ? '' : q.status !== 'over' ? `원천에 ${who} 총수가 없어 확정하지 못했습니다` : `${who} 총수는 원천에 없음`;
+        // 총수가 비면 같은 줄에 밝힌다. 0은 채운 값이 아니라 원천 감소율이라는 것도 같이(8회차: '0으로 채우지 않는다'와 부딪혀 보였다)
+        const baseNote = noBase ? `${who} 총수는 원천에 아직 없음 · 감소율은 원천 값` : '';
         const notes = [viaConsec ? '최근 5년 중 3년 연속 감소로 해당' : '', baseNote].filter(Boolean);
         return { code, label, std, value: q.rate, text, over: unsure ? null : q.status === 'over', cell: c, note: notes.join(' · ') };
       }),

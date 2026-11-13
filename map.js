@@ -4,7 +4,7 @@
    위쪽은 노드 시험용 순수 함수, 아래쪽은 브라우저 연결부(Leaflet, dashboard.js의 loadLeaflet 재사용). */
 (function () {
   'use strict';
-  const { esc, isNum, fmt2 } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
+  const { esc, isNum, fmt2, roundD, dongHit, plainSource } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
   const DeclineReq = typeof module !== 'undefined' && module.exports ? require('./decline-req.js') : window.DeclineReq;
   // HWPX·XLSX·복사용 표·1쪽 요약·지도 이미지. 브라우저에서는 첫 지도 뒤에 받는다(아래 loadDocgen): undefined = 아직, null = 못 받음
   let DG = typeof module !== 'undefined' && module.exports ? require('./docgen.js') : (typeof window !== 'undefined' && window.RenewDocgen) || undefined;
@@ -182,7 +182,7 @@
         delta: li.indicators.some(y => y && y.code === code + '_DELTA5Y'), worseUp: true, ...(x.source ? { source: String(x.source) } : {}) }; // 범례 출처는 이 지표의 출처
       if (group === 'sum') return { ...base, icon: 'sum', composite: true, edges: [1, 2, 3, 4], colors: SUMC, labels: ['0개', '1개', '2개', '3개', '4개 이상'], standard: null,
         title: `${x.label} · 원장 값 · 가중치·순위 없음 · 판정 아님` };
-      if (validStd(x.standard)) return { ...base, ...stdScale(x.standard), worseUp: x.standard.direction === 'above_bad', standard: { ...x.standard, status: x.standard.status || '' } };
+      if (validStd(x.standard)) return { ...base, ...stdScale(x.standard), worseUp: x.standard.direction === 'above_bad', standard: { ...x.standard, status: x.standard.status || '', source: plainSource(x.standard.source) } };   // 출처 문구의 저장소 경로는 걷어 낸다(v9)
       if (ascending(ref)) return { ...base, edges: ref, colors: REF.slice(REF.length - ref.length - 1), standard: null, ref: true };
       return { ...base, edges: [], colors: [REF[2]], labels: ['값 있음'], standard: null };
     });
@@ -338,23 +338,25 @@
       if (!Array.isArray(row) || row.length < 3) continue;
       const [code7, name, code5, sgName, sidoName] = row, r = leafRoute(index, code5);
       if (!r || !/^\d{7,10}$/.test(String(code7)) || !String(code7).startsWith(String(code5))) continue;
-      out.push({ label: [name, sgName, sidoName].filter(Boolean).join(' · '), route: { ...r, dong: String(code7) } });
+      out.push({ label: [name, sgName, sidoName].filter(Boolean).join(' · '), route: { ...r, dong: String(code7) }, name, region: [sgName, sidoName] });   // name·region: 법정동 이름으로 찾기(util.js dongHit)
     }
     return out;
   }
   const flatName = x => String(x || '').replace(/\s|·/g, '');
+  // '로/으로': 받침 없거나 ㄹ 받침이면 '로'(v9: '사하구 · 부산광역시(으)로'처럼 자리표시가 그대로 보였다)
+  const roJosa = w => { const c = String(w).slice(-1).charCodeAt(0) - 0xAC00; return c < 0 || c > 11171 || c % 28 === 0 || c % 28 === 8 ? '로' : '으로'; };
   function findEntry(entries, q) {
     const s = String(q || '').trim().replace(/\s+/g, ' ');
     if (!s) return null;
     const f = flatName(s);
-    return entries.find(e => e.label === s) || entries.find(e => flatName(e.label).startsWith(f)) || entries.find(e => flatName(e.label).includes(f)) || null;
+    return entries.find(e => e.label === s) || entries.find(e => e.name && dongHit(s, e.name, e.region)) || entries.find(e => flatName(e.label).startsWith(f)) || entries.find(e => flatName(e.label).includes(f)) || null;
   }
   // 입력한 글자에 맞는 이름만 n개(앞에서 맞는 것 먼저). 자동완성 목록에 전국 이름 3,800여 개를 한꺼번에 넣으면 화면 요소가 4,700개로 늘어 첫 화면이 무거웠다
   function suggestEntries(entries, q, n = 20) {
     const f = flatName(q); if (!f) return [];
-    const head = [], mid = [];
-    for (const e of entries) { const l = flatName(e.label); if (l.startsWith(f)) head.push(e); else if (l.includes(f)) mid.push(e); if (head.length >= n) break; }
-    return head.concat(mid).slice(0, n);
+    const hit = [], head = [], mid = [];   // hit: '우동'→우1·2·3동처럼 법정동 이름·구를 붙인 말이 가리키는 동(v9)
+    for (const e of entries) { const l = flatName(e.label); if (e.name && dongHit(q, e.name, e.region)) hit.push(e); else if (l.startsWith(f)) head.push(e); else if (l.includes(f)) mid.push(e); if (hit.length + head.length >= n) break; }
+    return hit.concat(head, mid).slice(0, n);
   }
 
   // ── 모델 ──
@@ -911,7 +913,8 @@
   const copyHead = caption => `<div class="dg-tbl-h" aria-live="polite"><b>${esc(caption)}</b>${DG ? `<button type="button" class="btn ghost dg-copy" data-copy-table>${esc(DG.COPY_TABLE)}</button>` : ''}</div>`;
   // 내려받기·인쇄·보조 메일 요청. 1쪽 요약에서는 HWPX가 1쪽 문서다
   const fileTools = (it, year, what, one) => `<button type="button" class="btn ghost" data-print>인쇄·PDF</button>` + (DG ? `<button type="button" class="btn" data-dl="hwpx">HWPX 받기${one ? '(1쪽)' : ''}</button><button type="button" class="btn" data-dl="xlsx">XLSX 받기</button><button type="button" class="btn" data-dl="docx">DOCX 받기</button><button type="button" class="btn" data-dl="pptx">PPTX 받기</button><button type="button" class="btn ghost" data-task-package>과업에 연결</button>` : '') +
-    `<a class="btn ghost rp-mail" href="${esc(briefMailto(it, year, what))}">HWPX·XLSX 요청(무료 · 1영업일)</a>`;
+    // 메일 요청은 단추가 아니라 한 줄 안내로(v9: 'HWPX 받기' 옆에 같은 모양으로 있어 둘의 차이를 몰랐다)
+    `<p class="rp-mail-note">${DG ? '양식에 맞춰 사람이 다듬은 파일이 필요하면' : '이 기기에서 파일을 만들 수 없으면'} <a class="rp-mail" href="${esc(briefMailto(it, year, what))}">메일로 요청</a>하세요(무료 · 1영업일).</p>`;
   // 양식에 붙일 조각(문장 5개 이하 + 표 1개 + 출처 줄): 양식을 고르면 그 양식 항목 순서대로 만든다(data-frag-out). 양식 정의는 data/report_templates.json
   function fragPanelHTML(sel) {
     if (!DG || !DG.getTemplates()) return '';
@@ -1214,7 +1217,8 @@
   // 왜: 회의 결정 "의미는 도시재생으로 넓히되 범위는 부산 고정"[팀]. 전국에서 시작하면 첫 화면이 대부분 '자료 없음'인 전국 지도라
   // 쓰기 어렵다는 인상을 남겼다(docs/design/ux_feedback_2026-11-12.md 1절 1번). 전국은 경로(전국 ›)나 #map 주소로 그대로 갈 수 있다
   const DEFAULT_ROUTE_HASH = '#map/21';
-  const deepLink = !!parseHash(location.hash);   // 경로를 들고 왔을 때만 휴대폰에서 지도로 내린다
+  const deepLink = !!parseHash(location.hash);
+  const BASE_TITLE = document.title;   // 경로를 들고 왔을 때만 휴대폰에서 지도로 내린다
   const state = { route: parseHash(location.hash) || parseHash(DEFAULT_ROUTE_HASH), ind: INDICATORS[0].code, bundle: BUNDLES[0].key, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, dash: undefined, mapErr: false, touched: false,
     migration: undefined, designations: undefined, forecastIdx: undefined, realestate: undefined, templates: undefined, sgGeoDetailed: false };
   const inds = () => allIndicators(state.living, { migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate });
@@ -1418,7 +1422,7 @@
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261112-guideline'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261113-v92'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
@@ -1537,7 +1541,7 @@
     return { type: 'FeatureCollection', name: meta.name, note: '좌표계 WGS84(EPSG:4326) · 값이 없으면 null · 색 구간·판정 아님 · 출처와 기준연도는 각 행에',
       features: feats.map(f => { const code = String((f.properties || {}).code), it = byCode.get(code);
         return { type: 'Feature', geometry: f.geometry, properties: { code, name: it ? it.name : (f.properties || {}).name || null, indicator: ind.code, label: ind.label,
-          value: it && isNum(it.value) ? it.value : null, unit: ind.unit || '', year: meta.year ?? null, source: meta.source } }; }) };
+          value: it && isNum(it.value) ? roundD(it.value, 2) : null, unit: ind.unit || '', year: meta.year ?? null, source: meta.source } }; }) };
   }
   // 지도 내보내기(GeoJSON·그림) 공통: 알림 줄, 시군구면 상세 경계 받기, 지금 보이는 경계만 고르기. 못 하면 알리고 null
   // (v9: 두 함수에 같은 코드가 한 벌씩 있었다)
@@ -1724,6 +1728,9 @@
     if (v.level === 'empty') { top.innerHTML = bottom.innerHTML = ''; panel.hidden = true; stage.innerHTML = emptyHTML('전국 데이터 준비 중', ['원장에서 내보낸 숫자만 이 자리에 보여 드립니다.', '준비되면 전국에서 읍·면·동까지 내려가 볼 수 있습니다.'], true); return; }
     const ind = curInd(), mode = effMode(ind), m = model(v), src = state.index.source && state.index.source.name, ok = avail(ind);
     const it = m.kind === 'emd' && v.dong ? m.items.find(x => x.code === v.dong) : null;
+    // 탭 제목에 지금 보는 곳을(v9 접근성: 동을 열어도 '동네 찾기·지도 | 리뉴맵' 그대로라 화면 읽기·탭 목록에서 어느 동인지 몰랐다)
+    const here = it ? it.name : v.crumbs.length > 1 ? v.crumbs[v.crumbs.length - 1].label : '';
+    document.title = here ? `${here} · ${BASE_TITLE}` : BASE_TITLE;
     const crumbs = `<nav class="map-crumbs" aria-label="현재 위치"><ol>${v.crumbs.map((c, i) => i === v.crumbs.length - 1 && !it ? `<li aria-current="page">${esc(c.label)}</li>` : `<li><a href="${esc(c.hash)}">${esc(c.label)}</a></li>`).join('')}${it ? `<li aria-current="page">${esc(it.name)}</li>` : ''}</ol><span class="map-step">${esc(v.step)} 단계</span></nav>`;
     const py = m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind) && !ind.noPlay ? playYears(state.index, ind.code) : null, sgOn = v.level === 'nation' && !reduced ? !!autoT : state.playing;
     const yearCtl = py && py.years.length ? `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${sgOn}" aria-label="${sgOn ? '재생 멈춤' : `${py.years[0]}년부터 ${py.years[py.years.length - 1]}년까지 재생`}">${icon(sgOn ? 'pause' : 'play')}</button><label>연도 <b>${esc(m.year ?? '')}</b><input type="range" data-year min="${py.years[0]}" max="${py.years[py.years.length - 1]}" step="1" value="${m.year ?? py.years[py.years.length - 1]}"></label></div>`
@@ -1845,7 +1852,8 @@
     const hatch = boundaryHatch();
     // 동네 찾기 넓은 화면은 지도가 화면 남은 높이 전체라(explore-layout.js) 페이지 스크롤과 다투지 않으므로 휠 확대를 처음부터 켠다(2026-11-13 v7)
     const wideApp = document.body.classList.contains('explore-page') && window.matchMedia('(min-width: 1100px)').matches;
-    const map = L.map(el, { dragging: !coarse, scrollWheelZoom: wideApp, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false }); // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
+    const map = L.map(el, { dragging: !coarse, scrollWheelZoom: wideApp, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false, zoomControl: false });
+    L.control.zoom({ zoomInTitle: '확대', zoomOutTitle: '축소' }).addTo(map);   // 기본 단추 이름이 영어(Zoom in)였다(v9 접근성) // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
     // 확대는 17(골목·건물 단위)까지. 두 번 누르기를 거듭해도 그 이상 커지지 않는다. 휠 확대는 지도를 한 번 누른 뒤에만 켠다(페이지를 내리다 지도에 걸려 확대되지 않게). 지도 밖으로 나가면 다시 끈다(2026-11-07 대표 지시)
     map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => { if (!wideApp) map.scrollWheelZoom.disable(); });
     map.on('zoomend', () => { if (map.getZoom() > 8) loadSgDetail(); });
@@ -1972,12 +1980,22 @@
     const L = window.L;
     M.sg = L.geoJSON(state.sgGeo, { pane: 'sg', renderer: M.sgRenderer, style: { weight: 1, color: '#fff' }, onEachFeature: (f, layer) => {
       layer.bindTooltip(() => { const it = M.sgItems.get(String(f.properties.code)); return it ? tooltipHTML(it, curInd(), effMode(curInd()), null, M.src()) : `<b>${esc(f.properties.name)}</b>`; }, { sticky: true });
-      layer.on('click', () => { const r = leafRoute(state.index, String(f.properties.code)); if (r) go(r); });
+      const pick = () => { const r = leafRoute(state.index, String(f.properties.code)); if (r) go(r); };
+      layer.on('click', pick); keyable(layer, f.properties.name, pick);
     } }).addTo(M.map);
     M.sido = L.featureGroup([L.polyline(lineLatLngs(outerLines(state.sgGeo.features, f => String(f.properties.code).slice(0, 2))), { pane: 'sg', renderer: M.sgRenderer, interactive: false, color: '#153c39', weight: 1.5, smoothFactor: 0 })]).addTo(M.map); // 묶음이라야 첫 시점이 잡히기 전 bringToFront가 오류 없이 지나간다
     M.sgGeo = state.sgGeo; M.order = null;
   }
   // 시군구 레이어 색: 현재 단계의 항목만 색, 나머지는 옅게. 칸 구성이 바뀌었는지(reorder)와 색칠한 코드(active)를 돌려준다
+  // 지도 도형을 키보드로도: Tab으로 닿으면 이름을 읽고 Enter·Space로 고른다(v9 접근성: 이름 없는 도형 18개에 초점만 멈추고 Enter가 안 먹었다).
+  // 캔버스로 그린 층은 요소가 없어 건너뛴다(목록으로 고를 수 있다)
+  function keyable(layer, name, act) {
+    layer.on('add', () => {
+      const el = layer.getElement && layer.getElement(); if (!el) return;
+      el.setAttribute('role', 'button'); el.setAttribute('aria-label', `${name} 고르기`); el.setAttribute('tabindex', '0');
+      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } });
+    });
+  }
   function paintSg(v, m) {
     M.sgItems = new Map((m.kind === 'sg' ? m.items : []).map(it => [it.code, it]));
     const active = new Set(M.sgItems.keys()), inEmd = v.level === 'emd';
@@ -1997,7 +2015,8 @@
         if (M.emd) M.emd.remove();
         M.emd = window.L.geoJSON(m.geo, { style: { weight: 1.5, color: '#fff' }, onEachFeature: (f, layer) => {
           layer.bindTooltip(() => { const it = M.emdItems.get(String((f.properties || {}).code)); return it ? tooltipHTML(it, curInd(), effMode(curInd()), it.year, M.src()) : `<b>${esc((f.properties || {}).name)}</b><br>지표와 코드가 맞지 않는 동`; }, { sticky: true });
-          layer.on('click', () => { const code = String((f.properties || {}).code); if (M.emdItems.has(code)) go({ ...state.route, dong: code }); });
+          const pick = () => { const code = String((f.properties || {}).code); if (M.emdItems.has(code)) go({ ...state.route, dong: code }); };
+          layer.on('click', pick); keyable(layer, (f.properties || {}).name || '동', pick);
         } }).addTo(M.map);
         M.emdCode = v.emdCode;
         if (M.emdLine) M.emdLine.remove();
@@ -2190,7 +2209,7 @@
   }
   if (form) {
     const q = form.querySelector('input'), msg = form.querySelector('[data-search-msg]');
-    const pick = () => { const e = findEntry(entries, q.value); if (msg) msg.textContent = e ? `${e.label}(으)로 이동했습니다.` : '찾는 이름이 없습니다. 시·군·구 이름으로 다시 찾아 보세요.'; if (e) { go(e.route); app.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); } };
+    const pick = () => { const e = findEntry(entries, q.value); if (msg) msg.textContent = e ? `${e.label.split(' · ')[0]}${roJosa(e.label.split(' · ')[0])} 이동했습니다.` : '찾는 이름이 없습니다. 시·군·구 이름으로 다시 찾아 보세요.'; if (e) { go(e.route); app.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); } };
     form.addEventListener('submit', e => { e.preventDefault(); pick(); });
     q.addEventListener('focus', touch);
     const dl = form.querySelector('datalist');

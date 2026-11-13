@@ -179,7 +179,12 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 .req-list li[data-status="미충족"] b { color: var(--dim); }
 
 .draw-map { height: 320px; margin: 8px 0; border-radius: 8px; }
-
+/* 휴대폰 그리기 지도 확대·축소 단추: Leaflet 기본 30px → 44px 터치 대상. #drawMap으로 나중에 붙는 leaflet.css보다 앞선다 */
+@media (max-width: 760px), (pointer: coarse) {
+  #drawMap .leaflet-bar a, #drawMap .leaflet-bar a:hover { width: 44px; height: 44px; line-height: 44px; font-size: 24px; }
+}
+/* 결과 맨 위 두 줄 답(줄마다 '\n'으로 나눔) */
+.out-answer { margin: 4px 0 12px; font-size: 18px; font-weight: 700; line-height: 1.5; white-space: pre-line; }
 .field #facilityFields, .field #visitFields { border: 0; padding: 0; margin: 12px 0; min-width: 0; }
 .field #visitFields .row > div { min-width: 0; }
 .survey-table { overflow-x: auto; margin-top: 12px; }

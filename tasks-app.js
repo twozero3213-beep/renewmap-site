@@ -71,9 +71,12 @@
     controls.forEach((b) => {
       b.disabled = true;
     });
-    say("처리 중입니다.");
+    const pending = "처리 중입니다.";
+    say(pending);
     try {
       await fn();
+      // 작업이 따로 결과를 알리지 않았으면 '처리 중'을 지운다(v9 QA: 끝난 뒤에도 계속 '처리 중입니다.'로 남았다)
+      if ($("taskMsg").textContent === pending) say("");
     } catch (e) {
       say(e.message || "기록하지 못했습니다. 이전 버전은 유지됩니다.");
     } finally {

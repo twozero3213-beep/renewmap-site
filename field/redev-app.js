@@ -33,7 +33,7 @@
     const from = want && gus.find((s) => s.dongs.some((d) => d.code === want));
     fill($("gu"), gus.map((s) => [s.code, s.name]), from ? from.code : "26350");
     showDongs(from ? from.code : "26350", from ? want : $("dong").value);
-    $("gu").addEventListener("change", () => showDongs($("gu").value));
+    $("gu").addEventListener("change", () => { showDongs($("gu").value); centreDraw(); });
     restoreDraft(gus, showDongs);
     const n = gus.reduce((s, g) => s + g.dongs.length, 0);
     $("coverage").textContent = `부산 ${gus.length}개 구·군 ${n}개 법정동의 건축물대장을 담았습니다. 다른 시·도는 그 조례를 확인한 뒤 엽니다.`;
@@ -70,23 +70,28 @@
     }
   }
 
-  // 고른 동 + 목록이 가리키는 다른 법정동(PNU 앞 10자리, 지번 앞 동 이름은 같은 구·군 안에서 찾음). 신청 구역이 동 경계를 넘을 때
+  // 고른 동 + 목록이 가리키는 다른 법정동(PNU 앞 10자리, 지번 앞 동 이름은 같은 구·군 안에서 찾음). 신청 구역이 동 경계를 넘을 때.
+  // 고른 동은 목록이 가리킬 때만 넣는다(동·PNU 없는 지번이 있거나 그 동의 PNU·이름). 다른 동에 그린 PNU 목록이 '감천동·반여동'처럼
+  // 건물 없는 동 이름까지 달고 나오던 것(11-13)
   async function loadFor(items, code) {
     const idx = await index, gu = idx && idx.sigungu.find((s) => s.code === code.slice(0, 5));
     const byName = new Map((gu ? gu.dongs : []).map((d) => [d.name, d.code]));
     const known = new Set(idx ? idx.sigungu.flatMap((s) => s.dongs.map((d) => d.code)) : []);
-    const codes = [code];
+    const want = (it) => (it.pnu ? it.pnu.slice(0, 10) : it.dong ? byName.get(it.dong) : code);
+    const codes = items.some((it) => want(it) === code) ? [code] : [];
     for (const it of items) {
-      const c = it.pnu ? it.pnu.slice(0, 10) : it.dong && byName.get(it.dong);
+      const c = want(it);
       if (c && known.has(c) && !codes.includes(c) && codes.length < R.MERGE_MAX) codes.push(c);
     }
+    if (!codes.length) codes.push(code);
     const files = await Promise.all(codes.map(getBuildings));
     return files.length === 1 ? files[0] : R.mergeFiles(files);
   }
 
   // 입력 자동 저장: 지번 목록·구역 면적·고른 동을 이 기기에만 남겨, 브라우저를 닫거나 계산이 끊긴 뒤 다시 열면 이어서 계산한다
   const DRAFT_KEY = "renewmap-redev-draft";
-  const saveDraft = () => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ gu: $("gu").value, dong: $("dong").value, list: $("list").value, area: $("area").value })); } catch (e) { /* 저장을 막은 브라우저는 이어 쓰기만 안 된다 */ } };
+  // area.dataset.src = "drawn": 면적 칸을 그린 구역에서 채웠다(사람이 고치면 지운다). 결과에 '입력값'이 아니라 '그린 구역에서 계산'으로 적는다
+  const saveDraft = () => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ gu: $("gu").value, dong: $("dong").value, list: $("list").value, area: $("area").value, areaSrc: $("area").dataset.src || "" })); } catch (e) { /* 저장을 막은 브라우저는 이어 쓰기만 안 된다 */ } };
   function restoreDraft(gus, showDongs) {
     let d = null;
     try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) { d = null; }
@@ -94,11 +99,14 @@
     const gu = gus.find((s) => s.code === d.gu);
     if (gu && gu.dongs.some((x) => x.code === d.dong)) { $("gu").value = d.gu; showDongs(d.gu, d.dong); }
     $("list").value = d.list; $("area").value = d.area || "";
+    if (d.area && d.areaSrc === "drawn") $("area").dataset.src = "drawn";
     say("지난번에 넣은 목록을 불러왔습니다.\n새로 시작하려면 목록 칸을 비우세요.");
   }
+  $("area").addEventListener("input", () => { delete $("area").dataset.src; });   // saveDraft보다 먼저
   ["list", "area", "dong"].forEach((id) => $(id).addEventListener("input", saveDraft));
   $("dong").addEventListener("change", saveDraft);
 
+  const n0 = (x) => x.toLocaleString("ko-KR");   // 개수는 늘 천 단위 쉼표
   const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };
   const today = () => D.localDate();
   const opt = () => ({ secret: $("secret").checked });
@@ -109,7 +117,7 @@
     let file;
     try { file = await getBuildings($("dong").value); } catch (err) { return say("건축물대장 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
     $("list").value = [...new Set(file.buildings.map((b) => b.jibun).filter(Boolean))].join("\n");
-    $("area").value = "";
+    $("area").value = ""; delete $("area").dataset.src;
     $("f").requestSubmit();
   });
 
@@ -126,7 +134,7 @@
     if (got.n === 0) return say("파일에서 PNU나 지번 열을 찾지 못했습니다.", true);
     $("list").value = got.text;
     saveDraft();
-    say(got.n === null ? `${f.name}을 목록에 넣었습니다.` : `${f.name}에서 ${got.n}필지를 넣었습니다.${got.skipped ? `\nPNU·지번이 없는 ${got.skipped}개는 뺐습니다.` : ""}`);
+    say(got.n === null ? `${f.name}을 목록에 넣었습니다.` : `${f.name}에서 ${n0(got.n)}필지를 넣었습니다.${got.skipped ? `\nPNU·지번이 없는 ${n0(got.skipped)}개는 뺐습니다.` : ""}`);
   });
 
   // 나·다·라목 참고 범위: 브이월드 토지특성을 격리 창(vw-frame)으로 그때그때 묻는다. 약관 제19조(저장·제공 금지)로 파일을 만들지 않는다.
@@ -136,7 +144,7 @@
     const pnus = [...items.map((it) => it.pnu).filter(Boolean), ...blds.map((b) => b.pnu).filter(Boolean)];
     const pres = ParcelRef.prefixes(pnus);
     if (!pres.length) return null;
-    say(`토지특성(도로접면·필지 면적)을 브이월드에서 묻는 중입니다. 본번 ${pres.length}곳.`);
+    say(`토지특성(도로접면·필지 면적)을 브이월드에서 묻는 중입니다. 본번 ${n0(pres.length)}곳.`);
     // 토지특성은 해마다 7월 무렵 공시된다. 작년 판이 아직 없으면 그 전 해로 묻는다
     let r = await vwAsk({ land: pres, year: String(new Date().getFullYear() - 1) }, 90000);
     if (r && !r.error && r.rows && !r.rows.length) r = await vwAsk({ land: pres, year: String(new Date().getFullYear() - 2) }, 90000);
@@ -170,13 +178,25 @@
     document.body.append(vwFrame);
   });
   const redraw = () => { drawLine.setLatLngs(drawPts.length > 2 ? [...drawPts, drawPts[0]] : drawPts); $("socOut").hidden = true; };   // 영역이 바뀌면 지난 SOC 표는 맞지 않는다
+  // 그리기 지도를 고른 법정동에 맞춘다. 건물 파일에는 좌표가 없어 외곽선 색인(bldg_outline/index.json, 39KB)의 동별 상자만 한 번 받는다.
+  // 색인을 못 받으면 처음엔 부산 전체를 보이고, 동을 바꿔도 움직이지 않는다
+  let outline = null;
+  const centreDraw = async (first = false) => {
+    const idx = await (outline || (outline = getJson("bldg_outline/index.json").catch(() => { outline = null; return null; })));
+    if (!drawMap) return;
+    const b = idx && R.dongBounds($("dong").value, idx.files);   // 받는 사이에 동을 바꿨을 수 있어 받은 뒤에 읽는다
+    if (b) drawMap.fitBounds(b, { maxZoom: 17 }); else if (first) drawMap.setView([35.16, 129.06], 12);
+  };
+  $("dong").addEventListener("change", () => centreDraw());
   $("drawOpen").addEventListener("click", async () => {
     $("drawBox").hidden = false;
     if (drawMap) return;
     try { await loadLeaflet(); } catch (err) { return say("지도를 불러오지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
     const L = window.L;
     // 누르기는 꼭짓점 찍기라 두 번 누르기 확대는 끈다. 휠 확대는 지도를 누른 뒤에만, 확대는 필지가 보이는 19(배경 타일 끝)까지
-    drawMap = L.map($("drawMap"), { scrollWheelZoom: false, doubleClickZoom: false, maxZoom: 19 }).setView([35.2052, 129.1196], 16);
+    drawMap = L.map($("drawMap"), { scrollWheelZoom: false, doubleClickZoom: false, maxZoom: 19, zoomControl: false });
+    L.control.zoom({ zoomInTitle: "확대", zoomOutTitle: "축소" }).addTo(drawMap);
+    centreDraw(true);
     drawMap.on("click", () => drawMap.scrollWheelZoom.enable()); drawMap.on("mouseout", () => drawMap.scrollWheelZoom.disable());
     if (VW) L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VW}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: "&copy; 국토교통부 브이월드" }).addTo(drawMap);
     else L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }).addTo(drawMap);
@@ -196,8 +216,9 @@
     if (!r.pnus.length) return say("영역 안에서 필지를 찾지 못했습니다.", true);
     $("list").value = r.pnus.join("\n");
     $("area").value = Math.round(R.polygonAreaM2(drawPts));   // 그린 선 기준 면적. 고시 면적이 있으면 사람이 고친다
+    $("area").dataset.src = "drawn";
     saveDraft();
-    say(`영역 안 ${r.pnus.length}필지를 넣었습니다.${r.total > r.pnus.length ? `\n전체 ${r.total}필지 중 1,000필지까지만 넣었습니다. 영역을 나눠 주세요.` : ""}\n경계에 걸친 필지도 들어가니 목록을 확인해 주세요.`);
+    say(`영역 안 ${n0(r.pnus.length)}필지를 넣었습니다.${r.total > r.pnus.length ? `\n전체 ${n0(r.total)}필지 중 1,000필지까지만 넣었습니다. 영역을 나눠 주세요.` : ""}\n경계에 걸친 필지도 들어가니 목록을 확인해 주세요.`);
   });
 
   $("shpSave").addEventListener("click", () => {
@@ -251,12 +272,13 @@
     if (refIn && refIn < file.age_reference_date) return say(`경과 기준일은 자료 기준일(${D.govDate(file.age_reference_date)}) 이후로 넣어 주세요.\n그 전 날짜는 그 뒤에 지은 건물이 섞여 바르게 셀 수 없습니다.`, true);
     // 나·다·라목 참고 범위(1365 트윈의 호수밀도·접도율·과소필지 흡수). 토지특성 파일이 없거나 못 받으면 예전처럼 '현장 확인'만 쓴다
     const parcel = await parcelText(p.items, m.buildings, areaM2);
-    const res = R.review(m.buildings, { ref: refIn || file.age_reference_date, district: $("district").checked, areaM2, parcel });
+    const res = R.review(m.buildings, { ref: refIn || file.age_reference_date, district: $("district").checked, areaM2, areaDrawn: $("area").dataset.src === "drawn", parcel });
     last = { res, m, file };
-    const skipped = [...(p.bad.length ? [`지번으로 읽지 못한 칸 ${p.bad.length}개`] : []), ...(m.missing.length ? [`대장에 없는 지번 ${m.missing.length}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})`] : []),
-      ...(m.otherDong.length ? [`계산에 넣지 못한 다른 동 지번 ${m.otherDong.length}개(같은 구·군 법정동 이름이 아니거나 ${R.MERGE_MAX}개 동을 넘음: ${m.otherDong.slice(0, 3).join(", ")}${m.otherDong.length > 3 ? " 등" : ""})`] : [])];
+    const skipped = [...(p.bad.length ? [`지번으로 읽지 못한 칸 ${n0(p.bad.length)}개`] : []), ...(m.missing.length ? [`대장에 없는 지번 ${n0(m.missing.length)}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})`] : []),
+      ...(m.otherDong.length ? [`계산에 넣지 못한 다른 동 지번 ${n0(m.otherDong.length)}개(같은 구·군 법정동 이름이 아니거나 ${R.MERGE_MAX}개 동을 넘음: ${m.otherDong.slice(0, 3).join(", ")}${m.otherDong.length > 3 ? " 등" : ""})`] : [])];
     say(skipped.length ? `제외: ${skipped.join(" · ")}` : "");
-    $("outBase").textContent = `${file.name} 건물 ${res.n}동 · 기준 ${res.thr}% · 경과 기준일 ${D.govDate(res.ref)} · 건축물대장 기준일 ${D.govDate(file.hub_reference_date)}`;
+    $("outAnswer").textContent = R.answerText(res);
+    $("outBase").textContent = `${file.name} 건물 ${n0(res.n)}동 · 기준 ${res.thr}% · 경과 기준일 ${D.govDate(res.ref)} · 건축물대장 기준일 ${D.govDate(file.hub_reference_date)}`;
     $("basis").innerHTML = R.basisHTML(res, file);   // 분모·기준시점·현장 확인 비율(행정동을 고르면 쇠퇴지표 기준연도까지)
     $("viz").innerHTML = R.summaryHTML(res);   // 그림 요약(종합 판정 아님)
     $("lines").replaceChildren(...res.lines.map((l) => {
@@ -275,6 +297,9 @@
     renderTodo(res);
     showDongDecline(file);
     $("out").hidden = false;
+    // 실제 결과가 생기면 견본 그림은 뺀다(휴대폰에서 결과 위를 가림). 제목으로 초점·스크롤을 옮겨 위 두 줄 답부터 읽게 한다
+    document.querySelector(".redev-sample").hidden = true;
+    $("outTitle").focus({ preventScroll: true });
     $("out").scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
@@ -285,7 +310,7 @@
     const t = R.todoList(res, recs), box = $("todo");
     if (!t.items.length) { box.replaceChildren(); return; }
     const h = document.createElement("h3"), p = document.createElement("p"), ul = document.createElement("ul");
-    h.textContent = `확인할 건물 ${t.items.length.toLocaleString("ko-KR")}동 · 현장 기록이 붙은 건물 ${t.withRecord}동`;
+    h.textContent = `확인할 건물 ${n0(t.items.length)}동 · 현장 기록이 붙은 건물 ${n0(t.withRecord)}동`;
     p.className = "hint"; p.textContent = "사용승인일이 없는 건물입니다. 목조·블록·벽돌·조적부터 보입니다. 판정에는 쓰지 않고 확인 순서만 정합니다.";
     ul.className = "todo-list";
     for (const it of t.items.slice(0, TODO_SHOW)) {

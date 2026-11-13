@@ -244,7 +244,8 @@
       el.className = 'dash-map';
       el.setAttribute('role', 'region');
       slot.replaceWith(el);
-      const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, maxZoom: 17, zoomSnap: 0.5 });
+      const map = L.map(el, { dragging: !coarse, scrollWheelZoom: false, maxZoom: 17, zoomSnap: 0.5, zoomControl: false });
+      L.control.zoom({ zoomInTitle: '확대', zoomOutTitle: '축소' }).addTo(map);
       // 동네 지도(map.js)와 같게: 확대 17까지, 휠은 지도를 누른 뒤에만
       map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => map.scrollWheelZoom.disable());
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {

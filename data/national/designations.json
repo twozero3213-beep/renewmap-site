@@ -1,6 +1,6 @@
 {
- "generated_at": "2026-11-07T12:20:31+09:00",
- "snapshot_hash": "746be0895c28aefd2872cd6263d075e1557e18da86d231dc1c9178b0ee870f11",
+ "generated_at": "2026-11-13T17:44:06+09:00",
+ "snapshot_hash": "43ddb0b165c5984cc52f29bee6c6177de09c7a611088bc6726748872ee7bdc92",
  "source": {
   "name": "행정안전부 인구감소지역 및 인구감소관심지역 지정 고시(제2026-61호)",
   "url": "https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000016&nttId=130293",
@@ -5020,8 +5020,8 @@
    ]
   },
   {
-   "code5": null,
-   "mois_code5": "28125",
+   "code5": "23020",
+   "mois_code5": "28140",
    "mois_code5_2026": "28125",
    "name": "제물포구",
    "sido": "인천광역시",
@@ -5029,11 +5029,12 @@
    "origin": "인구감소관심지역",
    "since": "2026-10-20",
    "first_designated": null,
-   "join": "index.json(SGIS 2024 경계)에 0건 — 이어 붙이지 않음(신설·개편 지역 등)",
+   "join": "개편 전 동구 전체가 제물포구에 들어감(「인천광역시 제물포구ㆍ영종구 및 검단구 설치 등에 관한 법률」 제2조) — 옛 동구 경계(SGIS 2024)에 이음",
+   "join_source": "https://www.law.go.kr/LSW/lsInfoR.do?ancYnChk=0&chrClsCd=010202&efYd=20260701&lsiSeq=281877",
    "cells": [
     {
-     "cell_id": "28125:DEPOP_STATUS:2026",
-     "area_code": "28125",
+     "cell_id": "23020:DEPOP_STATUS:2026",
+     "area_code": "23020",
      "indicator_code": "DEPOP_STATUS",
      "value": "인구활력+",
      "unit": "구분",
@@ -5057,7 +5058,7 @@
      "version": 1,
      "snapshot_id": null,
      "trust_grade": "C",
-     "note": "행정안전부 고시 제2026-61호(2026-10-19 고시, 2026-10-20 시행). 인천광역시 제물포구. 인구활력+지역은 종전 '인구감소관심지역' 지정을 유지하는 분류(부칙 제3조). 코드 연결: index.json(SGIS 2024 경계)에 0건 — 이어 붙이지 않음(신설·개편 지역 등)",
+     "note": "행정안전부 고시 제2026-61호(2026-10-19 고시, 2026-10-20 시행). 인천광역시 제물포구. 코드 연결: 개편 전 동구 전체가 제물포구에 들어감(「인천광역시 제물포구ㆍ영종구 및 검단구 설치 등에 관한 법률」 제2조) — 옛 동구 경계(SGIS 2024)에 이음. 인구활력+지역은 종전 '인구감소관심지역' 지정을 유지하는 분류(부칙 제3조)",
      "data_source_system": "행정안전부 훈령·예규·고시",
      "spatial_unit": "시군구",
      "base_year": 2026,

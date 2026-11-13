@@ -11,6 +11,8 @@
 
   // 사용승인 연도. 날짜가 없거나 1900년 전으로 적힌 것은 0(날짜 없음)
   function aprYear(b) {
+    // 사용승인일이 같은 해 안의 범위로만 있는 건물(use_apr_span, 부산 1만여 동)은 그해로 센다. 원장(소개·구역 계산)은 이 건물을 '날짜 없음'으로 두어
+    // 비율이 조금 다르다 — 화면에 그 수를 밝힌다(spanOnly). v9: 원장에 맞추면 연도를 아는 1만 동이 빠져 오히려 부정확해졌다
     const s = b.use_apr_day || (Array.isArray(b.use_apr_span) ? b.use_apr_span[0] : '');
     const y = Number(String(s || '').slice(0, 4));
     return y >= 1900 ? y : 0;
@@ -122,7 +124,10 @@
     $('t4Future').hidden = year <= NOW;
     $('t4App').classList.toggle('is-future', year > NOW);   // 올해 뒤는 지도 위에도 '가정' 표시(10회차: 미래 캡처가 사실처럼 돌 수 있다)
     // 동 목록·구역 계산의 대장 건물 수와 여기 숫자의 차이(사용승인일 없는 건물)를 그 자리에서 밝힌다(v7 평가: 5,207과 5,144가 왜 다른지 몰랐다)
-    $('t4NoDate').textContent = s.noDate ? `사용승인일이 없는 ${fmt(s.noDate)}동은 회색으로 세우고 비율에서 뺍니다.` : '';
+    const spanOnly = blds.filter((b) => !b.use_apr_day && Array.isArray(b.use_apr_span) && b.use_apr_span.length).length;
+    $('t4NoDate').textContent = [s.noDate ? `사용승인일이 없는 ${fmt(s.noDate)}동은 회색으로 세우고 비율에서 뺍니다.` : '',
+      // 원장(소개·구역 계산)과 몇 동 차이 나는지 밝힌다(v9: 반여동 92.6%·5,143동과 92.7%·5,144동이 설명 없이 달랐다)
+      spanOnly ? `사용승인일이 연도만 적힌 ${fmt(spanOnly)}동은 그해로 셉니다. 소개·구역 계산(건축물대장 원장)은 이 건물을 날짜 없음으로 두어 비율이 조금 다를 수 있습니다.` : ''].filter(Boolean).join(' ');
     if (map && map.getLayer('b3d')) {
       map.setPaintProperty('b3d', 'fill-extrusion-color', colorExpr(year));
       map.setFilter('b3d', filterExpr(year));
@@ -191,6 +196,8 @@
         container, style: 'vendor/openfreemap/positron.json', attributionControl: false,
         pitch: 55, bearing: -20, center: [129.13, 35.2], zoom: 15, maxPitch: 75,
         localIdeographFontFamily: '"Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
+        // 지도 단추 이름을 한국어로(v9 접근성: 화면 읽기가 'Zoom in', 'Drag to rotate map…'로 읽었다)
+        locale: { 'NavigationControl.ZoomIn': '확대', 'NavigationControl.ZoomOut': '축소', 'NavigationControl.ResetBearing': '끌어서 돌리기, 누르면 북쪽으로', 'AttributionControl.ToggleAttribution': '출처 보기' },
       });
       if (nav) map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
       map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: '국토교통부 GIS건물통합정보 · 건축물대장' }));
@@ -285,6 +292,10 @@
     const syncLinks = () => { const a = document.getElementById('t4Redev'); if (a) a.href = `field/redev.html?bjd=${$('t4Dong').value}`; };
     $('t4Dong').addEventListener('change', () => { history.replaceState(null, '', `?bjd=${$('t4Dong').value}`); syncLinks(); load($('t4Dong').value); });
     syncLinks();
-    load($('t4Dong').value);
+    // 주소의 동 코드가 부산 목록에 없으면 다른 동을 말없이 보여 주지 않고 알린다(v9 QA: ?bjd=0000000000·울산 코드가 중구 영주동으로 열렸다)
+    const asked = q.get('bjd'), missing = q.has('bjd') && !gus.some((s) => s.dongs.some((d) => d.code === asked));
+    load($('t4Dong').value).then(() => {
+      if (missing) $('t4Status').textContent = `주소의 법정동 코드(${asked || '빈 값'})를 부산 자료에서 찾지 못해 ${$('t4Dong').selectedOptions[0]?.textContent || '첫 동'}을 보여 줍니다. 건물 나이 4D는 부산만 있습니다.`;
+    });
   }).catch(() => { $('t4Status').textContent = '동 목록을 불러오지 못했습니다.'; });
 })(typeof self !== 'undefined' ? self : this);

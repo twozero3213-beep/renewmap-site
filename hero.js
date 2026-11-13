@@ -77,7 +77,7 @@
         `<p class="v">${esc(r.valueText)}</p><p class="d">기준: ${esc(r.text)}.</p>` +
         `<p class="proof">${r.source ? `출처 ${esc(r.source)}.<br>기준일 ${esc(r.ref || '기록 없음')}.` : '이 요건의 원장 셀이 아직 없습니다.<br>추정으로 채우지 않습니다.'}</p></article>`).join('')}</div>` +
       `<p class="verdict-sum" aria-live="polite"><span class="tag ${sum.label === '추가확인' ? 'check' : sum.label === '충족 방향' ? 'ok' : 'conflict'}">${esc(sum.text)}</span></p>` +
-      `<p class="verdict-note">초안 규칙 ${esc(RULE.id)}(${esc(RULE.state)}) · ${esc(RULE.law)}.<br>법정 판정이 아니라 셀 값과 기준값을 나란히 둔 화면입니다.<br>판정은 사람이 조문을 보고 승인한 규칙으로만 합니다.</p>`;
+      `<p class="verdict-note">기준: ${esc(RULE.law)}. 규칙은 담당자 확인 전 초안입니다.<br>법정 판정이 아니라 셀 값과 기준값을 나란히 둔 화면입니다.<br>판정은 사람이 조문을 보고 승인한 규칙으로만 합니다.</p>`;
   }
   const count = el => (window.RenewMap && window.RenewMap.countUp ? window.RenewMap.countUp(el) : (el.textContent = el.dataset.count));
   const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('is-in'); en.target.querySelectorAll('[data-count]').forEach(count); io.unobserve(en.target); } }), { threshold: 0.15 }) : null;
@@ -93,7 +93,7 @@
       if (reduced || el.closest('.is-in')) count(el);
     });
     const src = document.querySelector('[data-stat-src]');
-    if (src) src.textContent = `숫자 출처: data/national/index.json·living/index.json(전국 지표 묶음), data/dashboard.json(${dong ? dong.name : '정밀 사례'} 셀).`;
+    if (src) src.textContent = `숫자 출처: 전국 쇠퇴·생활 지표 원장과 건축물대장 정밀 사례(${dong ? dong.name : '정밀 사례'}). 원천 목록은 데이터 출처 화면에 있습니다.`;   // v9: 내부 파일 경로가 화면에 보였다
     const box = $('ledgerAnat'), html = anatomyHTML(dong, cell, D);
     if (box && html) { box.innerHTML = html; box.classList.add('is-real'); }
   }

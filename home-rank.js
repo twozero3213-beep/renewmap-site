@@ -10,7 +10,7 @@
   const rangeText = (r) => (Array.isArray(r) && r.length === 2 ? (r[0] === r[1] ? ` · 무게 바꿔도 ${r[0]}위` : ` · 무게 바꾸면 ${r[0]}~${r[1]}위`) : '');
   function itemsHTML(rows, n = SHOW) {
     return (rows || []).slice(0, n).map((r, i) => `<li><a href="explore.html#map/${esc(String(r.code7).slice(0, 2))}/${esc(r.code5)}/${esc(r.code7)}">` +
-      `<span class="h6-rank-n">${i + 1}</span><b>${esc(r.name)}</b><span class="h6-rank-sg">${esc(r.sgg)}${esc(rangeText(r.rank_range))}</span><em>${Number(r.score).toFixed(1)}</em></a></li>`).join('');
+      `<span class="h6-rank-n">${i + 1}</span><b>${esc(r.name)}</b><span class="h6-rank-sg">${esc(r.sido ? `${r.sido} ${r.sgg}` : r.sgg)}${esc(rangeText(r.rank_range))}</span><em>${Number(r.score).toFixed(1)}</em></a></li>`).join('');
   }
   // 곧 노후 요건에 닿는 동네(crossing_soon.json, export_crossing_soon.py): 해·동·지금 비율을 4D 주소로 잇는다
   function soonHTML(rows, n = 8) {
