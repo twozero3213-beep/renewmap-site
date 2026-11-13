@@ -57,7 +57,11 @@
       return num(f.met) && f.met >= 2 ? { state: 'ok', note: `${pct}, 쇠퇴요건 ${f.met}개(하한)` } : { state: 'check', note: `${pct}, 쇠퇴요건 ${num(f.met) ? f.met : '값 없음'}개(하한)` };
     }
     if (n.kind === 'desig') {
-      if (f.desig === '인구감소지역' || f.desig === '관심지역') return { state: 'ok', note: f.desig };
+      // 고시의 공식 이름으로 적고, 인구활력+지역은 종전 지정의 지원이 유지되는 분류(고시 부칙 제3조)라 기금 대상으로 본다
+      // (v9 2차: 송림2동이 '확인 필요 · 인구활력+'로만 나왔다)
+      if (f.desig === '인구감소지역') return { state: 'ok', note: '인구감소지역' };
+      if (f.desig === '관심지역') return { state: 'ok', note: '인구감소관심지역' };
+      if (f.desig === '인구활력+') return { state: 'ok', note: '인구활력+지역(종전 지정의 지원 유지, 고시 부칙 제3조)' };
       if (f.desig === '미지정') return { state: 'no', note: '미지정' };
       return { state: 'check', note: f.desig || '지정 자료 없음' };
     }
@@ -88,10 +92,18 @@
       `<p class="pg-acts"><a class="btn ghost" href="${esc(base)}explore.html">동네로 맞춰 보기</a>${p.tool ? `<a class="btn ghost" href="${esc(base)}${esc(p.tool[0])}">${esc(p.tool[1])}</a>` : ''}</p><p class="pg-src">출처 ${srcLine(p)}</p></section>`).join('');
   }
   // 동 하나에 맞대 본 표(지도 화면 문서 칸)
+  // 사업마다 한 줄 결론(v9 2차 마을기업 대표: '확인 필요'가 18번 나와 받을 수 있는 사업이 무엇인지 답을 못 얻었다)
+  function verdictOf(c) {
+    const nCheck = c.needs.filter(n => n.state === 'check').length;
+    if (c.blocked) return { cls: 'no', text: '자료로 보면 맞지 않는 요건이 있습니다. 다른 길(구역 조정 등)이 있는지 구청에 물어보세요.' };
+    if (c.candidate) return { cls: 'ok', text: `자료로 맞는 요건 ${c.ok}개${nCheck ? `, 구청 확인이 필요한 요건 ${nCheck}개` : ''}. 해볼 만한 후보입니다.` };
+    return { cls: 'check', text: '자료만으로는 정할 수 있는 요건이 없습니다. 구청에 공고 요건을 물어보세요.' };
+  }
   function dongHTML(name, rows) {
-    const list = checkAll(factsOf(rows));
-    return `<section class="pg-dong"><h3>${esc(name)}에 맞대 본 도시재생 사업</h3><p class="pg-warn">판정이 아닙니다. 행정동 자료로 맞대 본 참고이고, 실제 요건은 사업 구역 기준으로 다시 확인합니다.</p>` +
-      list.map(c => `<div class="pg-card"><h4><a href="programs.html#${esc(c.program.id)}">${esc(c.program.name)}</a><small>${esc(c.program.money)}</small></h4><ul>${c.needs.map(n => `<li class="is-${n.state}"><b>${STATE[n.state]}</b><span>${esc(n.t)}${n.note ? `<small>${esc(n.note)}</small>` : ''}</span></li>`).join('')}</ul></div>`).join('') + `</section>`;
+    const list = checkAll(factsOf(rows)), vs = list.map(verdictOf), nOk = vs.filter(v => v.cls === 'ok').length, nNo = vs.filter(v => v.cls === 'no').length;
+    return `<section class="pg-dong"><h3>${esc(name)}에 맞대 본 도시재생 사업</h3>` +
+      `<p class="pg-sum">해볼 만한 후보 <b>${nOk}개</b> · 구청 확인이 필요한 사업 ${list.length - nOk - nNo}개 · 맞지 않는 요건이 있는 사업 ${nNo}개<br><small>물어볼 곳: 시·군·구 도시재생 담당 부서, 도시재생지원센터. 행정동 자료로 맞대 본 참고라 실제 요건은 사업 구역 기준으로 다시 확인합니다.</small></p>` +
+      list.map((c, i) => `<div class="pg-card"><h4><a href="programs.html#${esc(c.program.id)}">${esc(c.program.name)}</a><small>${esc(c.program.money)}</small></h4><p class="pg-verdict is-${vs[i].cls}">${esc(vs[i].text)}</p><ul>${c.needs.map(n => `<li class="is-${n.state}"><b>${STATE[n.state]}</b><span>${esc(n.t)}${n.note ? `<small>${esc(n.note)}</small>` : ''}</span></li>`).join('')}</ul></div>`).join('') + `</section>`;
   }
   // 2027 가이드라인 기반·편의시설 현황표. value는 map.js가 지표 단위에 맞춰 만든 글자
   function socRows(rows, format) {

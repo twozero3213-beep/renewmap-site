@@ -25,9 +25,9 @@
 <script src="site.js" defer></script>
 <script src="site-motion.js" defer></script>
 <script src="cellpack.js" defer></script><!-- 2026-11-08: 줄여 저장한 원장 셀을 util.js fetchJson이 되돌릴 때 쓴다. util.js보다 먼저 -->
-<script src="util.js?v=20261113-v92" defer></script>
-<script src="list-pages.js?v=20261113-v92" defer></script>
-<script src="rank.js?v=20261113-v92" defer></script>
+<script src="util.js?v=20261113-v93" defer></script>
+<script src="list-pages.js?v=20261113-v93" defer></script>
+<script src="rank.js?v=20261113-v93" defer></script>
 <link rel="stylesheet" href="rm6.css">
 </head>
 <body class="rank-page">
@@ -47,7 +47,7 @@
 </form>
 <form id="rankFind" class="rank-find" role="search" autocomplete="off"><label for="rankQ">우리 동네 몇 위?</label><div class="rank-find-row"><input id="rankQ" list="rankNames" placeholder="동 이름 (예: 반여1동)" enterkeyhint="search"><button class="btn" type="submit">찾기</button></div><datalist id="rankNames"></datalist><p id="rankFound" class="rank-found" role="status" aria-live="polite"></p></form>
 <p id="rankMsg" aria-live="polite">불러오는 중입니다.</p>
-<p class="rank-table-help" id="rankScrollHelp">세부 점수(생활 편의·인구 활력·주거 노후도·치안)는 표 오른쪽에 있습니다.<br>휴대폰에서는 동 이름을 누르면 동 페이지에서 볼 수 있습니다.</p>
+<p class="rank-table-help" id="rankScrollHelp">세부 점수(고른 점수의 재료)는 표 오른쪽에 있습니다.<br>휴대폰에서는 동 이름을 누르면 동 페이지에서 볼 수 있습니다.</p>
 <div class="table-wrap" tabindex="0" role="region" aria-label="동네 점수 순위 표" aria-describedby="rankScrollHelp rankTableNote" id="rankOut"></div>
 <p id="rankTableNote" class="rank-table-note">순위 범위는 가중치 변동만 반영합니다. 데이터·경계·계산 방법의 오차는 포함하지 않으며 통계적 신뢰구간이 아닙니다.</p>
 <details class="rank-methods" id="rankMethods">
@@ -67,7 +67,7 @@
 <li>성범죄자 공개정보는 쓰지 않습니다(청소년성보호법 제55조). 점수가 낮다고 그곳 사람을 판단하지 않습니다.</li>
 <li>재생 필요 점수는 20년 이상 건축물 비율·인구 감소·사업체 감소·고령 비율이 클수록 높습니다.</li>
 </ul>
-<p class="sub">출처: 경찰청_범죄 발생 지역별 통계(공공데이터포털 3074462, 이용허락범위 제한 없음), 리뉴맵 행정동 쇠퇴·생활 지표(<a href="data.html">데이터 출처</a>). 계산: <code>backend/scripts/export_scores.py</code>, 규칙 SCORE-2026.11.</p>
+<p class="sub">출처: 경찰청_범죄 발생 지역별 통계(공공데이터포털 3074462, 이용허락범위 제한 없음), 리뉴맵 행정동 쇠퇴·생활 지표(<a href="data.html">데이터 출처</a>). 점수마다 쓴 지표와 무게는 위 '계산 방법'에 모두 적었고, 동마다 원값은 동 페이지에서 볼 수 있습니다. 규칙 판본 SCORE-2026.11.</p>
 </details>
 <p class="actions"><a class="btn" href="biz.html">사업성 간이 계산</a> <a class="btn ghost" href="dong/index.html">행정동 목록</a></p>
 </main>

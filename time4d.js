@@ -280,8 +280,8 @@
     const dongs = (gu, pick) => fill($('t4Dong'), gus.find((s) => s.code === gu).dongs.map((d) => [d.code, d.name]), pick);   // v7: 건물 수는 숫자판 하나로만(평가: 한 화면에 건물 수가 셋)
     const near = outlineIdx ? dongAt(outlineIdx, at[0], at[1]) : null;
     const want = q.get('bjd') || near || '2635010300';
-    if (at && !near) {
-      $('t4Status').textContent = '지도에서 보던 자리는 아직 4D 자료가 없습니다(부산만 있습니다). 대신 반여동을 보여 줍니다.';
+    const outside = at && !near;
+    if (outside) {
       const v = document.querySelector('a[href^="field/city3d.html"]');
       if (v) v.href = `field/city3d.html?lat=${at[1].toFixed(5)}&lng=${at[0].toFixed(5)}`;
     }
@@ -295,7 +295,10 @@
     // 주소의 동 코드가 부산 목록에 없으면 다른 동을 말없이 보여 주지 않고 알린다(v9 QA: ?bjd=0000000000·울산 코드가 중구 영주동으로 열렸다)
     const asked = q.get('bjd'), missing = q.has('bjd') && !gus.some((s) => s.dongs.some((d) => d.code === asked));
     load($('t4Dong').value).then(() => {
-      if (missing) $('t4Status').textContent = `주소의 법정동 코드(${asked || '빈 값'})를 부산 자료에서 찾지 못해 ${$('t4Dong').selectedOptions[0]?.textContent || '첫 동'}을 보여 줍니다. 건물 나이 4D는 부산만 있습니다.`;
+      const shown = $('t4Dong').selectedOptions[0]?.textContent || '첫 동';
+      // 불러온 뒤에 쓴다(전에는 '불러오는 중' 안내에 덮여, 대구에서 4D를 열면 말없이 부산이 나왔다)
+      if (outside) $('t4Status').textContent = `지도에서 보던 자리는 4D 자료가 없습니다(부산만 있습니다). 대신 ${shown}을 보여 줍니다.`;
+      else if (missing) $('t4Status').textContent = `주소의 법정동 코드(${asked || '빈 값'})를 부산 자료에서 찾지 못해 ${shown}을 보여 줍니다. 건물 나이 4D는 부산만 있습니다.`;
     });
   }).catch(() => { $('t4Status').textContent = '동 목록을 불러오지 못했습니다.'; });
 })(typeof self !== 'undefined' ? self : this);

@@ -219,7 +219,9 @@ html:has(body.explore-page) { scroll-padding-top: 140px; }
   .table-wrap { overflow: visible !important; }
   .table-wrap table { min-width: 0 !important; }
   a { color: #000 !important; text-decoration: none !important; }
-  section, table, li { break-inside: avoid; }
+  /* 표·구역 통째로 쪼개지 말라고 하면 긴 표가 다음 쪽으로 밀려 첫 쪽이 비었다(v9: 회의용 인쇄 5쪽, 첫 쪽은 제목과 두 문장) → 줄 단위로만 */
+  tr, li, .answer { break-inside: avoid; }
+  thead { display: table-header-group; }
 }
 .print-row { margin: 8px 0 16px; }
 
@@ -430,3 +432,9 @@ details.cp-fold { grid-column: 1 / -1; width: 100%; box-sizing: border-box; }
 /* v9 저시력: 문서 화면의 작은 글(<small>·각주 번호)이 11.7px·9.8px까지 작아졌다 → 아래로 13px·12px을 지킨다 */
 main.page small { font-size: max(13px, .85em); }
 main.page sup { font-size: max(12px, .75em); }
+.sr-req-rows li span small { display: block; font-size: 13px; color: var(--dim); font-weight: 400; }   /* v9 2차: 사업체 수 자료 해 */
+/* v9 2차: 스크립트 없는 정적 화면(동 페이지)은 '메뉴' 단추로 바뀌지 않아 휴대폰에서 메뉴가 한 줄로 화면 밖까지 이어졌다 → 3칸 두 줄 */
+@media (max-width: 720px) {
+  header.top .wrap:not(:has(.rm-nav)) .site-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; gap: 0 6px; flex: 1 0 100%; }
+  header.top .wrap:not(:has(.rm-nav)) .site-nav a { justify-content: center; text-align: center; min-height: 44px; font-size: 14px; }   /* 누름 크기 44px(ui_smoke) */
+}

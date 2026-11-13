@@ -210,9 +210,11 @@
     if (!wkt) return say("꼭짓점을 3개 이상 찍어 주세요.", true);
     if (!VW) return say("이 주소에서는 브이월드 필지 조회를 쓸 수 없습니다.\n공개 사이트에서 다시 시도해 주세요.", true);
     $("drawDone").disabled = true; say("브이월드에서 영역 안 필지를 찾는 중입니다.");
-    const r = await vwAsk({ wkt });
+    let r = await vwAsk({ wkt });
+    // 브이월드는 짧은 사이 여러 번 부르면 요청을 거절한다(v9 2차: 연속 4번 '조회 실패'). 한 번 쉬었다 다시 묻는다
+    if (r.error === "조회 실패") { say("브이월드가 잠시 응답하지 않아 다시 묻는 중입니다."); await new Promise((ok) => setTimeout(ok, 2000)); r = await vwAsk({ wkt }); }
     $("drawDone").disabled = false;
-    if (r.error) return say(`필지를 찾지 못했습니다(${r.error}).\n인터넷 연결을 확인해 주세요.`, true);
+    if (r.error) return say(`필지를 찾지 못했습니다(${r.error}).\n브이월드 조회가 몰리면 잠시 거절됩니다. 1분쯤 뒤에 다시 눌러 주세요.`, true);
     if (!r.pnus.length) return say("영역 안에서 필지를 찾지 못했습니다.", true);
     $("list").value = r.pnus.join("\n");
     $("area").value = Math.round(R.polygonAreaM2(drawPts));   // 그린 선 기준 면적. 고시 면적이 있으면 사람이 고친다

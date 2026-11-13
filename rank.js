@@ -38,13 +38,19 @@
     return r ? `${r[0].toLocaleString('ko-KR')}~${r[1].toLocaleString('ko-KR')}` : '–';
   }
 
+  // 재생 필요 점수의 재료(scores.json renewal_parts, 지표별 백분위). 재생 순위에서는 이 넷을 세부 열로 보인다(v9: 1위인 이유가 표에 없었다)
+  const RENEWAL_COLS = [['DECLINE_AGING_20Y_PCT', '20년 넘은 건물'], ['DECLINE_POP_CHANGE_PCT', '인구 감소'], ['DECLINE_BIZ_DROP10Y_PCT', '사업체 감소'], ['POP_AGED65_PCT', '고령 인구']];
   function tableHTML(list, kind, names, limit, range, scope, offset = 0, found = null) {
-    const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th><th scope="col">${esc(KINDS[kind].label)}</th><th scope="col">무게를 바꾼<br><small>순위 범위</small></th><th scope="col">생활 편의</th><th scope="col">인구 활력</th><th scope="col">주거 노후도<br><small>점수가 낮을수록 낡음</small></th><th scope="col">치안</th><th scope="col">범죄 발생률<br><small>1,000명당·시군구</small></th></tr></thead>`;
+    const renew = kind === 'renewal' && list.some(r => r.d.renewal_parts);
+    const cols = renew ? RENEWAL_COLS.map(([, l]) => `<th scope="col">${esc(l)}<br><small>백분위·클수록 쇠퇴</small></th>`).join('')
+      : '<th scope="col">생활 편의</th><th scope="col">인구 활력</th><th scope="col">주거 노후도<br><small>점수가 낮을수록 낡음</small></th><th scope="col">치안</th><th scope="col">범죄 발생률<br><small>1,000명당·시군구</small></th>';
+    const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th><th scope="col">${esc(KINDS[kind].label)}</th><th scope="col">무게를 바꾼<br><small>순위 범위</small></th>${cols}</tr></thead>`;
     const body = list.slice(0, limit).map((r, i) => {
-      const s = r.d.sub, sp = r.d.safety_parts || {};
+      const s = r.d.sub, sp = r.d.safety_parts || {}, rp = r.d.renewal_parts || {};
       return `<tr${r.code7 === found ? ' class="is-found" id="rankFoundRow"' : ''}><td class="num">${offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
-        + `<td class="num">${fmt(s.living)}</td><td class="num">${fmt(s.vitality)}</td><td class="num">${fmt(s.housing)}</td><td class="num">${fmt(s.safety)}</td>`
-        + `<td class="num">${sp.crime_rate_per_1k === null || sp.crime_rate_per_1k === undefined ? '없음' : esc(sp.crime_rate_per_1k)}</td></tr>`;
+        + (renew ? RENEWAL_COLS.map(([c]) => `<td class="num">${fmt(rp[c])}</td>`).join('')
+          : `<td class="num">${fmt(s.living)}</td><td class="num">${fmt(s.vitality)}</td><td class="num">${fmt(s.housing)}</td><td class="num">${fmt(s.safety)}</td>`
+          + `<td class="num">${sp.crime_rate_per_1k === null || sp.crime_rate_per_1k === undefined ? '없음' : esc(sp.crime_rate_per_1k)}</td>`) + '</tr>';
     }).join('');
     return `<table class="grid rank-table"><caption>선택한 범위의 행정동 순위</caption>${head}<tbody>${body}</tbody></table>`;
   }
@@ -108,7 +114,7 @@
         if (findForm) $('rankNames').innerHTML = Object.values(s.dongs).map(d => `<option value="${esc(d.name)}">`).filter((v, n, a) => a.indexOf(v) === n).join('');
         if (findForm) findForm.addEventListener('submit', e => {
           e.preventDefault();
-          const list = rows(scores, kindSel.value, sgSel.value || sidoSel.value || 'all'), q = $('rankQ').value, at = findRank(list, names, q, r => [sgName(r.d.code5)]);
+          const list = rows(scores, kindSel.value, sgSel.value || sidoSel.value || 'all'), q = $('rankQ').value, at = findRank(list, names, q, r => [sgName(r.d.code5), (idx.sido.find(x => x.code2 === String(r.code7).slice(0, 2)) || {}).name]);   // '부산 우동'처럼 시·도를 붙여 적어도(교차 검토)
           if (at < 0) { found = null; foundMsg.textContent = `지금 고른 범위에서 '${q}'을(를) 찾지 못했습니다. 시·도를 '전국'으로 바꿔 보세요.`; draw(); return; }
           found = list[at].code7; pager.goTo(Math.floor(at / 20) + 1); draw();
           // 순위(여러 지표를 합친 점수)와 쇠퇴 3요건 해당 수는 다른 잣대다. 둘이 엇갈려 보여도 모순이 아니라고 같은 자리에서 밝힌다(v9: 홈 '2개 해당'과 '178위'가 모순으로 읽혔다)

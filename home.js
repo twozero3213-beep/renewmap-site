@@ -72,7 +72,7 @@
       const ls = links(), i = ls.indexOf(doc.activeElement);
       if (i < 0) return;
       if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') { ev.preventDefault(); const j = i + (ev.key === 'ArrowDown' ? 1 : -1); (j < 0 ? input : ls[Math.min(j, ls.length - 1)]).focus(); }
-      else if (ev.key === 'Escape') { ev.preventDefault(); input.focus(); }
+      else if (ev.key === 'Escape') { ev.preventDefault(); show([]); msg.textContent = ''; input.focus(); }   // 목록도 닫는다(v9 2차: 한 번 더 눌러야 닫혔다)
     });
     form.addEventListener('submit', async ev => {
       ev.preventDefault();

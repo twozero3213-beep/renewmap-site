@@ -34,3 +34,10 @@
 .pg-find .home-hits small { color: var(--dim); }
 .pg-find .home-msg { white-space: pre-line; margin: 6px 0 0; font-size: 14px; color: var(--dim); }
 @media (max-width: 520px) { .pg-find .home-search-row { flex-direction: column; } }
+/* v9 2차: 사업마다 한 줄 결론과 맨 위 요약 */
+.pg-sum { margin: 8px 0 16px; font-size: 16px; line-height: 1.6; }
+.pg-sum small { color: var(--dim); font-size: 14px; }
+.pg-verdict { margin: 4px 0 8px; padding: 6px 10px; border-radius: 6px; font-size: 15px; font-weight: 600; line-height: 1.5; }
+.pg-verdict.is-ok { background: var(--soft); color: var(--green-press, var(--green)); }
+.pg-verdict.is-check { background: var(--amber-bg); color: var(--amber); }
+.pg-verdict.is-no { background: var(--mute-bg, #eee); color: var(--ink); }

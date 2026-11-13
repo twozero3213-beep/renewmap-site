@@ -481,5 +481,7 @@
 /* v9 휴대폰: 1쪽 요약 표가 공통 표 규칙의 최소 폭(640px) 때문에 값 칸이 화면 밖에 잘렸다 → 이 문서 안에서는 칸 안에서 줄을 바꾼다 */
 @media (max-width: 720px) {
   .dg-onepage .table-wrap .dg-table { min-width: 0; }
-  .dg-onepage .dg-table th, .dg-onepage .dg-table td { overflow-wrap: anywhere; word-break: keep-all; }
+  /* 낱말 단위로만 줄을 바꾼다(anywhere는 '34.8/1%'처럼 숫자 가운데를 끊었다, v9 2차). 칸 안 여백도 줄인다 */
+  .dg-onepage .dg-table th, .dg-onepage .dg-table td { overflow-wrap: break-word; word-break: keep-all; padding: 4px 5px; font-size: 13px; }
 }
+.sr-req-warn { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--amber-bg); color: var(--amber); font-size: 14px; line-height: 1.5; }

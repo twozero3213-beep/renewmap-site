@@ -128,7 +128,7 @@
   function valueWithUnit(c) {
     if (!c || hidden(c) || c.value === null || c.value === undefined) return fmtCell(c);
     if (typeof c.value === 'string') return (c.indicator_code === 'DEPOP_STATUS' && DEPOP_NAME[c.value]) || c.value;   // dong_brief.value_with_unit과 같다
-    const u = c.unit || '', flag = FMT().flag || { unit: '여부(1/0)', 1: '있음', 0: '없음' };
+    const u = c.unit || '', flag = FMT().flag || { unit: '여부(1/0)', 1: '예', 0: '아니요' };
     if (u === flag.unit) return c.value === 1 ? flag[1] : flag[0];
     return `${fmtCell(c)}${noSpace(u) ? '' : ' '}${u}`;
   }
@@ -157,6 +157,8 @@
     ['전망', []],
   ];
   const EXCLUDED = ['STD_SHORTFALL_COUNT'];
+  // 계산식 글에 든 지표 코드(POP_AGED65_PCT[2024] 등)를 이름으로 바꾸고 저장소 경로를 걷어 낸다. XLSX 출처 시트용(v9 2차: 코드가 남았다)
+  const plainFormula = s => plainSource(String(s || '').replace(/\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g, m => LABEL[m] || m));
   const LABEL = {
     DECLINE_AGING_20Y_PCT: '준공 20년 이상 건축물 비율', DECLINE_AGING_20Y_PCT_DELTA5Y: '노후건축물 비율 5년 차이', DECLINE_BIZ_TOTAL: '사업체 수',
     DECLINE_BIZ_TOTAL_DELTA5Y: '사업체 수 5년 차이', DECLINE_BIZ_DROP10Y_PCT: '10년 최대 대비 사업체 감소율', DECLINE_BIZ_DECL3IN5: '최근 5년 중 3년 연속 사업체 감소(1=있음)',
@@ -166,7 +168,7 @@
     APT_TRADE_COUNT: '아파트 매매 신고 건수(시군구·월)', APT_PRICE_M2_MEDIAN: '아파트 ㎡당 중위 거래가(시군구·월)', APT_PRICE_M2_YOY_PCT: '아파트 ㎡당 중위가 전년 동기 대비(시군구)',
     APT_TRADE_COUNT_YOY_PCT: '아파트 매매 건수 전년 동기 대비(시군구)', DEMOLITION_COUNT_3Y: '철거멸실 건수(최근 3년)',
   };
-  // 문서에서는 값이 '있음/없음'으로 나오므로 이름의 '(1=있음)'을 뗀다. LABEL은 dong_brief.LABEL(동 페이지)과 같게 둔다
+  // 문서에서는 값이 '예/아니요'로 나오므로 이름의 '(1=있음)'을 뗀다. LABEL은 dong_brief.LABEL(동 페이지)과 같게 둔다
   const docLabel = s => String(s).replace(/\(1=있음\)$/, '');
   // 개편으로 옛 구 경계에 이은 지정(인천 동구 → 제물포구)은 고시 표의 새 이름을 한 번 밝힌다(export_dong_pages.depop_section과 같은 규칙)
   const depopSg = (sg, c) => { const m = /코드 연결: 개편 전 [^.]*? 전체가 (\S+)에 들어감/.exec((c && c.note) || ''); return m ? `${sg}(2026.7.1. ${m[1]})` : sg; };
@@ -859,7 +861,7 @@
       const c = it.cell, f = it.fact; if (!c && !f) continue;
       const d = c || f;
       so.push([b.code8, b.dongName, src.number(d, it.group === '전망'), clean(it.label), d.source_name, d.source_url, govDate(d.reference_date), govDate((d.retrieved_at || '').slice(0, 10)), c ? licenseOf(c) : f.license,
-        c ? `${c.formula_id}: ${c.formula_text}` : f.formula, c ? c.rule_version : f.rule_version, c ? c.cell_id : '']);
+        c ? `${c.formula_id}: ${plainFormula(c.formula_text)}` : f.formula, c ? c.rule_version : f.rule_version, c ? c.cell_id : '']);
     }
     so.push([]); so.push([b.code8, b.dongName, 'snapshot_hash', b.snapshot, '원천 색인 지문']);
     if (b.inputHash) { so.push([b.code8, b.dongName, 'input_hash_scheme', b.inputHashScheme]); so.push([b.code8, b.dongName, 'input_hash', b.inputHash, '브라우저 문서 입력묶음 SHA-256']); }

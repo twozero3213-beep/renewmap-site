@@ -54,7 +54,8 @@
     { code: 'DECLINE_BIZ_DROP10Y_PCT', group: 'aging', icon: 'shop', label: '사업체 감소율', unit: '%', edges: [0, 5, 10, 20], colors: [BELOW[0], BELOW[2], ...ABOVE],
       title: '사업체 10년 최대 대비 감소율', worseUp: true, domain: [-20, 40], series: true, breakSource: 'biz_source', standard: lawStd(5, 'above_bad', '10년 최대 대비 5% 이상 감소') },
     { code: SUM, group: 'sum', icon: 'sum', label: '기준 해당 항목 수', unit: '개', edges: [1, 2, 3, 4], colors: SUMC, labels: ['0개', '1개', '2개', '3개', '4개 이상'],
-      title: '기준선보다 나쁜 쪽에 있는 항목 수 · 자료 있는 항목만 셈 · 가중치·순위 없음 · 판정 아님', worseUp: true, domain: [0, 8], computed: true, composite: true },
+      // v9: 카드의 '쇠퇴 3요건 N개 해당'과 수가 달라 혼란 → 무엇을 세는지 범례 제목에 밝힌다
+      title: '쇠퇴·생활 지표 가운데 공식 기준선보다 나쁜 쪽에 있는 항목 수(쇠퇴 3요건 해당 수와 다른 셈) · 자료 있는 항목만 · 가중치·순위 없음', worseUp: true, domain: [0, 8], computed: true, composite: true },
   ];
   // 자료 파일이 없을 때 칩에 '수집 중'으로만 보이는 자리. 숫자·기준값을 만들지 않는다
   const EXPECTED = { pop: ['고령(65세 이상) 비율', '청년(20~34세) 비율'], life: ['병의원(1만 명당)', '도서관 거리', '1인당 공원 면적', '공원 수', '버스정류장 밀도', '응급의료 거리'], safe: ['CCTV 밀도', '보안등 밀도', '경찰관서 거리'] };
@@ -343,20 +344,21 @@
     return out;
   }
   const flatName = x => String(x || '').replace(/\s|·/g, '');
+  const byLabel = (a, b) => a.label.localeCompare(b.label, 'ko', { numeric: true });
   // '로/으로': 받침 없거나 ㄹ 받침이면 '로'(v9: '사하구 · 부산광역시(으)로'처럼 자리표시가 그대로 보였다)
   const roJosa = w => { const c = String(w).slice(-1).charCodeAt(0) - 0xAC00; return c < 0 || c > 11171 || c % 28 === 0 || c % 28 === 8 ? '로' : '으로'; };
   function findEntry(entries, q) {
     const s = String(q || '').trim().replace(/\s+/g, ' ');
     if (!s) return null;
     const f = flatName(s);
-    return entries.find(e => e.label === s) || entries.find(e => e.name && dongHit(s, e.name, e.region)) || entries.find(e => flatName(e.label).startsWith(f)) || entries.find(e => flatName(e.label).includes(f)) || null;
+    return entries.find(e => e.label === s) || entries.filter(e => e.name && dongHit(s, e.name, e.region)).sort(byLabel)[0] || entries.find(e => flatName(e.label).startsWith(f)) || entries.find(e => flatName(e.label).includes(f)) || null;
   }
   // 입력한 글자에 맞는 이름만 n개(앞에서 맞는 것 먼저). 자동완성 목록에 전국 이름 3,800여 개를 한꺼번에 넣으면 화면 요소가 4,700개로 늘어 첫 화면이 무거웠다
   function suggestEntries(entries, q, n = 20) {
     const f = flatName(q); if (!f) return [];
     const hit = [], head = [], mid = [];   // hit: '우동'→우1·2·3동처럼 법정동 이름·구를 붙인 말이 가리키는 동(v9)
     for (const e of entries) { const l = flatName(e.label); if (e.name && dongHit(q, e.name, e.region)) hit.push(e); else if (l.startsWith(f)) head.push(e); else if (l.includes(f)) mid.push(e); if (hit.length + head.length >= n) break; }
-    return hit.concat(head, mid).slice(0, n);
+    return hit.sort(byLabel).concat(head, mid).slice(0, n);   // 반여1·2·3·4동 순(v9: 코드 순이라 2·3·1·4였고 Enter가 반여2동을 열었다)
   }
 
   // ── 모델 ──
@@ -486,6 +488,16 @@
   }
   const seriesOf = (dong, key) => (dong && dong.series && Array.isArray(dong.series[key]) ? dong.series[key].filter(p => Array.isArray(p) && isNum(p[0])).map(p => [p[0], isNum(p[1]) ? p[1] : null]).sort((a, b) => a[0] - b[0]) : []);
   function valueAt(series, year) { const p = series.find(x => x[0] === year); return p ? p[1] : null; }
+  // 그해 값이 앞뒤 3년(값 있는 해 4개 이상)의 중앙값과 thr(%p) 넘게 다르면 {median}. 원천 값은 그대로 두고 화면에 경고만 한다
+  // (v9: 남항동 노후 비율이 2020 80% → 2022 44.5%·2023 53.5% → 2024 85%. 국토부 원천이 그 두 해만 다르게 셈한 것으로 보이는 동이 42곳.
+  //  두 해 연속으로 내려가 '앞뒤 해와 비교'로는 못 잡아 중앙값과 견준다)
+  function seriesJump(series, year, thr = 20) {
+    const v = valueAt(series, year); if (!isNum(v)) return null;
+    const w = series.filter(p => Math.abs(p[0] - year) <= 3 && isNum(p[1])).map(p => p[1]).sort((a, b) => a - b);
+    if (w.length < 4) return null;
+    const median = w.length % 2 ? w[(w.length - 1) / 2] : (w[w.length / 2 - 1] + w[w.length / 2]) / 2;
+    return Math.abs(v - median) >= thr ? { median } : null;
+  }
   function latestYear(series) { const v = series.filter(p => p[1] !== null); return v.length ? v[v.length - 1][0] : null; }
   function yearsOf(emd) {
     const ys = new Set();
@@ -746,6 +758,8 @@
     const go = `<a class="btn sr-req-go" href="#report" data-set-mode="onepage">${icon('book')}1쪽 근거 문서 보기</a>`;
     // 2026-11-13: 가운뎃점 사슬(하한·승인 전·판정 아님)을 누가 무엇을 하는지 두 문장으로(11-13 평가: 승인 주체가 없고 사슬이 AI 티)
     // v7 7회차: 맺음말 두 문장(하한·담당자 승인 전)을 실무자가 못 읽었다 → 한 줄. 승인 상태는 기준 원문 대조 쪽(rules.html)에 그대로 있다
+    const jump = isNum(r.year) && dong ? seriesJump(seriesOf(dong, 'DECLINE_AGING_20Y_PCT'), r.year) : null;
+    const jumpNote = jump ? `<p class="sr-req-warn">이 해 20년 이상 건축물 비율이 앞뒤 해(중앙값 ${fmt2(jump.median)}%)와 크게 다릅니다. 원천 값을 그대로 옮긴 것이며, 원천의 계산 방식이 바뀐 해일 수 있어 이 해 판단은 원문을 확인하세요.</p>` : '';
     const rowsHtml = reqRowsHTML(rows, dong, r.year), allKnown = rowsHtml && !rowsHtml.includes('class="is-none"');   // 세 요건이 다 정해졌으면 '빼고 셌다'는 말이 맞지 않는다(11회차)
     const foot = `<p class="sr-req-note">${allKnown ? `${r.year ? `${esc(r.year)}년 기준. ` : ''}` : `자료가 없는 요건은 빼고 셌습니다${r.year ? `(${esc(r.year)}년 기준)` : ''}. `}법정 판정이 아닌 참고 계산이며, 판정은 담당 기관이 합니다.</p>`;
     if (r.value === null) {
@@ -758,7 +772,7 @@
     const undecided = (r.cell && DeclineReq && DeclineReq.metStatus(r.cell) === 'none' && (r.status === '기준 안' || r.status === '기준 넘음')) || (r.status === '기준 안' && isNum(r.value) && r.value + nUnknown >= 2);
     const st = undecided ? '추가확인' : r.status;
     return `<section class="sr-req is-${ROW_CLASS[st] || 'none'}" aria-label="쇠퇴 3요건 요약"><p class="sr-req-k">쇠퇴 3요건 중</p>` +
-      `<p class="sr-req-n"><b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(st))}</small>` : ''}</p>${rowsHtml}${go}${foot}</section>`;
+      `<p class="sr-req-n"><b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(st))}</small>` : ''}</p>${rowsHtml}${jumpNote}${go}${foot}</section>`;
   }
   // v7(2026-11-13): 3요건 각각의 값·상태를 홈 카드처럼 세 줄로. 평가: 카드의 세는 법이 넷(해당 수·확인할 항목·확정/추가확인·묶음별 수)이라
   // 무엇을 봐야 할지 몰랐다 → 맨 위는 '몇 개 해당'과 그 세 줄만 두고, 나머지 셈은 아래 접힌 칸으로 옮긴다. 값은 rows(원장 셀) 그대로
@@ -771,9 +785,13 @@
     if (!DeclineReq || !rowOf('DECLINE_AGING_20Y_PCT')) return '';
     const cellVal = code => { const cs = ((dong && dong.cells) || []).filter(c => c && c.indicator_code === code && isNum(c.value)); return cs.length ? cs.reduce((a, b) => (b.base_year > a.base_year ? b : a)).value : null; };
     const val = code => { const r = rowOf(code); if (r && isNum(r.value)) return r.cell ? DeclineReq.cellValue(r.cell) : r.value; return isNum(year) ? valueAt(seriesOf(dong, code), year) : cellVal(code); };
+    // 사업체 감소율은 사업체 수 마지막 값의 해로 셈한다(2025년 사업체 수는 원천에 아직 없음). 동 페이지·문서처럼 그 해를 밝힌다(v9 2차)
+    const bizS = seriesOf(dong, 'DECLINE_BIZ_TOTAL'), bizLast = [...bizS].reverse().find(p => isNum(p[1]));
+    const yr = isNum(year) ? year : (latestYear(seriesOf(dong, 'DECLINE_BIZ_DROP10Y_PCT')) ?? null);
     const li = DeclineReq.evaluate(val).map(q => {
       const text = q.via && /DECL3IN5$/.test(q.via.code) ? '3년 연속 감소' : q.rate === null ? '–' : `${fmt2(q.rate)}%`;   // 홈·문서와 같은 소수 둘째 자리
-      return `<li class="is-${q.status}"><span>${esc(q.name)}</span><b>${esc(text)}</b><em>${REQ_ST[q.status]}</em></li>`;
+      const note = q.key === 'biz' && bizLast && isNum(yr) && bizLast[0] < yr ? `<small>사업체 수 ${bizLast[0]}년 자료</small>` : '';
+      return `<li class="is-${q.status}"><span>${esc(q.name)}${note}</span><b>${esc(text)}</b><em>${REQ_ST[q.status]}</em></li>`;
     }).join('');
     return `<ul class="sr-req-rows">${li}</ul>`;
   }
@@ -912,7 +930,8 @@
   const srcHead = where => (DG ? DG.SRC_HEAD(where) : '');
   const copyHead = caption => `<div class="dg-tbl-h" aria-live="polite"><b>${esc(caption)}</b>${DG ? `<button type="button" class="btn ghost dg-copy" data-copy-table>${esc(DG.COPY_TABLE)}</button>` : ''}</div>`;
   // 내려받기·인쇄·보조 메일 요청. 1쪽 요약에서는 HWPX가 1쪽 문서다
-  const fileTools = (it, year, what, one) => `<button type="button" class="btn ghost" data-print>인쇄·PDF</button>` + (DG ? `<button type="button" class="btn" data-dl="hwpx">HWPX 받기${one ? '(1쪽)' : ''}</button><button type="button" class="btn" data-dl="xlsx">XLSX 받기</button><button type="button" class="btn" data-dl="docx">DOCX 받기</button><button type="button" class="btn" data-dl="pptx">PPTX 받기</button><button type="button" class="btn ghost" data-task-package>과업에 연결</button>` : '') +
+  // 동네 보고서 화면에서 받는 파일은 근거서 형식이다(문서는 1쪽 요약·근거서 두 가지). 단추에 그렇게 적는다(v9: 두 화면의 HWPX가 같은 파일인데 이름만 보고는 몰랐다)
+  const fileTools = (it, year, what, one) => `<button type="button" class="btn ghost" data-print>인쇄·PDF</button>` + (DG ? `<button type="button" class="btn" data-dl="hwpx">HWPX 받기${one ? '(1쪽)' : what === '동네 보고서' ? '(근거서 형식)' : ''}</button><button type="button" class="btn" data-dl="xlsx">XLSX 받기</button><button type="button" class="btn" data-dl="docx">DOCX 받기</button><button type="button" class="btn" data-dl="pptx">PPTX 받기</button><button type="button" class="btn ghost" data-task-package>과업에 연결</button>` : '') +
     // 메일 요청은 단추가 아니라 한 줄 안내로(v9: 'HWPX 받기' 옆에 같은 모양으로 있어 둘의 차이를 몰랐다)
     `<p class="rp-mail-note">${DG ? '양식에 맞춰 사람이 다듬은 파일이 필요하면' : '이 기기에서 파일을 만들 수 없으면'} <a class="rp-mail" href="${esc(briefMailto(it, year, what))}">메일로 요청</a>하세요(무료 · 1영업일).</p>`;
   // 양식에 붙일 조각(문장 5개 이하 + 표 1개 + 출처 줄): 양식을 고르면 그 양식 항목 순서대로 만든다(data-frag-out). 양식 정의는 data/report_templates.json
@@ -1186,7 +1205,7 @@
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
   const api = { geojsonOf, labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
-    livingIndicators, allIndicators, isAvailable, provenanceHTML, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
+    seriesJump, livingIndicators, allIndicators, isAvailable, provenanceHTML, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
     reportSentences, verifyPolished, stdTextOf, olsFit, trendSVG, donutSVG, coverLabel, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
     gapRows, gapsHTML, reqLineHTML, BUNDLES, BUNDLE_ALL, bundleList, reorgNote, REORG, ageText, WATER_GRADES, WATER_EDGES, waterGrade, waterStyle, waterTipHTML, waterNoteHTML, waterAutoHTML, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
@@ -1422,7 +1441,7 @@
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261113-v92'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261113-v93'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
@@ -1540,7 +1559,9 @@
   function geojsonOf(feats, byCode, ind, meta) {
     return { type: 'FeatureCollection', name: meta.name, note: '좌표계 WGS84(EPSG:4326) · 값이 없으면 null · 색 구간·판정 아님 · 출처와 기준연도는 각 행에',
       features: feats.map(f => { const code = String((f.properties || {}).code), it = byCode.get(code);
-        return { type: 'Feature', geometry: f.geometry, properties: { code, name: it ? it.name : (f.properties || {}).name || null, indicator: ind.code, label: ind.label,
+        // 시·도·시·군·구 이름을 같이 적는다(v9 용역사: 코드만 있어 보고서 표로 옮길 때 다시 찾아야 했다)
+        const reg = meta.region ? meta.region(code) : {};
+        return { type: 'Feature', geometry: f.geometry, properties: { code, name: it ? it.name : (f.properties || {}).name || null, sido: reg.sido || null, sigungu: reg.sigungu || null, indicator: ind.code, label: ind.label,
           value: it && isNum(it.value) ? roundD(it.value, 2) : null, unit: ind.unit || '', year: meta.year ?? null, source: meta.source } }; }) };
   }
   // 지도 내보내기(GeoJSON·그림) 공통: 알림 줄, 시군구면 상세 경계 받기, 지금 보이는 경계만 고르기. 못 하면 알리고 null
@@ -1561,7 +1582,9 @@
     const v = resolve(state.index, state.route), m = model(v), ind = curInd();
     const feats = await exportFeats(m, '지도 자료'); if (!feats) return;
     const where = v.crumbs[v.crumbs.length - 1].label, name = `지도자료_${DG.safeName(ind.label)}_${DG.safeName(where)}.geojson`;
-    const fc = geojsonOf(feats, new Map(m.items.map(i => [i.code, i])), ind, { name: `${where} ${ind.label}`, year: m.year, source: ind.source || (state.index.source && state.index.source.name) || SOURCE_DEFAULT });
+    const region = code => { if (m.kind === 'emd') return { sido: v.sido && v.sido.name, sigungu: [v.sigungu && v.sigungu.name, v.gu && v.gu.name].filter(Boolean).join(' ') };
+      const sg = sgOf(state.index, code); return { sido: v.sido ? v.sido.name : (sidoOf(state.index, String(code).slice(0, 2)) || {}).name, sigungu: sg && sg.name }; };
+    const fc = geojsonOf(feats, new Map(m.items.map(i => [i.code, i])), ind, { name: `${where} ${ind.label}`, year: m.year, source: ind.source || (state.index.source && state.index.source.name) || SOURCE_DEFAULT, region });
     say(`${name} (${Math.round(DG.saveBytes(name, new TextEncoder().encode(JSON.stringify(fc)), 'application/geo+json') / 1024)}KB)를 내려받았습니다.`);
   }
   // 지도 이미지(PNG): 배경 타일(CORS로 캔버스에 못 그림)을 빼고 경계·색·범례·출처·기준연도만 그린다
@@ -1880,7 +1903,7 @@
     const to3d = window.L.control({ position: 'topleft' });
     to3d.onAdd = () => {
       const a = window.L.DomUtil.create('a', 'leaflet-bar map-3d');
-      a.textContent = '건물 4D';
+      a.textContent = '건물 4D(부산)';   // v9: 대구에서 눌러도 부산이 열려 '부산만'을 단추에 밝힌다
       a.title = '지금 보는 곳의 건물을 연도별 입체로 봅니다(부산)';
       // 컨트롤을 붙일 때는 아직 지도 시점이 없어 getCenter가 오류를 낸다. 첫 맞춤(fitBounds) 뒤 moveend부터 좌표를 싣는다
       a.href = 'time4d.html';
