@@ -300,8 +300,13 @@ html:has(body.explore-page) { scroll-padding-top: 140px; }
 
 /* v7 머리글: 로고·메뉴 줄은 모든 화면에서 화면 폭 전체(왼쪽 24px)로 같게. 평가: 로고가 홈 140px, 구역·현장 150px, 동네 찾기 16px로 화면마다 달랐다.
    지도 화면(동네 찾기·4D)이 화면 폭 전체를 쓰므로 그쪽에 맞춘다. 본문은 그대로 가운데 정렬 */
-header.top > .wrap:first-child { max-width: none !important; padding-left: 24px; padding-right: 24px; }   /* 현장 화면 field.css의 560px보다 앞서게 */
-@media (max-width: 720px) { header.top > .wrap:first-child { padding-left: 16px; padding-right: 16px; } }
+/* v8: 머리글은 본문과 같은 격자(1200px, 안쪽 20px)라 로고·메뉴의 왼쪽 선이 제목·본문과 맞는다.
+   v7에서 모든 화면을 화면 폭 전체로 했더니 로고 24px·제목 140px로 어긋났다(대표 지적 '싱크가 안 맞는다'). 지도가 화면 전체인 앱 화면(동네 찾기·4D)만 폭 전체 */
+header.top > .wrap:first-child { max-width: var(--rm-max) !important; padding-left: 20px; padding-right: 20px; }
+body.explore-page header.top > .wrap:first-child, body:has(.t4-app) header.top > .wrap:first-child { max-width: none !important; padding-left: 24px; padding-right: 24px; }
+@media (max-width: 720px) { header.top > .wrap:first-child, body.explore-page header.top > .wrap:first-child, body:has(.t4-app) header.top > .wrap:first-child { padding-left: 16px; padding-right: 16px; } }
+/* 현장 화면(구역 계산·현장 기록)의 제목 띠와 본문도 같은 격자로(제목이 150px, 다른 화면은 140px였다) */
+@media (min-width: 721px) { body.field header.top > .wrap ~ .wrap { max-width: var(--rm-max) !important; padding-left: 20px !important; padding-right: 20px !important; } }
 
 /* v7 지도 카드의 3요건 세 줄(홈 카드와 같은 모양) */
 .sr-req-rows { list-style: none; margin: 10px 0 12px; padding: 0; border-top: 1px solid var(--line); }
@@ -395,3 +400,21 @@ header.top > .wrap:first-child { min-height: 64px !important; }
   .explore-page #mapApp > .map-stage { order: -1; margin-bottom: 12px; }
   .explore-page .workspace-panel .map-canvas { height: clamp(260px, 42dvh, 480px) !important; }   /* 고른 동 결과가 첫 화면에 걸치게(9회차) */
 }
+
+/* v8 접는 주제(서비스 소개·재생 사업): 제목 줄 하나가 단추. 열린 칸은 본문 그대로 */
+details.cp-fold { border-top: 1px solid var(--line); }
+details.cp-fold > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 12px 0; cursor: pointer; list-style: none; }
+details.cp-fold > summary::-webkit-details-marker { display: none; }
+details.cp-fold > summary h2 { margin: 0 !important; font-size: 20px !important; color: var(--ink) !important; }
+details.cp-fold > summary::after { content: "열기"; flex: none; font-size: 14px; font-weight: 600; color: var(--green); }
+details.cp-fold[open] > summary::after { content: "닫기"; }
+details.cp-fold > summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+details.cp-fold[open] { padding-bottom: 24px; }
+@media print { details.cp-fold > summary::after { content: none; } }
+/* 접힌 구획은 띠 배경·위아래 여백을 걷어 목록처럼 붙인다(열면 원래 모양) */
+[data-fold-from] > section:has(details.cp-fold:not([open])) { padding-top: 0 !important; padding-bottom: 0 !important; margin-top: 0 !important; margin-bottom: 0 !important; background: transparent !important; color: var(--ink) !important; border: 0 !important; }
+[data-fold-from] > section:has(details.cp-fold:not([open]))::before { display: none !important; }
+/* 접힌 제목은 나타나기 효과(rv) 대상이 아니다(투명한 채 남아 빈 줄로 보였다), 두 단 격자 구획에서도 한 줄 전체 폭 */
+details.cp-fold > summary .rv, details.cp-fold > summary h2 { opacity: 1 !important; transform: none !important; }
+details.cp-fold { grid-column: 1 / -1; width: 100%; box-sizing: border-box; }
+[data-fold-from] > section:has(details.cp-fold:not([open])) > .wrap { max-width: var(--rm-max) !important; margin-left: auto !important; margin-right: auto !important; }

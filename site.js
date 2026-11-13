@@ -19,11 +19,13 @@
     const ico = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
     const here = location.pathname + location.hash;
     // v7(2026-11-13): 머리 메뉴와 같은 이름·순서(평가: 위는 '동네 찾기·현장 기록', 아래는 '지도·현장'이라 다른 곳인 줄 알았다). 홈은 로고로 간다
+    // v8: 보관함 자리에 동네 순위(가장 궁금해하는 것을 손 닿는 곳에). 보관함은 꼬리글·현장 기록 화면에서 들어간다
     const tabs = [['explore.html#map', '동네 찾기', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html|\/dong\//],
+      ['rank.html', '동네 순위', 'M5 20V11M12 20V5M19 20v-6M3 20h18', /rank\.html$/],
       ['programs.html', '재생 사업', 'M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7', /programs\.html$/],
       ['field/redev.html', '구역 계산', 'M4 8l7-4 9 6-3 10H6zM11 4v16', /\/field\/redev\.html$/],
       ['field/', '현장 기록', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],
-      ['box.html', '보관함', 'M4 5h16v4H4zM5 9v10h14V9M10 13h4', /box\.html$/]];
+    ];
     const current = tabs.findIndex(t => t[3].test(here));
     const nav = document.createElement('nav');
     nav.className = 'tabbar';
@@ -43,7 +45,7 @@
   if (header && !header.querySelector('.rm-nav')) {
     const base = nested ? '../' : '';
     const path = location.pathname;
-    const items = [['explore.html', '동네 찾기', /explore\.html$|\/dong\//], ['programs.html', '재생 사업', /programs\.html$/],
+    const items = [['explore.html', '동네 찾기', /explore\.html$|\/dong\//], ['rank.html', '동네 순위', /rank\.html$/], ['programs.html', '재생 사업', /programs\.html$/],
       ['field/redev.html', '구역 계산', /\/field\/redev\.html$/], ['field/', '현장 기록', /\/field\/(?:index\.html)?$/]];
     const nav = document.createElement('nav');
     nav.className = 'rm-nav'; nav.id = 'rm-nav'; nav.setAttribute('aria-label', '주요 메뉴');

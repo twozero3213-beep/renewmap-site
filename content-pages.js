@@ -36,6 +36,10 @@
     const doc = root.ownerDocument;
     const list = topics(root, doc);
     list.forEach((s, i) => { if (!s.id) s.id = 'topic-' + (i + 1); });
+    // v8: data-fold-from="n"이면 n번째 주제부터 제목만 보이는 접는 칸(대표 지적: 스크롤이 너무 길다 — 소개 13.5화면, 재생 사업 7.6화면).
+    // 본문은 그대로 문서 안에 있고(찾기·앵커 유지), 차례·링크로 들어오면 그 칸을 열고, 인쇄할 때는 모두 연다
+    const from = root.dataset && root.dataset.foldFrom !== undefined ? Number(root.dataset.foldFrom) : -1;
+    if (from >= 0) { fold(list.slice(from), doc); return null; }   // 접는 칸 목록이 곧 차례라 차례를 따로 달지 않는다
     // 표가 곧 차례인 쪽(재생 사업: 비교표가 사업마다 링크)은 차례를 따로 만들지 않는다(v7 6회차: 밑줄 링크 10개가 표를 770px 아래로 밀었다)
     if (list.length < 3 || 'noToc' in root.dataset) return null;
     const nav = doc.createElement('nav'), ol = doc.createElement('ol');
@@ -50,6 +54,32 @@
     root.insertBefore(nav, after);
     return nav;
   }
+  function fold(list, doc) {
+    for (const s of list) {
+      const h = s.querySelector('h2');
+      if (!h) continue;
+      // 구획 안의 격자(.wrap) 안에 접는 칸을 둔다(밖에 두면 접힌 줄이 화면 끝에서 끝까지 퍼졌다)
+      const box = s.querySelector(':scope > .wrap') || s;
+      const d = doc.createElement('details'), sum = doc.createElement('summary');
+      d.className = 'cp-fold';
+      if (s.hasAttribute && s.hasAttribute('data-fold-open')) d.open = true;   // 직접 써 보는 예시가 든 구획(소개의 동네 비교)은 펼친 채로
+      sum.append(h);
+      d.append(sum, ...Array.from(box.childNodes));
+      box.append(d);
+    }
+  }
+  // 주소의 #앵커가 접힌 칸 안(또는 그 칸을 담은 주제)을 가리키면 연다
+  function openFor(doc, hash) {
+    const el = hash && hash.length > 1 ? doc.getElementById(decodeURIComponent(hash.slice(1))) : null;
+    if (!el) return;
+    const det = el.closest('details.cp-fold') || el.querySelector(':scope > details.cp-fold');
+    if (det) det.open = true;
+  }
   if (typeof module !== 'undefined' && module.exports) module.exports = { init, titleOf, textOf };
-  if (typeof document !== 'undefined') document.querySelectorAll('[data-content-book]').forEach(root => init(root));
+  if (typeof document !== 'undefined') {
+    document.querySelectorAll('[data-content-book]').forEach(root => init(root));
+    openFor(document, location.hash);
+    window.addEventListener('hashchange', () => openFor(document, location.hash));
+    window.addEventListener('beforeprint', () => document.querySelectorAll('details.cp-fold').forEach(d => { d.open = true; }));
+  }
 })();

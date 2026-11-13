@@ -40,11 +40,12 @@
 <script src="cellpack.js" defer></script>
 <script src="decline-req.js" defer></script>
 <script src="home-live.js?v=20261113-req" defer></script>
+<script src="home-rank.js" defer></script>
 <link rel="stylesheet" href="rm6.css">
 </head>
 <body class="app-home">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 상담</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 상담</a></nav></div></header>
 
 <main id="main" class="h6">
   <!-- 2026-11-13 v6 홈. 왜: 11-13 페르소나 8명이 공통으로 "첫 화면에 제품 실물이 없고 구호만 있다", "아이콘 카드가 AI가 만든 틀 같다"고 했다.
@@ -82,15 +83,34 @@
   </section>
 
   <!-- 11-13 2차 평가: 첫 화면 아래에서 무엇을 파는지(무료/시범 과업)와, 무료 공공 시스템과 무엇이 다른지가 안 보였다 -->
-  <section class="h6-diff wrap" aria-labelledby="diffTitle">
-    <h2 id="diffTitle">도시재생종합정보체계와 다른 점</h2>
-    <p class="h6-sec-lead">공공 시스템은 행정동 쇠퇴 지표를 보여 줍니다.<br>리뉴맵은 그 숫자를 제출할 수 있는 모양으로 바꾸고, 구역과 현장까지 이어 갑니다.</p>
-    <dl class="h6-diff-list">
-      <div><dt>문서</dt><dd>동마다 출처·기준일·계산식이 붙은 1쪽 근거 문서를 한글·워드·엑셀로 바로 받습니다.</dd></div>
-      <div><dt>구역</dt><dd>행정동이 아니라 신청 구역의 필지로 저층 주거 3분의 2와 20년 넘은 건물을 다시 세고, 경계를 SHP로 냅니다.</dd></div>
-      <div><dt>현장</dt><dd>현장 사진과 위치를 같은 기록에 묶고, 준공 뒤 같은 자리를 다시 재어 실적보고서로 잇습니다.</dd></div>
-    </dl>
+  <section id="rank" class="h6-rank wrap" aria-labelledby="rankTitle">
+    <div class="h6-rank-head">
+      <h2 id="rankTitle">동네 순위</h2>
+      <p>공식 통계로 셈한 점수로 줄을 세웠습니다. 판정이 아니라 비교용입니다. <a href="rank.html">점수 산식과 전체 순위</a></p>
+    </div>
+    <div class="h6-rank-cols">
+      <div class="h6-rank-col"><h3>부산에서 재생이 가장 필요한 동네</h3><ol data-rank="renewal_21"></ol><a class="h6-rank-all" href="rank.html?kind=renewal&amp;sido=21">부산 전체 순위</a></div>
+      <div class="h6-rank-col"><h3>전국에서 재생이 가장 필요한 동네</h3><ol data-rank="renewal_all"></ol><a class="h6-rank-all" href="rank.html?kind=renewal&amp;sido=">전국 전체 순위</a></div>
+      <div class="h6-rank-col"><h3>전국에서 동네 점수가 높은 곳</h3><ol data-rank="total_all"></ol><a class="h6-rank-all" href="rank.html?kind=total&amp;sido=">전국 전체 순위</a></div>
+    </div>
   </section>
+
+  <div class="h6-pair wrap">
+  <section class="h6-diff" aria-labelledby="diffTitle">
+      <h2 id="diffTitle">도시재생종합정보체계와 다른 점</h2>
+      <p class="h6-sec-lead">공공 시스템은 행정동 쇠퇴 지표를 보여 줍니다.<br>리뉴맵은 그 숫자를 제출할 수 있는 모양으로 바꾸고, 구역과 현장까지 이어 갑니다.</p>
+      <dl class="h6-diff-list">
+        <div><dt>문서</dt><dd>동마다 출처·기준일·계산식이 붙은 1쪽 근거 문서를 한글·워드·엑셀로 바로 받습니다.</dd></div>
+        <div><dt>구역</dt><dd>행정동이 아니라 신청 구역의 필지로 저층 주거 3분의 2와 20년 넘은 건물을 다시 세고, 경계를 SHP로 냅니다.</dd></div>
+        <div><dt>현장</dt><dd>현장 사진과 위치를 같은 기록에 묶고, 준공 뒤 같은 자리를 다시 재어 실적보고서로 잇습니다.</dd></div>
+      </dl>
+    </section>
+  <section class="h6-demo" aria-labelledby="demoTitle">
+      <h2 id="demoTitle">56초 시연</h2>
+      <p class="h6-sec-lead">동 카드를 바꿔 보고, 지도에서 요건을 확인하고, 1쪽 문서를 연 뒤 건물 나이를 4D로 돌려 기준선을 넘은 해와 올해를 나란히 봅니다.</p>
+      <video class="h6-video" controls preload="none" playsinline poster="img/v7/demo-poster.jpg" width="1280" height="720"><source src="img/v7/demo.mp4" type="video/mp4"><a href="img/v7/demo.mp4">시연 영상 받기</a></video>
+    </section>
+  </div>
 
   <!-- 리뉴맵만의 강점(11-13 정리): 진단 → 사업 → 구역 → 현장 → 다시 재기가 같은 출처 원장으로 이어진다. 공모 한 번 쓰고 끝나는 도구가 아니다 -->
   <section id="tools" class="h6-flow" aria-labelledby="flowTitle">
@@ -110,13 +130,6 @@
     </div>
   </section>
 
-
-  <section class="h6-demo wrap" aria-labelledby="demoTitle">
-    <h2 id="demoTitle">56초 시연</h2>
-    <p class="h6-sec-lead">동 카드를 바꿔 보고, 지도에서 요건을 확인하고, 1쪽 문서를 연 뒤 건물 나이를 4D로 돌려 기준선을 넘은 해와 올해를 나란히 봅니다.</p>
-    <video class="h6-video" controls preload="none" playsinline poster="img/v7/demo-poster.jpg" width="1280" height="720"><source src="img/v7/demo.mp4" type="video/mp4"><a href="img/v7/demo.mp4">시연 영상 받기</a></video>
-  </section>
-
   <section class="h6-trust wrap" id="trust" aria-labelledby="trustTitle">
     <h2 id="trustTitle">숫자 하나에 붙는 기록</h2>
     <p class="h6-sec-lead">위 카드의 '20년 넘은 건축물' 숫자를 펼친 실제 원장 기록입니다.<br>1쪽 문서와 엑셀로 내보내는 모든 숫자에 같은 기록이 따라갑니다.</p>
@@ -133,7 +146,6 @@
       </ul>
     </div>
   </section>
-
 
   <section class="h6-price wrap" aria-labelledby="priceTitle">
     <h2 id="priceTitle">비용</h2>

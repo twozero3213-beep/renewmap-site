@@ -154,3 +154,33 @@
 /* v7 시연(2026-11-13 다시 찍음: 옛 화면·숫자 불일치로 내렸던 영상을 지금 화면으로) */
 .h6-demo { padding-top: 64px; }
 .h6-video { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); background: var(--ink); }
+
+/* v8 동네 순위 미리보기(첫 화면 바로 아래): 세 목록을 한 줄에. 숫자는 표처럼 오른쪽 맞춤 */
+.h6-rank { padding-top: 40px; padding-bottom: 48px; }
+.h6-rank-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 24px; margin-bottom: 16px; }
+.h6-rank-head h2 { margin: 0; font-size: 28px; }
+.h6-rank-head p { margin: 0; color: var(--dim); font-size: 15px; }
+.h6-rank-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.h6-rank-col { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.h6-rank-col h3 { margin: 0 0 8px; font-size: 16px; }
+.h6-rank-col ol { list-style: none; margin: 0; padding: 0; min-height: 200px; }
+.h6-rank-col li a { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "n b e" "n s e"; column-gap: 10px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.h6-rank-col li:first-child a { border-top: 0; }
+.h6-rank-col li a:hover b { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+.h6-rank-col li a:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+.h6-rank-n { grid-area: n; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+.h6-rank-col b { grid-area: b; font-size: 16px; }
+.h6-rank-sg { grid-area: s; font-size: 13px; color: var(--dim); }
+.h6-rank-col em { grid-area: e; font-style: normal; font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; align-self: center; }
+.h6-rank-all { display: inline-flex; min-height: 40px; align-items: center; margin-top: 6px; font-weight: 700; color: var(--green); }
+.h6-rank-wait { color: var(--dim); font-size: 14px; padding: 8px 0; }
+/* 차이·시연을 두 단으로(같은 높이에 나란히, 홈 길이를 줄인다) */
+.h6-pair { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 40px; align-items: start; padding-top: 24px; padding-bottom: 40px; }
+.h6-pair .h6-diff, .h6-pair .h6-demo { padding: 0; margin: 0; }
+.h6-pair .h6-diff h2, .h6-pair .h6-demo h2 { font-size: 24px; }
+@media (max-width: 960px) {
+  .h6-rank-cols, .h6-pair { grid-template-columns: minmax(0, 1fr); }
+  .h6-rank-col ol { min-height: 0; }
+}
+/* 휴대폰: 목록마다 3곳만(세 목록이 쌓이면 홈이 너무 길다). 전체는 '전체 순위'에서 */
+@media (max-width: 720px) { .h6-rank-col li:nth-child(n+4) { display: none; } .h6-rank-head h2 { font-size: 24px; } }

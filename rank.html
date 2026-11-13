@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
 <script src="frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>동네 점수·순위 | 리뉴맵</title>
+<title>동네 순위 | 리뉴맵</title>
 <meta name="description" content="전국 행정동의 동네 점수·치안 점수·재생 필요 점수와 순위. 점수마다 입력 지표·무게·출처를 공개합니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/rank.html">
 <meta name="theme-color" content="#006f5b">
@@ -32,12 +32,11 @@
 </head>
 <body class="rank-page">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 상담</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 상담</a></nav></div></header>
 <main class="wrap page" id="main">
 <nav class="breadcrumb" aria-label="현재 위치"><ol><li><a href="./">홈</a></li><li aria-current="page">동네 점수·순위</li></ol></nav>
-<h1>동네 점수·순위</h1>
-<p class="label-scenario">참고용 계산 · 판정·공모 근거·납품 문서에 쓰지 않음 · 공개 계산식</p>
-<p class="rank-intro">점수와 지역을 고르고, 페이지를 넘겨 행정동을 찾아보세요.</p>
+<h1>동네 순위</h1>
+<p class="rank-intro">점수 종류와 지역을 고르면 행정동이 높은 점수부터 줄을 섭니다.<br>공개 계산식으로 셈한 비교용 점수이고, 판정이나 공모 근거로 쓰지 않습니다.</p>
 <form class="rank-form" aria-label="동네 순위 조건">
   <label>점수 종류 <select id="rankKind">
     <option value="total">동네 점수</option><option value="safety">치안 점수</option><option value="living">생활 편의</option>

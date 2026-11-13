@@ -18,7 +18,7 @@ def geometry(page):
       const ids=[...document.querySelectorAll('[id]')].map(e=>e.id);
       const tables=[...document.querySelectorAll('table')].filter(visible);
       return {width:innerWidth, scroll:document.documentElement.scrollWidth,
-        height:document.documentElement.scrollHeight, longPage:!!document.querySelector('.cp-toc'),
+        height:document.documentElement.scrollHeight, longPage:!!document.querySelector('.cp-toc'), fold:!!document.querySelector('details.cp-fold'),
         duplicateIds:ids.filter((id,i)=>ids.indexOf(id)!==i),
         crampedNav:[...document.querySelectorAll('header .site-nav a')].filter(visible).filter(e=>e.getBoundingClientRect().height<44).map(e=>e.textContent),
         exposedHidden:[...document.querySelectorAll('[hidden]')].filter(visible).map(e=>e.id||e.className),
@@ -82,7 +82,7 @@ def main():
                 assert row['scroll']<=width+1, row
                 assert not any(row[k] for k in ['duplicateIds','crampedNav','exposedHidden','gridTables','misaligned']), row
                 # 2026-11-13 v6: 한 장씩 넘기기를 없애고 본문을 펼친 쪽(맨 위 차례 .cp-toc)은 길어도 된다
-                assert row['height'] < (60000 if row.get('longPage') else 5000 if topic is not None else 10000), row
+                assert row['height'] < (60000 if row.get('longPage') else 8000 if row.get('fold') else 5000 if topic is not None else 10000), row   # v8: 접는 주제 쪽은 연 칸 하나 + 제목 줄들
                 assert not errors, errors
                 assert not missing, missing
 
