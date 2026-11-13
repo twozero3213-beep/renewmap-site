@@ -45,6 +45,7 @@
   <label>시·도 <select id="rankSido"><option value="">전국</option></select></label>
   <label>시·군·구 <select id="rankSg" disabled><option value="">시·군·구 전체</option></select></label>
 </form>
+<form id="rankFind" class="rank-find" role="search" autocomplete="off"><label for="rankQ">우리 동네 몇 위?</label><div class="rank-find-row"><input id="rankQ" list="rankNames" placeholder="동 이름 (예: 반여1동)" enterkeyhint="search"><button class="btn" type="submit">찾기</button></div><datalist id="rankNames"></datalist><p id="rankFound" class="rank-found" role="status" aria-live="polite"></p></form>
 <p id="rankMsg" aria-live="polite">불러오는 중입니다.</p>
 <p class="rank-table-help" id="rankScrollHelp">표를 좌우로 밀면 나머지 지표를 볼 수 있습니다.</p>
 <div class="table-wrap" tabindex="0" role="region" aria-label="동네 점수 순위 표" aria-describedby="rankScrollHelp rankTableNote" id="rankOut"></div>

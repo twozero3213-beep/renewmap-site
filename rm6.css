@@ -418,3 +418,12 @@ details.cp-fold[open] { padding-bottom: 24px; }
 details.cp-fold > summary .rv, details.cp-fold > summary h2 { opacity: 1 !important; transform: none !important; }
 details.cp-fold { grid-column: 1 / -1; width: 100%; box-sizing: border-box; }
 [data-fold-from] > section:has(details.cp-fold:not([open])) > .wrap { max-width: var(--rm-max) !important; margin-left: auto !important; margin-right: auto !important; }
+
+/* v8 순위: '우리 동네 몇 위?' 찾기와 찾은 줄 강조 */
+.rank-find { margin: 16px 0 8px; padding: 14px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; max-width: 560px; }
+.rank-find label { display: block; font-weight: 700; margin-bottom: 6px; }
+.rank-find-row { display: flex; gap: 8px; }
+.rank-find-row input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; font: inherit; }
+.rank-found { margin: 8px 0 0; font-weight: 700; color: var(--green-press); }
+.rank-found:empty { display: none; }
+.rank-table tr.is-found td { background: var(--soft); font-weight: 700; }

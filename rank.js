@@ -38,21 +38,30 @@
     return r ? `${r[0].toLocaleString('ko-KR')}~${r[1].toLocaleString('ko-KR')}` : '–';
   }
 
-  function tableHTML(list, kind, names, limit, range, scope, offset = 0) {
+  function tableHTML(list, kind, names, limit, range, scope, offset = 0, found = null) {
     const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th><th scope="col">${esc(KINDS[kind].label)}</th><th scope="col">무게를 바꾼<br><small>순위 범위</small></th><th scope="col">생활 편의</th><th scope="col">인구 활력</th><th scope="col">주거 노후도<br><small>낮을수록 낡음</small></th><th scope="col">치안</th><th scope="col">범죄 발생률<br><small>1,000명당·시군구</small></th></tr></thead>`;
     const body = list.slice(0, limit).map((r, i) => {
       const s = r.d.sub, sp = r.d.safety_parts || {};
-      return `<tr><td class="num">${offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
+      return `<tr${r.code7 === found ? ' class="is-found" id="rankFoundRow"' : ''}><td class="num">${offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
         + `<td class="num">${fmt(s.living)}</td><td class="num">${fmt(s.vitality)}</td><td class="num">${fmt(s.housing)}</td><td class="num">${fmt(s.safety)}</td>`
         + `<td class="num">${sp.crime_rate_per_1k === null || sp.crime_rate_per_1k === undefined ? '없음' : esc(sp.crime_rate_per_1k)}</td></tr>`;
     }).join('');
     return `<table class="grid rank-table"><caption>선택한 범위의 행정동 순위</caption>${head}<tbody>${body}</tbody></table>`;
   }
 
+  // '우리 동네 몇 위?'(2026-11-13 v8): 줄 세운 목록에서 이름으로 찾는다. 띄어쓰기 무시, 이름이 꼭 같은 동을 먼저, 없으면 이름에 든 첫 동. 없으면 -1
+  function findRank(list, names, q) {
+    const norm = s => String(s || '').replace(/\s+/g, '');
+    const k = norm(q);
+    if (!k) return -1;
+    const exact = list.findIndex(r => norm(r.d.name) === k || norm(names(r)) === k);
+    return exact >= 0 ? exact : list.findIndex(r => norm(names(r)).includes(k));
+  }
+
   function init() {
     const $ = id => document.getElementById(id);
     const kindSel = $('rankKind'), sidoSel = $('rankSido'), sgSel = $('rankSg'), out = $('rankOut'), msg = $('rankMsg'), sens = $('rankSens');
-    let scores = null, idx = null, range, pager;   // range: undefined=받는 중, null=없음
+    let scores = null, idx = null, range, pager, found = null;   // range: undefined=받는 중, null=없음. found: 찾은 동 코드
     const sgName = code5 => (idx.sigungu.find(s => s.code5 === code5) || {}).name || code5;
     const names = r => `${sgName(r.d.code5)} ${r.d.name}`;
     function draw() {
@@ -60,7 +69,7 @@
       const list = rows(scores, kindSel.value, scope);
       const page = pager.slice(list), offset = page.length ? list.indexOf(page[0]) : 0;
       msg.textContent = page.length ? `점수가 있는 ${list.length.toLocaleString('ko-KR')}개 동 중 ${(offset + 1).toLocaleString('ko-KR')}–${(offset + page.length).toLocaleString('ko-KR')}위를 보입니다.` : '선택한 범위에 점수가 있는 동이 없습니다.';
-      out.innerHTML = tableHTML(page, kindSel.value, names, page.length, range, scope, offset);
+      out.innerHTML = tableHTML(page, kindSel.value, names, page.length, range, scope, offset, found);
       const sm = range && range.sensitivity && range.sensitivity.summary && range.sensitivity.summary[kindSel.value];
       sens.textContent = sm ? `${KINDS[kindSel.value].label} 전국 순위는 무게만 바꿔도 범위 폭이 중앙값 ${sm.median_width_nat.toLocaleString('ko-KR')}위입니다. 기준 상위 10곳 중 무게를 바꿔도 95% 이상 상위 10 안에 남는 곳은 ${sm.top10_stay}곳입니다.` : kindSel.value === 'housing' ? '주거 노후도는 지표가 하나라 바꿀 무게가 없습니다.' : '';
     }
@@ -84,7 +93,17 @@
         fillSg();
         if (q.get('sg')) sgSel.value = q.get('sg');
         pager = window.RenewListPages.create(out, '동네 순위', draw, 1, 20);
-        const reset = () => { pager.reset(); draw(); };
+        const findForm = $('rankFind'), foundMsg = $('rankFound');   // 찾기 칸이 없는 화면(시험용 가짜 화면 포함)에서도 표는 그린다
+        const reset = () => { pager.reset(); found = null; if (foundMsg) foundMsg.textContent = ''; draw(); };
+        if (findForm) $('rankNames').innerHTML = Object.values(s.dongs).map(d => `<option value="${esc(d.name)}">`).filter((v, n, a) => a.indexOf(v) === n).join('');
+        if (findForm) findForm.addEventListener('submit', e => {
+          e.preventDefault();
+          const list = rows(scores, kindSel.value, sgSel.value || sidoSel.value || 'all'), q = $('rankQ').value, at = findRank(list, names, q);
+          if (at < 0) { found = null; foundMsg.textContent = `지금 고른 범위에서 '${q}'을(를) 찾지 못했습니다. 시·도를 '전국'으로 바꿔 보세요.`; draw(); return; }
+          found = list[at].code7; pager.goTo(Math.floor(at / 20) + 1); draw();
+          foundMsg.textContent = `${names(list[at])}: ${list.length.toLocaleString('ko-KR')}개 동 중 ${(at + 1).toLocaleString('ko-KR')}위 (${KINDS[kindSel.value].label} ${fmt(list[at].score)})`;
+          const tr = document.getElementById('rankFoundRow'); if (tr) tr.scrollIntoView({ block: 'center' });
+        });
         kindSel.onchange = reset; sgSel.onchange = reset;
         sidoSel.onchange = () => { fillSg(); reset(); };
         draw();
@@ -96,5 +115,5 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
     else init();
   }
-  return { KINDS, rows, tableHTML, rangeText };
+  return { KINDS, rows, tableHTML, rangeText, findRank };
 });

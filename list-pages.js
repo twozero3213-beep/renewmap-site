@@ -23,6 +23,7 @@
     select.addEventListener("change", () => move(Number(select.value)));
     return {
       reset() { page = 1; },
+      goTo(value) { page = value; },   // 바깥에서 쪽을 옮길 때(순위의 '우리 동네 몇 위' 찾기)
       slice(rows) {
         const range = windowOf(rows.length, page, size); page = range.page;
         select.textContent = "";

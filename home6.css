@@ -183,4 +183,11 @@
   .h6-rank-col ol { min-height: 0; }
 }
 /* 휴대폰: 목록마다 3곳만(세 목록이 쌓이면 홈이 너무 길다). 전체는 '전체 순위'에서 */
-@media (max-width: 720px) { .h6-rank-col li:nth-child(n+4) { display: none; } .h6-rank-head h2 { font-size: 24px; } }
+/* 휴대폰: 세 목록을 옆으로 넘겨 보는 카드로(세로로 쌓으면 1,150px). 다음 카드가 살짝 보여 넘길 수 있다는 걸 알린다 */
+@media (max-width: 720px) {
+  .h6-rank-head h2 { font-size: 24px; }
+  .h6-rank-cols { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 0 16px 8px; scrollbar-width: thin; }
+  .h6-rank-col { flex: 0 0 86%; scroll-snap-align: start; }
+  /* 하는 일: 휴대폰에서는 단계 글만(큰 화면 그림·산출물 줄은 뺀다, 흐름은 시연 영상이 보여 준다) */
+  .h6-flow-shot, .h6-steps .h6-out { display: none; }
+}
