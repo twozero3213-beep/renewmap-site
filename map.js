@@ -839,9 +839,20 @@
         : ind.standard ? `기준선 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · 기준 ${ind.standard.status}` : ''}`
           : ind.composite ? '자료 없는 항목·승인 대기 기준은 세지 않음(하한)' : ind.note || (ind.ref ? '공식 기준 없음 · 참고 구간' : ind.categorical ? '행정 지정 상태 · 좋고 나쁨 축 아님' : '공식 기준 없음 · 값 있는 곳만 한 색');
   }
+  // R5 10: 사람 수(명)인 지표는 인구 대비 비율로 읽히기 쉽다 → 범례 제목에 밝힌다
+  const countNote = (ind, title) => (ind.unit === '명' && !ind.noCountNote ? `${title} (명, 인구 대비 비율 아님)` : title);
+  // R5 10: 휴대폰·태블릿에서 전체 범례가 지도 아래 970px라 색 뜻을 모른 채 지도를 본다 → 같은 범례 자료(legendItems)로 한 줄 요약. 구간 견본 양 끝 이름 + 자료 없음
+  function legendLineHTML(ind, mode, avail) {
+    const off = avail === false || ind.pending, items = legendItems(ind, off ? 'now' : mode), nul = items[items.length - 1], cols = items.slice(0, -1);
+    const sw = it => `<i class="${it.hatch ? 'is-hatch' : ''}"${it.hatch ? '' : ` data-bg="${esc(it.color)}"`} aria-hidden="true"></i>`;
+    const nulText = off ? (ind.held ? '보류' : '수집 중') : '자료 없음';
+    const span = off || !cols.length ? '' : cols.length === 1 ? `<span>${sw(cols[0])}${esc(cols[0].label)}</span>`
+      : `<span>${esc(cols[0].label)} ${cols.map(sw).join('')} ${esc(cols[cols.length - 1].label)}</span>`;
+    return `<p class="map-legend-line"><b>색 · ${esc(countNote(ind, ind.label))}</b>${span}<span>${sw(nul)}${esc(nulText)}</span></p>`;
+  }
   function legendHTML(ind, mode, source, year, avail) {
     const s = scaleFor(ind, mode), off = avail === false || ind.pending, stdLine = stdLineOf(ind, off);
-    return `<div class="map-legend"><p class="map-legend-title">${esc(off ? ind.label : s.title)}</p><ul aria-label="지도 색 구간">${legendItems(ind, off ? 'now' : mode).filter(l => !off || l.hatch).map((l, i) =>
+    return `<div class="map-legend"><p class="map-legend-title">${esc(countNote(ind, off ? ind.label : s.title))}</p><ul aria-label="지도 색 구간">${legendItems(ind, off ? 'now' : mode).filter(l => !off || l.hatch).map((l, i) =>
       `<li data-i="${i}"><i class="${l.hatch ? 'is-hatch' : ''}" data-bg="${esc(l.color)}"></i>${esc(off ? (ind.held ? '보류' : '수집 중') : l.label)}</li>`).join('')}</ul>` +
       `<p class="map-legend-std${off || isPending(ind.standard) || !ind.standard ? ' is-flag' : ''}">${esc(stdLine)}</p>` +
       (ind.src === 'forecast' ? `<p class="map-legend-note">${esc(FORE_FIXED)}</p>` : ind.group === 'safe' ? `<p class="map-legend-note">${esc(SAFE_FIXED)}</p>` : ind.group === 'estate' ? `<p class="map-legend-note">${esc(ind.note || ESTATE_NOTE)}<br>${esc(ESTATE_PROV)}.</p>` : '') + // 수집 중에도 고정 문구는 상시
@@ -1306,8 +1317,8 @@
   const fold = { tools: false, list: false, more: false, listUser: null };   // 지도 아래 접힌 칸(받기·목록)의 펼침 상태. 다시 그려도 지킨다
 
   app.innerHTML = `<div class="map-top" data-top></div><div class="map-stage" data-stage><div class="map-canvas is-wait" data-map-slot>전국 자료를 불러오는 중입니다.</div>` +
-    `<section class="map-panel" data-panel id="dongCard" hidden aria-label="선택한 지역의 세부항목 척도표"></section></div><div class="map-dongs" data-dongs></div><div class="map-pick" data-pick></div><div class="map-bottom" data-bottom></div>`;
-  const $ = s => app.querySelector(s), top = $('[data-top]'), stage = $('[data-stage]'), panel = $('[data-panel]'), pick = $('[data-pick]'), bottom = $('[data-bottom]'), dongBox = $('[data-dongs]');
+    `<section class="map-panel" data-panel id="dongCard" hidden aria-label="선택한 지역의 세부항목 척도표"></section></div><div class="map-legend-line-box" data-legend-line></div><div class="map-dongs" data-dongs></div><div class="map-pick" data-pick></div><div class="map-bottom" data-bottom></div>`;
+  const $ = s => app.querySelector(s), top = $('[data-top]'), stage = $('[data-stage]'), panel = $('[data-panel]'), pick = $('[data-pick]'), bottom = $('[data-bottom]'), dongBox = $('[data-dongs]'), legendLine = $('[data-legend-line]');
   const heroLive = document.getElementById('heroLive');
   // R4 1: 키보드로 지도 동 모양 18개를 모두 지나야 카드에 닿았다(검색 → 카드 Tab 47번). 지도 앞에 건너뛰기 링크를 둔다(.skip 모양: 초점을 받을 때만 보임).
   //   넓은 화면은 지도가 DOM 맨 뒤라 조작 줄(top) 맨 앞에, 좁은 화면은 지도(stage) 맨 앞에 둔다(render가 옮긴다). 고른 동 카드는 동 단계에서만 있어 그때만 보인다
@@ -1395,7 +1406,7 @@
   }
   function panelHTML(v, m) {
     const ind = curInd(), mode = effMode(ind), scale = scaleFor(ind, mode), here = v.crumbs[v.crumbs.length - 1].label;
-    if (m.kind === 'wait') return `<div class="map-panel-wait">읍·면·동 자료를 불러오는 중입니다.</div>`;
+    if (m.kind === 'wait') return `<div class="map-panel-wait${v.dong ? ' has-dong' : ''}">읍·면·동 자료를 불러오는 중입니다.</div>`;   // has-dong: 동 카드 높이를 미리 잡아 둔다(R5 2, rm6.css)
     if (m.kind === 'noemd' || m.nodata) return emptyHTML(`${here} · 읍·면·동 자료 준비 중`, [m.kind === 'noemd' ? '이 지역의 읍·면·동 자료가 아직 없습니다.' : '경계는 있지만 지표 시계열이 아직 없습니다.', '준비되기 전에는 숫자를 보여 드리지 않습니다.']);
     const it = m.items.find(x => x.code === v.dong), dist = ind.level === 'sg' ? `<p class="map-note">${esc(ind.label)}은(는) 시·군·구 단위 자료라 읍·면·동 분포가 없습니다.</p>`
       : `<h4 class="map-h4">${esc(here)} 읍·면·동 분포 · ${esc(ind.label)} <small>순위 아님${m.year ? ` · ${esc(m.year)}년` : ''}</small></h4>${strip(m.items, it ? it.code : null, ind, scale)}`;
@@ -1405,6 +1416,7 @@
     // '자세한 근거' 접기 하나에 둔다(휴대폰 카드 1,334px → 요약만 약 500px). 넓은 화면도 같은 구조다. 접힘 상태는 다시 그려도 지킨다(fold.more)
     const req = reqLineHTML(rows, m.json.dongs.find(d => codeOf(d) === it.code)); // 2026-11-13: 동 이름 바로 아래에 신청요건(첫 약속 D23의 답을 맨 먼저)
     return `<div class="map-panel-head"><h3 class="map-h3" tabindex="-1" data-code="${esc(it.code)}">${esc(it.name)} <small>${esc(it.kind || '행정동')}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` + req +
+      '<p class="map-copy"><button type="button" class="btn ghost" data-copy-map>이 지도 링크 복사</button><span class="map-copy-msg" role="status" aria-live="polite" data-copy-map-msg></span></p>' +
       `<details class="map-more rm-disclosure" data-fold="more"${fold.more ? ' open' : ''}><summary>자세한 근거</summary>` +
       `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>${reorgNote(v)}` +
       (req.includes('data-biz-zero') ? `<p class="map-note">${esc(BIZ_BOUNDARY)}</p>` : '') +
@@ -1486,7 +1498,7 @@
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261114-d4'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261114-d7'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
@@ -1611,6 +1623,18 @@
   }
   // 지도 내보내기(GeoJSON·그림) 공통: 알림 줄, 시군구면 상세 경계 받기, 지금 보이는 경계만 고르기. 못 하면 알리고 null
   // (v9: 두 함수에 같은 코드가 한 벌씩 있었다)
+  // R5 3: 지금 지도(동·지표 포함) 주소 복사. 클립보드가 막히면 주소를 글로 보여 주고 선택해 둔다(site.js 인용 복사와 같은 방식)
+  function copyMapLink() {
+    const msg = panel.querySelector('[data-copy-map-msg]'), url = location.href;
+    if (!msg) return;
+    const select = () => {
+      msg.textContent = '복사하지 못해 주소를 선택해 두었습니다. Ctrl+C로 복사해 주세요. ';
+      const u = document.createElement('span'); u.textContent = url; u.className = 'map-copy-url'; msg.append(u);
+      const r = document.createRange(); r.selectNodeContents(u); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(() => { msg.textContent = '복사했습니다.'; }, select);
+    else select();
+  }
   const exportSay = t => { const msg = app.querySelector('[data-png-msg]'); if (msg) msg.textContent = t; };
   async function exportFeats(m, what) {
     if (m.kind === 'sg' && !state.sgGeoDetailed) {
@@ -1796,14 +1820,23 @@
     const n = narrow.matches;
     if (arranged === n || top.parentNode !== app) return;
     arranged = n;
-    if (n) app.append(stage, dongBox, panel, pick, top, bottom);
-    else { stage.append(panel); app.append(top, stage, dongBox, pick, bottom); }
+    if (n) app.append(stage, legendLine, dongBox, panel, pick, top, bottom);   // R5 10: 범례 한 줄은 지도 바로 아래(전체 범례는 pick 안 그대로)
+    else { stage.append(panel); app.append(top, stage, legendLine, dongBox, pick, bottom); }
+  }
+  // R5 3: 칩으로 지표를 바꾸면 주소(?ind=)도 따라간다 → 지금 지도를 메신저·서류에 그대로 건다. 기본 지표면 지우고, report·panel 같은 다른 값과 #경로는 그대로 둔다
+  function syncIndUrl() {
+    try {
+      const u = new URL(location.href);
+      if (state.ind === INDICATORS[0].code) u.searchParams.delete('ind'); else u.searchParams.set('ind', state.ind);
+      if (u.search !== location.search) history.replaceState(null, '', u.pathname + u.search + u.hash);
+    } catch (e) { /* 주소를 못 바꿔도 지도는 그대로 쓴다 */ }
   }
   function render() {
     if (state.index === undefined) return;
     if (wantInd) { const code = wantedInd(wantInd, inds()); if (code) { state.ind = code; state.year = null; wantInd = null; } else if (state.living !== undefined) wantInd = null; }   // 생활 지표 도착 전에는 기다리고, 도착했는데 없으면 버린다
+    if (!wantInd) syncIndUrl();
     const v = resolve(state.index, state.route);
-    if (v.level === 'empty') { top.innerHTML = pick.innerHTML = bottom.innerHTML = ''; panel.hidden = true; stage.innerHTML = emptyHTML('전국 데이터 준비 중', ['출처 기록에서 내보낸 숫자만 이 자리에 보여 드립니다.', '준비되면 전국에서 읍·면·동까지 내려가 볼 수 있습니다.'], true); return; }
+    if (v.level === 'empty') { top.innerHTML = pick.innerHTML = bottom.innerHTML = legendLine.innerHTML = ''; panel.hidden = true; stage.innerHTML = emptyHTML('전국 데이터 준비 중', ['출처 기록에서 내보낸 숫자만 이 자리에 보여 드립니다.', '준비되면 전국에서 읍·면·동까지 내려가 볼 수 있습니다.'], true); return; }
     const ind = curInd(), mode = effMode(ind), m = model(v), src = state.index.source && state.index.source.name, ok = avail(ind);
     const it = m.kind === 'emd' && v.dong ? m.items.find(x => x.code === v.dong) : null;
     if (EXTRA_FILES[ind.src]) wantExtra(ind.src);   // 그 칩을 골랐다
@@ -1848,7 +1881,8 @@
     //   지도 바로 아래로 옮겨 쓴다(새 목록을 만들지 않는다). 동을 고르기 전에는 펼쳐 두고, 고른 뒤에는 접어 카드가 지도 바로 아래에 오게 한다. 사용자가 누른 뒤에는 그 선택(fold.listUser)을 따른다
     const listOpen = narrow.matches ? (fold.listUser ?? !it) : fold.list;
     const dongList = `<details class="map-dong-list${narrow.matches ? ' map-more' : ''}" data-fold="list"${listOpen ? ' open' : ''}><summary>읍·면·동 목록</summary>${chips}</details>`;
-    dongBox.innerHTML = narrow.matches && m.kind === 'emd' ? dongList : '';
+    // R5 2: 자료가 오기 전(wait)에도 목록 자리를 비워 두지 않으면 도착 때 지도 아래 전부가 117px 밀린다(390 딥링크 CLS 0.16)
+    dongBox.innerHTML = narrow.matches ? (m.kind === 'emd' ? dongList : m.kind === 'wait' ? '<div class="map-dongs-wait" aria-hidden="true"></div>' : '') : '';
     // 2026-11-13 우지예: '지도 받기·더 보기' 안 단추들이 무엇을 하는지 설명이 없어 이해가 어려웠다 → 단추 위에 한 줄씩 설명, 제목도 하는 일 그대로
     const water = `<p class="map-tools-note">강·바다 수질 측정 위치를 지도 위에 겹쳐 봅니다.</p><p class="map-png"><button type="button" class="btn ghost" data-water aria-pressed="${!!state.water}">수변 수질 측정지점 ${state.water ? '끄기' : '보기'}</button></p>` +
       (state.water && state.waterData !== undefined ? waterNoteHTML(state.waterData) : '') + (state.water ? waterAutoHTML(state.waterAuto) : '');
@@ -1856,7 +1890,8 @@
     bottom.innerHTML = (narrow.matches ? '' : legend) + `<details class="map-tools" data-fold="tools"${fold.tools ? ' open' : ''}><summary>지도 저장·수질 겹쳐 보기</summary>` + (DG ? `<p class="map-tools-note">지금 보이는 지도를 그림 파일(PNG)이나 GIS 프로그램용 파일(GeoJSON)로 저장합니다.</p><p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><button type="button" class="btn ghost" data-map-geojson>지도 자료(GeoJSON)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + water + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, 휠이나 + − 버튼으로 확대합니다.'}<br>지도에서 구·군을 누르면 그 안의 읍·면·동이 보이고(시·도 → 구·군 → 읍·면·동), 동을 누르면 그 동의 요약이 열립니다.<br>지도가 불편하면 '읍·면·동 목록'에서 이름으로 고를 수 있습니다.</p></details>` +
       `</details>` +
       `<div class="map-selects">${sidoSel}${sgSel}${guSel}</div>${narrow.matches ? '' : dongList}<p class="map-live" aria-live="polite">${esc(liveText(v, it, ind, mode))}</p>`;
-    styleData(bottom); styleData(pick);   // 범례 색 견본(data-bg)은 좁은 화면에서 pick 안에 있다
+    legendLine.innerHTML = narrow.matches ? legendLineHTML(ind, mode, ok) : '';
+    styleData(bottom); styleData(pick); styleData(legendLine);   // 범례 색 견본(data-bg)은 좁은 화면에서 pick 안에 있다
     const inEmd = v.level === 'emd';
     panel.hidden = !inEmd;
     if (inEmd) {
@@ -2318,6 +2353,7 @@
     }
     else if (b.hasAttribute('data-close')) go({ ...state.route, dong: null }, `.map-list [data-dong]`);
     else if (b.hasAttribute('data-play')) { play(); app.querySelector('[data-play]')?.focus({ preventScroll: true }); }
+    else if (b.hasAttribute('data-copy-map')) copyMapLink();
     else if (b.hasAttribute('data-map-png')) mapPng();
     else if (b.hasAttribute('data-map-geojson')) mapGeojson();
     else if (b.hasAttribute('data-water')) {

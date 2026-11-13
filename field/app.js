@@ -175,8 +175,12 @@
       sessionStorage.setItem("renewmap-data-checked", "1");
     } catch (e) { return; }
     try {
-      // no-cache: 서비스 워커 캐시를 건너뛰고 서버에 바뀌었는지만 묻는다(안 바뀌었으면 304)
-      const [cur, latest] = await Promise.all([L.get("index.json"), fetch(DATA + "national/index.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null))]);
+      // 기기에 받아 둔 index.json이 없으면(처음 열기) 지금 받는 것이 곧 최신이라 비교할 것이 없다 → 받기만 한다(뒤의 위치 찾기가 같은 약속을 다시 쓴다)
+      const url = DATA + "national/index.json";
+      const hit = window.caches ? await caches.match(url).catch(() => null) : null;
+      if (!hit) { await L.get("index.json"); return; }
+      // 있으면 서버에 한 번만 묻는다. no-cache: 서비스 워커 캐시를 건너뛰고 바뀌었는지만 묻는다(안 바뀌었으면 304)
+      const [cur, latest] = await Promise.all([hit.json(), fetch(url, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null))]);
       $("newData").hidden = !E.isNewData(cur, latest);
     } catch (e) { /* 오프라인·일시 오류면 다음 세션에 다시 본다 */ }
   }

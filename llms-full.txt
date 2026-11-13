@@ -26,7 +26,7 @@
 
 ## 동네별 페이지
 
-- 행정동 쪽 3,610곳(쇠퇴진단지표 2025판 기준) 중 값이 이어진 곳은 3,568곳이고, 지도·검색에서 고를 수 있는 곳은 2025년 행정동 경계가 있는 3,559곳입니다.
+- 행정동 쪽 3,610곳(쇠퇴진단지표 2025판 기준) 중 값이 이어진 곳은 3,562곳이고, 지도·검색에서 고를 수 있는 곳은 2025년 행정동 경계가 있는 3,559곳입니다.
 - 행정동마다 정적 페이지가 있습니다:`https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html` (예: [서울특별시 종로구 사직동 쇠퇴 3요건 현황](https://twozero3213-beep.github.io/renewmap-site/dong/11010530.html)). 목록은 [행정동 목록](https://twozero3213-beep.github.io/renewmap-site/dong/index.html)과 [사이트맵](https://twozero3213-beep.github.io/renewmap-site/sitemap-dong.xml).
 
 ## 리뉴맵이 하지 않는 일
@@ -34,6 +34,63 @@
 - 감정평가·투자 권유
 - 매물 중개
 - 성범죄자 공개정보 활용(법으로 금지)
+
+## 주소로 여는 법 (화면 상태를 주소에 담아 링크로 겁니다)
+
+- 지도 지표: `https://twozero3213-beep.github.io/renewmap-site/explore.html?ind={지표코드}` (예: `?ind=DECLINE_AGING_20Y_PCT`). 모르는 코드는 무시하고 기본 지표를 엽니다. 코드표는 아래 '지도 지표 코드'.
+- 지도 위치: `https://twozero3213-beep.github.io/renewmap-site/explore.html#map/{시도 2자리}/{시·군·구 5자리}/{행정동 코드}` (예: `#map/21/21090/21090700`). 일반구가 있는 시는 시·군·구 5자리 뒤에 일반구 5자리가 하나 더 들어갑니다. 지표와 위치는 한 주소에 함께 쓸 수 있습니다(`?ind=…#map/…`).
+- 문서 용도: `https://twozero3213-beep.github.io/renewmap-site/explore.html?report={report|brief|onepage|programs}` = report(동네 보고서), brief(사업 근거서), onepage(1쪽 요약), programs(재생 사업).
+- 동네 순위: `https://twozero3213-beep.github.io/renewmap-site/rank.html?kind={total|safety|living|vitality|housing|renewal}&sido={시도 2자리, 비우면 전국}&sg={시·군·구 5자리}&ord=asc&page={쪽 번호}` (ord=asc는 낮은 점수부터 보기). kind: total(동네 점수), safety(치안 점수), living(생활 편의), vitality(인구 활력), housing(주거 노후도(점수가 낮을수록 낡음)), renewal(재생 필요 점수).
+- 건물 4D: `https://twozero3213-beep.github.io/renewmap-site/time4d.html?bjd={법정동 10자리}` (예: `?bjd=2635010300`). 구역 계산 현장 화면: `https://twozero3213-beep.github.io/renewmap-site/field/redev.html?bjd={법정동 10자리}`.
+- 값 하나: `https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html#{셀 번호}`. 셀 번호는 동 페이지 주요 지표 표의 행 id = `{행정동코드}:{지표코드}:{연도}` (예: `dong/21090700.html#21090700:DECLINE_AGING_20Y_PCT:2025`). 열면 그 행이 강조됩니다.
+
+### 지도 지표 코드 (?ind= 값, 이름, 단위)
+
+- DECLINE_AGING_20Y_PCT: 노후건축물비율 (%)
+- DECLINE_MET_COUNT: 확정된 요건 수 (개)
+- DECLINE_POP_DROP30Y_PCT: 인구 감소율(30년) (%)
+- DECLINE_POP_CHANGE_PCT: 인구변화율 (%)
+- DECLINE_BIZ_DROP10Y_PCT: 사업체 감소율 (%)
+- SUM_STD_CROSSED: 기준 해당 항목 수 (개)
+- POP_AGED65_PCT: 65세 이상 인구 비율 (%)
+- POP_YOUTH_PCT: 청년층(20~34세) 인구 비율 (%)
+- HH_ONE_PCT: 1인 세대 비율 (%)
+- HOSP_CLINIC_COUNT: 병원·의원 수 (개)
+- HOSP_PER10K: 인구 1만 명당 병원·의원 수 (개/1만 명)
+- LIB_NEAREST_M: 가장 가까운 공공도서관 직선거리 (m)
+- PARK_AREA_PER_CAPITA: 1인당 도시공원 면적 (㎡/인)
+- PARK_COUNT: 도시공원 수 (개)
+- ER_NEAREST_M: 가장 가까운 응급의료센터 직선거리 (m)
+- PHARM_COUNT: 약국 수 (개)
+- PHARM_NIGHT_COUNT: 평일 21시 넘어 영업 등록 약국 수 (개)
+- SENIOR_HALL_COUNT: 경로당 수 (개)
+- ELEM_SCHOOL_NEAREST_M: 가장 가까운 초등학교 직선거리 (m)
+- SUBWAY_NEAREST_M: 가장 가까운 도시철도역 직선거리 (m)
+- STORE_COUNT: 상가 업소 수 (개)
+- STORE_RETAIL_COUNT: 소매 업소 수 (개)
+- STORE_FOOD_COUNT: 음식 업소 수 (개)
+- HEALTH_CENTER_NEAREST_M: 가장 가까운 보건소(지소·진료소 포함) 직선거리 (m)
+- CHILDCARE_NEAREST_M: 가장 가까운 어린이집 직선거리 (m)
+- SPORTS_CENTER_NEAREST_M: 가장 가까운 실내 생활체육시설 직선거리 (m)
+- KINDER_NEAREST_M: 가장 가까운 유치원 직선거리 (m)
+- BUS_STOP_DENSITY: 버스정류장 밀도 (개/㎢)
+- CCTV_PER_KM2: CCTV 밀도 (대/㎢)
+- STREETLIGHT_PER_KM2: 보안등 밀도 (개/㎢)
+- POLICE_NEAREST_M: 가장 가까운 경찰관서 직선거리 (m)
+- PERMIT_COUNT_3Y: 건축 허가 건수(최근 3년) (건)
+- BLD_ERASED_COUNT_3Y: 건축물대장 말소 건수(최근 3년) (건)
+- OLD_PUBLIC_FACILITY_COUNT: 준공 30년 이상 공공시설물 수 (곳)
+- REDEV_PROJECTS: 정비사업 수(위치 확인분) (건)
+- EMERGENCY_BELL_PER_KM2: 안전비상벨 밀도 (개/㎢)
+- ELDERLY_PED_ACCIDENT_ZONES: 보행노인 교통사고 다발지역 수 (곳)
+- ELDERLY_LIVING_ALONE: 독거노인 수 (명)
+- STD_SHORTFALL_COUNT: 공식 기준 해당 항목 수(하한) (개)
+- RENT_COUNT_3M: 전월세 계약 건수(최근 3개월) (건)
+- RENT_SH_COUNT_3M: 단독·다가구 전월세 계약 건수(최근 3개월) (건)
+- JEONSE_M2_MED: 전세 보증금 ㎡당 중위값(최근 3개월) (만원/㎡)
+- WOLSE_MED: 월세 중위값(최근 3개월) (만원)
+
+그 밖에 순이동·인구감소지역 지정·전망·아파트 거래 지표도 같은 `?ind=`로 열리지만 코드는 해당 자료 파일(migration·designations·forecast/index.json·realestate)에 있어 이 표에는 싣지 않았습니다.
 
 ## 도시재생 쇠퇴 3요건
 
@@ -116,6 +173,30 @@
 - 행정안전부 인구감소지역 및 인구감소관심지역 지정 고시(제2026-61호) — 행정안전부, 기준 2026-10-20, 이용조건 이용허락범위 제한 없음: https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000016&nttId=130293
 - 국토교통부 전국 도시정비사업 통합 데이터(공공데이터포털 15160169) — 국토교통부, 기준 2026-05-18, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15160169/fileData.do
 - 경찰청_범죄 발생 지역별 통계(2025, 공공데이터포털 3074462) — 경찰청, 기준 2025-12-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/3074462/fileData.do
+
+## 공개 데이터 파일 (data/national/*.json, 하위 폴더 제외)
+
+공개 파일이며 필드는 예고 없이 바뀔 수 있습니다. 인용은 snapshot_hash로 고정하세요. 같은 목록: https://twozero3213-beep.github.io/renewmap-site/data-files.json
+
+- biz_unmatched.json (576바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
+- crossing_soon.json (3,903바이트): 최상위 basis, threshold, base_year, rows; generated_at 없음; snapshot_hash 없음
+- designations.json (206,136바이트): 최상위 generated_at, snapshot_hash, source, counts, note, items; generated_at 2026-11-13T17:44:06+09:00; snapshot_hash 43ddb0b165c5984cc52f29bee6c6177de09c7a611088bc6726748872ee7bdc92
+- dong_index.json (225,320바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
+- dong_successors.json (2,821바이트): 최상위 note, dongs; generated_at 없음; snapshot_hash 없음
+- index.json (1,625,531바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
+- index_core.json (1,066,049바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
+- index_series.json (559,403바이트): 최상위 snapshot_hash, generated_at, sigungu, unmatched; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
+- migration.json (717,178바이트): 최상위 generated_at, snapshot_hash, source, sigungu, unmatched; generated_at 2026-11-07T12:06:41+09:00; snapshot_hash ec91c53f996aba9898815bec8fb3c23908f49285e9af2c0fc27f06685e58b8d6
+- pop_name_joined.json (35,143바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
+- pop_unmatched.json (904,800바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
+- rank_top.json (3,941바이트): 최상위 generated_from, scores_generated_at, rule_version, note, lists; generated_at 없음; snapshot_hash 없음
+- realestate.json (1,962,064바이트): 최상위 generated_at, snapshot_hash, source, note, sigungu, unmatched; generated_at 2026-11-07T12:18:14+09:00; snapshot_hash e828b2ecdcbbf3950b90754e63265b0f88a695fb384dde6cb64f966aeda0dd1a
+- redev_national.json (1,511,634바이트): 최상위 generated_at, snapshot_hash, source, indicators, sigungu, unmatched; generated_at 2026-11-09T02:04:00+09:00; snapshot_hash 5cac8f1b8b661f1ad67a1f874a3d561b180aa8620dab269898131b24dacf7943
+- ref_lines.json (9,929바이트): 최상위 kind, names, indicators; generated_at 없음; snapshot_hash 없음
+- scores.json (2,516,930바이트): 최상위 generated_at, rule_version, decision, method, sources, crime_unmatched, dongs; generated_at 2026-11-13T18:46:39+09:00; snapshot_hash 없음
+- scores_range.json (1,052,685바이트): 최상위 generated_at, rule_version, sensitivity, dongs; generated_at 2026-11-13T18:46:39+09:00; snapshot_hash 없음
+- water_auto.json (21,944바이트): 최상위 source, latest, cur, prev, note, sites; generated_at 없음; snapshot_hash 없음
+- water_quality.json (204,974바이트): 최상위 source, year, note, points; generated_at 없음; snapshot_hash 없음
 
 ## 계산 기준 판본 (승인 대기 판본으로 낸 결과에는 '승인 전 참고'를 찍는다)
 

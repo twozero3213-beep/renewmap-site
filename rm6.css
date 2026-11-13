@@ -233,6 +233,9 @@ main table td a, main table th a { display: inline-block; padding: 12px 0; margi
 /* R3 6: 문단 속이 아니라 한 줄을 통째로 차지하는 링크·요약(고른 동 카드의 경로·보고서·출처 링크, 근거 읽는 법·재생 사업 링크)은 누름 44px.
    실측: 동 고른 뒤 탐색 40px 미만 단독 누름 1440 41개·768 69개·390 28개, 근거 4개, 재생 사업 7개(문단 속 링크는 센 것에서 뺐다) */
 .map-crumbs a, .map-report-link a, .map-hub a, .map-hub-more, .map-panel dd > a, .method-grid article > a, .pg-src a { display: inline-flex; align-items: center; min-height: 44px; }
+/* R5 3: 고른 동 카드의 '이 지도 링크 복사'(map.js copyMapLink). 안내는 단추 옆, 좁으면 아래로. 막힌 환경에서는 주소 글이 길어 어디서든 줄바꿈 */
+.map-copy { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 8px 0; }
+.map-copy-msg { font-size: 15px; color: var(--dim); min-width: 0; overflow-wrap: anywhere; }
 .map-hint > summary, .map-hint > a { display: flex; align-items: center; min-height: 44px; }
 .list-pages button, .list-pages select { min-width: 44px; min-height: 44px; }   /* 쪽 넘김(R2 7) */
 .rule-id { display: block; font-size: var(--t-cap); font-weight: 400; color: var(--dim); }
@@ -345,6 +348,17 @@ html.js .explore-page .evidence-workspace:not([data-workspace-ready]) .workspace
   .explore-page #mapApp .map-pick:empty { display: none; }
   .explore-page #mapApp .map-dongs { margin-top: 12px; order: -1; }   /* 카드(order -1)와 같은 값이면 DOM 순서(동 목록이 앞)가 이긴다 */   /* R4 2: 지도 바로 아래 '읍·면·동 목록'(44px 단추) */
   .explore-page #mapApp .map-dongs:empty { display: none; }
+  /* R5 2: 늦게 차는 자리의 높이를 미리 잡는다. 동 딥링크에서 목록(접힘 105px)과 동 카드(546px)가 도착하며 첫 화면의 지표 단추를 640px 밀었다(CLS 0.16) */
+  /* R5 10: 지도 바로 아래 범례 한 줄(색 이름 · 구간 견본 · 자료 없음). 견본 모양은 map.css .map-legend i와 같게 */
+  .explore-page #mapApp .map-legend-line-box { order: -2; }   /* 아래 쪽 묶음의 display: contents가 지도 칸을 order -3으로 올려 둔다 → 그 바로 뒤 */
+  .explore-page #mapApp .map-legend-line-box:empty { display: none; }
+  .map-legend-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 12px 0 0; font-size: 15px; color: var(--dim); }
+  .map-legend-line b { color: var(--ink); font-weight: 700; }
+  .map-legend-line i { display: inline-block; width: 16px; height: 16px; border-radius: 8px; margin-right: 3px; vertical-align: -3px; border: 1px solid var(--shade-25); }
+  .map-legend-line i:not(.is-hatch) { opacity: .85; }
+  .map-legend-line i.is-hatch { background-image: repeating-linear-gradient(45deg, var(--hatch-ink) 0 2px, var(--hatch-bg) 2px 6px); border: 1px dashed var(--off-ink); }
+  .explore-page #mapApp .map-dongs-wait { min-height: 105px; }
+  .explore-page #mapApp .map-panel-wait.has-dong { min-height: 500px; }
   .explore-page #mapApp .map-dongs .map-list { padding-bottom: 8px; }
   .explore-page #mapApp .map-legend { margin: 12px 0 0; }
   .explore-page #mapApp > .map-top { margin-top: 12px; }
@@ -432,6 +446,14 @@ body.redev-v4 #f.card { max-width: 820px; }
   table.kv td.num { font-size: 22px; font-weight: 800; }
   table.kv td a { overflow-wrap: anywhere; font-size: var(--t-cap); }
 }
+/* R5 6: 휴대폰 카드에서 기준일 칸이 비면(caption에 적은 기준일과 같을 때) styles.css의 ::before '기준일 ' 라벨만 남아 값이 빠진 것처럼 읽혔다 → 빈 칸은 칸째 숨긴다. 표 모양일 때는 칸을 빼면 열이 어긋나므로 카드 폭에서만 */
+@media (max-width: 720px) { .page table.kv td.ref:empty { display: none; } .page table.kv.no-ref td:nth-child(3)::before { content: none; } }
+/* R5 7: 값 하나 주소(#셀번호)로 열면 그 행을 연한 바탕으로 짚는다. 색에만 기대지 않게 왼쪽 선도 함께, 머리글 가림 없이 내려 앉는다 */
+tr[data-cell]:target { scroll-margin-top: 80px; }
+tr[data-cell]:target > th, tr[data-cell]:target > td { background: var(--soft); }
+tr[data-cell]:target > th { box-shadow: inset 4px 0 0 var(--green); }
+/* R5 8: 쪽 주소·생성일 한 줄은 인쇄본에만 */
+.print-only { display: none; }
 /* 행정동 목록: 시·도별 접기 */
 .dong-sido { border-top: 1px solid var(--line); padding: 4px 0; }
 .dong-sido > summary { cursor: pointer; font-size: 20px; font-weight: 700; min-height: 52px; display: flex; align-items: center; gap: 10px; }
@@ -488,4 +510,8 @@ body.redev-v4 #f.card { max-width: 820px; }
   tr, li, .answer { break-inside: avoid; }
   thead { display: table-header-group; }
   details.cp-fold > summary::after { content: none; }
+  .print-only { display: block; margin: 0 0 8pt; font-size: 11pt; color: #000; overflow-wrap: anywhere; }
+  /* R5 8: 종이에서는 링크를 누를 수 없다 → 출처 링크 뒤에 주소를 적는다(긴 주소는 아무 데서나 줄바꿈). 쪽 주소 줄이 있는 동 페이지에만 */
+  .print-only ~ * a[href^="http"] { overflow-wrap: anywhere; word-break: break-all; }
+  .print-only ~ * a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 10pt; }
 }

@@ -126,7 +126,9 @@
     if (!cite) return;
     const say = document.querySelector('[data-copy-status]'), tell = t => { if (say) say.textContent = t; };
     const select = () => { const r = document.createRange(); r.selectNodeContents(cite); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); tell('복사하지 못해 글을 선택해 두었습니다. Ctrl+C로 복사해 주세요.'); };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(cite.textContent.trim()).then(() => tell('복사했습니다.'), select);
+    // R5 7: 복사한 글만 따로 떨어져도 어느 쪽 값인지 찾게 끝에 쪽 주소(canonical, 없으면 현재 주소에서 # 뒤를 뗀 것)를 붙인다
+    const canon = document.querySelector('link[rel="canonical"]'), page = canon && canon.href ? canon.href : location.href.split('#')[0];
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(cite.textContent.trim() + ' ' + page).then(() => tell('복사했습니다.'), select);
     else select();
   });
 })();

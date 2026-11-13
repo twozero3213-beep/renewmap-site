@@ -26,7 +26,7 @@
 
 ## 동네별 페이지
 
-- 행정동 쪽 3,610곳(쇠퇴진단지표 2025판 기준) 중 값이 이어진 곳은 3,568곳이고, 지도·검색에서 고를 수 있는 곳은 2025년 행정동 경계가 있는 3,559곳입니다.
+- 행정동 쪽 3,610곳(쇠퇴진단지표 2025판 기준) 중 값이 이어진 곳은 3,562곳이고, 지도·검색에서 고를 수 있는 곳은 2025년 행정동 경계가 있는 3,559곳입니다.
 - 행정동마다 정적 페이지가 있습니다:`https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html` (예: [서울특별시 종로구 사직동 쇠퇴 3요건 현황](https://twozero3213-beep.github.io/renewmap-site/dong/11010530.html)). 목록은 [행정동 목록](https://twozero3213-beep.github.io/renewmap-site/dong/index.html)과 [사이트맵](https://twozero3213-beep.github.io/renewmap-site/sitemap-dong.xml).
 
 ## 리뉴맵이 하지 않는 일
@@ -34,6 +34,15 @@
 - 감정평가·투자 권유
 - 매물 중개
 - 성범죄자 공개정보 활용(법으로 금지)
+
+## 주소로 여는 법 (화면 상태를 주소에 담아 링크로 겁니다)
+
+- 지도 지표: `https://twozero3213-beep.github.io/renewmap-site/explore.html?ind={지표코드}` (예: `?ind=DECLINE_AGING_20Y_PCT`). 모르는 코드는 무시하고 기본 지표를 엽니다. 코드표는 [llms-full.txt](https://twozero3213-beep.github.io/renewmap-site/llms-full.txt).
+- 지도 위치: `https://twozero3213-beep.github.io/renewmap-site/explore.html#map/{시도 2자리}/{시·군·구 5자리}/{행정동 코드}` (예: `#map/21/21090/21090700`). 일반구가 있는 시는 시·군·구 5자리 뒤에 일반구 5자리가 하나 더 들어갑니다. 지표와 위치는 한 주소에 함께 쓸 수 있습니다(`?ind=…#map/…`).
+- 문서 용도: `https://twozero3213-beep.github.io/renewmap-site/explore.html?report={report|brief|onepage|programs}` = report(동네 보고서), brief(사업 근거서), onepage(1쪽 요약), programs(재생 사업).
+- 동네 순위: `https://twozero3213-beep.github.io/renewmap-site/rank.html?kind={total|safety|living|vitality|housing|renewal}&sido={시도 2자리, 비우면 전국}&sg={시·군·구 5자리}&ord=asc&page={쪽 번호}` (ord=asc는 낮은 점수부터 보기). kind: total(동네 점수), safety(치안 점수), living(생활 편의), vitality(인구 활력), housing(주거 노후도(점수가 낮을수록 낡음)), renewal(재생 필요 점수).
+- 건물 4D: `https://twozero3213-beep.github.io/renewmap-site/time4d.html?bjd={법정동 10자리}` (예: `?bjd=2635010300`). 구역 계산 현장 화면: `https://twozero3213-beep.github.io/renewmap-site/field/redev.html?bjd={법정동 10자리}`.
+- 값 하나: `https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html#{셀 번호}`. 셀 번호는 동 페이지 주요 지표 표의 행 id = `{행정동코드}:{지표코드}:{연도}` (예: `dong/21090700.html#21090700:DECLINE_AGING_20Y_PCT:2025`). 열면 그 행이 강조됩니다.
 
 ## 선택
 

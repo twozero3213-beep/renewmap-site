@@ -1,0 +1,278 @@
+{
+ "note": "공개 파일이며 필드는 예고 없이 바뀔 수 있습니다. 인용은 snapshot_hash로 고정하세요.",
+ "base": "https://twozero3213-beep.github.io/renewmap-site/data/national/",
+ "files": [
+  {
+   "name": "biz_unmatched.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/biz_unmatched.json",
+   "bytes": 576,
+   "type": "array",
+   "top_level_keys": [],
+   "generated_at": null,
+   "snapshot_hash": null
+  },
+  {
+   "name": "crossing_soon.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/crossing_soon.json",
+   "bytes": 3903,
+   "type": "object",
+   "top_level_keys": [
+    "basis",
+    "threshold",
+    "base_year",
+    "rows"
+   ],
+   "generated_at": null,
+   "snapshot_hash": null
+  },
+  {
+   "name": "designations.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/designations.json",
+   "bytes": 206136,
+   "type": "object",
+   "top_level_keys": [
+    "generated_at",
+    "snapshot_hash",
+    "source",
+    "counts",
+    "note",
+    "items"
+   ],
+   "generated_at": "2026-11-13T17:44:06+09:00",
+   "snapshot_hash": "43ddb0b165c5984cc52f29bee6c6177de09c7a611088bc6726748872ee7bdc92"
+  },
+  {
+   "name": "dong_index.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/dong_index.json",
+   "bytes": 225320,
+   "type": "array",
+   "top_level_keys": [],
+   "generated_at": null,
+   "snapshot_hash": null
+  },
+  {
+   "name": "dong_successors.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/dong_successors.json",
+   "bytes": 2821,
+   "type": "object",
+   "top_level_keys": [
+    "note",
+    "dongs"
+   ],
+   "generated_at": null,
+   "snapshot_hash": null
+  },
+  {
+   "name": "index.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/index.json",
+   "bytes": 1625531,
+   "type": "object",
+   "top_level_keys": [
+    "generated_at",
+    "snapshot_hash",
+    "source",
+    "boundary_source",
+    "pop_source",
+    "biz_source",
+    "emd_count",
+    "national_series",
+    "over_std",
+    "sido",
+    "sigungu",
+    "unmatched"
+   ],
+   "generated_at": "2026-11-13T20:14:33+09:00",
+   "snapshot_hash": "1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2"
+  },
+  {
+   "name": "index_core.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/index_core.json",
+   "bytes": 1066049,
+   "type": "object",
+   "top_level_keys": [
+    "generated_at",
+    "snapshot_hash",
+    "source",
+    "boundary_source",
+    "pop_source",
+    "biz_source",
+    "emd_count",
+    "national_series",
+    "over_std",
+    "sido",
+    "sigungu",
+    "series_file"
+   ],
+   "generated_at": "2026-11-13T20:14:33+09:00",
+   "snapshot_hash": "1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2"
+  },
+  {
+   "name": "index_series.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/index_series.json",
+   "bytes": 559403,
+   "type": "object",
+   "top_level_keys": [
+    "snapshot_hash",
+    "generated_at",
+    "sigungu",
+    "unmatched"
+   ],
+   "generated_at": "2026-11-13T20:14:33+09:00",
+   "snapshot_hash": "1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2"
+  },
+  {
+   "name": "migration.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/migration.json",
+   "bytes": 717178,
+   "type": "object",
+   "top_level_keys": [
+    "generated_at",
+    "snapshot_hash",
+    "source",
+    "sigungu",
+    "unmatched"
+   ],
+   "generated_at": "2026-11-07T12:06:41+09:00",
+   "snapshot_hash": "ec91c53f996aba9898815bec8fb3c23908f49285e9af2c0fc27f06685e58b8d6"
+  },
+  {
+   "name": "pop_name_joined.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/pop_name_joined.json",
+   "bytes": 35143,
+   "type": "array",
+   "top_level_keys": [],
+   "generated_at": null,
+   "snapshot_hash": null
+  },
+  {
+   "name": "pop_unmatched.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/pop_unmatched.json",
+   "bytes": 904800,
+   "type": "array",
+   "top_level_keys": [],
+   "generated_at": null,
+   "snapshot_hash": null
+  },
+  {
+   "name": "rank_top.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/rank_top.json",
+   "bytes": 3941,
+   "type": "object",
+   "top_level_keys": [
+    "generated_from",
+    "scores_generated_at",
+    "rule_version",
+    "note",
+    "lists"
+   ],
+   "generated_at": null,
+   "snapshot_hash": null
+  },
+  {
+   "name": "realestate.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/realestate.json",
+   "bytes": 1962064,
+   "type": "object",
+   "top_level_keys": [
+    "generated_at",
+    "snapshot_hash",
+    "source",
+    "note",
+    "sigungu",
+    "unmatched"
+   ],
+   "generated_at": "2026-11-07T12:18:14+09:00",
+   "snapshot_hash": "e828b2ecdcbbf3950b90754e63265b0f88a695fb384dde6cb64f966aeda0dd1a"
+  },
+  {
+   "name": "redev_national.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/redev_national.json",
+   "bytes": 1511634,
+   "type": "object",
+   "top_level_keys": [
+    "generated_at",
+    "snapshot_hash",
+    "source",
+    "indicators",
+    "sigungu",
+    "unmatched"
+   ],
+   "generated_at": "2026-11-09T02:04:00+09:00",
+   "snapshot_hash": "5cac8f1b8b661f1ad67a1f874a3d561b180aa8620dab269898131b24dacf7943"
+  },
+  {
+   "name": "ref_lines.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/ref_lines.json",
+   "bytes": 9929,
+   "type": "object",
+   "top_level_keys": [
+    "kind",
+    "names",
+    "indicators"
+   ],
+   "generated_at": null,
+   "snapshot_hash": null
+  },
+  {
+   "name": "scores.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/scores.json",
+   "bytes": 2516930,
+   "type": "object",
+   "top_level_keys": [
+    "generated_at",
+    "rule_version",
+    "decision",
+    "method",
+    "sources",
+    "crime_unmatched",
+    "dongs"
+   ],
+   "generated_at": "2026-11-13T18:46:39+09:00",
+   "snapshot_hash": null
+  },
+  {
+   "name": "scores_range.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/scores_range.json",
+   "bytes": 1052685,
+   "type": "object",
+   "top_level_keys": [
+    "generated_at",
+    "rule_version",
+    "sensitivity",
+    "dongs"
+   ],
+   "generated_at": "2026-11-13T18:46:39+09:00",
+   "snapshot_hash": null
+  },
+  {
+   "name": "water_auto.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/water_auto.json",
+   "bytes": 21944,
+   "type": "object",
+   "top_level_keys": [
+    "source",
+    "latest",
+    "cur",
+    "prev",
+    "note",
+    "sites"
+   ],
+   "generated_at": null,
+   "snapshot_hash": null
+  },
+  {
+   "name": "water_quality.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/water_quality.json",
+   "bytes": 204974,
+   "type": "object",
+   "top_level_keys": [
+    "source",
+    "year",
+    "note",
+    "points"
+   ],
+   "generated_at": null,
+   "snapshot_hash": null
+  }
+ ]
+}

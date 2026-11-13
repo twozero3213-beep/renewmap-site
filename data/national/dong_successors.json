@@ -1,0 +1,91 @@
+{
+ "note": "2025년 이후 없어진 행정동. 이어지는 동은 행안부 공고 문장만 옮겼다(이름으로 짐작하지 않음). 판정 아님",
+ "dongs": {
+  "11060810": {
+   "name": "용신동",
+   "abolished_on": "2025-07-01",
+   "successors": [
+    {
+     "code": "11060930",
+     "name": "신설동"
+    },
+    {
+     "code": "11060920",
+     "name": "용두동"
+    }
+   ],
+   "source": "행정안전부 행정기관(행정동) 및 관할구역(법정동) 변경내역 알림",
+   "source_url": "https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000052&nttId=118483"
+  },
+  "31041630": {
+   "name": "박달1동",
+   "abolished_on": "2025-07-01",
+   "successors": [
+    {
+     "code": "31041660",
+     "name": "박달동"
+    },
+    {
+     "code": "31041670",
+     "name": "호현동"
+    }
+   ],
+   "source": "행정안전부 행정기관(행정동) 및 관할구역(법정동) 변경내역 알림",
+   "source_url": "https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000052&nttId=118483"
+  },
+  "31041640": {
+   "name": "박달2동",
+   "abolished_on": "2025-07-01",
+   "successors": [
+    {
+     "code": "31041660",
+     "name": "박달동"
+    },
+    {
+     "code": "31041670",
+     "name": "호현동"
+    }
+   ],
+   "source": "행정안전부 행정기관(행정동) 및 관할구역(법정동) 변경내역 알림",
+   "source_url": "https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000052&nttId=118483"
+  },
+  "31191530": {
+   "name": "유림동",
+   "abolished_on": "2025-07-14",
+   "successors": [
+    {
+     "code": "31191570",
+     "name": "유림1동"
+    },
+    {
+     "code": "31191580",
+     "name": "유림2동"
+    }
+   ],
+   "source": "행정안전부 행정기관(행정동) 및 관할구역(법정동) 변경내역 알림",
+   "source_url": "https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000052&nttId=118733"
+  },
+  "23080880": {
+   "name": "아라동",
+   "abolished_on": "2025-10-20",
+   "successors": [
+    {
+     "code": "23080881",
+     "name": "아라1동"
+    },
+    {
+     "code": "23080882",
+     "name": "아라2동"
+    }
+   ],
+   "source": "행정안전부 행정기관(행정동) 및 관할구역(법정동) 변경내역 알림",
+   "source_url": "https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000052&nttId=121390"
+  },
+  "37020510": {
+   "name": "중부동",
+   "abolished_on": null,
+   "successors": [],
+   "note": "경주시 중부동: 2025년 쇠퇴진단지표에 이 코드의 값이 없다. 행정동 변경 공고를 찾지 못해 이어지는 동을 적지 않는다"
+  }
+ }
+}
