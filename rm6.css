@@ -497,6 +497,11 @@ tr[data-cell]:target > th { box-shadow: inset 4px 0 0 var(--green); }
 .h6-flow-shot img, .h6-steps img { border-radius: 12px; }
 
 /* ── 6. 인쇄: 메뉴·바닥글을 빼고 큰 글씨로(동 페이지 회의용 한 장). 화면 규칙과 화면 CSS의 지정값을 모두 이겨야 해 !important ── */
+/* R6: 없어진 동·같은 이름 쪽 안내의 링크는 홀로 누르는 대상이라 44px(문단 속 링크와 다르다) */
+.rm-note.link-note a { display: inline-block; min-height: 44px; line-height: 44px; padding: 0 4px; }
+/* R6: 표 칸 안 보조 글은 캡션 크기 하나(.85em이 17px 칸에서 14.45px가 됐다) */
+main.page td small, main.page th small { font-size: var(--t-cap); }
+
 @media print {
   header.top, .tabbar, footer, .rm-nav, .rm-menu-btn, .print-row, .skip, nav[aria-label="위치"] { display: none !important; }   /* 시트가 열린 .rm-nav.is-open·화면 CSS의 display보다 앞서야 한다 */
   body { background: #fff; font-size: 14pt !important; line-height: 1.55; padding: 0; }   /* body.field(0,1,1)의 17px보다 앞서야 한다 */
