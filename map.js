@@ -790,7 +790,10 @@
     const yr = isNum(year) ? year : (latestYear(seriesOf(dong, 'DECLINE_BIZ_DROP10Y_PCT')) ?? null);
     const li = DeclineReq.evaluate(val).map(q => {
       const text = q.via && /DECL3IN5$/.test(q.via.code) ? '3년 연속 감소' : q.rate === null ? '–' : `${fmt2(q.rate)}%`;   // 홈·문서와 같은 소수 둘째 자리
-      const note = q.key === 'biz' && bizLast && isNum(yr) && bizLast[0] < yr ? `<small>사업체 수 ${bizLast[0]}년 자료</small>` : '';
+      // 인구 감소율은 셀 계산식에 적힌 30년 최대 인구·그 해를 보인다(화면 시계열은 2000년부터라 1990년대 최댓값을 다시 셀 수 없었다, v9)
+      const peak = q.key === 'pop' && q.rate !== null ? /30년 최대 인구 ([\d,]+)명\((\d{4})년\)/.exec(((rowOf('DECLINE_POP_DROP30Y_PCT') || {}).cell || {}).formula_text || '') : null;
+      const note = q.key === 'biz' && bizLast && isNum(yr) && bizLast[0] < yr ? `<small>사업체 수 ${bizLast[0]}년 자료</small>`
+        : peak ? `<small>${peak[2]}년 최대 ${peak[1]}명 대비</small>` : '';
       return `<li class="is-${q.status}"><span>${esc(q.name)}${note}</span><b>${esc(text)}</b><em>${REQ_ST[q.status]}</em></li>`;
     }).join('');
     return `<ul class="sr-req-rows">${li}</ul>`;
