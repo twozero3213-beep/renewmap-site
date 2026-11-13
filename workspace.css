@@ -4,9 +4,9 @@
 .workspace-tabs button { min-height: 48px; min-width: 0; padding: 8px 16px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
 .workspace-tabs button[aria-selected="true"] { color: white; background: var(--green); }
 .workspace-tabs button:hover { background: var(--soft2, #e7f1ec); }
-.workspace-tabs button[aria-selected="true"]:hover { background: var(--green-hover, #005a4a); }
+.workspace-tabs button[aria-selected="true"]:hover { background: var(--green-press); }
 .workspace-tabs button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
-.workspace-context { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; margin: 0 0 16px; color: var(--dim); font-size: 14px; }
+.workspace-context { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; margin: 0 0 16px; color: var(--dim); font-size: 15px; }
 .workspace-context a { color: var(--green); }
 .explore-page .evidence-workspace .workspace-panels { display: block; }
 .explore-page .workspace-panel { min-width: 0; margin: 0 auto; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--card); overflow: visible; scroll-margin-top: calc(var(--site-header-h, 64px) + 76px); }
@@ -41,15 +41,15 @@
 .workspace-method p { margin: 12px 0; color: var(--dim); }
 .export-tools { margin: 0 0 12px; }
 .export-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
-.export-state { margin: 0; font-size: 14px; color: var(--dim); }
+.export-state { margin: 0; font-size: 15px; color: var(--dim); }
 .export-state.is-error { color: var(--worse); }
 .report-pages { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 12px; align-items: end; margin: 16px 0; padding: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; scroll-margin-top: calc(var(--site-header-h, 64px) + 76px); }
 .report-pages[hidden] { display: none; }
-.report-pages label { display: grid; gap: 4px; min-width: 0; font-size: 14px; font-weight: 600; }
+.report-pages label { display: grid; gap: 4px; min-width: 0; font-size: 15px; font-weight: 600; }
 .report-pages button, .report-pages select { min-width: 0; min-height: 48px; border: 1px solid var(--line-strong, #7a9089); border-radius: 8px; color: var(--ink); background: var(--card); padding: 8px 12px; font: inherit; }
 .report-pages button { cursor: pointer; }
 .report-pages button:disabled { color: var(--dim); background: var(--bg); cursor: not-allowed; }
-.report-pages [data-report-position] { align-self: center; padding-top: 20px; white-space: nowrap; font-size: 14px; font-variant-numeric: tabular-nums; }
+.report-pages [data-report-position] { align-self: center; padding-top: 20px; white-space: nowrap; font-size: 15px; font-variant-numeric: tabular-nums; }
 .workspace-report-hidden { display: none; }
 .workspace-panel .rp-g, .workspace-panel .rp-src { margin-top: 12px; }
 .workspace-panel .rp-src .table-wrap { overflow-x: auto; }
@@ -76,7 +76,7 @@
   .report-pages label { grid-column: 1 / -1; grid-row: 1; }
   .report-pages [data-report-position] { text-align: center; padding: 0; }
   .report-pages select { width: 100%; }
-  .workspace-context { font-size: 14px; }
+  .workspace-context { font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .explore-page .workspace-panel { opacity: 1; transform: none; animation: none !important; transition: none !important; }

@@ -1,6 +1,5 @@
 /* 동네 노후도 대시보드. 색은 styles.css 토큰(V23)을 쓴다. */
-:root { --y20: #006f5b; --y30: #2e7d5e; --bCOUNT: #153c39; --bAREA: #006f5b; --bHH: #5d8a1c; }
-.dash-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--dim); margin: 0 0 20px; }
+.dash-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 15px; color: var(--dim); margin: 0 0 20px; }
 .dash-meta b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .dash-meta .mono { font-family: var(--font-mono); }
 .dash-meta .note { flex-basis: 100%; }
@@ -11,9 +10,9 @@
 .dash-chip:hover { border-color: var(--green); }
 .dash-chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-green); }
 .dash-chip.is-planned { color: var(--off-ink); background: var(--mute-bg); border-style: dashed; }
-.dash-chip.is-planned small { font-size: 12px; margin-left: 4px; }
+.dash-chip.is-planned small { font-size: 13px; margin-left: 4px; }
 .dash-chip.is-planned[aria-pressed="true"] { background: var(--off-ink); color: var(--on-green); border-style: solid; }
-.dash-dongs .dash-chip { font-size: 14px; padding: 6px 14px; }
+.dash-dongs .dash-chip { font-size: 15px; padding: 6px 14px; }
 .dash-dongs .dash-chip[aria-pressed="true"] { background: var(--green); border-color: var(--green); }
 #dashboard button:focus-visible { outline: 3px solid var(--focus-ink); outline-offset: 2px; box-shadow: 0 0 0 5px var(--card); } /* 문채원 P1: 밝은 배경 ink 링 + 흰 안쪽 링 */
 
@@ -23,11 +22,11 @@
 .dash-panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 10px; }
 .dash-panel h3 { margin: 0; font-size: 20px; }
 .dash-panel h3 small { white-space: nowrap; font-size: 13px; font-weight: 400; color: var(--dim); font-variant-numeric: tabular-nums; }
-.dash-cap { font-size: 14px; color: var(--dim); margin: 0 0 12px; }
+.dash-cap { font-size: 15px; color: var(--dim); margin: 0 0 12px; }
 
 /* 토스식 세그먼트 탭 */
-.dash-seg { display: inline-flex; background: var(--canvas); border-radius: 10px; padding: 3px; }
-.dash-seg button { font: inherit; font-size: 14px; font-weight: 700; border: 0; background: transparent; color: var(--dim); border-radius: 8px; padding: 6px 14px; cursor: pointer; transition: background .2s, color .2s; }
+.dash-seg { display: inline-flex; background: var(--canvas); border-radius: 8px; padding: 3px; }
+.dash-seg button { font: inherit; font-size: 15px; font-weight: 700; border: 0; background: transparent; color: var(--dim); border-radius: 8px; padding: 6px 14px; cursor: pointer; transition: background .2s, color .2s; }
 .dash-seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px var(--shade-18); }
 
 /* 큰 숫자 카드 */
@@ -35,22 +34,22 @@
 .dash-big { font: inherit; text-align: left; color: var(--ink); background: var(--bg); border: 1px solid transparent; border-radius: var(--radius-card); padding: 14px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; min-width: 0; transition: transform .2s, border-color .2s, background .2s; }
 .dash-big:hover { border-color: var(--green); }
 .dash-big[aria-expanded="true"] { background: var(--soft); border-color: var(--green); }
-.dash-big .k { font-size: 14px; font-weight: 600; color: var(--dim); }
+.dash-big .k { font-size: 15px; font-weight: 600; color: var(--dim); }
 .dash-big .n { display: flex; align-items: baseline; gap: 2px; }
 .dash-big .v { font-size: clamp(26px, 6.4vw, 40px); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .dash-big .v.is-text { font-size: 20px; color: var(--dim); }
 .dash-big .u { font-size: 16px; font-weight: 700; }
 .dash-big .tag { align-self: flex-start; margin: 2px 0 0; }
-.dash-big .more { font-size: 14px; color: var(--green); font-weight: 600; }
+.dash-big .more { font-size: 15px; color: var(--green); font-weight: 600; }
 .tag.none { background: var(--canvas); color: var(--neutral-ink); }
 
 /* 셀 상세(PRD S5) */
 .dash-detail { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 12px; animation: dash-open .25s ease-out; }
 .dash-detail-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .dash-detail h4 { margin: 0; font-size: 16px; }
-.dash-close { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 4px 12px; cursor: pointer; color: var(--ink); }
+.dash-close { font: inherit; font-size: 15px; border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 4px 12px; cursor: pointer; color: var(--ink); }
 .dash-detail dl { margin: 10px 0 0; display: grid; gap: 6px; }
-.dash-detail dl div { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; font-size: 14px; }
+.dash-detail dl div { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; font-size: 15px; }
 .dash-detail dt { color: var(--dim); font-weight: 600; }
 .dash-detail dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 @keyframes dash-open { from { opacity: 0; transform: translateY(-4px); } }
@@ -59,11 +58,11 @@
 .dash-bars, .dash-cmp svg { width: 100%; height: auto; display: block; font-family: inherit; font-variant-numeric: tabular-nums; }
 .dash-bars { max-width: 460px; }
 .dash-grid { stroke: var(--line); stroke-dasharray: 3 3; }
-.dash-axis { font-size: 12px; fill: var(--dim); }
+.dash-axis { font-size: 13px; fill: var(--dim); }
 .dash-row { font-size: 15px; font-weight: 700; fill: var(--ink); }
 .dash-row.s { font-size: 13px; font-weight: 600; fill: var(--dim); }
-.dash-yr { font-size: 12px; fill: var(--dim); }
-.dash-val { font-size: 14px; font-weight: 700; fill: var(--ink); }
+.dash-yr { font-size: 13px; fill: var(--dim); }
+.dash-val { font-size: 15px; font-weight: 700; fill: var(--ink); }
 .dash-val.s { font-size: 13px; }
 .dash-track { fill: var(--mute-bg); }
 .dash-track.is-hidden { fill: none; stroke: var(--track-off); stroke-dasharray: 4 3; }
@@ -81,7 +80,7 @@
 .dash-cmp { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
 .dash-cmp li { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; transition: border-color .2s, background .2s; }
 .dash-cmp li.is-sel { border-color: var(--green); background: var(--hover-tint); }
-.dash-cmp-name { font: inherit; font-weight: 700; font-size: 15px; color: var(--ink); background: none; border: 0; padding: 2px 0 6px; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
+.dash-cmp-name { font: inherit; font-weight: 700; font-size: 15px; color: var(--ink); background: none; border: 0; min-height: 44px; padding: 2px 0 6px; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
 
 /* 빈 상태 */
 .dash-empty { text-align: center; background: var(--card); border: 1px dashed var(--line-mid); border-radius: var(--radius-card); padding: 32px 20px; margin-top: 8px; }
@@ -95,16 +94,16 @@
 .dash-map { position: relative; isolation: isolate; z-index: 0; height: min(60vh, 520px, 110vw); min-height: 280px; border-radius: var(--radius-card); overflow: hidden; border: 1px solid var(--line); background: var(--canvas); }
 .dash-map.is-wait { display: grid; place-items: center; color: var(--dim); font-size: 15px; }
 #dashboard .leaflet-container { font: inherit; }
-#dashboard .leaflet-tooltip { font-size: 14px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
-#dashboard .leaflet-control-attribution { font-size: 12px; }
-.dash-map-hint { font-size: 14px; color: var(--dim); margin: 10px 0 8px; word-break: keep-all; }
+#dashboard .leaflet-tooltip { font-size: 15px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
+#dashboard .leaflet-control-attribution { font-size: 13px; }
+.dash-map-hint { font-size: 15px; color: var(--dim); margin: 10px 0 8px; word-break: keep-all; }
 .dash-map-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
 .dash-map-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 5px; vertical-align: -2px; border: 1px solid var(--shade-25); }
 .dash-map-legend i.is-hidden { border: 1px dashed var(--off-ink); } /* 지도에서도 비공개 동은 회색 + 점선 테두리 */
 .dash-map-note { font-size: 13px; color: var(--dim); margin: 6px 0 12px; }
 .dash-map-list { flex-wrap: wrap; overflow: visible; }
 .dash-map-sel { font-size: 15px; margin: 4px 0 0; font-variant-numeric: tabular-nums; word-break: keep-all; }
-.dash-link { font: inherit; font-size: 14px; font-weight: 600; color: var(--green); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.dash-link { font: inherit; font-size: 15px; font-weight: 600; color: var(--green); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
   .dash-fill { transition: none; transform: scaleX(1); }

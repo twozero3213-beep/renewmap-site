@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ffffff">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net/npm/cesium@1.134.0/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/npm/cesium@1.134.0/; img-src 'self' data: blob: https://tile.openstreetmap.org https://cdn.jsdelivr.net/npm/cesium@1.134.0/; connect-src 'self' data: blob: https://tile.openstreetmap.org https://cdn.jsdelivr.net/npm/cesium@1.134.0/; worker-src blob: https://cdn.jsdelivr.net/npm/cesium@1.134.0/; font-src 'self' data:; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>3D 모델과 4D 단계 비교 | 리뉴맵</title>
@@ -18,9 +19,11 @@
 </head>
 <body class="field twin">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" href="../index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 찾기</a><a href="../rank.html">동네 순위</a><a href="../programs.html">재생 사업</a><a href="redev.html">구역 계산</a><a href="./">현장 기록</a><a href="../about.html#contact">시범 상담</a></nav></div><div class="wrap"><h1>3D 모델과 4D 단계 비교</h1></div></header>
+<header class="top"><div class="wrap"><a class="logo" href="../index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 찾기</a><a href="../rank.html">동네 순위</a><a href="../programs.html">재생 사업</a><a href="redev.html">구역 계산</a><a href="./">현장 기록</a><a href="../about.html#contact">시범 상담</a></nav></div></header>
 <main id="main">
-<p class="note">현재 모습과 계획안을 같은 위치에서 비교합니다.<br>건물·조형물의 GLB 파일은 직접 준비해 주세요.<br>사진만으로 건물 형상을 자동 복원하지 않습니다.</p>
+  <nav class="breadcrumb" aria-label="현재 위치"><ol><li><a href="../index.html">홈</a></li><li><a href="./">현장 기록</a></li><li aria-current="page">3D 모델과 4D 단계 비교</li></ol></nav>
+  <h1>3D 모델과 4D 단계 비교</h1>
+<p class="note rm-note">현재 모습과 계획안을 같은 위치에서 비교합니다.<br>건물·조형물의 GLB 파일은 직접 준비해 주세요.<br>사진만으로 건물 형상을 자동 복원하지 않습니다.</p>
 <div class="twin-layout">
 <section class="twin-map" aria-labelledby="mapTitle">
 <h2 id="mapTitle">배치 지도</h2>
@@ -69,7 +72,7 @@
 <div><label for="pitch">앞뒤 기울기(도)</label><input id="pitch" type="number" min="-180" max="180" step="any" value="0" required></div>
 <div><label for="roll">좌우 기울기(도)</label><input id="roll" type="number" min="-180" max="180" step="any" value="0" required></div>
 </div>
-<p class="warn">해발고도와 타원체고는 다릅니다.<br>기준점·모델 치수·방향을 대조하기 전에는 현장에 맞는 배치로 확정하지 마세요.</p>
+<p class="warn rm-note check">해발고도와 타원체고는 다릅니다.<br>기준점·모델 치수·방향을 대조하기 전에는 현장에 맞는 배치로 확정하지 마세요.</p>
 <button type="submit">배치 반영</button></form></section>
 <section class="card" aria-labelledby="fieldTitle"><h2 id="fieldTitle">현장 사진과 실물 대조</h2>
 <button id="recordsRefresh" class="ghost" type="button">이 기기 현장 기록 읽기</button>
@@ -83,11 +86,11 @@
 <button type="submit" class="ghost">대조 기록 추가</button></form>
 <p id="verificationInfo" class="hint">최종검수 전입니다.<br>허용오차와 측량 기준은 아직 승인되지 않았습니다.</p>
 </section>
-<section class="card"><h2>법정 규칙 승인</h2><p class="warn">승인 대기입니다.<br>3D 배치나 현장 대조를 저장해도 법정 규칙은 승인되지 않습니다.</p><p><a href="../rules.html">규칙별 원문·판본·승인 상태 보기</a></p><p class="hint">담당자가 원문 해석과 기준 답안 값을 검토하고 승인자를 기록해야 합니다.<br>이 화면은 종합 판정이나 승인자 서명을 대신하지 않습니다.</p></section>
+<section class="card"><h2>법정 규칙 승인</h2><p class="warn rm-note check">승인 대기입니다.<br>3D 배치나 현장 대조를 저장해도 법정 규칙은 승인되지 않습니다.</p><p><a href="../rules.html">규칙별 원문·판본·승인 상태 보기</a></p><p class="hint">담당자가 원문 해석과 기준 답안 값을 검토하고 승인자를 기록해야 합니다.<br>이 화면은 종합 판정이나 승인자 서명을 대신하지 않습니다.</p></section>
 </div>
 </div>
-<noscript><p>3D 비교에는 자바스크립트가 필요합니다.<br><a href="./">현장 기록</a>과 <a href="redev.html">구역 신청요건 계산</a>을 이용할 수 있습니다.</p></noscript>
+<noscript><p>3D 비교에는 자바스크립트가 필요합니다.<br><a href="./">현장 기록</a>과 <a href="redev.html">구역 계산</a>을 이용할 수 있습니다.</p></noscript>
 </main>
-<footer><div class="wrap"><div class="links"><a href="../about.html">서비스 소개</a><a href="../rules.html">기준 원문 대조</a><a href="../data.html">데이터 출처</a><a href="../ethics.html">AI 윤리</a><a href="../privacy.html">개인정보 처리방침</a><a href="../time4d.html">건물 4D</a><a href="../box.html">보관함</a><a href="../index.html#tools">참고 도구</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
+<footer><div class="wrap"><div class="links"><p><b>도구</b><a href="../explore.html">동네 찾기</a><a href="../rank.html">동네 순위</a><a href="../programs.html">재생 사업</a><a href="../field/redev.html">구역 계산</a><a href="../field/">현장 기록</a><a href="../time4d.html">건물 4D</a><a href="../box.html">보관함</a></p><p><b>근거</b><a href="../data.html">데이터 출처</a><a href="../rules.html">기준 원문 대조</a><a href="../evidence.html">근거 읽는 법</a><a href="../dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%EC%88%AB%EC%9E%90%20%EC%98%A4%EB%A5%98%20%EC%8B%A0%EA%B3%A0">숫자 오류 신고</a></p><p><b>리뉴맵</b><a href="../about.html">서비스 소개</a><a href="../about.html#contact">시범 상담</a><a href="../ethics.html">AI 윤리</a><a href="../privacy.html">개인정보 처리방침</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 <script src="record.js?v=20261112-taskreview"></script><script src="store.js"></script><script src="twin.js"></script><script src="twin-app.js"></script>
 </body></html>

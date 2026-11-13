@@ -4,13 +4,7 @@
   padding-top: 28px;
   padding-bottom: 60px;
 }
-.task-page h1 {
-  font-size: clamp(1.8rem, 4vw, 2.7rem);
-  margin: 0 0 12px;
-}
-.task-page h2 {
-  font-size: 1.35rem;
-}
+/* 제목 크기는 rm6.css 단계(--t-h1·--t-h2)를 따른다(R1: 43.2px·21.6px rem 값을 뺐다) */
 .task-page p {
   line-height: 1.75;
   word-break: keep-all;
@@ -44,7 +38,7 @@
   font: inherit;
   padding: 10px;
   border: 1px solid #7d9990;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #fff;
   color: #123b32;
 }
@@ -74,14 +68,12 @@
   outline: 3px solid var(--ink);
   outline-offset: 3px;
 }
+/* R2 8: 단계 줄이 휴대폰에서 화면 위에 붙어 머리와 함께 본문을 가렸다 → 제자리에 둔다 */
 .task-steps {
   display: flex;
   gap: 8px;
-  position: sticky;
-  top: 0;
   background: var(--bg);
   padding: 10px 0;
-  z-index: 2;
 }
 .task-steps button {
   flex: 1;
@@ -102,7 +94,7 @@
   gap: 0 16px;
 }
 .task-help {
-  font-size: 0.92rem;
+  font-size: var(--t-sub);
   color: #49675d;
 }
 .task-hash {
@@ -157,10 +149,7 @@
   padding: 8px;
   overflow-wrap: anywhere;
 }
-.top nav {
-  display: flex;
-  gap: 20px;
-}
+/* 머리 메뉴는 site.js·rm6.css가 다른 화면과 같게 그린다(R1 4: 옛 '.top nav' 규칙이 휴대폰 메뉴 시트를 늘 펼쳐 두었다) */
 .top .wrap {
   display: flex;
   align-items: center;
@@ -190,17 +179,14 @@
   }
   .task-steps button {
     padding: 8px 4px;
-    font-size: 0.9rem;
+    font-size: var(--t-sub);
   }
   .top .wrap {
     gap: 12px;
     flex-wrap: wrap;
   }
-  .top nav {
-    gap: 14px;
-  }
   .task-page input[type="file"] {
-    font-size: 0.86rem;
+    font-size: 13px;
   }
 }
 
@@ -241,4 +227,4 @@
 #revisitReport .rv-pages [aria-current="step"] { background: var(--green); color: white; }
 #revisitReport input[readonly] { background: #edf2ef; }
 
-.top nav a{display:inline-flex;align-items:center;min-height:44px}.task-page input,.task-page select{min-height:44px}
+.task-page input,.task-page select{min-height:44px}

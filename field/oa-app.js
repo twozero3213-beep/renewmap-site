@@ -37,7 +37,7 @@
   function draw() {
     const s = O.summary(dong), y = data.years, i19 = y.indexOf(2019);
     $("outTitle").textContent = `${dong.sigungu_name} ${dong.name} 집계구 ${dong.oas.length}개`;
-    $("outBase").textContent = `행정동 쇠퇴 요건 충족 수(하한) ${dong.met_count ?? "값 없음"} / 3 · 기준일 ${dong.met_ref || "–"} · 집계구 값 ${y[0]}~${y[y.length - 1]}년`;
+    $("outBase").textContent = `행정동 쇠퇴 확정된 요건 수 ${dong.met_count ?? "값 없음"} / 3 · 기준일 ${dong.met_ref || "–"} · 집계구 값 ${y[0]}~${y[y.length - 1]}년`;
     $("outCount").replaceChildren(...[2, 1, 0, "check"].map((g) => { const li = document.createElement("li"); li.append(swatch(g), ` ${O.LABEL[g]} ${s[g]}개`); return li; }));
     $("rows").replaceChildren(...dong.oas.map((o) => {
       const tr = document.createElement("tr"); tr.dataset.oa = o.oa;

@@ -17,7 +17,7 @@
 <meta property="og:description" content="사진·위치·그 동의 공식 현황을 출처와 함께 붙인 현장 기록 1쪽을 휴대폰에서 만듭니다.">
 <meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#006f5b">
+<meta name="theme-color" content="#ffffff">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../icon-192.png">
@@ -31,14 +31,16 @@
 </head>
 <body class="field">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" href="../index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 찾기</a><a href="../rank.html">동네 순위</a><a href="../programs.html">재생 사업</a><a href="redev.html">구역 계산</a><a href="./">현장 기록</a><a href="../about.html#contact">시범 상담</a></nav></div><div class="wrap"><h1>현장 기록</h1><span id="today" class="today"></span></div></header>
+<header class="top"><div class="wrap"><a class="logo" href="../index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 찾기</a><a href="../rank.html">동네 순위</a><a href="../programs.html">재생 사업</a><a href="redev.html">구역 계산</a><a href="./">현장 기록</a><a href="../about.html#contact">시범 상담</a></nav></div></header>
 <p id="recBadge" class="rec-badge" role="status" hidden>업무 촬영 중입니다 · 리뉴맵 현장 기록</p>
 <main id="main">
-  <div id="newData" class="note" role="status" hidden>
+  <nav class="breadcrumb" aria-label="현재 위치"><ol><li><a href="../index.html">홈</a></li><li aria-current="page">현장 기록</li></ol></nav>
+  <h1>현장 기록</h1><p class="sub"><span id="today" class="today"></span></p>
+  <div id="newData" class="note rm-note" role="status" hidden>
     <p>새 자료가 있습니다.<br>저장한 기록의 숫자는 바뀌지 않습니다.</p>
     <button type="button" class="ghost" id="newDataGet">새 자료 받기</button>
   </div>
-  <p id="intro" class="note">기록과 사진은 이 기기에만 저장됩니다.<br>내보내기 전에는 어디로도 보내지 않습니다.</p>
+  <p id="intro" class="note rm-note">기록과 사진은 이 기기에만 저장됩니다.<br>내보내기 전에는 어디로도 보내지 않습니다.</p>
   <p id="ready" class="hint" role="status">한 번 열어 두면 인터넷이 끊겨도 이 화면이 열립니다.</p>
 
   <div class="pick">
@@ -156,7 +158,7 @@
       <p class="hint">누르면 메모 끝에 붙습니다.<br>길게 누르면 지웁니다.</p>
     </div>
     <textarea id="memo" rows="2" maxlength="500" placeholder="이름·전화번호는 적지 마세요" aria-describedby="memoWarn"></textarea>
-    <p id="memoWarn" class="warn">이름·전화번호·주소 같은 개인정보는 적지 마세요.<br>보안시설은 찍거나 적지 마세요.</p>
+    <p id="memoWarn" class="warn rm-note check">이름·전화번호·주소 같은 개인정보는 적지 마세요.<br>보안시설은 찍거나 적지 마세요.</p>
     <label for="checker">확인자 (소속·직위, 선택)</label>
     <input id="checker" maxlength="40" autocomplete="organization-title" placeholder="예: 해운대구 도시재생과 주무관">
     <p class="hint">1쪽 문서의 '확인자' 칸에 들어갑니다.<br>이름과 서명은 결재 문서에서 하세요.</p>
@@ -182,6 +184,9 @@
 
   <section aria-labelledby="listTitle">
     <h2 id="listTitle">저장된 기록</h2>
+    <!-- 2026-11-14 우지예: 기록은 이 기기 브라우저(IndexedDB)에만 있어 사이트 데이터를 지우면 사라진다(docs/quality/backend_review_2026-11-14.md 6번).
+         팀 서버를 정하기 전까지, 백업(ZIP)하지 않은 기록이 있으면 목록 맨 위에 알리고 바로 백업하게 한다(app.js drawBackup) -->
+    <div id="backupNag" class="backup-nag" role="status" hidden><p id="backupText"></p><button type="button" id="backupNow">지금 ZIP으로 백업</button></div>
     <div id="stats" class="v4-stats" aria-live="polite"></div>
     <p id="listEmpty" class="hint" hidden>아직 저장한 기록이 없습니다.<br>위에서 사진을 찍어 저장하면 여기에 쌓이고, 사진대지·GeoJSON·CSV로 받을 수 있습니다.</p>
     <div id="listTools">
@@ -218,12 +223,12 @@
     <input id="teamCode" type="password" autocomplete="off">
     <button type="button" id="up">ZIP 올리기</button>
   </div>
-  <div id="install" class="note" hidden>
+  <div id="install" class="note rm-note" hidden>
     <p id="installMsg">홈 화면에 추가하면 앱처럼 바로 열립니다.</p>
     <button type="button" class="ghost" id="installGo">홈 화면에 추가</button>
   </div>
 </main>
-<footer><div class="wrap"><div class="links"><a href="../about.html">서비스 소개</a><a href="../rules.html">기준 원문 대조</a><a href="../data.html">데이터 출처</a><a href="../ethics.html">AI 윤리</a><a href="../privacy.html">개인정보 처리방침</a><a href="../time4d.html">건물 4D</a><a href="../box.html">보관함</a><a href="../index.html#tools">참고 도구</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
+<footer><div class="wrap"><div class="links"><p><b>도구</b><a href="../explore.html">동네 찾기</a><a href="../rank.html">동네 순위</a><a href="../programs.html">재생 사업</a><a href="../field/redev.html">구역 계산</a><a href="../field/">현장 기록</a><a href="../time4d.html">건물 4D</a><a href="../box.html">보관함</a></p><p><b>근거</b><a href="../data.html">데이터 출처</a><a href="../rules.html">기준 원문 대조</a><a href="../evidence.html">근거 읽는 법</a><a href="../dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%EC%88%AB%EC%9E%90%20%EC%98%A4%EB%A5%98%20%EC%8B%A0%EA%B3%A0">숫자 오류 신고</a></p><p><b>리뉴맵</b><a href="../about.html">서비스 소개</a><a href="../about.html#contact">시범 상담</a><a href="../ethics.html">AI 윤리</a><a href="../privacy.html">개인정보 처리방침</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 <div id="toast" class="toast" role="status" hidden><svg class="toast-ok" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11"/><path d="M7 12.5l3.2 3.2L17 9"/></svg><span id="toastText"></span><button type="button" id="toastAct" hidden></button></div>
 <dialog id="notice" aria-labelledby="noticeTitle">
   <h2 id="noticeTitle">촬영 사실 표시</h2>

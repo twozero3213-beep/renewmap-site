@@ -9,7 +9,12 @@
     return;
   }
   // 홈이 한 화면으로 줄면서 긴 소개는 about.html로 옮겼다. 이미 공유된 #how 같은 주소를 그대로 연결한다
-  if (atHome && /^#(?:evidence-demo|verdict|problem|how|howTitle|valuesTitle|notTitle|ledger|case|dashboard(?:\/.*)?|scope|faq|contact)$/.test(location.hash)) {
+  // R2(2026-11-13): 숫자 원칙·하지 않는 일·숫자 하나의 기록은 근거 읽는 법(evidence.html) 끝으로 옮겼다
+  if (atHome && /^#(?:valuesTitle|notTitle|ledger)$/.test(location.hash)) {
+    location.replace('evidence.html' + location.hash);
+    return;
+  }
+  if (atHome && /^#(?:evidence-demo|verdict|problem|how|howTitle|case|dashboard(?:\/.*)?|scope|faq|contact)$/.test(location.hash)) {
     location.replace('about.html' + location.hash);
     return;
   }
@@ -19,12 +24,12 @@
     const ico = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
     const here = location.pathname + location.hash;
     // v7(2026-11-13): 머리 메뉴와 같은 이름·순서(평가: 위는 '동네 찾기·현장 기록', 아래는 '지도·현장'이라 다른 곳인 줄 알았다). 홈은 로고로 간다
-    // v8: 보관함 자리에 동네 순위(가장 궁금해하는 것을 손 닿는 곳에). 보관함은 꼬리글·현장 기록 화면에서 들어간다
-    const tabs = [['explore.html#map', '동네 찾기', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html|\/dong\//],
-      ['rank.html', '동네 순위', 'M5 20V11M12 20V5M19 20v-6M3 20h18', /rank\.html$/],
-      ['programs.html', '재생 사업', 'M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7', /programs\.html$/],
-      ['field/redev.html', '구역 계산', 'M4 8l7-4 9 6-3 10H6zM11 4v16', /\/field\/redev\.html$/],
+    // R1(2026-11-13): 아래 탭은 넷(홈·동네 찾기·현장 기록·보관함, DESIGN.md). 다섯 칸이 머리 '메뉴' 시트와 같은 목록이라 두 벌로 보였다.
+    // 순위·재생 사업·구역 계산은 머리 '메뉴'에서 연다
+    const tabs = [['index.html', '홈', 'M3 11l9-8 9 8M5 9.5V20h14V9.5', /^(?!.*\/(?:field|dong)\/)[^#]*\/(?:index\.html)?(?:#.*)?$/],
+      ['explore.html#map', '동네 찾기', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html|\/dong\//],
       ['field/', '현장 기록', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],
+      ['box.html', '보관함', 'M3 8h18v12H3zM3 8l2-4h14l2 4M9 13h6', /box\.html$/],
     ];
     const current = tabs.findIndex(t => t[3].test(here));
     const nav = document.createElement('nav');
@@ -57,6 +62,8 @@
     btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', 'rm-nav');
     btn.addEventListener('click', () => { const open = btn.getAttribute('aria-expanded') !== 'true'; btn.setAttribute('aria-expanded', String(open)); nav.classList.toggle('is-open', open); btn.textContent = open ? '닫기' : '메뉴'; });
     document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && nav.classList.contains('is-open')) { btn.click(); btn.focus(); } });
+    // 시트 뒤 가림(rm6.css body::after)이나 본문을 누르면 닫는다
+    document.addEventListener('click', (ev) => { if (nav.classList.contains('is-open') && !ev.target.closest('header.top')) btn.click(); });
     header.append(btn, nav);
   }
   if (header && typeof ResizeObserver === 'function') {

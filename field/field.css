@@ -7,13 +7,11 @@
 body.field { font-size: 17px; }
 .field section:not(.card) { padding: 0; }
 .field [hidden] { display: none !important; }
-.field header.top .wrap { max-width: 560px; min-height: 56px; display: flex; align-items: center; justify-content: space-between; }
-.field header.top h1 { margin: 0; font-size: 22px; line-height: 30px; }
 .today { font-size: 15px; color: var(--dim); font-weight: 600; }
 .field main { max-width: 560px; margin: 0 auto; padding: 12px 16px 32px; }
 .field h2 { font-size: 18px; line-height: 26px; margin: 0 0 8px; }
 .field h3 { font-size: 15px; line-height: 22px; margin: 0 0 4px; }
-.note, .hint, .warn, .msg { margin: 8px 0; font-size: 14px; line-height: 20px; color: var(--dim); }
+.note, .hint, .warn, .msg { margin: 8px 0; font-size: 15px; line-height: 20px; color: var(--dim); }
 .note { padding: 12px 16px; border-radius: var(--radius-btn); background: var(--soft); color: var(--soft-ink); }
 .warn { color: var(--notice); }
 .msg { min-height: 20px; font-weight: 600; color: var(--ink); white-space: pre-line; }
@@ -40,7 +38,7 @@ body.field { font-size: 17px; }
 .pick { display: grid; gap: 8px; }
 .pick input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .pick label { margin: 0; display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: var(--radius-btn); border: 1px solid var(--line-strong); background: var(--card); color: var(--green); font-weight: 600; cursor: pointer; text-align: center; transition: background-color .12s var(--ease); }
-.pick label.big { min-height: 72px; font-size: 19px; border-color: transparent; background: var(--green); color: var(--on-green); }
+.pick label.big { min-height: 72px; font-size: 18px; border-color: transparent; background: var(--green); color: var(--on-green); }
 .pick label:not(.big):hover { background: var(--soft); border-color: var(--green); }
 .pick label:active { background: var(--green-press); color: var(--on-green); }
 .pick label:focus-within { outline: 3px solid var(--ink); outline-offset: 2px; }
@@ -53,11 +51,11 @@ body.field { font-size: 17px; }
 .thumbs img { width: 88px; height: 88px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
 .thumbs button { position: absolute; top: -6px; right: -6px; width: 44px; min-height: 44px; height: 44px; padding: 0; margin: 0; border-radius: 50%; background: var(--card); color: var(--error); border-color: var(--line); }
 /* 촬영 사실 표시: 촬영하는 동안 계속 보이는 작은 표시(개인정보 보호법 제25조의2) */
-.rec-badge { position: sticky; top: 56px; z-index: 19; margin: 0; padding: 6px 16px; text-align: center; font-size: 14px; line-height: 20px; font-weight: 700; color: var(--notice); background: var(--notice-bg); border-bottom: 1px solid var(--line); }
+.rec-badge { position: sticky; top: 56px; z-index: 19; margin: 0; padding: 6px 16px; text-align: center; font-size: 15px; line-height: 20px; font-weight: 700; color: var(--notice); background: var(--notice-bg); border-bottom: 1px solid var(--line); }
 .rec-badge::before { content: '●'; margin-right: 6px; }
 .loc { margin: 0; font-weight: 600; white-space: pre-line; }
 .dong { margin: 4px 0 0; color: var(--dim); font-size: 15px; white-space: pre-line; }
-.tag { display: inline-block; padding: 0 8px; margin-left: 6px; border-radius: 99px; font-size: 14px; line-height: 22px; background: var(--soft); color: var(--soft-ink); font-weight: 600; }
+.tag { display: inline-block; padding: 0 8px; margin-left: 6px; border-radius: 999px; font-size: 15px; line-height: 22px; background: var(--soft); color: var(--soft-ink); font-weight: 600; }
 .pin { margin-top: 12px; }
 #pinMap { display: block; width: 100%; aspect-ratio: 1; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); touch-action: manipulation; cursor: crosshair; }
 #pinMap .tile { opacity: .85; }
@@ -73,14 +71,14 @@ body.field { font-size: 17px; }
 .facts ul { list-style: none; margin: 0; padding: 0; }
 .facts li { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
 .facts li b { font-variant-numeric: tabular-nums; }
-.facts small { display: block; font-size: 14px; line-height: 20px; color: var(--dim); }
+.facts small { display: block; font-size: 15px; line-height: 20px; color: var(--dim); }
 fieldset.chips { border: 0; padding: 0; margin: 0 0 4px; }
 fieldset.chips legend { font-weight: 600; font-size: 15px; margin: 12px 0 8px; padding: 0; }
 .chips div { display: flex; flex-wrap: wrap; gap: 8px; }
 /* '무엇을 봤나요' 칩 9개는 스크립트가 채운다. 채워지기 전부터 줄 수만큼 자리를 잡는다(휴대폰 3줄 160px, 넓으면 2줄 104px · 실측 2026-11-08). 칩이 늘면 그만큼만 더 자란다 */
 #targets { min-height: 104px; }
 @media (max-width: 480px) { #targets { min-height: 160px; } }
-.chips label { margin: 0; display: inline-flex; align-items: center; min-height: 48px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 99px; background: var(--card); font-weight: 600; cursor: pointer; transition: background-color .12s var(--ease); }
+.chips label { margin: 0; display: inline-flex; align-items: center; min-height: 48px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--card); font-weight: 600; cursor: pointer; transition: background-color .12s var(--ease); }
 .chips input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .chips label:has(input:checked) { background: var(--soft); border-color: var(--green); color: var(--soft-ink); }
 .chips label:has(input:checked)::before { content: '✓'; margin-right: 6px; }
@@ -90,7 +88,7 @@ details summary { min-height: 48px; display: flex; align-items: center; font-wei
 .field section[aria-labelledby="listTitle"] { margin-top: 24px; }
 .list { list-style: none; padding: 0; margin: 8px 0 0; min-height: 48px; }   /* 기록은 기기 저장소에서 뒤늦게 채워진다. 한 줄 자리를 먼저 잡는다 */
 .list li { border-top: 1px solid var(--line); padding: 12px 0; overflow-wrap: anywhere; }
-.list .meta { font-size: 14px; color: var(--dim); }
+.list .meta { font-size: 15px; color: var(--dim); }
 .toast { position: fixed; left: 16px; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 40; max-width: 528px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 12px; background: var(--ink); color: var(--bg); font-weight: 600; animation: toast-in .16s ease-out; white-space: pre-line; }
 .toast button { width: auto !important; margin: 0 !important; min-height: 44px !important; background: transparent !important; border: 0 !important; color: var(--bg) !important; text-decoration: underline; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
@@ -108,7 +106,7 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 .gps-wait .pick label.big::after { content: ''; position: absolute; inset: -2px; border-radius: inherit; border: 3px solid var(--green); opacity: 0; animation: gps-pulse 1.2s ease-out infinite; pointer-events: none; }
 @keyframes gps-pulse { 0% { opacity: .7; transform: none; } 100% { opacity: 0; transform: scale(1.05, 1.15); } }
 /* 오차 칩: 20m 이하 / 50m 이하 / 넓음. 숫자가 본 정보이고 색은 보조다(대비 4.5:1 이상 토큰만) */
-.acc-chip { display: inline-block; padding: 0 10px; border-radius: 99px; font-size: 14px; line-height: 24px; font-weight: 600; border: 1px solid var(--line); background: var(--bg); color: var(--dim); transition: background-color .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease); }
+.acc-chip { display: inline-block; padding: 0 10px; border-radius: 999px; font-size: 15px; line-height: 24px; font-weight: 600; border: 1px solid var(--line); background: var(--bg); color: var(--dim); transition: background-color .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease); }
 .acc-chip[data-q="good"] { background: var(--soft); color: var(--soft-ink); border-color: var(--green); }
 .acc-chip[data-q="wide"] { background: var(--notice-bg); color: var(--notice); border-color: var(--notice); }
 /* 저장 성공: 체크가 한 번 톡 나타난다 */
@@ -118,7 +116,6 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 .toast.ok #toastText { margin-right: auto; }
 @keyframes ok-pop { from { opacity: 0; transform: scale(.5); } }
 @keyframes ok-tick { from { opacity: 0; transform: scale(.3); } }
-@media (min-width: 1100px) { .field header.top .wrap { max-width: 560px; } }
 @media (prefers-reduced-motion: reduce) {
   .toast, dialog[open] { animation: none; }
   .field button:not(:where(.city3d-map *)), .pick label, .chips label, .acc-chip { transition: none; }
@@ -148,16 +145,16 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 }
 /* A2 자주 쓰는 한 줄 · A4 같은 자리 이전 기록 · 설정 */
 .phrase-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
-.field .phrase-list button { width: auto; margin: 0; min-height: 44px; padding: 0 14px; border-radius: 99px; background: var(--soft); color: var(--soft-ink); border-color: var(--line); font-weight: 600; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.field .phrase-list button { width: auto; margin: 0; min-height: 44px; padding: 0 14px; border-radius: 999px; background: var(--soft); color: var(--soft-ink); border-color: var(--line); font-weight: 600; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .near { margin-top: 8px; border-top: 0; }
 .near-list { list-style: none; margin: 0; padding: 0; }
-.near-list li { display: grid; grid-template-columns: 64px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; line-height: 20px; }
+.near-list li { display: grid; grid-template-columns: 64px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; line-height: 20px; }
 .near-list img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
 .near-list .blank { width: 64px; height: 64px; border-radius: 8px; background: var(--soft); }
 .near-list .meta { color: var(--dim); }
 .near-list li > div { min-width: 0; }
-.near-list .check { margin: 6px 0 0; font-weight: 400; font-size: 14px; }
-.site-line { margin: 8px 0 0; font-size: 14px; font-weight: 600; color: var(--soft-ink); white-space: pre-line; }
+.near-list .check { margin: 6px 0 0; font-weight: 400; font-size: 15px; }
+.site-line { margin: 8px 0 0; font-size: 15px; font-weight: 600; color: var(--soft-ink); white-space: pre-line; }
 .field #newData p { margin: 0; }
 /* 오프라인 준비 표시는 첫 그림부터 자리를 잡는다(숨김이어도 높이만 두고 보이지 않게). 서비스 워커가 켜져 글자가 드러나도 아래가 밀리지 않는다(실측: 이 줄 48px가 CLS 0.20이었다, 2026-11-08) */
 .field #ready[hidden] { display: block !important; visibility: hidden; }
@@ -168,22 +165,23 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 #ready { min-height: 3em; }
 #visitPrevious { overflow-wrap: anywhere; }
 .bld-list, .check-list { list-style: none; margin: 4px 0 0; padding: 0; }
-.bld-list li { margin-top: 8px; font-size: 14px; line-height: 20px; }
+.bld-list li { margin-top: 8px; font-size: 15px; line-height: 20px; }
 .field .bld-list button { margin: 0; text-align: left; white-space: pre-line; font-weight: 600; line-height: 22px; }
 .check-list li { border-top: 1px solid var(--line); padding: 4px 0 8px; }
 .check-list .check { font-weight: 600; }
 .ck-more { padding-left: 34px; }
-.list .check { margin: 8px 0 0; font-weight: 400; font-size: 14px; }
+.list .check { margin: 8px 0 0; font-weight: 400; font-size: 15px; }
 /* 입안요건 사전검토: 상태 낱말이 본 정보이고 색은 보조다 */
 .req-list li[data-status="현장 확인"] b { color: var(--notice); }
 .req-list li[data-status="미충족"] b { color: var(--dim); }
 
 .draw-map { height: 320px; margin: 8px 0; border-radius: 8px; }
 /* 2026-11-13 우지예: 그리기 안내 한 줄과 번호 꼭짓점(redev-app.js redraw 주석). 1번 점은 진하게 해 '여기서 시작해 여기로 닫힌다'를 보인다 */
-.draw-step { margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: #fff7ed; color: #7c2d12; font-weight: 600; line-height: 1.5; }
-.draw-step.is-warn { background: #fef2f2; color: #991b1b; }
-.draw-pt { box-sizing: border-box; text-align: center; line-height: 20px; border-radius: 50%; background: #fff; border: 2px solid #b45309; color: #7c2d12; font: 700 12px/20px sans-serif; cursor: grab; }
-.draw-pt.is-first { background: #b45309; color: #fff; }
+.draw-step { margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: var(--soft); color: var(--soft-ink); font-weight: 600; line-height: 1.5; }
+.draw-step.is-warn { background: var(--amber-bg); color: var(--amber); }   /* 꼬임 경고만 호박색(확인 필요) */
+.draw-pt { display: grid; place-items: center; cursor: grab; }   /* 누르는 칸 44px(redev-app.js iconSize), 보이는 원은 안쪽 span */
+.draw-pt span { display: grid; place-items: center; width: 26px; height: 26px; box-sizing: border-box; border-radius: 999px; background: var(--card); border: 2px solid var(--green); color: var(--green-press); font-family: var(--font); font-size: 13px; font-weight: 700; line-height: 1; }
+.draw-pt.is-first span { background: var(--green); color: #fff; }
 /* 휴대폰 그리기 지도 확대·축소 단추: Leaflet 기본 30px → 44px 터치 대상. #drawMap으로 나중에 붙는 leaflet.css보다 앞선다 */
 @media (max-width: 760px), (pointer: coarse) {
   #drawMap .leaflet-bar a, #drawMap .leaflet-bar a:hover { width: 44px; height: 44px; line-height: 44px; font-size: 24px; }
@@ -193,6 +191,11 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 .field #facilityFields, .field #visitFields { border: 0; padding: 0; margin: 12px 0; min-width: 0; }
 .field #visitFields .row > div { min-width: 0; }
 .survey-table { overflow-x: auto; margin-top: 12px; }
-.survey-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.survey-table table { width: 100%; border-collapse: collapse; font-size: 15px; }
 .survey-table th, .survey-table td { border-bottom: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
 .survey-table th { font-weight: 600; }
+
+/* 2026-11-14 우지예: 백업하지 않은 기록 알림(index.html backupNag 주석). 눈에 띄되 오류 빨강은 아닌 주황 */
+.backup-nag { margin: 8px 0 12px; padding: 12px 14px; border: 1px solid #f0c48a; border-radius: 10px; background: #fff7ed; color: #7c2d12; }
+.backup-nag p { margin: 0 0 10px; white-space: pre-line; line-height: 1.55; font-weight: 600; }
+.backup-nag button { min-height: 44px; }

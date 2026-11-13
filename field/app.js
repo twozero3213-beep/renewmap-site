@@ -662,8 +662,20 @@
   }
   // 배포 직후 예전 HTML 캐시에 페이지 스크립트가 없어도 기록·내보내기를 유지한다.
   const recordPages = window.RenewListPages?.create($("list"), "현장 기록", () => render().catch(() => say("기록을 다시 불러오지 못했습니다. 새로고침해 주세요.", true))) || { reset() {}, slice: rows => rows };
+  // 2026-11-14 우지예: 백업(ZIP 내보내기·공유)한 때를 이 기기에 적어 두고, 그 뒤에 저장한 기록 수를 목록 위에 알린다(index.html backupNag 주석).
+  //     localStorage가 막힌 브라우저에서는 백업 때를 모르므로 기록이 있으면 늘 알린다(사라질 위험을 숨기지 않는다)
+  const BACKUP_KEY = "renewmap-field-last-backup";
+  const markBackup = () => { store(BACKUP_KEY, new Date().toISOString()); render().catch(() => {}); };
+  function drawBackup(rows) {
+    const last = store(BACKUP_KEY) || "", n = rows.filter((r) => String(r.recorded_at || "") > last).length;
+    $("backupNag").hidden = n === 0;
+    $("backupText").textContent = `백업하지 않은 기록이 ${n}건 있습니다.
+기록은 이 기기의 이 브라우저에만 저장됩니다. 사이트 데이터를 지우거나 다른 기기·브라우저에서 열면 보이지 않습니다.${last ? `
+마지막 백업 ${E.localTime(last)}` : ""}`;
+  }
   async function render() {
     let rows = await S.records();
+    drawBackup(rows);
     $("stats").innerHTML = R.statsHTML(R.stats(rows, new Date()));   // 개수 요약(순위 아님)
     // v7: 기록이 없으면 0·0·0 상자와 내보내기 단추 묶음 대신 안내 한 줄(평가: 빈 화면에서 단추 다섯 개가 가장 진했다)
     $("stats").hidden = $("listTools").hidden = rows.length === 0;
@@ -749,12 +761,14 @@
     return { name: `renewmap-field-${day}.zip`, bytes: D.zipStore(entries, day) };
   }
   $("exp").addEventListener("click", async () => {
-    try { const z = await buildZip(); D.saveBytes(z.name, z.bytes, "application/zip"); } catch (e) { toast("ZIP을 만들지 못했습니다.\n잠시 뒤 다시 해 보세요."); }
+    try { const z = await buildZip(); D.saveBytes(z.name, z.bytes, "application/zip"); markBackup(); } catch (e) { toast("ZIP을 만들지 못했습니다.\n잠시 뒤 다시 해 보세요."); }
   });
+  $("backupNow").addEventListener("click", () => $("exp").click());
   $("share").addEventListener("click", async () => {
     try {
       const z = await buildZip(), file = new File([z.bytes], z.name, { type: "application/zip" });
       await navigator.share({ files: [file], title: "리뉴맵 현장 기록" });
+      markBackup();   // 공유로 넘긴 ZIP도 백업으로 친다
     } catch (e) { if (e.name !== "AbortError") toast("공유하지 못했습니다.\n모두 내보내기(ZIP)를 쓰세요."); }
   });
   if (navigator.canShare && navigator.canShare({ files: [new File([""], "a.zip", { type: "application/zip" })] })) $("share").hidden = false;

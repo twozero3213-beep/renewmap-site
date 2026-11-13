@@ -1,16 +1,15 @@
 /* 문서 열기 화면 */
 .docs h1 { font-size: clamp(26px, 3vw, 34px); line-height: 1.2; margin: 8px 0 16px; }
-.docs h2 { font-size: 19px; margin: 0 0 6px; }
+.docs h2 { font-size: 18px; margin: 0 0 6px; }
 .home > section.docs-card, .docs-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 18px; margin-bottom: 16px; }
 .docs-card p { margin: 0 0 12px; word-break: keep-all; }
 .docs-formats { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 12px 0 0; }
 .docs-formats + .btn { margin-top: 16px; }
 /* 머리 로고를 640px 본문 왼쪽 선에 맞춘다(UX 정비 2026-10-30. 문서 화면은 v4.css를 싣지 않아 여기 둔다) */
-@media (min-width: 1100px) { body:has(.home.docs) header.top .wrap { max-width: 640px; padding-inline: 16px; } }
-.docs-formats li { padding: 4px 10px; border: 1px solid var(--line); border-radius: 99px; font-size: 14px; color: var(--ink); background: var(--bg); }
+.docs-formats li { padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; color: var(--ink); background: var(--bg); }
 .doc-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 120px; border: 2px dashed var(--green); border-radius: var(--radius-card); background: var(--bg); cursor: pointer; text-align: center; }
 .doc-drop b { font-size: 18px; color: var(--green); }
-.doc-drop span { font-size: 14px; color: var(--dim); }
+.doc-drop span { font-size: 15px; color: var(--dim); }
 .doc-drop.is-over { background: var(--soft); }
 .doc-drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .doc-drop:focus-within { outline: 3px solid var(--ink); outline-offset: 2px; }
@@ -22,17 +21,17 @@
 .doc-stage { margin-top: 8px; }
 .doc-page { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: var(--card); }
 .doc-docx { overflow-x: auto; background: var(--docx-bg); padding: 8px; }
-.doc-text { white-space: pre-wrap; word-break: break-word; max-height: 70vh; overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: 14px/1.6 Pretendard, sans-serif; }
+.doc-text { white-space: pre-wrap; word-break: break-word; max-height: 70vh; overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; font: 14px/1.6 Pretendard, sans-serif; }
 .doc-tabs { display: flex; gap: 6px; overflow-x: auto; }
-.doc-tab { min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; cursor: pointer; white-space: nowrap; }
+.doc-tab { min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; cursor: pointer; white-space: nowrap; }
 .doc-tab[aria-pressed="true"] { background: var(--ink); color: var(--on-green); }
-.doc-scroll { overflow: auto; max-height: 70vh; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
-.doc-sheet table { border-collapse: collapse; font-size: 14px; }
+.doc-scroll { overflow: auto; max-height: 70vh; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.doc-sheet table { border-collapse: collapse; font-size: 15px; }
 .doc-sheet td { border: 1px solid var(--line); padding: 4px 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.doc-slide { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.doc-slide { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
 .doc-slide h3 { margin: 0 0 6px; font-size: 15px; color: var(--green); }
 .doc-slide p { margin: 0 0 4px; }
-.doc-note { color: var(--dim); font-size: 14px; margin: 0; }
+.doc-note { color: var(--dim); font-size: 15px; margin: 0; }
 .vendor-note { font-size: 13px; }
 @media print {
   .doc-print-incomplete > * { display: none !important; }

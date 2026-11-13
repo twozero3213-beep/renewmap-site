@@ -18,7 +18,7 @@
 .twin #modelInfo { overflow-wrap: anywhere; }
 .twin :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .twin #globe button,.city3d-map button { width: auto; min-height: 0; margin: 0; padding: 0; }
-.twin #globe .cesium-credit-textContainer { font-size: 12px; }
+.twin #globe .cesium-credit-textContainer { font-size: 13px; }
 @media(max-width: 800px) { .twin-layout { display: block; } .twin-map { position: static; } #globe { height: 360px; } .city3d-map { height: 520px; } .twin-editor { margin-top: 24px; } .twin header.top .wrap { gap: 16px; } }
 /* 2026-11-12: 현재 건물 3D 보기 — 보기 단추 줄·불러오는 중 표시·지도 높이(회의 "조감도 잘 보이게")
    지도 높이를 화면 높이에 맞춰 키운다(480px 고정 → 화면의 70%, 480~760px). 조감도는 가로세로가 넉넉해야 동네가 한눈에 들어온다 */
@@ -32,7 +32,7 @@
 .city3d-labels small { color: var(--dim); }
 .city3d-stage { position: relative; }
 /* 받을 지도 조각이 남았을 때만 지도 위 가운데 아래에 띄운다. 지도 조작을 막지 않게 누르기는 통과시킨다 */
-.city3d-loading { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); margin: 0; padding: 8px 14px; border-radius: 999px; background: rgba(15, 23, 20, .78); color: #fff; font-size: 14px; pointer-events: none; }
+.city3d-loading { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); margin: 0; padding: 8px 14px; border-radius: 999px; background: rgba(15, 23, 20, .78); color: #fff; font-size: 15px; pointer-events: none; }
 .city3d-loading[hidden] { display: none; }
 @media (max-width: 600px) { .city3d-labels { margin-left: 0; } .city3d-views button { flex: 1 1 30%; padding: 0 8px; } }
 .pick-list { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; }

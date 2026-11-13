@@ -5,25 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; form-action 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'">
 <meta name="description" content="리뉴맵의 숫자·현장 기록·공간 비교를 읽는 방법. 출처와 기준일, 법정 기준과 참고 분석, 실제 관측과 가상 시나리오를 구분합니다.">
-<meta name="theme-color" content="#006f5b">
+<meta name="theme-color" content="#ffffff">
 <title>근거를 읽는 방법 | 리뉴맵</title>
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/evidence.html">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="pretendard.css">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="site-v4.css">
-<link rel="stylesheet" href="content-pages.css">
+<link rel="stylesheet" href="styles.css?v=20261114-m1">
+<link rel="stylesheet" href="site-v4.css?v=20261114-d3">
+<link rel="stylesheet" href="content-pages.css?v=20261113-d2">
 <script src="frame-guard.js"></script>
 <script src="site.js" defer></script>
 <script src="site-motion.js" defer></script>
-<script src="content-pages.js?v=20261112-toc" defer></script>
-<link rel="stylesheet" href="rm6.css">
+<script src="content-pages.js?v=20261114-m1" defer></script>
+<link rel="stylesheet" href="rm6.css?v=20261114-d3">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 상담</a></nav></div></header>
-<main class="wrap page" id="main" data-content-book>
-  <div class="evidence-head"><div><h1>근거를 읽는 방법</h1><p>숫자의 의미와 확인 범위를 먼저 살펴보세요.</p></div><img src="mascot/crew/taggy-default.svg" width="112" height="112" alt="" aria-hidden="true"></div>
+<main class="wrap page" id="main" data-content-book data-fold-from="1"><!-- R3 8: 첫 갈래(법정 기준과 지역 현황)만 펼치고, 나머지 절은 제목 한 줄로 접는다(content-pages.js·rm6 .cp-fold = .rm-disclosure). 내용은 그대로 문서 안에 있다 -->
+  <nav class="breadcrumb" aria-label="현재 위치"><ol><li><a href="index.html">홈</a></li><li aria-current="page">근거 읽는 법</li></ol></nav>
+  <h1>근거 읽는 법</h1>
+  <p class="sub">숫자의 의미와 확인 범위를 먼저 살펴보세요.</p>
+  <nav class="rm-subnav" aria-label="근거 쪽"><a class="rm-chip" href="data.html">데이터 출처</a><a class="rm-chip" href="rules.html">기준 원문 대조</a><a class="rm-chip" href="evidence.html" aria-current="page">근거 읽는 법</a></nav>
   <section id="approach" data-page-label="법정 기준과 지역 현황">
     <h2>법정 기준과 지역의 생활을 함께 봅니다</h2>
     <p class="method-lead">노후 건물의 비율과 인구 변화만으로 동네의 모든 모습을 설명할 수는 없습니다.</p>
@@ -31,14 +34,15 @@
       <article><h3>법정 요건 확인</h3><p>어떤 조문과 판본을 썼는지, 담당자 승인이 끝났는지 확인하세요.</p><p>승인 전 결과는 참고용입니다.<br>최종 판단은 담당 기관에 확인해야 합니다.</p><a href="rules.html">기준 원문과 승인 상태</a></article>
       <article><h3>생활·경제·운영 현황</h3><p>인구·사업체·생활시설은 서로 다른 현황입니다.<br>시설 위치와 실제 개방 여부도 구분해야 합니다.</p><p>행정동 통계를 특정 건물이나 주민의 사실로 해석하지 마세요.</p><a href="explore.html">동네 현황 살펴보기</a></article>
     </div>
+    <details class="rm-disclosure" id="decline3"><summary>도시재생 쇠퇴 3요건은 어떻게 확인하나요?</summary><p>도시재생활성화지역은 인구, 사업체, 노후건축물 세 요건 가운데 2개 이상을 갖춰야 지정할 수 있습니다(도시재생법 제13조 제4항).<br>인구 요건은 최근 30년 중 가장 많던 때보다 20% 이상 줄었거나, 최근 5년 중 3년 이상 연속으로 줄어든 경우입니다.<br>사업체 요건은 최근 10년 중 가장 많던 때보다 5% 이상 줄었거나, 최근 5년 중 3년 이상 연속으로 줄어든 경우입니다.<br>노후 요건은 준공 후 20년 이상 지난 건축물이 전체의 50% 이상인 경우입니다(시행령 제17조, 2025.10.1 개정).<br>리뉴맵에 동 이름을 넣으면 세 값을 출처·기준일과 함께 보여 줍니다.<br>판정이 아니며 최종 확인은 담당 기관이 합니다.</p><p class="method-source">근거: <a href="https://law.go.kr/LSW/lsInfoP.do?lsiSeq=166533">도시재생 활성화 및 지원에 관한 특별법 제13조 제4항</a>, <a href="https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=285399">같은 법 시행령 제17조</a>, <a href="dong/index.html">행정동별 값 목록</a></p></details>
     <p class="method-source">연구 참고: 이정은 외(2023), <a href="https://www.kci.go.kr/kciportal/landing/article.kci?arti_id=ART003033117">한국형 축소도시의 정의와 진단</a>(KCI 등재).<br>진단 기준과 공간 범위를 함께 봐야 한다는 점을 따랐습니다.</p>
   </section>
   <section id="sources" data-page-label="출처와 재현성">
-    <h2>숫자를 볼 때 원자료까지 확인합니다</h2>
+    <h2>숫자를 볼 때 출처까지 확인합니다</h2>
     <p class="method-lead">값과 출처를 함께 읽고, 계산을 다시 해도 같은 값이 나오는지 확인합니다.</p>
     <div class="method-grid">
       <article><h3>출처를 따라가기</h3><ol class="method-checks"><li>제공 기관과 원문 링크</li><li>자료의 기준일과 조회 시점</li><li>집계 단위·분모·계산 방법</li><li>누락된 값과 확인 상태</li></ol></article>
-      <article><h3>재현성과 정확성</h3><p>같은 자료로 같은 값이 나오는 것은 재현성입니다.</p><p>원자료나 계산식이 틀리면 같은 오류가 반복될 수도 있습니다.<br>정확성은 원문·수기 계산·현장 자료와 따로 대조해야 합니다.</p></article>
+      <article><h3>재현성과 정확성</h3><p>같은 자료로 같은 값이 나오는 것은 재현성입니다.</p><p>출처 자료나 계산식이 틀리면 같은 오류가 반복될 수도 있습니다.<br>정확성은 원문·수기 계산·현장 자료와 따로 대조해야 합니다.</p></article>
     </div>
     <p class="method-source">연구 참고: <a href="https://www.nature.com/articles/sdata201618">Wilkinson 외(2016), FAIR 원칙</a> · <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3383002/">Peng(2011), 계산 연구의 재현성</a>.<br>데이터 관리와 검증 설계에 참고했습니다.</p>
     <p class="method-source">2026년 보강: <a href="https://www.mdpi.com/2220-9964/15/5/197">Ponciano 외(2026), 공간 메타데이터 품질을 항목별로 평가하는 방법</a>을 참고했습니다.<br>출처가 있다는 사실과 정확성 검증을 구분합니다.<br>기준일 비교에서는 단위·산식·규칙·공간단위·출처 근거가 없거나 바뀌면 수치 차이 계산을 보류합니다.</p>
@@ -51,7 +55,7 @@
       <article><h3>위치 정확도</h3><p>휴대전화가 표시하는 위치 정확도와 실제 대상까지의 오차는 다를 수 있습니다.</p><p>골목·고층 건물 주변에서는 사진 속 대상과 지도 위치를 다시 맞춰 보세요.</p></article>
       <article><h3>시설 운영 확인</h3><p>지도에 시설이 있어도 현재 개방 중이라는 뜻은 아닙니다.</p><p>운영시간·출입구·이용 장벽과 확인한 날짜를 기록하세요.<br>판단하기 어려운 항목은 추가확인으로 남깁니다.</p></article>
     </div>
-    <p class="method-note">사진의 해시는 파일이 바뀌었는지 확인하는 수단입니다.<br>사진 내용이 사실이거나 법적 증거력이 있다는 보증은 아닙니다.</p>
+    <p class="method-note rm-note">사진의 해시는 파일이 바뀌었는지 확인하는 수단입니다.<br>사진 내용이 사실이거나 법적 증거력이 있다는 보증은 아닙니다.</p>
     <p class="method-source">연구 참고: <a href="https://doi.org/10.1016/j.spasta.2012.03.002">Goodchild·Li(2012), 참여형 공간정보 품질보증</a> · <a href="https://www.kci.go.kr/kciportal/landing/article.kci?arti_id=ART003152951">장우연·조선(2024), 도시재생 거점시설 운영 연구</a>.<br>리뉴맵 기기별 위치 오차와 현장 기록 정확도는 별도 실측 대상입니다.</p>
     <div class="method-actions"><a class="btn" href="field/">현장 기록 시작</a></div>
   </section>
@@ -61,7 +65,7 @@
       <article><h3>직선거리와 이동시간</h3><p>직선거리는 두 지점 사이를 바로 잰 거리입니다.</p><p>실제 보행은 계단·경사·횡단시설·출입구의 영향을 받습니다.<br>지도에 나온 거리의 계산 방법부터 확인하세요.</p></article>
       <article><h3>시설에 도착한 다음</h3><p>이동시간만으로 서비스 이용을 보장할 수는 없습니다.</p><p>운영시간, 이용 대상, 시설의 수용량을 따로 확인해야 합니다.</p></article>
     </div>
-    <p class="method-note">직선거리, 도보, 차량 분석은 서로 다른 지표입니다.<br>계산에 쓴 도로망·기준시각·속도 가정이 다르면 결과도 달라질 수 있습니다.</p>
+    <p class="method-note rm-note">직선거리, 도보, 차량 분석은 서로 다른 지표입니다.<br>계산에 쓴 도로망·기준시각·속도 가정이 다르면 결과도 달라질 수 있습니다.</p>
     <p class="method-source">연구 참고: 강성원·문태헌(2024), <a href="https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci?sereArticleSearchBean.artiId=ART003121458">n분 도시 계획을 위한 생활SOC 접근성 분석</a>(KCI 등재).<br>창원 사례의 수치는 부산 기준으로 옮겨 쓰지 않았습니다.</p>
     <div class="method-actions"><a class="btn" href="explore.html">지도 탐색</a></div>
   </section>
@@ -79,14 +83,43 @@
     <h2>연구 근거와 제품의 성능은 따로 확인합니다</h2>
     <p class="method-lead">문헌은 조사와 검증의 방법을 정하는 데 사용합니다.</p>
     <div class="method-grid">
-      <article><h3>문헌 확인 범위</h3><p>각 주제의 연구 링크에서 방법과 적용 범위를 확인할 수 있습니다.</p><p>다른 지역의 연구 결과나 지표를 이 동네의 사실 또는 법정 기준으로 곧바로 적용하지 않습니다.</p><p class="method-source">일부는 초록·서지 중심으로 확인했습니다.<br>모든 전문을 정독하거나 원자료를 재현한 것은 아닙니다.</p></article>
+      <article><h3>문헌 확인 범위</h3><p>각 주제의 연구 링크에서 방법과 적용 범위를 확인할 수 있습니다.</p><p>다른 지역의 연구 결과나 지표를 이 동네의 사실 또는 법정 기준으로 곧바로 적용하지 않습니다.</p><p class="method-source">일부는 초록·서지 중심으로 확인했습니다.<br>모든 전문을 정독하거나 출처 자료를 재현한 것은 아닙니다.</p></article>
       <article><h3>제품에서 확인할 것</h3><ol class="method-checks"><li>원문과 보고서 숫자의 일치</li><li>같은 스냅샷의 재계산 결과</li><li>실제 위치·경로와의 오차</li><li>작성시간·오류·재작업의 변화</li></ol></article>
     </div>
-    <p class="method-note">문헌 인용은 리뉴맵의 정확도나 시간 절감 효과를 인증하지 않습니다.<br>실제 과업에서 측정한 결과가 있어야 성능을 설명할 수 있습니다.</p>
+    <p class="method-note rm-note">문헌 인용은 리뉴맵의 정확도나 시간 절감 효과를 인증하지 않습니다.<br>실제 과업에서 측정한 결과가 있어야 성능을 설명할 수 있습니다.</p>
     <p class="method-source">참고: <a href="https://www.tandfonline.com/doi/full/10.1080/13658816.2025.2603586">IJGIS(2026)의 재현 가능성 감사</a>(공개 자료 평가).<br>리뉴맵도 자료·코드 공개, 재계산 시험, 원문·현장 대조를 따로 확인합니다.</p>
     <div class="method-actions"><a class="btn" href="about.html#contact">실제 과업으로 함께 확인하기</a><a class="btn ghost" href="ethics.html">데이터 원칙</a></div>
   </section>
+  <!-- R2 9: 서비스 소개에 있던 숫자 원칙·하지 않는 일·숫자 하나의 기록을 근거 쪽 끝으로 옮겼다(근거 설명이 네 곳에 흩어져 있었다) -->
+  <section id="values" aria-labelledby="valuesTitle" data-page-label="숫자를 다루는 원칙">
+    <h2 id="valuesTitle">숫자를 다루는 원칙</h2>
+    <div class="method-grid">
+      <article><h3>숫자에는 출처를</h3><p>모든 숫자에 출처·기준일·계산식을 붙입니다.<br>따라가서 확인할 수 있어야 근거입니다. 같은 자료로 다시 만들면 같은 문서가 나옵니다.</p></article>
+      <article><h3>모르면 모른다고</h3><p>자료로 정할 수 없는 건물은 '현장 확인'으로 남깁니다.<br>빈칸을 추정으로 채우지 않고, 확인하지 못한 것은 범위와 이유로 보여 드립니다.</p></article>
+      <article><h3>판단은 사람이</h3><p>기준 비교는 법정 판정·기관 승인을 대신하지 않습니다.<br>규칙 승인 대기와 자료 부족을 구분해 표시하고, 담당자가 최종 검토합니다. <a href="rules.html">규칙별 원문·승인 상태</a></p></article>
+      <article><h3>사람을 먼저</h3><p>기록·사진은 기기에 저장하고, 전달은 사용자가 선택합니다.<br>얼굴, 번호판, 건물 이름 속 개인 이름은 직접 확인하고 가려 주세요. 지도·필지 조회에는 위치 정보가 외부 서비스로 전달됩니다. <a href="privacy.html">처리 경로와 개인정보 안내</a></p></article>
+    </div>
+  </section>
+  <section id="scope" aria-labelledby="notTitle" data-page-label="하지 않는 일">
+    <h2 id="notTitle">하지 않는 일</h2>
+    <ul class="method-checks">
+      <li>감정평가·투자 권유</li>
+      <li>매물 중개</li>
+      <li>성범죄자 공개정보 활용(법으로 금지)</li>
+    </ul>
+    <p>근거를 만드는 쪽이 거래로 돈을 벌지 않아야 그 근거를 믿을 수 있습니다.</p>
+  </section>
+  <section id="ledger" aria-labelledby="ledgerTitle" data-page-label="숫자 하나의 기록">
+    <h2 id="ledgerTitle">숫자 하나의 기록</h2>
+    <p class="method-lead">값 뒤에 출처, 기준일, 계산식, 규칙 판본, 확인 상태가 줄지어 나옵니다.<br>자료가 모자란 칸은 비워 둔 채 이유를 적습니다.</p>
+    <figure class="ledger-fig"><img src="ledger.svg" width="520" height="360" loading="lazy" alt="출처 기록 한 칸의 구성 예시: 값 옆에 출처, 기준일, 계산식, 규칙 판본, 현장 확인 상태"><figcaption>출처 기록 한 칸의 구성 예시입니다.</figcaption></figure>
+    <ul class="anat-tags">
+      <li><span class="tag ok">확인</span>자료와 현장이 일치합니다.</li>
+      <li><span class="tag conflict">충돌</span>출처끼리 값이 다르거나, 법정 산식과 행정 지정 결과가 다릅니다.</li>
+      <li><span class="tag check">추가확인</span>자료가 없거나 판단이 어려워 확인이 더 필요합니다.</li>
+    </ul>
+  </section>
 </main>
-<footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="rules.html">기준 원문 대조</a><a href="data.html">데이터 출처</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="rank.html">동네 점수·순위</a><a href="biz.html">사업성 간이 계산</a><a href="time4d.html">건물 4D</a><a href="box.html">보관함</a><a href="index.html#tools">참고 도구</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
+<footer><div class="wrap"><div class="links"><p><b>도구</b><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="time4d.html">건물 4D</a><a href="box.html">보관함</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%EC%88%AB%EC%9E%90%20%EC%98%A4%EB%A5%98%20%EC%8B%A0%EA%B3%A0">숫자 오류 신고</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 상담</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 </body>
 </html>

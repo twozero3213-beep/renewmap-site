@@ -1,10 +1,11 @@
-/* 리뉴맵 v6 공통 층(2026-11-13). 모든 화면의 마지막 스타일시트다.
-   왜: 11-13 페르소나 8명 평가에서 머리 모양 3종·메뉴 4벌·형광 연두 배지·작고 흐린 회색 글이 공통 지적이었다.
-   원칙: 기존 화면 CSS는 그대로 두고, 공통 틀(머리·메뉴·글자·단추·표·띠)만 여기서 한 번에 맞춘다.
-   색 대비는 docs/design/DESIGN.md 계산을 따르고, 새로 쓴 값은 옆에 대비를 적었다. */
+/* 리뉴맵 공통 층(rm6). 모든 화면의 마지막 스타일시트다.
+   순서(R2 2026-11-13): 1 토큰 → 2 글자 → 3 머리·꼬리글 → 4 부품 → 5 화면별 → 6 인쇄. 같은 무게면 뒤가 이기므로 이 순서를 지킨다.
+   !important는 셋에만 쓴다: 인쇄, 지도 라이브러리·스크립트가 인라인으로 쓰는 값, 옛 화면 CSS가 !important로 둔 값. 그 밖에는 옛 CSS의 덮이는 속성을 지운다.
+   색 대비는 docs/design/DESIGN.md 계산을 따른다. */
+
+/* ── 1. 토큰 ── */
 :root {
-  /* v7(2026-11-13 밤): 경쟁 서비스 분해 결과 정돈돼 보인 곳(Felt·Giraffe·PLATEAU VIEW)은 바탕은 무채색, 강조는 한 색, 색은 지도 자료에만 썼다.
-     예전 판은 바탕·선·배지까지 연두빛이 번져 지도(산·공원의 초록)와 섞이고 어지러웠다. 강조색은 물가와 땅을 함께 떠올리는 짙은 청록 한 가지. */
+  /* v7: 바탕은 무채, 강조는 짙은 청록 한 색, 색은 지도 자료에만(경쟁 서비스 분해: Felt·Giraffe·PLATEAU VIEW) */
   --bg: #f6f5f2;            /* 종이색 바탕(무채) */
   --card: #ffffff;
   --canvas: #edece8;
@@ -13,13 +14,11 @@
   --green: #0b6b75;         /* 강조 한 색(이름은 옛 화면 CSS가 쓰는 그대로). 흰 위 6.2:1, bg 위 5.7:1 */
   --green-press: #085760;   /* 흰 위 8.3:1 */
   --green-deep: #085760;
-  --green-hover: #085760;
   --soft: #e5f1f2;          /* 고른 칩 바탕. 강조 글 5.4:1 */
   --soft2: #eef5f6;
   --soft-press: #d3e8ea;
   --soft-ink: #085760;
   --hover-tint: #f3f8f8;
-  --audience-bg: #e5f1f2;
   --crew-bg: #eef5f6;
   --crew-bg-2: #f8faf9;
   --crew-line: #cfdfe1;
@@ -38,322 +37,417 @@
   --yb-track: #e2e0da;
   --track-off: #a9adb3;
   --bar-empty: #d6d4ce;
-  --shade-06: rgba(23, 25, 28, .06); --shade-08: rgba(23, 25, 28, .08); --shade-16: rgba(23, 25, 28, .16); --shade-18: rgba(23, 25, 28, .18);
+  --shade-06: rgba(23, 25, 28, .06); --shade-16: rgba(23, 25, 28, .16); --shade-18: rgba(23, 25, 28, .18);
   --shade-22: rgba(23, 25, 28, .22); --shade-25: rgba(23, 25, 28, .25); --shade-30: rgba(23, 25, 28, .3); --shade-35: rgba(23, 25, 28, .35);
   --amber: #8a4b00;         /* 확인 필요 글자. #fff4dc 위 6.2:1 */
   --amber-bg: #fff4dc;
   --rm-max: 1200px;
+  /* R1: 제목 크기가 화면마다 여섯 가지라 같은 사이트로 안 읽혔다 → 단계 하나 */
+  --t-h1: 40px; --t-h1-hero: 48px; --t-h1-map: 24px; --t-h2: 24px; --t-h3: 18px;
+  --t-body: 17px; --t-sub: 15px; --t-cap: 13px; --h1-top: 40px; --t-nav: 16px;
+  --sec: 56px;   /* R2 4: 본문 안 절 간격 하나(rules·evidence 133~183px, 동 페이지 28~62px로 제각각이었다) */
+  /* 옛 녹색(확인 칩·소개 막대)이 청록 한 색 사이에서 튀었다(R1 12). 확인 = 청록 옅은 채움, 막대 = 먹·청록·회색 */
+  --better: #085760; --better-bg: #e5f1f2; --good-mid: #0b6b75;
+  --y20: #0b6b75; --y30: #4f8790; --bCOUNT: #17191c; --bAREA: #0b6b75; --bHH: #767b82;   /* 막대 트랙(#e2e0da) 위 3:1 이상 */
 }
-html { -webkit-text-size-adjust: 100%; }
-body { background: var(--bg); color: var(--ink); font-size: 17px; line-height: 1.7; }
+@media (max-width: 720px) { :root { --t-h1: 28px; --t-h1-hero: 28px; --t-h2: 20px; --h1-top: 24px; --sec: 40px; } }
+
+/* ── 2. 글자 ── */
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 80px; }   /* 고정 머리 아래로 앵커·검색칸이 숨지 않게 */
+html:has(body.explore-page) { scroll-padding-top: 140px; }   /* 동네 찾기는 머리 아래 조건·지도·문서 탭도 붙어 있다 */
+/* 아래 탭이 보이는 폭에서는 초점이 탭 밑에 숨지 않게(200% 확대에서 입력칸이 탭에 가려졌다, WCAG 2.4.11) */
+@media (max-width: 1099px) { html { scroll-padding-bottom: calc(80px + env(safe-area-inset-bottom)); } }
+body { background: var(--bg); color: var(--ink); font-size: var(--t-body); line-height: 1.7; }
 .wrap { max-width: var(--rm-max); }
 h1, h2, h3 { color: var(--ink); letter-spacing: -0.02em; }
 small, .sub, .note, .hint { color: var(--dim); }
+.hint { font-size: var(--t-sub); }
+/* 제목 단계: :is(main, .rm-t)는 (0,1,1)이라 화면 CSS의 '.클래스 h1'과 같은 무게이고, 이 파일이 맨 뒤라 이긴다 */
+:is(main, .rm-t) h1 { font-size: var(--t-h1); line-height: 1.25; font-weight: 700; letter-spacing: -0.02em; margin: var(--h1-top) 0 12px; text-wrap: balance; }
+:is(main, .rm-t) h2 { font-size: var(--t-h2); line-height: 1.3; font-weight: 700; }
+:is(main, .rm-t) h3 { font-size: var(--t-h3); line-height: 1.4; font-weight: 700; }
+:is(main, .rm-t) h1 + .sub { font-size: var(--t-sub); margin: 0 0 16px; }
+main .h6-hero h1 { font-size: var(--t-h1-hero); margin: 0 0 12px; }
+main .t4-side h1 { font-size: var(--t-h1-map); margin: 0 0 4px; }
+main .t4-side h2 { font-size: var(--t-h3); }
+main .t4-side h3 { font-size: var(--t-sub); }
+main .breadcrumb + h1, .pg-band .breadcrumb + h1 { margin-top: 12px; }
+/* 쪽 머리 하나(R2 3): 빵부스러기(누름 높이 44) + h1 + .sub. 머리 65 + 44 + 12 = 1440·390 모두 h1 top 121(전에는 92~145 일곱 값) */
+.breadcrumb { font-size: var(--t-sub); line-height: 20px; color: var(--dim); padding: 0; margin: 0; }
+.breadcrumb ol { min-height: 44px; align-items: center; gap: 0 4px; }
+.breadcrumb li + li::before { margin-right: 4px; }
+.breadcrumb a { display: inline-block; padding: 12px 4px; }
+main:has(> .breadcrumb:first-child), main.page:has(> .pg-band:first-child) { padding-top: 0; }
+/* 절 간격: 본문 끝 → 다음 제목이 --sec 하나. 위아래 56px씩 겹치던 section 여백을 걷고 제목 위 여백만 쓴다 */
+main.page section, .about-page > section { padding-top: 0; padding-bottom: 0; }
+main.page h2, .about-page h2 { margin-top: var(--sec); }
+main.page details h2 { margin-top: 24px; }
+.explore-page main h1 { font-size: var(--t-h1-map); }   /* 지도형 화면(눈에는 안 보이는 제목도 같은 단계로) */
+/* 저시력: 작은 글(<small>·각주 번호)이 11.7px·9.8px까지 작아졌다 → 13px·12px 아래로 내리지 않는다 */
+main small { font-size: max(var(--t-cap), .85em); }
+main button { font-family: inherit; font-size: inherit; }   /* 클래스 없는 단추가 브라우저 기본 13.33px로 나왔다 */
+main.page sup { font-size: max(13px, .75em); }
+/* 출처·기준 줄은 중요한 문장이라 15px·진한 회색 아래로 내리지 않는다 */
+.map-legend-std, .map-legend-note, .gp-std, .sr-req-note, .src-line, .pg-note, footer p { font-size: 15px; color: var(--dim); }
+/* 표: 낱말 중간에서 끊기지 않게(출처 표 '1993~202/5' 지적) */
+table td, table th { word-break: keep-all; overflow-wrap: normal; }
+@media (max-width: 720px) { body { font-size: 17px; } }
 
-/* ── 머리: 모든 화면 같은 흰 머리 하나(현장·신청요건의 짙은 녹색 머리와 연두 줄을 없앤다) ── */
-header.top, body.field header.top, body.field.scrolled header.top, body.scrolled header.top {
-  position: sticky; top: 0; z-index: 40; background: rgba(255, 255, 255, .97) !important; color: var(--ink);
-  border-bottom: 1px solid var(--line); box-shadow: none !important; }
-header.top > .wrap:first-child { min-height: 64px; display: flex; align-items: center; gap: 20px; }
-header.top .logo { color: var(--ink) !important; font-weight: 800; letter-spacing: .01em; font-size: 20px; text-decoration: none; flex: none; }
-header.top .logo span { color: var(--green) !important; }
-/* 현장·신청요건 화면은 머리 안에 쪽 제목 줄이 하나 더 있다. 흰 머리에 맞춰 글자를 진하게 */
-header.top > .wrap + .wrap, header.top > .wrap ~ .wrap { color: var(--ink); padding-top: 12px; padding-bottom: 14px; }
-header.top > .wrap ~ .wrap h1 { color: var(--ink); font-size: clamp(26px, 3vw, 34px); margin: 0; }
-header.top > .wrap ~ .wrap p, header.top > .wrap ~ .wrap a { color: var(--dim); }
-header.top > .wrap ~ .wrap a { color: var(--green); }
+/* ── 3. 머리·꼬리글 ── */
+/* 모든 화면 같은 흰 머리 하나. 옛 짙은 녹색 머리(site-v4 body.field)는 지웠다 */
+header.top { position: sticky; top: 0; z-index: 40; background: rgba(255, 255, 255, .97); color: var(--ink); border-bottom: 1px solid var(--line); box-shadow: none; }
+/* 로고·메뉴 줄은 본문과 같은 격자(1200px, 안쪽 20px)라 왼쪽 선이 제목·본문과 맞는다. 높이는 모든 화면 64px */
+header.top > .wrap:first-child { min-height: 64px; display: flex; flex-wrap: nowrap; align-items: center; gap: 20px; max-width: var(--rm-max); padding-left: 20px; padding-right: 20px; }
+/* 지도가 화면 전체인 앱 화면(동네 찾기·4D)만 폭 전체 */
+body.explore-page header.top > .wrap:first-child, body:has(.t4-app) header.top > .wrap:first-child { max-width: none; padding-left: 24px; padding-right: 24px; }
+@media (max-width: 720px) { header.top > .wrap:first-child, body.explore-page header.top > .wrap:first-child, body:has(.t4-app) header.top > .wrap:first-child { padding-left: 16px; padding-right: 16px; } }
+header.top .logo { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 800; letter-spacing: .01em; font-size: 20px; text-decoration: none; flex: none; }
+header.top .logo span { color: var(--green); }
+@media (max-width: 720px) { header.top .logo { font-size: 18px; } }
+/* 머리 메뉴(site.js .rm-nav) */
 .rm-nav { display: flex; align-items: center; gap: 2px; margin-left: auto; }
-.rm-nav a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: 16px; padding: 10px 12px; border-radius: 8px; min-height: 44px; display: inline-flex; align-items: center; white-space: nowrap; }
-.rm-nav a:hover { background: #eef2ef; }
+.rm-nav a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: var(--t-nav); padding: 10px 12px; border-radius: 8px; min-height: 44px; display: inline-flex; align-items: center; white-space: nowrap; }
+.rm-nav a:hover { background: var(--mute-bg); }
 .rm-nav a[aria-current="page"] { color: var(--green); box-shadow: inset 0 -3px 0 var(--green); border-radius: 0; }
-.rm-nav .rm-cta { background: var(--green); color: #fff; margin-left: 8px; border-radius: 8px; box-shadow: none; }
+.rm-nav .rm-cta { min-height: 44px; background: var(--green); color: #fff; margin-left: 8px; border-radius: 8px; box-shadow: none; font-size: var(--t-nav); font-weight: 700; }
 .rm-nav .rm-cta:hover { background: var(--green-press); }
-.rm-menu-btn { display: none; margin-left: auto; min-height: 44px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-weight: 700; }
-/* site.js가 새 메뉴를 달면 옛 메뉴를 숨긴다. site.js가 없는 동 페이지는 옛 메뉴를 같은 모양으로 보인다 */
-header.top .wrap:has(.rm-nav) .site-nav, header.top .menu-toggle { display: none !important; }
-header.top .site-nav { display: flex; flex-wrap: wrap; gap: 2px; margin-left: auto; }
-header.top .site-nav a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: 16px; padding: 10px 12px; min-height: 44px; display: inline-flex; align-items: center; }
-header.top .site-nav a[aria-current="page"] { color: var(--green); box-shadow: inset 0 -3px 0 var(--green); }
+/* '메뉴' 단추: (0,2,1)이라 현장 화면의 녹색 전체 폭 단추 규칙(.field button, 0,1,1)을 이긴다 */
+header.top .rm-menu-btn { display: none; flex: none; width: auto; margin: 0 0 0 auto; min-height: 44px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-size: 16px; font-weight: 700; box-shadow: none; }
 header.top a:focus-visible, header.top button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-
-/* 아래 탭(홈·지도·현장·보관함)은 휴대폰·태블릿에서만. 넓은 화면의 왼쪽 세로 막대는 머리 메뉴와 겹쳐 없앤다 */
+/* site.js가 새 메뉴를 달면 HTML의 옛 메뉴를 숨긴다. 스크립트 없는 화면(404)은 옛 메뉴를 같은 모양으로 보인다 */
+header.top .wrap:has(.rm-nav) .site-nav, header.top .menu-toggle { display: none; }
+header.top .site-nav { display: flex; flex-wrap: wrap; gap: 2px; margin-left: auto; }
+header.top .site-nav a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: var(--t-nav); padding: 10px 12px; min-height: 44px; display: inline-flex; align-items: center; }
+header.top .site-nav a[aria-current="page"] { color: var(--green); box-shadow: inset 0 -3px 0 var(--green); }
+header.top .site-nav a[href$="about.html#contact"] { background: var(--green); color: #fff; border-radius: 8px; padding: 8px 14px; font-weight: 700; }
+/* R3 1: ≤1099px에서는 site.js가 옛 메뉴를 '메뉴' 단추로 바꾼다. 그 전 한 순간 옛 메뉴가 두 줄로 꺾여 머리가 93px였다가 64px로 줄며 본문이 28px 올라갔다(768px CLS) → 스크립트가 켜져 있으면 처음부터 숨긴다 */
+@media (max-width: 1099px) and (scripting: enabled) { header.top .site-nav { display: none; } }
+/* 아래 탭(홈·동네 찾기·현장 기록·보관함)은 휴대폰·태블릿에서만 */
+.tabbar a { white-space: nowrap; }
 @media (min-width: 1100px) {
-  .tabbar { display: none !important; }
-  body { padding: 0 !important; }
+  .tabbar { display: none; }
+  body { padding: 0; }
 }
-/* 아래 탭이 보이는 폭에서는 초점이 탭 밑에 숨지 않게 스크롤 여유를 둔다(v9 접근성: 200% 확대에서 입력칸이 탭에 가려졌다, WCAG 2.4.11) */
-@media (max-width: 1099px) { html { scroll-padding-bottom: calc(80px + env(safe-area-inset-bottom)); } }
 @media (max-width: 1099px) {
-  .rm-menu-btn { display: inline-flex; align-items: center; }
-  .rm-nav { display: none; position: absolute; left: 0; right: 0; top: 100%; flex-direction: column; align-items: stretch; background: #fff; border-bottom: 1px solid var(--line); padding: 8px 16px 16px; box-shadow: 0 12px 24px rgba(15, 43, 39, .12); }
+  header.top > .wrap:first-child { position: relative; }
+  header.top .rm-menu-btn { display: inline-flex; align-items: center; }
+  .rm-nav { display: none; position: absolute; left: 0; right: 0; top: 100%; flex-direction: column; align-items: stretch; background: #fff; border-bottom: 1px solid var(--line); padding: 8px 16px 16px; box-shadow: 0 12px 24px var(--shade-16); }
   .rm-nav.is-open { display: flex; }
-  .rm-nav a { font-size: 18px; min-height: 52px; border-bottom: 1px solid #eef2ef; border-radius: 0; }
+  .rm-nav a { font-size: 18px; min-height: 52px; border-bottom: 1px solid var(--mute-bg); border-radius: 0; }
   .rm-nav a[aria-current="page"] { box-shadow: inset 4px 0 0 var(--green); padding-left: 16px; }
   .rm-nav .rm-cta { margin: 12px 0 0; justify-content: center; border-radius: 8px; }
-  header.top > .wrap:first-child { position: relative; }
+  /* 메뉴 시트 뒤를 가린다(R1 4). 가림을 누르면 site.js가 닫는다 */
+  body:has(.rm-nav.is-open)::after { content: ""; position: fixed; inset: 0; z-index: 35; background: rgba(23, 25, 28, .32); }
+  /* 스크립트 없는 화면의 옛 메뉴: 두 줄로 펼쳐져 옆으로 밀리던 것(11-13 4차) → 한 줄, 메뉴 줄만 옆으로 */
+  header.top .wrap:not(:has(.rm-nav)) { flex-wrap: wrap; row-gap: 0; }
+  header.top .wrap:not(:has(.rm-nav)) .site-nav { flex: 1 0 100%; flex-wrap: nowrap; overflow-x: auto; margin: 0 -4px; padding-bottom: 4px; scrollbar-width: thin; }
+  header.top .wrap:not(:has(.rm-nav)) .site-nav a { flex: none; font-size: 15px; padding: 8px 10px; }
+  footer { padding-bottom: 110px; }   /* 꼬리글 아래 여유는 아래 탭이 있는 폭에서만(R1 10) */
 }
+@media (max-width: 720px) {
+  /* 휴대폰에서는 옛 메뉴를 3칸 두 줄로(한 줄로 화면 밖까지 이어졌다) */
+  header.top .wrap:not(:has(.rm-nav)) .site-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; gap: 0 6px; }
+  header.top .wrap:not(:has(.rm-nav)) .site-nav a { justify-content: center; text-align: center; font-size: var(--t-sub); }
+}
+footer { background: #fff; border-top: 1px solid var(--line); margin-top: 56px; }
+footer .links { display: grid; gap: 0; margin-bottom: 8px; }
+footer .links p { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; margin: 0; }
+footer .links b { min-width: 56px; font-size: var(--t-sub); color: var(--ink); }
+footer .links a { color: var(--ink); font-size: var(--t-sub); }
 
-/* ── 띠(.pg-band): 순위·출처·소개 화면의 짙은 녹색 띠와 연두 배지를 종이색 머리글로 ── */
-.pg-band { background: transparent !important; color: var(--ink) !important; border-bottom: 1px solid var(--line); }
-.pg-band h1, .pg-band p, .pg-band .breadcrumb, .pg-band .breadcrumb a { color: var(--ink) !important; }
-.pg-band p { color: var(--dim) !important; }
-.pg-band a { color: var(--green) !important; }
-.pg-band .label-scenario, .label-scenario { background: var(--amber-bg) !important; color: var(--amber) !important; border-color: transparent !important; }
-.read-prog { display: none !important; }
-
-/* ── 단추 ── */
+/* ── 4. 부품 ── */
+/* 단추 */
 .btn { min-height: 48px; border-radius: 8px; font-weight: 700; }
 .btn:not(.ghost) { background: var(--green); border-color: var(--green); color: #fff; }
 .btn:not(.ghost):hover { background: var(--green-press); border-color: var(--green-press); }
 .btn.ghost { background: #fff; color: var(--green); border: 1px solid var(--line-strong); }
 .btn:focus-visible, a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-
-/* ── 표: 낱말 중간에서 끊기지 않게(출처 표 '1993~202/5' 지적). 좁으면 표 상자 안에서 옆으로 민다 ── */
-table td, table th { word-break: keep-all; overflow-wrap: normal; }
+.link-btn { min-height: 44px; padding: 0; border: 0; background: none; color: var(--green); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+input[type="file"]::file-selector-button { min-height: 40px; margin-right: 10px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+/* 파일 칸: 브라우저 언어와 상관없이 '파일 고르기' 단추. 입력은 단추 위에 투명하게 겹쳐 누르기·키보드가 그대로 된다 */
+.file-pick { position: relative; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 12px; }
+.file-pick input[type="file"] { position: absolute; left: 0; top: 0; width: 132px; height: 44px; opacity: 0; cursor: pointer; }
+.file-pick .btn { min-height: 44px; display: inline-flex; align-items: center; }
+.file-pick:focus-within .btn { outline: 3px solid var(--ink); outline-offset: 2px; }
+/* 칩 하나(.rm-chip, R1 2): 높이 44·알약·15px/600·1px 선, 고르면 청록 채움 + 흰 글자 하나. JS가 만드는 .dash-chip도 같은 규칙 */
+.rm-chip, .h6-chip, .dash-chip, .map-inds .dash-chip, .dash-dongs .dash-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--card); color: var(--ink); font: inherit; font-size: var(--t-sub); font-weight: 600; white-space: nowrap; cursor: pointer; box-shadow: none; }
+:is(.rm-chip, .h6-chip, .dash-chip):hover { border-color: var(--green); }
+:is(.rm-chip, .h6-chip, .dash-chip)[aria-pressed="true"], .explore-page #mapApp .map-inds .dash-chip[aria-pressed="true"], .dash-dongs .dash-chip[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: #fff; box-shadow: none; }
+/* 상태 태그 하나(DESIGN.md 4.4): 높이 22, 13px/700. 추가확인만 호박색 */
+.tag { display: inline-flex; align-items: center; min-height: 22px; padding: 0 10px; border-radius: 999px; font-size: var(--t-cap); font-weight: 700; line-height: 1; background: var(--off-bg); color: var(--neutral-ink); }
+.tag.check { background: var(--amber-bg); color: var(--amber); }
+/* '판정 아님' 꼬리표도 회색 태그(호박색은 '추가확인'에만, R1 2) */
+.label-scenario, .pg-band .label-scenario { background: var(--off-bg); color: var(--neutral-ink); border-color: transparent; border-radius: 999px; }
+/* 강조 상자 둘(R2 6): .rm-note(흰 바탕·1px 선) + .rm-note.check(호박, 확인이 더 필요한 안내). 옅은 청록·회색·흰 상자 넷을 바꿨다 */
+.rm-status, p.warn.rm-status, :is(p, div).rm-note { background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin: 16px 0; font-size: var(--t-sub); line-height: 1.6; }
+:is(p, div).rm-note.check { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-bg); }
+.rm-status b, .rm-note b { color: inherit; }
+/* 입력·고르기 칸 하나(R2 5): 17px·48px·반경 8. 소개 문의 양식의 브라우저 기본 select도 같은 모양 */
+main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea) { box-sizing: border-box; min-height: 48px; font-family: inherit; font-size: 17px; border: 1px solid var(--line-strong); border-radius: 8px; background-color: var(--card); color: var(--ink); }
+main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select) { padding-top: 0; padding-bottom: 0; padding-left: 12px; }
+main textarea { padding: 10px 12px; }
+main select { appearance: none; padding-right: 36px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2317191c' stroke-width='2'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+/* 근거 세 쪽(데이터 출처·기준 원문 대조·근거 읽는 법) 탭 줄(R2 9): 지금 쪽은 청록 채움 */
+.rm-subnav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+.rm-subnav .rm-chip { text-decoration: none; }
+.rm-subnav .rm-chip[aria-current="page"] { background: var(--green); border-color: var(--green); color: #fff; }
+.pg-who { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.task-notice { background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.verdict-card, .verdict-card.ok, .verdict-card.check, .verdict-card.conflict { border-left: 1px solid var(--line); }   /* 왼쪽 굵은 띠 대신 1px 선(R1 2) */
+/* 표: 좁으면 표 상자 안에서 옆으로 민다 */
 .table-wrap { overflow-x: auto; }
 .table-wrap table { min-width: 640px; }
-
-/* ── 작고 흐린 글: 출처·기준 줄은 중요한 문장이라 15px·진한 회색 아래로 내리지 않는다 ── */
-.map-legend-std, .map-legend-note, .gp-std, .sr-req-note, .src-line, .pg-note, footer p { font-size: 15px; color: var(--dim); }
-
-/* ── 바닥글 ── */
-footer { background: #fff; border-top: 1px solid var(--line); margin-top: 56px; }
-footer .links a { color: var(--ink); }
-
-/* ── 지도 키보드 초점: map.css가 지운 윤곽을 되살린다(접근성 심사 지적) ── */
-#map path.leaflet-interactive:focus-visible { outline: none; stroke: var(--ink); stroke-width: 4; }
-
-@media (max-width: 720px) {
-  body { font-size: 17px; }
-  header.top .logo { font-size: 18px; }
-}
-@media print { .rm-nav, .rm-menu-btn { display: none !important; } }
-
-/* ── 긴 화면 차례(content-pages.js v6): 넘기기 대신 펼친 본문 + 맨 위 차례 ── */
-.cp-toc { margin: 8px 0 32px; padding: 16px 20px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+main table caption { caption-side: top; text-align: left; padding: 0 0 8px; font-size: var(--t-sub); color: var(--dim); }   /* 같은 값을 한 번 적는 자리(R2 13·14) */
+/* 문서 화면 첫 머리(.pg-band, site-motion.js가 감싼다): 짙은 녹색 띠는 지웠다. 제목 위 여백은 h1(--h1-top) 한 값 */
+.pg-band { color: var(--ink); border-bottom: 1px solid var(--line); padding: 0 0 24px; margin-bottom: 24px; }
+.pg-band .breadcrumb, .pg-band .breadcrumb a { color: var(--ink); }
+.pg-band p { color: var(--dim); }
+.pg-band a { color: var(--green); }
+.read-prog { display: none; }
+/* 긴 화면 차례(content-pages.js): 넘기기 대신 펼친 본문 + 맨 위 차례. 번호 알약 대신 밑줄 글자 링크(v7) */
+.cp-toc { max-width: calc(var(--rm-max) - 40px); margin: 8px auto 32px; padding: 16px 20px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
 .cp-toc ol { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 24px; }
-/* v7: 번호 붙은 알약 칩 대신 밑줄 글자 링크(평가: 알약이 화면마다 4~10개라 AI 티, 재생 사업은 9종인데 번호가 1~10) */
 .cp-toc a { display: inline-flex; align-items: center; min-height: 40px; color: var(--green); text-decoration: underline; text-underline-offset: 4px; font-weight: 600; font-size: 15px; }
 .cp-toc a:hover { color: var(--green-press); }
 [data-content-book] > section { scroll-margin-top: 88px; }
+/* 접이 하나(R2 6 .rm-disclosure): 제목 줄 하나가 단추(18/700·높이 56·▸). 데이터 출처의 접는 주제(content-pages.js .cp-fold)·소개 질문도 같은 모양 */
+:is(details.rm-disclosure, details.cp-fold, .about-page details:not(.consent-full)) { margin: 0; padding: 0; background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; grid-column: 1 / -1; width: 100%; box-sizing: border-box; }
+:is(details.rm-disclosure, details.cp-fold, .about-page details:not(.consent-full)) > summary { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 12px 0; cursor: pointer; list-style: none; font-size: var(--t-h3); font-weight: 700; color: var(--ink); }
+:is(details.rm-disclosure, details.cp-fold, .about-page details:not(.consent-full)) > summary::-webkit-details-marker { display: none; }
+:is(details.rm-disclosure, details.cp-fold, .about-page details:not(.consent-full)) > summary::before { content: "▸"; flex: none; width: 16px; color: var(--dim); transition: transform .2s; }
+:is(details.rm-disclosure, details.cp-fold, .about-page details:not(.consent-full))[open] > summary::before { transform: rotate(90deg); }
+:is(details.rm-disclosure, details.cp-fold) > summary h2 { margin: 0; font-size: var(--t-h3); color: var(--ink); }
+:is(details.rm-disclosure, details.cp-fold, .about-page details:not(.consent-full))[open] { padding-bottom: 24px; }
+:is(details.rm-disclosure, details.cp-fold, .about-page details:not(.consent-full)) > :not(summary) { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { :is(details.rm-disclosure, details.cp-fold) > summary::before { transition: none; } }
+/* 접힌 구획은 띠 배경·위아래 여백을 걷어 목록처럼 붙인다(열면 원래 모양) */
+[data-fold-from] > section:has(details.cp-fold:not([open])) { padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; background: transparent; color: var(--ink); border: 0; }
+[data-fold-from] > section:has(details.cp-fold:not([open]))::before { display: none; }
+[data-fold-from] > section:has(details.cp-fold:not([open])) > .wrap { max-width: var(--rm-max); margin-left: auto; margin-right: auto; }
+/* 누름 크기 44px(R1 9, WCAG 2.5.8) */
+.h6-rank-all, .t4-jump { min-height: 44px; display: inline-flex; align-items: center; }
+.dash-seg button, .map-seg button, .map-close, #mapApp .btn, #mapApp select { min-height: 44px; }
+:is(main, footer) summary { min-height: 44px; box-sizing: border-box; padding-top: 10px; padding-bottom: 10px; }
+.map-year input[type="range"], .t4-slider input { height: 44px; }
+main table td a, main table th a { display: inline-block; padding: 12px 0; margin: -12px 0; }
+/* R3 6: 문단 속이 아니라 한 줄을 통째로 차지하는 링크·요약(고른 동 카드의 경로·보고서·출처 링크, 근거 읽는 법·재생 사업 링크)은 누름 44px.
+   실측: 동 고른 뒤 탐색 40px 미만 단독 누름 1440 41개·768 69개·390 28개, 근거 4개, 재생 사업 7개(문단 속 링크는 센 것에서 뺐다) */
+.map-crumbs a, .map-report-link a, .map-hub a, .map-hub-more, .map-panel dd > a, .method-grid article > a, .pg-src a { display: inline-flex; align-items: center; min-height: 44px; }
+.map-hint > summary, .map-hint > a { display: flex; align-items: center; min-height: 44px; }
+.list-pages button, .list-pages select { min-width: 44px; min-height: 44px; }   /* 쪽 넘김(R2 7) */
+.rule-id { display: block; font-size: var(--t-cap); font-weight: 400; color: var(--dim); }
+.data-lic { font-size: var(--t-sub); color: var(--dim); }
+.dong-more { margin: 16px 0; }
+.hero-basis a { display: inline-flex; align-items: center; min-height: 44px; }
 
-/* 재생 사업 비교 표 */
-.pg-compare table { border-collapse: collapse; width: 100%; background: #fff; }
-.pg-compare th, .pg-compare td { text-align: left; vertical-align: top; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 15px; }
-.pg-compare thead th { background: var(--bg); color: var(--ink); font-size: 14px; box-shadow: inset 0 -2px 0 var(--ink); }   /* v7.9: 검은 띠만 무게가 튄다(7회차) → 다른 표와 같은 머리 */
-.pg-compare tbody th a { font-weight: 700; color: var(--green); }
-.pg-compare ul { margin: 0; padding-left: 1.1em; }
-.pg-compare .table-wrap table { min-width: 860px; }
-
-/* ── 상태 안내: 빨간 '쓰지 마세요' 대신 무엇이 승인 전이고 어떻게 써도 되는지 한 상자로(11-13 평가 1순위) ── */
-.rm-status, p.warn.rm-status { background: var(--amber-bg); color: var(--ink); border-left: 4px solid var(--amber); border-radius: 8px; padding: 14px 16px; font-size: 16px; }
-.rm-status b { color: var(--amber); }
-
-/* ── 동네 찾기: 휴대폰·태블릿에서 검색창을 지도 위로(11-13 평가: 첫 화면에 검색이 없다) ── */
-@media (max-width: 1099px) {
-  .explore-page #map .workspace-panel-inner { display: flex; flex-direction: column; }
-  .explore-page #map .workspace-panel-inner > .hero-head { order: -2; }
-  .explore-page #map .workspace-panel-inner > .hero-search { order: -1; }
-}
-
-/* 제목: v7부터 Pretendard 하나(부리 글꼴을 뺐다. 지도·표·숫자가 주인공인 화면에서 제목만 결이 달라 따로 놀았다) */
-.about-top h1, .t4-head h1 { font-weight: 700; letter-spacing: -0.03em; }
-
-/* 현장 화면 CSS가 모든 단추를 녹색 전체 폭으로 칠해 '메뉴' 단추가 커지던 것 바로잡음 */
-header.top .rm-menu-btn { width: auto !important; flex: none; background: #fff !important; color: var(--ink) !important; border: 1px solid var(--line-strong) !important; margin: 0 0 0 auto !important; min-height: 44px !important; padding: 0 14px !important; font-size: 16px !important; box-shadow: none !important; }
-header.top > .wrap:first-child { flex-wrap: nowrap; }
-/* 구역 계산: 입력 칸이 왼쪽 440px에만 있어 오른쪽이 비던 것(11-13 평가) */
-body.redev-v4 #f.card { max-width: 820px; }
-
-/* ── 동네 찾기 다듬기(11-13) ── */
-/* '현재 지도 자료' 접힘 상자가 지도 위에서 반 폭 빈 카드로 자리만 차지하던 것: 한 줄 글 링크로 */
-.map-hint.map-provenance { border: 0 !important; background: none !important; padding: 0 !important; box-shadow: none !important; min-height: 0; }
+/* ── 5. 화면별 ── */
+/* 5-1 동네 찾기(explore) */
+/* 휴대폰·태블릿: 검색창이 지도 위에 오는 것은 explore.html의 DOM 순서(hero-head → heroSearch → hero-map)가 정한다(R3 2) */
+/* '현재 지도 자료' 접힘 상자가 지도 위 반 폭 빈 카드로 자리만 차지하던 것: 한 줄 글 링크로 */
+.map-hint.map-provenance { border: 0; background: none; padding: 0; box-shadow: none; min-height: 0; }
 .map-hint.map-provenance > summary { font-size: 15px; color: var(--green); padding: 6px 0; }
-/* 동 요약 맨 위 '쇠퇴 3요건 중 N개': 단추가 좁은 칸에서 글을 짓누르던 것을 한 줄씩 */
-.sr-req { grid-template-columns: minmax(0, 1fr) !important; }
-.sr-req .sr-req-go { grid-column: 1 !important; grid-row: auto !important; justify-self: start; margin-top: 8px; }
+/* 동 요약 '쇠퇴 3요건 중 N개': 단추가 좁은 칸에서 글을 짓누르던 것을 한 줄씩. 왼쪽 띠 대신 1px 선 */
+.sr-req { grid-template-columns: minmax(0, 1fr); border: 1px solid var(--line); }
+.sr-req .sr-req-go { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 8px; }
+.sr-req.is-over, .sr-req.is-in { border-left-color: var(--line); }
 .sr-req-n b { font-size: 28px; }
-.cp-toc { max-width: calc(var(--rm-max) - 40px); margin-left: auto; margin-right: auto; }
-/* 소개 첫 구획(짙은 녹색 띠): 연두 단추 대신 흰 단추, 상태 상자는 어두운 글로 */
-.about-top .btn:not(.ghost) { background: #fff !important; color: var(--ink) !important; border-color: #fff !important; }
-.about-top .rm-status, .about-top .rm-status * { color: var(--ink) !important; }
-.about-top .rm-status b { color: var(--amber) !important; }
-
-/* ── 짙은 녹색 띠를 모두 걷는다(11-13 2차: 띠 위 짙은 제목이 안 보임, 쪽마다 머리 모양이 다름) ──
-   띠 색은 .pg-band::before·.about-top의 배경으로 칠해져 있어 둘 다 끈다 */
-.pg-band::before, .about-top::before, .about-top::after { display: none !important; }
-.pg-band { padding: 40px 0 24px !important; margin-bottom: 24px !important; }
-.pg-band h1 { color: var(--ink) !important; font-weight: 700; letter-spacing: -0.03em; }
-.about-top { background: transparent !important; color: var(--ink) !important; }
-.about-top h1, .about-top p, .about-top dt, .about-top dd, .about-top a:not(.btn) { color: var(--ink) !important; }
-.about-top .about-def { color: var(--dim) !important; }
-.about-top .btn:not(.ghost) { background: var(--green) !important; color: #fff !important; border-color: var(--green) !important; }
-.about-top .btn.ghost { background: #fff !important; color: var(--green) !important; border-color: var(--line-strong) !important; }
-.about-top img[src*="mascot"] { display: none; }
-/* 스크롤하면 나타나는 효과가 전체 캡처·인쇄에서 빈 칸을 남겼다(11-13 2차). 내용은 처음부터 보인다 */
-[data-reveal], .motion [data-reveal] { opacity: 1 !important; transform: none !important; }
-/* 고정 머리 아래로 앵커·검색칸이 숨지 않게(11-13 2차 접근성) */
-html { scroll-padding-top: 80px; }
-body.field header.top .today { color: var(--dim) !important; }
-.t4-num dt small { display: block; font-size: 13px; color: var(--dim); font-weight: 400; }
-.hint { font-size: 15px; }
-.pg-who { background: #fff; border-left: 4px solid var(--green); border-radius: 8px; padding: 12px 16px; }
-/* 휴대폰: 지도 바로 아래에 결과 카드(11-13 2차: 카드가 범례 아래 한참 뒤에 나옴 → 지도 위로 올렸더니 v7 평가: '지도' 탭인데 첫 화면에 지도가 없다) */
+/* R3 3: 고른 동 카드 안의 3요건 요약은 카드 안의 카드가 아니라 카드 본문이다(테두리·안쪽 여백을 빼 폭 32px·높이 28px를 돌려받는다). '쇠퇴 3요건 중'은 '2개 해당'과 한 줄로 쓴다(map.js) */
+.map-panel > .sr-req { margin: 4px 0 0; padding: 0; border: 0; }
+.map-panel > .sr-req .sr-req-rows { margin: 8px 0; }
+.map-panel > .sr-req .sr-req-rows li { padding: 6px 0; }
+.sr-req.is-over .sr-req-n b, .sr-req-n b { color: var(--ink); }   /* 홈 카드처럼 먹색 */
+/* 지도 카드의 3요건 세 줄(홈 카드와 같은 모양) */
+.sr-req-rows { list-style: none; margin: 10px 0 12px; padding: 0; border-top: 1px solid var(--line); }
+.sr-req-rows li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.sr-req-rows b { font-variant-numeric: tabular-nums; font-size: 17px; }
+.sr-req-rows em { font-style: normal; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--off-bg); color: var(--neutral-ink); white-space: nowrap; }
+.sr-req-rows li.is-over em { background: var(--ink); color: #fff; }
+.sr-req-rows li.is-none em { background: var(--amber-bg); color: var(--amber); }
+.sr-req-rows li .sr-sub { grid-column: 1 / -1; font-size: 13px; color: var(--dim); font-weight: 400; line-height: 1.5; }
+/* 지도 카드 묶음 머리: 이름은 한 줄, 칩은 다음 줄로 */
+.sr-group summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.sr-group summary h4 { margin: 0; white-space: nowrap; letter-spacing: 0; }
+.sr-gsum { margin-left: 0; }
+/* 키보드 초점: map.css가 지운 윤곽을 되살린다 */
+#map path.leaflet-interactive:focus-visible { outline: none; stroke: var(--ink); stroke-width: 4; }
+/* 배경 지도는 회색(v7): 단계색이 산·공원의 초록, 도로의 주황과 섞였다 */
+.map-canvas .leaflet-tile-pane, .map-canvas .map-naver { filter: grayscale(1) contrast(.92) brightness(1.05); }
+/* 지도 +/- 단추가 30px쯤이라 누르기 어려웠다 → 40px */
+.map-canvas .leaflet-bar a, .map-canvas .leaflet-bar a:hover { width: 40px; height: 40px; line-height: 40px; font-size: 20px; }
+/* 스크립트가 탭을 고르기 전 잠깐 '조건' 패널이 지도 위에 보였다 → 처음부터 지도 패널만 */
+html.js .explore-page .evidence-workspace:not([data-workspace-ready]) .workspace-panel:not(#map) { display: none; }
+.map-legend i:not(.is-hatch) { opacity: .85; }   /* 범례 견본도 지도 칸과 같은 불투명도(R2 15) */
+.map-more { margin-top: 12px; border-top: 1px solid var(--line); }
+.map-more > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--green); }
+.map-panel, body.mx-on .mx-map .map-panel, body.mx-on .mx-map .map-panel.is-sheet { border-radius: 12px; }
+/* 화면 탭(조건·지도·문서)은 먹색 밑줄 3px, 고르기(칩·주제 격자)는 청록 채움, 시점은 세그먼트(R2 6: 선택 표시가 셋이었다) */
+.workspace-tabs button { border-radius: 0; }
+.workspace-tabs button[aria-selected="true"], .workspace-tabs button[aria-selected="true"]:hover { color: var(--ink); background: transparent; box-shadow: inset 0 -3px 0 var(--ink); }
+.workspace-tabs button:hover { background: var(--mute-bg); }
+.explore-page #mapApp .map-bundles, body.mx-on .mx-side .map-bundles { padding: 0; }   /* 칸 모양에서는 옛 가로 스크롤 줄 여백(map.css 2px 0 10px)을 없앤다(#96과 같은 수정) */
+#mapApp select { min-height: 48px; }
+/* Leaflet 확대 단추 44px: leaflet.css(.leaflet-touch .leaflet-bar a, 0,2,1)보다 무겁게 */
+#map .leaflet-control-zoom a, #map .leaflet-control-zoom a:hover { width: 44px; height: 44px; line-height: 44px; font-size: 20px; }
 @media (max-width: 1099px) {
-  /* 동 결과 시트는 감싸는 패널의 transform 때문에 화면이 아니라 패널 맨 아래에 붙었다. 휴대폰·태블릿에서는 지도 위에 펼친다 */
-  .explore-page .workspace-panel .map-stage { display: flex !important; flex-direction: column; }
-  .explore-page .workspace-panel .map-panel, .explore-page .workspace-panel .map-panel.is-sheet { position: static !important; order: 2 !important; max-height: none !important; margin: 12px 0 0 !important; border-radius: 12px !important; box-shadow: none !important; }
+  /* 휴대폰: 조건·지도·문서 탭이 머리 아래 붙어 본문을 가렸다(R2 8) → 제자리, 높이 44 */
+  .explore-page .workspace-tabs { position: static; }
+  .explore-page .workspace-tabs button { min-height: 44px; }
+}
+/* 넓은 화면(v7): 왼쪽 384px 패널 + 화면 남은 높이 전체 지도. explore-layout.js가 body.mx-on과 .mx를 만든다.
+   R3 1: 틀 바깥(탭 줄·소개 줄·#map·지도 칸)은 body.mx-on이 아니라 body.explore-page로 걸어, 스크립트가 돌기 전에도 같은 모양이다(전에는 JS 뒤 71px 올라가고 꼬리글이 밀려 CLS 0.28).
+   지도 칸은 그리기 전에도 최종 높이(100dvh - 머리·탭 122px)만큼 비워 둔다 */
+@media (min-width: 1100px) {
+  body.explore-page .evidence-workspace { max-width: none; padding: 0; }
+  body.explore-page .workspace-tabs { position: static; margin: 0; max-width: none; grid-template-columns: repeat(3, auto); justify-content: start; padding: 6px 16px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: #fff; }
+  body.explore-page .workspace-tabs button { min-height: 44px; padding: 6px 16px; }
+  body.explore-page .evidence-workspace[data-active-panel="map"] > .workspace-context { display: none; }
+  body.explore-page .evidence-workspace:not([data-active-panel="map"]) .workspace-panels { padding: 16px 24px 40px; }
+  body.explore-page #map { max-width: none; border: 0; border-radius: 0; }
+  body.explore-page #map > .workspace-panel-inner { padding: 0; }
+  body.explore-page #mapApp, body.explore-page #map .hero-map { display: block; margin: 0; padding: 0; border: 0; }
+  body.explore-page #mapApp { min-height: max(560px, calc(100dvh - 122px)); }
+  body.mx-on .mx { display: grid; grid-template-columns: 384px minmax(0, 1fr); height: calc(100dvh - var(--mx-top, 112px)); min-height: 560px; }
+  body.mx-on .mx-side { min-width: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; padding: 16px 16px 28px; border-right: 1px solid var(--line); background: #fff; }
+  /* #mapApp: v4.css의 '.explore-page #heroSearch'(1,1,0)·'.explore-page .evidence-workspace:not(...) .map-top'(0,4,0)보다 무겁게 */
+  body.mx-on #mapApp .mx-side > * { margin: 0; order: 0; }
+  body.mx-on #mapApp .mx-side .map-top { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }   /* v4의 가운데 맞춤이 남아 경로·요약이 가운데로 갔다 */
+  body.mx-on #mapApp .mx-side .map-top > * { margin: 0; }
+  body.mx-on .mx-side .map-bundles, body.mx-on .mx-side .map-inds { display: flex; flex-wrap: wrap; overflow: visible; gap: 6px; }
+  body.mx-on .mx-map .map-panel, body.mx-on .mx-map .map-panel.is-sheet { position: absolute; top: 12px; right: 12px; bottom: auto; left: auto; z-index: 2; width: 360px; height: auto; max-height: calc(100% - 24px); overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: 16px; box-shadow: 0 8px 24px var(--shade-16); }
+  body.mx-on .mx-side .map-bottom .map-list { max-height: 160px; }
+  body.mx-on .mx-side .map-crumbs { justify-content: flex-start; }
+  body.mx-on .mx-side .map-ctl, body.mx-on .mx-side > .map-bottom { padding-top: 12px; border-top: 1px solid var(--line); }
+  body.mx-on .mx-side .hero-head h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  body.mx-on .mx-side .hero-head .lead, body.mx-on .mx-side .hero-basis { font-size: 13px; line-height: 1.55; color: var(--dim); }
+  body.mx-on .mx-map { position: relative; min-width: 0; }
+  body.mx-on .mx-map .map-stage { display: block; height: 100%; }
+  body.mx-on .mx-map .map-canvas { height: 100%; min-height: 0; border: 0; border-radius: 0; }
+  body.mx-on .mx-side .map-legend { margin: 0; }   /* 범례는 지도 밖, 왼쪽 패널 '지표' 줄 바로 아래(R1 7) */
+  /* 주제 넷은 2×2 칸 단추(한 덩어리), 지표 칩 앞 장식 그림은 뺀다(v7.3) */
+  body.mx-on .mx-side .map-bundles { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+  body.mx-on .mx-side .map-bundles button { min-height: 44px; margin: 0; padding: 6px 8px; border: 0; border-radius: 0; background: var(--card); color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; box-shadow: inset -1px -1px 0 var(--line); }
+  body.mx-on .mx-side .map-bundles button[aria-pressed="true"] { background: var(--green); color: #fff; }
+  body.mx-on .mx-side .map-bundles button:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
+  body.mx-on .mx-side .map-inds .dash-chip .map-ico { display: none; }
+  body.mx-on .mx-side .map-top, body.mx-on .mx-side .map-top summary, body.mx-on .mx-side .map-crumbs ol { text-align: left; justify-content: flex-start; margin-left: 0; }
+}
+/* 휴대폰·태블릿: 검색 → 지도 → 고른 동 카드 → 지표 단추·범례 → 이동줄·연도·시점 → 나머지(R3 2: 팀원 PR #78 결정).
+   순서는 CSS가 아니라 DOM이 정한다(map.js arrange·render가 그 순서로 그리고, 동네 현황 카드 #heroLive는 explore.html에서 지도 뒤에 둔다). R1 7의 display: contents·order 줄을 지웠다 */
+@media (max-width: 1099px) {
+  /* 동 결과 시트는 감싸는 패널의 transform 때문에 패널 맨 아래에 붙었다 → 지도 아래에 펼친다 */
+  .explore-page .workspace-panel .map-panel, .explore-page .workspace-panel .map-panel.is-sheet { position: static; max-height: none; margin: 12px 0 0; border-radius: 12px; box-shadow: none; }
   .explore-page .workspace-panel .map-panel.is-sheet::before { display: none; }
-  body.sheet-open { overflow: auto !important; }
+  body.sheet-open { overflow: auto; }
+  .explore-page #mapApp { display: flex; flex-direction: column; min-height: 800px; }   /* R3 1: 지도를 그리기 전에도 꼬리글이 첫 화면 밖에 머문다(그린 뒤 실측 1,130~1,180px) */
+  .explore-page #map .workspace-panel-inner { display: flex; flex-direction: column; }
+  .explore-page .workspace-panel .map-canvas { height: clamp(260px, 42dvh, 480px); }   /* 고른 동 결과가 첫 화면에 걸치게(9회차) */
+  .explore-page #mapApp .map-pick { margin-top: 12px; }
+  .explore-page #mapApp .map-pick:empty { display: none; }
+  .explore-page #mapApp .map-legend { margin: 12px 0 0; }
+  .explore-page #mapApp > .map-top { margin-top: 12px; }
+  /* 주제 넷은 2×2 칸 단추(한 덩어리), 지표 칩 앞 장식 그림은 뺀다(v7.3) */
+  body.mx-on .mx-side .map-bundles { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+  body.mx-on .mx-side .map-bundles button { min-height: 44px; margin: 0; padding: 6px 8px; border: 0; border-radius: 0; background: var(--card); color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; box-shadow: inset -1px -1px 0 var(--line); }
+  body.mx-on .mx-side .map-bundles button[aria-pressed="true"] { background: var(--green); color: #fff; }
+  body.mx-on .mx-side .map-bundles button:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
+  body.mx-on .mx-side .map-inds .dash-chip .map-ico { display: none; }
+  body.mx-on .mx-side .map-top, body.mx-on .mx-side .map-top summary, body.mx-on .mx-side .map-crumbs ol { text-align: left; justify-content: flex-start; margin-left: 0; }
 }
-/* 동네 찾기는 머리 아래 조건·지도·문서 탭도 붙어 있어 앵커가 더 깊이 가려진다 */
-html:has(body.explore-page) { scroll-padding-top: 140px; }
-
-/* ── 인쇄: 메뉴·바닥글을 빼고 큰 글씨로(동 페이지 회의용 한 장, 11-13) ── */
-@media print {
-  header.top, .tabbar, footer, .rm-nav, .print-row, .skip, nav[aria-label="위치"] { display: none !important; }
-  body { background: #fff !important; font-size: 14pt !important; line-height: 1.55 !important; padding: 0 !important; }
-  h1 { font-size: 26pt !important; margin: 0 0 6pt !important; }
-  h2 { font-size: 17pt !important; break-after: avoid; }
-  table { font-size: 12pt !important; }
-  .table-wrap { overflow: visible !important; }
-  .table-wrap table { min-width: 0 !important; }
-  a { color: #000 !important; text-decoration: none !important; }
-  /* 표·구역 통째로 쪼개지 말라고 하면 긴 표가 다음 쪽으로 밀려 첫 쪽이 비었다(v9: 회의용 인쇄 5쪽, 첫 쪽은 제목과 두 문장) → 줄 단위로만 */
-  tr, li, .answer { break-inside: avoid; }
-  thead { display: table-header-group; }
+/* 휴대폰·태블릿: 검색 바로 아래 지도 → 범례 → 고른 동 카드 → 주제·지표(R1 7). 지도 칸과 아래 묶음을 풀어(display: contents) 같은 줄에 세운다 */
+@media (max-width: 1099px) {
+  .explore-page .workspace-panel .map-stage { display: flex; flex-direction: column; }
+  /* 동 결과 시트는 감싸는 패널의 transform 때문에 패널 맨 아래에 붙었다 → 지도 아래에 펼친다 */
+  .explore-page .workspace-panel .map-panel, .explore-page .workspace-panel .map-panel.is-sheet { position: static; order: 2; max-height: none; margin: 12px 0 0; border-radius: 12px; box-shadow: none; }
+  .explore-page .workspace-panel .map-panel.is-sheet::before { display: none; }
+  body.sheet-open { overflow: auto; }
+  .explore-page #mapApp { display: flex; flex-direction: column; }
+  .explore-page .workspace-panel .map-canvas { height: clamp(260px, 42dvh, 480px); }   /* 고른 동 결과가 첫 화면에 걸치게(9회차) */
+  .explore-page #mapApp > .map-stage, .explore-page #mapApp > .map-bottom { display: contents; }
+  .explore-page #mapApp .map-canvas { order: -3; }
+  .explore-page #mapApp .map-legend { order: -2; margin: 8px 0 0; }
+  .explore-page #mapApp .map-panel { order: -1; }
+  .explore-page #mapApp > .map-top { margin-top: 12px; }
+  /* 주제 넷은 2×2 칸 단추(옆으로 밀려 '상권 변화·모든 지표'가 잘려 보였다) */
+  .explore-page #mapApp .map-bundles { display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 8px; }
+  .explore-page #mapApp .map-bundles button { min-height: 44px; margin: 0; padding: 6px 8px; border: 0; border-radius: 0; background: var(--card); color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; box-shadow: inset -1px -1px 0 var(--line); white-space: normal; }
+  .explore-page #mapApp .map-bundles button[aria-pressed="true"] { background: var(--green); color: #fff; }
 }
+/* 5-2 건물 4D */
+.t4-head h1 { font-weight: 700; letter-spacing: -0.03em; }
+.t4-num dt small { display: block; font-size: 13px; color: var(--dim); font-weight: 400; }
+.t4-basis { font-size: var(--t-sub); }   /* 행정동·법정동 차이 설명은 본문에 가까운 크기로(7회차) */
+.t4-time { border-radius: 12px; }
+/* MapLibre 확대 단추 40px, '출처 보기' 단추 44px. maplibre-gl.css의 29·24px를 덮는다 */
+.maplibregl-ctrl-group button { width: 40px; height: 40px; }
+.maplibregl-ctrl-attrib-button { width: 44px; height: 44px; background-position: center; background-repeat: no-repeat; }   /* 반복하면 ⓘ 그림이 세 개로 깔렸다(R2 7) */
+/* 5-3 서비스 소개 첫 구획 */
+.about-top h1 { font-weight: 700; letter-spacing: -0.03em; }
+.about-top p, .about-top dt, .about-top dd, .about-top a:not(.btn) { color: var(--ink); }
+.about-top .about-def { color: var(--dim); }
+.about-top img[src*="mascot"] { display: none; }
+/* 소개 '이럴 때 씁니다'(R3 9): 링크 한 줄(44px) + 한 문장 설명 */
+.about-use { margin: 12px 0; }
+.about-use a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; }
+.about-use span { display: block; color: var(--dim); font-size: var(--t-sub); }
+/* 5-4 구역 계산: 입력 칸이 왼쪽 440px에만 있어 오른쪽이 비던 것 + 넓은 화면 오른쪽에 실제 계산 견본 */
+body.redev-v4 #f.card { max-width: 820px; }
+.redev-sample { margin: 16px 0; max-width: 640px; }
+.redev-sample img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.redev-sample figcaption { font-size: 15px; color: var(--dim); margin-top: 8px; }
+.redev-sample details { margin-top: 8px; }
+.redev-sample details summary { cursor: pointer; color: var(--green); font-weight: 700; min-height: 40px; display: flex; align-items: center; }
+@media (min-width: 1100px) {
+  /* 현장 화면 본문도 머리·다른 쪽과 같은 1200px 격자(로고와 제목의 왼쪽 선을 맞춘다) */
+  body.field main { max-width: var(--rm-max); padding-left: 20px; padding-right: 20px; }
+  body.field main > :is(.breadcrumb, h1, h1 + .sub) { grid-column: 1 / -1; }
+  body.field main > section[aria-labelledby="listTitle"] { grid-row: 4 / span 40; }
+  body.redev-v4 main > #out { grid-row: 6; }
+}
+@media (min-width: 1180px) {
+  body.redev-v4 #main { display: grid; grid-template-columns: minmax(0, 1fr) 400px; column-gap: 32px; align-items: start; }
+  body.redev-v4 #main > * { grid-column: 1; }
+  body.redev-v4 #main > :is(.breadcrumb, h1, h1 + .sub) { grid-column: 1 / -1; }
+  body.redev-v4 #main > .redev-sample { grid-column: 2; grid-row: 4 / span 4; position: sticky; top: 88px; margin: 0; }
+}
+/* 보관함도 같은 격자(로고 x와 제목 x가 6px 어긋났다, R2 3) */
+.home.box-v4 { max-width: var(--rm-max); padding-left: 20px; padding-right: 20px; }
+/* 5-5 동 페이지 */
+.biz-zero { display: block; margin-top: 4px; font-size: var(--t-cap); font-weight: 400; line-height: 1.5; color: var(--dim); }   /* R3 11: 사업체 감소율 0%의 뜻 한 줄 */
 .print-row { margin: 8px 0 16px; }
-
-/* 동 페이지 주요 지표 표: 휴대폰에서 값 칸이 화면 밖으로 밀리던 것(11-13 3차) — 줄마다 항목·값·기준일·출처를 위아래로 */
+.dong-status { font-size: var(--t-sub); color: var(--dim); margin: 0 0 8px; }
+.dong-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.dong-acts .btn { display: inline-flex; align-items: center; }
+/* 주요 지표 표: 휴대폰에서 값 칸이 화면 밖으로 밀리던 것 → 줄마다 항목·값·기준일·출처를 위아래로 */
 @media (max-width: 600px) {
-  .table-wrap table.kv { min-width: 0 !important; }
+  .table-wrap table.kv { min-width: 0; }
+  table.kv caption { display: block; width: auto; }   /* R3 5: 표를 block으로 풀면 table-caption이 익명 표에 싸여 폭이 69px(낱말 하나)로 줄었다 */
   table.kv, table.kv tbody, table.kv tr, table.kv th, table.kv td { display: block; width: auto; text-align: left; }
   table.kv thead { display: none; }
   table.kv tr { padding: 14px 0; border-bottom: 1px solid var(--line); }
   table.kv th { border: 0; padding: 0 0 4px; font-size: 16px; }
   table.kv td { border: 0; padding: 2px 0; }
   table.kv td.num { font-size: 22px; font-weight: 800; }
-  table.kv td a { overflow-wrap: anywhere; font-size: 14px; }
+  table.kv td a { overflow-wrap: anywhere; font-size: var(--t-cap); }
 }
-
-/* 구역 계산: 넓은 화면에서 입력 오른쪽 빈 곳에 실제 계산 견본(11-13 3차: 결과가 어떤 모양인지 미리 볼 수 없음) */
-.redev-sample { margin: 16px 0; max-width: 640px; }
-.redev-sample img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-.redev-sample figcaption { font-size: 15px; color: var(--dim); margin-top: 8px; }
-@media (min-width: 1180px) {
-  body.redev-v4 #main { display: grid; grid-template-columns: minmax(0, 1fr) 400px; column-gap: 32px; align-items: start; }
-  body.redev-v4 #main > * { grid-column: 1; }
-  body.redev-v4 #main > .redev-sample { grid-column: 2; grid-row: 1 / span 4; position: sticky; top: 88px; margin: 0; }
-}
-
-/* 동 페이지(site.js 없음) 휴대폰 머리: 옛 메뉴가 두 줄로 펼쳐져 화면이 옆으로 밀리던 것(11-13 4차). 한 줄로 두고 메뉴 줄만 옆으로 민다 */
-@media (max-width: 1099px) {
-  header.top .wrap:not(:has(.rm-nav)) { flex-wrap: wrap; row-gap: 0; }
-  header.top .wrap:not(:has(.rm-nav)) .site-nav { flex: 1 0 100%; flex-wrap: nowrap; overflow-x: auto; margin: 0 -4px; padding-bottom: 4px; scrollbar-width: thin; }
-  header.top .wrap:not(:has(.rm-nav)) .site-nav a { flex: none; font-size: 15px; padding: 8px 10px; }
-}
-/* 동 요약 '2개' 글자색을 홈 카드처럼 먹색으로 */
-.sr-req-n b { color: var(--ink) !important; }
-.redev-sample details { margin-top: 8px; }
-.redev-sample details summary { cursor: pointer; color: var(--green); font-weight: 700; min-height: 40px; display: flex; align-items: center; }
-
 /* 행정동 목록: 시·도별 접기 */
 .dong-sido { border-top: 1px solid var(--line); padding: 4px 0; }
 .dong-sido > summary { cursor: pointer; font-size: 20px; font-weight: 700; min-height: 52px; display: flex; align-items: center; gap: 10px; }
 .dong-sido > summary small { font-size: 15px; color: var(--dim); font-weight: 400; }
 .dong-sido section h2 { font-size: 18px; margin: 16px 0 8px; }
-
-/* v7 동네 찾기 지도 화면(2026-11-13): explore-layout.js가 body.mx-on과 .mx(왼쪽 패널 + 지도)를 만든다.
-   경쟁 서비스 분해(Felt·PLATEAU VIEW·디스코·밸류맵)에서 공통: 지도는 화면 남은 높이 전체, 조작은 왼쪽 한 줄 패널, 휠은 지도 확대. */
-@media (min-width: 1100px) {
-  body.mx-on .evidence-workspace { max-width: none; padding: 0; }
-  body.mx-on .workspace-tabs { position: static; margin: 0; max-width: none; grid-template-columns: repeat(3, auto); justify-content: start; padding: 6px 16px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: #fff; }
-  body.mx-on .workspace-tabs button { min-height: 36px; padding: 6px 16px; }
-  body.mx-on .evidence-workspace[data-active-panel="map"] > .workspace-context { display: none; }
-  body.mx-on .evidence-workspace:not([data-active-panel="map"]) .workspace-panels { padding: 16px 24px 40px; }
-  body.mx-on #map { max-width: none; border: 0; border-radius: 0; }
-  body.mx-on #map > .workspace-panel-inner { padding: 0; }
-  body.mx-on #mapApp, body.mx-on #map .hero-map { display: block; margin: 0; padding: 0; border: 0; }
-  body.mx-on .mx { display: grid; grid-template-columns: 384px minmax(0, 1fr); height: calc(100dvh - var(--mx-top, 112px)); min-height: 560px; }
-  body.mx-on .mx-side { min-width: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; padding: 16px 16px 28px; border-right: 1px solid var(--line); background: #fff; }
-  body.mx-on .mx-side > * { margin: 0 !important; order: 0 !important; }
-  body.mx-on .mx-side .map-top { display: flex !important; flex-direction: column; align-items: stretch !important; gap: 10px; }   /* v4의 가운데 맞춤(align-items)이 남아 경로·요약이 가운데로 갔다 */
-  body.mx-on .mx-side .map-top > * { margin: 0 !important; }
-  body.mx-on .mx-side .map-bundles, body.mx-on .mx-side .map-inds { display: flex; flex-wrap: wrap !important; overflow: visible !important; gap: 6px; }
-  body.mx-on .mx-map .map-panel, body.mx-on .mx-map .map-panel.is-sheet { position: absolute !important; top: 12px; right: 12px; bottom: auto; left: auto; z-index: 2; width: 360px; height: auto !important; max-height: calc(100% - 24px) !important; overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: 16px; border-radius: 10px; box-shadow: 0 8px 24px rgba(15, 43, 39, .16); }
-  body.mx-on .mx-side .map-bottom .map-list { max-height: 160px; }
-  body.mx-on .mx-side .map-crumbs { justify-content: flex-start !important; }
-  body.mx-on .mx-side .map-ctl, body.mx-on .mx-side > .map-bottom { padding-top: 12px; border-top: 1px solid var(--line); }
-  body.mx-on .mx-side .hero-head h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  body.mx-on .mx-side .hero-head .lead, body.mx-on .mx-side .hero-basis { font-size: 13px; line-height: 1.55; color: var(--dim); }
-  body.mx-on .mx-map { position: relative; min-width: 0; }
-  body.mx-on .mx-map .map-stage { display: block !important; height: 100% !important; }
-  body.mx-on .mx-map .map-canvas { height: 100% !important; min-height: 0; border: 0; border-radius: 0; }
-}
-
-/* v7 배경 지도는 회색으로(2026-11-13): 노후도·감소율 단계색이 산·공원의 초록, 도로의 주황과 섞여 어느 칸이 짙은지 읽기 어려웠다.
-   Kepler·PLATEAU VIEW처럼 배경은 무채, 색은 자료에만 둔다. 지명·도로 모양은 그대로 보인다. */
-.map-canvas .leaflet-tile-pane, .map-canvas .map-naver { filter: grayscale(1) contrast(.92) brightness(1.05); }
-
-/* v7 아래 탭 다섯(머리 메뉴와 같은 이름). 390px 폭에 다섯 이름이 한 줄로 들어가게 글자를 한 단계 줄인다 */
-.tabbar { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.tabbar a { font-size: 13px; letter-spacing: -0.02em; white-space: nowrap; }
-
-/* v7 머리글: 로고·메뉴 줄은 모든 화면에서 화면 폭 전체(왼쪽 24px)로 같게. 평가: 로고가 홈 140px, 구역·현장 150px, 동네 찾기 16px로 화면마다 달랐다.
-   지도 화면(동네 찾기·4D)이 화면 폭 전체를 쓰므로 그쪽에 맞춘다. 본문은 그대로 가운데 정렬 */
-/* v8: 머리글은 본문과 같은 격자(1200px, 안쪽 20px)라 로고·메뉴의 왼쪽 선이 제목·본문과 맞는다.
-   v7에서 모든 화면을 화면 폭 전체로 했더니 로고 24px·제목 140px로 어긋났다(대표 지적 '싱크가 안 맞는다'). 지도가 화면 전체인 앱 화면(동네 찾기·4D)만 폭 전체 */
-header.top > .wrap:first-child { max-width: var(--rm-max) !important; padding-left: 20px; padding-right: 20px; }
-body.explore-page header.top > .wrap:first-child, body:has(.t4-app) header.top > .wrap:first-child { max-width: none !important; padding-left: 24px; padding-right: 24px; }
-@media (max-width: 720px) { header.top > .wrap:first-child, body.explore-page header.top > .wrap:first-child, body:has(.t4-app) header.top > .wrap:first-child { padding-left: 16px; padding-right: 16px; } }
-/* 현장 화면(구역 계산·현장 기록)의 제목 띠와 본문도 같은 격자로(제목이 150px, 다른 화면은 140px였다) */
-@media (min-width: 721px) { body.field header.top > .wrap ~ .wrap { max-width: var(--rm-max) !important; padding-left: 20px !important; padding-right: 20px !important; } }
-
-/* v7 지도 카드의 3요건 세 줄(홈 카드와 같은 모양) */
-.sr-req-rows { list-style: none; margin: 10px 0 12px; padding: 0; border-top: 1px solid var(--line); }
-.sr-req-rows li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
-.sr-req-rows b { font-variant-numeric: tabular-nums; font-size: 17px; }
-.sr-req-rows em { font-style: normal; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--off-bg); color: var(--neutral-ink); white-space: nowrap; }
-/* 상태 꼬리표는 홈 카드와 같은 모양(10회차: 홈은 알약, 지도 카드는 글자라 다른 표시로 읽혔다) */
-.sr-req-rows li.is-over em { background: var(--ink); color: #fff; }
-.sr-req-rows li.is-none em { background: var(--amber-bg); color: var(--amber); }
-
-/* v7: 동 페이지처럼 site.js 없이 그린 옛 메뉴에서도 '시범 상담'은 단추로(머리 메뉴 한 벌과 같은 모양) */
-header.top .site-nav a[href$="about.html#contact"] { background: var(--green); color: #fff; border-radius: 8px; padding: 8px 14px; font-weight: 700; }
-
-/* v7: 동네 찾기를 열 때 workspace.js가 탭을 고르기 전 잠깐 '조건' 패널이 지도 위에 보였다(시연 녹화에서 발견). 스크립트가 켜진 화면은 처음부터 지도 패널만 */
-html.js .explore-page .evidence-workspace:not([data-workspace-ready]) .workspace-panel:not(#map) { display: none; }
-
-/* v7 접근성(11-13 6회차): 지도 +/- 단추가 30px쯤이라 누르기 어려웠다 → 40px. 파일 고르기 단추도 다른 단추와 같은 모양 */
-.map-canvas .leaflet-bar a, .map-canvas .leaflet-bar a:hover { width: 40px; height: 40px; line-height: 40px; font-size: 20px; }
-.maplibregl-ctrl-group button { width: 40px !important; height: 40px !important; }
-input[type="file"]::file-selector-button { min-height: 40px; margin-right: 10px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
-
-/* v7.3 동네 찾기 왼쪽 패널(평가 6회차: 알약 단추가 줄줄이라 빽빽하고 AI 티).
-   주제 넷은 2×2 칸 단추(한 덩어리), 지표는 작은 네모 칩, 지표 칩 앞 장식 그림은 넓은 화면 패널에서 뺀다 */
-body.mx-on .mx-side .map-bundles { display: grid !important; grid-template-columns: 1fr 1fr; gap: 0 !important; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
-body.mx-on .mx-side .map-bundles button { min-height: 40px; margin: 0; padding: 6px 8px; border: 0; border-radius: 0; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; box-shadow: inset -1px -1px 0 var(--line); }
-body.mx-on .mx-side .map-bundles button[aria-pressed="true"] { background: var(--green); color: #fff; }
-body.mx-on .mx-side .map-bundles button:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
-body.mx-on .mx-side .map-inds .dash-chip { min-height: 34px; padding: 4px 10px; border-radius: 6px; font-size: 13px; }
-body.mx-on .mx-side .map-inds .dash-chip .map-ico { display: none; }
-body.mx-on .mx-side .map-top, body.mx-on .mx-side .map-top summary, body.mx-on .mx-side .map-crumbs ol { text-align: left; justify-content: flex-start !important; margin-left: 0; }
-/* 고른 지표는 주제와 같은 청록 계열 한 가지(평가: 선택 표시가 청록·검정 두 가지였다) */
-body.mx-on .mx-side .map-inds .dash-chip[aria-pressed="true"] { background: var(--soft); color: var(--green-press); border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
-
-/* v7.4 휴대폰·태블릿 동네 찾기도 주제 넷은 2×2 칸 단추(옆으로 밀려 '상권 변화·모든 지표'가 잘려 보였다) */
-@media (max-width: 1099px) {
-  .explore-page #mapApp .map-bundles { display: grid !important; grid-template-columns: 1fr 1fr; gap: 0 !important; overflow: hidden !important; border: 1px solid var(--line-strong); border-radius: 8px; }
-  .explore-page #mapApp .map-bundles button { min-height: 44px; margin: 0; padding: 6px 8px; border: 0; border-radius: 0; background: var(--card); color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; box-shadow: inset -1px -1px 0 var(--line); white-space: normal; }
-  .explore-page #mapApp .map-bundles button[aria-pressed="true"] { background: var(--green); color: #fff; }
-}
-/* 고른 지표 칩은 모든 폭에서 청록 한 가지(검정 채움은 쓰지 않는다) */
-.explore-page #mapApp .map-inds .dash-chip[aria-pressed="true"] { background: var(--soft); color: var(--green-press); border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
-
-/* v7.7 휴대폰 재생 사업 비교표: 줄을 카드처럼 쌓고 칸 이름을 앞에(옆으로 밀어야 보이던 '신청 요건') */
+/* 5-6 재생 사업 비교 표 */
+.pg-compare table { border-collapse: collapse; width: 100%; background: #fff; }
+.pg-compare th, .pg-compare td { text-align: left; vertical-align: top; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 15px; }
+.pg-compare thead th { background: var(--bg); color: var(--ink); font-size: var(--t-sub); box-shadow: inset 0 -2px 0 var(--ink); }
+.pg-compare tbody th a { font-weight: 700; color: var(--green); }
+.pg-compare ul { margin: 0; padding-left: 1.1em; }
+.pg-compare .table-wrap table { min-width: 860px; table-layout: fixed; }
+.pg-compare thead th:nth-child(1) { width: 16%; } .pg-compare thead th:nth-child(2) { width: 12%; } .pg-compare thead th:nth-child(3) { width: 24%; }
+.pg-list .pg-item p { font-size: var(--t-sub); line-height: 1.6; }
+@media (min-width: 1100px) { .pg-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 40px; } .pg-list > h2 { grid-column: 1 / -1; } }
+/* 휴대폰: 줄을 카드처럼 쌓고 칸 이름을 앞에(옆으로 밀어야 보이던 '신청 요건') */
 @media (max-width: 720px) {
-  .pg-compare table, .pg-compare tbody, .pg-compare tr, .pg-compare th, .pg-compare td { display: block; width: auto; min-width: 0 !important; }
+  .pg-compare table, .pg-compare tbody, .pg-compare tr, .pg-compare th, .pg-compare td { display: block; width: auto; min-width: 0; }
+  .pg-compare .table-wrap table { min-width: 0; }
   .pg-compare li { overflow-wrap: anywhere; }
   .pg-compare thead { display: none; }
   .pg-compare .table-wrap { overflow: visible; }
@@ -363,78 +457,32 @@ body.mx-on .mx-side .map-inds .dash-chip[aria-pressed="true"] { background: var(
   .pg-compare td::before { content: attr(data-label); display: block; font-size: 13px; font-weight: 600; color: var(--dim); }
   .pg-compare td ul { margin: 2px 0 0; padding-left: 1.1em; }
 }
-/* 4D 행정동·법정동 차이 설명은 본문에 가까운 크기로(7회차: 회색 작은 글은 회의에서 못 읽는다) */
-.t4-basis { font-size: 14px !important; }
-
-/* v7.8 지도 카드 묶음 머리: 이름(쇠퇴·노후)이 셈 칩에 밀려 두 줄로 꺾이던 것 → 이름은 한 줄, 칩은 다음 줄로 */
-.sr-group summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-.sr-group summary h4 { margin: 0; white-space: nowrap; letter-spacing: 0; }
-.sr-gsum { margin-left: 0; }
-
-/* v7.9 제목 띠가 머리글 안에 있는 화면(구역 계산·현장 기록 등): 머리글은 다른 화면과 같은 흰 줄 하나, 제목은 본문 바탕 위로.
-   평가 6·7회차: 이 두 화면만 제목이 메뉴 밑 흰 띠에 붙어 다른 사이트처럼 보였다. 제목 띠까지 붙어 다니던 고정 머리는 이 화면에서만 풀어 화면을 덜 가린다 */
-header.top:has(> .wrap ~ .wrap) { position: relative !important; background: transparent !important; border-bottom: 0 !important; }
-header.top:has(> .wrap ~ .wrap) > .wrap:first-child { background: var(--card); border-bottom: 1px solid var(--line); }
-header.top:has(> .wrap ~ .wrap) > .wrap ~ .wrap { background: transparent; padding-top: 28px !important; }
-
-/* v7.9(8회차): 구역 계산·현장 기록 머리글이 다른 화면(64px)보다 낮아 메뉴를 옮길 때 들썩였다 */
-header.top > .wrap:first-child { min-height: 64px !important; }
-/* 파일 칸: 브라우저 언어와 상관없이 '파일 고르기' 단추와 고른 파일 이름(영어 'Choose File'이 보이던 것). 입력은 단추 위에 투명하게 겹쳐 누르기·키보드가 그대로 된다 */
-.file-pick { position: relative; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 12px; }
-.file-pick input[type="file"] { position: absolute; left: 0; top: 0; width: 132px; height: 44px; opacity: 0; cursor: pointer; }
-.file-pick .btn { min-height: 44px; display: inline-flex; align-items: center; }
-.file-pick:focus-within .btn { outline: 3px solid var(--ink); outline-offset: 2px; }
-
-/* v7.10 범례는 지도 위 왼쪽 아래 상자(Felt·Kepler처럼 지도와 같이 본다). 왼쪽 패널 층을 하나 줄인다.
-   .mx를 기준 상자로 삼아 패널의 스크롤 밖으로 꺼낸다(패널 안 DOM·map.js 위임은 그대로) */
-@media (min-width: 1100px) {
-  body.mx-on .mx { position: relative; }
-  body.mx-on .mx-side .map-legend { position: absolute; left: 400px; bottom: 44px; z-index: 3; width: max-content; max-width: 340px; margin: 0;
-    padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 14px var(--shade-16); }
-  body.mx-on .mx-side .map-legend .map-legend-note { font-size: 12px; }   /* 출처·기준연도는 지도 캡처에도 찍히게 범례 안에 둔다(10회차) */
-}
-.map-more { margin-top: 12px; border-top: 1px solid var(--line); }
-.map-more > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--green); }
-
-/* v7.11 휴대폰·태블릿 동네 찾기: 검색 바로 아래 지도(주제·지표 단추는 지도 아래). 8회차: 지도가 화면 가운데(약 485px)부터 나왔다 */
-@media (max-width: 1099px) {
-  .explore-page #mapApp { display: flex; flex-direction: column; }
-  .explore-page #mapApp > .map-stage { order: -1; margin-bottom: 12px; }
-  .explore-page .workspace-panel .map-canvas { height: clamp(260px, 42dvh, 480px) !important; }   /* 고른 동 결과가 첫 화면에 걸치게(9회차) */
-}
-
-/* v8 접는 주제(서비스 소개·재생 사업): 제목 줄 하나가 단추. 열린 칸은 본문 그대로 */
-details.cp-fold { border-top: 1px solid var(--line); }
-details.cp-fold > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 12px 0; cursor: pointer; list-style: none; }
-details.cp-fold > summary::-webkit-details-marker { display: none; }
-details.cp-fold > summary h2 { margin: 0 !important; font-size: 20px !important; color: var(--ink) !important; }
-details.cp-fold > summary::after { content: "열기"; flex: none; font-size: 14px; font-weight: 600; color: var(--green); }
-details.cp-fold[open] > summary::after { content: "닫기"; }
-details.cp-fold > summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-details.cp-fold[open] { padding-bottom: 24px; }
-@media print { details.cp-fold > summary::after { content: none; } }
-/* 접힌 구획은 띠 배경·위아래 여백을 걷어 목록처럼 붙인다(열면 원래 모양) */
-[data-fold-from] > section:has(details.cp-fold:not([open])) { padding-top: 0 !important; padding-bottom: 0 !important; margin-top: 0 !important; margin-bottom: 0 !important; background: transparent !important; color: var(--ink) !important; border: 0 !important; }
-[data-fold-from] > section:has(details.cp-fold:not([open]))::before { display: none !important; }
-/* 접힌 제목은 나타나기 효과(rv) 대상이 아니다(투명한 채 남아 빈 줄로 보였다), 두 단 격자 구획에서도 한 줄 전체 폭 */
-details.cp-fold > summary .rv, details.cp-fold > summary h2 { opacity: 1 !important; transform: none !important; }
-details.cp-fold { grid-column: 1 / -1; width: 100%; box-sizing: border-box; }
-[data-fold-from] > section:has(details.cp-fold:not([open])) > .wrap { max-width: var(--rm-max) !important; margin-left: auto !important; margin-right: auto !important; }
-
-/* v8 순위: '우리 동네 몇 위?' 찾기와 찾은 줄 강조 */
+/* 5-7 동네 순위: '우리 동네 몇 위?' 찾기와 찾은 줄 강조 */
 .rank-find { margin: 16px 0 8px; padding: 14px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; max-width: 560px; }
 .rank-find label { display: block; font-weight: 700; margin-bottom: 6px; }
 .rank-find-row { display: flex; gap: 8px; }
 .rank-find-row input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; font: inherit; }
-.rank-found { margin: 8px 0 0; font-weight: 700; color: var(--green-press); }
+/* R3 4: 입력 줄 높이(17px×1.7)가 48px 칸 안에서 datalist ▼를 5~6px 아래로 밀었다 → 줄 높이를 1로 줄이고(실측 차 0) ▼의 여백을 없앤다(글자 투명+배경 SVG 방식은 쓰지 않는다: 접근성 도구가 ▼를 못 본다) */
+#rankQ { line-height: 1; }
+#rankQ::-webkit-calendar-picker-indicator { margin: 0; padding: 0; align-self: center; }
+.rank-found { margin: 8px 0 0; color: var(--green-press); }   /* 첫 문장만 rank.js가 <b>로 굵게 */
 .rank-found:empty { display: none; }
 .rank-table tr.is-found td { background: var(--soft); font-weight: 700; }
-/* v9 저시력: 문서 화면의 작은 글(<small>·각주 번호)이 11.7px·9.8px까지 작아졌다 → 아래로 13px·12px을 지킨다 */
-main.page small { font-size: max(13px, .85em); }
-main.page sup { font-size: max(12px, .75em); }
-.sr-req-rows li span small { display: block; font-size: 13px; color: var(--dim); font-weight: 400; }   /* v9 2차: 사업체 수 자료 해 */
-/* v9 2차: 스크립트 없는 정적 화면(동 페이지)은 '메뉴' 단추로 바뀌지 않아 휴대폰에서 메뉴가 한 줄로 화면 밖까지 이어졌다 → 3칸 두 줄 */
-@media (max-width: 720px) {
-  header.top .wrap:not(:has(.rm-nav)) .site-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; gap: 0 6px; flex: 1 0 100%; }
-  header.top .wrap:not(:has(.rm-nav)) .site-nav a { justify-content: center; text-align: center; min-height: 44px; font-size: 14px; }   /* 누름 크기 44px(ui_smoke) */
+/* 5-8 홈 그림 반경 */
+.h6-flow-shot img, .h6-steps img { border-radius: 12px; }
+
+/* ── 6. 인쇄: 메뉴·바닥글을 빼고 큰 글씨로(동 페이지 회의용 한 장). 화면 규칙과 화면 CSS의 지정값을 모두 이겨야 해 !important ── */
+@media print {
+  header.top, .tabbar, footer, .rm-nav, .rm-menu-btn, .print-row, .skip, nav[aria-label="위치"] { display: none !important; }   /* 시트가 열린 .rm-nav.is-open·화면 CSS의 display보다 앞서야 한다 */
+  body { background: #fff; font-size: 14pt !important; line-height: 1.55; padding: 0; }   /* body.field(0,1,1)의 17px보다 앞서야 한다 */
+  h1 { font-size: 26pt !important; margin: 0 0 6pt !important; }   /* (0,1,1) 제목 단계 규칙보다 앞서야 한다 */
+  h2 { font-size: 17pt !important; break-after: avoid; }   /* 접이 제목(0,1,3) 등 화면 크기 규칙보다 앞서야 한다 */
+  table { font-size: 12pt !important; }   /* 동 페이지 .page table(0,1,1) 15px보다 앞서야 한다 */
+  .table-wrap { overflow: visible; }
+  .table-wrap table { min-width: 0 !important; }   /* 재생 사업 비교표(0,2,1) 860px보다 앞서야 한다 */
+  a { color: #000 !important; text-decoration: none !important; }   /* 화면별 링크 색·밑줄(.pg-band a, .cp-toc a 등)보다 앞서야 한다 */
+  /* 표·구역 통째로 쪼개지 말라고 하면 긴 표가 다음 쪽으로 밀려 첫 쪽이 비었다(v9) → 줄 단위로만 */
+  tr, li, .answer { break-inside: avoid; }
+  thead { display: table-header-group; }
+  details.cp-fold > summary::after { content: none; }
 }

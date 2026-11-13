@@ -74,8 +74,10 @@
     realestate: c => !!c.realestate && Array.isArray(c.realestate.sigungu),
   };
   // 이 범위(단위)에서 쓸 수 있는가. 안 되면 이유를 칩에 적는다. 숫자를 만들지 않는다
+  // R3 13: 큰 파일(realestate.json 1.96MB·migration.json 717KB)은 그 조건을 고를 때 받는다(첫 화면에서는 안 쓴다). 고른 조건이 있으면 render가 한 번만 받아 온다
+  const LAZY = { migration: 'migration.json', realestate: 'realestate.json' }, asked = new Set(), loaded = new Set();
   function condState(cond, ctx, unit) {
-    if (!SRC_READY[cond.src](ctx)) return { ok: false, why: '수집 중', th: null };
+    if (!SRC_READY[cond.src](ctx)) return { ok: false, why: LAZY[cond.src] && !loaded.has(cond.src) ? (asked.has(cond.src) ? '불러오는 중' : '눌러서 불러오기') : '수집 중', th: null };   // 받아 봤는데 없으면 그제야 '수집 중'
     if (!cond.units.includes(unit)) return { ok: false, why: '읍·면·동 단위만', th: null };
     const th = cond.th(ctx);
     if (th === null || th === undefined) return { ok: false, why: cond.src === 'realestate' ? '변화율 셀 없음' : '기준 없음', th: null };
@@ -245,7 +247,7 @@
     if (!url.searchParams.has('panel')) url.searchParams.set('panel', 'evidence');
     return url.pathname + url.search + url.hash;
   }
-  const api = { REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, entryReportMode, entryReportURL, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
+  const api = { lazy: { asked, loaded }, REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, entryReportMode, entryReportURL, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
   if (node) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewFind = api;
@@ -276,6 +278,7 @@
   }
   function render() {
     const c0 = st.ctx; if (!c0.index) return;
+    for (const id of st.sel.flat()) { const src = (condOf(id) || {}).src; if (LAZY[src] && !asked.has(src) && !c0[src]) { asked.add(src); fetchJson('data/national/' + LAZY[src], true).then(j => { st.ctx[src] = ok(j, 'sigungu'); loaded.add(src); render(); }); } }
     let ctx = c0, e = null;
     if (st.scope.sg) { e = emdCtx(st.scope.sg); ctx = { ...c0, emd: e && e.json, lv: e && e.lv, forecast: e && e.fc }; }
     $('[data-fd-scope]').innerHTML = scopeHTML();
@@ -361,7 +364,7 @@
       root.querySelector(`[data-fd-cond="${CSS.escape(rid || '')}"]`)?.focus({ preventScroll: true }); return;
     }
     const b = ev.target.closest('[data-fd-cond]');
-    if (b) { const id = b.dataset.fdCond, on = st.sel.flat().includes(id); if (b.getAttribute('aria-disabled') === 'true' && !on) return; st.sel = on ? dropId(st.sel, id) : [...st.sel, id]; st.page = 1; render(); root.querySelector(`[data-fd-cond="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }); return; }
+    if (b) { const id = b.dataset.fdCond, on = st.sel.flat().includes(id); if (b.getAttribute('aria-disabled') === 'true' && !on && !(LAZY[(condOf(id) || {}).src] && !asked.has(condOf(id).src))) return; st.sel = on ? dropId(st.sel, id) : [...st.sel, id]; st.page = 1; render(); root.querySelector(`[data-fd-cond="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }); return; }
     if (ev.target.closest('[data-fd-xlsx]')) { exportXlsx(); return; }
     const s = ev.target.closest('[data-fd-sort]'); if (s) { st.by = s.dataset.fdSort; st.page = 1; render(); root.querySelector(`[data-fd-sort="${st.by}"]`)?.focus({ preventScroll: true }); return; }
     const p = ev.target.closest('[data-fd-page]');
@@ -387,9 +390,9 @@
   const ok = (j, k) => (j && Array.isArray(j[k]) ? j : null);
   // 목록은 map.js와 같은 index_core.json(연도 요약 없음, 같은 캐시로 한 번만 받는다). 없으면 전체 index.json
   const core = fetchJson('data/national/index_core.json').then(c => (ok(c, 'sigungu') ? c : fetchJson('data/national/index.json')));
-  Promise.all([core, ...['living/index.json', 'designations.json', 'migration.json', 'forecast/index.json', 'realestate.json'].map((f, i) => fetchJson('data/national/' + f, i > 0))])
-    .then(([index, li, des, mig, fi, re]) => {
-      st.ctx = { index: ok(index, 'sigungu'), living: ok(li, 'indicators'), designations: ok(des, 'items'), migration: ok(mig, 'sigungu'), forecastIdx: ok(fi, 'horizons'), realestate: ok(re, 'sigungu') };
+  Promise.all([core, ...['living/index.json', 'designations.json', 'forecast/index.json'].map(f => fetchJson('data/national/' + f, true))])
+    .then(([index, li, des, fi]) => {
+      st.ctx = { index: ok(index, 'sigungu'), living: ok(li, 'indicators'), designations: ok(des, 'items'), migration: null, forecastIdx: ok(fi, 'horizons'), realestate: null };   // migration·realestate는 LAZY: 조건을 고를 때 받는다
       if (!st.ctx.index) { root.innerHTML = '<div class="fd-empty" data-state="error" role="alert"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>전국 자료 원본을 불러오지 못했습니다.<br>네트워크를 확인한 뒤 다시 열어 주세요.</p></div>'; return; }
       st.sgGeo = undefined; trackHash(); render();
     fetchJson('data/national/sigungu-overview.geojson').then(g => g && Array.isArray(g.features) ? g : fetchJson('data/national/sigungu.geojson'))

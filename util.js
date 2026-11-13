@@ -49,7 +49,21 @@
   // docgen.js plainSource와 같은 식이다(현장 화면은 util.js를 안 실어 거기 한 벌 더 있다. 시험이 둘을 대조한다)
   const plainSource = s => String(s || '').replace(/,?\s*docs\/\S+\.md(?:\s+[A-Z]+-[\d.]+)?/g, '').replace(/\[대조 필요\]/g, '(기준 원문 대조 필요)')
     .replace(/\[2차 인용, 원문 문서 미열람\]/g, '(2차 인용, 원문 미확인)').replace(/\[([^\]]+)\]/g, '($1)');
-  const api = { esc, isNum, roundD, fmt2, plainSource, fetchJson, unpackCells, flat, dongStem, dongHit, sidoShort };
+  // 받침에 맞는 조사(은/는·이/가). 끝의 괄호·숫자·기호는 건너뛰고 마지막 한글로 본다. 한글이 없으면 '은(는)'처럼 둘 다(#85: 세 곳에 따로 있던 계산을 하나로)
+  const josa = (word, a = '은', b = '는') => {
+    const ch = String(word).replace(/\([^)]*\)$/, '').replace(/[^가-힣]+$/, '').slice(-1);
+    return ch ? ((ch.charCodeAt(0) - 0xAC00) % 28 ? a : b) : `${a}(${b})`;
+  };
+  // R3 11: 사업체 감소율 0%는 '마지막 해 사업체 수가 최근 10년 중 가장 많다'는 뜻이다(식: (10년 최대 − 마지막 해) ÷ 10년 최대). 0이 채운 값처럼 읽혔다.
+  // 시계열로 실제 확인되는 때만 말한다(지어내지 않는다). 파이썬 export_dong_pages.biz_zero_note와 같은 글이다
+  const bizZeroNote = (points, rate) => {
+    if (rate !== 0) return '';
+    const pts = (points || []).filter(p => p && isNum(p[1])), last = pts[pts.length - 1];
+    if (!last || Math.max(...pts.filter(p => p[0] > last[0] - 10).map(p => p[1])) !== last[1]) return '';
+    return `${last[0]}년 사업체 수(${last[1].toLocaleString('ko-KR')}개)가 최근 10년 중 가장 많아 감소율이 0%입니다.`;
+  };
+  const BIZ_BOUNDARY = '사업체 출처 경계: 2019년까지는 쇠퇴진단지표(전국사업체조사 조사 기반), 2020년부터는 SGIS 전국사업체조사(등록 기반)라 이어서 비교할 때는 주의가 필요합니다.';
+  const api = { esc, isNum, roundD, fmt2, plainSource, fetchJson, unpackCells, flat, dongStem, dongHit, sidoShort, josa, bizZeroNote, BIZ_BOUNDARY };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root && root.document) { root.RenewUtil = api; root.renewFetch = fetchJson; }
 })(typeof window !== 'undefined' ? window : globalThis);

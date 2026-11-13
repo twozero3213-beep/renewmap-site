@@ -9,7 +9,7 @@
 .method-grid h3 { margin: 0 0 12px; font-size: 20px; }
 .method-grid p { margin: 8px 0; }
 .method-note { padding: 16px 20px; background: var(--soft); color: var(--soft-ink); border-radius: 8px; }
-.method-source { font-size: 14px; color: var(--dim); }
+.method-source { font-size: 15px; color: var(--dim); }
 .method-source a { text-underline-offset: 3px; }
 .method-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
 .method-checks { padding-left: 24px; }

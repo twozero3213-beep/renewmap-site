@@ -1,42 +1,42 @@
 /* 건물 나이 4D(2026-11-13 v7). 동네 찾기와 같은 틀: 왼쪽 패널 + 화면 남은 높이 전체의 입체 지도, 연도 막대는 지도 아래쪽에 떠 있다.
    왼쪽 패널은 스크롤이 페이지로 이어지게 둔다(맨 아래 '셈하는 법'으로 내려가야 한다). 지도 위 휠은 지도 확대다 */
-.t4-app { display: grid; grid-template-columns: 340px minmax(0, 1fr); height: calc(100dvh - var(--site-header-h, 64px)); min-height: 560px; border-bottom: 1px solid var(--line); }
+.t4-app { display: grid; grid-template-columns: 384px minmax(0, 1fr); height: calc(100dvh - var(--site-header-h, 64px)); min-height: 560px; border-bottom: 1px solid var(--line); }
 .t4-side { min-width: 0; overflow-y: auto; padding: 20px 20px 28px; background: var(--card); border-right: 1px solid var(--line); }
-.t4-side h1 { font-size: 24px; margin: 0 0 6px; }
 .t4-lead { color: var(--dim); font-size: 15px; line-height: 1.6; margin: 0 0 16px; }
 .t4-pick { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px 10px; margin: 0 0 20px; }
 .t4-pick label { font-weight: 600; font-size: 15px; }
 .t4-pick select { min-height: 44px; min-width: 0; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; font-size: 15px; }
-.t4-side h2 { font-size: 20px; margin: 0 0 10px; padding-top: 16px; border-top: 1px solid var(--line); }
-.t4-side h3 { font-size: 15px; margin: 20px 0 8px; }
+.t4-side h2 { margin: 0 0 10px; padding-top: 16px; border-top: 1px solid var(--line); }
+.t4-side h3 { margin: 20px 0 8px; }
 .t4-basis { margin: -4px 0 12px; font-size: 13px; line-height: 1.55; color: var(--dim); }
 .t4-num { margin: 0; display: grid; gap: 8px; }
 .t4-num div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
 .t4-num dt { color: var(--dim); font-size: 15px; }
 .t4-num dt small { display: block; font-size: 13px; }
 .t4-num dd { margin: 0; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.t4-future { background: var(--amber-bg); color: var(--amber); border-radius: 8px; padding: 10px 12px; margin: 12px 0 0; font-size: 14px; }
+.t4-future { background: var(--amber-bg); color: var(--amber); border-radius: 8px; padding: 10px 12px; margin: 12px 0 0; font-size: 15px; }
 .t4-marks, .t4-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 15px; }
-.t4-jump { min-height: 32px; padding: 0 4px; border: 0; background: none; color: var(--green); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.t4-jump { min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--green); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .t4-jump:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .t4-legend li { display: flex; align-items: center; gap: 8px; }
 .t4-legend i { width: 18px; height: 12px; border-radius: 3px; display: inline-block; box-shadow: inset 0 0 0 1px var(--shade-16); }
-.t4-status { color: var(--dim); font-size: 14px; margin-top: 16px; }
+.t4-status { color: var(--dim); font-size: 15px; margin-top: 16px; }
 .t4-next { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .t4-stage { position: relative; min-width: 0; }
 .t4-map { position: absolute; inset: 0; background: var(--bg); }
 .t4-time { position: absolute; left: 16px; right: 16px; bottom: 28px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 12px;
-  max-width: 980px; margin: 0 auto; padding: 8px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 18px var(--shade-16); }
+  max-width: 980px; margin: 0 auto; padding: 8px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 18px var(--shade-16); }
 .t4-slider input { width: 100%; accent-color: var(--green); min-height: 44px; }
 .t4-time output { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 22px; min-width: 4.5em; text-align: right; }
 .t4-map2, .t4-tag, .t4-cmp-note { display: none; }
-/* v7.10 색 설명은 지도 위 오른쪽 아래(왼쪽 패널 첫 화면 아래로 밀려 40년 단계가 안 보였다, 휴대폰에서도 지도와 같이 보인다) */
-.t4-key { position: absolute; right: 12px; bottom: 112px; z-index: 2; padding: 8px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 14px var(--shade-16); }
-.t4-key .t4-legend { gap: 4px; font-size: 13px; }
+/* R1 7: 색 설명은 지도 밖, 왼쪽 패널의 숫자판 바로 아래(동네 찾기와 같게). 지도 위 상자는 건물을 덮었다 */
+.t4-key { margin: 12px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); }
+.t4-key .t4-legend { grid-template-columns: repeat(4, minmax(0, 1fr)); }   /* 연수 네 칸 한 줄(R2 15), '사용승인일 없음'은 다음 줄 */
+.t4-key .t4-legend { gap: 4px; font-size: var(--t-cap); }
 .t4-future-tag { display: none; }
-.is-future .t4-future-tag { display: block; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 3; margin: 0; padding: 6px 12px; border-radius: 8px; background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber); font-weight: 700; font-size: 14px; }
+.is-future .t4-future-tag { display: block; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 3; margin: 0; padding: 6px 12px; border-radius: 8px; background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber); font-weight: 700; font-size: 15px; }
 .is-compare.is-future .t4-future-tag { left: 25%; }
-.t4-key-note { margin: 0 0 6px; font-size: 12px; line-height: 1.4; color: var(--dim); }
+.t4-key-note { margin: 0 0 6px; font-size: var(--t-cap); line-height: 1.4; color: var(--dim); }
 .t4-ends { display: block; margin-top: -6px; font-size: 13px; color: var(--ink); }
 .is-compare .t4-cmp-note { display: block; margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--soft); color: var(--green-press); font-weight: 700; font-variant-numeric: tabular-nums; }
 /* 나란히 볼 때 왼쪽 지도의 확대 단추가 두 지도 경계에 걸렸다 → 숨기고 휠·두 손가락으로 */
@@ -44,15 +44,15 @@
 /* 올해와 나란히: 왼쪽 = 막대의 해, 오른쪽 = 올해. 두 지도 시점은 time4d.js가 같이 움직인다 */
 .is-compare #t4Map { right: 50%; border-right: 2px solid var(--card); }
 .is-compare .t4-map2 { display: block; left: 50%; }
-.is-compare .t4-tag { display: block; position: absolute; top: 12px; z-index: 2; padding: 4px 10px; border-radius: 6px; background: var(--ink); color: #fff; font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
+.is-compare .t4-tag { display: block; position: absolute; top: 12px; z-index: 2; padding: 4px 10px; border-radius: 8px; background: var(--ink); color: #fff; font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
 .t4-tag-l { left: 12px; }
 .t4-tag-r { left: calc(50% + 12px); }
 #t4Cmp[aria-pressed="true"] { background: var(--soft); border-color: var(--green); color: var(--green-press); }
 .t4-how { padding: 40px 20px 56px; }
 .t4-how ul { padding-left: 1.2em; }
 .t4-how li { margin-bottom: 10px; }
-.t4-src { font-size: 14px; color: var(--dim); }
-.t4-pop p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink); }
+.t4-src { font-size: 15px; color: var(--dim); }
+.t4-pop p { margin: 0; font-size: 15px; line-height: 1.6; color: var(--ink); }
 .t4-pop b { font-weight: 600; color: var(--dim); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* 좁은 화면: 모형이 먼저, 숫자판은 아래 */
@@ -65,8 +65,10 @@
   .t4-time .t4-slider { grid-column: 1 / -1; order: 3; }
   .t4-time output { justify-self: end; }
   .t4-time #t4Now, .t4-time #t4Cmp { display: none; }
-  .t4-key { top: 12px; right: auto; left: 12px; bottom: auto; padding: 6px 8px; }
   .t4-ends { display: none; }   /* 휴대폰에서 세 줄로 꺾여 지도를 가렸다 */
-  .t4-key .t4-legend { font-size: 12px; }   /* 좁은 화면은 나란히 보기를 쓰지 않는다 */
   .t4-time output { font-size: 18px; min-width: 4em; }
 }
+
+/* R3 10: CSV 받기 줄 */
+.t4-csv { margin: 8px 0 0; }
+.t4-csv small { display: block; margin-top: 6px; font-size: 13px; color: var(--dim); }

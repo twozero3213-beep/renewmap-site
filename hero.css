@@ -14,7 +14,7 @@
 /* 우리 동네 찾기 */
 .hero-search label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 6px; }
 .hero-search-row { display: flex; gap: 8px; }
-.hero-search input { flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 11px 14px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--card); color: var(--ink); }
+.hero-search input { flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 11px 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--ink); }
 .hero-search .btn { padding: 11px 18px; font-size: 16px; }
 .hero-search-note, .hero-search-msg { margin: 6px 0 0; font-size: 13px; color: var(--dim); }
 .hero-search-msg:empty { display: none; }
@@ -22,9 +22,9 @@
 /* 지금 보는 지표와 '기준선을 넘은 곳' 개수(자동 재생 문구) */
 .hero-live { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 12px 14px; display: grid; gap: 2px; min-height: 96px; }
 .hero-live:empty { display: none; }
-.hl-k { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: var(--green); }
-.hl-n { font-size: 15px; color: var(--dim); } .hl-n b { font-size: 30px; font-weight: 700; color: var(--ink); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.hl-t { font-size: 14px; color: var(--ink); } .hl-auto { font-size: 12px; color: var(--dim); margin-top: 2px; }
+.hl-k { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; color: var(--green); }
+.hl-n { font-size: 15px; color: var(--dim); } .hl-n b { font-size: 28px; font-weight: 700; color: var(--ink); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.hl-t { font-size: 15px; color: var(--ink); } .hl-auto { font-size: 13px; color: var(--dim); margin-top: 2px; }
 /* 지표가 바뀔 때만 떠오른다(연도 재생 중 숫자는 카운트업으로만 바뀐다) */
 .hero-live.is-new > * { animation: rm-rise .45s cubic-bezier(.2, .8, .2, 1) both; } .hero-live.is-new > :nth-child(2) { animation-delay: .06s; } .hero-live.is-new > :nth-child(3) { animation-delay: .12s; }
 @keyframes rm-rise { from { opacity: 0; transform: translateY(6px); } }
@@ -36,29 +36,26 @@
 @keyframes rm-spin { to { --rm-angle: 360deg; } }
 
 /* 1분 판정 예시 */
-.verdict-head { font-size: 18px; font-weight: 700; margin: 0 0 12px; } .verdict-head small { font-size: 14px; font-weight: 400; color: var(--dim); white-space: nowrap; }
+.verdict-head { font-size: 18px; font-weight: 700; margin: 0 0 12px; } .verdict-head small { font-size: 15px; font-weight: 400; color: var(--dim); white-space: nowrap; }
 .verdict-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .verdict-card { background: var(--card); border: 1px solid var(--line); border-left-width: 5px; border-radius: var(--radius-card); padding: 18px 20px; }
 .verdict-card.ok { border-left-color: var(--better); } .verdict-card.check { border-left-color: var(--warn); } .verdict-card.conflict { border-left-color: var(--worse); }
 .verdict-card h3 { margin: 8px 0 4px; font-size: 18px; }
 .verdict-card .v { font-size: 28px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 6px; font-variant-numeric: tabular-nums; }
-.verdict-card .d, .verdict-card .proof { margin: 0; font-size: 14px; color: var(--dim); }
+.verdict-card .d, .verdict-card .proof { margin: 0; font-size: 15px; color: var(--dim); }
 .verdict-card .proof { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; }
 .verdict-sum { margin: 14px 0 6px; } .verdict-sum .tag { font-size: 15px; padding: 6px 14px; }
-.verdict-note, .verdict-empty { font-size: 14px; color: var(--dim); margin: 0; }
+.verdict-note, .verdict-empty { font-size: 15px; color: var(--dim); margin: 0; }
 .verdict-empty { background: var(--card); border: 1px dashed var(--line-mid); border-radius: var(--radius-card); padding: 24px; text-align: center; }
 
 /* 첫 화면과 스크롤 등장: 실제 콘텐츠를 짧게 순차 노출 */
 .hero-head { animation: rm-rise .4s cubic-bezier(.2, .8, .2, 1) both; }
 .hero-search { animation: rm-rise .4s .08s cubic-bezier(.2, .8, .2, 1) both; }
 .hero-map { animation: rm-rise .45s .12s cubic-bezier(.2, .8, .2, 1) both; }
-.js [data-reveal] { opacity: 0; transform: translateY(16px); transition: opacity .4s ease, transform .4s cubic-bezier(.2, .8, .2, 1); }
-.js [data-reveal].is-in { opacity: 1; transform: none; }
-.grid > [data-reveal]:nth-child(2), .verdict-grid > :nth-child(2) { transition-delay: .08s; } .grid > [data-reveal]:nth-child(3), .verdict-grid > :nth-child(3) { transition-delay: .16s; } .grid > [data-reveal]:nth-child(4) { transition-delay: .24s; }
+/* 스크롤 나타남([data-reveal] 투명→보임)은 R2에서 지웠다: 전체 캡처·인쇄에 빈칸이 남았다(DESIGN.md 3) */
 
 @media (prefers-reduced-motion: reduce) {
   .btn.glow::before, .hero-live.is-new > *, .hero-steps li, .hero-head, .hero-search, .hero-map, .hero-cta { animation: none; }
-  .js [data-reveal] { opacity: 1; transform: none; transition: none; }
   .btn, .workspace-steps a { transition: none; }
 }
 .hl-n .hl-y { font-size: 17px; font-weight: 700; color: var(--ink); letter-spacing: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -79,18 +76,18 @@
 
 /* #ledger 셀 해부도: 가운데 값, 둘레 근거 6개를 선으로 잇는다(모바일은 세로 줄기) */
 .anat { position: relative; display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); margin-bottom: 18px; isolation: isolate; }
-.anat-fallback { margin: 0; } .anat-fallback figcaption { font-size: 14px; color: var(--dim); }
+.anat-fallback { margin: 0; } .anat-fallback figcaption { font-size: 15px; color: var(--dim); }
 .anat-lines { display: none; }
 .anat-core { background: var(--ink); color: var(--on-green); border-radius: var(--radius-card); padding: 22px; text-align: center; }
-.anat-k { font-size: 14px; margin: 0 0 4px; color: var(--on-dark-dim); }
+.anat-k { font-size: 15px; margin: 0 0 4px; color: var(--on-dark-dim); }
 .anat-v { font-size: clamp(44px, 7vw, 64px); font-weight: 700; margin: 0 0 6px; letter-spacing: -.03em; line-height: 1.1; color: var(--lime); font-variant-numeric: tabular-nums; }
-.anat-cap { font-size: 12px; color: var(--on-dark-dim); margin: 8px 0 0; }
+.anat-cap { font-size: 13px; color: var(--on-dark-dim); margin: 8px 0 0; }
 .anat-parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .anat-p { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; min-width: 0; }
 .anat-p::before { content: ''; position: absolute; left: -23px; top: 50%; width: 20px; border-top: 3px solid var(--green); }
-.anat-p b { display: block; font-size: 14px; }
+.anat-p b { display: block; font-size: 15px; }
 .anat-p > span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; color: var(--dim); line-height: 1.45; }
-.anat-tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; }
+.anat-tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 15px; }
 @media (min-width: 900px) {
   .anat.is-real { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 1fr); column-gap: 7%; row-gap: 16px; align-items: center; }
   .anat.is-real .anat-parts { display: contents; }
@@ -105,7 +102,7 @@
 .cmp { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 18px 20px; margin-bottom: 16px; max-width: 720px; }
 .case-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .case-steps li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; align-items: start; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 14px 16px; }
-.case-steps b { font-size: 16px; } .case-steps small { font-size: 14px; color: var(--dim); line-height: 1.5; }
+.case-steps b { font-size: 16px; } .case-steps small { font-size: 15px; color: var(--dim); line-height: 1.5; }
 
 /* #scope '하지 않는 것': 제목 앞 × 표시와 설명(이모지 칩은 2026-10-30에 걷었다) */
 
@@ -125,7 +122,7 @@
 .evidence-links { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin-top: 24px; }
 .text-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--green); font-weight: 700; text-underline-offset: 4px; }
 .crew-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; padding: 22px 14px 14px; border: 1px solid var(--crew-line); border-radius: var(--radius-card); background: linear-gradient(145deg, var(--crew-bg), var(--crew-bg-2)); overflow: hidden; }
-.crew-strip > div { display: grid; justify-items: center; gap: 4px; min-width: 0; color: var(--navy); font-size: 14px; font-weight: 700; animation: rm-crew-in .5s cubic-bezier(.2, .8, .2, 1) both; }
+.crew-strip > div { display: grid; justify-items: center; gap: 4px; min-width: 0; color: var(--navy); font-size: 15px; font-weight: 700; animation: rm-crew-in .5s cubic-bezier(.2, .8, .2, 1) both; }
 .crew-strip > div:nth-child(2) { animation-delay: .08s; }
 .crew-strip > div:nth-child(3) { animation-delay: .16s; }
 .crew-strip img { display: block; width: min(100%, 160px); height: auto; }
@@ -150,14 +147,14 @@
 }
 
 /* 소개 맨 위: 정의 문장 + 가치관 4(docs/design/site_v3_copy_2026-10-28.md 4장). 움직임 없음 */
-.about-top { padding: 72px 0; }
-.about-top h1 { margin: 0 0 16px; font-size: clamp(30px, 4.6vw, 48px); line-height: 1.25; }
+/* 제목 위 여백·크기는 rm6.css 단계(--h1-top·--t-h1) 하나로(R1 1) */
+.about-top { padding: 0 0 72px; }
 .about-def { max-width: 760px; margin: 0 0 24px; font-size: 20px; line-height: 1.6; color: var(--dim); }
 .about-cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 56px; }
 .about-cta .btn { min-height: 48px; text-align: center; }
-.about-top h2 { font-size: clamp(24px, 3vw, 28px); margin: 0 0 20px; }
+.about-top h2 { margin: 0 0 20px; }
 @media (max-width: 720px) {
-  .about-top { padding: 32px 0 40px; }
+  .about-top { padding: 0 0 40px; }
   .about-def { font-size: 17px; }
   .about-cta { display: grid; margin-bottom: 40px; }
 }

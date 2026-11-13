@@ -11,18 +11,18 @@
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/time4d.html">
 <meta property="og:title" content="건물 나이 4D | 리뉴맵">
 <meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
-<meta name="theme-color" content="#0d3b35">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="pretendard.css">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="site-v4.css">
+<link rel="stylesheet" href="styles.css?v=20261114-m1">
+<link rel="stylesheet" href="site-v4.css?v=20261114-d3">
 <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
-<link rel="stylesheet" href="time4d.css">
+<link rel="stylesheet" href="time4d.css?v=20261114-d3">
 <script src="site.js" defer></script>
 <script src="vendor/maplibre/maplibre-gl-csp.js" defer></script>
-<script src="util.js?v=20261113-v93" defer></script>
-<script src="time4d.js?v=20261113-v93" defer></script>
-<link rel="stylesheet" href="rm6.css">
+<script src="util.js?v=20261114-d3" defer></script>
+<script src="time4d.js?v=20261114-d3" defer></script>
+<link rel="stylesheet" href="rm6.css?v=20261114-d3">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -30,31 +30,34 @@
 <main id="main" class="t4">
   <div id="t4App" class="t4-app">
     <aside class="t4-side" aria-labelledby="t4Title">
-      <h1 id="t4Title">건물 나이 4D</h1>
-      <p class="t4-lead">연도를 움직이면 건물이 사용승인 순서대로 서고, 해가 갈수록 색이 짙어집니다.</p>
+      <h1 id="t4Title">건물 4D</h1>
+      <p class="sub">건물 나이를 연도별 입체로 봅니다</p>
+      <!-- R2 15: 제목 → 구·군·법정동 → 범례(한 줄) → 숫자 → 설명 순서. 1440×900에서 범례가 813px 아래로 밀려 잘렸다 -->
       <div class="t4-pick">
         <label for="t4Gu">구·군</label><select id="t4Gu"></select>
         <label for="t4Dong">법정동</label><select id="t4Dong"></select>
       </div>
+      <div class="t4-key" role="group" aria-label="건물 색 설명"><p class="t4-key-note">사용승인 뒤 지난 햇수 · 법정 노후·불량 판정 아님</p><ul id="t4Legend" class="t4-legend"></ul></div>
       <h2 id="t4Name">-</h2>
-      <p class="t4-basis">법정동·건축물대장 기준입니다. 공모 신청서에 쓰는 노후 비율은 행정동 쇠퇴진단지표 값이라 다를 수 있습니다. <a href="explore.html">행정동 값은 동네 찾기에서</a></p>
       <dl class="t4-num">
         <div><dt>그해까지 사용승인된 건물<small>날짜 있는 주건축물</small></dt><dd id="t4Built">-</dd></div>
         <div><dt>20년 이상<small>법정동·건축물대장</small></dt><dd id="t4P20">-</dd></div>
         <div><dt>30년 이상</dt><dd id="t4P30">-</dd></div>
       </dl>
-      <p id="t4NoDate" class="t4-basis"></p>
+      <p class="t4-lead">연도를 움직이면 건물이 사용승인 순서대로 서고, 해가 갈수록 색이 짙어집니다.</p>
+      <p class="t4-basis">법정동·건축물대장 기준입니다. 공모 신청서에 쓰는 노후 비율은 행정동 쇠퇴진단지표 값이라 다를 수 있습니다. <a href="explore.html">행정동 값은 동네 찾기에서</a></p>
+      <details class="rm-disclosure"><summary>셈하는 법</summary><p id="t4NoDate" class="t4-basis"></p><p class="t4-basis"><a href="#t4How">분모·높이·연수 계산 자세히</a></p></details>
       <p id="t4CmpNote" class="t4-cmp-note" aria-live="polite"></p>
       <p id="t4Future" class="t4-future" hidden>올해 뒤는 지금 건물이 그대로 있다고 보고 셈한 달력 계산입니다.<br>철거나 새 건물은 넣지 않았습니다.</p>
       <h3>기준선에 닿는 해</h3>
       <ul id="t4Marks" class="t4-marks"></ul>
       <p id="t4Status" class="t4-status" role="status"></p>
+      <p class="t4-csv"><button type="button" id="t4Csv" class="btn ghost" disabled>건물 목록 CSV로 받기</button><small>지번·주용도·사용승인일·층수 등 건축물대장 공개 항목만 담았고, 소유자·거주자 등 개인 정보는 없습니다. 출처·기준일은 파일 맨 위 줄에 있습니다.</small></p>
       <p class="t4-next"><a class="btn" id="t4Redev" href="field/redev.html">이 동으로 구역 요건 계산</a><a class="btn ghost" href="#t4How">셈하는 법</a></p>
     </aside>
     <div class="t4-stage">
       <div id="t4Map" class="t4-map" role="img" aria-label="법정동 건물 입체 모형. 왼쪽 숫자판과 아래 연도가 같은 내용을 글로 알려 줍니다."></div>
       <div id="t4Map2" class="t4-map t4-map2" role="img" aria-label="올해 건물 입체 모형(비교)"></div>
-      <div class="t4-key" role="group" aria-label="건물 색 설명"><p class="t4-key-note">사용승인 뒤 지난 햇수<br>법정 노후·불량 판정 아님</p><ul id="t4Legend" class="t4-legend"></ul></div>
       <p class="t4-future-tag" aria-hidden="true">가정: 지금 건물이 그대로 있을 때</p>
       <span class="t4-tag t4-tag-l" id="t4TagL" aria-hidden="true"></span><span class="t4-tag t4-tag-r" aria-hidden="true">올해</span>
       <div class="t4-time">
@@ -78,6 +81,6 @@
     <p class="t4-next"><a class="btn ghost" href="field/city3d.html">브이월드 3D 지도로 지금 건물 보기</a></p>
   </section>
 </main>
-<footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="privacy.html">개인정보 처리방침</a></div><p>RENEWMAP · renewmapteam@gmail.com</p></div></footer>
+<footer><div class="wrap"><div class="links"><p><b>도구</b><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="time4d.html">건물 4D</a><a href="box.html">보관함</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%EC%88%AB%EC%9E%90%20%EC%98%A4%EB%A5%98%20%EC%8B%A0%EA%B3%A0">숫자 오류 신고</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 상담</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 </body>
 </html>

@@ -43,8 +43,12 @@
     const input = doc.getElementById('homeQ'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg'), report = form.dataset.report || 'onepage';
     let index = null, loading = null;
     // 실패하면 다음 입력·검색 때 다시 받는다
-    const load = () => loading || (loading = fetch('data/national/dong_index.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(d => { index = Array.isArray(d) ? d : null; return index; }).catch(() => { loading = null; return null; }));
+    // R3 12: 홈은 home-live.js도 같은 dong_index.json(225KB)을 받아 두 번 내려받았다 → util.js의 renewFetch(주소별 약속 한 개)를 같이 쓴다.
+    // home.js가 util.js보다 먼저 실려(defer는 DOMContentLoaded 직전에 차례로 돈다) 아직 renewFetch가 없으므로 DOMContentLoaded까지 기다린다. 시험용 가짜 화면에는 없어 fetch로 받는다
+    const ready = (doc.readyState === 'loading' || doc.readyState === 'interactive') ? new Promise(res => doc.addEventListener('DOMContentLoaded', res, { once: true })) : Promise.resolve();
+    const getIndex = () => ready.then(() => (win.renewFetch ? win.renewFetch('data/national/dong_index.json') : fetch('data/national/dong_index.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })));
+    const load = () => loading || (loading = getIndex()
+      .then(d => { index = Array.isArray(d) ? d : null; if (!index) loading = null; return index; }).catch(() => { loading = null; return null; }));
     load();
     const show = rows => {
       hits.classList.toggle('fresh', !hits.childElementCount);   // 처음 나타날 때만 움직이고, 고쳐 칠 때는 바로 바꾼다
@@ -83,6 +87,7 @@
       if (rows.length === 1) { win.location.href = route(rows[0], report); return; }
       show(rows); msg.textContent = MSG.many(rows.length, rows.every(r => r.label === rows[0].label));
     });
+    if (form.dataset.pick) initPick(win, form, load, report);
   }
   // 2026-11-13 우지예: 재생 사업 화면에서 이름을 몰라도 고를 수 있게 '시·도 → 구·군 → 동' 고르기(form data-pick). 시범 지역 부산을 먼저 고른 채로 연다.
   // 목록은 같은 dong_index.json에서 만들고, 구·군·동은 가나다순(반여1·2·3동처럼 숫자는 숫자 순). 동을 고르면 찾기와 같은 곳(route)으로 간다
@@ -93,22 +98,26 @@
     const dongs = index.filter(r => r[2] === sgg).map(r => [r[0], r[1]]).sort((a, b) => ko(a[1], b[1]));
     return { sidos, sggs, dongs };
   }
-  function initPick(win) {
-    const doc = win.document, form = doc.getElementById('homeSearch');
-    if (!form || !form.dataset.pick) return;
-    const box = doc.createElement('div'), report = form.dataset.report || 'onepage';
+  // 고르기 칸(#88 검토 반영): 목록은 init의 load()로 한 번만 받고, 이름은 new Option(글자 그대로)으로 넣고,
+  // 동을 고르기만 해서는 이동하지 않는다(화살표로 훑다 쪽이 넘어갔다, WCAG 3.2.2) → '이 동 보기' 단추로 이동
+  function initPick(win, form, load, report) {
+    const doc = win.document, box = doc.createElement('div');
     box.className = 'pick-row'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', '목록에서 동 고르기');
-    box.innerHTML = '<span class="pick-or">또는 목록에서</span><select aria-label="시·도"></select><select aria-label="구·군"></select><select aria-label="동"></select>';
+    box.innerHTML = '<span class="pick-or">또는 목록에서</span><select aria-label="시·도"></select><select aria-label="구·군"></select><select aria-label="동"></select><button type="button" class="btn ghost" disabled>이 동 보기</button>';
     form.querySelector('.home-search-row').after(box);
-    const [sSel, gSel, dSel] = box.querySelectorAll('select');
-    const opt = (list, first) => (first ? `<option value="">${first}</option>` : '') + list.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    const [sSel, gSel, dSel] = box.querySelectorAll('select'), go = box.querySelector('button');
+    const fill = (sel, list, first) => sel.replaceChildren(...(first ? [new Option(first, '')] : []), ...list.map(([v, l]) => new Option(l, v)));
     let index = null, sido = form.dataset.pick, sgg = '';
-    const paint = () => { const L = pickLists(index, sido, sgg); sSel.innerHTML = opt(L.sidos); sSel.value = sido; gSel.innerHTML = opt(L.sggs, '구·군 고르기'); gSel.value = sgg; dSel.innerHTML = opt(L.dongs, '동 고르기'); dSel.disabled = !sgg; };
-    fetch('data/national/dong_index.json').then(r => r.json()).then(d => { index = d; paint(); }).catch(() => box.remove());
+    const paint = () => {
+      const L = pickLists(index, sido, sgg);
+      fill(sSel, L.sidos); sSel.value = sido; fill(gSel, L.sggs, '구·군 고르기'); gSel.value = sgg; fill(dSel, L.dongs, '동 고르기');
+      dSel.disabled = !sgg; go.disabled = true;
+    };
+    load().then(d => { if (!d) { box.remove(); return; } index = d; paint(); });
     sSel.onchange = () => { sido = sSel.value; sgg = ''; paint(); };
     gSel.onchange = () => { sgg = gSel.value; paint(); dSel.focus(); };
-    dSel.onchange = () => { if (dSel.value) win.location.href = route({ sido, sgg, dong: dSel.value }, report); };
+    dSel.onchange = () => { go.disabled = !dSel.value; };
+    go.onclick = () => { if (dSel.value) win.location.href = route({ sido, sgg, dong: dSel.value }, report); };
   }
-  if (typeof window !== 'undefined' && window.document) { const go = () => initPick(window); window.document.readyState === 'loading' ? window.document.addEventListener('DOMContentLoaded', go) : go(); }
   return { find, route, norm, init, MSG, pickLists };
 });

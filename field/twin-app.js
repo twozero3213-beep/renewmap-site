@@ -93,8 +93,10 @@
     message('3D 엔진을 불러오는 중입니다.');
     if(!window.Cesium) {
       window.CESIUM_BASE_URL=base;
-      const css=document.createElement('link'); css.rel='stylesheet'; css.href=base+'Widgets/widgets.css'; document.head.append(css);
-      await new Promise((resolve,reject)=>{ const s=document.createElement('script'); s.src=base+'Cesium.js'; s.crossOrigin='anonymous'; s.onload=resolve; s.onerror=()=>{s.remove();reject(Error('3D 엔진을 받지 못했습니다. 인터넷 연결을 확인하세요. 현장 기록·장면 파일은 계속 사용할 수 있습니다.'));}; document.head.append(s); });
+      // R3 14: 판 1.134.0 고정 파일의 sha384(jsDelivr 공개 sha256과 대조함). 파일이 바뀌면 브라우저가 실행·적용을 거부한다. 판을 올리면 두 값도 다시 계산한다
+      const SRI={'Cesium.js':'sha384-LLAEyo5IccCQlVs0GUoxBYQ8sdsLCY+lPmN474d/bnEMnG8GykMkaCrQCmBrnR9d','Widgets/widgets.css':'sha384-ghEeMdcWWzRv/BPeUcX835vcKDGrxvROXisl/Btpv3GeekBUXTSPVcFJpI1Tcrgp'};
+      const css=document.createElement('link'); css.rel='stylesheet'; css.href=base+'Widgets/widgets.css'; css.integrity=SRI['Widgets/widgets.css']; css.crossOrigin='anonymous'; document.head.append(css);
+      await new Promise((resolve,reject)=>{ const s=document.createElement('script'); s.src=base+'Cesium.js'; s.integrity=SRI['Cesium.js']; s.crossOrigin='anonymous'; s.onload=resolve; s.onerror=()=>{s.remove();reject(Error('3D 엔진을 받지 못했습니다. 인터넷 연결을 확인하세요. 현장 기록·장면 파일은 계속 사용할 수 있습니다.'));}; document.head.append(s); });
     }
     Cesium.Ion.defaultAccessToken='';
     try {

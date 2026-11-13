@@ -6,7 +6,7 @@
 .ov > summary::-webkit-details-marker { display: none; }
 .ov > summary::after { content: "펼치기"; margin-left: auto; font-size: 13px; font-weight: 700; color: var(--green); }
 .ov[open] > summary::after { content: "접기"; }
-.ov > summary small { font-size: 14px; font-weight: 600; color: var(--dim); }
+.ov > summary small { font-size: 15px; font-weight: 600; color: var(--dim); }
 .ov > summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 12px; }
 .ov-body { padding: 0 16px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
 .ov-body p, .ov-body li, .ov-body label, .ov-body legend { word-break: keep-all; overflow-wrap: anywhere; }
@@ -15,11 +15,11 @@
 .ov-privacy p + p { margin-top: 2px; }
 .ov-pick { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .ov-pick > label { font-weight: 700; }
-.ov-pick input[type="file"] { width: 100%; max-width: 100%; min-height: 44px; padding: 8px; border: 1px dashed var(--line-strong); border-radius: 10px; background: var(--bg); font: inherit; }
-.ov-hint { font-size: 14px; color: var(--dim); }
+.ov-pick input[type="file"] { width: 100%; max-width: 100%; min-height: 44px; padding: 8px; border: 1px dashed var(--line-strong); border-radius: 8px; background: var(--bg); font: inherit; }
+.ov-hint { font-size: 15px; color: var(--dim); }
 .ov-status { min-height: 1.6em; font-size: 15px; color: var(--ink); }
 .ov-status.is-bad { color: var(--warn); font-weight: 700; }
-.ov-info { font-size: 14px; color: var(--dim); }
+.ov-info { font-size: 15px; color: var(--dim); }
 .ov-sheet { display: flex; align-items: center; gap: 8px; }
 .ov-warn { padding: 12px 14px; border-radius: 12px; background: var(--tbd-bg); border: 1px solid var(--tbd-line); color: var(--ink); }
 .ov-warn ul { margin: 6px 0; padding-left: 20px; }
@@ -30,14 +30,14 @@
 .ov-radio span { display: grid; gap: 1px; }
 .ov-radio small { font-size: 13px; color: var(--dim); }
 .ov-sel { display: flex; flex-wrap: wrap; gap: 10px 14px; padding: 4px 0 6px 28px; min-width: 0; }
-.ov-sel > label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; font-size: 14px; font-weight: 600; min-width: 0; }
+.ov-sel > label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; font-size: 15px; font-weight: 600; min-width: 0; }
 .ov-sel > label.ov-check { display: flex; align-items: center; gap: 8px; min-height: 44px; }
 .ov-sel > .ov-hint { flex-basis: 100%; }
-.ov select { width: 100%; max-width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; font-size: 15px; }
+.ov select { width: 100%; max-width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; font-size: 15px; }
 .ov-check input { width: 20px; height: 20px; accent-color: var(--green); }
-.ov-scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+.ov-scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
 .ov-scroll:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-.ov-table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+.ov-table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
 .ov-table caption { padding: 8px 10px; text-align: left; font-size: 13px; color: var(--dim); }
 .ov-table th, .ov-table td { padding: 7px 10px; border-top: 1px solid var(--line); text-align: left; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
 .ov-table th { background: var(--bg); font-weight: 700; }

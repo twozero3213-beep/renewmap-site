@@ -14,7 +14,7 @@
 <meta property="og:site_name" content="RENEWMAP">
 <meta property="og:title" content="동네 찾기 | RENEWMAP">
 <meta property="og:description" content="지도·조건 필터·근거 문서를 한 흐름으로 탐색합니다.">
-<meta name="theme-color" content="#006f5b">
+<meta name="theme-color" content="#ffffff">
 <meta name="ga-id" content="">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="32x32">
@@ -29,24 +29,24 @@
 <link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" crossorigin="anonymous" integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==">
 <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" crossorigin="anonymous" integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==">
 <link rel="stylesheet" href="pretendard-map.css">
-<link rel="stylesheet" href="styles.css?v=20261112-research">
-<link rel="stylesheet" href="site-v4.css">
-<link rel="stylesheet" href="dashboard.css">
-<link rel="stylesheet" href="hero.css">
+<link rel="stylesheet" href="styles.css?v=20261114-m1">
+<link rel="stylesheet" href="site-v4.css?v=20261114-d3">
+<link rel="stylesheet" href="dashboard.css?v=20261113-d2">
+<link rel="stylesheet" href="hero.css?v=20261113-d2">
 <!-- 2026-11-12: 동 이름표 스타일 추가에 맞춰 버전을 붙인다(옛 map.css 캐시가 이름표를 잘못 그리지 않게) -->
 <!-- 2026-11-13: 동 요약 신청요건 한 줄(.sr-req)·시작 묶음 단추(.map-bundles) 스타일로 버전을 올림 -->
-<link rel="stylesheet" href="map.css?v=20261113-bundles">
-<link rel="stylesheet" href="programs.css">
-<link rel="stylesheet" href="overlay.css">
-<link rel="stylesheet" href="v4.css?v=20261112-tablet"><!-- 2026-11-12: 768~1099px 지도 정리 규칙을 더해 캐시 버전을 붙임 -->
-<link rel="stylesheet" href="workspace.css">
+<link rel="stylesheet" href="map.css?v=20261114-m1">
+<link rel="stylesheet" href="programs.css?v=20261114-d3">
+<link rel="stylesheet" href="overlay.css?v=20261113-d2">
+<link rel="stylesheet" href="v4.css?v=20261114-d3"><!-- 2026-11-12: 768~1099px 지도 정리 규칙을 더해 캐시 버전을 붙임 -->
+<link rel="stylesheet" href="workspace.css?v=20261113-d2">
 <script src="site.js" defer></script>
 <script src="site-motion.js" defer></script>
 <script src="cellpack.js" defer></script><!-- 2026-11-08: 줄여 저장한 원장 셀을 util.js fetchJson이 되돌릴 때 쓴다. util.js보다 먼저 -->
-<script src="util.js?v=20261113-v93" defer></script>
+<script src="util.js?v=20261114-d3" defer></script>
 <script src="dashboard.js?v=20261113-v93" defer></script>
 <script src="field/vworld-key.js" defer></script>
-<script src="programs.js?v=20261113-v93" defer></script>
+<script src="programs.js?v=20261114-m1" defer></script>
 <!-- 2026-11-12: map.js 화면 낱말 바꿈('기준 미달'→'기준 해당')을 방문자 캐시가 옛 파일로 덮지 않게 버전을 올린다.
      main의 연구 적용판(20261112-research)과 합치면서 두 변경을 모두 담은 새 값으로 바꿨다(둘 중 어느 옛 값도 캐시에 남지 않게) -->
 <!-- 2026-11-12: 동 이름표(makeDongLabels)를 더해 버전을 올림 -->
@@ -55,18 +55,17 @@
 <!-- 2026-11-13: 신청요건 한 줄(reqLineHTML)·도넛 접기·시작 묶음(BUNDLES)으로 버전을 올림 -->
 <!-- 2026-11-13: 최저기준 묶음에 보건소·어린이집 거리 칩을 더해 버전을 올림 -->
 <script src="decline-req.js?v=20261113-v93" defer></script>
-<!-- 2026-11-13: 최저기준 묶음에 생활체육시설 거리 칩을 더해 버전을 올림(main v9.4 위) -->
-<script src="map.js?v=20261114-px" defer></script>
+<script src="map.js?v=20261114-d3" defer></script>
 <script src="explore-layout.js?v=20261113" defer></script>
 <script src="workspace.js?v=20261114-px" defer></script>
 <script src="report.js?v=20261112-audit" defer></script>
-<link rel="stylesheet" href="rm6.css">
+<link rel="stylesheet" href="rm6.css?v=20261114-d3">
 </head>
 <body class="explore-page">
 <a class="skip" href="#main">본문으로 바로가기</a>
 <header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 상담</a></nav></div></header>
 <main id="main">
-<h1 class="sr-only">동네 찾기: 조건으로 고르고, 지도로 보고, 문서로 받기</h1>
+<h1 class="sr-only">동네 찾기</h1>
   <div class="evidence-workspace" data-workspace data-active-panel="map">
     <nav class="workspace-tabs" aria-label="작업공간 패널" role="tablist">
       <button id="workspace-filters-tab" type="button" role="tab" data-workspace-tab="filters" aria-controls="find" aria-selected="false" tabindex="-1">조건</button>
@@ -102,8 +101,9 @@
             <p class="hero-search-note" data-search-note></p>
             <p class="hero-search-msg" data-search-msg aria-live="polite"></p>
           </form>
-          <p id="heroLive" class="hero-live" aria-live="polite"></p>
           <div class="hero-map"><div id="mapApp"></div><!-- 2026-11-12: 지도 화면에 자료 기준연도가 잘 안 보여 "최신이 아니다"로 오해받았다(docs/research/data_refresh_2026-11-12.md 4절 3번). 연도는 하드코딩하지 않고 map.js가 index_core.json의 출처 메타에서 채운다(원칙 1). 못 읽으면 빈 채로 숨는다 --><p class="hero-basis" data-basis></p><noscript><p>지도는 자바스크립트가 켜져 있어야 보입니다.</p></noscript></div>
+          <!-- R3 2: 동네 현황 카드는 지도·고른 동 카드 뒤(좁은 화면 DOM 순서). 넓은 화면은 explore-layout.js가 왼쪽 패널로 옮긴다 -->
+          <p id="heroLive" class="hero-live" aria-live="polite"></p>
           <div id="overlayApp" class="ov-slot"><button type="button" class="btn ghost" data-overlay-load>내 GIS 파일 겹쳐 보기</button></div><noscript><p>내 GIS 파일 겹쳐 보기는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
         </div>
       </section>
@@ -119,7 +119,7 @@
               <button type="button" class="btn" data-export-format="pptx" disabled>파워포인트 받기</button>
               <button type="button" class="btn" data-export-format="pdf" disabled>PDF로 저장</button>
             </div>
-            <div data-export-status aria-live="polite"><p class="export-state" role="status">문서는 이 휴대폰에서 만듭니다.<br>서버로 보내지 않습니다.</p></div>
+            <div data-export-status aria-live="polite"><p class="export-state" role="status">문서는 이 기기에서 만듭니다.<br>서버로 보내지 않습니다.</p></div>
           </div>
           <nav class="report-pages" data-report-pages aria-label="문서 주제 페이지" hidden>
             <button type="button" data-report-prev aria-label="이전 문서 주제">이전</button>
@@ -134,6 +134,6 @@
     </div>
   </div>
 </main>
-<footer><div class="wrap"><div class="links"><a href="about.html">서비스 소개</a><a href="rules.html">기준 원문 대조</a><a href="data.html">데이터 출처</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="rank.html">동네 점수·순위</a><a href="biz.html">사업성 간이 계산</a><a href="time4d.html">건물 4D</a><a href="box.html">보관함</a><a href="index.html#tools">참고 도구</a></div><p>RENEWMAP, 부산<br><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div></footer>
+<footer><div class="wrap"><div class="links"><p><b>도구</b><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="time4d.html">건물 4D</a><a href="box.html">보관함</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%EC%88%AB%EC%9E%90%20%EC%98%A4%EB%A5%98%20%EC%8B%A0%EA%B3%A0">숫자 오류 신고</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 상담</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 </body>
 </html>

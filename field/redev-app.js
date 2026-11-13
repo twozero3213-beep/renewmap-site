@@ -195,7 +195,7 @@
     drawFill.setLatLngs(drawPts.length > 2 ? drawPts : []);
     drawMarks.forEach((m) => m.remove());
     drawMarks = drawPts.map((p, i) => window.L.marker(p, { draggable: true, keyboard: false, title: `${i + 1}번 꼭짓점(끌어서 옮기기)`,
-      icon: window.L.divIcon({ className: "draw-pt" + (i === 0 ? " is-first" : ""), html: String(i + 1), iconSize: [24, 24] }) })
+      icon: window.L.divIcon({ className: "draw-pt" + (i === 0 ? " is-first" : ""), html: `<span>${i + 1}</span>`, iconSize: [44, 44] }) })   // 보이는 원은 26px, 누르는 칸은 44px(#89 검토)
       .on("drag", (e) => { const ll = e.target.getLatLng(); drawPts[i] = [ll.lat, ll.lng]; drawLine.setLatLngs(drawPts.length > 2 ? [...drawPts, drawPts[0]] : drawPts); drawFill.setLatLngs(drawPts.length > 2 ? drawPts : []); })
       .on("dragend", () => redraw())
       .addTo(drawMap));
@@ -224,8 +224,8 @@
     drawMap.on("click", () => drawMap.scrollWheelZoom.enable()); drawMap.on("mouseout", () => drawMap.scrollWheelZoom.disable());
     if (VW) L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VW}/Base/{z}/{y}/{x}.png`, { maxZoom: 19, attribution: "&copy; 국토교통부 브이월드" }).addTo(drawMap);
     else L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }).addTo(drawMap);
-    drawFill = L.polygon([], { stroke: false, fillColor: "#b45309", fillOpacity: 0.15, interactive: false }).addTo(drawMap);   // 영역 옅게(redraw 주석)
-    drawLine = L.polyline([], { color: "#b45309", weight: 3, interactive: false }).addTo(drawMap);
+    drawFill = L.polygon([], { stroke: false, fillColor: "#0b6b75", fillOpacity: 0.15, interactive: false }).addTo(drawMap);   // 영역 옅게(redraw 주석)
+    drawLine = L.polyline([], { color: "#0b6b75", weight: 3, interactive: false }).addTo(drawMap);
     drawSay();
     drawMap.on("click", (e) => { if (drawPts.length < 100) { drawPts.push([e.latlng.lat, e.latlng.lng]); redraw(); } });
   });
@@ -239,7 +239,7 @@
     let r = await vwAsk({ wkt });
     // 브이월드는 짧은 사이 여러 번 부르면 요청을 거절한다(v9 2차: 연속 4번 '조회 실패'). 한 번 쉬었다 다시 묻는다
     if (r.error === "조회 실패") { say("브이월드가 잠시 응답하지 않아 다시 묻는 중입니다."); await new Promise((ok) => setTimeout(ok, 2000)); r = await vwAsk({ wkt }); }
-    $("drawDone").disabled = false;
+    drawSay();   // 조회 중에 점을 끌어 선이 꼬였을 수 있어 단추 상태를 다시 맞춘다(#89 검토)
     if (r.error) return say(`필지를 찾지 못했습니다(${r.error}).\n브이월드 조회가 몰리면 잠시 거절됩니다. 1분쯤 뒤에 다시 눌러 주세요.`, true);
     if (!r.pnus.length) return say("영역 안에서 필지를 찾지 못했습니다.", true);
     $("list").value = r.pnus.join("\n");

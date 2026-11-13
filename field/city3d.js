@@ -36,7 +36,7 @@
       let touched = false;
       const el = v.canvas || document.getElementById("vmap");
       ["pointerdown", "wheel", "touchstart", "keydown"].forEach((ev) => el && el.addEventListener && el.addEventListener(ev, () => { touched = true; }, { once: true, passive: true }));
-      if (document.querySelectorAll) document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => { touched = true; }, { once: true }));
+      if (document.querySelectorAll) document.querySelectorAll("[data-view], #orbit, #labels").forEach((b) => b.addEventListener("click", () => { touched = true; }, { once: true }));
       const recheck = () => { if (!touched && !v.isDestroyed?.() && C.Cartesian3.distance && cam.positionWC && C.Cartesian3.distance(cam.positionWC, start) > 5000) { cam.cancelFlight(); goStart(); } };
       const off = cam.moveEnd && cam.moveEnd.addEventListener ? cam.moveEnd.addEventListener(recheck) : null;
       [600, 1500, 3000].forEach((ms) => setTimeout(recheck, ms));

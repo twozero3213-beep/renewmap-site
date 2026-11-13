@@ -8,7 +8,8 @@
     const start = (page - 1) * size;
     return { page, pages, start, end: Math.min(total, start + size) };
   }
-  function create(list, label, changed, initialPage = 1, size = 5) {
+  // opts.below: 쪽 넘김을 목록 아래에(순위: 휴대폰 첫 줄이 848px까지 밀렸다, R2 14). opts.quiet: '전체 N건 중' 줄을 빼고 화면의 다른 문장에 맡긴다(같은 말이 두 번 읽혔다)
+  function create(list, label, changed, initialPage = 1, size = 5, opts = {}) {
     let page = initialPage;
     const nav = document.createElement("nav"), prev = document.createElement("button"), next = document.createElement("button"), select = document.createElement("select"), status = document.createElement("span");
     nav.className = "list-pages"; nav.setAttribute("aria-label", label + " 페이지");
@@ -16,7 +17,8 @@
     prev.textContent = "이전"; next.textContent = "다음";
     select.setAttribute("aria-label", label + " 페이지 선택"); select.setAttribute("aria-controls", list.id);
     status.setAttribute("role", "status");
-    nav.append(prev, select, next, status); list.before(nav);
+    nav.append(prev, select, next); if (!opts.quiet) nav.append(status);
+    if (opts.below) list.after(nav); else list.before(nav);
     function move(value) { page = value; changed(); select.focus({ preventScroll: true }); nav.scrollIntoView({ block: "nearest" }); }
     prev.addEventListener("click", () => move(page - 1));
     next.addEventListener("click", () => move(page + 1));

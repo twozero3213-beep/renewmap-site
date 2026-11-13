@@ -88,16 +88,19 @@
     //     [검증 2026-11-13 국토부 2027 신규사업 공모 보도(2026-09-11 착수)]. 혁신지구와 나머지 4개는 따로 신청하는 사업이라 표 안에서 두 묶음으로 나눈다.
     //     사업 목록·요건 문구는 그대로이고, 줄 순서와 묶음 제목만 바뀐다
     const core = PROGRAMS.filter(p => CORE.includes(p.id)), rest = PROGRAMS.filter(p => !CORE.includes(p.id));
-    const group = (t, sub) => `<tr class="pg-group"><th colspan="4" scope="colgroup">${esc(t)}<small>${esc(sub)}</small></th></tr>`;
+    // 묶음마다 tbody 하나: 제목 칸은 scope="rowgroup"이라 화면 낭독기가 그 묶음의 줄에만 제목을 붙인다(#88 검토)
+    const group = (t, sub, list) => `<tbody><tr class="pg-group"><th colspan="4" scope="rowgroup">${esc(t)}<small>${esc(sub)}</small></th></tr>${list.map(row).join('')}</tbody>`;
     return `<section class="pg-compare" id="compare" data-page-label="사업 한눈에"><h2>도시재생 공모 ${core.length}종 + 함께 볼 사업 ${rest.length}종</h2>` +
       `<div class="table-wrap" tabindex="0" role="region" aria-label="재생 사업 비교 표"><table><thead><tr><th scope="col">사업</th><th scope="col">맡는 곳</th><th scope="col">지원 규모·기간</th><th scope="col">신청 요건(공식 문서 옮김)</th></tr></thead>` +
-      `<tbody>${group('국토교통부 2027년 도시재생 신규 공모', '3개 유형(노후주거지정비는 일반정비형·빈집정비형 2가지). 2026년 9월 공모, 연말까지 접수')}${core.map(row).join('')}` +
-      `${group('함께 볼 만한 다른 지원사업', '도시재생 신규 공모와 따로 신청합니다. 맡는 곳·시기가 사업마다 다릅니다')}${rest.map(row).join('')}</tbody></table></div></section>`;
+      group('국토교통부 2027년 도시재생 신규 공모', '3개 유형(노후주거지정비는 일반정비형·빈집정비형 2가지). 국토교통부 2026-09-11 공고, 연말까지 접수', core) +
+      group('함께 볼 만한 다른 지원사업', '도시재생 신규 공모와 따로 신청합니다. 맡는 곳·시기가 사업마다 다릅니다', rest) + `</table></div></section>`;
   }
+  // R2 12: 사업 9종을 접이 9개로 두고 '위 표' 되돌림 링크·'동네로 맞춰 보기' 단추를 9번 반복했다(위 찾기 칸과 겹침) → 표 아래 펼친 목록, 사업마다 목적·하는 일·출처 한 줄씩
   function listHTML(base) {
-    return PROGRAMS.map(p => `<section class="pg-item" id="${esc(p.id)}"><h2>${esc(p.name)}</h2><p class="pg-meta">${esc(p.owner)}, ${esc(p.money)}</p><p>${esc(p.aim).replace('&lt;br&gt;', '<br>')}</p>` +
-      `<h3>신청 요건</h3><ul>${p.needs.map(n => `<li>${esc(n.t)}</li>`).join('')}</ul><h3>리뉴맵에서 하는 일</h3><p>${esc(p.use)}</p>` +
-      `<p class="pg-acts"><a class="btn ghost" href="${esc(base)}explore.html">동네로 맞춰 보기</a>${p.tool ? `<a class="btn ghost" href="${esc(base)}${esc(p.tool[0])}">${esc(p.tool[1])}</a>` : ''}</p><p class="pg-src">출처 ${srcLine(p)}</p></section>`).join('');
+    const line = s => esc(s).replace(/&lt;br&gt;/g, ' ');
+    return `<section class="pg-list" id="list" data-page-label="사업별 목적과 하는 일"><h2>사업별 목적과 리뉴맵에서 하는 일</h2>` +
+      PROGRAMS.map(p => `<article class="pg-item" id="${esc(p.id)}"><h3>${esc(p.name)}</h3><p><b>목적</b> ${line(p.aim)}</p>` +
+        `<p><b>하는 일</b> ${line(p.use)}${p.tool ? ` <a href="${esc(base)}${esc(p.tool[0])}">${esc(p.tool[1])}</a>` : ''}</p><p class="pg-src"><b>출처</b> ${srcLine(p)}</p></article>`).join('') + `</section>`;
   }
   // 동 하나에 맞대 본 표(지도 화면 문서 칸)
   // 사업마다 한 줄 결론(v9 2차 마을기업 대표: '확인 필요'가 18번 나와 받을 수 있는 사업이 무엇인지 답을 못 얻었다)

@@ -80,7 +80,7 @@
         "codes": [
           "DECLINE_MET_COUNT"
         ],
-        "template": "쇠퇴 3요건 중 확정된 충족 수는 {v}(기준 {min_met}개 이상)이다.{ref}"
+        "template": "쇠퇴 3요건 중 확정된 요건 수는 {v}(기준 {min_met}개 이상)이다.{ref}"
       },
       {
         "codes": [
@@ -235,7 +235,7 @@
               "codes": [
                 "DECLINE_MET_COUNT"
               ],
-              "template": "쇠퇴 3요건 중 확정된 충족 수는 {v}(기준 {min_met}개 이상)이다.{ref}"
+              "template": "쇠퇴 3요건 중 확정된 요건 수는 {v}(기준 {min_met}개 이상)이다.{ref}"
             },
             {
               "id": "A5",
@@ -571,7 +571,7 @@
               "codes": [
                 "DECLINE_MET_COUNT"
               ],
-              "template": "쇠퇴 3요건 중 확정된 충족 수는 {v}(기준 {min_met}개 이상)이다.{ref}"
+              "template": "쇠퇴 3요건 중 확정된 요건 수는 {v}(기준 {min_met}개 이상)이다.{ref}"
             }
           ],
           "table": {
@@ -663,7 +663,7 @@
                 }
               ],
               [
-                "쇠퇴 3요건 중 확정된 충족 수(하한)",
+                "쇠퇴 3요건 중 확정된 요건 수",
                 {
                   "value": "DECLINE_MET_COUNT"
                 },

@@ -8,9 +8,6 @@
 }
 html, body { overflow-x: clip; }
 
-/* 머리띠: 붙어 있다가 스크롤하면 아래선이 생긴다 */
-header.top { position: sticky; top: 0; z-index: 40; transition: background-color .2s var(--ease), box-shadow .2s var(--ease); }
-body.scrolled header.top { background: var(--bg); box-shadow: 0 1px 0 var(--line); }
 header.top .menu a { position: relative; }
 header.top .menu a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px; background: var(--green); transform: scaleX(0); transform-origin: 0 50%; transition: transform .3s var(--out); }
 header.top .menu a:hover::after, header.top .menu a[aria-current]::after { transform: scaleX(1); }
@@ -29,24 +26,8 @@ header.top .menu a:hover::after, header.top .menu a[aria-current]::after { trans
 .table-wrap tbody tr:hover { background: var(--hover-tint); }
 
 /* ── 문서 화면 첫 띠(site-motion.js가 제목 묶음을 .pg-band로 감싼다. 스크립트가 없으면 예전 모습 그대로) ── */
-.pg-band { position: relative; isolation: isolate; color: var(--hero-ink); padding: 48px 0 40px; margin-bottom: 40px; }
-.pg-band::before { content: ""; position: absolute; z-index: -2; top: 0; bottom: 0; left: calc(50% - 50vw); right: calc(50% - 50vw); background: var(--hero-bg); }
-.pg-band h1 { color: var(--hero-ink); font-size: clamp(30px, 4vw, 48px); line-height: 1.15; letter-spacing: -.02em; text-wrap: balance; margin: 8px 0 12px; }
-.pg-band p, .pg-band .sub { color: var(--hero-dim); max-width: 46em; }
-.pg-band a { color: var(--lime); }
-.pg-band .breadcrumb, .pg-band .breadcrumb a { color: var(--hero-dim); }
-.pg-band .breadcrumb a:hover { color: var(--lime); }
-.pg-band .label-scenario { color: var(--navy); background: var(--lime); border-color: var(--lime); }
+.pg-band p, .pg-band .sub { max-width: 46em; }   /* 색·여백은 rm6.css(짙은 녹색 띠는 R2에서 지웠다) */
 
-/* 서비스 소개 첫 단락도 같은 어두운 띠 */
-.about-top { position: relative; isolation: isolate; color: var(--hero-ink); background: var(--hero-bg); }
-.about-top h1, .about-top h2, .about-top h3 { color: var(--hero-ink); }
-.about-top h1 { font-size: clamp(32px, 4.4vw, 56px); line-height: 1.12; letter-spacing: -.02em; text-wrap: balance; }
-.about-top p, .about-top .about-vl { color: var(--hero-dim); }
-.about-top .btn:not(.ghost) { background: var(--lime); color: var(--navy); border-color: var(--lime); }
-.about-top .btn:not(.ghost):hover { background: var(--hero-ink); border-color: var(--hero-ink); }
-.about-top .btn.ghost { background: transparent; color: var(--hero-ink); border-color: var(--hero-line); }
-.about-top .btn.ghost:hover { background: rgba(255,255,255,.08); }
 /* 네 가지 원칙은 흰 카드라 글자는 원래 진한 색으로 */
 
 /* ── 움직임 ── */
@@ -55,8 +36,7 @@ header.top .menu a:hover::after, header.top .menu a[aria-current]::after { trans
 .motion .about-top h1 { animation: v4-rise .9s var(--out) both; }
 .motion .about-top .about-def, .motion .about-top .about-cta { animation: v4-rise .9s var(--out) .12s both; }
 @keyframes v4-rise { from { opacity: 0; transform: translateY(22px); } }
-.motion .rv { opacity: 0; transform: translateY(24px); transition: opacity .6s var(--out), transform .7s var(--out); transition-delay: calc(var(--k, 0) * 60ms); }
-.motion .rv.in { opacity: 1; transform: none; }
+/* R1 10: 스크롤 나타남(.rv)은 뺐다. 내용 화면에서 아직 안 나타난 칸이 빈칸으로 남고 전체 캡처·인쇄에서도 비었다 */
 
 @media (prefers-reduced-motion: reduce) {
   .btn, header.top, .table-wrap tbody tr { transition: none; }
@@ -66,28 +46,16 @@ header.top .menu a:hover::after, header.top .menu a[aria-current]::after { trans
 /* 첫 띠는 머리띠 바로 아래에 붙인다(문서 화면 main.page의 위 여백만큼 올림) */
 main.page:has(> .pg-band:first-child) { padding-top: 0; }
 
-/* 도구 화면(현장·신청요건·창고 목록) 머리띠: 첫 화면과 같은 어두운 녹색에 연두 밑줄. 움직임은 없다(일하는 화면) */
-body.field header.top { background: var(--hero-bg); border-bottom: 0; box-shadow: inset 0 -3px 0 var(--lime); }
-body.field header.top h1, body.field header.top .today { color: var(--hero-ink); }
-body.field.scrolled header.top { background: var(--hero-bg); box-shadow: inset 0 -3px 0 var(--lime); }
 
 /* 공통 머리글 메뉴(심사 06, 2026-11-08): 모든 화면에 같은 5개. 스크립트 없이 동작하고, 좁은 화면에서는 로고 옆에서 가로로 민다 */
 .site-nav { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .site-nav::-webkit-scrollbar { display: none; }
-.site-nav a { display: inline-flex; align-items: center; flex: none; min-height: 44px; padding: 8px 10px; border-radius: 8px; color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.site-nav a { display: inline-flex; align-items: center; flex: none; min-height: 44px; padding: 8px 10px; border-radius: 8px; color: var(--ink); text-decoration: none; font-size: 15px; font-weight: 600; white-space: nowrap; }
 .site-nav a:hover { color: var(--green); background: var(--soft); }
 .site-nav a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--green); border-radius: 8px 8px 0 0; }
 .site-nav a:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; box-shadow: 0 0 0 5px var(--green); }
-body.field .logo, body.field .site-nav a { color: var(--hero-ink); }
-body.field .logo span { color: var(--lime); }
-body.field .site-nav a:hover { color: var(--lime); background: rgba(255,255,255,.08); }
-body.field .site-nav a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--lime); }
-body.field header.top .wrap:has(.site-nav) { min-height: 44px; padding-top: 4px; }
 @media (max-width: 720px) {
-  header.top .wrap:has(.site-nav) { flex-wrap: wrap; gap: 0; padding-top: 8px; padding-bottom: 0; }
   .site-nav { flex: 1 0 100%; justify-content: space-between; gap: 4px; overflow: visible; }
-  .site-nav a { min-width: 44px; padding: 8px 0; font-size: 12px; }
+  .site-nav a { min-width: 44px; padding: 8px 0; font-size: 13px; }
 }
 
-/* 어두운 첫 단락 안의 글자 링크는 연두로(녹색은 어두운 바탕에서 안 읽힌다) */
-.about-top a:not(.btn) { color: var(--lime); }

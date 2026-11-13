@@ -86,7 +86,20 @@
     return best;
   }
 
-  const api = { YEAR_FROM, BANDS, NO_DATE, aprYear, stats, crossYear, sinceYear, features, colorExpr, filterExpr, dongAt };
+  // R3 10: 지금 고른 법정동의 건물 목록을 CSV로. 이미 받은 건축물대장 표제부 파일(화면이 쓰는 그 자료)의 공개 항목만 옮기고 새 요청은 없다.
+  // 머리줄 3개(출처·기준일·개인 정보)는 '#'로 시작하고, 그 아래 열 이름 한 줄 + 건물마다 한 줄(=화면 건물 수). 엑셀이 한글을 읽게 BOM을 붙인다
+  const CSV_COLS = ['관리 건축물대장 번호', '법정동', '지번', '건물명', '주용도', '구조', '사용승인일', '사용승인 연도', '층수', '연면적(㎡)', '만 연수', '30년 이상'];
+  function csv(bf, list) {
+    // 셀이 =+-@로 시작하면 엑셀이 식으로 읽는다 → 앞에 작은따옴표
+    const q = (v) => { const t = v === null || v === undefined ? '' : String(v); return `"${(/^[=+\-@]/.test(t) ? "'" + t : t).replace(/"/g, '""')}"`; };
+    const meta = [`# 출처: ${bf.source || ''} (${bf.data_source_system || ''})`, `# 기준일: ${bf.hub_reference_date || ''} · 법정동: ${bf.name || ''}(${bf.bjd10 || ''}) · 건물 ${list.length}동`,
+      '# 개인 정보: 소유자·거주자 항목은 없습니다(건물명 속 개인 이름 패턴은 가림). 법정 노후·불량 판정이 아닙니다.'];
+    const rows = list.map((b) => [b.mgm_bld_pk, bf.name, b.jibun, b.name, b.main_use, b.structure, b.use_apr_day || (Array.isArray(b.use_apr_span) ? '연도만: ' + b.use_apr_span[0].slice(0, 4) : ''),
+      aprYear(b) || '', b.floors, b.tot_area, b.age_years, b.over30 === true ? '예' : b.over30 === false ? '아니오' : ''].map(q).join(','));
+    return '\ufeff' + [...meta, CSV_COLS.map(q).join(','), ...rows].join('\r\n') + '\r\n';
+  }
+
+  const api = { YEAR_FROM, BANDS, NO_DATE, aprYear, stats, crossYear, sinceYear, features, colorExpr, filterExpr, dongAt, csv, CSV_COLS };
   if (typeof module === 'object' && module.exports) { module.exports = api; return; }
   root.Time4D = api;
 
@@ -146,8 +159,16 @@
     $('t4Marks').innerHTML = line(y50, '20년 이상 건물 절반 넘음') + line(y67, '20년 이상 건물 3분의 2 넘음');
   }
 
+  // 'CSV로 받기': 파일은 이 브라우저 안에서 만들어 바로 내려받는다(서버로 보내지 않는다)
+  $('t4Csv').addEventListener('click', () => {
+    if (!fileMeta) return;
+    const a = document.createElement('a'), url = URL.createObjectURL(new Blob([csv(fileMeta.bf, blds)], { type: 'text/csv;charset=utf-8' }));
+    a.href = url; a.download = `건물목록_${fileMeta.bf.name}_${fileMeta.bf.bjd10}.csv`; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
   async function load(code) {
     stop();
+    $('t4Csv').disabled = true;
     $('t4Status').textContent = '건물을 불러오는 중입니다.';
     try {
       const [outline, bf] = await Promise.all([getJson(`bldg_outline/${code}.json`), getJson(`buildings/${code}.json`)]);
@@ -171,6 +192,7 @@
       $('t4Name').textContent = bf.name;
       $('t4Src').innerHTML = `외곽선·높이: ${esc(outline.name)}(기준일 ${esc(outline.base_date)}, ${esc(outline.license_type)}) · 사용승인일: ${esc(bf.source)}(기준일 ${esc(bf.hub_reference_date)})`;
       marks(); paint();
+      $('t4Csv').disabled = !blds.length;
     } catch (e) {
       $('t4Status').textContent = '이 동의 건물 자료를 불러오지 못했습니다. 다른 동을 골라 보세요.';
     }

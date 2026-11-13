@@ -98,8 +98,8 @@ def main():
                         # 외부 3D 프레임은 타일 요청이 계속돼 networkidle이 준비 완료 조건이 아니다.
                         if route!='field/city3d.html':
                             page.wait_for_load_state('networkidle', timeout=15000)
-                        if route=='about.html':
-                            page.wait_for_selector('#dashCompare li', state='attached')
+                        if route=='about.html':   # 2026-11-14 디자인 2차: 소개의 구 칩 대시보드를 한 문단 + '건물 나이 4D로 보기' 단추로 바꿨다
+                            page.wait_for_selector('main h1')
                         if route=='rank.html':
                             page.wait_for_selector('#rankOut tbody tr')
                         if route=='explore.html' and not args.base:
@@ -126,16 +126,6 @@ def main():
                             assert 1<=page.locator('#rankOut tbody tr').count()<=20
                             assert page.locator('#rankOut tbody tr').last.locator('td').first.inner_text()==str(ranked)
                             check(route, width)
-                        if route=='about.html':
-                            page.goto(base+'about.html#dashboard', wait_until='load')
-                            page.wait_for_selector('#dashCompare li')
-                            assert page.locator('#dashCompare li').count()<=5
-                            page.get_by_role('navigation',name='법정동 비교 페이지',exact=True).get_by_role('button',name='다음',exact=True).click()
-                            assert page.locator('#dashCompare li').count()<=5
-                            selected=page.locator('#dashCompare [data-dong]').last.get_attribute('data-dong')
-                            page.locator('#dashCompare [data-dong]').last.click()
-                            assert page.locator(f'#dashCompare [data-dong="{selected}"]').get_attribute('aria-pressed')=='true'
-                            check(route+'#dashboard', width, 'dashboard')
                         page.screenshot(path=str(args.output/f'{route.replace("/","_")}-{width}.png'))
                     except Exception as error:
                         failures.append({'route': route, 'width': width, 'error': str(error)})

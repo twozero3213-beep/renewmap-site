@@ -2,4 +2,4 @@
 .list-pages[hidden] { display: none; }
 .list-pages button, .list-pages select { min-height: 44px; width: auto; margin: 0; }
 .list-pages select { max-width: 10rem; }
-.list-pages [role="status"] { flex-basis: 100%; font-size: .875rem; color: var(--muted, #53625d); }
+.list-pages [role="status"] { flex-basis: 100%; font-size: 15px; color: var(--muted, #53625d); }

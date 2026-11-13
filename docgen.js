@@ -162,7 +162,7 @@
   const LABEL = {
     DECLINE_AGING_20Y_PCT: '준공 20년 이상 건축물 비율', DECLINE_AGING_20Y_PCT_DELTA5Y: '노후건축물 비율 5년 차이', DECLINE_BIZ_TOTAL: '사업체 수',
     DECLINE_BIZ_TOTAL_DELTA5Y: '사업체 수 5년 차이', DECLINE_BIZ_DROP10Y_PCT: '10년 최대 대비 사업체 감소율', DECLINE_BIZ_DECL3IN5: '최근 5년 중 3년 연속 사업체 감소(1=있음)',
-    DECLINE_MET_COUNT: '쇠퇴 3요건 중 확정된 충족 수(하한)', DEPOP_STATUS: '인구감소지역 지정 구분(시군구)', DECLINE_POP_TOTAL: '주민등록 인구', DECLINE_POP_CHANGE_PCT: '인구변화율',
+    DECLINE_MET_COUNT: '쇠퇴 3요건 중 확정된 요건 수', DEPOP_STATUS: '인구감소지역 지정 구분(시군구)', DECLINE_POP_TOTAL: '주민등록 인구', DECLINE_POP_CHANGE_PCT: '인구변화율',
     DECLINE_POP_CHANGE_PCT_DELTA5Y: '인구변화율 5년 차이', DECLINE_POP_DROP30Y_PCT: '30년 최대 대비 인구 감소율', DECLINE_POP_DECL3IN5: '최근 5년 중 3년 연속 인구 감소(1=있음)',
     DECLINE_POP_TOTAL_CHANGE_PCT: '기준연도 대비 인구 변화율', YOUTH_NET_MIGRATION: '청년층 순이동자 수(시군구)', YOUTH_NET_MIGRATION_PER1K: '청년층 순이동률(시군구)',
     APT_TRADE_COUNT: '아파트 매매 신고 건수(시군구·월)', APT_PRICE_M2_MEDIAN: '아파트 ㎡당 중위 거래가(시군구·월)', APT_PRICE_M2_YOY_PCT: '아파트 ㎡당 중위가 전년 동기 대비(시군구)',
@@ -336,7 +336,7 @@
       rows.push([`${DECLINE_PREFIX}${name}`, v, cond, dSrc, dStatus, ver]); rule.set(code, { cond, verdict: ver, status: dStatus });
     }
     const [mc, mv] = val('DECLINE_MET_COUNT'), mcCond = `${DECLINE_N_REQ}개 중 ${DECLINE_MIN_MET}개 이상`, mcVer = verdictOf(judgeMetCount(mc), dStatus);
-    rows.push([`${DECLINE_PREFIX}충족 요건 수`, mv, mcCond, `${dSrc}. 값은 확정된 충족 수의 하한`, dStatus, mcVer]); rule.set('DECLINE_MET_COUNT', { cond: mcCond, verdict: mcVer, status: dStatus });
+    rows.push([`${DECLINE_PREFIX}충족 요건 수`, mv, mcCond, `${dSrc}. 값은 확정된 요건 수의 하한`, dStatus, mcVer]); rule.set('DECLINE_MET_COUNT', { cond: mcCond, verdict: mcVer, status: dStatus });
     for (const ind of (livingIdx || {}).indicators || []) {
       const std = ind.standard;
       if (!std || std.value === null || std.value === undefined) continue;

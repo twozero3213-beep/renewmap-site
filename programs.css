@@ -1,48 +1,50 @@
 /* 도시재생 사업 찾기(programs.html)와 지도 화면 문서 칸의 사업 맞대 보기 */
 .pg-sched { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin: 24px 0 40px; padding: 20px 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line); }
-.pg-sched dt { font-size: 14px; color: var(--dim); }
+.pg-sched dt { font-size: 15px; color: var(--dim); }
 .pg-sched dd { margin: 4px 0 0; font-weight: 700; }
-.pg-item { padding: 32px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 80px; }
-.pg-item h2 { margin: 0; }
-.pg-item h3 { margin: 24px 0 8px; font-size: 16px; }
+.pg-item { padding: 16px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 80px; }
+.pg-item h3 { margin: 0 0 4px; }
+.pg-item p { margin: 0; }
+.pg-item p b { margin-right: 6px; }
 .pg-item ul { margin: 0; padding-left: 20px; }
 .pg-meta { margin: 4px 0 16px; color: var(--green); font-weight: 700; }
 .pg-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 8px; }
-.pg-src { margin: 0; font-size: 14px; color: var(--dim); }
+.pg-src { margin: 0; font-size: 15px; color: var(--dim); }
 .pg-dong { margin: 24px 0; }
 .pg-dong h3 { margin: 0 0 8px; }
-.pg-warn { margin: 0 0 16px; font-size: 14px; color: var(--dim); }
+.pg-warn { margin: 0 0 16px; font-size: 15px; color: var(--dim); }
 .pg-card { padding: 16px 0; border-top: 1px solid var(--line); }
 .pg-card h4 { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin: 0 0 8px; font-size: 17px; }
-.pg-card h4 small { font-size: 14px; font-weight: 400; color: var(--dim); }
+.pg-card h4 small { font-size: 15px; font-weight: 400; color: var(--dim); }
 .pg-card ul { list-style: none; margin: 0; padding: 0; }
 .pg-card li { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 8px; padding: 4px 0; font-size: 15px; }
 .pg-card li b { font-weight: 700; color: var(--dim); }
 .pg-card li.is-ok b { color: var(--green); }
 .pg-card li.is-no b { color: var(--notice); }
-.pg-card li small { display: block; font-size: 14px; color: var(--dim); }
+.pg-card li small { display: block; font-size: 15px; color: var(--dim); }
 /* v9: 재생 사업 화면에서 바로 동을 골라 맞대 본다(홈 찾기 칸과 같은 home.js). 전에는 '동을 고르면'이라 해 놓고 고르는 칸이 없었다 */
 .pg-find { max-width: 640px; margin: 16px 0 24px; }
 .pg-find label { display: block; font-weight: 700; margin-bottom: 6px; }
 .pg-find .home-search-row { display: flex; gap: 8px; }
 /* 2026-11-13 우지예: 이름을 몰라도 고르는 '시·도 → 구·군 → 동' 목록(home.js initPick). 찾기 칸 바로 아래 한 줄, 좁으면 줄바꿈 */
 .pg-find .pick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
-.pg-find .pick-or { font-size: 14px; color: var(--dim); }
-.pg-find .pick-row select { min-height: 44px; padding: 0 10px; border: 1px solid var(--line-strong, #9aa8a2); border-radius: 8px; background: #fff; font: inherit; max-width: 100%; }
+.pg-find .pick-or { font-size: 15px; color: var(--dim); }
+.pg-find .pick-row select { min-height: 48px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card, #fff); font: inherit; font-size: 17px; max-width: 100%; }
+.pg-find .pick-row .btn { min-height: 48px; }
 .pg-find .pick-row select:disabled { opacity: .55; }
 .pg-find input { flex: 1; min-width: 0; min-height: 48px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; font: inherit; font-size: 16px; background: var(--card); color: var(--ink); }
-.pg-find .home-hits { list-style: none; margin: 8px 0 0; padding: 0; border-radius: 10px; overflow: hidden; }
+.pg-find .home-hits { list-style: none; margin: 8px 0 0; padding: 0; border-radius: 12px; overflow: hidden; }
 .pg-find .home-hits:not(:empty) { border: 1px solid var(--line); background: var(--card); }
 .pg-find .home-hits a { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; min-height: 48px; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
 .pg-find .home-hits a:hover { background: var(--soft); }
 .pg-find .home-hits a:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
 .pg-find .home-hits small { color: var(--dim); }
-.pg-find .home-msg { white-space: pre-line; margin: 6px 0 0; font-size: 14px; color: var(--dim); }
+.pg-find .home-msg { white-space: pre-line; margin: 6px 0 0; font-size: 15px; color: var(--dim); }
 @media (max-width: 520px) { .pg-find .home-search-row { flex-direction: column; } }
 /* v9 2차: 사업마다 한 줄 결론과 맨 위 요약 */
 .pg-sum { margin: 8px 0 16px; font-size: 16px; line-height: 1.6; }
-.pg-sum small { color: var(--dim); font-size: 14px; }
-.pg-verdict { margin: 4px 0 8px; padding: 6px 10px; border-radius: 6px; font-size: 15px; font-weight: 600; line-height: 1.5; }
+.pg-sum small { color: var(--dim); font-size: 15px; }
+.pg-verdict { margin: 4px 0 8px; padding: 6px 10px; border-radius: 8px; font-size: 15px; font-weight: 600; line-height: 1.5; }
 .pg-verdict.is-ok { background: var(--soft); color: var(--green-press, var(--green)); }
 .pg-verdict.is-check { background: var(--amber-bg); color: var(--amber); }
 .pg-verdict.is-no { background: var(--mute-bg, #eee); color: var(--ink); }
@@ -50,3 +52,10 @@
 /* 2026-11-13 우지예: 사업 비교 표의 묶음 제목 줄(도시재생 공모 / 함께 볼 사업, programs.js compareHTML 주석) */
 .pg-compare tr.pg-group th { background: var(--soft, #eef4f1); text-align: left; font-size: 15px; padding: 10px 12px; }
 .pg-compare tr.pg-group th small { display: block; font-weight: 400; font-size: 13px; color: var(--dim); margin-top: 2px; }
+
+/* R3 1: 목록은 자바스크립트가 그려서 아래 꼬리글이 약 2초 뒤 통째로 밀렸다(CLS 0.44~0.94). 그리기 전 높이를 먼저 잡는다(DESIGN.md §0 '렌더 전 높이 선언').
+   #programs 실측 1,965(1440)·2,555(768)·4,678(390)px라 모든 폭에서 이 값보다 크다. 꼬리글이 첫 화면 밖에 머무는 높이만 둔다 */
+#programs { min-height: 1400px; }
+/* 목록에서 고르기 줄(home.js initPick)도 나중에 끼어든다: 시·도·구·동 칸 + 단추가 들어갈 자리(실측 147px, 휴대폰 259px) */
+.pg-find[data-pick] { min-height: 147px; }
+@media (max-width: 520px) { .pg-find[data-pick] { min-height: 259px; } }

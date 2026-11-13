@@ -10,11 +10,11 @@
   ];
   const MET = 'DECLINE_MET_COUNT';
   // 1쪽 문서·동 페이지와 같은 자릿수(소수 둘째 자리)로 보인다(11-13 3차: 홈 83%, 문서 82.96%로 달라 보임)
-  const { fmt2: fmt } = typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil;
+  const { fmt2: fmt, bizZeroNote, BIZ_BOUNDARY } = typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil;
   // 한 동의 셀들 → 카드에 쓸 값(순수 함수, 시험용). 상태는 요건 단위(decline-req.js: 30년·10년 감소율 또는 '최근 5년 중 3년 연속 감소' 중 하나라도 해당이면 해당).
   // v7(11-13 6회차): 감소율 한 길만 보고 '추가확인'을 붙여, 연속 감소로 해당한 동은 머리의 'N개 해당'과 줄이 어긋났다
   const DR = typeof module === 'object' && module.exports ? require('./decline-req.js') : root.DeclineReq;
-  function summarize(cells) {
+  function summarize(cells, series) {
     const by = new Map((cells || []).map((c) => [c.indicator_code, c]));
     const met = by.get(MET), val = (code) => DR.cellValue(by.get(code));   // 미확정·비공개 셀은 셈에 안 쓴다(문서·동 페이지와 같게)
     const reqs = DR.evaluate(val);
@@ -32,9 +32,13 @@
         const text = viaConsec ? '3년 연속 감소' : q.rate === null ? '–' : `${fmt(q.rate)}%`;   // 상태 칸이 '추가확인'이라 값 칸에 또 쓰지 않는다(v9: 두 번 읽혔다)
         const who = label.replace(' 감소', '');
         // 총수가 비면 같은 줄에 밝힌다. 0은 채운 값이 아니라 원천 감소율이라는 것도 같이(8회차: '0으로 채우지 않는다'와 부딪혀 보였다)
-        const baseNote = noBase ? `${who} 총수는 원천에 아직 없음 · 감소율은 원천 값` : '';
-        const notes = [viaConsec ? '최근 5년 중 3년 연속 감소로 해당' : '', baseNote].filter(Boolean);
-        return { code, label, std, value: q.rate, text, over: unsure ? null : q.status === 'over', cell: c, note: notes.join(' · ') };
+        // R2 11: '총수는 원천에 없음 · 0%'가 지어낸 0처럼 읽혔다 → 감소율이 기관 공표값이고 총수가 공표 전임을 문장으로
+        const year = String((base && base.reference_date) || '').slice(0, 4);
+        const baseNote = noBase ? `감소율은 기관 공표값입니다. ${year ? year + '년 ' : ''}${who} 수는 아직 공표 전입니다.` : '';
+        // R3 11: 감소율 0%의 뜻(그 해 사업체 수가 10년 중 최대)을 같은 줄에, 출처 경계는 출처 기록 접기에(boundary)
+        const zero = code === 'DECLINE_BIZ_DROP10Y_PCT' && !viaConsec ? bizZeroNote((series || {}).DECLINE_BIZ_TOTAL, q.rate) : '';
+        const notes = [viaConsec ? '최근 5년 중 3년 연속 감소로 해당' : '', zero, baseNote].filter(Boolean);
+        return { code, label, std, value: q.rate, text, over: unsure ? null : q.status === 'over', cell: c, note: notes.join(' · '), boundary: zero ? BIZ_BOUNDARY : '' };
       }),
       ref: met ? met.reference_date : null,
     };
@@ -48,7 +52,8 @@
   const $ = (id) => doc.getElementById(id);
   const json = (p) => fetch(p).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
   let index = null;
-  const idx = () => index || (index = json('data/national/dong_index.json'));
+  // R3 12: home.js와 같은 약속을 쓴다(dong_index.json 225KB를 한 번만). 실패(null)는 예전처럼 오류로 던진다
+  const idx = () => index || (index = root.renewFetch ? root.renewFetch('data/national/dong_index.json').then((d) => { if (!d) throw new Error('dong_index'); return d; }) : json('data/national/dong_index.json'));
   const cache = new Map();
   const sgFile = (sgg) => { if (!cache.has(sgg)) cache.set(sgg, json(`data/national/emd/${sgg}.json`).then((d) => root.RenewCellPack.unpack(d)).catch((e) => { cache.delete(sgg); throw e; })); return cache.get(sgg); };
 
@@ -60,17 +65,17 @@
     li.append(s, b, tag, sm); return li;
   }
   // 근거 영수증: '20년 넘은 건축물' 셀 하나의 원장 기록을 그대로 펼친다(값을 만들거나 고치지 않는다)
-  function prov(cells, name) {
+  function prov(cells, name, boundary) {
     const dl = $('h6ReceiptList'); if (!dl) return;
     dl.replaceChildren();
     $('h6ReceiptDong').textContent = name;
     const c = cells.find((x) => x.indicator_code === 'DECLINE_AGING_20Y_PCT');
-    if (!c) { const d = doc.createElement('div'); d.textContent = '이 동은 원장 기록이 없습니다.'; dl.append(d); return; }
+    if (!c) { const d = doc.createElement('div'); d.textContent = '이 동은 출처 기록이 없습니다.'; dl.append(d); return; }
     // 사람에게 보이는 줄과 내부 식별자(셀 번호·규칙 판본)를 나눈다. 상태·[미확인]은 무엇이 아직인지 말로 푼다(11-13 3차)
-    const state = { 미확인: '공식 통계 원값 그대로(사람 검토 전)', 확인: '리뉴맵 담당자가 원천과 대조함', 추가확인: '자료가 모자라 확인이 더 필요함' }[c.status] || c.status;
+    const state = { 미확인: '공식 통계 원값 그대로(사람 검토 전)', 확인: '리뉴맵 담당자가 출처와 대조함', 추가확인: '자료가 모자라 확인이 더 필요함' }[c.status] || c.status;
     // 9회차: '확인하지 못함'이 신뢰를 깎는 대표 예시로 읽혔다. 사실대로 '원천 기관이 계산해 공표한 값'임을 말한다(리뉴맵이 다시 계산하지 않는다)
-    const formula = String(c.formula_text || '').replace(/\s*\[미확인\]/g, '(원천 기관이 계산해 공표한 값, 리뉴맵은 다시 계산하지 않음)');
-    const rows = [['값', c.value === null ? '추가확인' : `${fmt(c.value)}${c.unit || ''}`], ['원천', c.source_name], ['원천 주소', c.source_url],
+    const formula = String(c.formula_text || '').replace(/\s*\[미확인\]/g, '(출처 기관이 계산해 공표한 값, 리뉴맵은 다시 계산하지 않음)');
+    const rows = [['값', c.value === null ? '추가확인' : `${fmt(c.value)}${c.unit || ''}`], ['출처', c.source_name], ['출처 주소', c.source_url],
       ['기준일', c.reference_date], ['조회 시각', String(c.retrieved_at || '').slice(0, 16).replace('T', ' ')], ['계산식', formula],
       ['공간 단위', c.spatial_unit], ['이용 조건', c.license_type], ['상태', state]];
     for (const [k, v] of rows) {
@@ -79,8 +84,9 @@
       dt.textContent = k; dd.textContent = v; box.append(dt, dd); dl.append(box);
     }
     const more = doc.createElement('details'), sum = doc.createElement('summary'), code = doc.createElement('p');
-    sum.textContent = '내부 식별자'; code.textContent = `셀 번호 ${c.cell_id} · 규칙 판본 ${c.rule_version}`;
+    sum.textContent = '기록 번호'; code.textContent = `셀 번호 ${c.cell_id} · 규칙 판본 ${c.rule_version}`;
     more.className = 'h6-receipt-ids'; more.append(sum, code); dl.append(more);
+    if (boundary) { const b = doc.createElement('div'), dt = doc.createElement('dt'), dd = doc.createElement('dd'); dt.textContent = '사업체 자료'; dd.textContent = boundary; b.append(dt, dd); dl.insertBefore(b, more); }
   }
   async function show(code8) {
     card.setAttribute('aria-busy', 'true');
@@ -91,12 +97,12 @@
       const [code, name, sgg, sggName, sido] = hit;
       const un = await sgFile(sgg);
       const dong = (un.dongs || []).find((d) => d.code7 === code);
-      const s = summarize(dong ? dong.cells : []);
+      const s = summarize(dong ? dong.cells : [], dong ? dong.series : null);
       $('h6LiveName').textContent = name;
       $('h6LiveWhere').textContent = `${sido} ${sggName}`;
       $('h6Met').textContent = s.met === null ? '추가확인' : `${s.met}개 해당`;
       $('h6Rows').replaceChildren(...s.rows.map(row));
-      prov(dong ? dong.cells : [], name);
+      prov(dong ? dong.cells : [], name, s.rows.map((r) => r.boundary).find(Boolean));
       const sidoCode = sgg.slice(0, 2), hash = `#map/${sidoCode}/${sgg}/${code}`;
       $('h6Go').href = `explore.html?report=onepage${hash}`;
       $('h6Prog').href = `explore.html?report=programs${hash}`;

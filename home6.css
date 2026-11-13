@@ -1,33 +1,37 @@
 /* v6 홈(2026-11-13). 시각 기준: '도면 위의 근거' — 종이색 바탕, 진한 먹색 글, 녹색은 누를 곳에만.
    카드는 실제 자료를 담는 곳(지금 이 동네)에만 쓰고, 나머지는 선과 여백으로 나눈다(11-13 평가: 아이콘 카드 반복이 AI 티). */
 .h6 { padding-bottom: 24px; }
-.h6 h2 { font-size: clamp(26px, 3vw, 36px); line-height: 1.3; margin: 0 0 12px; }
+.h6 h2 { margin: 0 0 12px; }
 .h6-sec-lead { color: var(--dim); margin: 0 0 32px; max-width: 46em; }
 
 /* 첫 화면 */
-.h6-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 48px; align-items: start; padding-top: 48px; padding-bottom: 56px; }
-.h6-hero h1 { font-size: clamp(32px, 4.2vw, 52px); line-height: 1.22; font-weight: 800; margin: 0 0 18px; letter-spacing: -0.03em; }
-.h6-lead { font-size: 18px; color: var(--dim); margin: 0 0 28px; }
+.h6-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 20px 48px; align-items: start; padding-top: 48px; padding-bottom: 56px; }
+/* 넓은 화면: 카드는 오른쪽 두 줄, 무료·범위 안내는 검색 아래(왼쪽 둘째 줄). 좁은 화면은 카드 다음(R1 6) */
+.h6-live { grid-column: 2; grid-row: 1 / span 2; }
+.h6-hero { grid-template-rows: auto 1fr; }   /* 카드 높이의 남는 줄은 둘째 줄이 받는다(안내가 검색 바로 아래 붙게) */
+.h6-lead { font-size: 18px; color: var(--dim); margin: 0 0 20px; }
+/* R1 6: 첫 화면이 누구의 일인지 한 줄로 */
+.h6-for { margin: 0 0 12px; font-size: var(--t-sub); font-weight: 700; color: var(--ink); }
 .h6-search label { display: block; font-weight: 700; margin-bottom: 8px; }
 .h6-search .home-search-row { display: flex; gap: 8px; }
-.h6-search input { flex: 1; min-width: 0; min-height: 56px; font: inherit; font-size: 18px; padding: 0 16px; border: 2px solid var(--ink); border-radius: 10px; background: #fff; }
-.h6-search .btn { min-height: 56px; padding: 0 26px; font-size: 18px; }
-.h6-search .home-hits { list-style: none; margin: 8px 0 0; padding: 0; border-radius: 10px; overflow: hidden; }
+.h6-search input { flex: 1; min-width: 0; min-height: 48px; font: inherit; font-size: 17px; padding: 0 16px; border: 2px solid var(--ink); border-radius: 8px; background: #fff; }
+.h6-search .btn { min-height: 48px; padding: 0 24px; }
+.h6-search .home-hits { list-style: none; margin: 8px 0 0; padding: 0; border-radius: 8px; overflow: hidden; }
 .h6-search .home-hits:not(:empty) { border: 1px solid var(--line); background: #fff; }
 .h6-search .home-hits a { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; color: var(--ink); text-decoration: none; border-bottom: 1px solid #eef2ef; min-height: 48px; }
 .h6-search .home-hits a:hover { background: #f1f5f2; }
 .h6-search .home-hits small { color: var(--dim); }
-.h6-try { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 0; font-weight: 600; color: var(--dim); }
-.h6-chip { min-height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
-.h6-chip[aria-pressed="true"] { background: var(--green); color: #fff; border-color: var(--green); }   /* v7.16: 선택 표시는 모든 화면에서 청록 한 가지(10회차) */
-.h6-free { font-size: 15px; color: var(--dim); margin: 18px 0 0; }
+/* 바로 보기 칩은 한 줄(넘치면 옆으로 민다, R1 6: 휴대폰에서 두 줄로 꺾여 카드를 첫 화면 밖으로 밀었다). 칩 모양은 rm6.css .rm-chip */
+.h6-try { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; margin: 12px 0 0; font-weight: 600; color: var(--dim); overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
+.h6-try > * { flex: none; }
+.h6-free { font-size: var(--t-sub); color: var(--dim); margin: 0; }
 
 /* 지금 이 동네 카드: 원장 셀 그대로 */
-.h6-live { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 24px 24px 20px; box-shadow: 0 18px 40px -24px rgba(15, 43, 39, .35); }
+.h6-live { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 24px 24px 20px; }
 .h6-live[aria-busy="true"] { opacity: .6; }
 .h6-live-head { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 0 12px; border-bottom: 2px solid var(--ink); padding-bottom: 12px; }
-.h6-live-k { grid-column: 1 / -1; margin: 0; font-size: 14px; font-weight: 700; color: var(--dim); }
-.h6-live-head h2 { margin: 0; font-size: 30px; }
+.h6-live-k { grid-column: 1 / -1; margin: 0; font-size: 15px; font-weight: 700; color: var(--dim); }
+.h6-live-head h2 { margin: 0; }
 .h6-live-where { margin: 0; color: var(--dim); font-size: 15px; }
 .h6-live-big { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 16px 0 8px; }
 .h6-live-big-k { font-weight: 700; }
@@ -37,16 +41,14 @@
 .h6-live-rows span { grid-area: k; font-weight: 600; }
 .h6-live-rows b { grid-area: v; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .h6-live-rows i { grid-area: t; font-style: normal; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
-.h6-live-rows small { grid-area: s; font-size: 14px; color: var(--dim); }
-.h6-live-rows .is-over i { background: #fbe4dc; color: #8f2f0c; }
-.h6-live-rows .is-under i { background: #dcefe7; color: #0b5a48; }
+.h6-live-rows small { grid-area: s; font-size: 15px; color: var(--dim); }
 .h6-live-rows .is-none i { background: var(--amber-bg); color: var(--amber); }
 .h6-prov { margin: 12px 0 0; }
 .h6-prov summary { cursor: pointer; font-weight: 700; color: var(--green); min-height: 40px; display: flex; align-items: center; }
-.h6-prov dl { display: grid; grid-template-columns: 6em 1fr; gap: 4px 12px; margin: 8px 0 0; font-size: 14px; }
+.h6-prov dl { display: grid; grid-template-columns: 6em 1fr; gap: 4px 12px; margin: 8px 0 0; font-size: 15px; }
 .h6-prov dt { color: var(--dim); }
 .h6-prov dd { margin: 0; overflow-wrap: anywhere; }
-.h6-live-note { font-size: 14px; color: var(--dim); margin: 12px 0 16px; }
+.h6-live-note { font-size: 15px; color: var(--dim); margin: 12px 0 16px; }
 .h6-live-go { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
 .h6-live-go .btn { flex: 1 1 auto; justify-content: center; }
 
@@ -58,55 +60,46 @@
 .h6-steps a { display: grid; grid-template-columns: 56px minmax(0, 1fr) minmax(0, 380px); grid-template-areas: "n h img" "n p img" "n o img"; gap: 4px 28px; padding: 28px 0; color: var(--ink); text-decoration: none; align-items: start; }
 .h6-steps a:hover h3 { color: var(--green); text-decoration: underline; text-underline-offset: 4px; }
 .h6-n { grid-area: n; font-size: 40px; font-weight: 800; line-height: 1; color: var(--green); font-variant-numeric: tabular-nums; }
-.h6-steps h3 { grid-area: h; font-size: 24px; margin: 0; }
+.h6-steps h3 { grid-area: h; margin: 0; }
 .h6-steps p { grid-area: p; margin: 0; color: var(--ink); }
 .h6-steps .h6-out { grid-area: o; font-size: 15px; color: var(--dim); }
-.h6-steps img { grid-area: img; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
+.h6-steps img { grid-area: img; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); }
 
 .h6-trust { padding-top: 64px; }
 
 .h6-price { margin-top: 64px; padding-top: 24px; padding-bottom: 40px; border-top: 1px solid var(--line); }   /* v7.12: 띠·단추 둘 대신 글 한 단락과 링크 하나(8회차: 흔한 SaaS 마무리 띠) */
-.h6-price h2 { margin: 0 0 8px; font-size: 20px; }
+.h6-price h2 { margin: 0 0 8px; }
 .h6-price p { margin: 0; color: var(--ink); max-width: 720px; }
 .h6-price a { font-weight: 700; }
 .h6-more { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 15px; color: var(--dim); padding-top: 8px; }
 .h6-more a { color: var(--ink); }
 
 @media (max-width: 960px) {
-  .h6-hero { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-top: 28px; }
+  .h6-hero { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-top: 24px; }
+  .h6-live { grid-column: 1; grid-row: auto; }
   .h6-steps a { grid-template-columns: 44px minmax(0, 1fr); grid-template-areas: "n h" "n p" "n o" "img img"; }
   .h6-steps img { margin-top: 12px; }
-  .h6-n { font-size: 30px; }
+  .h6-n { font-size: 28px; }
 }
 @media (max-width: 520px) {
-  .h6-search .home-search-row { flex-direction: column; }
   .h6-live { padding: 18px 16px; }
-  .h6-live-head h2 { font-size: 26px; }
-  }
+  .h6-lead { font-size: var(--t-body); margin-bottom: 16px; }
+}
 
-.h6 h1, .h6 h2:not(#h6LiveName) { font-weight: 700; letter-spacing: -0.03em; }
-.h6-hero h1 { font-size: clamp(38px, 5vw, 64px); line-height: 1.18; }
-.h6 h2:not(#h6LiveName) { line-height: 1.32; }
 .h6-prov, .h6-prov[open] { border: 0; padding: 0; background: none; box-shadow: none; }
 .h6-prov summary { padding: 0; border: 0; background: none; text-decoration: underline; text-underline-offset: 4px; }
 
-/* 공공 시스템과의 차이 + 무엇을 파는지 */
-.h6-diff { padding-top: 8px; padding-bottom: 56px; }
-.h6-diff-list { margin: 0; display: grid; gap: 0; border-top: 1px solid var(--line); }
-.h6-diff-list > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
-.h6-diff-list dt { font-weight: 800; color: var(--green); }
-.h6-diff-list dd { margin: 0; }
 /* 요건 '해당'은 좋고 나쁨이 아니다(11-13 2차: 빨강=해당·초록=아님이 거꾸로 읽힘). 해당은 먹색, 아님은 회색 */
 .h6-live-rows .is-over i { background: var(--ink); color: #fff; }
 .h6-live-rows .is-under i { background: var(--off-bg); color: var(--neutral-ink); }
-.h6-live-rule { margin: 0 0 4px; font-size: 14px; color: var(--dim); }
+.h6-live-rule { margin: 0 0 4px; font-size: 15px; color: var(--dim); }
 
 /* 근거 영수증(11-13): 세 칸 표어 대신 실제 원장 셀 한 장. 인쇄된 계산서처럼 점선과 고정폭 숫자로 */
 .h6-receipt-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: start; margin-top: 8px; }
-.h6-receipt { margin: 0; background: #fffdf8; border: 1px solid #e3dccb; border-radius: 4px; padding: 20px 22px 16px; box-shadow: 0 1px 0 #e3dccb, 0 14px 30px -22px rgba(15, 43, 39, .5); font-variant-numeric: tabular-nums; }
+.h6-receipt { margin: 0; background: #fffdf8; border: 1px solid #e3dccb; border-radius: 8px; padding: 20px 22px 16px; font-variant-numeric: tabular-nums; }
 .h6-receipt figcaption { display: flex; justify-content: space-between; gap: 12px; font-weight: 800; letter-spacing: .02em; padding-bottom: 10px; border-bottom: 2px solid var(--ink); }
 .h6-receipt dl { margin: 0; }
-.h6-receipt dl > div { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px dashed #d8cfba; font-size: 14px; }
+.h6-receipt dl > div { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px dashed #d8cfba; font-size: 15px; }
 .h6-receipt dt { color: var(--dim); }
 .h6-receipt dd { margin: 0; overflow-wrap: anywhere; }
 .h6-receipt dl > div:first-child dd { font-size: 22px; font-weight: 800; }
@@ -122,8 +115,6 @@
 .h6-steps h3 { margin-bottom: 6px; }
 .h6-steps .h6-out { align-self: start; margin-top: 10px; }
 
-/* 첫 화면 제목 크기 */
-.h6-hero h1 { font-size: clamp(34px, 4.4vw, 56px); }
 .h6-receipt-ids { padding: 8px 0 0; font-size: 13px; color: var(--dim); }
 .h6-receipt-ids summary { cursor: pointer; }
 .h6-receipt-ids p { margin: 6px 0 0; overflow-wrap: anywhere; }
@@ -131,13 +122,12 @@
 /* v7.2(11-13): 단계는 글 목록, 옆에 큰 화면 한 장. 평가 6회차: 215px 작은 그림 다섯 칸은 글자가 안 읽히는 흔한 틀이었다(흐름은 시연 영상이 보여 준다) */
 .h6-flow-body { display: grid; gap: 32px; }
 .h6-flow-shot { margin: 0; }
-.h6-flow-shot img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; }
-.h6-flow-shot figcaption { margin-top: 8px; font-size: 14px; color: var(--dim); }
+.h6-flow-shot img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 12px; }
+.h6-flow-shot figcaption { margin-top: 8px; font-size: 15px; color: var(--dim); }
 @media (min-width: 961px) {
   .h6-flow-body { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: start; }
   .h6-steps a { grid-template-columns: 40px minmax(0, 1fr); grid-template-areas: "n h" "n p" "n o"; padding: 16px 0; gap: 2px 12px; }
   .h6-n { font-size: 22px; }
-  .h6-steps h3 { font-size: 18px; }
   .h6-steps p { font-size: 15px; line-height: 1.6; }
   .h6-steps .h6-out { font-size: 13px; }
   .h6-flow-shot { position: sticky; top: 96px; }
@@ -150,11 +140,11 @@
 /* v8 동네 순위 미리보기(첫 화면 바로 아래): 세 목록을 한 줄에. 숫자는 표처럼 오른쪽 맞춤 */
 .h6-rank { padding-top: 40px; padding-bottom: 48px; }
 .h6-rank-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 24px; margin-bottom: 16px; }
-.h6-rank-head h2 { margin: 0; font-size: 28px; }
+.h6-rank-head h2 { margin: 0; }
 .h6-rank-head p { margin: 0; color: var(--dim); font-size: 15px; }
-.h6-rank-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.h6-rank-cols { display: grid; grid-template-columns: minmax(0, 1fr); max-width: 720px; }   /* R2 10: 부산 카드 하나, 전국은 링크로 */
 .h6-rank-col { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
-.h6-rank-col h3 { margin: 0 0 8px; font-size: 16px; }
+.h6-rank-col h3 { margin: 0 0 8px; }
 .h6-rank-col ol { list-style: none; margin: 0; padding: 0; min-height: 200px; }
 .h6-rank-col li a { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "n b e" "n s e"; column-gap: 10px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--line); color: var(--ink); text-decoration: none; }
 .h6-rank-col li:first-child a { border-top: 0; }
@@ -164,35 +154,24 @@
 .h6-rank-col b { grid-area: b; font-size: 16px; }
 .h6-rank-sg { grid-area: s; font-size: 13px; color: var(--dim); }
 .h6-rank-col em { grid-area: e; font-style: normal; font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; align-self: center; }
-.h6-rank-all { display: inline-flex; min-height: 40px; align-items: center; margin-top: 6px; font-weight: 700; color: var(--green); }
-.h6-rank-wait { color: var(--dim); font-size: 14px; padding: 8px 0; }
-/* 차이·시연을 두 단으로(같은 높이에 나란히, 홈 길이를 줄인다) */
-.h6-pair { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 40px; align-items: start; padding-top: 24px; padding-bottom: 40px; }
-.h6-pair .h6-diff, .h6-pair .h6-demo { padding: 0; margin: 0; }
-.h6-pair .h6-diff h2, .h6-pair .h6-demo h2 { font-size: 24px; }
-@media (max-width: 960px) {
-  .h6-rank-cols, .h6-pair { grid-template-columns: minmax(0, 1fr); }
-  .h6-rank-col ol { min-height: 0; }
-}
-/* 휴대폰: 목록마다 3곳만(세 목록이 쌓이면 홈이 너무 길다). 전체는 '전체 순위'에서 */
-/* 휴대폰: 세 목록을 옆으로 넘겨 보는 카드로(세로로 쌓으면 1,150px). 다음 카드가 살짝 보여 넘길 수 있다는 걸 알린다 */
+.h6-rank-links { display: flex; flex-wrap: wrap; gap: 0 24px; margin: 6px 0 0; }
+.h6-rank-all { display: inline-flex; min-height: 44px; align-items: center; font-weight: 700; color: var(--green); }
+.h6-rank-wait { color: var(--dim); font-size: 15px; padding: 8px 0; }
+@media (max-width: 960px) { .h6-rank-col ol { min-height: 0; } }
 @media (max-width: 720px) {
-  .h6-rank-head h2 { font-size: 24px; }
-  .h6-rank-cols { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 0 16px 8px; scrollbar-width: thin; }
-  .h6-rank-col { flex: 0 0 86%; scroll-snap-align: start; }
   /* 하는 일: 휴대폰에서는 단계 글만(큰 화면 그림·산출물 줄은 뺀다, 흐름은 시연 영상이 보여 준다) */
   .h6-flow-shot, .h6-steps .h6-out { display: none; }
 }
 
 /* v9 곧 노후 요건에 닿는 동네: 해가 먼저 읽히는 한 줄 칸들 */
 .h6-soon { margin-top: 20px; padding: 16px 18px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
-.h6-soon-head h3 { margin: 0 0 4px; font-size: 18px; }
-.h6-soon-head p { margin: 0 0 12px; font-size: 14px; color: var(--dim); line-height: 1.6; }
+.h6-soon-head h3 { margin: 0 0 4px; }
+.h6-soon-head p { margin: 0 0 12px; font-size: 15px; color: var(--dim); line-height: 1.6; }
 .h6-soon-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .h6-soon-list a { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "e b" "e s"; column-gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; }
 .h6-soon-list a:hover { border-color: var(--green); }
 .h6-soon-list a:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-.h6-soon-list em { grid-area: e; align-self: center; font-style: normal; font-weight: 700; font-size: 17px; color: var(--amber); font-variant-numeric: tabular-nums; }
+.h6-soon-list em { grid-area: e; align-self: center; font-style: normal; font-weight: 700; font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }   /* R1 2: 장식 호박색을 먹색으로 */
 .h6-soon-list b { grid-area: b; }
 .h6-soon-list .h6-rank-sg { grid-area: s; }
 @media (max-width: 960px) { .h6-soon-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -201,8 +180,7 @@
 
 /* 2026-11-13 우지예: '다른 조사 도구 보기'를 펼치면 링크 7개가 띄어쓰기 없이 한 줄로 붙어 한 문장처럼 읽혔다
    ("과업·납품 이력집계구로 다시 보기오래된…"). 왜: 위 .h6-more의 flex·gap은 details 자신에 걸려 있고, 링크는 그 안 <p>에 들어 있어
-   간격이 링크 사이에 닿지 않았다. → 제목은 한 줄 전체, 링크는 <p> 안에서 줄바꿈되는 작은 단추로 띄운다(누름 크기 44px, ui_smoke 기준) */
+   간격이 링크 사이에 닿지 않았다. → 제목은 한 줄 전체, 링크는 <p> 안에서 줄바꿈되는 칩으로 띄운다 */
 .h6-more > summary { flex: 1 0 100%; }
 .h6-more > p { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 2px; }
-.h6-more > p a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; text-decoration: none; font-weight: 600; }
-.h6-more > p a:hover, .h6-more > p a:focus-visible { border-color: var(--green, #006f5b); color: var(--green, #006f5b); }
+.h6-more > p .rm-chip { text-decoration: none; }   /* 링크 모양은 칩 하나(.rm-chip, rm6.css)로 — #84 검토 */
