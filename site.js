@@ -116,6 +116,21 @@
   });
 })();
 
+/* 동 페이지 '인용 한 줄 복사'(R4 4). 새 파일·인라인 스크립트 없이 이 파일의 위임 처리 하나로 한다(CSP script-src 'self').
+   navigator.clipboard가 막히면(권한·http) 글을 선택해 두고 직접 복사하게 안내한다. 결과는 aria-live 칸(role=status)으로 알린다. */
+(function () {
+  if (typeof document === 'undefined' || !document.addEventListener) return;   // 메뉴 시험(vm)은 document 없이, 또는 가짜 document로 이 파일을 돌린다
+  document.addEventListener('click', ev => {
+    const btn = ev.target.closest && ev.target.closest('[data-copy-cite]');
+    const cite = btn && document.getElementById('cite');
+    if (!cite) return;
+    const say = document.querySelector('[data-copy-status]'), tell = t => { if (say) say.textContent = t; };
+    const select = () => { const r = document.createRange(); r.selectNodeContents(cite); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); tell('복사하지 못해 글을 선택해 두었습니다. Ctrl+C로 복사해 주세요.'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(cite.textContent.trim()).then(() => tell('복사했습니다.'), select);
+    else select();
+  });
+})();
+
 /* 방문 분석(핵클, 모두의 창업 스타터 플랜). 키 파일(hackle-key.js)은 사이트 저장소에만 있어 원본·로컬에서는 아무것도 보내지 않는다.
    이 브라우저에서 끈 경우(privacy.html)·전역 개인정보 보호 신호(GPC)·추적 안 함(DNT)이면 SDK를 아예 불러오지 않는다.
    이벤트에는 회원 번호·검색어·파일 이름을 담지 않는다(개인정보처리방침 1-4). */

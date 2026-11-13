@@ -105,7 +105,8 @@
     }
     // 2026-11-08 속도: 순위 범위(scores_range.json, 압축 풀면 1MB)를 기다리지 않고 점수·목록이 오면 표부터 그린다.
     // 범위 열은 '…'로 두었다가 도착하면 다시 그린다. 받는 양은 같고 표가 먼저 보인다
-    const rangeP = fetch('data/national/scores_range.json').then(r => (r.ok ? r.json() : null)).catch(() => null);
+    // R4 10: 그래도 scores.json(296KB gz)과 같은 때 받으면 대역폭을 나눠(느린 4G) 표가 늦었다 → 범위 파일(223KB gz)은 표를 처음 그린 뒤에 받는다
+    const loadRange = () => fetch('data/national/scores_range.json').then(r => (r.ok ? r.json() : null)).catch(() => null);
     Promise.all([fetch('data/national/scores.json').then(r => r.json()), fetch('data/national/index_core.json').then(r => r.json())])
       .then(([s, i]) => {
         scores = s; idx = i;
@@ -140,7 +141,7 @@
         if (ascBox) ascBox.onchange = reset;
         sidoSel.onchange = () => { fillSg(); reset(); };
         draw();
-        rangeP.then(g => { range = g; draw(); });
+        loadRange().then(g => { range = g; draw(); });
       })
       .catch(() => { msg.textContent = '점수 자료를 불러오지 못했습니다. 새로고침해 주세요.'; });
   }

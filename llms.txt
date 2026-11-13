@@ -7,7 +7,7 @@
 ## 핵심 페이지
 
 - [리뉴맵 | 숫자마다 출처가 붙은 도시재생 기초조사](https://twozero3213-beep.github.io/renewmap-site/): 동 이름을 넣으면 인구·사업체·건물 노후 쇠퇴 3요건과 맞는 도시재생 사업을 공식 통계로 보여 주고, 출처가 붙은 1쪽 문서를 만들어 줍니다.
-- [동네 찾기·지도 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/explore.html): 전국 3,559개 행정동을 지도와 조건으로 찾아보세요. 공공데이터 값과 출처·기준일이 붙은 문서를 한글·워드·엑셀·PDF로 받습니다.
+- [동네 찾기·지도 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/explore.html): 전국 행정동 3,559곳(2025년 경계 기준)을 지도와 조건으로 찾아보세요. 공공데이터 값과 출처·기준일이 붙은 문서를 한글·워드·엑셀·PDF로 받습니다.
 - [현장 기록 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/field/): 현장 사진을 찍으면 위치와 정확도, 그 행정동의 공식 현황 숫자(출처·기준일)를 붙여 결재용 1쪽 문서(한글·PDF)로 만듭니다. 기록과 사진은 이 기기에만 저장됩니다.
 - [구역 신청요건 계산(노후주거지정비·재개발) | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/field/redev.html): 지번 목록을 붙여 넣으면 부산 254개 법정동 건축물대장으로 노후주거지정비 신청요건(저층 주거 3분의 2, 20년 경과)과 재개발 입안요건(노후·불량 비율)을 조문과 함께 계산해 1쪽 문서와 건물별 근거 CSV로 만듭니다. 목록은 이 기기 밖으로 보내지 않습니다.
 - [오래된 창고·공장 목록 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/field/idle.html): 부산 법정동을 고르면 건축물대장에서 주용도가 창고·공장인 건물을 지번 순으로 보이고, 30년 이상과 사용승인일로 못 정함을 따로 셉니다. 비어 있는지는 대장에 없어 현장 확인으로 넘깁니다. 추천이나 순위가 아닙니다.
@@ -26,7 +26,8 @@
 
 ## 동네별 페이지
 
-- 전국 행정동 3,610곳마다 정적 페이지가 있습니다:`https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html` (예: [서울특별시 종로구 사직동 쇠퇴 3요건 현황](https://twozero3213-beep.github.io/renewmap-site/dong/11010530.html)). 목록은 [행정동 목록](https://twozero3213-beep.github.io/renewmap-site/dong/index.html)과 [사이트맵](https://twozero3213-beep.github.io/renewmap-site/sitemap-dong.xml).
+- 행정동 쪽 3,610곳(쇠퇴진단지표 2025판 기준) 중 값이 이어진 곳은 3,568곳이고, 지도·검색에서 고를 수 있는 곳은 2025년 행정동 경계가 있는 3,559곳입니다.
+- 행정동마다 정적 페이지가 있습니다:`https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html` (예: [서울특별시 종로구 사직동 쇠퇴 3요건 현황](https://twozero3213-beep.github.io/renewmap-site/dong/11010530.html)). 목록은 [행정동 목록](https://twozero3213-beep.github.io/renewmap-site/dong/index.html)과 [사이트맵](https://twozero3213-beep.github.io/renewmap-site/sitemap-dong.xml).
 
 ## 리뉴맵이 하지 않는 일
 

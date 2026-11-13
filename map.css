@@ -46,6 +46,8 @@
 .map-dong-label { width: max-content !important; height: auto !important; transform-origin: center; margin: 0 !important; translate: -50% -50%; white-space: nowrap; font-size: 13px; font-weight: 700; line-height: 1.2; color: #12302d;
   text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff, 0 0 1px #fff; pointer-events: none; }
 .map-dong-label.is-sel { font-size: 15px; color: #0b1f1d; }
+/* 2026-11-14 우지예: 진한 갈색 칸 위 진한 글자는 대비 2.7(기준 4.5 미달)로 흰 테두리에만 기대 번져 보였다 → 진한 칸에서는 흰 글자 + 어두운 테두리(map.js isDarkFill) */
+.map-dong-label.on-dark, .map-dong-label.on-dark.is-sel { color: #fff; text-shadow: 0 0 3px rgba(40,16,4,.9), 0 0 2px rgba(40,16,4,.9), 0 0 1px rgba(40,16,4,.9); }
 #map .leaflet-tooltip { font-size: 15px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
 #map .leaflet-tooltip small { color: var(--dim); }
 #map .leaflet-control-attribution { font-size: 13px; }

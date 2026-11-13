@@ -177,6 +177,12 @@
     .replace(/\[2차 인용, 원문 문서 미열람\]/g, '(2차 인용, 원문 미확인)').replace(/\[([^\]]+)\]/g, '($1)');
   // 사업체 감소율 셀의 기준일 해(ref)보다 사업체 수 시계열의 마지막 값 해(last)가 이르면 그 사실을 적는다(값·판정은 그대로)
   const bizShort = b => (b.biz ? `사업체 수는 ${b.biz.last}년 자료(${b.biz.ref}년 사업체 수는 원천에 아직 없음)` : '');
+  // R4 5: 사업체 수 칸이 기준연도에 '자료 없음'인데 시계열·감소율에는 앞 해 값이 있어 모순처럼 읽혔다 → 한 줄('2025년 아직 공표 전 · 2024년 3,169개').
+  // 값은 시계열 그대로다. 1쪽·HWPX 본문은 dong_brief.py와 글자 단위로 같아야 해서(docgen.test) 표 파일(XLSX)에만 쓴다. export_dong_pages.biz_total_text와 같은 글
+  const bizTotalNote = b => {
+    const p = b.biz ? ((b.series || {}).DECLINE_BIZ_TOTAL || []).find(q => q[0] === b.biz.last) : null;
+    return p && p[1] !== null && p[1] !== undefined ? `${b.biz.ref}년 아직 공표 전 · ${b.biz.last}년 ${fmtNum(p[1])}개` : '';
+  };
   const bizNote = b => (b.biz ? `사업체 감소율의 사업체 수는 ${b.biz.last}년 자료다(${b.biz.ref}년 사업체 수는 원천에 아직 없음).` : '');
   // 쇠퇴지역 3요건(도시재생법 시행령 제17조). [지표 코드, 비교, 기준값, 항목 이름]
   const DECLINE_CRITERIA = [
@@ -847,15 +853,19 @@
     const bizRow = r => r === `${DECLINE_PREFIX}${DECLINE_CRITERIA.find(x => x[0] === 'DECLINE_BIZ_DROP10Y_PCT')[3]}`;
     for (const it of b.items) {
       const c = it.cell, f = it.fact, g = [b.code8, b.dongName, kind, rp ? rp.lat : null, rp ? rp.lon : null, it.group, clean(it.label)];
-      const date = govDate(c ? c.reference_date : '') + (c && it.code === 'DECLINE_BIZ_DROP10Y_PCT' && b.biz ? ` · ${bizShort(b)}` : '');
+      const date = govDate(c ? c.reference_date : '') + (c && it.code === 'DECLINE_BIZ_DROP10Y_PCT' && b.biz ? ` · ${bizShort(b)}` : '')
+        + (c && it.code === 'DECLINE_BIZ_TOTAL' && !isNum(c.value) && bizTotalNote(b) ? ` · ${bizTotalNote(b)}` : '');
       if (c) status.push([...g, usable(c) ? (isNum(c.value) ? num(c.value) : valueWithUnit(c)) : fmtCell(c), c.unit, c.spatial_unit || '', date, c.status, src.number(c, it.group === '전망'), c.source_name, licenseOf(c)]);
       else if (f) status.push([...g, f.value, f.unit, '시군구', govDate(f.reference_date), '-', src.number(f), f.source_name, f.license]);
       else status.push([...g, noData(), '-', '', '-', '-', '', '-', '-']);
     }
     status.push([]); status.push([b.code8, b.dongName, tpl().overview_basis]);
     const crit = [[...head, ...b.crit.rows[0]], ...b.crit.rows.slice(1).map(r => [b.code8, b.dongName, ...r.map((x, i) => clean(i === 3 && b.biz && bizRow(r[0]) ? `${x} · ${bizShort(b)}` : x))])];
-    const ser = [[...head, ...b.ser.raw[0]], ...b.ser.raw.slice(1).map(r => [b.code8, b.dongName, ...r.map(num)])];
+    // R4 5: 사업체 수 줄에서 마지막 값 해보다 뒤 해는 '없음' 대신 '아직 공표 전'
+    const serRaw = b.ser.raw.map((r, i) => (i && b.biz && String(r[0]).startsWith(LABEL.DECLINE_BIZ_TOTAL) ? r.map((x, j) => (j && x === '없음' && +b.ser.raw[0][j] > b.biz.last ? '아직 공표 전' : x)) : r));
+    const ser = [[...head, ...serRaw[0]], ...serRaw.slice(1).map(r => [b.code8, b.dongName, ...r.map(num)])];
     ser.push([]); b.ser.notes.forEach(n => ser.push([b.code8, b.dongName, n]));
+    if (b.biz) ser.push([b.code8, b.dongName, `'아직 공표 전'은 원천이 그 해 값을 아직 내지 않았다는 뜻이다(${b.biz.ref}년 사업체 수는 ${b.biz.last}년 값까지만 있다).`]);
     const so = [[...head, '출처 번호', '지표', '출처', 'URL', '기준일(전망은 대상일)', '조회일', '이용조건', '계산식', '규칙 버전', '셀 ID']];
     for (const it of b.items) {
       const c = it.cell, f = it.fact; if (!c && !f) continue;

@@ -166,6 +166,8 @@
       event.preventDefault();
       if (hash === '#find') document.getElementById('findMore')?.setAttribute('open', '');
       navigate(panelFromHash(hash), false, hash, link.dataset.setMode);
+      // R4 1: '1쪽 근거 문서 보기' 같은 링크를 누르면 눌렀던 단추가 숨은 패널에 있어 초점이 BODY로 돌아갔다 → 문서 패널 제목으로 옮긴다(화면도 그리로 간다)
+      if (hash === '#report') { const heading = document.getElementById('reportTitle'); if (heading) { heading.tabIndex = -1; heading.focus(); } }
     });
     const restore = () => {
       if (/^#map(?:\/\d+)*$/.test(location.hash)) mapHash = location.hash;

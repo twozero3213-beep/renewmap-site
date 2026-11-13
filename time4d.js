@@ -93,8 +93,12 @@
     // 셀이 =+-@로 시작하면 엑셀이 식으로 읽는다 → 앞에 작은따옴표
     const q = (v) => { const t = v === null || v === undefined ? '' : String(v); return `"${(/^[=+\-@]/.test(t) ? "'" + t : t).replace(/"/g, '""')}"`; };
     const meta = [`# 출처: ${bf.source || ''} (${bf.data_source_system || ''})`, `# 기준일: ${bf.hub_reference_date || ''} · 법정동: ${bf.name || ''}(${bf.bjd10 || ''}) · 건물 ${list.length}동`,
-      '# 개인 정보: 소유자·거주자 항목은 없습니다(건물명 속 개인 이름 패턴은 가림). 법정 노후·불량 판정이 아닙니다.'];
-    const rows = list.map((b) => [b.mgm_bld_pk, bf.name, b.jibun, b.name, b.main_use, b.structure, b.use_apr_day || (Array.isArray(b.use_apr_span) ? '연도만: ' + b.use_apr_span[0].slice(0, 4) : ''),
+      '# 개인 정보: 소유자·거주자 항목은 없습니다(건물명 속 개인 이름 패턴은 가림). 법정 노후·불량 판정이 아닙니다.',
+      '# 정렬: 사용승인일이 오래된 순(날짜가 없는 건물은 맨 뒤). 점검 대상을 고를 때 참고하는 순서일 뿐 노후도 판정이 아닙니다.'];
+    // R4 14: 화재·안전 점검 후보를 찾는 사람은 오래된 건물부터 본다 → 기본 정렬을 사용승인일 오름차순으로(연도만 있는 건물은 그 기간의 첫날, 같으면 원래 순서)
+    const key = (b) => b.use_apr_day || (Array.isArray(b.use_apr_span) ? b.use_apr_span[0] : '');
+    const oldest = list.map((b, i) => [b, i, key(b)]).sort((a, b) => (a[2] === b[2] ? a[1] - b[1] : !a[2] ? 1 : !b[2] ? -1 : a[2] < b[2] ? -1 : 1)).map((x) => x[0]);
+    const rows = oldest.map((b) => [b.mgm_bld_pk, bf.name, b.jibun, b.name, b.main_use, b.structure, b.use_apr_day || (Array.isArray(b.use_apr_span) ? '연도만: ' + b.use_apr_span[0].slice(0, 4) : ''),
       aprYear(b) || '', b.floors, b.tot_area, b.age_years, b.over30 === true ? '예' : b.over30 === false ? '아니오' : ''].map(q).join(','));
     return '\ufeff' + [...meta, CSV_COLS.map(q).join(','), ...rows].join('\r\n') + '\r\n';
   }
