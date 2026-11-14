@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width,initial-scale=1,viewport-fit=cover"
     />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://lpzuswxkivkidkhauoki.supabase.co; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
     <meta name="robots" content="noindex" />
     <meta name="theme-color" content="#ffffff" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
@@ -14,20 +14,21 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="pretendard.css" />
     <link rel="stylesheet" href="styles.css?v=20261114-m1" />
-    <link rel="stylesheet" href="tasks.css?v=20261113-d2" />
+    <link rel="stylesheet" href="tasks.css?v=20261114-followup" />
     <script src="frame-guard.js"></script>
-    <!-- R1(2026-11-13): 다른 화면과 같은 머리 메뉴·아래 탭(site.js). 방문 분석 전송처는 다른 화면과 같은 CSP -->
-    <script src="site.js" defer></script>
+    <script src="task-cloud-callback.js?v=20261115-auth"></script>
+    <!-- R1(2026-11-13): 다른 화면과 같은 머리 메뉴·아래 탭(site.js). 인증·검토 화면에서는 외부 방문 분석을 실행하지 않는다 -->
+    <script src="site.js?v=20261114-task-auth" defer></script>
     <link rel="stylesheet" href="list-pages.css?v=20261113-d2" />
     <script src="list-pages.js?v=20261113-d2" defer></script>
-    <script src="tasks.js?v=20261112-taskreview" defer></script>
+    <script src="tasks.js?v=20261114-followup" defer></script>
     <script src="task-store.js?v=20261112-taskreview" defer></script>
     <script src="field/store.js" defer></script>
     <script src="docgen.js?v=20261114-e2" defer></script>
-    <script src="tasks-files.js?v=20261112-tasks" defer></script>
-    <script src="task-cloud-config.js?v=20261112-cloud" defer></script>
-    <script src="task-cloud.js?v=20261112-cloud" defer></script>
-    <script src="task-cloud-ui.js?v=20261112-cloud" defer></script>
+    <script src="tasks-files.js?v=20261114-followup" defer></script>
+    <script src="task-cloud-config.js?v=20261114-server" defer></script>
+    <script src="task-cloud.js?v=20261115-auth" defer></script>
+    <script src="task-cloud-ui.js?v=20261115-auth" defer></script>
     <script src="survey-change.js?v=20261113-survey" defer></script>
     <script src="survey-template.js?v=20261113-revisit" defer></script>
     <script src="survey-change-ui.js?v=20261113-survey" defer></script>
@@ -36,7 +37,8 @@
     <script src="revisit-report.js?v=20261113-revisit" defer></script>
     <script src="revisit-photos.js?v=20261113-revisit" defer></script>
     <script src="revisit-report-ui.js?v=20261113-revisit" defer></script>
-    <script src="tasks-app.js?v=20261113-v93" defer></script>
+    <script src="task-followup-ui.js?v=20261114-followup" defer></script>
+    <script src="tasks-app.js?v=20261114-followup" defer></script>
   <link rel="stylesheet" href="rm6.css?v=20261114-d9">
 </head>
   <body>
@@ -81,6 +83,7 @@
           1 과업 설정</button
         ><button type="button" data-step="1">2 근거 대조</button
         ><button type="button" data-step="2">3 납품·이력</button>
+        <button type="button" data-step="3">4 검토·후속 점검</button>
       </nav>
       <p id="taskMsg" role="status" aria-live="polite"></p>
       <section data-panel="0" aria-labelledby="planTitle">
@@ -328,6 +331,7 @@
           <button type="submit">파일 연결</button>
         </form>
         <ul id="artifactList" class="task-files"></ul>
+        <p id="workApproval" class="task-help"></p>
         <details id="decisionDetails">
           <summary>최종 검토 결과 기록</summary>
           <p>
@@ -391,6 +395,58 @@
           <summary>버전·검증·납품·결정 이력</summary>
           <ol id="taskHistory"></ol>
         </details>
+      </section>
+      <section id="taskWork" data-panel="3" hidden aria-labelledby="workHeading">
+        <h2 id="workHeading">검토 의견과 후속 점검</h2>
+        <p class="task-help">검토 의견은 보완본과 해소 확인을 연결합니다. 후속 점검은 확인 기한과 담당자를 남깁니다. 내용과 증빙은 과업의 JSON·ZIP 이력에 함께 보관됩니다.</p>
+        <p id="workScope" class="task-notice"></p>
+        <div class="task-grid">
+          <label>관리할 기록<select id="workKind"><option value="issue">검토 의견</option><option value="followup">후속 점검</option></select></label>
+          <label>기록 선택<select id="workPick"><option value="">새 기록</option></select></label>
+        </div>
+        <button id="workNew" type="button">새 검토 의견</button>
+        <p id="workSummary" role="status"></p>
+        <details id="workBrowse">
+          <summary>목록과 기한 보기</summary>
+          <label>상태로 보기<select id="workFilter"><option value="all">전체</option><option value="open">처리 전</option><option value="submitted">확인 대기</option><option value="closed">확인 완료</option><option value="overdue">기한 지남</option></select></label>
+          <ul id="workList" class="task-files"></ul>
+        </details>
+        <div id="workDetail" class="work-detail"></div>
+        <details id="workEvidencePanel" hidden>
+          <summary>연결 증빙과 변경 이력</summary>
+          <div id="workNotes"></div>
+          <div id="workEvidenceLinks" class="task-actions"></div>
+          <ol id="workHistory"></ol>
+        </details>
+        <form id="workForm">
+          <label>이번 처리<select id="workAction"><option value="open">새 검토 의견 등록</option></select></label>
+          <div data-work-fields="new" class="task-grid">
+            <label>연결할 요구 항목<select id="workRequirement" required></select></label>
+            <label data-work-fields="issue-new">검토할 현재 납품 파일<select id="workArtifact"></select></label>
+            <label data-work-fields="followup-new">점검 이름<input id="workTitle" maxlength="300"></label>
+            <label data-work-fields="followup-new">연결할 검토 의견<select id="workIssue"><option value="">별도 후속 점검</option></select></label>
+          </div>
+          <div data-work-fields="issue-new">
+            <div class="task-grid">
+              <label>검토할 쪽·표·셀<input id="workLocation" maxlength="200" placeholder="예: 실적보고서 2쪽 또는 조사표 B5"></label>
+              <label>문서 안 조사 행 ID · 작성자 지정(선택)<input id="workRowId" maxlength="200"></label>
+            </div>
+            <label>검토 의견<textarea id="workComment" rows="3" maxlength="4000"></textarea></label>
+            <p class="task-help">선택한 파일과 과업 판본을 고정합니다. 조사 행 ID는 작성자가 지정하는 위치이며, 파일 내용의 진위나 지정 위치를 자동 확인하지 않습니다. 미해소 의견은 최종 승인을 막습니다.</p>
+          </div>
+          <div data-work-fields="schedule" class="task-grid">
+            <label>보완·점검 담당자<input id="workAssignee" maxlength="200" autocomplete="off" placeholder="팀 내부 성명 또는 담당 표기"></label>
+            <label data-work-fields="due">확인 완료 기한<input id="workDue" type="date"></label>
+          </div>
+          <p data-work-fields="followup-new" class="task-help">미래의 후속 점검은 현재 납품 승인을 막지 않습니다. 결과를 올려도 확인을 마치지 않으면 기한 경과 표시가 남습니다. 담당자를 적어도 알림이나 이메일을 보내지 않습니다.</p>
+          <div data-work-fields="update">
+            <label>답변·처리 사유<textarea id="workNote" rows="3" maxlength="4000"></textarea></label>
+            <label data-work-fields="evidence">이번 처리 증빙 파일<input id="workEvidence" type="file"></label>
+            <p id="workActionHelp" class="task-help"></p>
+          </div>
+          <button id="workSave" type="submit">새 검토 의견 등록</button>
+        </form>
+        <p id="workMsg" role="status" aria-live="polite"></p>
       </section>
     </main>
 <footer><div class="wrap"><div class="links"><p><b>도구</b><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="time4d.html">건물 4D</a><a href="box.html">보관함</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%EC%88%AB%EC%9E%90%20%EC%98%A4%EB%A5%98%20%EC%8B%A0%EA%B3%A0">숫자 오류 신고</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 상담</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 끄기</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>

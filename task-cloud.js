@@ -35,16 +35,16 @@
   }
   function create(config,options={}){
     const cfg=configuration(config),fetcher=options.fetch||globalThis.fetch;
-    let session=null,generation=0,refreshing=null;
+    let session=null,pendingLink=null,generation=0,refreshing=null;
     const available=()=>!!cfg;
     const user=()=>session?{id:session.id,email:session.email}:null;
     function configured(){if(!cfg)fail('클라우드 연결이 설정되지 않았습니다. 이 기기의 과업 보관을 이용해 주세요.');if(typeof fetcher!=='function')fail('이 환경에서는 클라우드 연결을 사용할 수 없습니다.');}
     function authenticated(expected){configured();if(!session||expected!==undefined&&expected!==generation)fail('로그인이 필요합니다. 이메일 인증을 다시 해 주세요.');return generation;}
-    async function request(path,body,bearer,noContent=false){
+    async function request(path,body,bearer,noContent=false,method='POST'){
       configured();const headers={apikey:cfg.key,'Content-Type':'application/json'};if(bearer)headers.Authorization='Bearer '+bearer;
       let response;const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
       try{
-        try{response=await fetcher(cfg.url+path,{method:'POST',headers,body:JSON.stringify(body),credentials:'omit',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer',signal:controller.signal});}
+        try{response=await fetcher(cfg.url+path,{method,headers,...(method==='GET'?{}:{body:JSON.stringify(body)}),credentials:'omit',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer',signal:controller.signal});}
         catch(_){fail('클라우드에 연결하지 못했습니다. 네트워크를 확인해 주세요.');}
         if(!response||!Number.isInteger(response.status))fail('유효한 클라우드 응답을 받지 못했습니다.');
         if(!response.ok)throw remoteError(response.status);
@@ -79,18 +79,37 @@
       }
       authenticated(epoch);return data;
     }
-    return {
+    const ids=options.knownTaskIds||[];
+    if(!Array.isArray(ids)||ids.length>10000||ids.some(id=>typeof id!=='string'||!TASK.test(id)))fail('공유 과업 잠금 기록을 확인해 주세요.');
+    const knownShared=new Set(ids);
+    function shared(id){knownShared.add(id);if(typeof options.onShared==='function')options.onShared(id);}
+    const api={
       available,user,
+      prepareLink:async(value)=>{
+        configured();
+        const epoch=++generation;session=null;pendingLink=null;refreshing=null;
+        if(!value||!token(value.access_token)||!token(value.refresh_token))fail('로그인 링크가 유효하지 않습니다. 새 로그인 메일을 받아 주세요.');
+        const pair={access_token:value.access_token,refresh_token:value.refresh_token};
+        const verified=await request('/auth/v1/user',null,pair.access_token,false,'GET');
+        if(generation!==epoch)fail('인증 중 로그인이 변경됐습니다. 새 로그인 메일을 받아 주세요.');
+        pendingLink=authSession({...pair,user:verified});
+        return {id:pendingLink.id,email:pendingLink.email};
+      },
+      acceptLink:()=>{
+        if(!pendingLink)fail('확인할 로그인 링크가 없습니다. 새 로그인 메일을 받아 주세요.');
+        session=pendingLink;pendingLink=null;generation++;refreshing=null;return user();
+      },
+      discardLink:()=>{pendingLink=null;generation++;},
       requestCode:async(email)=>{configured();email=mail(email);await request('/auth/v1/otp',{email,create_user:true});return true;},
       verifyCode:async(email,code)=>{
         configured();email=mail(email);if(typeof code!=='string'||!/^\d{6,10}$/.test(code))fail('이메일로 받은 숫자 인증 코드를 확인해 주세요.');
-        const epoch=++generation;session=null;
+        const epoch=++generation;session=null;pendingLink=null;
         const data=await request('/auth/v1/verify',{email,token:code,type:'email'});
         if(generation!==epoch)fail('인증 중 로그인이 변경됐습니다. 다시 인증해 주세요.');
         session=authSession(data,email);return user();
       },
       logout:async()=>{
-        const previous=session;session=null;generation++;refreshing=null;
+        const previous=session;session=null;pendingLink=null;generation++;refreshing=null;
         if(!previous)return;
         await request('/auth/v1/logout?scope=local',{},previous.access,true);
       },
@@ -100,20 +119,35 @@
         const checked=await B.read(text),safe=JSON.parse(text);authenticated(epoch);
         const canonical_history=checked.manifest.history.map(r=>{const {hash,...body}=r;return T.canonical(body);});
         const canonical_artifacts=checked.manifest.history.map(r=>T.canonical(r.artifacts));
-        return rpc('renewmap_sync_task',{backup:safe,canonical_history,canonical_artifacts},epoch);
+        const result=await rpc('renewmap_sync_task',{backup:safe,canonical_history,canonical_artifacts},epoch);shared(checked.manifest.id);return result;
+      },
+      assertCanChange:async(id,actions)=>{
+        id=taskId(id);
+        const names=['create','edit','check','hold','attach','approve','reject','issue_open','issue_reply','issue_resolve','issue_reopen','followup_open','followup_reschedule','followup_submit','followup_verify','followup_reopen'];
+        if(!Array.isArray(actions)||!actions.length||actions.some(type=>!names.includes(type)))fail('저장할 과업 행동을 확인해 주세요.');
+        if(!cfg)return true;
+        if(!session){if(knownShared.has(id)||options.requireAuthentication)fail('서버에 연결된 과업이거나 공유 여부를 확인할 수 없습니다. 다시 로그인한 뒤 수정해 주세요.');return true;}
+        const rows=await api.list(),row=rows.find(r=>r.id===id);
+        if(!row){if(knownShared.has(id))fail('공유 과업의 현재 권한을 확인할 수 없어 수정을 중단했습니다.');return true;}
+        const review=['approve','reject','issue_resolve','issue_reopen','followup_verify','followup_reopen'];
+        const edit=['issue_reply','followup_open','followup_reschedule','followup_submit'];
+        if(row.role==='viewer'||actions.some(type=>review.includes(type)&&!['owner','reviewer'].includes(row.role)||edit.includes(type)&&!['owner','editor'].includes(row.role)))
+          fail('현재 계정 역할로 이 변경을 서버에 저장할 수 없습니다. 기기 판본을 만들지 않았습니다.');
+        return true;
       },
       list:async()=>{
         const rows=await rpc('renewmap_list_tasks',{});
         if(!Array.isArray(rows)||rows.length>10000)fail('서버의 과업 목록 형식을 확인해 주세요.');
-        return rows.map(r=>{
+        const safe=rows.map(r=>{
           if(!r||!TASK.test(r.id||'')||typeof r.title!=='string'||!r.title.trim()||r.title.length>200||!STATES.includes(r.state)||!Number.isSafeInteger(r.revision)||r.revision<1||!HEX.test(r.head_hash||'')||!UUID.test(r.owner_id||'')||!ROLES.includes(r.role)||typeof r.updated_at!=='string'||!Number.isFinite(Date.parse(r.updated_at)))fail('서버의 과업 목록 형식을 확인해 주세요.');
           return {id:r.id,title:r.title,state:r.state,revision:r.revision,head_hash:r.head_hash,owner_id:r.owner_id,role:r.role,updated_at:r.updated_at};
         });
+        for(const row of safe)shared(row.id);return safe;
       },
       get:async(id)=>{
         const epoch=authenticated();id=taskId(id);const backup=await rpc('renewmap_get_task',{task_id:id},epoch);
         const text=JSON.stringify(backup),checked=await B.read(text);authenticated(epoch);
-        if(checked.manifest.id!==id)fail('요청한 과업과 서버 응답이 다릅니다.');return JSON.parse(text);
+        if(checked.manifest.id!==id)fail('요청한 과업과 서버 응답이 다릅니다.');shared(id);return JSON.parse(text);
       },
       member:async(id,memberId,role)=>{
         const epoch=authenticated();id=taskId(id);
@@ -121,6 +155,7 @@
         return rpc('renewmap_task_member',{task_id:id,member_id:memberId,member_role:role},epoch);
       },
     };
+    return api;
   }
   return {create};
 });

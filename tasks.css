@@ -228,3 +228,15 @@
 #revisitReport input[readonly] { background: #edf2ef; }
 
 .task-page input,.task-page select{min-height:44px}
+#taskWork .work-detail { border-left: 3px solid var(--green); padding: 0 14px; margin: 20px 0; overflow-wrap: anywhere; }
+#taskWork .work-detail:empty { display: none; }
+#workDetail p, #workNotes p, #workHistory li, #workMsg, #workApproval { white-space: pre-line; overflow-wrap: anywhere; }
+#workHistory { padding-left: 24px; }
+#workHistory li { padding: 8px 0; }
+#workList button { width: 100%; text-align: left; background: white; color: var(--green); }
+#workList small { display: block; }
+#taskWork .work-overdue { color: #803e10; font-weight: 700; }
+#workEvidenceLinks button { overflow-wrap: anywhere; max-width: 100%; }
+@media (max-width: 600px) {
+  .task-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

@@ -19,7 +19,8 @@
     checks = [],
     selectedCheck = "",
     packets = [],
-    busy = false;
+    busy = false,
+    cloud = null;
   const say = (text) => {
     $("taskMsg").textContent = text;
   };
@@ -50,6 +51,10 @@
     run: action, task: () => current, versions: () => history,
     attach: (base, files) => attachReport(base, files, window.RenewRevisitUI.isRevisit), notify: say,
   });
+  const followup = window.RenewTaskFollowupUI.mount({
+    run: action, task: () => current, versions: () => history,
+    commit: commitWork, notify: say,
+  });
   const isReport = file => window.RenewSurveyChangeUI.isSurvey(file) || window.RenewRevisitUI.isRevisit(file);
   function step(n) {
     document.querySelectorAll("[data-panel]").forEach((e) => {
@@ -65,7 +70,7 @@
     busy = true;
     const controls = [
       ...document.querySelectorAll(
-        "form button,form input,form select,form textarea,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#restoreTask,#restoreFile",
+        "form button,form input,form select,form textarea,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#restoreTask,#restoreFile,#taskWork button,#taskWork input,#taskWork select,#taskWork textarea",
       ),
     ];
     controls.forEach((b) => {
@@ -74,7 +79,21 @@
     const pending = "처리 중입니다.";
     say(pending);
     try {
-      await fn();
+      const run = async () => {
+        const before = new Set((await F.docs()).map(d => d.id));
+        try { await fn(); }
+        catch (error) {
+          // 다른 탭과 직렬화하여 실패한 작업의 새 파일만 회수하고, 저장된 이력의 파일은 보존한다.
+          const needed = new Map();
+          for (const d of await F.docs()) if (d.kind === "task-file" && !before.has(d.id)) {
+            if (!needed.has(d.task_id)) needed.set(d.task_id, B.needed(await S.history(d.task_id)));
+            if (!needed.get(d.task_id).has(d.sha256)) await F.deleteDoc(d.id);
+          }
+          throw error;
+        }
+      };
+      if (navigator.locks) await navigator.locks.request("renewmap-task-files", run);
+      else await run();
       // 작업이 따로 결과를 알리지 않았으면 '처리 중'을 지운다(v9 QA: 끝난 뒤에도 계속 '처리 중입니다.'로 남았다)
       if ($("taskMsg").textContent === pending) say("");
     } catch (e) {
@@ -194,6 +213,10 @@
       : "";
     renderArtifacts();
     renderHistory();
+    const blockers = current ? T.workBlockers(current) : [];
+    $("workApproval").textContent = blockers.length
+      ? `검토 의견 ${blockers.length}건의 미해결 사유가 있어 최종 승인할 수 없습니다. 4 검토·후속 점검에서 확인하세요.`
+      : "검토 의견의 승인 보류 사유가 없습니다. 후속 점검 기한은 4 검토·후속 점검에서 따로 관리합니다.";
     if (current?.decision)
       say(
         `검토 결정은 v${current.revision}의 파일 세트 ${current.decision.artifact_set_hash}에 연결돼 있습니다. 신원·서명 진위는 별도 확인 대상입니다.`,
@@ -233,6 +256,7 @@
     await refreshList();
     await survey.refresh();
     await revisit.refresh();
+    followup.refresh();
     if (current) historyReplace(current.id);
   }
   function historyReplace(id) {
@@ -243,11 +267,44 @@
   }
   async function commit(type, payload, base = current, beforeAppend) {
     if (!base) throw new Error("과업 계획을 먼저 저장해 주세요.");
+    if (cloud) await cloud.assertCanChange(base.id, [type]);
     const next = await T.revise(base, { type, payload }, options());
     if (beforeAppend) await beforeAppend();
     await S.append(next, base.hash);
     await select(base.id);
     return next;
+  }
+  async function commitWork(type, payload, file, base) {
+    if (!base) throw new Error("과업 계획을 먼저 저장해 주세요.");
+    if (base.hash !== current?.hash)
+      throw new Error("편집 중 과업이 바뀌었습니다. 기록을 다시 불러오세요.");
+    if (cloud) await cloud.assertCanChange(base.id, type === "issue_reply" ? ["attach", type] : [type]);
+    const prefix = history.slice(), added = [];
+    let source = base, evidence;
+    if (file) {
+      if (!file.size || file.size > B.MAX)
+        throw new Error("비어 있지 않은 20MB 이하 증빙 파일을 선택해 주세요.");
+      evidence = {name:file.name,sha256:await T.hash(await file.arrayBuffer()),size:file.size};
+      if (type === "issue_reply") {
+        const existing = base.artifacts.find(a => a.name === evidence.name);
+        if (existing && (existing.sha256 !== evidence.sha256 || existing.size !== evidence.size))
+          throw new Error("원본을 보존할 수 있도록 보완 파일은 기존 납품 파일과 다른 이름을 사용하세요.");
+        if (!existing) {
+          source = await T.revise(base, {type:"attach",payload:{artifacts:[...base.artifacts,artifact(evidence)]}}, options());
+          added.push(source);
+        }
+      }
+    }
+    const next = await T.revise(source, {type,payload:evidence ? {...payload,evidence} : payload}, options());
+    added.push(next);
+    // 보완본 연결과 답변은 함께 검증한 뒤 한 이력으로 저장하여 중간 판본만 남기지 않는다.
+    if (file) {
+      const stored = await storeFile(file, base.id);
+      if (stored.sha256 !== evidence.sha256 || stored.size !== evidence.size)
+        throw new Error("저장할 증빙의 파일 지문·크기가 다릅니다.");
+    }
+    await S.fastForward([...prefix,...added]);
+    await select(base.id);
   }
   async function storeFile(file, id) {
     if (!file || !file.size || file.size > B.MAX)
@@ -406,6 +463,7 @@
       keepCheck();
       const retained = current?.artifacts.filter(isReport) || [];
       if (retained.length) {
+        if (cloud) await cloud.assertCanChange(current.id, ["check", "attach"]);
         // 같은 계획의 재검증에서도 조사 보류와 제출서식 연결을 함께 보존한다.
         const checked = await T.revise(current, {type:"check",payload:{checks}}, options());
         const next = await T.revise(checked, {type:"attach",payload:{artifacts:retained}}, options());
@@ -562,7 +620,7 @@
     await select(new URL(location.href).searchParams.get("id") || "");
     await loadPackets();
     if (window.RenewTaskCloudUI)
-      window.RenewTaskCloudUI.mount({
+      cloud = window.RenewTaskCloudUI.mount({
         getBackup: backup,
         restoreBackup: (b) => restoreBackup(b, true),
         run: action,

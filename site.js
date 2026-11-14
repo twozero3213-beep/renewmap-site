@@ -139,6 +139,8 @@
 (function () {
   'use strict';
   if (typeof document === 'undefined' || !document.currentScript) return;
+  // 인증 토큰·검토 증거를 다루는 과업 화면에는 외부 분석 코드를 실행하지 않는다.
+  if (/\/tasks\.html$/.test(location.pathname)) return;
   const base = new URL('.', document.currentScript.src).href, OFF = 'renewmap-analytics-off';
   const off = () => { try { return localStorage.getItem(OFF) === '1'; } catch (e) { return false; } };
   const page = () => location.pathname.replace(/^.*\/renewmap-site\//, '/').replace(/\/index\.html$/, '/') || '/';

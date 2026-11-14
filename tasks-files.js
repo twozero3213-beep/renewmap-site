@@ -1,12 +1,12 @@
 (function(root,factory){'use strict';const api=factory(typeof module==='object'&&module.exports?require('./tasks.js'):root.RenewTasks);if(typeof module==='object'&&module.exports)module.exports=api;else root.TaskFiles=api;})(typeof globalThis!=='undefined'?globalThis:this,function(T){
   'use strict';
   const MAX=20*1024*1024, MAX_FILES=500, MAX_JSON=40*1024*1024, HEX=/^[a-f0-9]{64}$/;
-  function needed(history){const out=new Set();for(const r of history){for(const a of r.artifacts||[])out.add(a.sha256);for(const c of r.checks||[])if(HEX.test(c.evidence_sha256||''))out.add(c.evidence_sha256);if(r.decision)out.add(r.decision.evidence.sha256);}return out;}
+  function needed(history){const out=new Set();for(const r of history){for(const a of [...(r.artifacts||[]),...T.workEvidence(r)])out.add(a.sha256);for(const c of r.checks||[])if(HEX.test(c.evidence_sha256||''))out.add(c.evidence_sha256);if(r.decision)out.add(r.decision.evidence.sha256);}return out;}
   function to64(bytes){let s='';for(let i=0;i<bytes.length;i+=8192)s+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(s);}
   function fields(value,names){return value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===names.length&&names.every(k=>Object.hasOwn(value,k));}
   function fileName(name){if(typeof name!=='string'||!name.trim()||name.length>240||['.','..'].includes(name.trim())||/[\x00-\x1f\x7f/\\:]/.test(name))throw new Error('백업 파일 이름이 올바르지 않습니다.');return name;}
   function textSize(text){if(typeof text!=='string'||text.length>MAX_JSON||new TextEncoder().encode(text).byteLength>MAX_JSON)throw new Error('백업이 너무 큽니다.');}
-  function declaredSizes(history){const sizes=new Map();for(const r of history)for(const f of [...r.artifacts,...(r.decision?[r.decision.evidence]:[])]){if(sizes.has(f.sha256)&&sizes.get(f.sha256)!==f.size)throw new Error('같은 파일의 크기 기록이 다릅니다.');sizes.set(f.sha256,f.size);}return sizes;}
+  function declaredSizes(history){const sizes=new Map();for(const r of history)for(const f of [...r.artifacts,...T.workEvidence(r),...(r.decision?[r.decision.evidence]:[])]){if(sizes.has(f.sha256)&&sizes.get(f.sha256)!==f.size)throw new Error('같은 파일의 크기 기록이 다릅니다.');sizes.set(f.sha256,f.size);}return sizes;}
   function from64(s){
     if(typeof s!=='string'||s.length>Math.ceil(MAX/3)*4||s.length%4)throw new Error('백업 파일의 데이터 형식이 올바르지 않습니다.');
     const pad=s.endsWith('==')?2:s.endsWith('=')?1:0,body=s.slice(0,s.length-pad),alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';

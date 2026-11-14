@@ -38,9 +38,11 @@ def main():
             page.on('pageerror', lambda e: result['errors'].append(str(e)))
             page.goto(base + 'tasks.html', wait_until='networkidle')
             page.wait_for_function('() => !document.querySelector("#newTask").disabled')
-            assert page.evaluate('() => window.RenewTaskCloudConfig === null')
-            assert page.locator('#taskCloud').count() == 0
-            result['checks'].append('unconfigured_cloud_inactive')
+            configured = page.evaluate('() => window.RenewTaskCloudConfig !== null')
+            assert page.locator('#taskCloud').count() == int(configured)
+            if configured:
+                assert '로그인하지 않았습니다' in page.locator('#cloudUser').text_content()
+            result['checks'].append('cloud_configuration_matches_ui')
             page.locator('#taskActor').fill('합성 검사 작성자')
             for selector, value in {'taskTitle': '합성 과업 — 실제 고객 자료 아님', 'taskProgram': '합성 사업 2026', 'taskGuideline': '합성 지침 v1 https://example.test', 'taskScope': '합성 행정동 경계', 'taskRequirements': '인구 현황 | 합성 지정 자료 | 행정동'}.items():
                 page.locator('#' + selector).fill(value)
@@ -118,6 +120,7 @@ def main():
             q.locator('#restoreFile').set_input_files(backup)
             q.locator('#restoreTask').click()
             q.wait_for_function('() => document.querySelector("#taskState").textContent.includes("최종 승인 기록됨")')
+            q.wait_for_function('() => !document.querySelector("#newTask").disabled')
             actual = q.evaluate('async()=>{const id=document.querySelector("#taskPick").value;return (await TaskStore.history(id)).at(-1).hash;}')
             assert actual == manifest['head_hash']
             q.reload(wait_until='networkidle')
