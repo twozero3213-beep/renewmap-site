@@ -9,7 +9,7 @@ from datetime import date
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import expect, sync_playwright
 
 
 def main():
@@ -43,6 +43,56 @@ def main():
             if configured:
                 assert '로그인하지 않았습니다' in page.locator('#cloudUser').text_content()
             result['checks'].append('cloud_configuration_matches_ui')
+            if configured:
+                # 실제 메일을 보내지 않고 브라우저의 Enter·오류·재요청 동작만 검사한다.
+                origin = page.evaluate('() => RenewTaskCloudConfig.url').rstrip('/')
+                calls = {'otp': 0, 'verify': 0}
+
+                def auth_response(route):
+                    headers = {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*',
+                               'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST,OPTIONS'}
+                    if route.request.method == 'OPTIONS':
+                        route.fulfill(status=204, headers=headers)
+                        return
+                    kind = route.request.url.rsplit('/', 1)[-1]
+                    assert kind in calls, '예상하지 않은 합성 인증 요청입니다.'
+                    calls[kind] += 1
+                    route.fulfill(status=200 if kind == 'otp' else 400, headers=headers,
+                                  body=json.dumps({} if kind == 'otp' else {'message': 'synthetic-detail-not-for-display'}))
+
+                ctx.route(origin + '/auth/v1/**', auth_response)
+                page.locator('#taskCloud summary').click()
+                assert page.evaluate('async()=> (await TaskStore.list()).length') == 0
+                page.locator('#cloudEmail').fill('synthetic-user@example.test')
+                page.locator('#cloudEmail').press('Enter')
+                expect(page.locator('#cloudMsg')).to_contain_text('로그인 메일을 요청했습니다')
+                expect(page.locator('#cloudSendCode')).to_be_enabled()
+                assert calls == {'otp': 1, 'verify': 0}
+                assert page.locator('#taskPick').input_value() == ''
+                result['checks'].append('cloud_request_without_task_intercepted')
+                for index, control in enumerate(['cloudCode', 'cloudEmail'], 1):
+                    page.locator('#cloudCode').fill('123456')
+                    page.locator('#' + control).press('Enter')
+                    expect(page.locator('#cloudMsg')).to_contain_text('가장 최근에 받은 코드')
+                    expect(page.locator('#cloudLogin')).to_be_enabled()
+                    expect(page.locator('#cloudCode')).to_have_value('')
+                    assert calls == {'otp': 1, 'verify': index}
+                result['checks'].append('cloud_enter_with_code_verifies_once_without_resend')
+                expect(page.locator('#taskCloud #cloudMsg')).to_be_visible()
+                expect(page.locator('#cloudMsg')).to_have_attribute('role', 'status')
+                assert 'synthetic-detail-not-for-display' not in page.locator('#cloudMsg').inner_text()
+                result['checks'].append('cloud_safe_error_visible_in_panel')
+                page.locator('#cloudCode').fill('123456')
+                page.locator('#cloudSendCode').click()
+                expect(page.locator('#cloudMsg')).to_contain_text('로그인 메일을 요청했습니다')
+                expect(page.locator('#cloudSendCode')).to_be_enabled()
+                expect(page.locator('#cloudCode')).to_have_value('')
+                assert calls == {'otp': 2, 'verify': 2}
+                page.locator('#cloudCode').fill('123456')
+                page.locator('#cloudEmail').fill('')
+                expect(page.locator('#cloudCode')).to_have_value('')
+                result['checks'].append('cloud_rerequest_and_email_change_clear_old_code')
+                page.locator('#taskCloud summary').click()
             page.locator('#taskActor').fill('합성 검사 작성자')
             for selector, value in {'taskTitle': '합성 과업 — 실제 고객 자료 아님', 'taskProgram': '합성 사업 2026', 'taskGuideline': '합성 지침 v1 https://example.test', 'taskScope': '합성 행정동 경계', 'taskRequirements': '인구 현황 | 합성 지정 자료 | 행정동'}.items():
                 page.locator('#' + selector).fill(value)

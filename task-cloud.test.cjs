@@ -28,6 +28,26 @@ test('로그인 전 RPC와 잘못된 이메일·코드는 요청 전에 거절�
 test('여러 @가 있는 이메일은 서버에 보내지 않는다',async()=>{
  const {c,calls}=client(()=>response({}));await assert.rejects(c.requestCode('a@b@c.test'));assert.equal(calls.length,0);
 });
+
+test('붙여 넣은 이메일과 코드의 바깥 공백은 정리하고 내부 공백·제어문자는 거절한다',async()=>{
+ const {c,calls}=client(url=>response(url.endsWith('/verify')?session():{}));
+ await c.requestCode('  SYNTHETIC@EXAMPLE.TEST  ');assert.equal(JSON.parse(calls[0].opts.body).email,email);
+ await c.verifyCode(' SYNTHETIC@EXAMPLE.TEST ',' 123456 ');assert.equal(c.user().email,email);
+ for(const bad of ['synthetic @example.test','synthetic@example.test\n','a\t@example.test'])await assert.rejects(c.requestCode(bad));
+ assert.equal(calls.length,2);
+});
+
+test('잘못되거나 만료된 코드와 메일 재요청 오류는 안전하고 구체적인 다음 행동을 안내한다',async()=>{
+ for(const status of [400,401,403,422]){
+  const {c}=client(()=>response({message:'synthetic-private-token '+email},status));
+  await assert.rejects(c.verifyCode(email,'123456'),error=>error.message.includes('가장 최근')&&!error.message.includes(email)&&!error.message.includes('synthetic-private'));
+  assert.equal(c.user(),null);
+ }
+ const limited=client(()=>response({message:'synthetic-private-token'},429));
+ await assert.rejects(limited.c.requestCode(email),error=>error.message.includes('잠시 뒤')&&!error.message.includes('synthetic-private'));
+ const unavailable=client(()=>response({message:'synthetic-private-token'},500));
+ await assert.rejects(unavailable.c.requestCode(email),error=>error.message.includes('메일')&&!error.message.includes('synthetic-private'));
+});
 test('OTP는 공식 POST 몸체를 사용하고 토큰 없는 인증 응답은 실패한다',async()=>{
  const {c,calls}=client(url=>response(url.endsWith('/otp')?{}:{}));await c.requestCode(email);
  assert.equal(calls[0].url,config.url+'/auth/v1/otp');assert.deepEqual(JSON.parse(calls[0].opts.body),{email,create_user:true});assert.equal(calls[0].opts.headers.apikey,config.publishableKey);assert.equal(calls[0].opts.headers.Authorization,undefined);

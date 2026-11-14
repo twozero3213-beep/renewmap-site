@@ -12,7 +12,11 @@
   const STATES=['planned','invalid','hold','ready','approved','rejected'];
   const ROLES=['owner','editor','reviewer','viewer'];
   function fail(message){throw new Error(message);}
-  function mail(value){if(typeof value!=='string'||value.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)||/[\x00-\x1f\x7f]/.test(value))fail('이메일 주소를 확인해 주세요.');return value.trim().toLowerCase();}
+  function mail(value){
+    if(typeof value!=='string'||/[\x00-\x1f\x7f]/.test(value))fail('이메일 주소를 확인해 주세요.');
+    const normalized=value.trim().toLowerCase();
+    if(normalized.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))fail('이메일 주소를 확인해 주세요.');return normalized;
+  }
   function taskId(id){if(typeof id!=='string'||!TASK.test(id))fail('과업 ID를 확인해 주세요.');return id;}
   function configuration(value){
     if(value===undefined||value===null||(typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===0))return null;
@@ -22,8 +26,10 @@
     if(typeof value.publishableKey!=='string'||value.publishableKey.length>512||!/^sb_publishable_[A-Za-z0-9_-]+$/.test(value.publishableKey))fail('브라우저용 공개 키만 사용할 수 있습니다. 서버 비밀 키는 사용할 수 없습니다.');
     return {url:url.origin,key:value.publishableKey};
   }
-  function remoteError(status){
+  function remoteError(status,path){
     const messages={401:'로그인이 만료됐습니다. 다시 인증해 주세요.',403:'이 과업을 처리할 권한이 없습니다.',409:'서버의 과업 이력이 달라 동기화를 중단했습니다.',413:'전송할 과업 묶음이 너무 큽니다.',429:'인증 요청이 많습니다. 잠시 뒤 다시 시도해 주세요.'};
+    if(path==='/auth/v1/verify'&&[400,401,403,422].includes(status))messages[status]='인증 코드를 확인하지 못했습니다. 가장 최근에 받은 코드와 이메일을 확인하거나 새 로그인 메일을 받아 주세요.';
+    if(path==='/auth/v1/otp'&&status>=500)messages[status]='로그인 메일 발송 요청을 처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
     const e=new Error(messages[status]||(status>=500?'클라우드 서버가 응답하지 못했습니다. 잠시 뒤 다시 시도해 주세요.':'클라우드 요청이 거절됐습니다. 입력과 권한을 확인해 주세요.'));e.status=status;return e;
   }
   function token(value){return typeof value==='string'&&value.trim()===value&&value.length>0&&value.length<=8192&&!/[\x00-\x20\x7f]/.test(value);}
@@ -47,7 +53,7 @@
         try{response=await fetcher(cfg.url+path,{method,headers,...(method==='GET'?{}:{body:JSON.stringify(body)}),credentials:'omit',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer',signal:controller.signal});}
         catch(_){fail('클라우드에 연결하지 못했습니다. 네트워크를 확인해 주세요.');}
         if(!response||!Number.isInteger(response.status))fail('유효한 클라우드 응답을 받지 못했습니다.');
-        if(!response.ok)throw remoteError(response.status);
+        if(!response.ok)throw remoteError(response.status,path);
         if(noContent&&response.status===204)return null;
         if(!/\bapplication\/(?:[a-z0-9.-]+\+)?json\b/i.test(response.headers.get('Content-Type')||''))fail('유효한 클라우드 응답을 받지 못했습니다.');
         let text;try{text=await response.text();}catch(_){fail('클라우드 응답을 읽지 못했습니다. 다시 시도해 주세요.');}
@@ -102,7 +108,7 @@
       discardLink:()=>{pendingLink=null;generation++;},
       requestCode:async(email)=>{configured();email=mail(email);await request('/auth/v1/otp',{email,create_user:true});return true;},
       verifyCode:async(email,code)=>{
-        configured();email=mail(email);if(typeof code!=='string'||!/^\d{6,10}$/.test(code))fail('이메일로 받은 숫자 인증 코드를 확인해 주세요.');
+        configured();email=mail(email);if(typeof code==='string')code=code.trim();if(typeof code!=='string'||!/^\d{6,10}$/.test(code))fail('이메일로 받은 숫자 인증 코드를 확인해 주세요.');
         const epoch=++generation;session=null;pendingLink=null;
         const data=await request('/auth/v1/verify',{email,token:code,type:'email'});
         if(generation!==epoch)fail('인증 중 로그인이 변경됐습니다. 다시 인증해 주세요.');

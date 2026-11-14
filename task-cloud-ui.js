@@ -39,6 +39,8 @@
     const notice=el('p','서버 설정이 있는 환경에서만 이용합니다. 실제 연결 여부는 이메일 인증 후 확인합니다. 로그인 계정은 서버 보관·접근 기록의 주체입니다. 문서에 적힌 외부 검토자의 신원·전자서명·기관 승인은 별도 확인 대상입니다.');notice.className='task-help';details.append(notice);
     markerWarning=el('p');markerWarning.id='cloudMarkerWarning';markerWarning.setAttribute('role','status');details.append(markerWarning);paintMarker();
     const status=el('p');status.id='cloudUser';status.setAttribute('aria-live','polite');details.append(status);
+    const feedback=el('p');feedback.id='cloudMsg';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');details.append(feedback);
+    function notify(message){feedback.textContent=message;options.notify(message);}
     function field(label,id,type='text'){
       const wrap=el('label',label),input=el('input');input.id=id;input.type=type;input.autocomplete='off';wrap.htmlFor=id;wrap.append(input);return{wrap,input};
     }
@@ -48,9 +50,12 @@
     linkPanel.id='cloudLinkPanel';linkPanel.hidden=true;linkStatus.id='cloudLinkUser';linkStatus.setAttribute('aria-live','polite');linkPanel.append(linkStatus,accept,discard);details.append(linkPanel);
     function clearLink(){linkPanel.hidden=true;linkStatus.textContent='';}
     const authForm=el('form'),email=field('로그인 이메일','cloudEmail','email'),code=field('숫자 코드가 있는 메일만 · 인증 코드','cloudCode');
-    email.input.maxLength=254;code.input.maxLength=10;code.input.inputMode='numeric';code.input.autocomplete='one-time-code';
+    email.input.maxLength=254;email.input.required=true;code.input.maxLength=10;code.input.inputMode='numeric';code.input.autocomplete='one-time-code';
     const send=button('로그인 메일 받기','cloudSendCode'),login=button('숫자 코드로 로그인','cloudLogin'),logout=button('로그아웃','cloudLogout');
-    authForm.append(email.wrap,send,code.wrap,login,logout);authForm.addEventListener('submit',event=>event.preventDefault());details.append(authForm);
+    send.type='submit';
+    authForm.append(email.wrap,send,code.wrap,login,logout);authForm.addEventListener('submit',event=>{event.preventDefault();requestMail();});details.append(authForm);
+    for(const input of [email.input,code.input])input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();if(code.input.value.trim())login.click();else requestMail();}});
+    email.input.addEventListener('input',()=>{code.input.value='';});
     details.append(el('p','로그아웃해도 이 기기에 저장한 과업과 파일은 남습니다. 공동 기기에서는 별도 백업과 기기 보관 정책을 확인해 주세요.'));
     const sync=button('현재 과업 서버 보관','cloudSync'),list=button('서버 과업 목록','cloudList'),pull=button('선택 과업을 기기에 복원','cloudPull');
     const remoteLabel=el('label','서버 과업'),remote=el('select');remote.id='cloudTaskPick';remoteLabel.htmlFor=remote.id;remoteLabel.append(remote);
@@ -66,28 +71,30 @@
     async function perform(fn){
       if(busy)return;busy=true;
       const controls=[...details.querySelectorAll('button,input,select')];controls.forEach(e=>{e.disabled=true;});
-      try{await options.run(fn);}finally{busy=false;controls.forEach(e=>{e.disabled=false;});paint();}
+      const pending='처리 중입니다.';feedback.textContent=pending;
+      try{await options.run(async()=>{try{await fn();}catch(error){feedback.textContent=error.message||'요청을 처리하지 못했습니다. 다시 시도해 주세요.';throw error;}});}
+      finally{busy=false;controls.forEach(e=>{e.disabled=false;});paint();if(feedback.textContent===pending)feedback.textContent='';}
     }
-    send.addEventListener('click',()=>perform(async()=>{client.discardLink();clearLink();await client.requestCode(email.input.value.trim());options.notify('로그인 메일을 요청했습니다. 메일의 링크를 열고 표시된 이메일을 확인한 뒤 로그인 완료를 눌러 주세요. 숫자 코드가 포함된 메일은 코드로도 인증할 수 있습니다.');}));
-    login.addEventListener('click',()=>perform(async()=>{client.discardLink();clearLink();try{await client.verifyCode(email.input.value.trim(),code.input.value.trim());options.notify('이메일 계정을 인증했습니다. 서버 과업의 접근 권한은 작업할 때 확인합니다.');}finally{code.input.value='';}}));
-    logout.addEventListener('click',()=>perform(async()=>{clearLink();try{await client.logout();options.notify('서버 로그아웃을 요청하고 로그인 정보를 지웠습니다. 기기 사본은 유지됩니다.');}finally{email.input.value='';code.input.value='';clearRows();}}));
-    sync.addEventListener('click',()=>perform(async()=>{const backup=await options.getBackup();await client.sync(backup);options.notify('인증 계정 권한으로 현재 과업을 서버에 보관했습니다. 기기 사본도 유지됩니다.');}));
-    list.addEventListener('click',()=>perform(async()=>{const rows=await client.list();clearRows();for(const row of rows)remote.add(new Option(`${row.title} · v${row.revision} · ${row.role}`,row.id));options.notify(`접근 가능한 서버 과업 ${rows.length}건을 불러왔습니다.`);}));
-    pull.addEventListener('click',()=>perform(async()=>{const id=remote.value;if(!id)throw new Error('기기에 복원할 서버 과업을 선택해 주세요.');const backup=await client.get(id);await options.restoreBackup(backup);options.notify('검사한 서버 과업을 기기에 복원했습니다. 기관 승인 진위는 별도 확인 대상입니다.');}));
-    grant.addEventListener('click',()=>perform(async()=>{const memberId=member.input.value.trim(),memberRole=role.value||null,backup=await options.getBackup();if(!backup?.manifest?.id)throw new Error('기기에서 과업을 먼저 선택해 주세요.');await client.member(backup.manifest.id,memberId,memberRole);options.notify('서버 과업의 구성원 권한을 변경했습니다. 이메일은 보내지 않았습니다.');}));
-    accept.addEventListener('click',()=>perform(async()=>{const u=client.acceptLink();clearLink();email.input.value=u.email;options.notify('확인한 이메일 계정으로 로그인했습니다. 서버 과업의 접근 권한은 작업할 때 확인합니다.');}));
-    discard.addEventListener('click',()=>perform(async()=>{client.discardLink();clearLink();options.notify('로그인 링크를 폐기했습니다. 기기의 과업과 파일은 유지됩니다.');}));
+    function requestMail(){return perform(async()=>{client.discardLink();clearLink();code.input.value='';await client.requestCode(email.input.value.trim());notify('로그인 메일을 요청했습니다. 가장 최근 메일의 링크를 열고 표시된 이메일을 확인한 뒤 로그인 완료를 눌러 주세요. 숫자 코드가 포함된 메일은 코드로도 인증할 수 있습니다.');});}
+    login.addEventListener('click',()=>perform(async()=>{client.discardLink();clearLink();try{await client.verifyCode(email.input.value.trim(),code.input.value.trim());notify('이메일 계정을 인증했습니다. 서버 과업의 접근 권한은 작업할 때 확인합니다.');}finally{code.input.value='';}}));
+    logout.addEventListener('click',()=>perform(async()=>{clearLink();try{await client.logout();notify('서버 로그아웃을 요청하고 로그인 정보를 지웠습니다. 기기 사본은 유지됩니다.');}finally{email.input.value='';code.input.value='';clearRows();}}));
+    sync.addEventListener('click',()=>perform(async()=>{const backup=await options.getBackup();await client.sync(backup);notify('인증 계정 권한으로 현재 과업을 서버에 보관했습니다. 기기 사본도 유지됩니다.');}));
+    list.addEventListener('click',()=>perform(async()=>{const rows=await client.list();clearRows();for(const row of rows)remote.add(new Option(`${row.title} · v${row.revision} · ${row.role}`,row.id));notify(`접근 가능한 서버 과업 ${rows.length}건을 불러왔습니다.`);}));
+    pull.addEventListener('click',()=>perform(async()=>{const id=remote.value;if(!id)throw new Error('기기에 복원할 서버 과업을 선택해 주세요.');const backup=await client.get(id);await options.restoreBackup(backup);notify('검사한 서버 과업을 기기에 복원했습니다. 기관 승인 진위는 별도 확인 대상입니다.');}));
+    grant.addEventListener('click',()=>perform(async()=>{const memberId=member.input.value.trim(),memberRole=role.value||null,backup=await options.getBackup();if(!backup?.manifest?.id)throw new Error('기기에서 과업을 먼저 선택해 주세요.');await client.member(backup.manifest.id,memberId,memberRole);notify('서버 과업의 구성원 권한을 변경했습니다. 이메일은 보내지 않았습니다.');}));
+    accept.addEventListener('click',()=>perform(async()=>{const u=client.acceptLink();clearLink();email.input.value=u.email;notify('확인한 이메일 계정으로 로그인했습니다. 서버 과업의 접근 권한은 작업할 때 확인합니다.');}));
+    discard.addEventListener('click',()=>perform(async()=>{client.discardLink();clearLink();notify('로그인 링크를 폐기했습니다. 기기의 과업과 파일은 유지됩니다.');}));
     details.assertCanChange=(id,actions)=>client.assertCanChange(id,actions);
     clearRows();paint();main.append(details);
     if(callback){
       details.open=true;
-      if(callback.error){callback=null;options.notify('로그인 링크가 만료됐거나 유효하지 않습니다. 새 로그인 메일을 받아 주세요.');}
+      if(callback.error){callback=null;notify('로그인 링크가 만료됐거나 유효하지 않습니다. 새 로그인 메일을 받아 주세요.');}
       else root.setTimeout(()=>perform(async()=>{
         const pair=callback;callback=null;
         const u=await client.prepareLink(pair);
         linkStatus.textContent=`서버가 확인한 로그인 이메일: ${u.email}. 본인이 요청한 계정인지 확인하세요. 아직 서버 로그인은 완료하지 않았습니다.`;
         linkPanel.hidden=false;
-        options.notify('로그인 링크의 이메일을 확인한 뒤 이메일 링크 로그인 완료를 눌러 주세요.');
+        notify('로그인 링크의 이메일을 확인한 뒤 이메일 링크 로그인 완료를 눌러 주세요.');
       }),0);
     }
     return details;
