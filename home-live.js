@@ -34,7 +34,8 @@
         // 총수가 비면 같은 줄에 밝힌다. 0은 채운 값이 아니라 원천 감소율이라는 것도 같이(8회차: '0으로 채우지 않는다'와 부딪혀 보였다)
         // R2 11: '총수는 원천에 없음 · 0%'가 지어낸 0처럼 읽혔다 → 감소율이 기관 공표값이고 총수가 공표 전임을 문장으로
         const year = String((base && base.reference_date) || '').slice(0, 4);
-        const baseNote = noBase ? `감소율은 기관 공표값입니다. ${year ? year + '년 ' : ''}${who} 수는 아직 공표 전입니다.` : '';
+        // 11-14 페르소나: 셀이 derived(F-DECLINE-BIZ-01, 공표된 사업체 수로 계산)인데 '기관 공표값'이라 적었다
+        const baseNote = noBase ? `감소율은 공표된 ${who} 수로 리뉴맵이 계산한 값입니다. ${year ? year + '년 ' : ''}${who} 수는 아직 공표 전입니다.` : '';
         // R3 11: 감소율 0%의 뜻(그 해 사업체 수가 10년 중 최대)을 같은 줄에, 출처 경계는 출처 기록 접기에(boundary)
         const zero = code === 'DECLINE_BIZ_DROP10Y_PCT' && !viaConsec ? bizZeroNote((series || {}).DECLINE_BIZ_TOTAL, q.rate) : '';
         const notes = [viaConsec ? '최근 5년 중 3년 연속 감소로 해당' : '', zero, baseNote].filter(Boolean);

@@ -123,7 +123,8 @@
   const srcName = s => (s && typeof s === 'object' ? s.name : s) || null;
   function extraIndicators(ext, lv) {
     const e = ext || {};
-    const mig = { code: MIG_CODE, group: 'pop', icon: 'move', label: '청년 순이동', unit: '명', level: 'sg', src: 'migration', source: srcName(e.migration && e.migration.source), standard: null, worseUp: false, ref: true,
+    // 값은 청년 인구 천 명당 순이동(셀 단위 '명/천 명'). 이름에 '천 명당'이 없어 보고서에서 사람 수로 읽혔다(11-14 페르소나: -41.2명 ≠ 사하구 -1,880명)
+    const mig = { code: MIG_CODE, group: 'pop', icon: 'move', label: '청년 순이동(천 명당)', unit: '명', level: 'sg', src: 'migration', source: srcName(e.migration && e.migration.source), standard: null, worseUp: false, ref: true,
       edges: [-20, -5, 5, 20], colors: MIG, labels: ['천 명당 20명 이상 유출', '5~20명 유출', '±5명 안', '5~20명 유입', '20명 이상 유입'], pending: !hasList(e.migration, 'sigungu'),
       title: '청년(20~34세) 순이동 · 청년 인구 천 명당 · 시·군·구 단위 · 주황 유출 · 청록 유입 · 기준선 0' };
     const des = { code: DESIG_CODE, group: 'pop', icon: 'flag', label: '인구감소지역 지정', unit: '', level: 'sg', src: 'designations', source: srcName(e.designations && e.designations.source), standard: null, categorical: true, cats: DESIG,
@@ -868,13 +869,17 @@
       const ind = r.ind, c = r.cell || {}, v = rowText(r), y = r.year ? `${r.year}년` : null;
       const src = c.source_name || (r.evidenceMissing ? '추가확인' : ind.source || SOURCE_DEFAULT), ref = c.reference_date ? String(c.reference_date).slice(0, 10) : null;
       const where = r.sgLevel ? `이 동이 속한 시·군·구의 ${ind.label}` : `${name}의 ${ind.label}`;
-      const std = validStd(ind.standard) ? `${isPending(ind.standard) ? '승인 대기 중인 기준' : '기준'}(${ind.standard.text}) ${r.crossed ? '선을 넘습니다' : '안에 있습니다'}` : null;
+      const below = validStd(ind.standard) && ind.standard.direction === 'below_bad', kind = isPending(ind.standard) ? '승인 대기 중인 기준' : '기준';
+      // 하한 기준(below_bad, 예: 공원 1인당 6㎡ 이상)은 '선을 넘습니다'가 '충분하다'로 읽혔다(11-14 페르소나: 0.5㎡/인) → 기준값과 높낮이로
+      const std = !validStd(ind.standard) ? null : below
+        ? `${kind}값 ${fmt(ind.standard.value, ind.unit)}${r.crossed ? '보다 낮습니다' : ' 이상입니다'}(${kind}: ${ind.standard.text})`
+        : `${kind}(${ind.standard.text}) ${r.crossed ? '선을 넘습니다' : '안에 있습니다'}`;
       const fore = ind.src === 'forecast' && isNum(r.lo) && isNum(r.hi) ? `80% 구간은 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}이며 ${foreNote(ind)}` : null;
       const tail = std ? `로, ${std}.` : fore ? `로 계산됩니다. ${fore}입니다.` : '입니다.';
       // crossed: 기준 문장이 있을 때만 true(넘습니다)/false(안에 있습니다), 없으면 null. AI 문장 검증이 방향을 대조할 때 쓴다(2026-11-01)
       // stdText: 기준 문구("1만 명당 10곳 미만" 등). 문구 안의 '미만'·'이상'을 방향 표현으로 오인하지 않게 검증 때 떼어 낸다
       return { code: ind.code, group: ind.group, label: ind.label, value: v, year: r.year ?? null, source: src, ref, url: safeUrl(c.source_url),
-        crossed: std ? !!r.crossed : null, stdText: std ? ind.standard.text : null,
+        crossed: std ? !!r.crossed : null, below: std ? below : null, stdText: std ? ind.standard.text : null,
         text: `${where}${josa(ind.label)} ${v}${y ? `(${y})` : ''}${tail} 출처 ${src}${ref ? `, 기준일 ${ref}` : ''}.${r.evidenceMissing ? ` ${SERIES_NO_CELL}.` : ''}` };
     });
   }
@@ -896,7 +901,10 @@
   // 기준 방향: 원장은 "선을 넘습니다"/"안에 있습니다" 두 가지뿐. 단정으로 끝나는 표현만 인정한다.
   // 낱말만 찾으면 "초과하지 않습니다"·"넘은 적이 없습니다"·"안에 있지 않습니다"처럼 뒤집은 문장이 통과한다(2026-11-04 재현). 다른 표현은 거부해 출처 기록 문장을 보인다
   const CROSS_RE = /(?:넘(?:습니다|었습니다|어섭니다|어섰습니다|는다|었다)|초과(?:합니다|했습니다|입니다|한다|했다))(?![가-힣])/,
-    WITHIN_RE = /(?:안에\s?있습니다|이내입니다|(?:넘지|넘어서지|초과하지)\s?(?:않습니다|않았습니다|못했습니다)|미만입니다|이하입니다)(?![가-힣])/;
+    WITHIN_RE = /(?:안에\s?있습니다|이내입니다|(?:넘지|넘어서지|초과하지)\s?(?:않습니다|않았습니다|못했습니다)|미만입니다|이하입니다)(?![가-힣])/,
+    // 하한 기준(below_bad) 문장: 기준값보다 낮음 = 넘은 쪽, 기준값 이상 = 안쪽
+    LOW_RE = /(?:낮습니다|낮았습니다|못\s?미칩니다|못\s?미쳤습니다|밑돕니다|미만입니다)(?![가-힣])/,
+    HIGH_RE = /(?:이상입니다|높습니다|웃돕니다|넘습니다|넘었습니다)(?![가-힣])/;
   // 지표 이름은 괄호 설명을 떼고 글자 사이 띄어쓰기를 허용해 찾는다(예: "병의원(1만 명당)" → "병 의원"도 찾음)
   const labelRe = label => {
     const core = String(label || '').replace(/\(.*?\)/g, '').replace(/\s+/g, '');
@@ -951,7 +959,8 @@
           // 기준 문장이 있는 지표는 이름을 찾아 방향을 대조해야 한다. 이름을 못 찾으면 방향을 확인할 수 없으므로 거부한다
           // 기준 문구는 위에서 이미 뗐다. AI가 문구를 바꿔 옮긴 경우에 대비해 괄호 속 설명도 방향 판단에서 뺀다
           const d = (seen[i] || '').replace(/\([^()]*\)/g, ' ');
-          const ok = seen[i] && (s.crossed ? CROSS_RE.test(d) && !WITHIN_RE.test(d) : WITHIN_RE.test(d) && !CROSS_RE.test(d));
+          const [C, W] = s.below ? [LOW_RE, HIGH_RE] : [CROSS_RE, WITHIN_RE];
+          const ok = seen[i] && (s.crossed ? C.test(d) && !W.test(d) : W.test(d) && !C.test(d));
           if (!ok) flipped.push(s.label);
         }
       });
