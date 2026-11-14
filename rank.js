@@ -96,6 +96,9 @@
       const page = pager.slice(list), offset = page.length ? list.indexOf(page[0]) : 0, rk = j => (rankAt ? rankAt(j) : j + 1).toLocaleString('ko-KR');
       msg.textContent = page.length ? `점수가 있는 ${list.length.toLocaleString('ko-KR')}개 동 중 ${rk(offset)}–${rk(offset + page.length - 1)}위를 ${rankAt ? '낮은 점수부터 ' : ''}보입니다.` : '선택한 범위에 점수가 있는 동이 없습니다.';
       out.innerHTML = tableHTML(page, kindSel.value, names, page.length, range, scope, offset, found, rankAt);
+      // R8 5: 재생 필요 점수만 재료(세부 지표 백분위) 열이 있다. 다른 점수는 오른쪽 열이 '다른 점수'라 '고른 점수의 재료'라 쓰지 않는다
+      const help = $('rankScrollHelp');
+      if (help) help.innerHTML = (kindSel.value === 'renewal' && page.some(r => r.d.renewal_parts) ? '세부 점수(고른 점수의 재료)는 표 오른쪽에 있습니다.' : '표 오른쪽 열은 고른 점수가 아닌 다른 점수와 범죄 발생률입니다.<br>고른 점수의 재료는 동 이름을 눌러 동 페이지에서 볼 수 있습니다.') + '<br>휴대폰에서는 동 이름을 누르면 동 페이지에서 볼 수 있습니다.';
       // 고른 조건·쪽을 주소에 적는다. 동을 눌렀다 뒤로 오거나 새로 고쳐도 그대로(v9: 늘 '재생 필요·부산·1쪽'으로 돌아갔다)
       if (typeof history !== 'undefined' && history.replaceState && location.href) {   // 시험용 가짜 화면에는 주소가 없다
         const u = new URL(location.href), set = (k, v) => (v ? u.searchParams.set(k, v) : u.searchParams.delete(k));

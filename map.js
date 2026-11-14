@@ -1510,7 +1510,7 @@
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261114-d7'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261114-e2'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
@@ -1685,7 +1685,10 @@
       () => say('이미지를 만들지 못했습니다. 브라우저 인쇄로 지도를 저장해 주세요.'));
   }
   const rowsOfTable = t => [...t.rows].map(tr => [...tr.cells].map(c => c.textContent.replace(/\s+/g, ' ').trim()));
-  const copyDone = (b, ok) => { const old = b.dataset.label || (b.dataset.label = b.textContent); b.textContent = ok ? '복사했습니다' : '복사하지 못했습니다. 표를 직접 선택해 복사해 주세요'; clearTimeout(b._t); b._t = setTimeout(() => { b.textContent = old; }, 2200); };
+  // R8 3: 문장 복사 단추는 aria-label이 이름을 정하고 live 영역 밖이라 '복사했습니다'가 안 읽혔다. 표 복사 단추는 .dg-tbl-h(aria-live) 안이라 이미 읽히므로,
+  // live 밖의 단추만 화면 하나뿐인 숨김 알림 칸(role=status)에 알린다(같은 글이 live 두 곳에 들어가 두 번 읽히지 않게)
+  const copyLive = msg => { let l = app.querySelector('[data-copy-live]'); if (!l) { l = document.createElement('p'); l.className = 'sr-only'; l.setAttribute('role', 'status'); l.dataset.copyLive = ''; app.append(l); } l.textContent = ''; setTimeout(() => { l.textContent = msg; }, 50); };
+  const copyDone = (b, ok) => { const old = b.dataset.label || (b.dataset.label = b.textContent); const msg = ok ? '복사했습니다' : '복사하지 못했습니다. 표를 직접 선택해 복사해 주세요'; if (!b.closest('[aria-live]')) copyLive(msg); b.textContent = msg; clearTimeout(b._t); b._t = setTimeout(() => { b.textContent = old; }, 2200); };
   function copyTable(b) {
     const box = b.closest('.dg-tbl'), t = box && box.querySelector('table'); if (!t || !DG) return;
     DG.copyToClipboard(DG.tablePayload(rowsOfTable(t), (box.querySelector('.dg-tbl-h b') || {}).textContent || '')).then(() => copyDone(b, true), () => copyDone(b, false));

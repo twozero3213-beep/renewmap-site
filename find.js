@@ -257,7 +257,37 @@
   const fetchJson = window.RenewUtil.fetchJson;
   const st = { sel: [], by: 'code', page: 1, scope: { sido: '', sg: '' }, ctx: { index: null }, sgGeo: null, emd: new Map(), svgKey: '', lastSg: null, lastDong: null, hint: '', govKey: '' };
   const gov = document.querySelector('#gov [data-gov]');
-  root.innerHTML = `<div class="fd-scope" data-fd-scope></div><div class="fd-grid"><div class="fd-left" data-fd-chips></div><div class="fd-right"><div data-fd-out></div><div class="fd-map" data-fd-map><div class="fd-wait" data-state="loading" role="status"><img src="mascot/crew/saeum-waiting.svg" width="104" height="104" alt="" aria-hidden="true"><p>경계 자료를 불러오는 중입니다.</p></div></div><div data-fd-list></div></div></div>`;
+  // R8 6: 범위 선택 칸은 접힌 details 밖(explore.html 탭 맨 위)에 있다. 없는 쪽(옛 주소·시험)이면 예전처럼 안에 둔다
+  const scopeEl = document.querySelector('#find [data-fd-scope]') || (() => { const d = document.createElement('div'); d.className = 'fd-scope'; root.before(d); return d; })();
+  // R8 6: 범위 선택(scopeHTML이 [data-fd-sel]을 다시 그린다) 아래에 동 이름 찾기. 고른 범위 안의 동만 보이고, 전국·시·도 범위여도 이름만으로 찾는다
+  scopeEl.innerHTML = '<div class="fd-sel" data-fd-sel></div><form class="fd-name" data-fd-name role="search" autocomplete="off"><label class="map-select" for="fdQ">동 이름으로 찾기</label><input id="fdQ" type="search" data-fd-q placeholder="예: 서대신1동, 반여" enterkeyhint="search"><ul class="fd-name-res" data-fd-qres></ul><p class="fd-name-msg" data-fd-qmsg role="status"></p></form>';
+  const dongList = fetchJson('data/national/dong_index.json', true).then(d => (Array.isArray(d) ? d : null));
+  const nameIn = scopeEl.querySelector('[data-fd-q]'), nameOut = scopeEl.querySelector('[data-fd-qres]'), nameMsg = scopeEl.querySelector('[data-fd-qmsg]');
+  const NAME_MAX = 8;
+  function nameSearch() {
+    const q = nameIn.value.trim(), U = window.RenewUtil; nameOut.replaceChildren();
+    if (!q) { nameMsg.textContent = ''; return; }
+    dongList.then(list => {
+      if (nameIn.value.trim() !== q) return;   // 늦게 도착한 앞 글자 결과가 지금 글을 덮지 않게
+      if (!list) { nameMsg.textContent = '동 목록을 불러오지 못했습니다. 페이지를 새로 고쳐 주세요.'; return; }
+      const sido = st.scope.sido, sg = st.scope.sg, fq = U.flat(q);
+      const hits = list.filter(([c8, n, c5, sgn, sidon]) => (!sido || c8.startsWith(sido)) && (!sg || String(c5) === sg) && (U.dongHit(q, n, [sgn, sidon]) || U.flat(n).includes(fq)));
+      nameMsg.textContent = hits.length ? `${hits.length}곳을 찾았습니다.${hits.length > NAME_MAX ? ` 앞의 ${NAME_MAX}곳만 보입니다. 이름을 더 적거나 범위를 좁혀 주세요.` : ''}` : '이 범위에서 그 이름의 동을 찾지 못했습니다. 범위를 넓혀 보세요.';
+      for (const [c8, n, c5, sgn, sidon] of hits.slice(0, NAME_MAX)) {
+        const li = document.createElement('li'), b = document.createElement('button');
+        b.type = 'button'; b.className = 'btn ghost'; b.dataset.fdGoDong = c8; b.dataset.code5 = c5; b.textContent = `${U.sidoShort(sidon)} ${sgn} ${n}`;
+        li.append(b); nameOut.append(li);
+      }
+    });
+  }
+  nameIn.addEventListener('input', nameSearch);
+  scopeEl.querySelector('[data-fd-name]').addEventListener('submit', ev => { ev.preventDefault(); nameSearch(); });
+  nameOut.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-fd-go-dong]'); if (!b) return;
+    const r = st.ctx.index ? M.leafRoute(st.ctx.index, b.dataset.code5) : null;
+    if (r) goMap(M.toHash({ ...r, dong: b.dataset.fdGoDong })); else nameMsg.textContent = '지역 자료를 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요.';
+  });
+  root.innerHTML = `<div class="fd-grid"><div class="fd-left" data-fd-chips></div><div class="fd-right"><div data-fd-out></div><div class="fd-map" data-fd-map><div class="fd-wait" data-state="loading" role="status"><img src="mascot/crew/saeum-waiting.svg" width="104" height="104" alt="" aria-hidden="true"><p>경계 자료를 불러오는 중입니다.</p></div></div><div data-fd-list></div></div></div>`;
   const $ = s => root.querySelector(s);
   const unit = () => (st.scope.sg ? 'emd' : 'sg');
   // 시·군·구 범위의 읍·면·동 파일(지도 지연 로드와 같은 캐시). 아직이면 null
@@ -281,7 +311,7 @@
     for (const id of st.sel.flat()) { const src = (condOf(id) || {}).src; if (LAZY[src] && !asked.has(src) && !c0[src]) { asked.add(src); fetchJson('data/national/' + LAZY[src], true).then(j => { st.ctx[src] = ok(j, 'sigungu'); loaded.add(src); render(); }); } }
     let ctx = c0, e = null;
     if (st.scope.sg) { e = emdCtx(st.scope.sg); ctx = { ...c0, emd: e && e.json, lv: e && e.lv, forecast: e && e.fc }; }
-    $('[data-fd-scope]').innerHTML = scopeHTML();
+    scopeEl.querySelector('[data-fd-sel]').innerHTML = scopeHTML();
     $('[data-fd-chips]').innerHTML = chipsHTML(st.sel, ctx, unit());
     renderGov(ctx);
     if (more && !more.open) return; // 접힌 조건 칸은 열 때 그린다(전국 경계 그림이 휴대폰 첫 화면에서 0.2~0.3초 멈췄다)
@@ -332,7 +362,7 @@
     st.sel = presetConds(p, unit()); st.page = 1;
     st.hint = st.scope.sg ? '' : '시·도와 시·군·구를 고르면 그 안 읍·면·동에서 찾습니다.';
     render();
-    const f = root.querySelector(st.scope.sg ? '[data-fd-out]' : '[data-fd-sido]'); if (!f) return;
+    const f = st.scope.sg ? root.querySelector('[data-fd-out]') : scopeEl.querySelector('[data-fd-sido]'); if (!f) return;
     // 작업공간 규칙: 화면을 강제로 스크롤하지 않는다(모바일 탭 전환이 표시를 바꾼다). 초점만 옮긴다
     (st.scope.sg ? root.querySelector('[data-fd-sort="code"]') : f)?.focus({ preventScroll: true });
   }
@@ -380,12 +410,12 @@
     // 해시를 바꾸면 map.js가 그 단계로 그리고 workspace.js가 지도 패널을 연다.
     if (ev.target.closest('[data-fd-go]')) return;
   });
-  root.addEventListener('change', ev => {
+  scopeEl.addEventListener('change', ev => {
     const s = ev.target.closest('select'); if (!s) return;
     if ('fdSido' in s.dataset) { st.scope = { sido: s.value, sg: '' }; st.page = 1; }
     else if ('fdSg' in s.dataset) { st.scope = { sido: st.scope.sido, sg: s.value }; st.page = 1; }
     if (st.scope.sg) st.hint = '';
-    render(); root.querySelector(s.hasAttribute('data-fd-sido') ? '[data-fd-sido]' : '[data-fd-sg]')?.focus({ preventScroll: true });
+    render(); scopeEl.querySelector(s.hasAttribute('data-fd-sido') ? '[data-fd-sido]' : '[data-fd-sg]')?.focus({ preventScroll: true });
   });
   const ok = (j, k) => (j && Array.isArray(j[k]) ? j : null);
   // 목록은 map.js와 같은 index_core.json(연도 요약 없음, 같은 캐시로 한 번만 받는다). 없으면 전체 index.json

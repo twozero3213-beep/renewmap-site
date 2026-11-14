@@ -295,6 +295,14 @@
 @media (max-width: 520px) { .fd-list li { grid-template-columns: minmax(0, 1fr) auto; } .fd-b { grid-column: 1; grid-row: 2; } .fd-count b { font-size: 40px; } }
 @media (prefers-reduced-motion: reduce) { .fd-list li { animation: none; } .fd-chip { transition: none; } }
 .fd-scope .map-select { flex: 0 1 260px; }
+/* R8 6: 범위 선택·동 이름 찾기는 접힌 영역 밖(조건 탭 맨 위). 선택 상자는 예전처럼 한 줄에 놓고 이름 찾기는 그 아래 한 줄 */
+.fd-sel { display: contents; }
+.fd-name { flex: 1 1 100%; display: grid; gap: 4px; }
+.fd-name label { min-width: 0; }
+.fd-name input { font: inherit; font-size: 16px; min-height: 44px; padding: 8px 10px; max-width: 420px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--ink); }
+.fd-name-res { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.fd-name-res .btn { min-height: 44px; font-size: 15px; }
+.fd-name-msg { margin: 0; font-size: 15px; color: var(--dim); }
 /* 모바일: 큰 숫자를 칩 위에 붙여 두어(스크롤해도 보임) 칩을 누를 때마다 결과 수가 바로 보이게 한다 */
 @media (max-width: 999px) {
   .fd-grid { display: flex; flex-direction: column; } .fd-right { display: contents; }

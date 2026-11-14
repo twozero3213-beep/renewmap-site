@@ -1169,7 +1169,8 @@
       const table = s.table ? tableFrame(s.table.rows, s.table.widths) : '';
       const y = s.table ? 1150000 + ROW_H * s.table.rows.length + 150000 : 1200000;
       const lines = s.lines.length ? box('본문', M, y, SW - 2 * M, SH - y - 600000, s.lines.map(l => para(runsOf(l.text, l.size || 16, l.bold, l.color), { bullet: l.bullet, before: l.before || 400 })).join('')) : '';
-      const foot = box('쪽·출처', M, SH - 480000, SW - 2 * M, 380000, para(`<a:r>${rp(9, false, '595959')}<a:t>${xe(`${fileFooter(doc)} · ${i + 1}/${total}`)}</a:t></a:r>`));
+      // R8 2: 꼬리말이 ' · '로 끝나(워드·한글은 쪽 번호가 뒤에 붙는다) 여기서 ' · '를 또 붙이면 ' ·  · '로 빈 칸이 생겼다
+      const foot = box('쪽·출처', M, SH - 480000, SW - 2 * M, 380000, para(`<a:r>${rp(9, false, '595959')}<a:t>${xe(`${fileFooter(doc).replace(/ · $/, '')} · ${i + 1}/${total}`)}</a:t></a:r>`));
       return `${OX}<p:sld ${ns}><p:cSld><p:spTree>${grpXml}${title}${table}${lines}${foot}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
     };
     const clr = ['dk1 000000', 'lt1 FFFFFF', 'dk2 153C39', 'lt2 F2F5F3', 'accent1 006F5B', 'accent2 D7F988', 'accent3 8A4B00', 'accent4 2E7D5E', 'accent5 4F625D', 'accent6 102F2D', 'hlink 006F5B', 'folHlink 4F625D'].map(s => { const [n, v] = s.split(' '); return `<a:${n}><a:srgbClr val="${v}"/></a:${n}>`; }).join('');

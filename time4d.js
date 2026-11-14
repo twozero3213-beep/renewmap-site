@@ -91,7 +91,8 @@
   const CSV_COLS = ['관리 건축물대장 번호', '법정동', '지번', '건물명', '주용도', '구조', '사용승인일', '사용승인 연도', '층수', '연면적(㎡)', '만 연수', '30년 이상'];
   function csv(bf, list) {
     // 셀이 =+-@로 시작하면 엑셀이 식으로 읽는다 → 앞에 작은따옴표. R5 11: 앞 공백·BOM 뒤의 식 문자와 탭·CR로 시작하는 칸도 막는다(candidates.js cell과 같은 방식)
-    const q = (v) => { const t = v === null || v === undefined ? '' : String(v); return `"${(/^[\s\uFEFF]*[=+\-@\t\r]/.test(t) ? "'" + t : t).replace(/"/g, '""')}"`; };
+    // R8 1: '-2.81' 같은 순수 숫자는 제외한다(따옴표가 붙으면 엑셀이 글자로 읽는다). '-1+2'·'=1'은 그대로 막는다
+    const q = (v) => { const t = v === null || v === undefined ? '' : String(v); return `"${(/^-?\d+(\.\d+)?$/.test(t.trim()) ? t : /^[\s\uFEFF]*[=+\-@\t\r]/.test(t) ? "'" + t : t).replace(/"/g, '""')}"`; };
     // R5 11: 안전 점검 담당자가 파일만 열어도 규모를 알게 한다(30년 이상 = over30 참인 건물 수). 판정이 아니라 사용승인일로 센 수다
     const meta = [`# 출처: ${bf.source || ''} (${bf.data_source_system || ''})`, `# 기준일: ${bf.hub_reference_date || ''} · 법정동: ${bf.name || ''}(${bf.bjd10 || ''}) · 건물 ${list.length}동`,
       `# 30년 이상 ${list.filter((b) => b.over30 === true).length}동 / 전체 ${list.length}동 (사용승인일로 센 수이며 노후 판정이 아닙니다)`,

@@ -118,7 +118,7 @@
     syncStates();
     function show(name, focusTab) {
       active = normalizePanel(name);
-      if (active === 'filters' && !window.RenewFind) import('./find.js?v=20261114-px').catch(() => {
+      if (active === 'filters' && !window.RenewFind) import('./find.js?v=20261114-e2').catch(() => {
         document.getElementById('findMore').open = true;
         const slot = document.getElementById('findApp'); slot.setAttribute('role', 'alert');
         slot.textContent = '조건 도구를 불러오지 못했습니다. 새로고침한 뒤 다시 열어 주세요.';

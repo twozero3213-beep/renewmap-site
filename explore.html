@@ -35,7 +35,7 @@
 <link rel="stylesheet" href="hero.css?v=20261113-d2">
 <!-- 2026-11-12: 동 이름표 스타일 추가에 맞춰 버전을 붙인다(옛 map.css 캐시가 이름표를 잘못 그리지 않게) -->
 <!-- 2026-11-13: 동 요약 신청요건 한 줄(.sr-req)·시작 묶음 단추(.map-bundles) 스타일로 버전을 올림 -->
-<link rel="stylesheet" href="map.css?v=20261114-d5">
+<link rel="stylesheet" href="map.css?v=20261114-e2">
 <link rel="stylesheet" href="programs.css?v=20261114-d3">
 <link rel="stylesheet" href="overlay.css?v=20261113-d2">
 <link rel="stylesheet" href="v4.css?v=20261114-d3"><!-- 2026-11-12: 768~1099px 지도 정리 규칙을 더해 캐시 버전을 붙임 -->
@@ -55,10 +55,10 @@
 <!-- 2026-11-13: 신청요건 한 줄(reqLineHTML)·도넛 접기·시작 묶음(BUNDLES)으로 버전을 올림 -->
 <!-- 2026-11-13: 최저기준 묶음에 보건소·어린이집 거리 칩을 더해 버전을 올림 -->
 <script src="decline-req.js?v=20261113-v93" defer></script>
-<script src="map.js?v=20261114-e1" defer></script>
+<script src="map.js?v=20261114-e2" defer></script>
 <script src="explore-layout.js?v=20261113" defer></script>
-<script src="workspace.js?v=20261114-d4" defer></script>
-<script src="report.js?v=20261112-audit" defer></script>
+<script src="workspace.js?v=20261114-e2" defer></script>
+<script src="report.js?v=20261114-e2" defer></script>
 <link rel="stylesheet" href="rm6.css?v=20261114-d9">
 </head>
 <body class="explore-page">
@@ -77,6 +77,8 @@
       <section class="workspace-panel" id="find" data-workspace-panel="filters" aria-labelledby="findTitle">
         <div class="workspace-panel-inner">
           <button type="button" class="btn ghost ws-close" data-filters-close aria-label="조건을 닫고 지도 보기">지도 보기</button>
+          <!-- R8 6: 범위(시·도·시·군·구) 선택과 동 이름 찾기를 접힌 '조건으로 동네 고르기' 안에서 꺼내 탭 맨 위에 둔다(find.js가 채운다) -->
+          <div class="fd-scope" data-fd-scope></div>
           <div id="gov" class="gov" aria-labelledby="govTitle">
             <div class="section-head"><div><h2 id="govTitle">어떤 일 때문에 오셨나요?</h2></div><p>업무를 선택하면 관련 조건으로 지역을 찾습니다.<br>지역을 고른 뒤 문서에서 출처와 기준일을 확인하세요.</p></div>
             <div data-gov><p class="fd-wait">자료를 불러오는 중입니다.</p></div>
@@ -119,7 +121,7 @@
               <button type="button" class="btn" data-export-format="pptx" disabled>파워포인트 받기</button>
               <button type="button" class="btn" data-export-format="pdf" disabled>PDF로 저장</button>
             </div>
-            <div data-export-status aria-live="polite"><p class="export-state" role="status">문서는 이 기기에서 만듭니다.<br>서버로 보내지 않습니다.</p></div>
+            <div data-export-status aria-live="polite"><p class="export-state">문서는 이 기기에서 만듭니다.<br>서버로 보내지 않습니다.</p></div>
           </div>
           <nav class="report-pages" data-report-pages aria-label="문서 주제 페이지" hidden>
             <button type="button" data-report-prev aria-label="이전 문서 주제">이전</button>

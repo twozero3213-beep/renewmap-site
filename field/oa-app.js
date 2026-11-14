@@ -74,6 +74,9 @@
     $("dong").replaceChildren(new Option("행정동을 고르세요", ""), ...data.dongs.map((x) => new Option(`${x.sigungu_name} ${x.name} (충족 ${x.met_count ?? "값 없음"}개)`.trim(), x.code)));
     $("dong").disabled = false;
     $("dong").addEventListener("change", () => show($("dong").value));
+    // R8 4: 동 페이지가 ?dong=행정동코드로 이 쪽을 열면 그 동을 바로 보여 준다(없는 코드는 무시)
+    const want = new URLSearchParams(location.search).get("dong");
+    if (want && data.dongs.some((x) => x.code === want)) { $("dong").value = want; show(want); }
   }).catch(() => say("집계구 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true));
 
   $("csv").addEventListener("click", () => {

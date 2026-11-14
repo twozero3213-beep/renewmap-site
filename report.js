@@ -16,14 +16,14 @@
     const supported = FORMATS.includes(format), d = detail || {};
     const label = supported ? format.toUpperCase() : esc(format);
     const state = supported ? status : 'unavailable';
-    if (state === 'error') return `<p class="export-state is-error" role="alert"><strong>${label} 납품 오류</strong> ${d.message ? esc(d.message) : '파일을 만들지 못했습니다. 다시 시도해 주세요.'}</p>`;
-    if (state === 'done' && format !== 'pdf') return `<p class="export-state is-ready" role="status"><strong>${label} 파일을 내려받았습니다</strong> ${esc(d.file || '')}${d.size ? ` (${Math.max(1, Math.round(d.size / 1024))}KB)` : ''}<br>이 브라우저에서 만들었고 서버로 보내지 않았습니다.${format === 'hwpx' ? ' 한/글에서 열어 쪽 번호와 글꼴을 한 번 확인해 주세요.' : ''}</p>`;
-    if (state === 'ready' && format === 'pdf') return `<p class="export-state is-ready" role="status"><strong>PDF 인쇄 가능</strong> 기존 브라우저 인쇄 창에서 PDF로 저장할 수 있습니다.</p>`;
-    if (state === 'ready') return `<p class="export-state is-ready" role="status"><strong>${label} 바로 만들기 가능</strong> 이 브라우저에서 만들어 내려받습니다. 서버로 보내지 않습니다.</p>`;
-    if (state === 'empty') return `<p class="export-state" role="status"><strong>${label}</strong> 지역을 선택한 뒤 만들 수 있습니다.</p>`;
-    if (format === 'pdf') return `<p class="export-state" role="status"><strong>PDF</strong> 지역을 선택한 뒤 브라우저 인쇄로 만들 수 있습니다.</p>`;
-    if (supported) return `<p class="export-state" role="status"><strong>${label}</strong> 지역을 선택한 뒤 이 브라우저에서 바로 만들 수 있습니다.</p>`;
-    return `<p class="export-state is-unavailable" role="status"><strong>${label} 준비 중</strong> 아직 파일을 만들지 않습니다. 실제 생성 기능이 완성되면 제공합니다.</p>`;
+    if (state === 'error') return `<p class="export-state is-error"><strong>${label} 납품 오류</strong> ${d.message ? esc(d.message) : '파일을 만들지 못했습니다. 다시 시도해 주세요.'}</p>`;
+    if (state === 'done' && format !== 'pdf') return `<p class="export-state is-ready"><strong>${label} 파일을 내려받았습니다</strong> ${esc(d.file || '')}${d.size ? ` (${Math.max(1, Math.round(d.size / 1024))}KB)` : ''}<br>이 브라우저에서 만들었고 서버로 보내지 않았습니다.${format === 'hwpx' ? ' 한/글에서 열어 쪽 번호와 글꼴을 한 번 확인해 주세요.' : ''}</p>`;
+    if (state === 'ready' && format === 'pdf') return `<p class="export-state is-ready"><strong>PDF 인쇄 가능</strong> 기존 브라우저 인쇄 창에서 PDF로 저장할 수 있습니다.</p>`;
+    if (state === 'ready') return `<p class="export-state is-ready"><strong>${label} 바로 만들기 가능</strong> 이 브라우저에서 만들어 내려받습니다. 서버로 보내지 않습니다.</p>`;
+    if (state === 'empty') return `<p class="export-state"><strong>${label}</strong> 지역을 선택한 뒤 만들 수 있습니다.</p>`;
+    if (format === 'pdf') return `<p class="export-state"><strong>PDF</strong> 지역을 선택한 뒤 브라우저 인쇄로 만들 수 있습니다.</p>`;
+    if (supported) return `<p class="export-state"><strong>${label}</strong> 지역을 선택한 뒤 이 브라우저에서 바로 만들 수 있습니다.</p>`;
+    return `<p class="export-state is-unavailable"><strong>${label} 준비 중</strong> 아직 파일을 만들지 않습니다. 실제 생성 기능이 완성되면 제공합니다.</p>`;
   }
   function init() {
     const report = document.getElementById('reportApp');
