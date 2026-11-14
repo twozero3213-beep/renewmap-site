@@ -29,6 +29,7 @@
 
 - 행정동 쪽 3,610곳(쇠퇴진단지표 2025판 기준) 중 값이 이어진 곳은 3,562곳이고, 지도·검색에서 고를 수 있는 곳은 2025년 행정동 경계가 있는 3,559곳입니다.
 - 행정동마다 정적 페이지가 있습니다:`https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html` (예: [서울특별시 종로구 사직동 쇠퇴 3요건 현황](https://twozero3213-beep.github.io/renewmap-site/dong/11010530.html)). 목록은 [행정동 목록](https://twozero3213-beep.github.io/renewmap-site/dong/index.html)과 [사이트맵](https://twozero3213-beep.github.io/renewmap-site/sitemap-dong.xml).
+- 기계로 읽기: 동별 값은 `https://twozero3213-beep.github.io/renewmap-site/data/national/emd/{시군구코드5}.json`(쇠퇴 3요건·시계열)과 `https://twozero3213-beep.github.io/renewmap-site/data/national/living/{시군구코드5}.json`(생활 지표)에 있고, 셀마다 값·상태·출처·산식·기준일이 붙어 있습니다. 형식은 [SCHEMA.md](https://twozero3213-beep.github.io/renewmap-site/data/SCHEMA.md)이며, 줄여 저장한 셀(cell_pack)은 [cellpack.js](https://twozero3213-beep.github.io/renewmap-site/cellpack.js)로 되돌립니다. 없어진 행정동과 이어지는 동은 `https://twozero3213-beep.github.io/renewmap-site/data/national/dong_successors.json`(행안부 공고).
 
 ## 리뉴맵이 하지 않는 일
 
@@ -159,7 +160,7 @@
 - 한국도로교통공단 보행노인 교통사고 다발지역(공공데이터포털 15057666) — 공공데이터포털, 기준 2025-12-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15057666/openapi.do
 - 국토교통부 건축HUB 건축인허가정보 서비스(공공데이터포털 15136267) — 국토교통부, 기준 2026-10-26, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15136267/openapi.do
 - 국립중앙의료원 전국 약국 정보 조회 서비스(공공데이터포털 15000576) — 국립중앙의료원, 기준 2026-10-28, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15000576/openapi.do
-- 경찰청 전국 지구대 파출소 주소 현황(15077036)·전국 치안센터 주소 현황(15076962), 주소를 카카오 로컬 주소검색으로 좌표 변환 — 경찰청, 기준 2025-12-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15077036/fileData.do
+- 경찰청 전국 지구대 파출소 주소 현황(15077036)·전국 치안센터 주소 현황(15076962), 주소를 국가데이터처 SGIS 지오코딩으로 좌표 변환 — 경찰청, 기준 2025-12-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15077036/fileData.do
 - 부산광역시 정비사업 정보(공공데이터포털 3069406) — 공공데이터포털, 기준 2026-10-26, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/3069406/openapi.do
 - 국토교통부 아파트·연립다세대·오피스텔 전월세 실거래가 자료(공공데이터포털 15126474·15126473·15126475) — 국토교통부, 기준 2026-10-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15126474/openapi.do
 - 한국지방교육행정연구재단 초중등학교위치(공공데이터포털 15099519) — 공공데이터포털, 기준 2025-09-22, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15099519/fileData.do
@@ -194,8 +195,8 @@
 - realestate.json (1,962,064바이트): 최상위 generated_at, snapshot_hash, source, note, sigungu, unmatched; generated_at 2026-11-07T12:18:14+09:00; snapshot_hash e828b2ecdcbbf3950b90754e63265b0f88a695fb384dde6cb64f966aeda0dd1a
 - redev_national.json (1,511,634바이트): 최상위 generated_at, snapshot_hash, source, indicators, sigungu, unmatched; generated_at 2026-11-09T02:04:00+09:00; snapshot_hash 5cac8f1b8b661f1ad67a1f874a3d561b180aa8620dab269898131b24dacf7943
 - ref_lines.json (9,929바이트): 최상위 kind, names, indicators; generated_at 없음; snapshot_hash 없음
-- scores.json (2,516,930바이트): 최상위 generated_at, rule_version, decision, method, sources, crime_unmatched, dongs; generated_at 2026-11-13T18:46:39+09:00; snapshot_hash 없음
-- scores_range.json (1,052,685바이트): 최상위 generated_at, rule_version, sensitivity, dongs; generated_at 2026-11-13T18:46:39+09:00; snapshot_hash 없음
+- scores.json (2,516,929바이트): 최상위 generated_at, rule_version, decision, method, sources, crime_unmatched, dongs; generated_at 2026-11-14T16:36:39+09:00; snapshot_hash 없음
+- scores_range.json (1,052,674바이트): 최상위 generated_at, rule_version, sensitivity, dongs; generated_at 2026-11-14T16:36:39+09:00; snapshot_hash 없음
 - water_auto.json (21,944바이트): 최상위 source, latest, cur, prev, note, sites; generated_at 없음; snapshot_hash 없음
 - water_quality.json (204,974바이트): 최상위 source, year, note, points; generated_at 없음; snapshot_hash 없음
 

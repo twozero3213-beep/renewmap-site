@@ -29,6 +29,7 @@
 
 - 행정동 쪽 3,610곳(쇠퇴진단지표 2025판 기준) 중 값이 이어진 곳은 3,562곳이고, 지도·검색에서 고를 수 있는 곳은 2025년 행정동 경계가 있는 3,559곳입니다.
 - 행정동마다 정적 페이지가 있습니다:`https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html` (예: [서울특별시 종로구 사직동 쇠퇴 3요건 현황](https://twozero3213-beep.github.io/renewmap-site/dong/11010530.html)). 목록은 [행정동 목록](https://twozero3213-beep.github.io/renewmap-site/dong/index.html)과 [사이트맵](https://twozero3213-beep.github.io/renewmap-site/sitemap-dong.xml).
+- 기계로 읽기: 동별 값은 `https://twozero3213-beep.github.io/renewmap-site/data/national/emd/{시군구코드5}.json`(쇠퇴 3요건·시계열)과 `https://twozero3213-beep.github.io/renewmap-site/data/national/living/{시군구코드5}.json`(생활 지표)에 있고, 셀마다 값·상태·출처·산식·기준일이 붙어 있습니다. 형식은 [SCHEMA.md](https://twozero3213-beep.github.io/renewmap-site/data/SCHEMA.md)이며, 줄여 저장한 셀(cell_pack)은 [cellpack.js](https://twozero3213-beep.github.io/renewmap-site/cellpack.js)로 되돌립니다. 없어진 행정동과 이어지는 동은 `https://twozero3213-beep.github.io/renewmap-site/data/national/dong_successors.json`(행안부 공고).
 
 ## 리뉴맵이 하지 않는 일
 

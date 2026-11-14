@@ -216,7 +216,7 @@
   {
    "name": "scores.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/scores.json",
-   "bytes": 2516930,
+   "bytes": 2516929,
    "type": "object",
    "top_level_keys": [
     "generated_at",
@@ -227,13 +227,13 @@
     "crime_unmatched",
     "dongs"
    ],
-   "generated_at": "2026-11-13T18:46:39+09:00",
+   "generated_at": "2026-11-14T16:36:39+09:00",
    "snapshot_hash": null
   },
   {
    "name": "scores_range.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/scores_range.json",
-   "bytes": 1052685,
+   "bytes": 1052674,
    "type": "object",
    "top_level_keys": [
     "generated_at",
@@ -241,7 +241,7 @@
     "sensitivity",
     "dongs"
    ],
-   "generated_at": "2026-11-13T18:46:39+09:00",
+   "generated_at": "2026-11-14T16:36:39+09:00",
    "snapshot_hash": null
   },
   {
