@@ -82,6 +82,19 @@
         return `<td>${U.esc(valueText(x))}<br><small>${U.esc(x?.d || '기준일 추가확인')}<br>${U.esc(x?.s || '미확인')}<br>${U.esc(x?.basis?.spatial_unit || '공간 단위 추가확인')}<br>${U.esc(x?.evidence?.source_name || '출처 추가확인')}</small></td>`;
       }).join('') + '<td><small>' + comparisonConditions(rows, code).map(([name, status]) => U.esc(`${name}: ${status}`)).join('<br>') + '</small></td></tr>').join('') + '</tbody></table></div>';
   }
+  // 동 비교 XLSX(11-14 페르소나: '동 비교 화면이 없다' → 보관함 비교 표를 표 파일로). 비교 표와 같은 저장 당시 값만 옮기고
+  // 차이·순위·합산은 계산하지 않는다(D13). 숫자 칸은 숫자로 둬 엑셀에서 바로 쓰게 한다. 글 칸은 inlineStr이라 식으로 실행되지 않는다
+  function compareSheets(rows) {
+    const indicators = [...new Map(rows.flatMap(r => r.items.map(x => [x.c, x.l]))).entries()];
+    const val = x => (x && typeof x.v === 'number' && Number.isFinite(x.v) ? x.v : valueText(x));
+    const cmp = [['항목', ...rows.flatMap(r => [`${r.name} 값`, `${r.name} 단위`, `${r.name} 기준일`]), '비교 조건'],
+      ...indicators.map(([code, label]) => [label, ...rows.flatMap(r => { const x = r.items.find(i => i.c === code); return [val(x), x?.u || '', x?.d || '기준일 추가확인']; }),
+        comparisonConditions(rows, code).map(([n, s]) => `${n}: ${s}`).join(', ')]),
+      [], ['판정·순위가 아닙니다. 저장 당시 값이며 기준일·산식·공간 단위가 다를 수 있습니다.']];
+    const src = [['후보 동', '항목', '출처', '출처 URL', '기준일', '이용조건', '셀 ID'],
+      ...rows.flatMap(r => r.items.map(x => [r.name, x.l, x.evidence?.source_name || '', x.basis?.source_url || '', x.d || '', x.evidence?.license_type || '', x.evidence?.cell_id || '']))];
+    return [{ name: '비교', rows: cmp, widths: [28, ...rows.flatMap(() => [12, 8, 12]), 44] }, { name: '출처', rows: src, widths: [14, 28, 40, 50, 12, 18, 30] }];
+  }
   function init(root) {
     const host = root.document.querySelector('[data-candidates]');
     if (!host) return;
@@ -90,12 +103,15 @@
     const pager = root.RenewListPages.create(list, '검토 후보', render);
     if (!out.id) out.id = 'candidateComparison';
     const comparisonPager = root.RenewListPages.create(out, '비교 지표', renderComparison);
+    const xbtn = host.querySelector('[data-candidate-xlsx]'), fold = out.closest('details');
     const say = t => { msg.textContent = t; };
     function renderComparison(rows) {
       try {
         const chosen = (rows || load(root.localStorage)).filter(r => selected.has(r.code));
         const indicators = chosen.length < 2 ? [] : [...new Map(chosen.flatMap(r => r.items.map(x => [x.c, x.l]))).entries()];
         out.innerHTML = comparisonHTML(chosen, comparisonPager.slice(indicators));
+        if (xbtn) xbtn.disabled = chosen.length < 2;
+        if (fold && chosen.length >= 2) fold.open = true;   // 2곳을 고르면 접힌 비교 표를 연다(있는 줄 몰랐다)
         return true;
       } catch (e) { say('비교를 열지 못했습니다. ' + e.message); return false; }
     }
@@ -116,7 +132,7 @@
       if (e.target.checked && selected.size >= 3) { e.target.checked = false; say('비교는 한 번에 3곳까지 선택합니다.'); return; }
       e.target.checked ? selected.add(code) : selected.delete(code);
       comparisonPager.reset();
-      if (renderComparison()) say(`${selected.size}곳 선택`);
+      if (renderComparison()) say(selected.size >= 2 ? `${selected.size}곳 선택 · 아래 비교 표를 열었습니다` : `${selected.size}곳 선택`);
     });
     list.addEventListener('submit', e => {
       const form = e.target.closest('[data-candidate-edit]'); if (!form) return;
@@ -135,7 +151,16 @@
         say(selected.size ? `선택한 ${rows.length}곳의 근거 CSV를 받았습니다.` : `후보 전체 ${rows.length}곳의 근거 CSV를 받았습니다.`);
       } catch (err) { say('내보내지 못했습니다. ' + err.message); }
     });
+    if (xbtn) xbtn.addEventListener('click', () => {
+      try {
+        const rows = load(root.localStorage).filter(r => selected.has(r.code));
+        if (rows.length < 2) { say('비교할 후보를 2~3곳 고르세요.'); return; }
+        const D = root.RenewDocgen;
+        D.saveBytes('리뉴맵_후보비교.xlsx', D.xlsxBytes(compareSheets(rows), new Date()), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        say(`고른 ${rows.length}곳의 비교 XLSX를 받았습니다.`);
+      } catch (err) { say('내보내지 못했습니다. ' + err.message); }
+    });
     render();
   }
-  return { KEY, STAGES, load, save, update, csv, comparisonHTML, init };
+  return { KEY, STAGES, load, save, update, csv, comparisonHTML, compareSheets, init };
 });
