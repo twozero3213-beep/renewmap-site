@@ -88,6 +88,19 @@
 .task-state {
   font-weight: 700;
 }
+.task-handover {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  scroll-margin-top: 80px;
+}
+#handoverStatus {
+  white-space: pre-line;
+}
+#handoverAttention {
+  padding-left: 24px;
+  overflow-wrap: anywhere;
+}
 .task-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

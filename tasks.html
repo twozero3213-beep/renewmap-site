@@ -14,7 +14,7 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="pretendard.css" />
     <link rel="stylesheet" href="styles.css?v=20261114-m1" />
-    <link rel="stylesheet" href="tasks.css?v=20261114-followup" />
+    <link rel="stylesheet" href="tasks.css?v=20261117-handover" />
     <script src="frame-guard.js"></script>
     <script src="task-cloud-callback.js?v=20261115-auth"></script>
     <!-- R1(2026-11-13): 다른 화면과 같은 머리 메뉴·아래 탭(site.js). 인증·검토 화면에서는 외부 방문 분석을 실행하지 않는다 -->
@@ -25,7 +25,7 @@
     <script src="task-store.js?v=20261112-taskreview" defer></script>
     <script src="field/store.js" defer></script>
     <script src="docgen.js?v=20261114-e2" defer></script>
-    <script src="tasks-files.js?v=20261114-followup" defer></script>
+    <script src="tasks-files.js?v=20261117-handover" defer></script>
     <script src="task-cloud-config.js?v=20261114-server" defer></script>
     <script src="task-cloud.js?v=20261115-auth" defer></script>
     <script src="task-cloud-ui.js?v=20261115-auth" defer></script>
@@ -38,7 +38,7 @@
     <script src="revisit-photos.js?v=20261113-revisit" defer></script>
     <script src="revisit-report-ui.js?v=20261113-revisit" defer></script>
     <script src="task-followup-ui.js?v=20261114-followup" defer></script>
-    <script src="tasks-app.js?v=20261116-entry" defer></script>
+    <script src="tasks-app.js?v=20261117-handover" defer></script>
   <link rel="stylesheet" href="rm6.css?v=20261114-d9">
 </head>
   <body>
@@ -301,6 +301,17 @@
       </section>
       <section data-panel="2" hidden aria-labelledby="deliveryTitle">
         <h2 id="deliveryTitle">납품 파일과 최종 검토</h2>
+        <section id="handoverSummary" class="task-handover" aria-labelledby="handoverHeading">
+          <h3 id="handoverHeading" tabindex="-1">다음 담당자에게 넘길 요약</h3>
+          <p class="task-help">이미 기록한 근거와 검토 결과에서 남은 일을 정리합니다.<br>같은 요약과 파일 목차가 납품 ZIP에도 들어갑니다.</p>
+          <button id="handoverTask" type="button">이력·파일 검사 후 요약 보기</button>
+          <p id="handoverStatus" role="status">저장한 과업을 선택하면 인수인계 요약을 확인할 수 있습니다.</p>
+          <div id="handoverPreview" hidden>
+            <ul id="handoverAttention"></ul>
+            <button id="downloadHandover" type="button" hidden>인수인계 요약 받기(TXT)</button>
+            <p class="task-help">현재 이 기기에서 선택한 과업판의 요약입니다.<br>요약 파일은 복원용 백업이 아닙니다. 공유 전에 작성자·의견에 개인정보가 있는지 확인해 주세요.</p>
+          </div>
+        </section>
         <p>
           지도에서 <b>과업에 연결</b>을 누르면 생성 파일·고정 입력·기준일 비교를
           함께 가져옵니다.<br /><a

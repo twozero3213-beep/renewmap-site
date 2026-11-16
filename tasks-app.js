@@ -70,7 +70,7 @@
     busy = true;
     const controls = [
       ...document.querySelectorAll(
-        "form button,form input,form select,form textarea,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#restoreTask,#restoreFile,#taskWork button,#taskWork input,#taskWork select,#taskWork textarea",
+        "form button,form input,form select,form textarea,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#handoverTask,#downloadHandover,#restoreTask,#restoreFile,#taskWork button,#taskWork input,#taskWork select,#taskWork textarea",
       ),
     ];
     controls.forEach((b) => {
@@ -193,6 +193,12 @@
     $("checkFile").value = "";
   }
   function render() {
+    $("handoverStatus").textContent = current
+      ? `선택한 v${current.revision}의 이력과 연결 파일을 검사한 뒤 요약을 확인하세요.`
+      : "저장한 과업을 선택하면 인수인계 요약을 확인할 수 있습니다.";
+    $("handoverAttention").replaceChildren();
+    $("handoverPreview").hidden = true;
+    $("downloadHandover").hidden = true;
     $("taskState").textContent = current
       ? `${current.spec.title} · v${current.revision} · ${labels[current.state]} · 검증 ${current.attempts}/3회`
       : "새 과업을 설정하세요.";
@@ -399,10 +405,37 @@
   }
   async function backup() {
     if (!current) throw new Error("보관할 과업을 선택해 주세요.");
+    const base = current, versions = history.slice();
     const entries = (await F.docs()).filter(
-      (d) => d.kind === "task-file" && d.task_id === current.id,
+      (d) => d.kind === "task-file" && d.task_id === base.id,
     );
-    return B.make(history, entries);
+    const saved = await B.make(versions, entries);
+    if (current?.hash !== base.hash)
+      throw new Error("검사 중 선택한 과업판이 바뀌었습니다. 다시 확인해 주세요.");
+    return saved;
+  }
+  async function handover() {
+    $("handoverPreview").hidden = true;
+    $("downloadHandover").hidden = true;
+    $("handoverAttention").replaceChildren();
+    $("handoverStatus").textContent = "이력과 연결 파일을 검사하고 있습니다.";
+    try {
+      const saved = await backup();
+      const guide = await B.handover(saved.manifest, D.localDate());
+      if (current?.hash !== saved.manifest.head_hash)
+        throw new Error("요약 준비 중 선택한 과업판이 바뀌었습니다. 다시 확인해 주세요.");
+      showHandover(guide);
+      return { saved, guide };
+    } catch (error) {
+      $("handoverStatus").textContent = "요약을 만들지 못했습니다. 안내된 파일이나 이력을 확인해 주세요.";
+      throw error;
+    }
+  }
+  function showHandover(guide) {
+    $("handoverStatus").textContent = guide.summary;
+    $("handoverAttention").replaceChildren(...guide.attention.map(li));
+    $("handoverPreview").hidden = false;
+    $("downloadHandover").hidden = false;
   }
   $("planForm").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -556,7 +589,7 @@
     action(async () => {
       const b = await backup();
       D.saveBytes(
-        `renewmap-task-${current.id}-v${current.revision}.json`,
+        `renewmap-task-${b.manifest.id}-v${b.manifest.revision}.json`,
         JSON.stringify(b),
         "application/json",
       );
@@ -565,10 +598,24 @@
       );
     }),
   );
+  $("handoverTask").addEventListener("click", () =>
+    action(async () => {
+      await handover();
+      say("선택한 과업판의 인수인계 요약을 확인했습니다. 과업 이력은 바뀌지 않았습니다.");
+    }),
+  );
+  $("downloadHandover").addEventListener("click", () =>
+    action(async () => {
+      const { saved, guide } = await handover();
+      D.saveBytes(`renewmap-handover-${saved.manifest.id}-v${saved.manifest.revision}.txt`, guide.text, "text/plain;charset=utf-8");
+      say("인수인계 요약을 받았습니다. 복원용 JSON 백업도 별도로 보관해 주세요.");
+    }),
+  );
   $("zipTask").addEventListener("click", () =>
     action(async () => {
-      const b = await backup(),
+      const { saved: b, guide } = await handover(),
         entries = [
+          { name: "인수인계.txt", data: guide.text },
           { name: "manifest.json", data: JSON.stringify(b.manifest, null, 2) },
           ...b.files.map((f) => ({
             name: `files/${f.sha256}`,
@@ -576,11 +623,11 @@
           })),
         ];
       D.saveBytes(
-        `renewmap-delivery-${current.id}-v${current.revision}.zip`,
+        `renewmap-delivery-${b.manifest.id}-v${b.manifest.revision}.zip`,
         D.zipStore(entries, D.localDate()),
         "application/zip",
       );
-      say("파일 지문·검토 이력이 담긴 납품 묶음을 받았습니다.");
+      say("인수인계 요약·파일 목차·검토 이력이 담긴 납품 묶음을 받았습니다.");
     }),
   );
   $("restoreTask").addEventListener("click", () =>
@@ -625,6 +672,10 @@
       step(panels[entry]);
       if (entry === "survey") $("surveyChanges").open = true;
       if (entry === "revisit") $("revisitReport").open = true;
+      if (entry === "delivery" && location.hash === "#handoverSummary") {
+        $("handoverHeading").focus({ preventScroll: true });
+        $("handoverSummary").scrollIntoView({ block: "start" });
+      }
       if (!current)
         say("저장한 과업을 선택하거나, 1 과업 설정에서 새 과업을 저장한 뒤 이어서 기록하세요.");
     }

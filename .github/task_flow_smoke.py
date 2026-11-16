@@ -49,6 +49,14 @@ def main():
                 expect(page.locator('#taskMsg')).to_contain_text(re.compile(r'과업.*저장'))
                 assert page.evaluate('async()=> (await TaskStore.list()).length') == 0
             result['checks'].append('direct_workflow_links_open_without_creating_records')
+            page.goto(base + 'tasks.html?step=delivery#handoverSummary', wait_until='networkidle')
+            expect(page.locator('#newTask')).to_be_enabled()
+            expect(page.locator('#handoverSummary')).to_be_visible()
+            assert page.evaluate('async()=> (await TaskStore.list()).length') == 0
+            page.locator('#handoverTask').click()
+            expect(page.locator('#handoverStatus')).to_contain_text('요약을 만들지 못했습니다')
+            expect(page.locator('#handoverPreview')).to_be_hidden()
+            result['checks'].append('handover_entry_does_not_create_or_approve_task')
             page.goto(base + 'tasks.html?step=__proto__', wait_until='networkidle')
             expect(page.locator('[data-panel="0"]')).to_be_visible()
             result['checks'].append('unknown_workflow_keeps_plan_screen')
@@ -146,10 +154,15 @@ def main():
             page.locator('#decisionForm button').click()
             page.wait_for_function('() => document.querySelector("#taskState").textContent.includes("최종 승인 기록됨")')
             result['checks'].append('decision_bound_to_files')
+            page.locator('#handoverTask').click()
+            expect(page.locator('#handoverPreview')).to_be_visible()
             page.locator('#deliveryFiles').set_input_files({'name': 'delivery.txt', 'mimeType': 'text/plain', 'buffer': b'synthetic delivery only'})
             page.locator('#fileForm button').click()
             page.wait_for_function('() => document.querySelector("#taskState").textContent.includes("A 대조 완료")')
             assert '요구 자료 대조 전' not in page.locator('#artifactList').inner_text()
+            expect(page.locator('#handoverPreview')).to_be_hidden()
+            expect(page.locator('#downloadHandover')).to_be_hidden()
+            result['checks'].append('new_revision_clears_previous_handover')
             page.locator('#decisionForm button').click()
             page.wait_for_function('() => document.querySelector("#taskState").textContent.includes("최종 승인 기록됨")')
             result['checks'].append('file_reattach_invalidates_decision_without_false_blocker')
@@ -158,6 +171,16 @@ def main():
             backup = args.output / 'synthetic-backup.json'
             downloaded.value.save_as(backup)
             data = json.loads(backup.read_text(encoding='utf-8'))
+            page.locator('#handoverTask').click()
+            expect(page.locator('#handoverPreview')).to_be_visible()
+            with page.expect_download() as downloaded:
+                page.locator('#downloadHandover').click()
+            guide_file = args.output / 'synthetic-handover.txt'
+            downloaded.value.save_as(guide_file)
+            guide = guide_file.read_text(encoding='utf-8')
+            assert data['manifest']['head_hash'] in guide
+            assert data['manifest']['history'][-1]['spec']['title'] in guide
+            assert all('files/' + f['sha256'] in guide for f in data['files'])
             with page.expect_download() as downloaded:
                 page.locator('#zipTask').click()
             delivery = args.output / 'synthetic-delivery.zip'
@@ -165,10 +188,13 @@ def main():
             with zipfile.ZipFile(delivery) as z:
                 manifest = json.loads(z.read('manifest.json'))
                 assert manifest['head_hash'] == data['manifest']['head_hash']
+                assert z.read('인수인계.txt') == guide_file.read_bytes()
                 for name in z.namelist():
                     if name.startswith('files/'):
                         assert hashlib.sha256(z.read(name)).hexdigest() == name.split('/')[1]
             result['checks'].append('backup_zip_actual_bytes')
+            assert page.evaluate('async()=> (await TaskStore.history(document.querySelector("#taskPick").value)).at(-1).hash') == manifest['head_hash']
+            result['checks'].append('handover_matches_zip_and_preserves_history')
             for width, zoom in [(1280, 1), (390, 1), (320, 1), (640, 2)]:
                 page.set_viewport_size({'width': width, 'height': 900})
                 page.evaluate('(z) => document.documentElement.style.zoom=String(z)', zoom)
@@ -177,6 +203,24 @@ def main():
                     assert page.evaluate('() => document.documentElement.scrollWidth<=innerWidth+1')
                 page.screenshot(path=str(args.output / f'tasks-{width}-{zoom}.png'))
             result['checks'].append('layout_320_390_1280_zoom200')
+            downloads = []
+            page.on('download', lambda d: downloads.append(d.suggested_filename))
+            page.evaluate('''async()=>{
+              const id=document.querySelector('#taskPick').value;
+              const file=(await FieldStore.docs()).find(x=>x.kind==='task-file' && x.task_id===id);
+              if(!file)throw Error('시험 파일 없음');
+              await FieldStore.deleteDoc(file.id);
+            }''')
+            page.locator('#downloadHandover').click()
+            expect(page.locator('#handoverStatus')).to_contain_text('요약을 만들지 못했습니다')
+            expect(page.locator('#handoverPreview')).to_be_hidden()
+            expect(page.locator('#zipTask')).to_be_enabled()
+            page.locator('#zipTask').click()
+            expect(page.locator('#taskMsg')).to_contain_text('연결된 파일이 없습니다')
+            expect(page.locator('#zipTask')).to_be_enabled()
+            assert not downloads, downloads
+            assert page.evaluate('async()=> (await TaskStore.history(document.querySelector("#taskPick").value)).at(-1).hash') == manifest['head_hash']
+            result['checks'].append('missing_file_blocks_txt_zip_and_stale_preview')
             restored = browser.new_context(accept_downloads=True, service_workers='block')
             q = restored.new_page()
             q.on('pageerror', lambda e: result['errors'].append(str(e)))
