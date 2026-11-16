@@ -7,7 +7,7 @@
 <script src="../frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>오래된 창고·공장 목록 | 리뉴맵</title>
-<meta name="description" content="부산 법정동을 고르면 건축물대장에서 주용도가 창고·공장인 건물을 지번 순으로 보이고, 30년 이상과 사용승인일로 못 정함을 따로 셉니다. 비어 있는지는 대장에 없어 현장 확인으로 넘깁니다. 추천이나 순위가 아닙니다.">
+<meta name="description" content="부산·양산·거제 법정동을 고르면 건축물대장에서 주용도가 창고·공장인 건물을 지번 순으로 보이고, 30년 이상과 사용승인일로 못 정함을 따로 셉니다. 비어 있는지는 대장에 없어 현장 확인으로 넘깁니다. 추천이나 순위가 아닙니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/field/idle.html">
 <meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/field/idle.html">
 <meta property="og:type" content="website">
@@ -37,7 +37,7 @@
   <p class="warn rm-note check">추천이나 순위가 아닌 현황 목록입니다.<br>건축물대장에는 비어 있는지가 적혀 있지 않습니다.<br>쓰임은 현장 확인으로만 정합니다.</p>
 
   <form id="f" class="card" novalidate>
-    <label for="gu">구·군(부산)</label>
+    <label for="gu">시·구·군(부산·양산·거제)</label>
     <select id="gu"><option value="26200" selected>영도구</option></select>
     <label for="dong">법정동</label>
     <select id="dong"><option value="2620012000" selected>청학동</option></select>
@@ -68,7 +68,7 @@
         <tbody id="vacantRows"></tbody>
       </table>
     </div>
-    <p class="hint">구가 빈집 실태조사·정비계획으로 올린 값을 고치지 않고 옮겼습니다.<br>행정동 단위라 위 법정동 목록과 경계가 다를 수 있습니다.</p>
+    <p class="hint" id="vacantNote">구가 빈집 실태조사·정비계획으로 올린 값을 고치지 않고 옮겼습니다.<br>행정동 단위라 위 법정동 목록과 경계가 다를 수 있습니다.</p>
   </section>
   <p id="vacantNone" class="hint" hidden></p>
   <p class="hint" id="src">출처는 목록 위에 자료 파일 그대로 적습니다.<br>신청 구역 계산은 <a href="redev.html">구역 계산</a>에서 합니다.<br>행정동 단위로 쇠퇴 요건이 모자라면 <a href="oa.html">집계구(통계청 최소 통계 구역)로 다시 보기</a>.</p>

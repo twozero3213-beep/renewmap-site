@@ -35,7 +35,7 @@
 <link rel="stylesheet" href="hero.css?v=20261113-d2">
 <!-- 2026-11-12: 동 이름표 스타일 추가에 맞춰 버전을 붙인다(옛 map.css 캐시가 이름표를 잘못 그리지 않게) -->
 <!-- 2026-11-13: 동 요약 신청요건 한 줄(.sr-req)·시작 묶음 단추(.map-bundles) 스타일로 버전을 올림 -->
-<link rel="stylesheet" href="map.css?v=20261114-e2">
+<link rel="stylesheet" href="map.css?v=20261116-c2">
 <link rel="stylesheet" href="programs.css?v=20261114-d3">
 <link rel="stylesheet" href="overlay.css?v=20261113-d2">
 <link rel="stylesheet" href="v4.css?v=20261114-d3"><!-- 2026-11-12: 768~1099px 지도 정리 규칙을 더해 캐시 버전을 붙임 -->
@@ -55,7 +55,7 @@
 <!-- 2026-11-13: 신청요건 한 줄(reqLineHTML)·도넛 접기·시작 묶음(BUNDLES)으로 버전을 올림 -->
 <!-- 2026-11-13: 최저기준 묶음에 보건소·어린이집 거리 칩을 더해 버전을 올림 -->
 <script src="decline-req.js?v=20261113-v93" defer></script>
-<script src="map.js?v=20261114-e2" defer></script>
+<script src="map.js?v=20261116-gn" defer></script>
 <script src="explore-layout.js?v=20261113" defer></script>
 <script src="workspace.js?v=20261114-e2" defer></script>
 <script src="report.js?v=20261114-e2" defer></script>
@@ -102,6 +102,9 @@
             <datalist id="heroPlaces"></datalist>
             <p class="hero-search-note" data-search-note></p>
             <p class="hero-search-msg" data-search-msg aria-live="polite"></p>
+            <!-- 2026-11-16 우지예: 양산·거제 바로가기. 처음엔 form 밖에 두었더니 넓은 화면에서 검색 칸만 왼쪽 패널로 옮겨지고(explore-layout.js)
+                 이 줄은 지도 위로 튀어나왔다(사용자 화면). 검색 칸 안에 넣어 함께 옮겨지게 하고, 작은 글자 링크로 줄인다 -->
+            <p class="hero-regions"><span>자료가 더 많은 곳</span> <a href="#map/21">부산</a> · <a href="#map/38/38100">양산</a> · <a href="#map/38/38090">거제</a></p>
           </form>
           <div class="hero-map"><div id="mapApp"></div><!-- 2026-11-12: 지도 화면에 자료 기준연도가 잘 안 보여 "최신이 아니다"로 오해받았다(docs/research/data_refresh_2026-11-12.md 4절 3번). 연도는 하드코딩하지 않고 map.js가 index_core.json의 출처 메타에서 채운다(원칙 1). 못 읽으면 빈 채로 숨는다 --><p class="hero-basis" data-basis></p><noscript><p>지도는 자바스크립트가 켜져 있어야 보입니다.</p></noscript></div>
           <!-- R3 2: 동네 현황 카드는 지도·고른 동 카드 뒤(좁은 화면 DOM 순서). 넓은 화면은 explore-layout.js가 왼쪽 패널로 옮긴다 -->

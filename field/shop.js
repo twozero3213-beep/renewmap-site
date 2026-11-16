@@ -11,7 +11,7 @@
     for (const k of KINDS) {
       for (const r of (doc.kinds[k] || { rows: [] }).rows) {
         if (r.gu !== gu) continue;
-        const o = by.get(r.dong) || { dong: r.dong, bjd10: r.bjd10 || null };
+        const o = by.get(r.dong) || { dong: r.dong, bjd10: r.bjd10 || null, unit: r.unit || null };
         o[k] = r;
         by.set(r.dong, o);
       }
@@ -19,20 +19,26 @@
     return [...by.values()].sort((a, b) => a.dong.localeCompare(b.dong, "ko"));
   }
   const gus = (doc) => [...new Set(KINDS.flatMap((k) => (doc.kinds[k] || { rows: [] }).rows.map((r) => r.gu)))].sort((a, b) => a.localeCompare(b, "ko"));
+  // 2026-11-16 우지예: 양산·거제(shop_change_gyeongnam.json)는 부산 평균이 아니라 그 시 평균(city_avg[시])과 견준다.
+  // 부산 파일은 kinds[k].busan을 그대로 쓰므로 부산 화면·CSV는 한 글자도 바뀌지 않는다
+  const avgOf = (doc, k, gu) => (doc.kinds[k].city_avg ? doc.kinds[k].city_avg[gu] : doc.kinds[k].busan) || {};
+  const avgName = (doc, gu) => (doc.kinds.general.city_avg ? `${gu} 평균` : "부산 평균");
+  // 읍·면은 리를 묻지 않고 읍·면 전체를 한 줄로 센다(export_shop_change_gyeongnam.py 머리말)
+  const dongText = (o) => (o.unit === "읍면" ? `${o.dong}(읍·면 전체)` : o.dong);
   const cell = (v) => { const s = v === null || v === undefined ? "" : String(v); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
   function toCSV(doc, gu, rows) {
     const note = [`${gu} 음식점 상권 변화 유형(참고) · 인허가 기준일 ${doc.ref_date} · ${doc.source} · ${doc.license} · ${doc.method} · 판정·추천 아님`];
-    const head = ["법정동", "법정동코드"];
+    const head = [doc.kinds.general.city_avg ? "법정동·읍면" : "법정동", "법정동코드"];
     for (const k of KINDS) { const n = doc.kinds[k].name; head.push(`${n} 유형`, `${n} 운영 업소`, `${n} 운영 평균 영업개월`, `${n} 최근 ${doc.years}년 폐업 업소`, `${n} 폐업 평균 영업개월`); }
     const body = rows.map((o) => {
-      const out = [o.dong, o.bjd10 || ""];
+      const out = [dongText(o), o.bjd10 || ""];
       for (const k of KINDS) { const r = o[k]; out.push(r ? typeText(r, doc.min_n) : "자료 없음", r ? r.n_open : "", r ? r.open_avg_m : "", r ? r.n_closed : "", r ? r.closed_avg_m : ""); }
       return out;
     });
-    const avg = KINDS.map((k) => `${doc.kinds[k].name} 부산 평균: 운영 ${doc.kinds[k].busan.open_avg_m}개월, 폐업 ${doc.kinds[k].busan.closed_avg_m}개월`);
+    const avg = KINDS.map((k) => `${doc.kinds[k].name} ${avgName(doc, gu)}: 운영 ${avgOf(doc, k, gu).open_avg_m}개월, 폐업 ${avgOf(doc, k, gu).closed_avg_m}개월`);
     return "﻿" + [note, head, ...body, [avg.join(" / ")]].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
   }
-  const api = { KINDS, MEANING, typeText, rowsFor, gus, toCSV };
+  const api = { KINDS, MEANING, typeText, rowsFor, gus, toCSV, avgOf, avgName, dongText };
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.RenewShop = api;
 })(this);

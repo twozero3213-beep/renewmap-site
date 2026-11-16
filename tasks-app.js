@@ -619,6 +619,15 @@
   action(async () => {
     await select(new URL(location.href).searchParams.get("id") || "");
     await loadPackets();
+    const entry = new URL(location.href).searchParams.get("step");
+    const panels = { survey: 1, revisit: 1, delivery: 2, review: 3 };
+    if (Object.hasOwn(panels, entry)) {
+      step(panels[entry]);
+      if (entry === "survey") $("surveyChanges").open = true;
+      if (entry === "revisit") $("revisitReport").open = true;
+      if (!current)
+        say("저장한 과업을 선택하거나, 1 과업 설정에서 새 과업을 저장한 뒤 이어서 기록하세요.");
+    }
     if (window.RenewTaskCloudUI)
       cloud = window.RenewTaskCloudUI.mount({
         getBackup: backup,

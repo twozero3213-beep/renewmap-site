@@ -295,9 +295,20 @@
     if (!index || ind.src || ind.computed || ind.level === 'sg' || ind.pending) return '';
     const all = leavesOf(index), has = all.filter(sg => isNum(summaryOf(sg, ind.code).value));
     if (!has.length || has.length >= all.length / 2) return '';
-    const names = [...new Set(has.map(sg => String(sg.sido2)))].map(c => ((index.sido || []).find(x => String(x.code2) === c) || {}).name).filter(Boolean);
-    return names.length && names.length <= 2 ? `${names.map(n => n.replace(/(특별시|광역시|특별자치시|특별자치도|도)$/, '')).join('·')}만` : '일부 지역';
+    // 2026-11-16 우지예: 양산·거제만 값이 있는 지표가 '부산·경상남만'으로 나왔다('도'를 떼는 규칙 + 경남 전체처럼 읽힘).
+    // 시·도 안의 모든 시·군·구에 값이 있으면 시·도 줄임말(부산·경남), 일부만 있으면 그 시·군·구 이름(양산·거제)을 쓴다. 이름이 3개 넘으면 '일부 지역'
+    const names = [];
+    for (const c of [...new Set(has.map(sg => String(sg.sido2)))]) {
+      const mine = has.filter(sg => String(sg.sido2) === c);
+      if (mine.length >= leavesOf(index, c).length) names.push(sidoShort(((index.sido || []).find(x => String(x.code2) === c) || {}).name));
+      else names.push(...mine.map(sg => String(sg.name || '').replace(/(시|군|구)$/, '')));
+    }
+    const ok = names.filter(Boolean);
+    return ok.length && ok.length === names.length && ok.length <= 3 ? `${ok.join('·')}만` : '일부 지역';
   }
+  // 시·도 줄임말(경상남도→경남). 표에 없으면 끝의 특별시·광역시 등을 뗀다
+  const SIDO_SHORT = { 경상남도: '경남', 경상북도: '경북', 충청남도: '충남', 충청북도: '충북', 전라남도: '전남', 전북특별자치도: '전북', 전라북도: '전북', 강원특별자치도: '강원', 강원도: '강원', 제주특별자치도: '제주', 경기도: '경기' };
+  const sidoShort = n => (n ? SIDO_SHORT[n] || n.replace(/(특별시|광역시|특별자치시|특별자치도)$/, '') : '');
   function leavesOf(index, sido2) {
     const all = (index && index.sigungu) || [], parents = new Set(all.map(s => String(s.parent || '')));
     return all.filter(s => !parents.has(String(s.code5)) && (!sido2 || String(s.sido2) === String(sido2)));

@@ -3,6 +3,7 @@ import argparse
 import functools
 import hashlib
 import json
+import re
 import threading
 import zipfile
 from datetime import date
@@ -36,6 +37,21 @@ def main():
             ctx = browser.new_context(accept_downloads=True, service_workers='block', reduced_motion='reduce')
             page = ctx.new_page()
             page.on('pageerror', lambda e: result['errors'].append(str(e)))
+            for entry, panel, detail in [('survey', '1', 'surveyChanges'),
+                                         ('revisit', '1', 'revisitReport'),
+                                         ('delivery', '2', None), ('review', '3', None)]:
+                page.goto(base + 'tasks.html?step=' + entry, wait_until='networkidle')
+                expect(page.locator('#newTask')).to_be_enabled()
+                expect(page.locator('[data-panel="' + panel + '"]')).to_be_visible()
+                expect(page.locator('[data-step="' + panel + '"]')).to_have_attribute('aria-current', 'step')
+                if detail:
+                    expect(page.locator('#' + detail)).to_have_attribute('open', '')
+                expect(page.locator('#taskMsg')).to_contain_text(re.compile(r'과업.*저장'))
+                assert page.evaluate('async()=> (await TaskStore.list()).length') == 0
+            result['checks'].append('direct_workflow_links_open_without_creating_records')
+            page.goto(base + 'tasks.html?step=__proto__', wait_until='networkidle')
+            expect(page.locator('[data-panel="0"]')).to_be_visible()
+            result['checks'].append('unknown_workflow_keeps_plan_screen')
             page.goto(base + 'tasks.html', wait_until='networkidle')
             page.wait_for_function('() => !document.querySelector("#newTask").disabled')
             configured = page.evaluate('() => window.RenewTaskCloudConfig !== null')
@@ -176,6 +192,13 @@ def main():
             q.reload(wait_until='networkidle')
             q.wait_for_function('() => document.querySelector("#taskState").textContent.includes("최종 승인 기록됨")')
             result['checks'].append('restore_reload_identical_history')
+            task_id = q.locator('#taskPick').input_value()
+            q.goto(base + 'tasks.html?id=' + task_id + '&step=revisit', wait_until='networkidle')
+            expect(q.locator('#newTask')).to_be_enabled()
+            expect(q.locator('#taskPick')).to_have_value(task_id)
+            expect(q.locator('#revisitReport')).to_have_attribute('open', '')
+            assert q.evaluate('async(id)=>(await TaskStore.history(id)).at(-1).hash', task_id) == actual
+            result['checks'].append('direct_revisit_preserves_selected_task_and_history')
             map_context=browser.new_context(accept_downloads=True,service_workers='block')
             m=map_context.new_page()
             m.on('pageerror',lambda e:result['errors'].append(str(e)))

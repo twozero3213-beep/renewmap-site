@@ -192,6 +192,19 @@
     });
     return { rows, inside, near };
   }
+  // 2026-11-16 우지예: 양산·거제(data/soc_gyeongnam.json)도 센다. 두 파일은 같은 10종·같은 데이터셋 번호라 같은 줄로 합치고,
+  // 경남 점의 끝 칸(시군구 코드)은 뗀다. 받은 날이 파일마다 달라 출처에 둘 다 남긴다(soc_received). 경남 파일이 없으면 부산만 쓴다
+  function socMerge(busan, gn) {
+    if (!gn) return busan;
+    const sources = busan.sources.map((s) => ({ ...s })), at = new Map();
+    gn.sources.forEach((t, j) => {
+      let i = sources.findIndex((s) => s.kind === t.kind && s.id === t.id);
+      if (i < 0) { i = sources.length; sources.push({ ...t }); } else sources[i].gn_retrieved_at = t.retrieved_at;
+      at.set(j, i);
+    });
+    return { ...busan, sources, points: busan.points.concat(gn.points.map((p) => [at.get(p[0]), ...p.slice(1, 7)])) };
+  }
+  const socReceived = (s) => (s.gn_retrieved_at ? `부산 ${s.retrieved_at.slice(0, 10)} · 양산·거제 ${s.gn_retrieved_at.slice(0, 10)}` : s.retrieved_at.slice(0, 10));
   const socTypes = (r) => Object.entries(r.types).sort((a, b) => b[1] - a[1]).map(([t, n]) => `${t} ${n}`).join(" · ");
   const socDates = (r) => !r.dates ? "" : r.dates[0] === r.dates[1] ? r.dates[0] : `${r.dates[0]}~${r.dates[1]}`;
 
@@ -202,7 +215,7 @@
     for (const p of near) same.set(socKey(p), (same.get(socKey(p)) || 0) + 1);
     const out = [[`리뉴맵 지역 SOC 현황표 · ${today} · 그린 영역 안 시설 점 수 · 경계 도형은 담지 않음 · ${soc.license_type}`],
       ["시설", "영역 안 수", "영역과 반경 500m 수", "영역 안 종류별", "데이터기준일자", "자료", "받은 날"],
-      ...rows.map((r) => [r.kind, r.n, r.near, socTypes(r), socDates(r), `${r.source.name}(공공데이터포털 ${r.source.id}, ${r.source.license_type}) ${r.source.url}`, r.source.retrieved_at.slice(0, 10)]),
+      ...rows.map((r) => [r.kind, r.n, r.near, socTypes(r), socDates(r), `${r.source.name}(공공데이터포털 ${r.source.id}, ${r.source.license_type}) ${r.source.url}`, socReceived(r.source)]),
       [], ["시설", "이름", "종류", "위치 구분", "위도", "경도", "데이터기준일자", "관리번호", "같은 이름·위치 행"],
       ...near.map((p) => [soc.sources[p[0]].kind, p[1], p[2], inPolygon(p[3], p[4], pts) ? "영역 안" : "반경 500m", p[3], p[4], p[5], p[6] || "", same.get(socKey(p)) > 1 ? `${same.get(socKey(p))}행(관리번호로 구분)` : ""])];
     return "﻿" + out.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
@@ -651,5 +664,5 @@
   }
 
   // 2026-11-13: ringCrosses를 화면(redev-app.js)에서도 써서, 그리는 도중에 선이 겹치면 바로 알린다
-  return { ringCrosses, dongBounds, oneRange, answerText, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { ringCrosses, dongBounds, oneRange, answerText, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socMerge, socReceived, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

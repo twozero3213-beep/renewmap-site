@@ -10,6 +10,14 @@
 .map-crumbs li + li::before { content: "›"; margin: 0 6px; color: var(--dim); font-weight: 400; }
 .map-crumbs a { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
 .map-crumbs [aria-current] { color: var(--ink); }
+/* 2026-11-16 우지예: 링크(전국)는 rm6.css에서 44px 높이 가운데 정렬인데 현재 위치(부산광역시)는 글자만이라 위에 붙어 두 글자가 8px 어긋났다(화면 확인).
+   칸(li)을 같은 높이로 세워 가운데에 맞춘다. 누르는 영역(44px)은 그대로 */
+.map-crumbs ol { align-items: center; }
+.map-crumbs li { display: inline-flex; align-items: center; min-height: 44px; }
+/* 2026-11-16: 검색 아래 '자료가 더 있는 곳' 바로가기(부산·양산·거제) */
+.hero-regions { margin: 6px 0 0; font-size: 14px; line-height: 1.6; color: var(--dim); }
+.hero-regions span { margin-right: 6px; }
+.hero-regions a { color: var(--green); text-decoration: underline; text-underline-offset: 3px; padding: 4px 2px; }   /* 칩 대신 글자 링크: 검색 칸 아래 보조 정보로 보이게 */
 .map-step { font-size: 13px; font-weight: 700; color: var(--green); background: var(--soft); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
 
 /* 지표: 묶음 탭 + 아이콘 칩(모바일은 가로 스크롤) */

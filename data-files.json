@@ -65,7 +65,7 @@
   {
    "name": "index.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/index.json",
-   "bytes": 1625531,
+   "bytes": 1626139,
    "type": "object",
    "top_level_keys": [
     "generated_at",
@@ -87,7 +87,7 @@
   {
    "name": "index_core.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/index_core.json",
-   "bytes": 1066049,
+   "bytes": 1066657,
    "type": "object",
    "top_level_keys": [
     "generated_at",

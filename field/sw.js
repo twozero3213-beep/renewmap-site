@@ -1,7 +1,9 @@
 // 앱 셸을 캐시해 오프라인에서 연다. 기록은 IndexedDB에만 있고 네트워크로 나가지 않는다.
 // 캐시 이름 = 앱 셸 파일 내용의 지문. 파일이 바뀌면 이름도 바뀌어야 새 판이 설치된다(감사 이수진1: v20을 안 올린 채 7번 바뀜).
 // 셸 파일을 고치면 field/evidence.test.cjs가 실패하며 새 지문을 알려 준다
-const CACHE = "renewmap-field-697e199fe0";
+// 2026-11-15: f5d3cc214(tasks)가 셸 파일 ../site.js를 바꿨는데 지문을 안 올려 main 테스트가 실패했다 → 테스트가 알려 준 새 지문으로 맞춘다
+// 2026-11-15: 양산·거제 SOC 시설 이름의 새 글자로 글꼴(../fonts/pretendard-variable.woff2)을 다시 만들어 지문을 다시 맞춘다
+const CACHE = "renewmap-field-2c70ee4307";
 const SHELL = ["./", "index.html", "field.css", "record.js?v=20261112-taskreview", "store.js", "evidence.js", "app.js", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js", "../site-motion.js", "../frame-guard.js", "../docgen.js", "../cellpack.js", "../list-pages.js", "../list-pages.css", "../rm6.css",
   "../data/report_templates.json", "upload.js", "upload-config.js", "detect.js", "redev.html", "redev.js", "redev-app.js", "parcel-ref.js", "twin.html", "twin.css", "twin.js", "twin-app.js", "../favicon.svg", "../icon-192.png"];
 // 설치 때는 브라우저 HTTP 캐시(Pages max-age=600)를 건너뛴다. 안 그러면 갱신 직전에 열어 둔 옛 파일이 새 캐시에 들어간다

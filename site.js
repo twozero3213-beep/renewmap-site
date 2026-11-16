@@ -155,7 +155,10 @@
   const disabled = () => off() || navigator.globalPrivacyControl === true || navigator.doNotTrack === '1';
   if (disabled()) return;
   const load = (src, then) => { const s = document.createElement('script'); s.src = src; s.onload = then; document.head.appendChild(s); };
-  load(base + 'hackle-key.js', () => {
+  // 2026-11-16 우지예: SDK(약 97KB)가 첫 화면 자료·지도와 같은 때 내려받아져 첫 그리기를 늦췄다(공개 사이트 실측: 동네 찾기 첫 화면 요청 72개 중 셋째로 큼).
+  // 페이지 load 뒤 브라우저가 한가할 때(없으면 1.5초 뒤) 부른다. 분석 끄기·GPC·DNT 검사와 보내는 항목은 그대로다
+  const later = (fn) => { const go = () => (window.requestIdleCallback ? window.requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 1500)); document.readyState === 'complete' ? go() : window.addEventListener('load', go, { once: true }); };
+  later(() => load(base + 'hackle-key.js', () => {
     if (disabled()) return;
     const key = window.RENEWMAP_HACKLE_KEY;
     if (!key) return;
@@ -176,5 +179,5 @@
         else if (ev.target.id === 'f' && /redev\.html$/.test(location.pathname)) track('run_redev_check', {});
       }, true);
     });
-  });
+  }));
 })();

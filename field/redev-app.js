@@ -258,7 +258,9 @@
 
   // 지역 SOC 현황표(흡수 6번). 그린 꼭짓점과 시설 점은 이 기기에서만 맞대 본다. 브이월드는 부르지 않는다
   let soc = null;
-  const socReady = () => soc || (soc = getJson("soc_busan.json").catch((err) => { soc = null; throw err; }));
+  // 지역 파일이 빠지면 시설이 없는 것으로 계산하지 않고 표와 CSV 생성을 함께 멈춘다.
+  const socReady = () => soc || (soc = Promise.all([getJson("soc_busan.json"), getJson("soc_gyeongnam.json")])
+    .then(([b, g]) => R.socMerge(b, g)).catch((err) => { soc = null; throw err; }));
   $("socRun").addEventListener("click", async () => {
     if (!R.polygonWKT(drawPts)) return say("꼭짓점을 3개 이상 찍어 주세요.", true);
     let data;

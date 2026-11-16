@@ -69,9 +69,15 @@
     }
   }
 
-  getJson("oa_decline_busan.json").then((d) => {
+  // 2026-11-15 우지예: 경남 양산·거제(oa_decline_gyeongnam.json, PR #125)를 같은 목록에 붙인다. 두 파일은 같은 방법·규칙·연도로 만들어
+  // 출처·규칙 문구(data.source·rule·years)가 같다 → 동만 이어 붙이고 시도 묶음(optgroup)으로 나눈다. 경남 파일을 못 받으면 부산만 보인다
+  const GROUPS = [["oa_decline_busan.json", "부산광역시"], ["oa_decline_gyeongnam.json", "경상남도 양산시·거제시"]];
+  Promise.all(GROUPS.map(([f], i) => getJson(f).catch((err) => { if (i === 0) throw err; return null; }))).then(([d, ...rest]) => {
     data = d;
-    $("dong").replaceChildren(new Option("행정동을 고르세요", ""), ...data.dongs.map((x) => new Option(`${x.sigungu_name} ${x.name} (충족 ${x.met_count ?? "값 없음"}개)`.trim(), x.code)));
+    const sets = [[GROUPS[0][1], d.dongs], ...rest.map((x, i) => x && x.rule === d.rule && x.years.join() === d.years.join() ? [GROUPS[i + 1][1], x.dongs] : null).filter(Boolean)];
+    data = { ...d, dongs: sets.flatMap(([, ds]) => ds) };
+    const opt = (x) => new Option(`${x.sigungu_name} ${x.name} (충족 ${x.met_count ?? "값 없음"}개)`.trim(), x.code);
+    $("dong").replaceChildren(new Option("행정동을 고르세요", ""), ...sets.map(([label, ds]) => { const g = document.createElement("optgroup"); g.label = label; g.append(...ds.map(opt)); return g; }));
     $("dong").disabled = false;
     $("dong").addEventListener("change", () => show($("dong").value));
     // R8 4: 동 페이지가 ?dong=행정동코드로 이 쪽을 열면 그 동을 바로 보여 준다(없는 코드는 무시)

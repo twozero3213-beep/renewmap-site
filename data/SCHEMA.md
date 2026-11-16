@@ -122,8 +122,29 @@
 - 원천은 표준데이터 파일(이용허락범위 제한 없음) 도서관·도시공원·경로당·주차장. 원장 셀이 아니라 원자료 점 목록이다. 개수는 사용자가 그린 영역마다 기기에서 센다.
 - 만들기: `backend/scripts/export_soc_busan.py`. 확인 기록: `docs/research/soc_datasets_2026-11-07.md`.
 
+## 경남 양산시·거제시 자료 (2026-11-15) — `soc_gyeongnam.json`, `vacant_gyeongnam.json`, `oa_decline_gyeongnam.json`
+부산 밖으로 넓히는 임시안(사람 결정 9번 전, PR #122 건물 자료와 같은 두 시). 아직 이 세 파일을 읽는 화면은 없다(화면 연결은 Before/After 확인 후).
+- `soc_gyeongnam.json`: `soc_busan.json`과 같은 7종 표준데이터 파일을 주소(경상남도 양산시·거제시)로 거른 점. `points[]` 끝에 시군구 코드 한 칸을 더 둔다(`fields` 참고).
+  초등학교(사람이 받은 15099519 CSV, 85곳)·응급의료기관(15000563, 7곳)·보건소 4종(15001698, 31곳)도 넣어 부산과 같은 10종이다(2026-11-15). 못 받은 종류는 `missing[]`에 적는다. 만들기: `backend/scripts/export_soc_gyeongnam.py`.
+- `vacant_gyeongnam.json`: 시가 올린 빈집 목록(한 채 한 줄, 공공데이터포털 15144630 양산·15144458 거제)을 **법정동(읍면은 리)**·등급별로 센 값. 부산 파일(행정동 합계)과 단위가 달라 `unit`에 적는다.
+  등급 이름은 원자료 그대로(거제는 (신)·(구) 등급과 '행정조사'가 섞임). 지번 등 주소는 싣지 않는다. 만들기: `backend/scripts/export_vacant_gyeongnam.py`.
+- `oa_decline_gyeongnam.json` + `oa/{행정동 8자리}.json`: `oa_decline_busan.json`과 같은 방법·규칙(rules/decline.py 그대로)으로 거제(38090)·양산(38100) 행정동 중 쇠퇴 요건이 2개 미만인 동을 집계구로 본다.
+  만들기: `backend/scripts/export_oa_decline.py --region gyeongnam`.
+- `shop_change_gyeongnam.json`(2026-11-16): `shop_change_busan.json`과 같은 원천(인허가 일반·휴게음식점)·같은 계산. 다른 점 두 가지 — 각 동을 **그 시 평균**(`kinds.*.city_avg[시]`)과 견주고,
+  읍·면은 리를 나누지 않고 **읍·면 전체를 한 줄**(`unit`='읍면', `bjd10` 없음)로 센다. `rows[]` 칸은 부산 칸 + `unit`. 업소 이름·주소 없음. 화면: `field/shop.html` '경상남도' 묶음.
+  만들기: `backend/scripts/export_shop_change_gyeongnam.py`(포털이 쪽당 100줄만 줘 3만 줄에 몇 시간, 끊기면 다시 돌리면 이어 받음).
+- `national/living/38090.json`·`38100.json`의 `KINDER_NEAREST_M`·`CHILDCARE_NEAREST_M`(2026-11-16): 부산과 같은 '대표점→가장 가까운 시설' 직선거리.
+  원천은 경남교육청 학교일람표(3036368)·양산·거제 어린이집현황(3040402·15117963) 주소를 SGIS로 바꾼 좌표. 만들기: `backend/scripts/export_kinder_gyeongnam.py`.
+  `PERMIT_COUNT_3Y`는 `export_gov_national fetch|build --only 48330,48310`로 두 시만 먼저 채웠다(부산과 같은 창 2023-11-09~2026-11-09).
+  `sigungu_cells`의 `ELDERLY_1P_HH_SGG`(65세 이상 1인가구 수)·`ELDERLY_1P_HH_PCT`(독거노인가구 비율): 통계청 KOSIS DT_1YL12701 시군구 값(2025: 양산 16,905가구·10.9%, 거제 8,947가구·9.0%).
+  부산 `ELDERLY_LIVING_ALONE`(행정동 독거노인 인원)과 단위·원천이 달라 다른 코드다. 만들기: `backend/scripts/export_elderly_gyeongnam.py`.
+- 양산 `SENIOR_HALL_COUNT`·`soc_gyeongnam.json` '경로당(양산시 현황)'(2026-11-16): 전국 표준데이터에 양산시 줄이 없어 양산시 경로당 현황(15045251, 337곳) 주소를 SGIS로 바꿔 셌다.
+  띄어쓰기가 빠진 주소 4곳은 스크립트의 ADDR_FIX로 바로잡아 337곳 모두 좌표가 있다. 거제는 표준데이터 그대로. 만들기: `backend/scripts/export_senior_yangsan.py`.
+
 ## 건물 외곽선·대장 연결 (2026-11-07) — `bldg_outline/{bjd10}.json`, `bldg_outline/index.json`
 - 현재 건물 3D 보기(`field/city3d.html`)에서 누른 자리의 건물을 우리 건축물대장 행(`buildings/{bjd10}.json`)과 잇는 데 쓴다.
 - `items[]` = `[mgm_bld_pk|null, match, height_m|null, floors|null, pnu, [lng,lat,...] 바깥 고리]`. match 1 PNU+사용승인일+연면적, 2 PNU+연면적, 3 PNU+사용승인일(모두 대장 한 행과만 맞을 때), 0 못 이음.
 - 원천: 국토교통부 GIS건물통합정보 부산 SHP(기준일 2026-10-09, 공공누리 제1유형). 높이는 대장 신고값 그대로, 층수로 만들지 않는다. `index.json`은 법정동별 경계 상자.
 - 지금은 부산 건축물대장 파일이 있는 법정동 254곳 전부. 만들기: `backend/scripts/export_bldg_outline.py <bjd10...>`.
+- 경남 양산·거제(2026-11-15): 같은 방법으로 경남 SHP(AL_D010_48_20261109, 기준일 2026-11-09)에서 147동(양산 58·거제 89, 4833031000은 외곽선 없음)을 더했다.
+  파일마다 자기 출처 이름·기준일을 싣고, `index.json` 맨 위 출처 칸은 부산 그대로다. 대장 연결은 양산 42%·거제 35%(부산 57%)로 낮다(원인 [미확인]). 만들기: `export_bldg_outline.py --name AL_D010_48_20261109 <bjd10...>`.
