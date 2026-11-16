@@ -1,6 +1,16 @@
 {
   "source": "twozero3213-beep/renewmap",
-  "source_commit": "19ed2ce058c1a59034781537b6e915848a88da9c",
+  "source_commit": "925e6f1568c7421f7a7152060133a0490f458e0d",
   "ref": "main",
-  "synced_at": "2026-11-16T13:38:18.615719+00:00"
+  "synced_at": "2026-11-16T15:32:59.4059394Z",
+  "source_snapshot_complete": false,
+  "source_baseline_commit": "51fb2648d8b67c6ecccb287c9966103a0aef7998",
+  "applied_patch_commits": [
+    "a4ba5cdf2f791f8530ddb05d6498741fa4033e8c",
+    "925e6f1568c7421f7a7152060133a0490f458e0d"
+  ],
+  "deferred_source_commits": [
+    "522aaf785"
+  ],
+  "deferred_scope": "PR137 landing/data/buildings: publication terms and privacy verification pending; previous published data retained"
 }

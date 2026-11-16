@@ -70,12 +70,16 @@
   }
   // 주소의 #앵커가 접힌 칸 안(또는 그 칸을 담은 주제)을 가리키면 연다
   function openFor(doc, hash) {
-    const el = hash && hash.length > 1 ? doc.getElementById(decodeURIComponent(hash.slice(1))) : null;
+    let id;
+    try { id = hash && hash.length > 1 ? decodeURIComponent(hash.slice(1)) : ''; }
+    catch (e) { if (e instanceof URIError) return; throw e; }
+    const el = id ? doc.getElementById(id) : null;
     if (!el) return;
-    const det = el.closest('details.cp-fold') || el.querySelector(':scope > details.cp-fold');
+    for (let det = el.closest('details'); det; det = det.parentElement?.closest('details')) det.open = true;
+    const det = el.querySelector(':scope > details.cp-fold');
     if (det) det.open = true;
   }
-  if (typeof module !== 'undefined' && module.exports) module.exports = { init, titleOf, textOf };
+  if (typeof module !== 'undefined' && module.exports) module.exports = { init, titleOf, textOf, openFor };
   if (typeof document !== 'undefined') {
     document.querySelectorAll('[data-content-book]').forEach(root => init(root));
     openFor(document, location.hash);

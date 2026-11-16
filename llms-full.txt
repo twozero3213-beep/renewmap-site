@@ -189,8 +189,8 @@
 - designations.json (206,136바이트): 최상위 generated_at, snapshot_hash, source, counts, note, items; generated_at 2026-11-13T17:44:06+09:00; snapshot_hash 43ddb0b165c5984cc52f29bee6c6177de09c7a611088bc6726748872ee7bdc92
 - dong_index.json (225,320바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
 - dong_successors.json (2,821바이트): 최상위 note, dongs; generated_at 없음; snapshot_hash 없음
-- index.json (1,626,139바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
-- index_core.json (1,066,657바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
+- index.json (1,667,289바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
+- index_core.json (1,107,807바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
 - index_series.json (559,403바이트): 최상위 snapshot_hash, generated_at, sigungu, unmatched; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
 - migration.json (717,178바이트): 최상위 generated_at, snapshot_hash, source, sigungu, unmatched; generated_at 2026-11-07T12:06:41+09:00; snapshot_hash ec91c53f996aba9898815bec8fb3c23908f49285e9af2c0fc27f06685e58b8d6
 - pop_name_joined.json (35,143바이트): 최상위 array; generated_at 없음; snapshot_hash 없음

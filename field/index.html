@@ -213,7 +213,8 @@
       <p class="hint">현장에 나가기 전에 받아 두면 첫 사진에서 기다리지 않습니다.<br>홈 화면에 추가하거나 Wi-Fi에 있으면 저절로 받습니다.</p>
       <label for="importZip">다른 사람이 내보낸 ZIP 가져오기</label>
       <input id="importZip" type="file" accept=".zip,application/zip">
-      <p class="hint">리뉴맵 현장 기록에서 내보낸 ZIP만 받습니다.<br>가져온 기록에는 '가져옴'이 붙습니다.<br>이 기기에 있던 기록은 바뀌지 않습니다.</p>
+      <p id="importResult" class="hint" role="status" aria-live="polite"></p>
+      <p class="hint">리뉴맵 현장 기록에서 내보낸 ZIP만 받습니다.<br>가져온 기록에는 '가져옴'이 붙습니다. 사진의 얼굴·번호판 가림은 공유·제출 전에 다시 확인해 주세요.<br>누락·손상된 사진이나 EXIF·미확인 ICC 등 허용하지 않는 메타데이터가 있는 사진은 받지 않습니다. 확인된 표준 색상 프로파일 외에는 일부 정상 JPEG도 거절될 수 있습니다.<br>거절된 원본 ZIP은 보존하고, 현장 기록에서 사진을 다시 골라 가린 뒤 새 기록으로 저장해 주세요.<br>이 기기에 있던 기록과 원본 ZIP은 바뀌지 않습니다.</p>
     </details>
   </section>
   <div id="upBox" class="card" hidden>

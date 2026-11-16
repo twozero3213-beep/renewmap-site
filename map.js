@@ -404,13 +404,20 @@
     const status = ind.pending ? '수집 중' : v === null ? (extra && extra.held ? '보류' : '자료 없음') : ind.src === 'forecast' ? '추세 전망' : !ind.standard ? '공식 기준 없음' : isPending(ind.standard) ? '기준 승인 대기' : c ? '기준 넘음' : '기준 안';
     return { ind, value: v, crossed: c, status, ...extra };
   }
-  // 생활 지표의 시·군·구 대표값(living/summary.json, 그 안 동 값의 중앙값)을 index의 summary에 넣는다. 이미 있는 지표는 덮지 않는다
+  // 같은 동 중앙값은 결측까지 갱신한다. 직접 원장 집계·시군구 원값은 다른 공간 단위라 보존한다.
   function mergeLivingSummary(index, sum) {
     if (!index || !sum || !sum.items) return;
     for (const sg of index.sigungu) {
-      const row = sum.items[String(sg.code5)]; if (!row) continue;
+      const row = sum.items[String(sg.code5)] || {};
       sg.summary = sg.summary || {};
-      for (const [code, [value, year, n]] of Object.entries(row)) if (!sg.summary[code]) sg.summary[code] = { value, year, n, status: null, dongMedian: true };
+      for (const code of sum.indicators || Object.keys(row)) {
+        const old = sg.summary[code], owned = old && !old.cell_id && (old.agg === '읍·면·동 중앙값' || old.dongMedian === true);
+        if (old && !owned) continue;
+        const current = row[code];
+        if (!current && !owned) continue;
+        const [value, year, n] = current || [null, null, 0];
+        sg.summary[code] = { value: isNum(value) ? value : null, year, n, status: null, dongMedian: true };
+      }
     }
   }
   // 시군구 단위 추가 자료(청년 순이동·인구감소지역 지정). 코드는 index.json code5 또는 행안부 code5(mois_code5) 어느 쪽이든 맞춘다

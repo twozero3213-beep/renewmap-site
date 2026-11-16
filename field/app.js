@@ -12,6 +12,7 @@
   let place = null;           // E.makeLocator().locate 결과 + 공식 현황
   let pending = [];           // 이번 기록에 붙일 사진 [{id, blob, url}]
   let edit = null;            // 편집 중 사진 {canvas(원본), boxes:[], drag, start}
+  let photoLoadEpoch = 0;     // 늦게 열린 이전 사진이 새 사진·취소 결과를 덮지 않게 한다
   let draft = null;           // 손 보정 중 핀 {lat,lng}
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } return null; };
   // localStorage가 막힌 브라우저(사생활 모드 등)에서는 기억 기능만 끄고 기록 저장은 그대로 된다
@@ -369,62 +370,75 @@
   }
   async function startEdit(file) {
     if (!file) return;
+    closeEdit();
+    const epoch = photoLoadEpoch;
     try {
       const canvas = await loadImage(file);
-      edit = { canvas, boxes: [], drag: null, start: null };
+      if (epoch !== photoLoadEpoch) return;
+      edit = { canvas, boxes: [], drag: null, start: null, revision: 0, attaching: false };
       const cv = $("cv"); cv.width = canvas.width; cv.height = canvas.height;
       $("safe").checked = false; $("attach").disabled = true; $("editor").hidden = false;
       paint(false); say(""); badge();
-    } catch (e) { say("사진을 읽지 못했습니다.\n다른 사진으로 다시 해 보세요.", true); }
+    } catch (e) { if (epoch === photoLoadEpoch) say("사진을 읽지 못했습니다.\n다른 사진으로 다시 해 보세요.", true); }
   }
-  function closeEdit() { edit = null; $("editor").hidden = true; $("shot").value = ""; $("album").value = ""; badge(); }
+  function closeEdit() { photoLoadEpoch++; edit = null; $("editor").hidden = true; $("shot").value = ""; $("album").value = ""; badge(); }
+  function invalidatePhotoCheck() {
+    if (edit) edit.revision++;
+    $("safe").checked = false; $("attach").disabled = true;
+  }
 
   const cv = $("cv");
-  cv.addEventListener("pointerdown", (e) => { if (!edit) return; cv.setPointerCapture(e.pointerId); const p = point(e); edit.start = p; edit.drag = { x: p.x, y: p.y, w: 0, h: 0 }; });
+  cv.addEventListener("pointerdown", (e) => { if (!edit) return; invalidatePhotoCheck(); cv.setPointerCapture(e.pointerId); const p = point(e); edit.start = p; edit.drag = { x: p.x, y: p.y, w: 0, h: 0 }; });
   cv.addEventListener("pointermove", (e) => {
     if (!edit || !edit.drag) return;
+    invalidatePhotoCheck();
     const p = point(e), s = edit.start;
     edit.drag = { x: Math.min(s.x, p.x), y: Math.min(s.y, p.y), w: Math.abs(p.x - s.x), h: Math.abs(p.y - s.y) };
     paint(true);
   });
-  cv.addEventListener("pointerup", () => { if (!edit || !edit.drag) return; if (edit.drag.w > 12 && edit.drag.h > 12) edit.boxes.push(edit.drag); edit.drag = null; paint(false); });
-  cv.addEventListener("pointercancel", () => { if (edit) { edit.drag = null; paint(false); } });
+  cv.addEventListener("pointerup", () => { if (!edit || !edit.drag) return; invalidatePhotoCheck(); if (edit.drag.w > 12 && edit.drag.h > 12) edit.boxes.push(edit.drag); edit.drag = null; paint(false); });
+  cv.addEventListener("pointercancel", () => { if (edit) { invalidatePhotoCheck(); edit.drag = null; paint(false); } });
   $("auto").addEventListener("click", async () => {
     const cur = edit; if (!cur) return;
+    invalidatePhotoCheck();
     $("auto").disabled = true; say("얼굴·번호판을 찾는 중입니다.\n처음에는 도구를 받느라 시간이 걸립니다.");
     try {
       const r = await window.FieldDetect.findAll(cur.canvas);
       if (edit !== cur) return;                       // 그 사이 사진을 닫았거나 바꿨으면 버린다
+      invalidatePhotoCheck();
       cur.boxes.push(...r.faces, ...r.plates); paint(false);
       const none = !r.faces.length && !r.plates.length;
       say(`얼굴·번호판으로 보이는 곳 ${r.faces.length + r.plates.length}곳을 가렸습니다.\n놓친 곳은 손가락으로 문질러 가리세요.${r.errors.length ? "\n(" + r.errors.join(" / ") + ")" : ""}`, none && r.errors.length > 0);
     } catch (e) { if (edit === cur) say("자동 찾기를 쓰지 못했습니다.\n직접 가려 주세요.", true); }
     finally { $("auto").disabled = false; }
   });
-  $("undo").addEventListener("click", () => { if (edit) { edit.boxes.pop(); paint(false); } });
+  $("undo").addEventListener("click", () => { if (edit) { edit.boxes.pop(); invalidatePhotoCheck(); paint(false); } });
   $("cancel").addEventListener("click", () => { linkNext = null; closeEdit(); });
-  $("safe").addEventListener("change", () => { $("attach").disabled = !$("safe").checked; });
+  $("safe").addEventListener("change", () => { $("attach").disabled = !$("safe").checked || !edit || edit.attaching; });
   $("shot").addEventListener("change", (e) => startEdit(e.target.files[0]));
   $("album").addEventListener("change", (e) => startEdit(e.target.files[0]));
-  $("attach").addEventListener("click", () => {
-    if (!edit) return;
+  $("attach").addEventListener("click", async () => {
+    if (!edit || edit.attaching) return;
     if (!$("safe").checked) { say("사진을 붙이기 전에 '가릴 곳을 모두 확인했습니다'를 눌러 주세요.", true); return; }
     if (pending.length + (site ? site.photos.size : 0) >= R.MAX_PHOTOS) { say(`사진은 한 기록에 ${R.MAX_PHOTOS}장까지 붙일 수 있습니다.`, true); return; }
+    const cur = edit, revision = cur.revision, link = linkNext;
+    cur.attaching = true; $("attach").disabled = true;
     paint(false);
-    $("cv").toBlob(async (blob) => {   // 캔버스에서 새로 만든 JPEG라 원본의 위치·기기 정보(EXIF)가 없다
-      // 메모리가 모자라면 blob이 null로 온다. 편집 창은 그대로 두어 다시 누를 수 있게 한다
-      try {
+    try {
+        // 캔버스에서 새로 만든 JPEG라 원본 EXIF가 없다. 메모리 부족(null)과 동기 예외 모두 다시 시도할 수 있게 한다.
+        const blob = await new Promise((resolve) => $("cv").toBlob(resolve, "image/jpeg", 0.82));
         if (!blob) throw new Error("no blob");
         const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
         // FR-45: 가림을 마친 이 JPEG 바이트(저장·내보내기되는 그대로)의 SHA-256을 붙이는 순간 계산한다(2026-11-01).
         // 나중에 ZIP 가져오기·원장 확인 이력에서 사진이 바뀌지 않았는지 대조하는 근거가 된다
         const sha256 = R.sha256Hex(new Uint8Array(await blob.arrayBuffer()));
+        if (edit !== cur || cur.revision !== revision || !$("safe").checked) return;
         pending.push({ id, blob, url: URL.createObjectURL(blob), sha256 });
-        const link = linkNext; linkNext = null;
+        linkNext = null;
         closeEdit(); drawThumbs(); say("");
         if (link) { $(`ck-${link}`).checked = true; $(`ck-${link}`).dispatchEvent(new Event("change")); $(`ckp-${link}`).value = id; }
-      } catch (e) { say("사진을 붙이지 못했습니다.\n다시 눌러 보세요.", true); }
-    }, "image/jpeg", 0.82);
+    } catch (e) { if (edit === cur) say("사진을 붙이지 못했습니다.\n다시 눌러 보세요.", true); }
+    finally { cur.attaching = false; if (edit === cur) $("attach").disabled = !$("safe").checked; }
   });
   function drawThumbs() {
     const box = $("thumbs"); box.textContent = "";
@@ -560,7 +574,9 @@
       // 붙인 사진은 '가림 확인' 칸을 거쳐야 pending에 들어오므로 photoSafe는 그 확인을 뜻한다
       const dong = place && place.code ? { code: place.code, name: place.name, sgName: place.sgName, sido: place.sido, nearby: place.nearby.map((x) => x.name), boundary: place.boundary } : null;
       const rec = R.makeRecord({ pnu: $("pnu").value, jibun: $("jibun").value, target: picked("target"), item: $("item").value, observed: $("observed").value,
-        status: picked("status"), memo: $("memo").value, checker: $("checker").value, photos: pending.map((p) => p.id), photo_sha256: Object.fromEntries(pending.map((p) => [p.id, p.sha256])), photoSafe: true, checks: readChecks(), building: chosen,
+        status: picked("status"), memo: $("memo").value, checker: $("checker").value, photos: pending.map((p) => p.id),
+        photo_sha256: Object.fromEntries([...(site ? [...site.photos].map((id) => [id, site.from.photo_sha256?.[id]]) : []), ...pending.map((p) => [p.id, p.sha256])]),
+        photo_sha256_source: site?.from.photo_sha256_source === "가져올 때 계산" ? "가져올 때 계산" : "촬영 시", photoSafe: true, checks: readChecks(), building: chosen,
         facility: readSurvey("facility", "fac", facilityKeys), visit: readSurvey("visit", "visit", visitKeys),
         ...(pos ? { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy, corrected, gps } : {}), dong, indicators: dong ? place.rows : [], snapshot: dong ? place.snapshot : null,
         ...(site ? { site_id: site.id, visit_previous_id: site.from.id, site_radius_m: site.radius || null, prev_photos: [...site.photos],
@@ -751,21 +767,18 @@
   // ── 내보내기: records.json + photos/<id>.jpg 를 ZIP 하나로. 공유는 같은 ZIP을 기기의 공유 창으로 넘긴다
   async function buildZip() {
     const rows = await S.records(), entries = [{ name: "records.json", data: JSON.stringify(R.exportDoc(rows, new Date()), null, 2) }];
-    let changed = 0;
     const sent = new Set();
     for (const r of rows) for (const id of new Set([...(r.photos || []), ...(r.prev_photos || [])])) {
-      const b = await S.photo(id); if (!b) continue;
-      const data = new Uint8Array(await b.arrayBuffer());
-      // 기기에 저장된 사진이 촬영 때와 같은지 내보내기 전에 대조한다(FR-45). 달라도 내보내되 알린다(받는 쪽 가져오기가 그 기록을 거절한다)
-      if (r.photo_sha256 && r.photo_sha256[id] && R.sha256Hex(data) !== r.photo_sha256[id]) changed++;
+      const b = await S.photo(id), data = b ? new Uint8Array(await b.arrayBuffer()) : null;
+      // 빠진·바뀐 사진을 성공한 백업으로 표시하면 복원할 때 기록이 사라진다. 하나라도 실패하면 ZIP 전체를 중단한다.
+      R.checkPhoto(data, r.photo_sha256 && r.photo_sha256[id]);
       if (!sent.has(id)) { sent.add(id); entries.push({ name: `photos/${id}.jpg`, data }); }
     }
-    if (changed) toast(`사진 ${changed}장이 촬영 때와 다릅니다.\n기기 저장 공간을 확인해 주세요.`);
     const day = D.localDate();
     return { name: `renewmap-field-${day}.zip`, bytes: D.zipStore(entries, day) };
   }
   $("exp").addEventListener("click", async () => {
-    try { const z = await buildZip(); D.saveBytes(z.name, z.bytes, "application/zip"); markBackup(); } catch (e) { toast("ZIP을 만들지 못했습니다.\n잠시 뒤 다시 해 보세요."); }
+    try { const z = await buildZip(); D.saveBytes(z.name, z.bytes, "application/zip"); markBackup(); } catch (e) { toast(e.code === "FIELD_PHOTO" ? e.message : "ZIP을 만들지 못했습니다.\n잠시 뒤 다시 해 보세요."); }
   });
   $("backupNow").addEventListener("click", () => $("exp").click());
   $("share").addEventListener("click", async () => {
@@ -773,7 +786,7 @@
       const z = await buildZip(), file = new File([z.bytes], z.name, { type: "application/zip" });
       await navigator.share({ files: [file], title: "리뉴맵 현장 기록" });
       markBackup();   // 공유로 넘긴 ZIP도 백업으로 친다
-    } catch (e) { if (e.name !== "AbortError") toast("공유하지 못했습니다.\n모두 내보내기(ZIP)를 쓰세요."); }
+    } catch (e) { if (e.name !== "AbortError") toast(e.code === "FIELD_PHOTO" ? e.message : "공유하지 못했습니다.\n모두 내보내기(ZIP)를 쓰세요."); }
   });
   if (navigator.canShare && navigator.canShare({ files: [new File([""], "a.zip", { type: "application/zip" })] })) $("share").hidden = false;
 
@@ -800,13 +813,16 @@
   $("importZip").addEventListener("change", async (e) => {
     const f = e.target.files[0]; e.target.value = "";
     if (!f) return;
+    const importResult = $("importResult");
+    if (importResult) importResult.textContent = "ZIP과 사진을 확인하고 있습니다.";
     try {
       if (f.size > R.LIMITS.zip) throw new Error("파일이 너무 큽니다.\n100MB 이하만 가져올 수 있습니다.");
       const got = R.parseImport(new Uint8Array(await f.arrayBuffer()), new Date()), have = new Set((await S.records()).map((r) => r.id));
-      let added = 0, same = 0, failed = 0, conflicts = 0;
+      let added = 0, same = 0, failed = 0, conflicts = 0, photoRejected = got.photoRejected || 0;
+      const decoded = new Set();
       for (const rec of got.records) {
         if (have.has(rec.id)) { same++; continue; }
-        let photoChanged = false;
+        let photoChanged = false, photoUnreadable = false;
         try {
           let conflict = false;
           const checked = new Set();
@@ -816,6 +832,11 @@
             if (existing) checked.add(id);
           }
           if (conflict) { conflicts++; continue; }
+          for (const id of new Set([...rec.photos, ...rec.prev_photos])) if (!decoded.has(id)) {
+            // 구조·해시 검사만으로 실제 사진인지는 알 수 없다. 원본을 바꾸지 않고 브라우저로 읽을 수 있는지 확인한다.
+            try { await loadImage(new Blob([got.photos.get(id)], { type: "image/jpeg" })); decoded.add(id); }
+            catch (err) { photoUnreadable = true; throw err; }
+          }
           await S.tx(["records", "photos"], "readwrite", (rs, ps) => {
             for (const id of new Set([...rec.photos, ...rec.prev_photos])) {
               const q = ps.count(id);
@@ -827,11 +848,13 @@
             return rs.add(rec);
           });
           added++;
-        } catch (err) { if (photoChanged) conflicts++; else if (err.name === "ConstraintError") same++; else failed++; }
+        } catch (err) { if (photoChanged) conflicts++; else if (photoUnreadable) photoRejected++; else if (err.name === "ConstraintError") same++; else failed++; }
       }
-      toast(`${added}건을 가져왔습니다.${same ? `\n이미 있는 ${same}건은 건너뛰었습니다.` : ""}${conflicts ? `\n사진 ID 충돌로 ${conflicts}건은 가져오지 못했습니다. 기존 사진은 보존했습니다. ZIP을 확인한 뒤 다시 가져오세요.` : ""}${failed ? `\n저장에 실패한 ${failed}건은 가져오지 못했습니다. 저장 공간·기기 저장소를 확인한 뒤 ZIP을 다시 가져오세요.` : ""}${got.skipped ? `\n형식이 맞지 않는 ${got.skipped}건은 받지 않았습니다.` : ""}`);
+      const result = `${added}건을 가져왔습니다.${same ? `\n이미 있는 ${same}건은 건너뛰었습니다.` : ""}${conflicts ? `\n사진 ID 충돌로 ${conflicts}건은 가져오지 못했습니다. 기존 사진은 보존했습니다. ZIP을 확인한 뒤 다시 가져오세요.` : ""}${failed ? `\n저장에 실패한 ${failed}건은 가져오지 못했습니다. 저장 공간·기기 저장소를 확인한 뒤 ZIP을 다시 가져오세요.` : ""}${got.skipped ? `\n형식이 맞지 않는 ${got.skipped}건은 받지 않았습니다.` : ""}${photoRejected ? `\n사진 누락·손상·메타데이터 검사로 ${photoRejected}건은 받지 않았습니다. 원본 ZIP을 보존하고 사진을 다시 골라 가린 뒤 저장해 주세요.` : ""}`;
+      if (importResult) importResult.textContent = result;
+      toast(result);
       await render(); drawNear();
-    } catch (err) { toast(err.message); }
+    } catch (err) { if (importResult) importResult.textContent = err.message; toast(err.message); }
   });
 
   // 위치 권한이 이미 있으면 바로 받는다. 처음이면 사진 찍기·'현재 위치 받기'를 누를 때 한 번 묻는다

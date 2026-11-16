@@ -125,7 +125,10 @@
         const checked=await B.read(text),safe=JSON.parse(text);authenticated(epoch);
         const canonical_history=checked.manifest.history.map(r=>{const {hash,...body}=r;return T.canonical(body);});
         const canonical_artifacts=checked.manifest.history.map(r=>T.canonical(r.artifacts));
-        const result=await rpc('renewmap_sync_task',{backup:safe,canonical_history,canonical_artifacts},epoch);shared(checked.manifest.id);return result;
+        const result=await rpc('renewmap_sync_task',{backup:safe,canonical_history,canonical_artifacts},epoch),manifest=checked.manifest;
+        if(!result||typeof result!=='object'||Array.isArray(result)||result.id!==manifest.id||result.revision!==manifest.revision||result.head_hash!==manifest.head_hash||result.state!==manifest.state||!['owner','editor','reviewer'].includes(result.role))
+          fail('서버 보관 결과가 요청한 과업과 일치하지 않습니다. 서버 목록과 복원으로 저장 여부를 확인해 주세요.');
+        shared(manifest.id);return result;
       },
       assertCanChange:async(id,actions)=>{
         id=taskId(id);
@@ -158,7 +161,10 @@
       member:async(id,memberId,role)=>{
         const epoch=authenticated();id=taskId(id);
         if(typeof memberId!=='string'||!UUID.test(memberId)||role!==null&&!['editor','reviewer','viewer'].includes(role))fail('구성원 계정 ID와 역할을 확인해 주세요.');
-        return rpc('renewmap_task_member',{task_id:id,member_id:memberId,member_role:role},epoch);
+        const result=await rpc('renewmap_task_member',{task_id:id,member_id:memberId,member_role:role},epoch);
+        if(!result||typeof result!=='object'||Array.isArray(result)||result.task_id!==id||result.user_id!==memberId.toLowerCase()||result.role!==role)
+          fail('권한 변경 결과가 요청한 과업·계정·역할과 일치하지 않습니다. 같은 권한 변경을 다시 요청해 확인해 주세요.');
+        return result;
       },
     };
     return api;

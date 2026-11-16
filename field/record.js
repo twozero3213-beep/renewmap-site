@@ -169,15 +169,15 @@
     rejectPersonal(checker);
     // 사진은 기록과 따로 저장하고 기록에는 id만 둔다. 얼굴·차량번호·소유자 정보가 없거나 가렸다는 확인 없이는 붙이지 않는다
     const photos = Array.isArray(input.photos) ? input.photos.map(clean).filter(Boolean) : [];
-    // 사진별 SHA-256(FR-45). 이 기록에 붙인 사진 id만, 64자리 소문자 16진수만 남긴다. 촬영 시 값이 없으면(이전 기록) 칸을 비운다
+    // 사진별 SHA-256(FR-45). 현재·이전 사진으로 참조한 id만, 64자리 소문자 16진수만 남긴다. 이전에 남긴 값이 없으면 칸을 비운다.
     const shaIn = input.photo_sha256 && typeof input.photo_sha256 === "object" ? input.photo_sha256 : {};
-    const photoSha = Object.fromEntries(photos.filter((p) => SHA_RE.test(clean(shaIn[p]))).map((p) => [p, clean(shaIn[p])]));
     // 같은 자리 묶음(A4). site_id는 묶음 첫 기록의 id라 이전 기록을 고치지 않는다. 이전 기록 사진은 고른 것만 1쪽에 넣는다
     const site = clean(input.site_id);
     if (site && !ID_RE.test(site)) throw new Error("같은 자리 묶음 번호가 올바르지 않습니다.");
     const previous = clean(input.visit_previous_id);
     if (previous && (!site || !ID_RE.test(previous))) throw new Error("재방문 비교 기록 번호가 올바르지 않습니다.");
     const prevPhotos = site && Array.isArray(input.prev_photos) ? input.prev_photos.map(clean).filter((x) => ID_RE.test(x)) : [];
+    const photoSha = Object.fromEntries([...new Set([...photos, ...prevPhotos])].filter((p) => SHA_RE.test(clean(shaIn[p]))).map((p) => [p, clean(shaIn[p])]));
     if (photos.length + prevPhotos.length > MAX_PHOTOS) throw new Error(`사진은 한 기록에 ${MAX_PHOTOS}장까지 붙일 수 있습니다.`);
     if (photos.length && input.photoSafe !== true) throw new Error("사진을 붙이기 전에 '가릴 곳을 모두 확인했습니다'를 눌러 주세요.");
     // 현장 확인 항목: 대상 유형이 맞을 때 본 항목만 목록 순서로 남긴다. 사진은 이 기록에 붙인 사진만 가리킨다
@@ -236,7 +236,7 @@
     return {
       kind: "현장 확인 기록(원장 셀 아님 — 사람이 검토해 확인 이력으로 올린다)", app_version: "0.3.0",
       exported_at: now.toISOString(), count: records.length, goal: GOAL,
-      personal_data: "없음(소유자·거주자 항목 미수집). 사진은 EXIF를 지우고 가림 확인을 거친 것만 포함", records,
+      personal_data: "소유자·거주자 항목 미수집. 직접 붙인 사진은 기기에서 가림 확인. 가져온 사진의 가림·촬영 사실은 자동 검증하지 않으므로 공유·제출 전 다시 확인", records,
     };
   }
 
@@ -280,7 +280,49 @@
     }
     return files;
   }
-  const isJpeg = (b) => b && b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+  // Chrome 155 캔버스에서 확인한 고정 sRGB·Display P3 ICC 세그먼트(마커·길이·ICC_PROFILE 식별자·1/1 청크 번호 포함).
+  // 사용자 문자가 들어갈 수 있는 임의 ICC는 허용하지 않는다. 표준 색상 이름과 Google Inc. 2016 저작권만 담겼다.
+  const CANVAS_ICC = new Set(["f47e7d60d3b19f2dd03dd94389d6a19b9b6b06b0524aa2304e7e481e935fddb1", "b1bb5929e6315bac561412ac6ad3bb0826717636d77af81c327d98e6edfd8e51"]);
+  // 해시는 가림이나 EXIF 제거의 증거가 아니다. 바이트를 바꾸지 않고 메타데이터·필수 구조만 검사하며, 가져오기 화면에서 실제 디코딩도 확인한다.
+  function checkPhoto(b, expectedHash) {
+    const fail = (message) => Object.assign(new Error(message), { code: "FIELD_PHOTO" });
+    const bad = () => fail("사진이 없거나 JPEG가 손상됐습니다. 원본 ZIP을 보존하고 사진을 확인해 주세요.");
+    const metadata = () => fail("사진에 허용하지 않는 메타데이터가 있습니다. 원본 ZIP을 보존하고 현장 기록에서 사진을 다시 골라 가린 뒤 저장해 주세요.");
+    if (!(b instanceof Uint8Array) || b.length < 4 || b.length > LIMITS.photo || b[0] !== 0xff || b[1] !== 0xd8) throw bad();
+    let p = 2, frame = false, scan = false, entropy = false, profile = false;
+    while (p < b.length) {
+      if (entropy) {
+        while (p < b.length && b[p] !== 0xff) p++;
+        if (p === b.length) throw bad();
+      } else if (b[p] !== 0xff) throw bad();
+      while (p < b.length && b[p] === 0xff) p++;
+      if (p === b.length) throw bad();
+      const marker = b[p++];
+      if (entropy && (marker === 0 || marker >= 0xd0 && marker <= 0xd7)) continue;
+      entropy = false;
+      if (marker === 0xd9) {
+        if (!frame || !scan || p !== b.length) throw bad();
+        if (expectedHash && sha256Hex(b) !== expectedHash) throw fail("사진 해시가 기록과 다릅니다. 백업을 중단했습니다. 원본 사진·ZIP을 보존하고 확인해 주세요.");
+        return;
+      }
+      if (marker === 0 || marker === 0xd8 || marker >= 0xd0 && marker <= 0xd7 || p + 2 > b.length) throw bad();
+      const length = b[p] * 256 + b[p + 1], start = p + 2, end = p + length;
+      if (length < 2 || end > b.length) throw bad();
+      if (marker >= 0xe0 && marker <= 0xef || marker === 0xfe) {
+        // 축소 이미지 없는 JFIF와 위의 고정 색상 프로파일 한 개만 허용한다. EXIF·XMP·IPTC·주석은 받지 않는다.
+        if (marker === 0xe2 && !profile && CANVAS_ICC.has(sha256Hex(b.subarray(p - 2, end)))) profile = true;
+        else if (marker !== 0xe0 || length !== 16 || ![74, 70, 73, 70, 0].every((v, i) => b[start + i] === v) || b[end - 2] || b[end - 1]) throw metadata();
+      } else if ([0xc0, 0xc1, 0xc2].includes(marker)) {
+        if (frame || length < 11 || length !== 8 + b[start + 5] * 3 || !b[start + 5] || !(b[start + 1] || b[start + 2]) || !(b[start + 3] || b[start + 4])) throw bad();
+        frame = true;
+      } else if (marker === 0xda) {
+        if (!frame || length < 8 || length !== 6 + b[start] * 2 || !b[start]) throw bad();
+        scan = true; entropy = true;
+      } else if (![0xc4, 0xdb, 0xdd].includes(marker)) throw bad();
+      p = end;
+    }
+    throw bad();
+  }
   // 기록마다 makeRecord로 다시 검사한다(개인정보 꼴·형식이 틀리면 그 기록만 건너뛴다). 가져온 기록에는 '가져옴' 표시를 붙인다
   function parseImport(bytes, now) {
     const files = readZip(bytes), j = files.get("records.json");
@@ -289,13 +331,13 @@
     try { doc = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(j)); } catch (e) { throw new Error(NOT_OURS); }
     if (!doc || !/^현장 확인 기록/.test(String(doc.kind)) || !Array.isArray(doc.records)) throw new Error(NOT_OURS);
     const records = [], photos = new Map();
-    let skipped = 0;
+    let skipped = 0, photoRejected = 0;
     for (const r of doc.records) {
       try {
         if (!r || !ID_RE.test(String(r.id)) || !isDay(String(r.recorded_at))) throw new Error("형식");
-        const own = Array.isArray(r.photos) ? r.photos.map(String) : [];
+        const own = Array.isArray(r.photos) ? r.photos.map(String) : [], previous = Array.isArray(r.prev_photos) ? r.prev_photos.map(String) : [];
         const got = (id) => files.get(`photos/${id}.jpg`);
-        if (!own.every((id) => isJpeg(got(id)))) throw new Error("사진 없음");
+        for (const id of new Set([...own, ...previous])) checkPhoto(got(id));
         // 사진 무결성(FR-45, 2026-11-01): 기록에 촬영 시 해시가 있으면 ZIP 안 사진을 다시 해시해 대조하고, 다르면 그 기록을 받지 않는다
         // (사진이 바뀌었거나 다른 사진으로 바꿔치기됨). 해시가 없는 이전 기록은 받되 '가져올 때 계산'으로 표시한다
         const shaIn = r.photo_sha256 && typeof r.photo_sha256 === "object" ? r.photo_sha256 : {}, sha = {};
@@ -304,19 +346,22 @@
           if (rec0 && rec0 !== h) throw new Error("사진 해시 다름");
           sha[id] = h;
         }
-        const shaSource = own.length && own.every((id) => SHA_RE.test(String(shaIn[id] || ""))) && r.photo_sha256_source !== "가져올 때 계산" ? "촬영 시" : "가져올 때 계산";
+        // 이전 사진의 기존 해시도 대조한다. 없던 해시는 지금 만들어 촬영 당시 값처럼 저장하지 않는다.
+        for (const id of previous) if (shaIn[id]) { checkPhoto(got(id), String(shaIn[id])); sha[id] = String(shaIn[id]); }
+        const referenced = [...new Set([...own, ...previous])];
+        const shaSource = referenced.length && referenced.every((id) => SHA_RE.test(String(shaIn[id] || ""))) && r.photo_sha256_source !== "가져올 때 계산" ? "촬영 시" : "가져올 때 계산";
         const g = r.gps_original || {};
         const rec = makeRecord({ pnu: r.pnu, jibun: r.jibun, target: r.target, item: r.item, observed: r.observed, status: r.status, memo: r.memo,
           photos: own, photo_sha256: sha, photo_sha256_source: shaSource, photoSafe: true, lat: r.lat, lng: r.lng, accuracy: r.accuracy_m, corrected: r.corrected === true, gps: { lat: g.lat, lng: g.lng, accuracy: g.accuracy_m },
           dong: r.dong, indicators: r.indicators, site_id: r.site_id, site_prev: r.site_prev, site_radius_m: r.site_radius_m,
-          prev_photos: Array.isArray(r.prev_photos) ? r.prev_photos.filter((id) => isJpeg(got(id))) : [], snapshot: r.data_snapshot, checks: r.checks, building: r.building, checker: r.checker,
+          prev_photos: previous, snapshot: r.data_snapshot, checks: r.checks, building: r.building, checker: r.checker,
           facility: r.facility, visit: r.visit, visit_previous_id: r.visit_previous_id }, new Date(r.recorded_at), String(r.id));
         rec.imported = true; rec.imported_at = now.toISOString();
         for (const id of [...rec.photos, ...rec.prev_photos]) photos.set(id, got(id));
         records.push(rec);
-      } catch (e) { skipped++; }
+      } catch (e) { skipped++; if (e.code === "FIELD_PHOTO") photoRejected++; }
     }
-    return { records, photos, skipped };
+    return { records, photos, skipped, photoRejected };
   }
 
   // ── GIS 내보내기(N2): 기록 한 건 = 점 하나. 좌표는 WGS84(EPSG:4326) 그대로 둔다. 사진은 빼고 ZIP 안 파일 이름만 적는다
@@ -485,6 +530,6 @@
     return { text: lines.length ? lines.join("\n") + "\n" : "", n: lines.length };
   }
 
-  const api = { buildingId, FACILITY_FIELDS, FACILITY_STATES, VISIT_FIELDS, WEATHER, sha256Hex, blockSnapshot, blockEdits, hwpxText, exemplarOf, dice, OUTCOME_STATUS, REASON_CODES, NEEDS_REASON, docKind, setOutcome, outcomeRecord, outcomesJSONL, stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
+  const api = { checkPhoto, buildingId, FACILITY_FIELDS, FACILITY_STATES, VISIT_FIELDS, WEATHER, sha256Hex, blockSnapshot, blockEdits, hwpxText, exemplarOf, dice, OUTCOME_STATUS, REASON_CODES, NEEDS_REASON, docKind, setOutcome, outcomeRecord, outcomesJSONL, stats, statsHTML, CHECKS, CHECK_TARGETS, CHECK_MEMO_MAX, GIS_FIELDS, toGeoJSON, toCSV, STATUSES, STATUS_LABEL, ITEMS, TARGETS, NO_PARCEL, GOAL, MAX_PHOTOS, PII_PATTERNS, personalKinds, makeRecord, exportDoc, PHRASES_MAX, rememberPhrase, LIMITS, readZip, parseImport };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.FieldRecord = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

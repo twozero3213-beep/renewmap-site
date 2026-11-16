@@ -13,7 +13,7 @@
       const btn = document.createElement("button");
       btn.type = "button"; btn.textContent = label; if (cls) btn.className = cls; if (aria) btn.setAttribute("aria-label", aria);
       // 지우기·원본 받기는 기기 저장소를 쓰므로 실패하면 조용히 멈추지 않고 알린다
-      btn.addEventListener("click", async () => { try { await fn(); } catch (e) { say("처리하지 못했습니다.\n새로고침한 뒤 다시 해 보세요."); } }); a.append(btn);
+      btn.addEventListener("click", async () => { try { await fn(); } catch (e) { say(e.code === "FIELD_PHOTO" ? e.message : "처리하지 못했습니다.\n새로고침한 뒤 다시 해 보세요."); } }); a.append(btn);
     }
     li.append(b, m, a);
     return li;
@@ -79,7 +79,11 @@
   // 기록 한 건의 원본 ZIP(records.json + 가린 사진)
   async function recordZip(rec) {
     const entries = [{ name: "records.json", data: JSON.stringify(R.exportDoc([rec], new Date()), null, 2) }];
-    for (const id of new Set([...(rec.photos || []), ...(rec.prev_photos || [])])) { const b = await S.photo(id); if (b) entries.push({ name: `photos/${id}.jpg`, data: new Uint8Array(await b.arrayBuffer()) }); }
+    for (const id of new Set([...(rec.photos || []), ...(rec.prev_photos || [])])) {
+      const b = await S.photo(id), data = b ? new Uint8Array(await b.arrayBuffer()) : null;
+      R.checkPhoto(data, rec.photo_sha256 && rec.photo_sha256[id]);
+      entries.push({ name: `photos/${id}.jpg`, data });
+    }
     return D.zipStore(entries, D.localDate());
   }
   async function render() {
