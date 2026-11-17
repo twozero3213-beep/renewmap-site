@@ -3,6 +3,8 @@ import argparse
 import base64
 import functools
 import json
+import zipfile
+import xml.etree.ElementTree as ET
 import re
 import tempfile
 import threading
@@ -30,6 +32,66 @@ def geometry(page):
             [...row.cells].some((c,i)=>Math.abs(c.getBoundingClientRect().x-heads[i].getBoundingClientRect().x)>1));
         }).map(t=>t.className)};
     }""")
+
+
+def verify_reusable_evidence(page, output, width):
+    original = page.evaluate('() => localStorage.getItem(RenewCandidates.KEY)')
+    try:
+        page.evaluate(r"""() => {
+          const C=RenewCandidates;
+          localStorage.setItem(C.KEY,'[]');
+          for(const [code,name,value] of [['21090700','합성 후보 A',0],['21090701','합성 후보 B',-2.81]]) {
+            const basis={source_url:'https://example.org/a',area_code:code,formula_id:'synthetic',formula_text:'합성 산식',rule_version:'synthetic',spatial_unit:'행정동'};
+            const item={c:'POP',l:'합성 비율',u:'%',v:value,t:value+'%',s:'미확인',d:'2025-12-31',basis};
+            C.save(localStorage,{code,name,saved_at:'2026-11-17T01:00:00.000Z',items:[item,{c:'MISSING',l:'미수집 항목',u:'%',v:null,t:'확인 필요',s:'추가확인',d:null,basis:null}]},'#map/21/21090/'+code,
+              [{ind:{code:'POP'},cell:{source_name:'합성기관',retrieved_at:'2026-11-17T00:00:00Z',license_type:'합성',cell_id:'synthetic-'+code,snapshot_id:'synthetic'}}]);
+          }
+          C.update(localStorage,'21090700','hold','=1+2\n원천 자료 추가확인');
+        }""")
+        page.reload(wait_until='networkidle')
+        page.wait_for_selector('[data-candidate-select]')
+        for checkbox in page.locator('[data-candidate-select]').all():
+            checkbox.check()
+        before = page.evaluate('() => localStorage.getItem(RenewCandidates.KEY)')
+        with page.expect_download() as downloaded:
+            page.locator('[data-candidate-xlsx]').click()
+        target = output / f'synthetic-candidate-comparison-{width}.xlsx'
+        downloaded.value.save_as(target)
+        ns = {'s':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+        with zipfile.ZipFile(target) as archive:
+            assert archive.testzip() is None
+            book = ET.fromstring(archive.read('xl/workbook.xml'))
+            assert [x.attrib['name'] for x in book.findall('s:sheets/s:sheet',ns)] == ['비교','출처','검토 기록']
+            review = ET.fromstring(archive.read('xl/worksheets/sheet3.xml'))
+            records = [[''.join(c.itertext()) for c in row] for row in review.findall('s:sheetData/s:row',ns)]
+            a = next(r for r in records if r and r[0]=='21090700')
+            assert a == ['21090700','합성 후보 A','보류','=1+2\n원천 자료 추가확인','2026-11-17T01:00:00.000Z']
+            comparison = ET.fromstring(archive.read('xl/worksheets/sheet1.xml'))
+            values = [float(v.text) for v in comparison.findall('.//s:v',ns)]
+            assert 0 in values and -2.81 in values
+            assert '자료 없음' in ''.join(comparison.itertext())
+            for name in archive.namelist():
+                if re.fullmatch(r'xl/worksheets/sheet\d+\.xml',name):
+                    assert not ET.fromstring(archive.read(name)).findall('.//s:f',ns), '문자열 메모가 수식으로 실행됩니다.'
+        assert page.evaluate('() => localStorage.getItem(RenewCandidates.KEY)') == before
+        page.context.grant_permissions(['clipboard-read','clipboard-write'])
+        copied = page.evaluate(r"""async () => {
+          const D=RenewDocgen;
+          D.setTemplates(await (await fetch('data/report_templates.json')).json());
+          const base={source_name:'합성기관',reference_date:'2025-12-31',value:0,unit:'%',status:'미확인'};
+          const brief={dongName:'합성동',sgName:'합성구',region:'합성지역',year:2025,items:[
+            {code:'DECLINE_POP_TOTAL',cell:{...base,value:100,unit:'명',source_url:'https://example.org/a'}},
+            {code:'DECLINE_POP_DROP30Y_PCT',cell:{...base,source_url:'https://example.org/b'}}]};
+          const before=JSON.stringify(brief),fragment=D.buildFragments(brief,['MLIT-DECLINE'])[0],payload=D.fragmentPayload(fragment);
+          await D.copyToClipboard(payload);
+          return {text:await navigator.clipboard.readText(),html:payload.html,unchanged:JSON.stringify(brief)===before};
+        }""")
+        assert copied['unchanged'] and '[1][2]' in copied['text']
+        assert all(url in copied['text'] and url in copied['html'] for url in ['https://example.org/a','https://example.org/b'])
+        (output / f'synthetic-source-fragment-{width}.txt').write_text(copied['text'],encoding='utf-8')
+        page.locator('[data-candidates]').screenshot(path=str(output / f'candidate-review-{width}.png'))
+    finally:
+        page.evaluate('(value) => value===null?localStorage.removeItem(RenewCandidates.KEY):localStorage.setItem(RenewCandidates.KEY,value)', original)
 
 
 def main():
@@ -134,6 +196,9 @@ def main():
                             page.wait_for_function('() => [...document.querySelectorAll("#mapApp .leaflet-tile-pane img")].some(img => img.complete && img.naturalWidth>0)')
                             assert not page.locator('#mapApp .map-naver').count()
                         check(route, width)
+                        if route == 'box.html':
+                            verify_reusable_evidence(page,args.output,width)
+                            check(route,width,'reusable_evidence')
                         if route == 'index.html':
                             page.locator('main a[href="about.html#usesTitle"]').click()
                             page.wait_for_url(base+'about.html#usesTitle', wait_until='networkidle')

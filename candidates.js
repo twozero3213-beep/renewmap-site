@@ -93,7 +93,10 @@
       [], ['판정·순위가 아닙니다. 저장 당시 값이며 기준일·산식·공간 단위가 다를 수 있습니다.']];
     const src = [['후보 동', '항목', '출처', '출처 URL', '기준일', '이용조건', '셀 ID'],
       ...rows.flatMap(r => r.items.map(x => [r.name, x.l, x.evidence?.source_name || '', x.basis?.source_url || '', x.d || '', x.evidence?.license_type || '', x.evidence?.cell_id || '']))];
-    return [{ name: '비교', rows: cmp, widths: [28, ...rows.flatMap(() => [12, 8, 12]), 44] }, { name: '출처', rows: src, widths: [14, 28, 40, 50, 12, 18, 30] }];
+    const review = [['지역 코드', '후보 동', '검토 단계', '검토 메모', '저장 시각'],
+      ...rows.map(r => [r.code, r.name, STAGES.find(([key]) => key === r.stage)[1], r.note, r.saved_at]),
+      [], ['메모는 수정할 수 있는 사용자 기록이며 기관의 선정·승인 이력이 아닙니다.']];
+    return [{ name: '비교', rows: cmp, widths: [28, ...rows.flatMap(() => [12, 8, 12]), 44] }, { name: '출처', rows: src, widths: [14, 28, 40, 50, 12, 18, 30] }, { name: '검토 기록', rows: review, widths: [16, 20, 18, 60, 28] }];
   }
   function init(root) {
     const host = root.document.querySelector('[data-candidates]');

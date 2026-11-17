@@ -1553,7 +1553,7 @@
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261114-e2'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261117-reuse'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
@@ -2406,7 +2406,7 @@
       const rows = rowsFor(c.v, c.m, c.it), snapshot = snapshotOf(c.it, rows, new Date()), route = toHash(state.route);
       b.disabled = true;
       try {
-        if (!window.RenewCandidates) await import('./candidates.js?v=20261112-research');
+        if (!window.RenewCandidates) await import('./candidates.js?v=20261117-reuse');
         const saved = window.RenewCandidates.save(localStorage, snapshot, route, rows);
         msg.textContent = saved ? '보관함(아래 탭·바닥글)에서 단계·메모와 근거를 확인하세요.' : '이미 저장한 후보입니다. 기존 근거와 메모를 보존했습니다.';
       } catch (err) { msg.textContent = '저장하지 못했습니다. ' + err.message; }

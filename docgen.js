@@ -927,13 +927,13 @@
     constructor() { this.items = []; }
     ref(d, forecast) {
       if (!d) return '';
-      const name = displayName(d.source_name), key = JSON.stringify([name, d.reference_date, !!forecast]);
+      const name = displayName(d.source_name), key = JSON.stringify([name, d.source_url || '', d.reference_date, !!forecast]);
       let i = this.items.findIndex(x => x.key === key);
-      if (i < 0) { this.items.push({ key, name, date: d.reference_date, forecast: !!forecast }); i = this.items.length - 1; }
+      if (i < 0) { this.items.push({ key, name, url: d.source_url || '', date: d.reference_date, forecast: !!forecast }); i = this.items.length - 1; }
       return `[${i + 1}]`;
     }
     refs(ds) { const out = []; for (const d of ds) { const r = this.ref(d); if (r && !out.includes(r)) out.push(r); } return out.sort((a, b) => +a.slice(1, -1) - +b.slice(1, -1)).join(''); }
-    lines(foot) { return this.items.map((x, n) => `[${n + 1}] ${x.name}. ${x.forecast ? '전망 대상일' : '기준일'} ${govDate(x.date)}`).concat([foot]); }
+    lines(foot) { return this.items.map((x, n) => `[${n + 1}] ${x.name}. ${x.forecast ? '전망 대상일' : '기준일'} ${govDate(x.date)} · ${x.url || '출처 주소 추가확인'}`).concat([foot]); }
   }
   // 가장 먼 지평의 전망 셀 { mid, lo, hi }. 전망값이 없거나 숨김이면 null
   function forecastCells(byCode, base) {
