@@ -285,6 +285,18 @@
   const oneRange = (s) => String(s).replace(/(\d+(?:\.\d+)?)~(\d+(?:\.\d+)?)/g, (all, a, b) => (a === b ? a : all));
   // lo: 못 정한 건물을 노후 아님으로, hi: 노후로 볼 때. 기준이 둘 사이에 걸리면 현장 확인
   const status = (lo, hi, thr) => (lo >= thr ? MET : hi < thr ? NOT_MET : CHECK);
+  // 못 정한 건물을 몇 동 더 확인하면 그 줄이 정해지나(2026-11-18: 현장 확인을 어디서 멈춰도 되는지). 판정이 아니라 그 줄과 같은 비교식의 산술이다.
+  // atLeast(c): 해당으로 확정된 동수 c가 기준에 닿는가. 이미 정해진 줄은 null.
+  // toMet: 해당으로 더 확인되면 충족이 되는 동수, toNotMet: 비해당으로 확인되면 미충족이 되는 동수
+  function settle(known, unk, atLeast) {
+    if (atLeast(known) || !atLeast(known + unk)) return null;
+    let need = known + 1;
+    while (!atLeast(need)) need += 1;   // 못 정한 동수만큼만 돈다
+    return { unk, toMet: need - known, toNotMet: known + unk - need + 1 };
+  }
+  // yes·no: 조사까지 붙인 말("노후·불량으로", "노후·불량이 아닌 것으로")
+  const settleText = (s, yes, no) => (s ? `못 정한 ${n0(s.unk)}동 중 ${yes} ${n0(s.toMet)}동이 더 확인되면 충족, ${no} ${n0(s.toNotMet)}동이 확인되면 미충족으로 정해진다. 같은 기준의 계산이며 판정이 아니다.` : "");
+  const SETTLE_OLD = ["노후·불량으로", "노후·불량이 아닌 것으로"], SETTLE_URBAN = ["준공 20년 이상으로", "20년 미만으로"], SETTLE_LOW = ["저층 주거로", "저층 주거가 아닌 것으로"];
   const range = (lo, hi) => (fmt(lo) === fmt(hi) ? `${fmt(lo)}%` : `${fmt(lo)}~${fmt(hi)}%`);   // 반올림해 같으면 한 값(못 정한 동수는 값 옆에 따로 적는다)
 
   // 사용승인일 + n년이 되는 날. ageYears와 같이 기념일 당일부터 '지난' 것으로 보고, 2월 29일은 평년이면 3월 1일
@@ -332,7 +344,7 @@
       { label: "구역 면적", rule: "1만㎡ 이상", value: areaM2 === null ? "입력 안 함" : `${n0(Math.round(areaM2))}㎡(${areaDrawn ? "그린 구역에서 계산" : "입력값"})`,
         status: areaM2 === null ? CHECK : areaM2 >= 10000 ? MET : NOT_MET, basis: art("제5조②2") },
       { label: "노후·불량 건축물 수", rule: `전체의 ${thr}% 이상`, value: `${range(cLo, cHi)} (${n0(nOld)}/${n0(n)}동${nUnk ? `, 못 정한 ${n0(nUnk)}동` : ""})`,
-        status: status(cLo, cHi, thr), basis: `${art("제5조②2")}·제3조②` },
+        status: status(cLo, cHi, thr), basis: `${art("제5조②2")}·제3조②`, settle: settle(nOld, nUnk, (k) => (k / n) * 100 >= thr) },
       { label: "가목 노후·불량 연면적", rule: `전체의 ${thr}% 이상`, value: area ? range(fLo, fHi) : "연면적 자료 없음", status: ga, basis: art("제5조②2가") },
       { label: "나목 호수밀도", rule: "1ha당 50동 이상", value: parcel ? `참고 ${oneRange(parcel.density)}` : "대장 표제부로 셀 수 없음(공동주택 세대층 기준)", status: CHECK, basis: `${art("제5조②2나")}·제2조8호` },
       { label: "다목 도로", rule: "폭 4m 미만 30% 이상 또는 접도율 40% 이하", value: parcel ? `참고 접도율 ${oneRange(parcel.road)}` : "현장·도면 확인", status: CHECK, basis: art("제5조②2다"), field: "road" },   // field: 현장 앱 R.CHECKS id(접도 상태)
@@ -349,7 +361,7 @@
     const known = uUnk && n > uUnk ? (uOld / (n - uUnk)) * 100 : null;
     const noDate = rows.filter((r) => !aprSpan(r.b)), unkMasonry = noDate.filter((r) => MASONRY.test(r.b.structure || "")).length;
     const urban = { label: "도시재생 쇠퇴 진단 노후 요건", rule: `준공 ${URBAN.years}년 이상 건축물 수 ${URBAN.thr}% 이상`, value: range(uLo, uHi), known, unk: uUnk, noDate: noDate.length, unkMasonry,
-      status: status(uLo, uHi, URBAN.thr), basis: "도시재생법 시행령 제17조" };
+      status: status(uLo, uHi, URBAN.thr), basis: "도시재생법 시행령 제17조", settle: settle(uOld, uUnk, (k) => (k / n) * 100 >= URBAN.thr) };
     const one = (w) => [reachDate(rows, w, thr, ref, fromEarly), reachDate(rows, w, thr, ref, fromLate)];
     const reach = { count: one(() => 1), area: one((r) => Number(r.b.tot_area) || 0) };
     return { thr, district, n, nOld, nUnk, unk, area, aOld, aUnk, lines, perBuilding, ref, urban, reach, newVillage: newVillage(blds, urban) };
@@ -405,7 +417,7 @@
     const unkText = unk ? `, 확인 필요 ${["층수 없는 주택", "주택 겸용", "5층 이상 단독·다세대·연립", "4층 이하 아파트·기숙사 등"].filter((k) => why.has(k)).map((k) => `${k} ${n0(why.get(k))}동`).join("·")}` : "";
     const lo = (yes / n) * 100, hi = ((yes + unk) / n) * 100;
     const lowrise = { label: "저층 주거 비율", rule: LOWRISE.rule, value: `${range(lo, hi)} (${n0(yes)}/${n0(n)}동${unkText})`, mixed, unk, unkWhy: Object.fromEntries(why),
-      status: yes * 3 >= 2 * n ? MET : (yes + unk) * 3 < 2 * n ? NOT_MET : CHECK, unit: "신청 구역(이 목록)", define: "단독·다가구·연립·다세대 등(유형과 지상 4층 이하 기준이 갈리는 건물, 주택 겸용 근린생활시설 등은 확인 필요)", basis: NV_BASIS };
+      status: yes * 3 >= 2 * n ? MET : (yes + unk) * 3 < 2 * n ? NOT_MET : CHECK, settle: settle(yes, unk, (k) => k * 3 >= 2 * n), unit: "신청 구역(이 목록)", define: "단독·다가구·연립·다세대 등(유형과 지상 4층 이하 기준이 갈리는 건물, 주택 겸용 근린생활시설 등은 확인 필요)", basis: NV_BASIS };
     // ③(20년 경과)이 안 되면 나머지와 관계없이 불충족. ①②는 행정동 공식 쇠퇴진단 값이라 이 목록으로는 정하지 못한다
     const decline = { label: "쇠퇴요건 2개 이상(20년 경과 포함)", rule: "①인구 감소 ②사업체 감소 ③20년 이상 건축물 2분의 1 중 ③ 포함 2개 이상",
       value: urban.status === NOT_MET ? "③ 20년 경과 미충족" : `③ 20년 경과 ${urban.status}, ①·② 중 하나 이상은 공식 쇠퇴진단(행정동) 값으로 확인`,
@@ -419,6 +431,7 @@
   function newVillageHTML(nv) {
     const row = (x) => `<div><dt>${escH(x.label)} <span class="nv-st">${escH(x.shown || x.status)}</span></dt><dd><b>${escH(x.value)}</b> <span>기준 ${escH(x.rule)} · 적용 단위: ${escH(x.unit)}${x.define ? ` · 저층 주거 = ${escH(x.define)}` : ""}</span></dd></div>`;
     return `<h3 class="nv-h">노후주거지정비 신청요건</h3><dl class="rv-ref">${row(nv.area)}${row(nv.lowrise)}${row(nv.decline)}</dl>` +
+      (nv.lowrise.settle ? `<p class="rv-key rv-settle">${escH(`저층 주거 비율: ${settleText(nv.lowrise.settle, ...SETTLE_LOW)}`)}</p>` : "") +
       `<p class="rv-key">${escH(`${NV_BASIS}. 적용 단위는 가이드라인 원문과 대조 전이다. 종합 판정이 아니라 요건별 상태다.`)}</p>`;
   }
 
@@ -507,7 +520,8 @@
       `<div class="rv-stacks">${stackHTML("건물 수", res.nOld, res.nUnk, res.n, res.thr)}${stackHTML("연면적", res.aOld, res.aUnk, res.area, res.thr)}` +
       `<p class="rv-key"><i class="rv-old"></i>노후·불량 <i class="rv-unk"></i>못 정함 <i class="rv-no"></i>아님 <i class="rv-thr"></i>기준선</p></div></div>` +
       `<dl class="rv-ref">${refRows(res).map(([k, rule, v]) => `<div><dt>${escH(k)}</dt><dd><b>${escH(v)}</b> <span>기준 ${escH(rule)}</span></dd></div>`).join("")}</dl>` +
-      `<p class="rv-key">${escH(REACH_NOTE)}</p>` + (res.urban.unkMasonry ? `<p class="rv-key">${escH(masonryNote(res.urban))}</p>` : "") +
+      `<p class="rv-key">${escH(REACH_NOTE)}</p>` +
+      (res.urban.settle ? `<p class="rv-key rv-settle">${escH(`도시재생 노후 기준: ${settleText(res.urban.settle, ...SETTLE_URBAN)}`)}</p>` : "") + (res.urban.unkMasonry ? `<p class="rv-key">${escH(masonryNote(res.urban))}</p>` : "") +
       (res.newVillage ? newVillageHTML(res.newVillage) : "");
   }
   const masonryNote = (u) => `사용승인일 없는 ${n0(u.noDate)}동 중 목조·블록·벽돌·조적이 ${n0(u.unkMasonry)}동이다. ${MASONRY_PRIOR.basis} 기준 같은 구조의 날짜 있는 건물 ${n0(MASONRY_PRIOR.n)}동 중 ${MASONRY_PRIOR.pct}%가 20년 이상이다. 판정에는 쓰지 않고, 대장 열람·현장 확인을 이 건물부터 하라는 참고다.`;
@@ -672,5 +686,5 @@
   }
 
   // 2026-11-13: ringCrosses를 화면(redev-app.js)에서도 써서, 그리는 도중에 선이 겹치면 바로 알린다
-  return { assertBusan, REGION_ERROR, ringCrosses, dongBounds, oneRange, answerText, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socMerge, socReceived, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { settle, settleText, SETTLE_OLD, assertBusan, REGION_ERROR, ringCrosses, dongBounds, oneRange, answerText, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socMerge, socReceived, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

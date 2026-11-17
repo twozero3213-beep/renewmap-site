@@ -40,16 +40,16 @@
     <p>새 자료가 있습니다.<br>저장한 기록의 숫자는 바뀌지 않습니다.</p>
     <button type="button" class="ghost" id="newDataGet">새 자료 받기</button>
   </div>
-  <!-- 2026-11-17 우지예(지원센터 담당자 인터뷰): 현장에서는 휴대폰으로 사진을 찍고 메모한 뒤 사무실에 돌아와 다시 입력한다고 했다.
-       이 화면이 그 다시 입력을 줄여 준다는 점을 첫 줄에서 알린다. 내보내기 형식은 아래 단추(사진대지·CSV)에 실제로 있는 것만 적는다 -->
-  <p id="intro" class="note rm-note">사진을 찍으면 위치와 그 동의 공식 숫자가 함께 저장되어, 사무실에서 다시 옮겨 적지 않고 사진대지(한글)·CSV로 바로 받을 수 있습니다.<br>기록과 사진은 이 기기에만 저장됩니다.<br>내보내기 전에는 어디로도 보내지 않습니다.</p>
-  <p id="ready" class="hint" role="status">한 번 열어 두면 인터넷이 끊겨도 이 화면이 열립니다.</p>
-
+  <!-- 2026-11-18 현장 조사자 검토: 한 손으로 쓰는데 안내 두 단락이 사진 찍기를 화면 중간 아래로 밀었다 → 찍기 단추를 제목 바로 아래로 -->
   <div class="pick">
     <label class="big" for="shot">사진 찍기<input id="shot" type="file" accept="image/*" capture="environment"></label>
     <label class="ghost" for="album">앨범에서 고르기<input id="album" type="file" accept="image/*"></label>
   </div>
   <p class="hint">사람이 찍히지 않게 건물·시설 위주로 찍어 주세요.<br>사진은 휴대폰 사진첩에 남지 않습니다.</p>
+  <!-- 2026-11-17 우지예(지원센터 담당자 인터뷰): 현장에서는 휴대폰으로 사진을 찍고 메모한 뒤 사무실에 돌아와 다시 입력한다고 했다.
+       이 화면이 그 다시 입력을 줄여 준다는 점을 알린다. 내보내기 형식은 아래 단추(사진대지·CSV)에 실제로 있는 것만 적는다 -->
+  <p id="intro" class="note rm-note">사진을 찍으면 위치와 그 동의 공식 숫자가 함께 저장되어, 사무실에서 다시 옮겨 적지 않고 사진대지(한글)·CSV로 바로 받을 수 있습니다.<br>기록과 사진은 이 기기에만 저장됩니다.<br>내보내기 전에는 어디로도 보내지 않습니다.</p>
+  <p id="ready" class="hint" role="status">한 번 열어 두면 인터넷이 끊겨도 이 화면이 열립니다.</p>
 
   <div id="editor" class="card" hidden>
     <canvas id="cv" aria-label="사진 편집: 끌어서 가릴 곳을 지정"></canvas>
@@ -73,7 +73,7 @@
     </details>
     <p id="siteLine" class="site-line" hidden></p>
     <div class="row">
-      <button type="button" class="ghost" id="gps">현재 위치 받기</button>
+      <button type="button" id="gps">현재 위치 받기</button>
       <button type="button" class="ghost" id="fix" disabled>위치 고치기</button>
     </div>
     <div id="pinBox" class="pin" hidden>

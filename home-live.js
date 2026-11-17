@@ -109,6 +109,9 @@
       $('h6Prog').href = `explore.html?report=programs${hash}`;
       $('h6Note').textContent = `도시재생법 시행령 제17조 기준으로 셈한 참고 계산입니다${s.ref ? `(기준일 ${s.ref})` : ''}. 판정은 담당 기관이 원문과 대조해 정합니다.`;
       doc.querySelectorAll('.h6-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.dong === code8)));
+      // 카드 전체를 다시 읽히지 않고 새 요지 한 문장만 읽힌다(2026-11-18 접근성 검토: 카드 전체가 aria-live라 표·출처까지 다시 읽혔다)
+      const say = $('h6Say');
+      if (say) say.textContent = `${name}, 도시재생 쇠퇴 3요건 중 ${$('h6Met').textContent}`;
     } catch (e) {
       $('h6Met').textContent = '불러오지 못함';
       $('h6Note').textContent = '자료를 불러오지 못했습니다. 인터넷 연결을 확인하거나 동네 찾기에서 열어 보세요.';

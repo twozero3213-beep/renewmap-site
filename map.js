@@ -1894,6 +1894,19 @@
       if (u.search !== location.search) history.replaceState(null, '', u.pathname + u.search + u.hash);
     } catch (e) { /* 주소를 못 바꿔도 지도는 그대로 쓴다 */ }
   }
+  // 연도 막대: 재생 단추 + 연도 끌기. 시·군·구(재생 연도 목록)와 읍·면·동(연도 범위) 두 곳이 같은 모양을 쓴다
+  const yearHTML = (on, min, max, year) => `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${on}" aria-label="${on ? '재생 멈춤' : `${min}년부터 ${max}년까지 재생`}">${icon(on ? 'pause' : 'play')}</button><label>연도 <b>${esc(year ?? '')}</b><input type="range" data-year min="${min}" max="${max}" step="1" value="${year ?? max}"></label></div>`;
+  // '지도 저장·수질 겹쳐 보기' 접이. v7.14(9회차): 받기·수질·쓰는 법은 접어 두고 펼침 상태는 다시 그려도 지킨다(fold).
+  // 2026-11-13 우지예: 단추가 무엇을 하는지 설명이 없어 이해가 어려웠다 → 단추 위에 한 줄씩 설명. median: 시·군·구 색이 중앙값일 때 계산법도 적는다
+  function toolsHTML(median) {
+    const save = DG ? `<p class="map-tools-note">지금 보이는 지도를 그림 파일(PNG)이나 GIS 프로그램용 파일(GeoJSON)로 저장합니다.</p><p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><button type="button" class="btn ghost" data-map-geojson>지도 자료(GeoJSON)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '';
+    const water = `<p class="map-tools-note">강·바다 수질 측정 위치를 지도 위에 겹쳐 봅니다.</p><p class="map-png"><button type="button" class="btn ghost" data-water aria-pressed="${!!state.water}">수변 수질 측정지점 ${state.water ? '끄기' : '보기'}</button></p>` +
+      (state.water && state.waterData !== undefined ? waterNoteHTML(state.waterData) : '') + (state.water ? waterAutoHTML(state.waterAuto) : '');
+    const move = coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, 휠이나 + − 버튼으로 확대합니다.';
+    const hint = `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${move}<br>지도에서 구·군을 누르면 그 안의 읍·면·동이 보이고(시·도 → 구·군 → 읍·면·동), 동을 누르면 그 동의 요약이 열립니다.<br>지도가 불편하면 '읍·면·동 목록'에서 이름으로 고를 수 있습니다.</p></details>`;
+    return `<details class="map-tools" data-fold="tools"${fold.tools ? ' open' : ''}><summary>지도 저장·수질 겹쳐 보기</summary>${save}${water}${hint}</details>`;
+  }
+
   function render() {
     if (state.index === undefined) return;
     if (wantInd) { const code = wantedInd(wantInd, inds()); if (code) { state.ind = code; state.year = null; wantInd = null; } else if (state.living !== undefined) wantInd = null; }   // 생활 지표 도착 전에는 기다리고, 도착했는데 없으면 버린다
@@ -1910,8 +1923,8 @@
     document.title = here ? `${here} · ${BASE_TITLE}` : BASE_TITLE;
     const crumbs = `<nav class="map-crumbs" aria-label="현재 위치"><ol>${v.crumbs.map((c, i) => i === v.crumbs.length - 1 && !it ? `<li aria-current="page">${esc(c.label)}</li>` : `<li><a href="${esc(c.hash)}">${esc(c.label)}</a></li>`).join('')}${it ? `<li aria-current="page">${esc(it.name)}</li>` : ''}</ol><span class="map-step">${esc(v.step)} 단계</span></nav>`;
     const py = m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind) && !ind.noPlay ? playYears(state.index, ind.code) : null, sgOn = v.level === 'nation' && !reduced ? !!autoT : state.playing;
-    const yearCtl = py && py.years.length ? `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${sgOn}" aria-label="${sgOn ? '재생 멈춤' : `${py.years[0]}년부터 ${py.years[py.years.length - 1]}년까지 재생`}">${icon(sgOn ? 'pause' : 'play')}</button><label>연도 <b>${esc(m.year ?? '')}</b><input type="range" data-year min="${py.years[0]}" max="${py.years[py.years.length - 1]}" step="1" value="${m.year ?? py.years[py.years.length - 1]}"></label></div>`
-      : m.kind === 'emd' && m.years && (ind.series || ind.computed) ? `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${state.playing}" aria-label="${state.playing ? '재생 멈춤' : `${m.years.min}년부터 ${m.years.max}년까지 재생`}">${icon(state.playing ? 'pause' : 'play')}</button><label>연도 <b>${esc(m.year ?? '')}</b><input type="range" data-year min="${m.years.min}" max="${m.years.max}" step="1" value="${m.year ?? m.years.max}"></label></div>`
+    const yearCtl = py && py.years.length ? yearHTML(sgOn, py.years[0], py.years[py.years.length - 1], m.year)
+      : m.kind === 'emd' && m.years && (ind.series || ind.computed) ? yearHTML(state.playing, m.years.min, m.years.max, m.year)
       : m.kind === 'sg' && state.index.seriesPending && ind.series && !ind.noPlay && mode === 'now' ? '<div class="map-year" aria-busy="true"><span class="map-year-wait">연도 자료를 불러오는 중입니다.</span></div>' : '';
     const base = state.index.source && isNum(state.index.source.base_year) ? state.index.source.base_year : null;
     // 휴대폰 폭에서 네 칸이 한 줄에 들어가게 '(+1년)'은 뺐다. 기준연도는 지표 이름(○○년 대비)에 있다
@@ -1947,12 +1960,7 @@
     const dongList = `<details class="map-dong-list${narrow.matches ? ' map-more' : ''}" data-fold="list"${listOpen ? ' open' : ''}><summary>읍·면·동 목록</summary>${chips}</details>`;
     // R5 2: 자료가 오기 전(wait)에도 목록 자리를 비워 두지 않으면 도착 때 지도 아래 전부가 117px 밀린다(390 딥링크 CLS 0.16)
     dongBox.innerHTML = narrow.matches ? (m.kind === 'emd' ? dongList : m.kind === 'wait' ? '<div class="map-dongs-wait" aria-hidden="true"></div>' : '') : '';
-    // 2026-11-13 우지예: '지도 받기·더 보기' 안 단추들이 무엇을 하는지 설명이 없어 이해가 어려웠다 → 단추 위에 한 줄씩 설명, 제목도 하는 일 그대로
-    const water = `<p class="map-tools-note">강·바다 수질 측정 위치를 지도 위에 겹쳐 봅니다.</p><p class="map-png"><button type="button" class="btn ghost" data-water aria-pressed="${!!state.water}">수변 수질 측정지점 ${state.water ? '끄기' : '보기'}</button></p>` +
-      (state.water && state.waterData !== undefined ? waterNoteHTML(state.waterData) : '') + (state.water ? waterAutoHTML(state.waterAuto) : '');
-    // v7.14(9회차): 받기·수질·쓰는 법과 동 이름 목록은 접어 둔다(왼쪽 패널이 일곱 겹이라는 지적). 펼침 상태는 다시 그려도 지킨다(fold)
-    bottom.innerHTML = (narrow.matches ? '' : legend) + `<details class="map-tools" data-fold="tools"${fold.tools ? ' open' : ''}><summary>지도 저장·수질 겹쳐 보기</summary>` + (DG ? `<p class="map-tools-note">지금 보이는 지도를 그림 파일(PNG)이나 GIS 프로그램용 파일(GeoJSON)로 저장합니다.</p><p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><button type="button" class="btn ghost" data-map-geojson>지도 자료(GeoJSON)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + water + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, 휠이나 + − 버튼으로 확대합니다.'}<br>지도에서 구·군을 누르면 그 안의 읍·면·동이 보이고(시·도 → 구·군 → 읍·면·동), 동을 누르면 그 동의 요약이 열립니다.<br>지도가 불편하면 '읍·면·동 목록'에서 이름으로 고를 수 있습니다.</p></details>` +
-      `</details>` +
+    bottom.innerHTML = (narrow.matches ? '' : legend) + toolsHTML(median) +
       `<div class="map-selects">${sidoSel}${sgSel}${guSel}</div>${narrow.matches ? '' : dongList}<p class="map-live" aria-live="polite">${esc(liveText(v, it, ind, mode))}</p>`;
     legendLine.innerHTML = narrow.matches ? (summaryNotice ? `<span role="status">${esc(summaryNotice)}</span>` : legendLineHTML(ind, mode, ok)) : '';
     styleData(bottom); styleData(pick); styleData(legendLine);   // 범례 색 견본(data-bg)은 좁은 화면에서 pick 안에 있다

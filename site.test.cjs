@@ -322,7 +322,8 @@ test('R3: 소개에 쓰임 세 줄 링크, 근거 읽는 법은 첫 갈래만 �
 
 test('R4 3: 홈 대상 줄은 담당자·용역사 + 복지·안전·기사, 방문 분석 한 줄은 개인정보 처리방침 절로 잇고, 소개에 쓰임 네 번째(인용 한 줄)', () => {
   const home = read('index.html'), about = read('about.html');
-  assert.match(home, /<p class="h6-for">도시재생 담당자·용역사를 위해 만들었고, 복지·안전·기사에 쓰는 분도 같은 숫자를 출처째 가져가실 수 있습니다\.<\/p>/);
+  // 2026-11-18 대표 지시('웹사이트는 단순해야 한다', 토스증권식 단순화): 제목이 대상을 이미 말해 대상 줄을 뺐다. 다시 넣으면 첫 칸이 길어진다
+  assert.ok(!home.includes('class="h6-for"'));
   assert.ok(!home.includes('용역사·시군구 도시재생 담당자용'));
   // R4 13: privacy.html 1-4절(자동으로 수집되는 정보)과 같은 말: 화면·기능 이름, 누른 횟수만, 검색어·파일 이름·연락처는 안 보냄
   const priv = read('privacy.html');

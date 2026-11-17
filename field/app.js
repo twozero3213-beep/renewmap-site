@@ -19,7 +19,8 @@
   const canStore = (() => { try { localStorage.setItem("renewmap-probe", "1"); localStorage.removeItem("renewmap-probe"); return true; } catch (e) { return false; } })();
   const storeJson = (k, v) => { if (v !== undefined) return store(k, JSON.stringify(v)); try { return JSON.parse(store(k)) || null; } catch (e) { return null; } };
 
-  function say(text, err) { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; }
+  // 오류는 role=alert로 바로 읽히게 한다(2026-11-18 접근성 검토: 저장 실패가 status로만 뒤늦게 읽혔다). 역할을 먼저 바꾸고 글을 넣는다
+  function say(text, err) { $("msg").setAttribute("role", err ? "alert" : "status"); $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; }
   let toastTimer = 0;
   function toast(text, actLabel, act, ok) {
     const t = $("toast"), b = $("toastAct");

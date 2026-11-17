@@ -11,7 +11,6 @@
 .h6-hero { grid-template-rows: auto 1fr; }   /* 카드 높이의 남는 줄은 둘째 줄이 받는다(안내가 검색 바로 아래 붙게) */
 .h6-lead { font-size: 18px; color: var(--dim); margin: 0 0 20px; }
 /* R1 6: 첫 화면이 누구의 일인지 한 줄로 */
-.h6-for { margin: 0 0 12px; font-size: var(--t-sub); font-weight: 700; color: var(--ink); }
 .h6-search label { display: block; font-weight: 700; margin-bottom: 8px; }
 .h6-search .home-search-row { display: flex; gap: 8px; }
 .h6-search input { flex: 1; min-width: 0; min-height: 48px; font: inherit; font-size: 17px; padding: 0 16px; border: 2px solid var(--ink); border-radius: 8px; background: #fff; }
@@ -24,6 +23,13 @@
 /* 바로 보기 칩은 한 줄(넘치면 옆으로 민다, R1 6: 휴대폰에서 두 줄로 꺾여 카드를 첫 화면 밖으로 밀었다). 칩 모양은 rm6.css .rm-chip */
 .h6-try { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; margin: 12px 0 0; font-weight: 600; color: var(--dim); overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
 .h6-try > * { flex: none; }
+/* 2026-11-18 디자인 검토: 칩이 잘린 채 끝나 옆에 더 있는 줄 몰랐다 → 오른쪽 끝을 흐리게 하고 끝까지 밀면 마지막 칩이 흐림 밖으로 나오게 여백을 둔다.
+   넓은 화면은 카드가 옆 칸이라 두 줄로 꺾어도 첫 화면 밖으로 밀리지 않는다 */
+.h6-try { padding-inline-end: 32px; mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
+@media (min-width: 961px) { .h6-try { flex-wrap: wrap; overflow-x: visible; padding-inline-end: 0; mask-image: none; } }
+/* 두 보조 링크: 가운뎃점으로 잇지 않고 따로 둔다(웹 UI AI 티 기준 '가운뎃점 메타 줄') */
+.h6-links { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 12px 0 0; font-weight: 600; }
+.h6-links a { display: inline-flex; align-items: center; min-height: 44px; }
 .h6-free { font-size: var(--t-sub); color: var(--dim); margin: 0; }
 
 /* 지금 이 동네 카드: 원장 셀 그대로 */
@@ -189,3 +195,9 @@
 @media screen {
   .h6 > section:not(.h6-hero) { content-visibility: auto; contain-intrinsic-size: auto 700px; }
 }
+/* 2026-11-18 홈 단순화(토스증권 공개 웹 측정 참고: 핵심만 보이고 긴 기록·목록·영상은 펼쳐 본다, 숫자는 자릿수를 맞춘다).
+   색·글꼴·대비는 DESIGN.md 값 그대로. 접이 제목은 누르는 높이 48px */
+.h6-receipt-fold > summary, .h6-soon > summary, .h6-demo-fold > summary { min-height: 48px; padding: 12px 0; cursor: pointer; font-weight: 700; color: var(--green); }
+.h6-soon > summary h3 { display: inline; margin: 0; font-size: inherit; color: var(--ink); }
+.h6-live-big b, .h6-live-rows b { font-variant-numeric: tabular-nums; }
+.h6-prov a { display: inline-flex; align-items: center; min-height: 44px; }   /* 2026-11-18 휴대폰 탭 점검: 단독 링크인데 높이가 18px였다 */

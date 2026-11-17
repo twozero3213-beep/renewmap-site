@@ -42,6 +42,15 @@
    "snapshot_hash": "43ddb0b165c5984cc52f29bee6c6177de09c7a611088bc6726748872ee7bdc92"
   },
   {
+   "name": "dong_extra.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/dong_extra.json",
+   "bytes": 555,
+   "type": "array",
+   "top_level_keys": [],
+   "generated_at": null,
+   "snapshot_hash": null
+  },
+  {
    "name": "dong_index.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/dong_index.json",
    "bytes": 225320,

@@ -6,7 +6,8 @@
 // 2026-11-16: #138과 main(셸 파일·글꼴 변경)을 합친 뒤 테스트가 알려 준 지문으로 맞춘다
 // 2026-11-17: field.css(입력 칸 밑 도움말 간격)를 고쳐 테스트가 알려 준 새 지문으로 맞춘다
 // 2026-11-17: 현장 기록 첫 안내 문구(index.html)를 고쳐 테스트가 알려 준 새 지문으로 맞춘다
-const CACHE = "renewmap-field-5226168f76";
+// 2026-11-18: 공개판에 '몇 동 더 확인하면 정해지나'(redev.js·redev-app.js)와 사용자 편의 검토(현장 기록·구역 계산 화면)를 선택 반영해 셸 지문을 다시 맞춘다
+const CACHE = "renewmap-field-c9bfc6248d";
 const SHELL = ["./", "index.html", "field.css", "record.js?v=20261112-taskreview", "store.js", "evidence.js", "app.js", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js", "../site-motion.js", "../frame-guard.js", "../docgen.js?v=20261117-reuse", "../cellpack.js", "../list-pages.js", "../list-pages.css", "../rm6.css",
   "../data/report_templates.json", "upload.js", "upload-config.js", "detect.js", "redev.html", "redev.js", "redev-app.js", "parcel-ref.js", "twin.html", "twin.css", "twin.js", "twin-app.js", "../favicon.svg", "../icon-192.png"];
 // 설치 때는 브라우저 HTTP 캐시(Pages max-age=600)를 건너뛴다. 안 그러면 갱신 직전에 열어 둔 옛 파일이 새 캐시에 들어간다

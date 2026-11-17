@@ -410,6 +410,9 @@
 .dg-copy { padding: 6px 12px; font-size: 13px; border-width: 1.5px; min-height: 36px; }
 .dg-copy-s { font: inherit; font-size: 13px; font-weight: 700; margin-left: 8px; padding: 3px 10px; min-height: 30px; border: 1.5px solid var(--green); color: var(--green); background: var(--card); border-radius: 999px; cursor: pointer; white-space: nowrap; vertical-align: baseline; }
 .dg-copy-s:hover, .dg-copy:hover { background: var(--soft); color: var(--ink); }
+/* 2026-11-18 접근성 검토: 표 복사·요건 더 보기는 보이는 크기를 두고 누르는 자리만 44px로 넓힌다(KRDS 터치 44px, 표 줄 높이는 그대로) */
+.dg-copy, .dg-copy-s, .sr-req-more a { position: relative; }
+.dg-copy::after, .dg-copy-s::after, .sr-req-more a::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
 .dg-doc { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 16px 18px; margin-bottom: 12px; }
 .dg-title { margin: 0 0 10px; font-size: clamp(19px, 2.6vw, 24px); text-align: center; }
 .dg-box { width: 100%; border-collapse: collapse; margin: 0 0 8px; font-size: 15px; }

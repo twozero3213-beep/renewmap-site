@@ -10,7 +10,8 @@
   const norm = s => String(s || '').replace(/\s+/g, '').toLowerCase();
   // 홈에서 들어오면 기본 보고서는 '1쪽 요약'(?report=onepage, find.js entryReportMode). 동까지 정해지면 탐색이 문서 패널을 바로 연다(심사 06: 동 이름 → 1쪽 한글 3번 안에)
   // report: 열 문서 종류. 재생 사업 화면의 같은 찾기 칸은 'programs'(그 동에 맞는 사업 표)로 보낸다(form data-report)
-  const route = (r, report = 'onepage') => `explore.html?report=${report}#map/${r.sido}/${r.sgg}${r.dong ? '/' + r.dong : ''}`;
+  // page: 2025 경계가 없어 지도에 못 올리는 동(dong_extra.json). 지도 대신 그 동 쪽으로 보낸다
+  const route = (r, report = 'onepage') => r.page ? `dong/${r.dong}.html` : `explore.html?report=${report}#map/${r.sido}/${r.sgg}${r.dong ? '/' + r.dong : ''}`;
 
   // 동 판별은 util.js dongHit(법정동 이름 '우동'·'해운대 우동'도). 화면에서는 util.js가 이 파일 뒤에 실려 부를 때 꺼낸다
   const U = () => (typeof window !== 'undefined' && window.RenewUtil) || require('./util.js');
@@ -20,8 +21,8 @@
     const q = norm(query);
     if (!q || !Array.isArray(index)) return [];
     const exact = [], fuzzy = [], seenSgg = new Set(), hit = U().dongHit;
-    for (const [code, dong, sgg, sggName, sido] of index) {
-      const row = { label: dong, sub: `${sido} ${sggName}`, sido: code.slice(0, 2), sgg, dong: code };
+    for (const [code, dong, sgg, sggName, sido, page] of index) {
+      const row = { label: dong, sub: `${sido} ${sggName}`, sido: code.slice(0, 2), sgg, dong: code, page: !!page };
       if (hit(query, dong, [sido, sggName])) exact.push(row);
       else if (norm(sggName) === q && !seenSgg.has(sgg)) { seenSgg.add(sgg); exact.push({ label: sggName, sub: `${sido} 시군구`, sido: row.sido, sgg, dong: '' }); }   // 시군구 이름은 동 수십 개 대신 한 줄
       else if (norm(sido + sggName + dong).includes(q)) fuzzy.push(row);
@@ -49,6 +50,12 @@
         observer.observe(video);
       } else showPoster();
     }
+    // 카드의 출처 기록 보기나 #h6Receipt 주소로 오면 접힌 기록을 연다(2026-11-18 홈 단순화)
+    const fold = doc.getElementById('h6ReceiptFold');
+    if (fold) {
+      doc.querySelectorAll('a[href="#h6Receipt"]').forEach(a => a.addEventListener('click', () => { fold.open = true; }));
+      if (win.location.hash === '#h6Receipt') fold.open = true;
+    }
     const form = doc.getElementById('homeSearch');
     if (!form) return;
     const input = doc.getElementById('homeQ'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg'), report = form.dataset.report || 'onepage';
@@ -57,7 +64,10 @@
     // R3 12: 홈은 home-live.js도 같은 dong_index.json(225KB)을 받아 두 번 내려받았다 → util.js의 renewFetch(주소별 약속 한 개)를 같이 쓴다.
     // home.js가 util.js보다 먼저 실려(defer는 DOMContentLoaded 직전에 차례로 돈다) 아직 renewFetch가 없으므로 DOMContentLoaded까지 기다린다. 시험용 가짜 화면에는 없어 fetch로 받는다
     const ready = (doc.readyState === 'loading' || doc.readyState === 'interactive') ? new Promise(res => doc.addEventListener('DOMContentLoaded', res, { once: true })) : Promise.resolve();
-    const getIndex = () => ready.then(() => (win.renewFetch ? win.renewFetch('data/national/dong_index.json') : fetch('data/national/dong_index.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })));
+    const get = u => (win.renewFetch ? win.renewFetch(u) : fetch(u).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }));
+    // 보충 목록(경계 없는 동)은 받지 못해도 본 색인으로 검색은 된다. 그 9곳만 없으므로 실패를 검색 실패로 바꾸지 않는다
+    const getIndex = () => ready.then(() => Promise.all([get('data/national/dong_index.json'), get('data/national/dong_extra.json').catch(() => [])])
+      .then(([main, extra]) => (Array.isArray(main) ? main.concat((Array.isArray(extra) ? extra : []).map(r => [...r, true])) : main)));
     const load = () => loading || (loading = getIndex()
       .then(d => { index = Array.isArray(d) ? d : null; if (!index) loading = null; return index; }).catch(() => { loading = null; return null; }));
     load();
@@ -75,7 +85,7 @@
       if (!index) return;
       const rows = input.value.trim().length >= 2 ? find(index, input.value, 6) : [];
       show(rows);
-      if (rows.length) msg.textContent = `후보 ${rows.length}곳`;
+      if (rows.length) msg.textContent = `후보 ${rows.length}곳. 아래 화살표로 고를 수 있습니다.`;   // 화면을 소리로 읽는 사람에게 후보 목록과 들어가는 키를 함께 읽어 준다(2026-11-18)
     });
     // 키보드: ↓로 후보 목록에 들어가 ↑↓로 옮기고, Esc는 목록만 닫는다(v9 접근성: ↓가 안 먹고 Esc가 적은 글을 지웠다)
     const links = () => [...hits.querySelectorAll('a')];

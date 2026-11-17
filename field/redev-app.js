@@ -103,6 +103,7 @@
     if (gu && gu.dongs.some((x) => x.code === d.dong)) { $("gu").value = d.gu; showDongs(d.gu, d.dong); }
     $("list").value = d.list; $("area").value = d.area || "";
     if (d.area && d.areaSrc === "drawn") $("area").dataset.src = "drawn";
+    if (d.area) $("optIn").open = true;   // 접힌 선택 입력에 값이 있으면 보이게
     say("지난번에 넣은 목록을 불러왔습니다.\n새로 시작하려면 목록 칸을 비우세요.");
   }
   $("area").addEventListener("input", () => { delete $("area").dataset.src; });   // saveDraft보다 먼저
@@ -110,7 +111,7 @@
   $("dong").addEventListener("change", saveDraft);
 
   const n0 = (x) => x.toLocaleString("ko-KR");   // 개수는 늘 천 단위 쉼표
-  const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };
+  const say = (text, err) => { $("msg").setAttribute("role", err ? "alert" : "status"); $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };   // 오류는 바로 읽힌다(field/app.js say와 같음)
   const today = () => D.localDate();
   const opt = () => ({ secret: $("secret").checked });
   const fileName = (ext, file = last.file, options = opt(), day = today()) => `${options.secret ? "대외비_" : ""}${file.name}_입안요건_사전검토_승인전_${day}.${ext}`;
@@ -248,6 +249,7 @@
     $("list").value = r.pnus.join("\n");
     $("area").value = Math.round(R.polygonAreaM2(drawPts));   // 그린 선 기준 면적. 고시 면적이 있으면 사람이 고친다
     $("area").dataset.src = "drawn";
+    $("optIn").open = true;   // 그린 면적을 사람이 확인·고치게 접힌 선택 입력을 연다
     saveDraft();
     say(`영역 안 ${n0(r.pnus.length)}필지를 넣었습니다.${r.total > r.pnus.length ? `\n전체 ${n0(r.total)}필지 중 1,000필지까지만 넣었습니다. 영역을 나눠 주세요.` : ""}\n경계에 걸친 필지도 들어가니 목록을 확인해 주세요.`);
   });
@@ -328,6 +330,11 @@
       b.textContent = `${l.label} · ${l.status}`;
       s.textContent = `기준 ${l.rule} · 이 목록 ${l.value} · ${l.basis}`;
       li.append(b, s);
+      if (l.settle) {   // 현장 확인 줄: 못 정한 건물을 몇 동 더 확인하면 정해지는지
+        const t = document.createElement("small");
+        t.className = "rv-settle"; t.textContent = R.settleText(l.settle, ...R.SETTLE_OLD);
+        li.append(t);
+      }
       if (l.field && l.status === R.CHECK) {   // 현장에서 볼 수 있는 줄은 현장 기록으로 바로 넘긴다(같은 앱, 항목이 미리 골라진다)
         const a = document.createElement("a");
         a.href = `./?check=${l.field}`; a.textContent = "현장 기록으로 확인하기";
@@ -353,6 +360,8 @@
     const h = document.createElement("h3"), p = document.createElement("p"), ul = document.createElement("ul");
     h.textContent = `확인할 건물 ${n0(t.items.length)}동 · 현장 기록이 붙은 건물 ${n0(t.withRecord)}동`;
     p.className = "hint"; p.textContent = "사용승인일이 없는 건물입니다. 목조·블록·벽돌·조적부터 보입니다. 판정에는 쓰지 않고 확인 순서만 정합니다.";
+    const old = res.lines.find((l) => l.settle), stop = document.createElement("p");   // 정해지는 지점을 알면 목록을 다 돌기 전에 확인을 멈출 수 있다
+    stop.className = "hint rv-settle"; stop.textContent = old ? `${old.label}: ${R.settleText(old.settle, ...R.SETTLE_OLD)}` : "";
     ul.className = "todo-list";
     for (const it of t.items.slice(0, TODO_SHOW)) {
       const li = document.createElement("li"), s = document.createElement("span");
@@ -369,7 +378,7 @@
       }
       ul.append(li);
     }
-    box.replaceChildren(h, p, ul);
+    box.replaceChildren(h, p, ...(old ? [stop] : []), ul);
     if (t.items.length > TODO_SHOW) { const more = document.createElement("p"); more.className = "hint"; more.textContent = `나머지 ${(t.items.length - TODO_SHOW).toLocaleString("ko-KR")}동은 건물별 근거 CSV에 있습니다.`; box.append(more); }
   }
 
