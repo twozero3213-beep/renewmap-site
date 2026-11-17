@@ -1,6 +1,7 @@
 /* 공통 반응형 메뉴. 링크는 자바스크립트 없이도 그대로 동작한다. */
 (function () {
   'use strict';
+  if (document.currentScript?.hasAttribute('data-field-update-only')) return;
   const inField = /\/field\//.test(location.pathname);
   const nested = inField || /\/dong\//.test(location.pathname);
   const atHome = !nested && /(?:\/|\/index\.html)$/.test(location.pathname);
@@ -131,6 +132,66 @@
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(cite.textContent.trim() + ' ' + page).then(() => tell('복사했습니다.'), select);
     else select();
   });
+})();
+
+// 현장 화면 직행과 홈 복귀 모두 기존 오프라인 판의 갱신을 확인한다. 기록 저장소는 건드리지 않는다.
+(function () {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator) || !document.currentScript?.src) return;
+  const sw = navigator.serviceWorker, scope = new URL('field/', document.currentScript.src);
+  const inField = location.pathname.startsWith(scope.pathname);
+  const home = new URL('./', document.currentScript.src).pathname;
+  if (!inField && location.pathname !== home && location.pathname !== home + 'index.html') return;
+  const recording = location.pathname === scope.pathname || location.pathname === scope.pathname + 'index.html';
+  let hadController = !!sw.controller, busy = false, changed = false;
+  const notice = (text, refresh) => {
+    if (!inField) return;
+    let box = document.getElementById('fieldUpdate');
+    if (!box) { box = document.createElement('p'); box.id = 'fieldUpdate'; box.className = 'err-banner'; box.setAttribute('role', 'status'); document.body.append(box); }
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'ghost';
+    button.textContent = refresh ? '새 판으로 열기' : '다시 확인';
+    button.addEventListener('click', () => refresh ? location.reload() : check());
+    box.replaceChildren(text + ' ', button);
+  };
+  sw.addEventListener('controllerchange', () => {
+    if (hadController && inField) {
+      changed = true;
+      if (!recording) {
+        document.documentElement.dataset.fieldStale = 'true';
+        const main = document.querySelector('main');
+        main?.querySelectorAll('button, input[type="submit"], input[type="button"]').forEach(button => { button.disabled = true; });
+        document.dispatchEvent(new Event('renewmap-field-updated'));
+      }
+      notice(recording ? '새 판을 받았습니다. 입력 중인 기록을 저장한 뒤 새 판으로 열어 주세요. 저장한 기록과 사진은 유지됩니다.' : '새 판을 받았습니다. 이전 계산과 내보내기를 멈췄습니다. 입력 중인 내용이 있으면 복사한 뒤 새 판으로 열어 다시 계산해 주세요. 저장한 기록과 사진은 유지됩니다.', true);
+    }
+    hadController = !!sw.controller;
+  });
+  document.addEventListener('submit', event => {
+    if (changed && inField && !recording) { event.preventDefault(); event.stopImmediatePropagation(); }
+  }, true);
+  for (const type of ['input', 'change']) document.addEventListener(type, event => {
+    if (changed && inField && !recording) event.stopImmediatePropagation();
+  }, true);
+  document.addEventListener('click', event => {
+    if (changed && inField && !recording && event.target.closest('main button, main [download], main input[type="submit"], main input[type="button"]')) {
+      event.preventDefault(); event.stopImmediatePropagation();
+    }
+  }, true);
+  async function check() {
+    if (busy || !navigator.onLine) return;
+    busy = true;
+    try {
+      const previous = await sw.getRegistration(scope.href);
+      if (!inField && !previous) return;
+      const registration = await sw.register(new URL('sw.js', scope).href, { scope: scope.href, updateViaCache: 'none' });
+      await registration.update();
+      if (!changed) document.getElementById('fieldUpdate')?.remove();
+    } catch (_) {
+      if (!changed) notice('새 판 확인을 마치지 못했습니다. 현재 판으로 계속 사용할 수 있으며, 연결되면 다시 확인합니다.', false);
+    } finally { busy = false; }
+  }
+  window.addEventListener('online', check);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+  check();
 })();
 
 /* 방문 분석(핵클)은 중지했다. SDK의 자동 URL 수집·수집 중지 동작을 검증한 뒤에만 재개한다. */

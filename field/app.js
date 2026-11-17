@@ -906,7 +906,7 @@
   const goodNet = () => !!conn && conn.saveData === false && (conn.type === "wifi" || conn.type === "ethernet" || conn.effectiveType === "4g");
   const whenIdle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 20000 }) : setTimeout(fn, 4000));
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js").catch(() => { $("ready").textContent = "오프라인 준비를 마치지 못했습니다.\n인터넷 연결과 브라우저 설정을 확인해 주세요."; });
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(() => { $("ready").textContent = "오프라인 준비를 마치지 못했습니다.\n인터넷 연결과 브라우저 설정을 확인해 주세요."; });
     // 이미 옛 판이 있던 기기에서만 알린다(첫 설치는 알릴 것이 없다). 쓰던 기록은 기기 저장소에 남아 새로고침해도 그대로다
     let hadCtrl = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadCtrl) toast("새 판을 받았습니다.\n새로고침하면 반영됩니다.", "새로고침", () => location.reload()); hadCtrl = true; });

@@ -111,6 +111,8 @@
 ## 건물 단위 (2026-10-26) — `buildings/{bjd10}.json`
 - `{source, source_url, license, retrieved_at, hub_reference_date, age_reference_date, bjd10, name, count, excluded_attached, pnu_rule, age_rule, personal_data, fields, buildings:[{pnu|null, jibun|null, mgm_bld_pk, name|null, main_use, structure, use_apr_day|null, floors|null, tot_area|null, age_years|null, over30|null}]}`. 건축물대장 표제부 주건축물 원천 행(원장 셀 아님), 지번 순, 소유자·거주자 항목 없음. 사용승인일이 비정상이면 age·over30 null. 부산 해운대구 8개 법정동 시범. 30년 이상 목록 XLSX는 `scripts/export_old_buildings.py`(좌표는 지적도 전까지 법정동 대표점).
 
+2026-11-17 공개 건물 자료: 개별 건물의 `name`은 모두 `null`이다. 자유문자열 건물명에 개인명이 섞일 수 있어 원천의 `bldNm`을 읽거나 공개·검색하지 않는다. 파일 머리의 `name`은 법정동명이며 건물명과 구분한다. 실제 API 제공 범위는 `buildings/index.json`으로 확인하고, 대용량 자료의 재배포 조건이 확인되지 않은 파일은 공개 색인에서 제외한다. 파일 없음은 건물 0동을 뜻하지 않는다.
+
 ## 건축·정비·복지·안전비상벨 (2026-10-26, living 확장)
 - `indicators[].group`: "건축·정비"(PERMIT_COUNT_3Y, DEMOLITION_COUNT_3Y, OLD_PUBLIC_FACILITY_COUNT, REDEV_PROJECTS → 화면 '정비 신호'), "안전 인프라"(+EMERGENCY_BELL_PER_KM2, ELDERLY_PED_ACCIDENT_ZONES), "복지"(ELDERLY_LIVING_ALONE → 화면 '인구 변화'). 모두 standard null·기준 없음.
 - `indicators[].hidden_until_decision`(+hidden_reason): true면 셀은 있으나 화면에 내지 않는다. 현재 EMERGENCY_BELL_PER_KM2만(대표 결정 대기, D17).

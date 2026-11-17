@@ -290,6 +290,7 @@
 
   $("f").addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (document.documentElement.dataset.fieldStale === 'true') return say("새 판으로 연 뒤 다시 계산해 주세요.", true);
     const request = ++calculation;
     last = null; $("out").hidden = true;
     saveDraft();
@@ -378,6 +379,7 @@
   const savePlans = (ps) => { try { localStorage.setItem(PLAN_KEY, JSON.stringify(ps)); return true; } catch (e) { return false; } };
   const planSay = (text, err) => { $("planMsg").textContent = text; $("planMsg").className = err ? "msg err" : "msg"; };
   async function renderPlans() {
+    if (document.documentElement.dataset.fieldStale === 'true') return;
     const request = ++plansRevision;
     const ps = loadPlans();
     $("planTable").replaceChildren(); planSay("");
@@ -414,17 +416,22 @@
   });
   renderPlans();
 
+  const assertCurrent = (res) => {
+    if (!last || last.res !== res || document.documentElement.dataset.fieldStale === 'true') throw new Error("계산 결과가 바뀌었습니다. 새 판으로 연 뒤 다시 계산해 주세요.");
+  };
   const applicationArgs = async () => {
     const current = last, day = today(), options = opt();
     const records = window.FieldStore ? await window.FieldStore.records() : [];
     const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(current.file)));
     const dataHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+    assertCurrent(current.res);
     return [current.res, current.m, current.file, day, { ...options, records, dataHash }];
   };
   $("consultHwpx").addEventListener("click", async () => {
     try {
       const args = await applicationArgs();
       await templates;
+      assertCurrent(args[0]);
       D.saveBytes(fileName("hwpx", args[2], args[4], args[3]).replace("_입안요건_사전검토_", "_사전컨설팅_부록_"), D.hwpxBytes(R.buildConsultDoc(...args)), "application/hwp+zip");
     } catch (err) { say("부록을 만들지 못했습니다.\n신청요건 근거 CSV 끝에도 같은 질의가 있습니다.", true); }
   });
@@ -432,11 +439,12 @@
     try {
       const args = await applicationArgs();
       await templates;
+      assertCurrent(args[0]);
       D.saveBytes(fileName("hwpx", args[2], args[4], args[3]).replace("_입안요건_사전검토_", "_신청요건_근거_"), D.hwpxBytes(R.buildApplicationDoc(...args)), "application/hwp+zip");
     } catch (err) { say("신청요건 문서를 만들지 못했습니다.\n신청요건 근거 CSV로 받아 보세요.", true); }
   });
   $("applicationCsv").addEventListener("click", async () => {
-    try { const args = await applicationArgs(); D.saveBytes(fileName("csv", args[2], args[4], args[3]).replace("_입안요건_사전검토_", "_신청요건_근거_"), R.applicationCSV(...args), "text/csv;charset=utf-8"); say("신청요건 근거 CSV를 받았습니다."); }
+      try { const args = await applicationArgs(); assertCurrent(args[0]); D.saveBytes(fileName("csv", args[2], args[4], args[3]).replace("_입안요건_사전검토_", "_신청요건_근거_"), R.applicationCSV(...args), "text/csv;charset=utf-8"); say("신청요건 근거 CSV를 받았습니다."); }
     catch (err) { say("신청요건 근거 CSV를 만들지 못했습니다.\n이 기기의 현장 기록 저장소를 확인해 주세요.", true); }
   });
   const doc = async () => { await templates; return R.buildDoc(last.res, last.m, last.file, today(), opt()); };
@@ -453,5 +461,9 @@
   $("csv").addEventListener("click", () => D.saveBytes(fileName("csv"), R.toCSV(last.res, last.file, opt()), "text/csv;charset=utf-8"));
   $("sample").addEventListener("click", () => D.saveBytes(fileName("csv").replace("_사전검토_", "_수기대조표본_"), R.sampleCSV(last.res, last.file, opt()), "text/csv;charset=utf-8"));
   // 현장 앱(sw.js)이 이 쪽도 맡는다. 새 판이 자리를 잡으면 옛 계산 파일로 문서를 받지 않게 새로고침을 알린다
-  if ("serviceWorker" in navigator && navigator.serviceWorker.controller) navigator.serviceWorker.addEventListener("controllerchange", () => say("계산 파일의 새 판을 받았습니다. 새로고침한 뒤 다시 계산하세요."));
+  document.addEventListener('renewmap-field-updated', () => {
+    calculation++; plansRevision++; last = null;
+    $("out").hidden = true; $("planTable").replaceChildren();
+    say("계산 파일의 새 판을 받았습니다. '새 판으로 열기'를 누른 뒤 다시 계산하세요.");
+  });
 })();

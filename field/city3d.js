@@ -6,8 +6,11 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   const say = (t, err) => { $("message").textContent = t; $("message").className = err ? "msg err" : "msg"; };
+  const load = window.City3dLoad;
+  if (load && load.state === "failed") return;
   const at = window.City3dViews.startPoint(location.search);
   if (typeof window.vw === "undefined") {
+    if (load) return load.fail();
     $("vmap").hidden = true;
     for (const id of ["views", "loading"]) { const el = $(id); if (el) el.hidden = true; }
     return say("브이월드 3D 지도를 불러오지 못했습니다.\n이 주소에서는 쓸 수 없거나 인터넷 연결이 끊겼습니다.\n공개 사이트에서 다시 열어 주세요.", true);
@@ -20,9 +23,11 @@
     logo: true, navigation: true,
   });
   vw.ws3dInitCallBack = () => {
+    if (load && load.state === "failed") return;
     // 브이월드는 이 함수를 부른 '뒤'에 자기 방식으로 initPosition으로 옮긴다(VWViewerStartup.v30: ws3dInitCallBack → lookat.moveTo).
     // 그 결과가 요청 위치와 달랐다(2026-11-07 공개 사이트: 3km 남쪽 2km 높이, 산만 보임). 그 이동이 끝난 다음 차례에 카메라를 직접 옮긴다
     setTimeout(() => {
+      if (load && load.state === "failed") return;
       const C = window.Cesium, v = window.ws3d && ws3d.viewer;
       if (!C || !v || v.isDestroyed?.() || !v.cesiumWidget?.scene) return;
       const cam = v.camera; if (!cam) return;
@@ -42,8 +47,9 @@
       [600, 1500, 3000].forEach((ms) => setTimeout(recheck, ms));
       setTimeout(() => off && off(), 8000);
       window.City3dControls.attach(v, C, at, document);
+      if (load) load.ready();
+      say("국토교통부 브이월드 3D 건물입니다.\n마우스로 끌어 옮기고 휠로 확대·축소합니다. 위 단추로 조감도·위에서·가까이·한 바퀴 돌기를 고를 수 있습니다.");
     }, 0);
-    say("국토교통부 브이월드 3D 건물입니다.\n마우스로 끌어 옮기고 휠로 확대·축소합니다. 위 단추로 조감도·위에서·가까이·한 바퀴 돌기를 고를 수 있습니다.");
   };
   map.start();
   say("브이월드 3D 지도를 여는 중입니다.\n건물은 가까이 갈수록 그려집니다.");

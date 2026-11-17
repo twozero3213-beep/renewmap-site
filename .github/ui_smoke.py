@@ -82,6 +82,8 @@ def main():
 
             def check(route, width, topic=None):
                 row = {'route': route, 'width': width, 'topic': topic, **geometry(page)}
+                if route == 'field/city3d.html':
+                    row['provider_status'] = page.evaluate('() => window.City3dLoad.state')
                 results.append(row)
                 assert row['scroll']<=width+1, row
                 assert not any(row[k] for k in ['duplicateIds','crampedNav','exposedHidden','gridTables','misaligned']), row
@@ -99,11 +101,24 @@ def main():
                     page.on('pageerror', lambda error: errors.append(re.sub(r'\?[^\s)]*', '?[query omitted]', error.stack or str(error))))
                     page.on('response', lambda res: missing.append(res.url) if res.status>=400 and res.url.startswith(base) and not res.url.endswith(('/field/naver-map-key.js','/field/vworld-key.js')) else None)
                     try:
-                        response = page.goto(base+route, wait_until='load')
+                        response = page.goto(base+route, wait_until='commit' if route == 'field/city3d.html' else 'load')
                         assert response and response.status==200, f'{route}: {response.status if response else None}'
-                        page.evaluate('() => document.fonts.ready')
-                        # 외부 3D 프레임은 타일 요청이 계속돼 networkidle이 준비 완료 조건이 아니다.
-                        if route!='field/city3d.html':
+                        if route == 'field/city3d.html':
+                            # 외부 SDK가 문서 파싱을 멈춰도 준비 또는 명시적 실패로 끝나야 한다.
+                            page.wait_for_function("() => window.City3dLoad && ['ready','failed'].includes(window.City3dLoad.state)")
+                            assert page.locator('#city3dRetry').is_visible()
+                            recovery = page.locator('#city3dRecovery a[href="../explore.html"]')
+                            assert recovery.is_visible(), '3D 실패 시 2D 지도 복귀 링크가 없습니다.'
+                            if page.evaluate('() => window.City3dLoad.state') == 'ready':
+                                assert page.locator('#vmap canvas').count() > 0, '준비 상태인데 지도 캔버스가 없습니다.'
+                                assert page.locator('#views').is_visible()
+                            else:
+                                assert '3D 지도 응답을 받지 못했습니다' in page.locator('#message').inner_text()
+                                assert page.locator('#vmap').is_hidden()
+                                assert page.locator('#views').is_hidden()
+                                assert page.locator('#loading').is_hidden()
+                        else:
+                            page.evaluate('() => document.fonts.ready')
                             page.wait_for_load_state('networkidle', timeout=15000)
                         if route=='about.html':   # 2026-11-14 디자인 2차: 소개의 구 칩 대시보드를 한 문단 + '건물 나이 4D로 보기' 단추로 바꿨다
                             page.wait_for_selector('main h1')
