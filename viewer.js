@@ -67,7 +67,7 @@
         await loadScript('vendor/office/jszip.min.js'); await loadScript('vendor/office/docx-preview.min.js');
         const box = el('div', 'doc-docx'); stage.append(box);
         await win.docx.renderAsync(bytes, box, null, { inWrapper: true, ignoreLastRenderedPageBreak: true });
-        return { text: async () => box.textContent };
+        return { text: async () => box.innerText };
       },
       async sheet(bytes, file, stage) {
         await loadScript('vendor/office/xlsx.mini.min.js');

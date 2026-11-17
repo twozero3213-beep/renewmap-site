@@ -1465,12 +1465,15 @@
     if (m.kind === 'noemd' || m.nodata) return emptyHTML(`${here} · 읍·면·동 자료 준비 중`, [m.kind === 'noemd' ? '이 지역의 읍·면·동 자료가 아직 없습니다.' : '경계는 있지만 지표 시계열이 아직 없습니다.', '준비되기 전에는 숫자를 보여 드리지 않습니다.']);
     const it = m.items.find(x => x.code === v.dong), dist = ind.level === 'sg' ? `<p class="map-note">${esc(ind.label)}은(는) 시·군·구 단위 자료라 읍·면·동 분포가 없습니다.</p>`
       : `<h4 class="map-h4">${esc(here)} 읍·면·동 분포 · ${esc(ind.label)} <small>순위 아님${m.year ? ` · ${esc(m.year)}년` : ''}</small></h4>${strip(m.items, it ? it.code : null, ind, scale)}`;
-    if (!it) return `<h3 class="map-h3" tabindex="-1">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3><p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}동별 사업 요건 비교 보기</a></p>${reorgNote(v)}${forecastChart(ind, m.ext, v.gu || v.sigungu, null)}${dist}${hubHTML(v)}`;
+    const boundaries = new Set(((m.geo || {}).features || []).map(f => String((f.properties || {}).code)));
+    const missingBoundaries = m.items.filter(x => !boundaries.has(x.code)).length;
+    if (!it) return `<h3 class="map-h3" tabindex="-1">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3><p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.${missingBoundaries ? `<br>지도 경계가 없는 ${missingBoundaries}개 동은 ‘읍·면·동 목록’에서 이름으로 고를 수 있습니다.` : ''}</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}동별 사업 요건 비교 보기</a></p>${reorgNote(v)}${forecastChart(ind, m.ext, v.gu || v.sigungu, null)}${dist}${hubHTML(v)}`;
     const rows = rowsFor(v, m, it), D = window.RenewDashboard, dy = rows.find(r => r.ind.series && r.year)?.year;
     // R3 3: 카드는 '동 이름 · 쇠퇴 3요건 세 줄 · 1쪽 근거 문서 단추'까지만 보이고, 나머지(경로·보고서 링크·후보 저장·세부 지표·정밀 사례)는
     // '자세한 근거' 접기 하나에 둔다(휴대폰 카드 1,334px → 요약만 약 500px). 넓은 화면도 같은 구조다. 접힘 상태는 다시 그려도 지킨다(fold.more)
     const req = reqLineHTML(rows, m.json.dongs.find(d => codeOf(d) === it.code)); // 2026-11-13: 동 이름 바로 아래에 신청요건(첫 약속 D23의 답을 맨 먼저)
     return `<div class="map-panel-head"><h3 class="map-h3" tabindex="-1" data-code="${esc(it.code)}">${esc(it.name)} <small>${esc(it.kind || '행정동')}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` + req +
+      (boundaries.has(it.code) ? '' : '<p class="map-note" data-boundary-missing role="status">이 동의 지도 경계가 없어 선택 위치를 표시하지 못합니다. 지표 자료는 아래에서 확인할 수 있습니다.</p>') +
       '<p class="map-copy"><button type="button" class="btn ghost" data-copy-map>이 지도 링크 복사</button><span class="map-copy-msg" role="status" aria-live="polite" data-copy-map-msg></span></p>' +
       `<details class="map-more rm-disclosure" data-fold="more"${fold.more ? ' open' : ''}><summary>자세한 근거</summary>` +
       `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>${reorgNote(v)}` +

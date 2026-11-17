@@ -94,6 +94,40 @@ def verify_reusable_evidence(page, output, width):
         page.evaluate('(value) => value===null?localStorage.removeItem(RenewCandidates.KEY):localStorage.setItem(RenewCandidates.KEY,value)', original)
 
 
+def verify_document_actions(page, output, width, kind):
+    if kind == 'box':
+        doc_id = 'synthetic-outcome-regression'
+        try:
+            page.evaluate("""async id => FieldStore.addDoc({id,name:'합성 상태 검사.hwpx',kind:'hwpx',
+              created_at:'2026-11-17T00:00:00Z',blob:new Blob(['synthetic'])})""",doc_id)
+            for status in ['', 'approved', 'edited']:
+                if status:
+                    page.locator('select[aria-label="합성 상태 검사.hwpx 결재 결과"]').select_option(status)
+                    page.wait_for_function('(id) => FieldStore.doc(id).then(d => d.outcome?.status === "'+status+'")',arg=doc_id)
+                page.reload(wait_until='networkidle')
+                select = page.locator('select[aria-label="합성 상태 검사.hwpx 결재 결과"]')
+                select.wait_for(state='attached')
+                export = select.locator('..').locator('.exemplar')
+                assert export.is_visible() == (status == 'approved'), f'{status or "결과 없음"}: 채택 내보내기 표시 오류'
+        finally:
+            page.evaluate('(id) => FieldStore.deleteDoc(id)',doc_id)
+            page.reload(wait_until='networkidle')
+    else:
+        import io
+        content = io.BytesIO()
+        with zipfile.ZipFile(content,'w',zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr('[Content_Types].xml','<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')
+            archive.writestr('_rels/.rels','<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')
+            archive.writestr('word/document.xml','<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>합성 첫 문단</w:t></w:r></w:p><w:p><w:r><w:t>합성 둘째 문단</w:t></w:r></w:p></w:body></w:document>')
+        page.locator('#docFile').set_input_files({'name':'synthetic.docx','mimeType':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','buffer':content.getvalue()})
+        page.locator('#docText').wait_for(state='visible')
+        with page.expect_download() as downloaded:
+            page.locator('#docText').click()
+        target = output / f'synthetic-docx-text-{width}.txt'
+        downloaded.value.save_as(target)
+        assert [line for line in target.read_text(encoding='utf-8-sig').splitlines() if line.strip()] == ['합성 첫 문단','합성 둘째 문단'], 'DOCX 글자 내보내기에 스타일 또는 불필요한 글자가 포함됐습니다.'
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--base', help='배포 후에는 실제 사이트 주소로 같은 검사를 실행한다')
@@ -191,11 +225,25 @@ def main():
                             page.evaluate("location.hash='%'")
                         if route=='rank.html':
                             page.wait_for_selector('#rankOut tbody tr')
+                        if route=='explore.html':
+                            page.goto(base+'explore.html#map/11/11060',wait_until='networkidle')
+                            page.locator('[data-dong="11060920"]').wait_for(state='attached')
+                            listing = page.locator('[data-fold="list"]')
+                            if not listing.evaluate('(el) => el.open'):
+                                listing.locator('summary').click()
+                            page.locator('[data-dong="11060920"]').click()
+                            page.locator('.map-h3[data-code="11060920"]').wait_for(state='visible')
+                            assert page.locator('[data-boundary-missing]').is_visible(), '경계 없는 동을 선택했지만 누락 안내가 없습니다.'
+                            check(route,width,'missing_boundary')
+                            page.goto(base+route,wait_until='networkidle')
                         if route=='explore.html' and not args.base:
                             page.wait_for_selector('#mapApp .leaflet-tile-pane img[src*="tile.openstreetmap.org"]',state='attached')
                             page.wait_for_function('() => [...document.querySelectorAll("#mapApp .leaflet-tile-pane img")].some(img => img.complete && img.naturalWidth>0)')
                             assert not page.locator('#mapApp .map-naver').count()
                         check(route, width)
+                        if route in ('box.html','docs.html'):
+                            verify_document_actions(page,args.output,width,'box' if route == 'box.html' else 'docs')
+                            check(route,width,'document_actions')
                         if route == 'box.html':
                             verify_reusable_evidence(page,args.output,width)
                             check(route,width,'reusable_evidence')

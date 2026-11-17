@@ -39,7 +39,7 @@
       d.outcome = next.outcome; sync(); say(next.outcome ? "결재 결과를 이 기기에 저장했습니다." : "결재 결과를 지웠습니다."); tally();
     };
     sel.addEventListener("change", save); why.addEventListener("change", save); cb.addEventListener("change", save);
-    sync(); box.append(sel, why, ok);
+    box.append(sel, why, ok);
     if (Array.isArray(d.blocks) && d.blocks.length) {   // 4단계: 고친 한글 파일을 올리면 블록마다 고친 비율만 남긴다
       const up = document.createElement("label"), f = document.createElement("input"), info = document.createElement("span");
       f.type = "file"; f.accept = ".hwpx"; up.className = "edit-up"; info.className = "meta";
@@ -63,7 +63,7 @@
         say("채택 자가 기록 파일을 받았습니다. 승인 사례로 등록된 것은 아닙니다.");
       } catch (e) { say(e.message); }
     });
-    box.append(ex);
+    box.append(ex); sync();
     return box;
   }
   const withOutcome = (d, li) => { li.append(outcomeBox(d)); return li; };

@@ -173,12 +173,17 @@
     a.href = url; a.download = `건물목록_${fileMeta.bf.name}_${fileMeta.bf.bjd10}.csv`; document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
+  let loadEpoch = 0;
   async function load(code) {
+    const epoch = ++loadEpoch;
     stop();
     $('t4Csv').disabled = true;
     $('t4Status').textContent = '건물을 불러오는 중입니다.';
     try {
       const [outline, bf] = await Promise.all([getJson(`bldg_outline/${code}.json`), getJson(`buildings/${code}.json`)]);
+      if (epoch !== loadEpoch) return false;
+      await ready();
+      if (epoch !== loadEpoch) return false;
       blds = bf.buildings || [];
       fileMeta = { outline, bf };
       const ref = Number(String(bf.age_reference_date || bf.hub_reference_date || '').slice(0, 4));
@@ -189,7 +194,6 @@
       }
       const gj = features(outline, bf);
       const bbox = bboxOf(gj);
-      await ready();
       map.getSource('b').setData(gj);
       lastGj = gj;
       if (map2) map2.getSource('b').setData(gj);
@@ -200,8 +204,10 @@
       $('t4Src').innerHTML = `외곽선·높이: ${esc(outline.name)}(기준일 ${esc(outline.base_date)}, ${esc(outline.license_type)}) · 사용승인일: ${esc(bf.source)}(기준일 ${esc(bf.hub_reference_date)})`;
       marks(); paint();
       $('t4Csv').disabled = !blds.length;
+      return true;
     } catch (e) {
-      $('t4Status').textContent = '이 동의 건물 자료를 불러오지 못했습니다. 다른 동을 골라 보세요.';
+      if (epoch === loadEpoch) $('t4Status').textContent = '이 동의 건물 자료를 불러오지 못했습니다. 다른 동을 골라 보세요.';
+      return false;
     }
   }
   // 건물이 몰린 곳에 맞춘다(외곽선 중심의 5~95% 범위). 산자락의 외딴 건물 몇 채 때문에 모형이 작아 보이던 것을 막는다
@@ -303,11 +309,12 @@
   // 구·군 → 법정동(buildings/index.json, 부산만). 지도에서 좌표로 왔으면 그 자리의 동부터
   const q = new URLSearchParams(location.search);
   const at = q.has('lat') && q.has('lng') ? [Number(q.get('lng')), Number(q.get('lat'))] : null;
-  Promise.all([getJson('buildings/index.json'), at ? getJson('bldg_outline/index.json') : null]).then(([idx, outlineIdx]) => {
-    const gus = idx.sigungu.filter((s) => s.code.startsWith('26') && s.dongs.length);
+  Promise.all([getJson('buildings/index.json'), getJson('bldg_outline/index.json')]).then(([idx, outlineIdx]) => {
+    const gus = idx.sigungu.filter((s) => s.code.startsWith('26'))
+      .map((s) => ({ ...s, dongs: s.dongs.filter((d) => outlineIdx.files[d.code]) })).filter((s) => s.dongs.length);
     const fill = (sel, items, pick) => sel.replaceChildren(...items.map(([v, t]) => { const o = new Option(t, v); o.selected = v === pick; return o; }));
     const dongs = (gu, pick) => fill($('t4Dong'), gus.find((s) => s.code === gu).dongs.map((d) => [d.code, d.name]), pick);   // v7: 건물 수는 숫자판 하나로만(평가: 한 화면에 건물 수가 셋)
-    const near = outlineIdx ? dongAt(outlineIdx, at[0], at[1]) : null;
+    const near = at ? dongAt(outlineIdx, at[0], at[1]) : null;
     const want = q.get('bjd') || near || '2635010300';
     const outside = at && !near;
     if (outside) {
@@ -323,7 +330,8 @@
     syncLinks();
     // 주소의 동 코드가 부산 목록에 없으면 다른 동을 말없이 보여 주지 않고 알린다(v9 QA: ?bjd=0000000000·울산 코드가 중구 영주동으로 열렸다)
     const asked = q.get('bjd'), missing = q.has('bjd') && !gus.some((s) => s.dongs.some((d) => d.code === asked));
-    load($('t4Dong').value).then(() => {
+    load($('t4Dong').value).then((loaded) => {
+      if (!loaded) return;
       const shown = $('t4Dong').selectedOptions[0]?.textContent || '첫 동';
       // 불러온 뒤에 쓴다(전에는 '불러오는 중' 안내에 덮여, 대구에서 4D를 열면 말없이 부산이 나왔다)
       if (outside) $('t4Status').textContent = `지도에서 보던 자리는 4D 자료가 없습니다(부산만 있습니다). 대신 ${shown}을 보여 줍니다.`;
