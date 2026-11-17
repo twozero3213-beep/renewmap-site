@@ -38,7 +38,18 @@
   };
 
   function init(win) {
-    const doc = win.document, form = doc.getElementById('homeSearch');
+    const doc = win.document, video = doc.querySelector('video[data-poster]');
+    if (video) {
+      // 화면 아래 시연 표지가 첫 화면 글꼴·동네 자료와 통신을 나눠 쓰지 않게 한다.
+      const showPoster = () => { video.poster = video.dataset.poster; delete video.dataset.poster; };
+      if (typeof win.IntersectionObserver === 'function') {
+        const observer = new win.IntersectionObserver(entries => {
+          if (entries.some(entry => entry.isIntersecting)) { showPoster(); observer.disconnect(); }
+        }, { rootMargin: '300px' });
+        observer.observe(video);
+      } else showPoster();
+    }
+    const form = doc.getElementById('homeSearch');
     if (!form) return;
     const input = doc.getElementById('homeQ'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg'), report = form.dataset.report || 'onepage';
     let index = null, loading = null;

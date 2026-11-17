@@ -505,6 +505,21 @@
     return { year: y, over: c.over, n: c.n, std, notes, skipNote: !ind.noPlay && py.skipped.length ? `자료 없는 해 건너뜀: ${py.skipped.join('·')}` : null,
       text: sgs && index && index.seriesPending ? '연도별 동 수를 불러오는 중입니다' : c.n ? `${stdText} 넘은 동 ${c.over === null ? '–' : f(c.over)}곳 / 값 있는 동 ${f(c.n)}곳 · ${y}년` : `${y ?? ''}년은 자료가 없습니다` };
   }
+  // 분리 자료는 같은 생성판에서만 합친다. 추가 지표를 기다리는 동안 결측이나 0으로 판단하지 않는다.
+  const indexSummaryPending = (index, ind, mode) => !!(index && Array.isArray(index.summary_codes) && !index.summaryReady && !ind.src &&
+    (ind.computed || !index.summary_codes.includes(keyOf(ind, mode))));
+  function mergeIndexSeries(index, data) {
+    if (!data || !data.sigungu || typeof data.sigungu !== 'object' || Array.isArray(data.sigungu) ||
+        data.snapshot_hash !== index.snapshot_hash || data.generated_at !== index.generated_at ||
+        (Array.isArray(index.summary_codes) && (!data.summary || typeof data.summary !== 'object' || Array.isArray(data.summary)))) return false;
+    for (const sg of index.sigungu || []) {
+      if (Object.hasOwn(data.sigungu, sg.code5)) sg.series = data.sigungu[sg.code5];
+      if (data.summary && Object.hasOwn(data.summary, sg.code5)) sg.summary = { ...sg.summary, ...data.summary[sg.code5] };
+    }
+    index.unmatched = data.unmatched || [];
+    index.summaryReady = true;
+    return true;
+  }
   function sigunguModel(sgs, ind, mode, inds, year, ext) {
     const scale = scaleFor(ind, mode), key = keyOf(ind, mode), byYear = !!ind.series && mode !== 'trend';
     return (sgs || []).map(sg => {
@@ -1283,7 +1298,7 @@
     return new Set(kept.map(b => b.id));
   }
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
-  const api = { rentSub, geojsonOf, labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
+  const api = { indexSummaryPending, mergeIndexSeries, rentSub, geojsonOf, labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     seriesJump, livingIndicators, allIndicators, wantedInd, isAvailable, provenanceHTML, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
@@ -1387,6 +1402,9 @@
     }
     const sgs = v.level === 'nation' ? leavesOf(state.index) : v.level === 'sido' ? leavesOf(state.index, v.sido.code2) : v.children;
     const items = sigunguModel(sgs, ind, mode, list, state.year, extOf(v));
+    if (indexSummaryPending(state.index, ind, mode)) return { kind: 'sg', summaryWaiting: true, year: null, sgs,
+      items: items.map(it => ({ ...it, value: null, year: null, color: NULL_COLOR, status: null, over: null, n: null,
+        text: state.index.summaryError ? '추가 지표 자료를 불러오지 못했습니다' : '추가 지표 자료를 불러오는 중입니다' })) };
     return { kind: 'sg', items, sgs: v.level === 'nation' ? null : sgs, year: (isNum(state.year) && ind.series && mode === 'now' ? state.year : null) ?? items.find(i => i.year)?.year ?? null };
   }
   const coverMemo = new Map();
@@ -1674,6 +1692,7 @@
   }
   const exportSay = t => { const msg = app.querySelector('[data-png-msg]'); if (msg) msg.textContent = t; };
   async function exportFeats(m, what) {
+    if (m.summaryWaiting) { exportSay('추가 지표 자료가 준비되지 않아 저장을 보류했습니다. 잠시 뒤 다시 시도하거나 새로고침해 주세요.'); return null; }
     if (m.kind === 'sg' && !state.sgGeoDetailed) {
       exportSay('상세 경계를 불러오는 중입니다.');
       if (!(await loadSgDetail())) { exportSay(`상세 경계를 불러오지 못해 ${what}을 보류했습니다. 다시 열어 주세요.`); return null; }
@@ -1814,7 +1833,7 @@
   }
   // 첫 화면 왼쪽 문구: 지금 보이는 범위에서 기준선을 넘은 곳의 개수(순위 아님)
   // 2026-11-12: 지도 아래 "자료 기준" 한 줄. 화면에 기준연도가 안 보여 자료가 오래됐다는 오해가 있었다.
-  // 숫자는 손으로 적지 않고 index_core.json의 출처 메타(source·boundary_source·pop_source·biz_source)에서만 읽는다.
+  // 숫자는 손으로 적지 않고 index_map.json의 출처 메타(source·boundary_source·pop_source·biz_source)에서만 읽는다.
   // 메타에 없는 항목은 빼고, 하나도 없으면 줄 자체를 숨긴다(모르는 값을 지어내지 않는다)
   function heroBasis(index) {
     const el = document.querySelector('[data-basis]');
@@ -1835,7 +1854,8 @@
     if (m.kind !== 'emd' && m.kind !== 'sg') return;
     const total = m.items.length, has = m.items.filter(i => i.value !== null).length;
     let body;
-    if (!avail(ind)) body = `<span class="hl-t">${ind.held ? `${esc(ind.label)}은(는) 보류 중입니다: ${esc(ind.held)}` : `${esc(ind.label)}은(는) 자료를 모으는 중입니다.`}<br>자료가 오기 전에는 지도를 회색으로 둡니다.</span>`;
+    if (m.summaryWaiting) body = `<span class="hl-t">${state.index.summaryError ? '추가 지표 자료를 불러오지 못했습니다. 새로고침해 주세요.' : '추가 지표 자료를 불러오는 중입니다.'}<br>자료가 준비되면 숫자와 색을 보여 줍니다.</span>`;
+    else if (!avail(ind)) body = `<span class="hl-t">${ind.held ? `${esc(ind.label)}은(는) 보류 중입니다: ${esc(ind.held)}` : `${esc(ind.label)}은(는) 자료를 모으는 중입니다.`}<br>자료가 오기 전에는 지도를 회색으로 둡니다.</span>`;
     else if (!has) body = `<span class="hl-t">${esc(ind.label)}은(는) 읍·면·동 자료만 있습니다.<br>지도에서 시·군·구를 누르면 색이 보입니다.</span>`;
     else if (ind.src === 'forecast') body = `<span class="hl-t">${esc(FORE_FIXED)}</span>`;
     else if (ind.group === 'safe') body = `<span class="hl-t">${esc(SAFE_FIXED)}</span>`;
@@ -1878,6 +1898,7 @@
     const v = resolve(state.index, state.route);
     if (v.level === 'empty') { top.innerHTML = pick.innerHTML = bottom.innerHTML = legendLine.innerHTML = ''; panel.hidden = true; stage.innerHTML = emptyHTML('전국 데이터 준비 중', ['출처 기록에서 내보낸 숫자만 이 자리에 보여 드립니다.', '준비되면 전국에서 읍·면·동까지 내려가 볼 수 있습니다.'], true); return; }
     const ind = curInd(), mode = effMode(ind), m = model(v), src = state.index.source && state.index.source.name, ok = avail(ind);
+    const summaryNotice = m.summaryWaiting ? (state.index.summaryError ? '추가 지표 자료를 불러오지 못했습니다. 새로고침해 주세요.' : '추가 지표 자료를 불러오는 중입니다.') : '';
     const it = m.kind === 'emd' && v.dong ? m.items.find(x => x.code === v.dong) : null;
     if (EXTRA_FILES[ind.src]) wantExtra(ind.src);   // 그 칩을 골랐다
     if (it) wantExtra('migration', 'realestate');   // 동 카드의 세부 지표 표와 문서가 쓴다
@@ -1893,7 +1914,7 @@
     // 휴대폰 폭에서 네 칸이 한 줄에 들어가게 '(+1년)'은 뺐다. 기준연도는 지표 이름(○○년 대비)에 있다
     const hzCtl = ind.src === 'forecast' && horizons().length ? seg('horizon', horizons().map(h => [h, `${h}년`]), horizon(), base !== null ? `전망 연도(기준 ${base}년)` : '전망 연도') : '';
     // 연도 막대를 끄는 중이면 막대를 다시 만들지 않는다(다시 만들면 끌기가 한 칸에서 끊긴다)
-    const lkey = ind.code + mode, median = ok && !ind.pending && m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind), legend = legendHTML(ind, mode, src, m.year, ok).replace('class="map-legend"', `class="map-legend${lkey !== lastLegend && !reduced ? ' is-new' : ''}"`); lastLegend = lkey;
+    const lkey = ind.code + mode, median = ok && !ind.pending && m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind), legend = (summaryNotice ? `<div class="map-legend" role="status"><b>${esc(ind.label)}</b><p>${esc(summaryNotice)}</p></div>` : legendHTML(ind, mode, src, m.year, ok)).replace('class="map-legend"', `class="map-legend${lkey !== lastLegend && !reduced ? ' is-new' : ''}"`); lastLegend = lkey;
     arrange();
     const sliding = top.contains(document.activeElement) && document.activeElement.matches('[data-year]');
     if (sliding) {
@@ -1930,7 +1951,7 @@
     bottom.innerHTML = (narrow.matches ? '' : legend) + `<details class="map-tools" data-fold="tools"${fold.tools ? ' open' : ''}><summary>지도 저장·수질 겹쳐 보기</summary>` + (DG ? `<p class="map-tools-note">지금 보이는 지도를 그림 파일(PNG)이나 GIS 프로그램용 파일(GeoJSON)로 저장합니다.</p><p class="map-png"><button type="button" class="btn ghost" data-map-png>지도 이미지(PNG)</button><button type="button" class="btn ghost" data-map-geojson>지도 자료(GeoJSON)</button><span class="map-png-msg" data-png-msg role="status"></span></p>` : '') + water + `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, 휠이나 + − 버튼으로 확대합니다.'}<br>지도에서 구·군을 누르면 그 안의 읍·면·동이 보이고(시·도 → 구·군 → 읍·면·동), 동을 누르면 그 동의 요약이 열립니다.<br>지도가 불편하면 '읍·면·동 목록'에서 이름으로 고를 수 있습니다.</p></details>` +
       `</details>` +
       `<div class="map-selects">${sidoSel}${sgSel}${guSel}</div>${narrow.matches ? '' : dongList}<p class="map-live" aria-live="polite">${esc(liveText(v, it, ind, mode))}</p>`;
-    legendLine.innerHTML = narrow.matches ? legendLineHTML(ind, mode, ok) : '';
+    legendLine.innerHTML = narrow.matches ? (summaryNotice ? `<span role="status">${esc(summaryNotice)}</span>` : legendLineHTML(ind, mode, ok)) : '';
     styleData(bottom); styleData(pick); styleData(legendLine);   // 범례 색 견본(data-bg)은 좁은 화면에서 pick 안에 있다
     const inEmd = v.level === 'emd';
     panel.hidden = !inEmd;
@@ -2446,8 +2467,8 @@
   window.renewAfter = firstMap;
   const geoP = fetchJson('data/national/sigungu-overview.geojson', true).then(geo => geo && Array.isArray(geo.features)
     ? { geo, detailed: false } : fetchJson('data/national/sigungu.geojson').then(geo => ({ geo, detailed: true })));
-  // 첫 지도는 index_core.json(연도 요약·미연결 목록을 뺀 36KB)만 기다린다. 없으면 전체 index.json
-  const indexP = fetchJson('data/national/index_core.json').then(c => (c && Array.isArray(c.sigungu) ? c : fetchJson('data/national/index.json')));
+  // 첫 지도는 기본 쇠퇴 지표·지역 메타만 담은 index_map.json을 기다린다. 없으면 전체 index.json
+  const indexP = fetchJson('data/national/index_map.json').then(c => (c && Array.isArray(c.sigungu) ? c : fetchJson('data/national/index.json')));
   window.renewAfter = Promise.all([indexP, geoP, firstMap]).then(() => {}, () => {});
   if (DG === undefined) window.renewAfter.then(loadDocgen);
   indexP.then(index => {
@@ -2459,10 +2480,9 @@
     if (index.series_file) { // 시·군·구 연도 요약은 목록·경계 뒤에 받아 붙인다. 오기 전에는 연도 문구를 '불러오는 중'으로 두고 자동 재생을 미룬다
       index.seriesPending = true;
       fetchJson('data/national/' + index.series_file, true).then(s => {
-        const by = (s && s.sigungu) || {};
-        index.sigungu.forEach(sg => { if (by[sg.code5]) sg.series = by[sg.code5]; });
-        index.unmatched = (s && s.unmatched) || [];
-        index.seriesPending = false; render(); startAuto();
+        index.summaryError = !mergeIndexSeries(index, s);
+        if (!index.summaryError) mergeLivingSummary(index, state.livingSummary);
+        index.seriesPending = false; coverMemo.clear(); render(); startAuto();
         document.dispatchEvent(new Event('renew-series'));   // find.js: 시·군·구 값은 series에서 읽는다. 늦게 오면 다시 센다(v9: 먼저 열면 '0곳'으로 남았다)
       });
     }
@@ -2487,7 +2507,7 @@
   Promise.all([
     fetchJson('data/report_templates.json', true).then(j => { state.templates = j && typeof j === 'object' && j.onepage && j.summary ? j : null; if (DG && state.templates) DG.setTemplates(j); }),
     fetchJson('data/national/living/index.json', true).then(li => { state.living = li && Array.isArray(li.indicators) ? li : null; }),
-    fetchJson('data/national/living/summary.json', true).then(j => { mergeLivingSummary(state.index, j); coverMemo.clear(); }),
+    fetchJson('data/national/living/summary.json', true).then(j => { state.livingSummary = j; mergeLivingSummary(state.index, j); coverMemo.clear(); }),
     // 다른 직원이 만드는 중인 파일. 없으면 null → 해당 칩은 '수집 중'
     fetchJson('data/national/designations.json', true).then(j => { state.designations = j && Array.isArray(j.items) ? j : null; }),
     fetchJson('data/national/forecast/index.json', true).then(j => { state.forecastIdx = j && Array.isArray(j.horizons) ? j : null; }),

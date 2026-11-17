@@ -19,7 +19,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="manifest" href="site.webmanifest">
-<link rel="preload" as="fetch" href="data/national/index_core.json" crossorigin="anonymous">
+<link rel="preload" as="fetch" href="data/national/index_map.json" crossorigin="anonymous">
 <link rel="preload" as="script" href="field/naver-map-key.js" fetchpriority="high">
 <link rel="preload" as="font" href="fonts/pretendard-map.woff2" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://oapi.map.naver.com">
@@ -55,9 +55,9 @@
 <!-- 2026-11-13: 신청요건 한 줄(reqLineHTML)·도넛 접기·시작 묶음(BUNDLES)으로 버전을 올림 -->
 <!-- 2026-11-13: 최저기준 묶음에 보건소·어린이집 거리 칩을 더해 버전을 올림 -->
 <script src="decline-req.js?v=20261113-v93" defer></script>
-<script src="map.js?v=20261117-oa-scope" defer></script>
+<script src="map.js?v=20261117-core-split" defer></script>
 <script src="explore-layout.js?v=20261113" defer></script>
-<script src="workspace.js?v=20261114-e2" defer></script>
+<script src="workspace.js?v=20261117-core-split" defer></script>
 <script src="report.js?v=20261114-e2" defer></script>
 <link rel="stylesheet" href="rm6.css?v=20261114-d9">
 </head>
@@ -106,7 +106,7 @@
                  이 줄은 지도 위로 튀어나왔다(사용자 화면). 검색 칸 안에 넣어 함께 옮겨지게 하고, 작은 글자 링크로 줄인다 -->
             <p class="hero-regions"><span>자료가 더 많은 곳</span> <a href="#map/21">부산</a> · <a href="#map/38/38100">양산</a> · <a href="#map/38/38090">거제</a></p>
           </form>
-          <div class="hero-map"><div id="mapApp"></div><!-- 2026-11-12: 지도 화면에 자료 기준연도가 잘 안 보여 "최신이 아니다"로 오해받았다(docs/research/data_refresh_2026-11-12.md 4절 3번). 연도는 하드코딩하지 않고 map.js가 index_core.json의 출처 메타에서 채운다(원칙 1). 못 읽으면 빈 채로 숨는다 --><p class="hero-basis" data-basis></p><noscript><p>지도는 자바스크립트가 켜져 있어야 보입니다.</p></noscript></div>
+          <div class="hero-map"><div id="mapApp"></div><!-- 2026-11-12: 지도 화면에 자료 기준연도가 잘 안 보여 "최신이 아니다"로 오해받았다(docs/research/data_refresh_2026-11-12.md 4절 3번). 연도는 하드코딩하지 않고 map.js가 index_map.json의 출처 메타에서 채운다(원칙 1). 못 읽으면 빈 채로 숨는다 --><p class="hero-basis" data-basis></p><noscript><p>지도는 자바스크립트가 켜져 있어야 보입니다.</p></noscript></div>
           <!-- R3 2: 동네 현황 카드는 지도·고른 동 카드 뒤(좁은 화면 DOM 순서). 넓은 화면은 explore-layout.js가 왼쪽 패널로 옮긴다 -->
           <p id="heroLive" class="hero-live" aria-live="polite"></p>
           <div id="overlayApp" class="ov-slot"><button type="button" class="btn ghost" data-overlay-load>내 GIS 파일 겹쳐 보기</button></div><noscript><p>내 GIS 파일 겹쳐 보기는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>

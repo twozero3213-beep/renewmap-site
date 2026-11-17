@@ -887,36 +887,33 @@
   async function showTools() {
     if (fetchingTools) return;
     const done = await toolsDone();
+    if (fetchingTools) return;
     $("prefetchState").textContent = done ? "가리기 도구: 받음" : "가리기 도구: 안 받음";
     $("prefetch").disabled = done;
   }
-  async function prefetchTools(auto) {
-    if (fetchingTools || !navigator.onLine) return;
-    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) { if (!auto) toast("오프라인 준비가 끝난 뒤 다시 눌러 주세요."); return; }
-    if (await toolsDone()) { showTools(); return; }
+  async function prefetchTools() {
+    if (fetchingTools) return;
+    if (!navigator.onLine) { toast("가리기 도구를 받으려면 인터넷에 연결해 주세요."); return; }
+    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) { toast("오프라인 준비가 끝난 뒤 다시 눌러 주세요."); return; }
     fetchingTools = true; $("prefetch").disabled = true; $("prefetchState").textContent = "가리기 도구: 받는 중";
-    try { await window.FieldDetect.prefetch(); }
-    catch (e) { if (!auto) toast("가리기 도구를 받지 못했습니다.\n인터넷을 확인하고 다시 해 보세요."); }
-    fetchingTools = false; showTools();
+    try { if (!(await toolsDone())) await window.FieldDetect.prefetch(); }
+    catch (e) { toast("가리기 도구를 받지 못했습니다.\n인터넷을 확인하고 다시 해 보세요."); }
+    finally { fetchingTools = false; showTools(); }
   }
-  $("prefetch").addEventListener("click", () => prefetchTools(false));
+  $("prefetch").addEventListener("click", prefetchTools);
   showTools();
-  // 자동 받기: 홈 화면에 추가했을 때, 그리고 데이터 절약이 꺼진 채 Wi-Fi·유선이거나 4g일 때 화면이 한가해지면. 2g·3g·데이터 절약에서는 받지 않는다
-  const conn = navigator.connection;
-  const goodNet = () => !!conn && conn.saveData === false && (conn.type === "wifi" || conn.type === "ethernet" || conn.effectiveType === "4g");
-  const whenIdle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 20000 }) : setTimeout(fn, 4000));
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(() => { $("ready").textContent = "오프라인 준비를 마치지 못했습니다.\n인터넷 연결과 브라우저 설정을 확인해 주세요."; });
     // 이미 옛 판이 있던 기기에서만 알린다(첫 설치는 알릴 것이 없다). 쓰던 기록은 기기 저장소에 남아 새로고침해도 그대로다
     let hadCtrl = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadCtrl) toast("새 판을 받았습니다.\n새로고침하면 반영됩니다.", "새로고침", () => location.reload()); hadCtrl = true; });
     // ready는 앱 셸을 다 저장한 서비스 워커가 켜져야 풀린다. 현장에 나가기 전에 오프라인으로 열리는지 보이게 한다(감사 이수진2)
-    navigator.serviceWorker.ready.then(() => { $("ready").textContent = "오프라인 준비됨.\n인터넷이 끊겨도 이 화면이 열립니다."; if (goodNet()) whenIdle(() => prefetchTools(true)); });
+    navigator.serviceWorker.ready.then(() => { $("ready").textContent = "오프라인 준비됨.\n인터넷이 끊겨도 이 화면이 열립니다."; });
   } else { $("ready").textContent = "이 브라우저에서는 오프라인으로 열 수 없습니다.\n인터넷에 연결한 상태로 사용해 주세요."; }
   // 홈 화면 추가(감사 이수진3). 크롬·삼성 인터넷은 beforeinstallprompt를 주고, iOS 사파리는 주지 않아 공유 메뉴를 한 번 안내한다
   let installAsk = null;
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installAsk = e; $("install").hidden = false; });
-  window.addEventListener("appinstalled", () => { $("install").hidden = true; prefetchTools(true); });
+  window.addEventListener("appinstalled", () => { $("install").hidden = true; });
   $("installGo").addEventListener("click", () => { $("install").hidden = true; if (installAsk) installAsk.prompt(); installAsk = null; });
   if (navigator.standalone === false && !store("renewmap-field-install")) {
     $("installMsg").textContent = "사파리 아래의 공유 버튼 → '홈 화면에 추가'를 누르면 앱처럼 바로 열립니다.";

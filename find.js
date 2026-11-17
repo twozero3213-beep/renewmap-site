@@ -105,6 +105,11 @@
   // AND 결합: 고른 조건 중 이 범위에서 쓸 수 있는 것만 센다. 값이 없는 조건이 있으면 '자료 없음'(맞음으로 세지 않는다)
   // ids의 원소가 배열이면 그 안은 OR 묶음(프리셋 전용. 하나라도 맞으면 맞음, 맞는 것 없이 자료 없음이 있으면 자료 없음). 묶음 사이는 AND
   function evaluate(areas, ids, ctx, unit) {
+    // 시군구 조건은 연도 요약이 있어야 계산한다. 조건을 빼고 나머지만 평가하면 맞는 지역이 부풀려진다.
+    if (unit === 'sg' && (ids || []).flat().some(id => { const c = condOf(id); return c && c.units.includes('sg') && ['index', 'living'].includes(c.src); }) &&
+        (ctx.index?.seriesPending || ctx.index?.summaryError)) return { waiting: ctx.index.summaryError
+      ? '조건 자료를 불러오지 못했습니다. 새로고침해 주세요. 결과 계산과 내보내기를 보류합니다.'
+      : '조건 자료를 불러오는 중입니다. 준비되면 결과를 계산합니다.' };
     const groups = (ids || []).map(g => (Array.isArray(g) ? g : [g]).map(condOf).filter(Boolean).map(c => ({ c, s: condState(c, ctx, unit) })));
     const use = groups.map(g => g.filter(x => x.s.ok)).filter(g => g.length), skipped = groups.flat().filter(x => !x.s.ok).map(x => x.c.id);
     const res = new Map();
@@ -165,6 +170,7 @@
     return `<nav class="fd-pager" aria-label="지역 결과 페이지"><button type="button" data-fd-page="prev" aria-label="이전 페이지"${p.page === 1 ? ' disabled' : ''}>이전</button><div>${pageRange(p.page, p.pages).map(n => typeof n === 'number' ? `<button type="button" data-fd-page="${n}"${n === p.page ? ' aria-current="page"' : ''} aria-label="${n}페이지">${n}</button>` : '<span aria-hidden="true">…</span>').join('')}</div><button type="button" data-fd-page="next" aria-label="다음 페이지"${p.page === p.pages ? ' disabled' : ''}>다음</button></nav>`;
   }
   function resultHTML(ev, areas, ctx, unit, by, page = 1) {
+    if (ev.waiting) return `<p class="fd-wait" data-state="${ctx.index?.summaryError ? 'failed' : 'loading'}" role="status">${esc(ev.waiting)}</p>`;
     const emo = ev.use.map(id => ico(condOf(id).e)).join('');   // e는 아이콘 이름(bldg 등). 글자로 찍혀 줄마다 'bldg sum'이 보였다(v9)
     const skip = ev.skipped.length ? `<p class="fd-skip">이 범위에서 쓸 수 없어 빠진 조건 ${ev.skipped.length}개: ${esc(ev.skipped.map(id => chipLabel(condOf(id), ctx, condState(condOf(id), ctx, unit))).join(', '))}</p>` : '';
     const head = `<p class="fd-note">${esc(NOTE)} · ${esc(UNIT[unit])} 단위${unit === 'sg' ? ' · 시·군·구 값은 그 안 읍·면·동 값의 중앙값' : ''}</p>`;
@@ -193,6 +199,7 @@
   }
   const JUDGE = { hit: '해당', miss: '해당 안 함', na: '자료 없음' };
   function exportSheets(areas, ev, ctx, unit) {
+    if (ev.waiting) throw new Error(ev.waiting);
     const idx = ctx.index, conds = ev.use.map(condOf), sts = conds.map(c => condState(c, ctx, unit)), srcs = conds.map(c => condSource(c, ctx)), keys = [], nums = srcs.map(x => {
       const k = JSON.stringify([x.name, x.url, x.date]); if (!keys.includes(k)) keys.push(k); return keys.indexOf(k) + 1; });
     const sido = a => ((idx.sido || []).find(x => String(x.code2) === String(a.sg.sido2)) || {}).name || '';
@@ -319,6 +326,7 @@
     const areas = areasOf(st.scope, ctx), ev = evaluate(areas, st.sel, ctx, unit());
     const [head, list] = resultHTML(ev, areas, ctx, unit(), st.by, st.page).split(LIST_MARK); // 큰 숫자 → 지도 → 목록 순서로 놓는다
     $('[data-fd-out]').innerHTML = head; $('[data-fd-list]').innerHTML = list || '';
+    if (ev.waiting) { $('[data-fd-map]').innerHTML = ''; st.svgKey = null; return; }
     drawSvg(areas, ev, e);
     root.querySelectorAll('[data-count]').forEach(el => (M.countUp ? M.countUp(el) : null));
   }
@@ -379,6 +387,7 @@
     const msg = root.querySelector('[data-fd-xlsx-msg]'), say = t => { if (msg) msg.textContent = t; };
     let ctx = st.ctx; if (st.scope.sg) { const e = emdCtx(st.scope.sg); if (!e) { say('읍·면·동 자료를 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요.'); return; } ctx = { ...st.ctx, emd: e.json, lv: e.lv, forecast: e.fc }; }
     const areas = areasOf(st.scope, ctx), ev = evaluate(areas, st.sel, ctx, unit());
+    if (ev.waiting) { say(ev.waiting); return; }
     if (!ev.use.length) { say('조건을 하나 이상 고른 뒤 눌러 주세요.'); return; }
     const d = new Date(), p = n => String(n).padStart(2, '0'), day = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
     const sg = st.scope.sg ? (st.ctx.index.sigungu || []).find(x => String(x.code5) === st.scope.sg) : null, sd = st.scope.sido ? (st.ctx.index.sido || []).find(x => String(x.code2) === st.scope.sido) : null;
@@ -418,8 +427,8 @@
     render(); scopeEl.querySelector(s.hasAttribute('data-fd-sido') ? '[data-fd-sido]' : '[data-fd-sg]')?.focus({ preventScroll: true });
   });
   const ok = (j, k) => (j && Array.isArray(j[k]) ? j : null);
-  // 목록은 map.js와 같은 index_core.json(연도 요약 없음, 같은 캐시로 한 번만 받는다). 없으면 전체 index.json
-  const core = fetchJson('data/national/index_core.json').then(c => (ok(c, 'sigungu') ? c : fetchJson('data/national/index.json')));
+  // 목록은 map.js와 같은 index_map.json(연도 요약 없음, 같은 캐시로 한 번만 받는다). 없으면 전체 index.json
+  const core = fetchJson('data/national/index_map.json').then(c => (ok(c, 'sigungu') ? c : fetchJson('data/national/index.json')));
   Promise.all([core, ...['living/index.json', 'designations.json', 'forecast/index.json'].map(f => fetchJson('data/national/' + f, true))])
     .then(([index, li, des, fi]) => {
       st.ctx = { index: ok(index, 'sigungu'), living: ok(li, 'indicators'), designations: ok(des, 'items'), migration: null, forecastIdx: ok(fi, 'horizons'), realestate: null };   // migration·realestate는 LAZY: 조건을 고를 때 받는다
