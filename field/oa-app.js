@@ -8,6 +8,16 @@
   const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };
   const n = (x) => (x === null || x === undefined ? "–" : Number(x).toLocaleString("ko-KR"));
   let data = null, dong = null;
+  const requested = new URLSearchParams(location.search).get("dong");
+  const originCode = /^\d{7,10}$/.test(requested || "") ? requested : null;
+  if (requested !== null) {
+    $("origin").hidden = false;
+    $("originNote").textContent = originCode ? `지도에서 요청한 행정동 코드 ${originCode}의 자료를 확인합니다.` : "행정동 코드 형식이 올바르지 않아 선택을 복원하지 않았습니다.";
+    if (originCode) {
+      $("originBack").href = `../explore.html#map/${originCode.slice(0, 2)}/${originCode.slice(0, 5)}/${originCode}`;
+      $("originBack").textContent = "선택한 행정동 지도로 돌아가기";
+    }
+  }
 
   const svg = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
   const swatch = (g) => { const s = svg("svg", { width: 14, height: 14, viewBox: "0 0 14 14", "aria-hidden": "true" }); s.append(svg("rect", { width: 14, height: 14, rx: 3, fill: O.FILL[g], stroke: "#7a9089" })); return s; };
@@ -37,7 +47,7 @@
   function draw() {
     const s = O.summary(dong), y = data.years, i19 = y.indexOf(2019);
     $("outTitle").textContent = `${dong.sigungu_name} ${dong.name} 집계구 ${dong.oas.length}개`;
-    $("outBase").textContent = `행정동 쇠퇴 확정된 요건 수 ${dong.met_count ?? "값 없음"} / 3 · 기준일 ${dong.met_ref || "–"} · 집계구 값 ${y[0]}~${y[y.length - 1]}년`;
+    $("outBase").textContent = `이 자료에 기록된 행정동 요건 수 ${dong.met_count ?? "값 없음"} / 3 · 기준일 ${dong.met_ref || "–"} · 집계구 값 ${y[0]}~${y[y.length - 1]}년 · 원래 지도의 최신 결과와 기준일을 비교하세요.`;
     $("outCount").replaceChildren(...[2, 1, 0, "check"].map((g) => { const li = document.createElement("li"); li.append(swatch(g), ` ${O.LABEL[g]} ${s[g]}개`); return li; }));
     $("rows").replaceChildren(...dong.oas.map((o) => {
       const tr = document.createElement("tr"); tr.dataset.oa = o.oa;
@@ -71,19 +81,30 @@
 
   // 2026-11-15 우지예: 경남 양산·거제(oa_decline_gyeongnam.json, PR #125)를 같은 목록에 붙인다. 두 파일은 같은 방법·규칙·연도로 만들어
   // 출처·규칙 문구(data.source·rule·years)가 같다 → 동만 이어 붙이고 시도 묶음(optgroup)으로 나눈다. 경남 파일을 못 받으면 부산만 보인다
-  const GROUPS = [["oa_decline_busan.json", "부산광역시"], ["oa_decline_gyeongnam.json", "경상남도 양산시·거제시"]];
+  // 2026-11-16: 경상도 파일이 양산·거제에서 경남·경북 전체(96개 동)로 넓어졌다. 시도 묶음을 동의 시군구 코드 앞 두 자리(SGIS 37 경북·38 경남)로 나눈다
+  const GROUPS = [["oa_decline_busan.json", "부산광역시"], ["oa_decline_gyeongnam.json", "경상도"]];
+  const SIDO_OF = { "37": "경상북도", "38": "경상남도" };
+  const bySido = (ds) => Object.entries(ds.reduce((o, x) => { const k = SIDO_OF[String(x.sigungu || x.code).slice(0, 2)] || "경상도"; (o[k] = o[k] || []).push(x); return o; }, {})).sort((p, q) => p[0].localeCompare(q[0], "ko"));
   Promise.all(GROUPS.map(([f], i) => getJson(f).catch((err) => { if (i === 0) throw err; return null; }))).then(([d, ...rest]) => {
     data = d;
-    const sets = [[GROUPS[0][1], d.dongs], ...rest.map((x, i) => x && x.rule === d.rule && x.years.join() === d.years.join() ? [GROUPS[i + 1][1], x.dongs] : null).filter(Boolean)];
+    const sets = [[GROUPS[0][1], d.dongs], ...rest.flatMap((x) => (x && x.rule === d.rule && x.years.join() === d.years.join() ? bySido(x.dongs) : []))];
     data = { ...d, dongs: sets.flatMap(([, ds]) => ds) };
+    const incomplete = rest.some((x) => !x || x.rule !== d.rule || x.years.join() !== d.years.join());
+    $("coverage").textContent = `불러온 목록: ${sets.filter(([, ds]) => ds.length).map(([label, ds]) => `${label} ${ds.length}개 동`).join(" · ") || "없음"}. 목록에 있는 동의 자료만 확인할 수 있습니다.${incomplete ? " 일부 지역 자료를 확인할 수 없어 이 목록에 포함하지 않았습니다." : ""}`;
     const opt = (x) => new Option(`${x.sigungu_name} ${x.name} (충족 ${x.met_count ?? "값 없음"}개)`.trim(), x.code);
     $("dong").replaceChildren(new Option("행정동을 고르세요", ""), ...sets.map(([label, ds]) => { const g = document.createElement("optgroup"); g.label = label; g.append(...ds.map(opt)); return g; }));
     $("dong").disabled = false;
     $("dong").addEventListener("change", () => show($("dong").value));
-    // R8 4: 동 페이지가 ?dong=행정동코드로 이 쪽을 열면 그 동을 바로 보여 준다(없는 코드는 무시)
-    const want = new URLSearchParams(location.search).get("dong");
-    if (want && data.dongs.some((x) => x.code === want)) { $("dong").value = want; show(want); }
-  }).catch(() => say("집계구 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true));
+    // 링크의 값·판정은 받지 않는다. 요청한 동이 없으면 다른 동을 대신 고르지 않고 원래 지도로 돌아갈 수 있게 한다.
+    if (originCode) {
+      const selected = data.dongs.find((x) => x.code === originCode);
+      $("originNote").textContent = selected ? `지도에서 선택한 ${selected.sigungu_name} ${selected.name}입니다. 행정동 결과는 원래 지도에서 확인하세요.` : `요청한 행정동(코드 ${originCode})의 집계구 자료는 현재 불러온 목록에 없습니다. 다른 동의 자료를 원래 동의 결과로 사용할 수 없습니다.`;
+      if (selected) { $("dong").value = originCode; show(originCode); }
+    }
+  }).catch(() => {
+    $("coverage").textContent = "자료 범위를 확인하지 못했습니다.";
+    say("집계구 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true);
+  });
 
   $("csv").addEventListener("click", () => {
     if (!dong) return;

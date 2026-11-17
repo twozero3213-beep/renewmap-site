@@ -45,6 +45,8 @@ def main():
     routes += sorted('field/'+p.name for p in (site/'field').glob('*.html') if p.name!='vw-frame.html')
     scores = json.loads((site/'data/national/scores.json').read_text(encoding='utf-8'))['dongs']
     ranked = sum(d.get('total') is not None for d in scores.values())
+    oa_records = json.loads((site/'data/oa_decline_busan.json').read_text(encoding='utf-8'))['dongs']
+    oa_known = min((d for d in oa_records if d['oas']), key=lambda d: len(d['oas']))
     args.output.mkdir(parents=True, exist_ok=True)
     server = None
     if not args.base:
@@ -75,27 +77,27 @@ def main():
                 context.route('https://api.vworld.kr/req/wmts/**', lambda route: route.abort())
                 tile = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/bJ8AAAAASUVORK5CYII=')
                 context.route('https://tile.openstreetmap.org/**', lambda route: route.fulfill(content_type='image/png', body=tile))
-            page = context.new_page()
             errors = []
             missing = []
-            page.on('pageerror', lambda error: errors.append(re.sub(r'\?[^\s)]*', '?[query omitted]', error.stack or str(error))))
-            page.on('response', lambda res: missing.append(res.url) if res.status>=400 and res.url.startswith(base) and not res.url.endswith(('/field/naver-map-key.js','/field/vworld-key.js')) else None)
 
             def check(route, width, topic=None):
                 row = {'route': route, 'width': width, 'topic': topic, **geometry(page)}
                 results.append(row)
                 assert row['scroll']<=width+1, row
                 assert not any(row[k] for k in ['duplicateIds','crampedNav','exposedHidden','gridTables','misaligned']), row
-                assert row['height'] < (5000 if topic is not None else 10000), row
+                assert row['height'] < (5000 if isinstance(topic, int) else 10000), row
                 assert not errors, errors
                 assert not missing, missing
                 assert not analytics, f'중지한 방문 분석 요청: {analytics}'
 
             for width in [1280, 390]:
-                page.set_viewport_size({'width': width, 'height': 900})
                 for route in routes:
                     errors.clear()
                     missing.clear()
+                    page = context.new_page()
+                    page.set_viewport_size({'width': width, 'height': 900})
+                    page.on('pageerror', lambda error: errors.append(re.sub(r'\?[^\s)]*', '?[query omitted]', error.stack or str(error))))
+                    page.on('response', lambda res: missing.append(res.url) if res.status>=400 and res.url.startswith(base) and not res.url.endswith(('/field/naver-map-key.js','/field/vworld-key.js')) else None)
                     try:
                         response = page.goto(base+route, wait_until='load')
                         assert response and response.status==200, f'{route}: {response.status if response else None}'
@@ -117,6 +119,65 @@ def main():
                             page.wait_for_function('() => [...document.querySelectorAll("#mapApp .leaflet-tile-pane img")].some(img => img.complete && img.naturalWidth>0)')
                             assert not page.locator('#mapApp .map-naver').count()
                         check(route, width)
+                        if route == 'index.html':
+                            page.locator('main a[href="about.html#usesTitle"]').click()
+                            page.wait_for_url(base+'about.html#usesTitle', wait_until='networkidle')
+                            page.evaluate('() => document.fonts.ready')
+                            assert page.locator('#how > .wrap > .about-use').count() == 5
+                            check(route, width, 'role_entry')
+                            page.goto(base+route, wait_until='networkidle')
+                            entry = page.locator('main a[href="field/oa.html"]').first
+                            assert entry.count(), '집계구 자료 확인 진입 링크가 없습니다.'
+                            entry.evaluate('(a) => { const d=a.closest("details"); if(d)d.open=true; }')
+                            entry.click()
+                            page.wait_for_url(base+'field/oa.html', wait_until='networkidle')
+                            page.wait_for_selector('#dong')
+                            page.wait_for_function('() => !document.querySelector("#dong").disabled')
+                            assert page.locator('#origin').is_hidden()
+                            assert '불러온 목록' in page.locator('#coverage').inner_text()
+                            check(route, width, 'oa_entry')
+                            page.goto(base+route, wait_until='networkidle')
+                        if route == 'about.html':
+                            for entry, panel, detail in [('survey', '1', 'surveyChanges'), ('review', '3', None),
+                                                         ('revisit', '1', 'revisitReport'), ('delivery', '2', 'handoverSummary')]:
+                                href = 'tasks.html?step='+entry+('#handoverSummary' if entry == 'delivery' else '')
+                                page.locator('#how > .wrap > .about-use a[href="'+href+'"]').click()
+                                page.wait_for_url(base+href, wait_until='networkidle')
+                                page.wait_for_selector('#newTask')
+                                page.evaluate('() => document.fonts.ready')
+                                page.wait_for_function('() => !document.querySelector("#newTask").disabled')
+                                assert page.locator('[data-panel="'+panel+'"]').is_visible()
+                                if detail:
+                                    assert page.locator('#'+detail).is_visible()
+                                    if entry in ('survey', 'revisit'):
+                                        assert page.locator('#'+detail).evaluate('(el) => el.open')
+                                assert page.evaluate('async()=> (await TaskStore.list()).length') == 0
+                                check(route, width, 'role_'+entry)
+                                page.goto(base+route, wait_until='networkidle')
+                        if route == 'field/oa.html':
+                            code = oa_known['code']
+                            page.goto(base+route+'?dong='+code+'&met=3', wait_until='networkidle')
+                            page.wait_for_function('() => !document.querySelector("#out").hidden')
+                            assert page.locator('#dong').input_value() == code
+                            assert oa_known['name'] in page.locator('#originNote').inner_text()
+                            assert f"요건 수 {oa_known['met_count']} / 3" in page.locator('#outBase').inner_text()
+                            expected_hash = f'#map/{code[:2]}/{code[:5]}/{code}'
+                            assert page.locator('#originBack').get_attribute('href') == '../explore.html'+expected_hash
+                            check(route, width, 'oa_supported')
+                            page.locator('#originBack').click()
+                            page.wait_for_url(base+'explore.html'+expected_hash, wait_until='networkidle')
+                            assert page.evaluate('location.hash') == expected_hash
+                            check(route, width, 'oa_return_map')
+                            for query, message, href in [('99999999', '현재 불러온 목록에 없습니다', ''), ('javascript%3Aalert(1)', '코드 형식', '../explore.html')]:
+                                page.goto(base+route+'?dong='+query, wait_until='networkidle')
+                                page.wait_for_function('() => !document.querySelector("#dong").disabled')
+                                assert page.locator('#dong').input_value() == ''
+                                assert page.locator('#out').is_hidden()
+                                assert message in page.locator('#originNote').inner_text()
+                                if href:
+                                    assert page.locator('#originBack').get_attribute('href') == href
+                                check(route, width, 'oa_unavailable' if query == '99999999' else 'oa_invalid_code')
+                            page.goto(base+route, wait_until='networkidle')
                         topic = page.locator('#contentTopic')
                         if topic.count():
                             count = topic.locator('option').count()
@@ -141,6 +202,11 @@ def main():
                     except Exception as error:
                         failures.append({'route': route, 'width': width, 'error': str(error)})
                         page.screenshot(path=str(args.output/f'failed-{route.replace("/","_")}-{width}.png'))
+                    finally:
+                        # 이전 화면의 비동기 3D 작업이 다음 화면의 오류로 기록되지 않게 종료한다. 늦게 받은 오류도 원래 화면에 남긴다.
+                        page.close()
+                        if errors and not any(f['route'] == route and f['width'] == width for f in failures):
+                            failures.append({'route': route, 'width': width, 'error': '\n'.join(errors)})
                     print(f'{width} {route}: {"FAIL" if failures and failures[-1]["route"]==route and failures[-1]["width"]==width else "OK"}', flush=True)
             context.close()
             browser.close()

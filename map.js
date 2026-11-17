@@ -813,13 +813,20 @@
       return `<section class="sr-req is-none" aria-label="쇠퇴 3요건 요약"><p class="sr-req-n"><span class="sr-req-k">쇠퇴 3요건</span> 추가확인 <small>자료가 모자라 아직 셀 수 없습니다</small></p>${go}${foot}</section>`;
     }
     const std = validStd(r.ind.standard) ? r.ind.standard.text : null;
+    // 2026-11-17 우지예(지원센터 담당자 인터뷰): "구 단위 지표로는 사업이 타당한지 판단할 수 없고, 사업지 안의 지표를 다시 봐야 한다".
+    // 통계 범위가 다른 집계구 자료를 확인하도록 잇는다. 자료가 없는 동은 도착 화면에서 안내하며 숫자는 새로 세지 않는다(원칙 1).
+    // 구역 그리기(field/redev.html)는 부산 기준 계산만 제공하므로 부산(21) 동에서만 함께 보인다. 규칙 승인을 뜻하지 않는다.
+    const code = dong && /^\d{7,10}$/.test(codeOf(dong)) ? codeOf(dong) : null;
     // 정해지지 않은 요건이 남아 결과가 바뀔 수 있으면 '기준 안'·'기준 넘음' 대신 추가확인(1쪽 문서 '확정 불가'와 같은 판단)
     // 그해 셀이 없으면(지난 해) 아래 세 줄에서 정해지지 않은 요건 수를 센다
     const nUnknown = (rowsHtml.match(/class="is-none"/g) || []).length;
     const undecided = (r.cell && DeclineReq && DeclineReq.metStatus(r.cell) === 'none' && (r.status === '기준 안' || r.status === '기준 넘음')) || (r.status === '기준 안' && isNum(r.value) && r.value + nUnknown >= 2);
     const st = undecided ? '추가확인' : r.status;
+    // 요건이 아직 정해지지 않았으면(추가확인) '못 미친다'고 단정하지 않는다(원칙 4) → 문장을 나눈다
+    const lead = st === '추가확인' ? '동 전체로는 아직 정해지지 않은 요건이 있습니다.' : '동 전체로는 2개에 못 미칩니다.';
+    const smaller = isNum(r.value) && r.value < 2 && code ? `<p class="sr-req-more">${lead} 사업지와 통계 범위가 다를 수 있습니다. 집계구에서는 인구·사업체 두 요건의 자료만 확인합니다: <a href="field/oa.html?dong=${encodeURIComponent(code)}">집계구 자료 범위 확인</a>${String(code).startsWith('21') ? ` · <a href="field/redev.html">구역 그려 계산하기</a>` : ''}</p>` : '';
     return `<section class="sr-req is-${ROW_CLASS[st] || 'none'}" aria-label="쇠퇴 3요건 요약">` +
-      `<p class="sr-req-n"><span class="sr-req-k">쇠퇴 3요건 중</span> <b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(st))}</small>` : ''}</p>${rowsHtml}${jumpNote}${go}${foot}</section>`;
+      `<p class="sr-req-n"><span class="sr-req-k">쇠퇴 3요건 중</span> <b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(st))}</small>` : ''}</p>${rowsHtml}${jumpNote}${go}${smaller}${foot}</section>`;
   }
   // v7(2026-11-13): 3요건 각각의 값·상태를 홈 카드처럼 세 줄로. 평가: 카드의 세는 법이 넷(해당 수·확인할 항목·확정/추가확인·묶음별 수)이라
   // 무엇을 봐야 할지 몰랐다 → 맨 위는 '몇 개 해당'과 그 세 줄만 두고, 나머지 셈은 아래 접힌 칸으로 옮긴다. 값은 rows(출처 기록) 그대로

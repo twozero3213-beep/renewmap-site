@@ -473,6 +473,9 @@
 .sr-req-n small { display: block; font-size: 15px; color: var(--dim); }
 .sr-req-go { grid-column: 2; grid-row: 1 / span 2; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .sr-req-note { grid-column: 1 / -1; margin: 6px 0 0; font-size: 13px; color: var(--dim); }
+/* 2026-11-17: 동 전체로 2개 미만일 때 더 작은 단위(집계구·구역)로 잇는 한 줄 — 맺음말과 같은 폭 */
+.sr-req-more { grid-column: 1 / -1; margin: 8px 0 0; font-size: 14px; }
+.sr-req-more a { display: inline-block; min-height: 32px; line-height: 32px; }
 /* 도넛·점 요약은 접힌 칸 안으로(같은 map.js 주석). 펼치면 예전과 같은 모양 */
 .sr-glance-more { margin: 8px 0 0; border-top: 1px solid var(--line); }
 .sr-glance-more > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: 15px; color: var(--dim); }
