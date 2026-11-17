@@ -1,8 +1,8 @@
 {
   "source": "twozero3213-beep/renewmap",
-  "source_commit": "a849642adc5da21f620de9c43fa8d810655c242f",
+  "source_commit": "8c9e3526e6c916b9a3f579b0e579f85bb5dd23f8",
   "ref": "main",
-  "synced_at": "2026-11-17T05:37:31.898767+00:00",
+  "synced_at": "2026-11-17T08:34:30.920590+00:00",
   "source_snapshot_complete": false,
   "source_baseline_commit": "51fb2648d8b67c6ecccb287c9966103a0aef7998",
   "applied_patch_commits": [
@@ -11,7 +11,8 @@
     "24f926c9257d0f399a253b09242f4bc6ca06121b",
     "06cc318595d7590ecd7eb3826c6a100c938ae960",
     "02e1a5d765a73d83b0aedfcb40a17246b6291dcf",
-    "a849642adc5da21f620de9c43fa8d810655c242f"
+    "a849642adc5da21f620de9c43fa8d810655c242f",
+    "8c9e3526e6c916b9a3f579b0e579f85bb5dd23f8"
   ],
   "deferred_source_commits": [
     "522aaf785",
@@ -28,5 +29,23 @@
     "da4aab61e",
     "5eeab5719"
   ],
-  "deferred_scope": "PR137 landing/data/buildings: publication terms and privacy verification pending; PR138-140 Gyeongsang data, related pages and fonts: outside this handover release validation; previous published versions retained; PR141-148 data, draft rules, other UI and catalog changes: outside this release validation. PR149 map handoff and tested OA UI grouping/coverage are applied without any new data. All other previously deferred content remains deferred."
+  "deferred_scope": "전체 원본과 다른 부분 배포. PR137 대용량 건물은 이용조건 미확인으로 보류하며 기존 공개 148파일과 결합 외곽선 147파일도 제외. API 건물349파일은 이름을 제외해 유지. PR141 인허가627셀만 반영하고 폐쇄말소3559셀은 추가확인으로 보류. PR150 현장 안내와 PR151 내부 규칙 승인 기록은 반영하되 새 지역 계산 기능은 공개하지 않음. 새 집계구의 영업 이용 승낙, 시설의 제3자 권리, 정비사업의 혼합 출처, 그 밖의 확대 자료·글꼴·화면은 기존 보류 범위 유지.",
+  "public_data_review": {
+    "reviewed_on": "2026-11-17",
+    "building_api_files": 349,
+    "building_name_policy": "name=null",
+    "withheld_bulk_building_files": 148,
+    "outline_files": 249,
+    "withheld_joined_outline_files": 147,
+    "permit_cells": 627,
+    "permit_known": 535,
+    "permit_needs_check": 92,
+    "permit_reference_date": "2026-11-09",
+    "withheld_closed_register_cells": 3559,
+    "registered_rules": 24,
+    "internally_approved_rules": 14,
+    "pending_registered_rules": 10,
+    "pending_city_applicability_rules": 8,
+    "decline_rule": "승인 대기"
+  }
 }

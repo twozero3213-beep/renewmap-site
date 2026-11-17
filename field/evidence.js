@@ -97,17 +97,18 @@
     const names = m ? m[1].split(/,\s+/).map((x) => x.trim().replace(/\s+\d[\d,]*건$/, "")) : [String(name || "").replace(/\d+(?=동$)/, "")];
     return ((living && living.bjdong_cells) || []).filter((b) => names.includes(b.name)).map((b) => ({ code10: String(b.code10), name: String(b.name) }));
   }
-  // 건물 자료(buildings/{법정동}.json)에 좌표가 없어 사진 위치로는 거리를 못 잰다. 지번으로 찾는다: 같은 본번 안에서 부번이 가까운 순, 최대 3동.
-  // 지번 뒤에 낱말을 더 적으면 건물 이름에 그 낱말이 든 것만 남긴다(예: '22 101동'). ponytail: 좌표가 생기면 거리순으로 바꾼다
+  // 건물 자료에 좌표가 없어 지번으로 찾는다. 같은 본번에서 부번이 가까운 순서를 페이지가 바뀌어도 유지한다.
   const JIBUN_RE = /^(산)?(\d+)(?:-(\d+))?$/;
-  function findBuildings(files, query, max = 3) {
-    const [j, ...words] = String(query || "").trim().replace(/번지/g, "").split(/\s+/), q = JIBUN_RE.exec(j || "");
-    if (!q) return { hits: [], total: 0 };
-    const sub = (m) => Number(m[3] || 0), word = words.join(" ");
+  function findBuildings(files, query, max = 3, offset = 0) {
+    const j = String(query || "").trim().replace(/번지$/, ""), q = JIBUN_RE.exec(j);
+    if (!j) return { hits: [], total: 0 };
+    if (!q) return { hits: [], total: 0, error: "지번만 입력해 주세요. 예: 113-2, 산113-2. 건물 이름은 검색하지 않습니다." };
+    const sub = (m) => Number(m[3] || 0);
+    const size = Number.isSafeInteger(max) && max > 0 ? max : 3, start = Number.isSafeInteger(offset) && offset >= 0 ? offset : 0;
     const all = (files || []).flatMap((f) => (f.buildings || []).map((b) => ({ b, f, k: JIBUN_RE.exec(String(b.jibun || "")) })))
-      .filter((x) => x.k && x.k[1] === q[1] && x.k[2] === q[2] && (!word || String(x.b.name || "").includes(word)))
+      .filter((x) => x.k && x.k[1] === q[1] && x.k[2] === q[2])
       .sort((a, b) => Math.abs(sub(a.k) - sub(q)) - Math.abs(sub(b.k) - sub(q)) || sub(a.k) - sub(b.k));
-    return { hits: all.slice(0, max).map(({ b, f }) => ({ b, f, exact: b.jibun === j })), total: all.length };
+    return { hits: all.slice(start, start + size).map(({ b, f }) => ({ b, f, exact: b.jibun === j })), total: all.length };
   }
   // 고른 건물을 기록 칸으로. 표제부의 정해진 칸만 옮긴다(소유자 등 개인 항목은 읽지 않는다)
   const buildingFill = (b, f) => ({ ...(R.buildingId(b.mgm_bld_pk) !== null ? { mgm_bld_pk: R.buildingId(b.mgm_bld_pk) } : {}), pnu: b.pnu, jibun: b.jibun, bjd10: f.bjd10, bjd_name: f.name, use_apr_day: b.use_apr_day, main_use: b.main_use, structure: b.structure, floors: b.floors,

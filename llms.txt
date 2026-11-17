@@ -14,7 +14,7 @@
 - [집계구로 다시 보기 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/field/oa.html): 사업지와 행정동의 범위가 다를 때 집계구 자료가 있는지 확인합니다. 자료가 있는 동의 인구·사업체 두 요건과 통계 경계, 연도별 값, CSV를 제공합니다. 규칙은 승인 전이고 노후건축물은 집계구로 계산하지 않습니다.
 - [음식점 상권 변화 유형 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/field/shop.html): 부산 법정동과 양산·거제 법정동·읍면마다 일반음식점·휴게음식점의 운영 업소와 최근 10년 폐업 업소 평균 영업기간을 부산 평균(양산·거제는 그 시 평균)과 견줘 다이나믹·상권확장·상권축소·정체로 나눕니다. 서울시 상권분석서비스 상권변화지표 방식이며 판정이나 추천이 아닙니다.
 - [도시재생 사업 찾기 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/programs.html): 지역특화재생, 인정사업, 노후주거지정비, 혁신지구, 지방소멸대응기금의 요건과 2027년 일정을 공식 문서 기준으로 정리했습니다.
-- [기준 원문 대조 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/rules.html): 리뉴맵이 계산에 쓰는 기준의 판본·근거 조문·승인 상태와, 공식 자료끼리 기준이 다른 사례를 원문 링크와 함께 공개한다.
+- [기준 원문 대조 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/rules.html): 리뉴맵의 계산 규칙과 검토 초안의 판본·근거 조문·승인 상태를 구분하고, 공식 자료의 기준 차이를 원문 링크와 함께 공개한다.
 - [문서 열기·받기 | 리뉴맵 RENEWMAP](https://twozero3213-beep.github.io/renewmap-site/docs.html): 한글·워드·엑셀·파워포인트·PDF 파일을 설치 없이 브라우저에서 바로 엽니다. 파일은 이 기기 밖으로 나가지 않습니다.
 - [서비스 소개 | 리뉴맵 RENEWMAP](https://twozero3213-beep.github.io/renewmap-site/about.html): 도시재생·정비 용역사와 지자체를 위한 기초조사 도구입니다. 공개 자료와 현장 기록을 출처·기준일이 붙은 문서로 정리하고, 무료 자동 초안과 유료 시범 과업의 범위를 확인하세요. 현재 산출물은 규칙 승인 전 참고 자료입니다.
 - [데이터 출처 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/data.html): 리뉴맵이 쓰는 공공데이터 출처의 이름·제공 기관·이용조건·기준 시점 목록. 값은 출처 그대로 옮기며 판정이 아닙니다.

@@ -18,6 +18,7 @@
     return p;
   };
   let last = null;   // {res, m, file}
+  let calculation = 0, plansRevision = 0;
 
   // 구·군 → 법정동 목록(buildings/index.json). 부산 조례 기준만 계산하므로 부산(26)만 싣는다. 목록을 못 받으면 HTML의 해운대구 8개 동 그대로 쓴다
   const BUSAN = "26";
@@ -50,7 +51,7 @@
       const nsg = gu && nat && nat.sigungu.find((s) => s.sido2 === "21" && s.name === gu.name);
       if (!nsg) throw new Error("no sigungu");
       const emd = await getJson(`national/emd/${nsg.code5}.json`);
-      if (last.file !== file) return;   // 그사이 다른 목록을 계산했다
+      if (!last || last.file !== file) return;   // 그사이 다른 목록을 계산했다
       const near = R.dongCandidates(file.name, emd.dongs), rest = emd.dongs.filter((d) => !near.includes(d));
       sel.replaceChildren(new Option("행정동을 고르세요", ""), ...[...near, ...rest].map((d) => new Option(d.name, d.code7)));
       const show = () => {
@@ -63,7 +64,7 @@
       show();
       box.hidden = false;
     } catch (err) {
-      if (last.file !== file) return;
+      if (!last || last.file !== file) return;
       sel.replaceChildren();
       out.textContent = "행정동 값을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.";
       box.hidden = false;
@@ -74,6 +75,7 @@
   // 고른 동은 목록이 가리킬 때만 넣는다(동·PNU 없는 지번이 있거나 그 동의 PNU·이름). 다른 동에 그린 PNU 목록이 '감천동·반여동'처럼
   // 건물 없는 동 이름까지 달고 나오던 것(11-13)
   async function loadFor(items, code) {
+    R.assertBusan(items, code);
     const idx = await index, gu = idx && idx.sigungu.find((s) => s.code === code.slice(0, 5));
     const byName = new Map((gu ? gu.dongs : []).map((d) => [d.name, d.code]));
     const known = new Set(idx ? idx.sigungu.flatMap((s) => s.dongs.map((d) => d.code)) : []);
@@ -85,6 +87,7 @@
     }
     if (!codes.length) codes.push(code);
     const files = await Promise.all(codes.map(getBuildings));
+    files.forEach((file) => R.assertBusan(file.buildings, file.bjd10));
     return files.length === 1 ? files[0] : R.mergeFiles(files);
   }
 
@@ -287,6 +290,8 @@
 
   $("f").addEventListener("submit", async (e) => {
     e.preventDefault();
+    const request = ++calculation;
+    last = null; $("out").hidden = true;
     saveDraft();
     const p = R.parseList($("list").value);
     if (!p.items.length) return say("지번을 한 줄에 하나씩 넣어 주세요.", true);
@@ -295,13 +300,18 @@
     const refIn = $("ref").value;
     say("건축물대장 자료를 여는 중입니다.");
     let file;
-    try { file = await loadFor(p.items, $("dong").value); } catch (err) { return say("건축물대장 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
+    try { file = await loadFor(p.items, $("dong").value); } catch (err) {
+      if (request !== calculation) return;
+      return say(err.message === R.REGION_ERROR ? R.REGION_ERROR : "건축물대장 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true);
+    }
+    if (request !== calculation) return;
     const m = R.match(p.items, file);
     if (!m.buildings.length) return say(`목록에서 찾은 건물이 없습니다.\n${file.name} 지번이 맞는지 확인해 주세요.`, true);
     // 기준일은 자료 기준일보다 앞설 수 없다. 그 사이에 지은 건물을 대장 스냅숏으로는 가려낼 수 없어 분모가 틀어진다
     if (refIn && refIn < file.age_reference_date) return say(`경과 기준일은 자료 기준일(${D.govDate(file.age_reference_date)}) 이후로 넣어 주세요.\n그 전 날짜는 그 뒤에 지은 건물이 섞여 바르게 셀 수 없습니다.`, true);
     // 나·다·라목 참고 범위(1365 트윈의 호수밀도·접도율·과소필지 흡수). 토지특성 파일이 없거나 못 받으면 예전처럼 '현장 확인'만 쓴다
     const parcel = await parcelText(p.items, m.buildings, areaM2);
+    if (request !== calculation) return;
     const res = R.review(m.buildings, { ref: refIn || file.age_reference_date, district: $("district").checked, areaM2, areaDrawn: $("area").dataset.src === "drawn", parcel });
     last = { res, m, file };
     const skipped = [...(p.bad.length ? [`지번으로 읽지 못한 칸 ${n0(p.bad.length)}개`] : []), ...(m.missing.length ? [`대장에 없는 지번 ${n0(m.missing.length)}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})`] : []),
@@ -368,7 +378,17 @@
   const savePlans = (ps) => { try { localStorage.setItem(PLAN_KEY, JSON.stringify(ps)); return true; } catch (e) { return false; } };
   const planSay = (text, err) => { $("planMsg").textContent = text; $("planMsg").className = err ? "msg err" : "msg"; };
   async function renderPlans() {
+    const request = ++plansRevision;
     const ps = loadPlans();
+    $("planTable").replaceChildren(); planSay("");
+    $("planList").replaceChildren(...ps.map((p, i) => {
+      const li = document.createElement("li"), b = document.createElement("button");
+      li.textContent = `${p.name} · 다시 계산 필요 `;
+      b.type = "button"; b.className = "ghost"; b.textContent = "지우기";
+      b.addEventListener("click", () => { savePlans(loadPlans().filter((_, j) => j !== i)); renderPlans(); });
+      li.append(b);
+      return li;
+    }));
     $("plans").hidden = !ps.length;
     if (!ps.length) return;
     try {
@@ -376,16 +396,13 @@
         const items = R.parseList(p.list).items, file = await loadFor(items, p.dong), m = R.match(items, file);
         return { name: p.name, res: R.review(m.buildings, { ref: p.ref && p.ref > file.age_reference_date ? p.ref : file.age_reference_date, district: p.district }), keys: R.planKeys(m.buildings), dongName: file.name };
       }));
+      if (request !== plansRevision) return;
       $("planTable").innerHTML = R.compareHTML(R.comparePlans(plans));
-      $("planList").replaceChildren(...plans.map((p, i) => {
-        const li = document.createElement("li"), b = document.createElement("button");
-        li.textContent = `${p.name} · ${p.dongName} ${p.res.n.toLocaleString("ko-KR")}동 `;
-        b.type = "button"; b.className = "ghost"; b.textContent = "지우기";
-        b.addEventListener("click", () => { savePlans(loadPlans().filter((_, j) => j !== i)); renderPlans(); });
-        li.append(b);
-        return li;
-      }));
-    } catch (err) { planSay("경계안을 다시 세지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
+      plans.forEach((p, i) => { $("planList").children[i].firstChild.textContent = `${p.name} · ${p.dongName} ${p.res.n.toLocaleString("ko-KR")}동 `; });
+    } catch (err) {
+      if (request !== plansRevision) return;
+      planSay(err.message === R.REGION_ERROR ? R.REGION_ERROR : "경계안을 다시 세지 못했습니다.\n인터넷 연결을 확인해 주세요.", true);
+    }
   }
   $("savePlan").addEventListener("click", () => {
     const ps = loadPlans();

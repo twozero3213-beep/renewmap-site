@@ -14,7 +14,7 @@
 - [집계구로 다시 보기 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/field/oa.html): 사업지와 행정동의 범위가 다를 때 집계구 자료가 있는지 확인합니다. 자료가 있는 동의 인구·사업체 두 요건과 통계 경계, 연도별 값, CSV를 제공합니다. 규칙은 승인 전이고 노후건축물은 집계구로 계산하지 않습니다.
 - [음식점 상권 변화 유형 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/field/shop.html): 부산 법정동과 양산·거제 법정동·읍면마다 일반음식점·휴게음식점의 운영 업소와 최근 10년 폐업 업소 평균 영업기간을 부산 평균(양산·거제는 그 시 평균)과 견줘 다이나믹·상권확장·상권축소·정체로 나눕니다. 서울시 상권분석서비스 상권변화지표 방식이며 판정이나 추천이 아닙니다.
 - [도시재생 사업 찾기 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/programs.html): 지역특화재생, 인정사업, 노후주거지정비, 혁신지구, 지방소멸대응기금의 요건과 2027년 일정을 공식 문서 기준으로 정리했습니다.
-- [기준 원문 대조 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/rules.html): 리뉴맵이 계산에 쓰는 기준의 판본·근거 조문·승인 상태와, 공식 자료끼리 기준이 다른 사례를 원문 링크와 함께 공개한다.
+- [기준 원문 대조 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/rules.html): 리뉴맵의 계산 규칙과 검토 초안의 판본·근거 조문·승인 상태를 구분하고, 공식 자료의 기준 차이를 원문 링크와 함께 공개한다.
 - [문서 열기·받기 | 리뉴맵 RENEWMAP](https://twozero3213-beep.github.io/renewmap-site/docs.html): 한글·워드·엑셀·파워포인트·PDF 파일을 설치 없이 브라우저에서 바로 엽니다. 파일은 이 기기 밖으로 나가지 않습니다.
 - [서비스 소개 | 리뉴맵 RENEWMAP](https://twozero3213-beep.github.io/renewmap-site/about.html): 도시재생·정비 용역사와 지자체를 위한 기초조사 도구입니다. 공개 자료와 현장 기록을 출처·기준일이 붙은 문서로 정리하고, 무료 자동 초안과 유료 시범 과업의 범위를 확인하세요. 현재 산출물은 규칙 승인 전 참고 자료입니다.
 - [데이터 출처 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/data.html): 리뉴맵이 쓰는 공공데이터 출처의 이름·제공 기관·이용조건·기준 시점 목록. 값은 출처 그대로 옮기며 판정이 아닙니다.
@@ -147,7 +147,7 @@
 - 부산광역시 구·군별 어린이집 현황(공공데이터포털 15147779 외 15개) — 공공데이터포털, 기준 2025-03-14, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15148277/openapi.do
 - 경상남도 거제시_어린이집현황_20260716 — 공공데이터포털, 기준 2026-07-16, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15117963/fileData.do
 - 경상남도 양산시_어린이집현황_20260220 — 공공데이터포털, 기준 2026-02-20, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/3040402/fileData.do
-- 국토교통부 건축HUB 대용량 제공 — 폐쇄말소대장 표제부(같은 원천 API: 공공데이터포털 15137093) — 국토교통부, 기준 2026-09-30, 이용조건 이용허락범위 제한 없음: https://www.hub.go.kr/portal/opn/lps/idx-lgcpt-pvsn-srvc-list.do
+- 국토교통부 건축HUB 대용량 제공 — 폐쇄말소대장 표제부 — 국토교통부, 기준 2026-09-30, 이용조건 미표시: https://www.hub.go.kr/portal/opn/lps/idx-lgcpt-pvsn-srvc-list.do
 - 국립중앙의료원 전국 응급의료기관 정보 조회 서비스(공공데이터포털 15000563) — 국립중앙의료원, 기준 2026-10-23, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15000563/openapi.do
 - 행정안전부 안전비상벨위치정보 조회서비스(공공데이터포털 15155046) — 행정안전부, 기준 2026-09-30, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15155046/openapi.do
 - 건강보험심사평가원 전국 병의원 및 약국 현황(공공데이터포털 15051059) — 건강보험심사평가원, 기준 2026-09-30, 이용조건 공공누리 1유형: https://www.data.go.kr/data/15051059/fileData.do
@@ -161,7 +161,7 @@
 - 국토안전관리원 노후화된 공공시설물현황(공공데이터포털 15017291) — 공공데이터포털, 기준 2026-10-26, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15017291/openapi.do
 - 전국도시공원정보표준데이터(공공데이터포털 15012890) — 공공데이터포털, 기준 2026-10-23, 이용조건 공공누리 1유형: https://www.data.go.kr/data/15012890/standard.do
 - 한국도로교통공단 보행노인 교통사고 다발지역(공공데이터포털 15057666) — 공공데이터포털, 기준 2025-12-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15057666/openapi.do
-- 국토교통부 건축HUB 건축인허가정보 서비스(공공데이터포털 15136267) — 국토교통부, 기준 2026-10-26, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15136267/openapi.do
+- 국토교통부 건축HUB 건축인허가정보 서비스(공공데이터포털 15136267) — 국토교통부, 기준 2026-11-09, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15136267/openapi.do
 - 국립중앙의료원 전국 약국 정보 조회 서비스(공공데이터포털 15000576) — 국립중앙의료원, 기준 2026-10-28, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15000576/openapi.do
 - 경찰청 전국 지구대 파출소 주소 현황(15077036)·전국 치안센터 주소 현황(15076962), 주소를 국가데이터처 SGIS 지오코딩으로 좌표 변환 — 경찰청, 기준 2025-12-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15077036/fileData.do
 - 부산광역시 정비사업 정보(공공데이터포털 3069406) — 공공데이터포털, 기준 2026-10-26, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/3069406/openapi.do
@@ -189,8 +189,8 @@
 - designations.json (206,136바이트): 최상위 generated_at, snapshot_hash, source, counts, note, items; generated_at 2026-11-13T17:44:06+09:00; snapshot_hash 43ddb0b165c5984cc52f29bee6c6177de09c7a611088bc6726748872ee7bdc92
 - dong_index.json (225,320바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
 - dong_successors.json (2,821바이트): 최상위 note, dongs; generated_at 없음; snapshot_hash 없음
-- index.json (1,667,289바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
-- index_core.json (1,107,807바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
+- index.json (1,667,439바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
+- index_core.json (1,107,957바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
 - index_series.json (559,403바이트): 최상위 snapshot_hash, generated_at, sigungu, unmatched; generated_at 2026-11-13T20:14:33+09:00; snapshot_hash 1deda14f6d51d0dd909c812acb45b264cb4add01f00e8608c03055817f5bb1f2
 - migration.json (717,178바이트): 최상위 generated_at, snapshot_hash, source, sigungu, unmatched; generated_at 2026-11-07T12:06:41+09:00; snapshot_hash ec91c53f996aba9898815bec8fb3c23908f49285e9af2c0fc27f06685e58b8d6
 - pop_name_joined.json (35,143바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
@@ -209,9 +209,17 @@
 - BSN-AGE-2025.10: 부산광역시 도시 및 주거환경정비 조례 제3조제2항 (부산광역시조례 제7751호, 2025.10.1) (승인 대기)
 - BSN-ORD-2024.05: 부산광역시 도시및주거환경정비조례 제5조(2024.5 개정 추정) (승인 대기)
 - BSN-ORD-2025.10: 부산광역시 도시 및 주거환경정비 조례 제5조제2항제2호·제2조제1호·제8호 (부산광역시조례 제7751호, 2025.10.1) (승인 대기)
-- GN-AGE-2026.11: 경상남도 도시 및 주거환경정비 조례 제3조제2항 (경상남도조례 제6149호, 2026.11.5) (승인 대기)
-- GN-ORD-2026.11-REDEV: 경상남도 도시 및 주거환경정비 조례 제5조제2항제2호·제2조제3호·제4호 (경상남도조례 제6149호, 2026.11.5) (승인 대기)
-- GN-ORD-2026.11-RESENV: 경상남도 도시 및 주거환경정비 조례 제5조제2항제1호·제2조제3호·제4호 (경상남도조례 제6149호, 2026.11.5) (승인 대기)
+- CW-AGE-2026.05: 창원시 도시 및 주거환경정비 조례 (경상남도창원시조례 제2315호, 2026.5.15) 제2조의2제2항 (우지예 승인 2026-11-17)
+- CW-ORD-2026.05-REDEV: 창원시 도시 및 주거환경정비 조례 (경상남도창원시조례 제2315호, 2026.5.15) 제4조제2항·제3항 (우지예 승인 2026-11-17)
+- GB-AGE-2025.12: 경상북도 도시 및 주거환경정비 조례 제3조제2항 (경상북도조례 제5421호, 2025.12.29) (우지예 승인 2026-11-17)
+- GB-ORD-2025.12-REDEV: 경상북도 도시 및 주거환경정비 조례 제5조제2항제2호·제2조제5호·제6호 (경상북도조례 제5421호, 2025.12.29) (우지예 승인 2026-11-17)
+- GB-ORD-2025.12-RESENV: 경상북도 도시 및 주거환경정비 조례 제5조제2항제1호·제2조제5호·제6호 (경상북도조례 제5421호, 2025.12.29) (우지예 승인 2026-11-17)
+- GH-AGE-2025.10: 김해시 도시 및 주거환경정비 조례 (경상남도김해시조례 제2197호, 2025.10.1) 제3조제2항 (우지예 승인 2026-11-17)
+- GH-ORD-2025.10-REDEV: 김해시 도시 및 주거환경정비 조례 (경상남도김해시조례 제2197호, 2025.10.1) 제5조제2항제2호·제2조 (우지예 승인 2026-11-17)
+- GH-ORD-2025.10-RESENV: 김해시 도시 및 주거환경정비 조례 (경상남도김해시조례 제2197호, 2025.10.1) 제5조제2항제1호·제2조 (우지예 승인 2026-11-17)
+- GN-AGE-2026.11: 경상남도 도시 및 주거환경정비 조례 제3조제2항 (경상남도조례 제6149호, 2026.11.5) (우지예 승인 2026-11-17)
+- GN-ORD-2026.11-REDEV: 경상남도 도시 및 주거환경정비 조례 제5조제2항제2호·제2조제3호·제4호 (경상남도조례 제6149호, 2026.11.5) (우지예 승인 2026-11-17)
+- GN-ORD-2026.11-RESENV: 경상남도 도시 및 주거환경정비 조례 제5조제2항제1호·제2조제3호·제4호 (경상남도조례 제6149호, 2026.11.5) (우지예 승인 2026-11-17)
 - LIVING-STD-2026.10: 도시공원법 시행규칙 제4조, 생활SOC 최저기준(국토부 2019.1.29 공고), 복지부 고시 제2024-261호, 고령사회 정의 (승인 대기)
 - MED-2024.12: 복지부 고시 제2024-261호(응급), 분만취약지 기준 (승인 대기)
 - OLDRES-2025: 노후주거지정비 가이드라인 2025.8.22 (승인 대기)
@@ -219,3 +227,6 @@
 - OLDRES-2027-GEN: 노후주거지정비 가이드라인 2026.2.6·2027(2026.9.11) 일반정비형 (승인 대기)
 - OLDRES-2027-VAC: 노후주거지정비 가이드라인 2026·2027 빈집정비형 (승인 대기)
 - OLDRES-2027-VAC.v2: 2027년 도시재생 신규사업 평가 가이드라인(2026.9.11) p.36 빈집정비형 신청요건 ①② (승인 대기)
+- PH-AGE-2025.10: 포항시 도시 및 주거환경정비 조례 (경상북도포항시조례 제2298호, 2025.10.1) 제3조제1항 (우지예 승인 2026-11-17)
+- PH-ORD-2025.10-REDEV: 포항시 도시 및 주거환경정비 조례 (경상북도포항시조례 제2298호, 2025.10.1) 제4조제2항제2호·제2조 (우지예 승인 2026-11-17)
+- PH-ORD-2025.10-RESENV: 포항시 도시 및 주거환경정비 조례 (경상북도포항시조례 제2298호, 2025.10.1) 제4조제2항제1호·제2조 (우지예 승인 2026-11-17)

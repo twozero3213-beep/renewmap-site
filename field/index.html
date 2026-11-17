@@ -40,7 +40,9 @@
     <p>새 자료가 있습니다.<br>저장한 기록의 숫자는 바뀌지 않습니다.</p>
     <button type="button" class="ghost" id="newDataGet">새 자료 받기</button>
   </div>
-  <p id="intro" class="note rm-note">기록과 사진은 이 기기에만 저장됩니다.<br>내보내기 전에는 어디로도 보내지 않습니다.</p>
+  <!-- 2026-11-17 우지예(지원센터 담당자 인터뷰): 현장에서는 휴대폰으로 사진을 찍고 메모한 뒤 사무실에 돌아와 다시 입력한다고 했다.
+       이 화면이 그 다시 입력을 줄여 준다는 점을 첫 줄에서 알린다. 내보내기 형식은 아래 단추(사진대지·CSV)에 실제로 있는 것만 적는다 -->
+  <p id="intro" class="note rm-note">사진을 찍으면 위치와 그 동의 공식 숫자가 함께 저장되어, 사무실에서 다시 옮겨 적지 않고 사진대지(한글)·CSV로 바로 받을 수 있습니다.<br>기록과 사진은 이 기기에만 저장됩니다.<br>내보내기 전에는 어디로도 보내지 않습니다.</p>
   <p id="ready" class="hint" role="status">한 번 열어 두면 인터넷이 끊겨도 이 화면이 열립니다.</p>
 
   <div class="pick">
@@ -103,8 +105,14 @@
       <p id="bldNote" class="hint"></p>
       <div id="bldFind">
         <label for="bldQ">지번으로 찾기</label>
-        <input id="bldQ" autocomplete="off" placeholder="예: 113-2">
+        <input id="bldQ" autocomplete="off" placeholder="예: 113-2, 산113-2" aria-describedby="bldHelp">
+        <p id="bldHelp" class="hint">지번만 입력해 주세요. 건물 이름은 공개·검색하지 않습니다.<br>같은 지번의 건물은 용도·구조·층수·사용승인일을 대조해 고르세요.</p>
         <ul id="bldList" class="bld-list" aria-live="polite"></ul>
+        <p id="bldRange" class="hint" role="status"></p>
+        <div id="bldPages" class="row" hidden>
+          <button id="bldPrev" type="button" class="ghost">이전 후보</button>
+          <button id="bldNext" type="button" class="ghost">다음 후보</button>
+        </div>
       </div>
       <p id="bldPicked" class="site-line" hidden></p>
     </div>

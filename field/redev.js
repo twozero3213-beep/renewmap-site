@@ -10,6 +10,13 @@
   const ORD = "부산광역시 도시 및 주거환경정비 조례(조례 제7751호, 2025. 10. 1. 시행)";
   const RULES = [{ id: "BSN-AGE-2025.10", article: "제3조제2항", approved: false }, { id: "BSN-ORD-2025.10", article: "제5조제2항제2호", approved: false }];
   const NOT_APPROVED = "승인 전 참고 · 납품용 아님";
+  const REGION_ERROR = "지금은 부산 구역만 계산할 수 있습니다. 부산 밖 PNU가 섞여 있으면 전체 계산을 멈춥니다. 목록과 선택한 동을 확인해 주세요.";
+  function assertBusan(items, code) {
+    if ((code !== undefined && (typeof code !== "string" || !/^26\d{8}$/.test(code))) ||
+        items.some((it) => it.pnu != null && it.pnu !== "" && (typeof it.pnu !== "string" || !/^26\d{17}$/.test(it.pnu)))) {
+      throw new Error(REGION_ERROR);
+    }
+  }
   // 입안 전 후보지 목록은 미공개정보다(이해충돌방지법 제14조: 받은 제3자도 처벌, 도시정비법 제77조 권리산정기준일). 표시는 사용자가 끌 수 있다
   const SECRET = "대외비(입안 전 후보지 정보, 외부 배포 금지)";
   // 조례 제3조②2나는 기존무허가건축물도 20년 노후·불량에 넣는데, 대장에 없으니 세지 못한다(공개 계획서에서 분모 차이 26%p 사례: 수원 매산동)
@@ -192,7 +199,7 @@
     });
     return { rows, inside, near };
   }
-  // 2026-11-16 우지예: 양산·거제(data/soc_gyeongnam.json)도 센다. 두 파일은 같은 10종·같은 데이터셋 번호라 같은 줄로 합치고,
+  // 2026-11-16 우지예: 경상도(data/soc_gyeongnam.json, 처음엔 양산·거제)도 센다. 두 파일은 같은 10종·같은 데이터셋 번호라 같은 줄로 합치고,
   // 경남 점의 끝 칸(시군구 코드)은 뗀다. 받은 날이 파일마다 달라 출처에 둘 다 남긴다(soc_received). 경남 파일이 없으면 부산만 쓴다
   function socMerge(busan, gn) {
     if (!gn) return busan;
@@ -204,7 +211,7 @@
     });
     return { ...busan, sources, points: busan.points.concat(gn.points.map((p) => [at.get(p[0]), ...p.slice(1, 7)])) };
   }
-  const socReceived = (s) => (s.gn_retrieved_at ? `부산 ${s.retrieved_at.slice(0, 10)} · 양산·거제 ${s.gn_retrieved_at.slice(0, 10)}` : s.retrieved_at.slice(0, 10));
+  const socReceived = (s) => (s.gn_retrieved_at ? `부산 ${s.retrieved_at.slice(0, 10)} · 경상도 ${s.gn_retrieved_at.slice(0, 10)}` : s.retrieved_at.slice(0, 10));
   const socTypes = (r) => Object.entries(r.types).sort((a, b) => b[1] - a[1]).map(([t, n]) => `${t} ${n}`).join(" · ");
   const socDates = (r) => !r.dates ? "" : r.dates[0] === r.dates[1] ? r.dates[0] : `${r.dates[0]}~${r.dates[1]}`;
 
@@ -308,6 +315,7 @@
   // parcel: parcel-ref.js texts() 결과(나·다·라목 참고 범위). 있어도 상태는 '현장 확인' 그대로다(규칙 승인 전·정의 일부를 자료로 못 채움)
   // areaDrawn: 면적을 사람이 넣지 않고 지도에 그린 구역에서 계산했을 때(11-13: 그린 면적이 '입력값'으로 찍힘)
   function review(blds, { ref, district = false, areaM2 = null, areaDrawn = false, parcel = null }) {
+    assertBusan(blds);
     if (!blds.length) throw new Error("목록에서 찾은 건물이 없습니다.");
     const thr = district ? THR.district : THR.default, rows = blds.map((b) => ({ b, ...oldState(b, ref) }));
     const sum = (f) => rows.reduce((s, r) => s + (f(r) ? Number(r.b.tot_area) || 0 : 0), 0);
@@ -664,5 +672,5 @@
   }
 
   // 2026-11-13: ringCrosses를 화면(redev-app.js)에서도 써서, 그리는 도중에 선이 겹치면 바로 알린다
-  return { ringCrosses, dongBounds, oneRange, answerText, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socMerge, socReceived, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { assertBusan, REGION_ERROR, ringCrosses, dongBounds, oneRange, answerText, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socMerge, socReceived, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

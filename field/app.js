@@ -83,35 +83,46 @@
 
   // ── 가까운 건물(N1): 행정동에서 근사한 법정동의 건물 자료(buildings/{법정동}.json)를 지번으로 찾는다. 사람이 고르기 전에는 채우지 않는다.
   // 건물 자료는 처음 찾을 때 받고(서비스 워커가 오프라인용으로 저장), 위치는 기기 밖으로 보내지 않는다(받는 파일 이름은 법정동 코드뿐)
-  let bjds = [], chosen = null;
-  const bldFiles = new Map();
+  let bjds = [], chosen = null, bldOffset = 0, bldQuery = "", bldSearchSeq = 0;
+  const bldPageSize = 3, bldFiles = new Map();
   const bldGet = (code) => { if (!bldFiles.has(code)) bldFiles.set(code, getJson(`buildings/${code}.json`).catch(() => { bldFiles.delete(code); return null; })); return bldFiles.get(code); };
   const line = (text, cls) => { const li = document.createElement("li"); li.textContent = text; if (cls) li.className = cls; return li; };
   function drawBld(cands) {
-    bjds = cands || []; chosen = null; $("bldQ").value = ""; $("bldList").textContent = ""; $("bldPicked").hidden = true;
+    bjds = cands || []; chosen = null; bldOffset = 0; bldQuery = ""; bldSearchSeq++;
+    $("bldQ").value = ""; $("bldList").textContent = ""; $("bldPicked").hidden = true;
+    $("bldPages").hidden = true; $("bldRange").textContent = "";
     $("bld").hidden = !place;
     $("bldFind").hidden = !bjds.length;
     $("bldNote").textContent = bjds.length
-      ? `법정동 ${bjds.map((b) => b.name).join("·")}의 건축물대장에서 찾습니다.\n법정동은 행정동에서 근사해 골랐습니다.\n건물 자료에 좌표가 없어 사진 위치로 거리를 재지 못합니다.\n지번을 적으면 3동까지 보여 줍니다.`
+      ? `법정동 ${bjds.map((b) => b.name).join("·")}의 건축물대장에서 찾습니다.\n법정동은 행정동에서 근사해 골랐습니다.\n건물 자료에 좌표가 없어 사진 위치로 거리를 재지 못합니다.\n같은 본번에서 부번이 가까운 순으로 3동씩 보여 줍니다.`
       : "이 지역은 건물 자료가 아직 없습니다.\n지번은 아래 '자세히'에 직접 적어 주세요.";
   }
   function pickedText() {
     $("bldPicked").hidden = !chosen;
     if (chosen) $("bldPicked").textContent = `자동 채움 · 건축물대장 기준일 ${D.govDate(chosen.reference_date)}\n${chosen.bjd_name} ${chosen.jibun || ""} · 사용승인 ${chosen.use_apr_day ? D.govDate(chosen.use_apr_day) : "자료 없음"} · ${chosen.main_use || "-"} · ${chosen.structure || "-"} · ${chosen.floors === null ? "층수 자료 없음" : `지상 ${chosen.floors}층`}\n지번이나 필지 번호를 고치면 자동 채움을 지웁니다.`;
   }
-  const same = (b, f) => !!chosen && chosen.bjd10 === f.bjd10 && chosen.jibun === b.jibun && chosen.main_use === b.main_use && chosen.use_apr_day === b.use_apr_day && chosen.floors === b.floors;
+  const same = (b, f) => {
+    if (!chosen || chosen.bjd10 !== f.bjd10) return false;
+    const id = R.buildingId(b.mgm_bld_pk), picked = R.buildingId(chosen.mgm_bld_pk);
+    if (id !== null && picked !== null) return id === picked;
+    return chosen.jibun === b.jibun && chosen.main_use === b.main_use && chosen.structure === b.structure && chosen.use_apr_day === b.use_apr_day && chosen.floors === b.floors;
+  };
   async function searchBld() {
-    const q = $("bldQ").value, files = (await Promise.all(bjds.map((b) => bldGet(b.code10)))).filter(Boolean);
-    if (q !== $("bldQ").value) return;                                  // 그 사이 더 적었으면 버린다
-    const ul = $("bldList"), { hits, total } = E.findBuildings(files, q);
-    ul.textContent = "";
+    const q = $("bldQ").value, seq = ++bldSearchSeq, ul = $("bldList");
+    if (q !== bldQuery) { bldQuery = q; bldOffset = 0; }
+    ul.textContent = ""; $("bldRange").textContent = ""; $("bldPages").hidden = true;
     if (!q.trim()) return;
-    if (!files.length) { ul.append(line("건물 자료를 불러오지 못했습니다.\n인터넷에 한 번 연결되면 다음부터는 오프라인에서도 찾습니다.", "hint")); return; }
+    const validation = E.findBuildings([], q);
+    if (validation.error) { ul.append(line(validation.error, "hint")); return; }
+    const files = (await Promise.all(bjds.map((b) => bldGet(b.code10)))).filter(Boolean);
+    if (seq !== bldSearchSeq) return;     // 이전 지번·페이지·법정동의 응답은 새 목록을 덮지 않는다
+    const { hits, total } = E.findBuildings(files, q, bldPageSize, bldOffset);
+    if (!files.length) { ul.append(line("건물 자료를 불러오지 못했습니다.\n자료 공개 범위와 연결 상태를 확인해 주세요. 지번은 직접 기록할 수 있습니다.", "hint")); return; }
     if (!hits.length) { ul.append(line("그 지번의 건물을 찾지 못했습니다.\n지번만 적어 두어도 문서에 남습니다.", "hint")); return; }
     for (const { b, f } of hits) {
       const li = document.createElement("li"), btn = document.createElement("button"), on = same(b, f);
       btn.type = "button"; btn.className = on ? "" : "ghost"; btn.setAttribute("aria-pressed", String(on));
-      btn.textContent = `${f.name} ${b.jibun}${b.name ? ` ${b.name}` : ""}\n${b.main_use || "-"} · ${b.structure || "-"} · ${b.floors === null ? "층수 자료 없음" : `지상 ${b.floors}층`} · 사용승인 ${b.use_apr_day ? D.govDate(b.use_apr_day) : "자료 없음"}`;
+      btn.textContent = `${f.name} ${b.jibun}\n${b.main_use || "주용도 자료 없음"} · ${b.structure || "구조 자료 없음"} · ${b.floors == null ? "층수 자료 없음" : `지상 ${b.floors}층`} · 사용승인 ${b.use_apr_day ? D.govDate(b.use_apr_day) : "자료 없음"}`;
       btn.addEventListener("click", () => {
         chosen = on ? null : E.buildingFill(b, f);
         $("jibun").value = chosen ? chosen.jibun || "" : ""; $("pnu").value = chosen ? chosen.pnu || "" : "";
@@ -119,9 +130,14 @@
       });
       li.append(btn); ul.append(li);
     }
-    if (total > hits.length) ul.append(line(`같은 본번 건물이 ${total}동 있습니다.\n지번 뒤에 건물 이름을 더 적으면 좁혀집니다.`, "hint"));
+    $("bldRange").textContent = `같은 본번 ${total}동 중 ${bldOffset + 1}–${bldOffset + hits.length}동 · ${Math.floor(bldOffset / bldPageSize) + 1}/${Math.ceil(total / bldPageSize)}페이지`;
+    $("bldPages").hidden = total <= bldPageSize;
+    $("bldPrev").disabled = bldOffset === 0;
+    $("bldNext").disabled = bldOffset + hits.length >= total;
   }
   $("bldQ").addEventListener("input", searchBld);
+  $("bldPrev").addEventListener("click", () => { bldOffset = Math.max(0, bldOffset - bldPageSize); searchBld(); });
+  $("bldNext").addEventListener("click", () => { bldOffset += bldPageSize; searchBld(); });
 
   // ── 필지 찾기(선택): 격리된 창(vw-frame.html, sandbox allow-scripts)이 브이월드 연속지적도에 좌표 1개를 묻는다.
   // 받은 지번·PNU는 사람이 보는 칸에 채우고(고칠 수 있음), 경계는 핀 지도에만 그리고 저장하지 않는다(브이월드 약관 제19조)
