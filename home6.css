@@ -184,3 +184,8 @@
 .h6-more > summary { flex: 1 0 100%; }
 .h6-more > p { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 2px; }
 .h6-more > p .rm-chip { text-decoration: none; }   /* 링크 모양은 칩 하나(.rm-chip, rm6.css)로 — #84 검토 */
+
+/* 첫 화면 밖의 긴 설명은 접근할 때 배치한다. 인쇄에서는 전부 펼친다. */
+@media screen {
+  .h6 > section:not(.h6-hero) { content-visibility: auto; contain-intrinsic-size: auto 700px; }
+}

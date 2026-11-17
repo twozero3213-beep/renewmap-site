@@ -193,12 +193,18 @@
   const LEAFLET = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/';
   let leafletP = null;
   function loadLeaflet() {
-    if (window.L) return Promise.resolve();
-    return leafletP || (leafletP = new Promise((ok, fail) => {
-      const tag = (name, attrs) => { const el = Object.assign(document.createElement(name), attrs, { crossOrigin: 'anonymous' }); el.onerror = fail; document.head.appendChild(el); return el; };
-      tag('link', { rel: 'stylesheet', href: LEAFLET + 'leaflet.css', integrity: 'sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==' });
-      tag('script', { src: LEAFLET + 'leaflet.js', integrity: 'sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==' }).onload = ok;
-    }).catch(e => { leafletP = null; throw e; }));
+    const css = document.querySelector(`link[rel="stylesheet"][href="${LEAFLET}leaflet.css"]`);
+    if (window.L && (!css || css.sheet)) return Promise.resolve();
+    if (leafletP) return leafletP;
+    const tag = (name, attrs) => new Promise((ok, fail) => {
+      const el = Object.assign(document.createElement(name), attrs, { crossOrigin: 'anonymous' });
+      el.onload = ok; el.onerror = fail; document.head.appendChild(el);
+    });
+    leafletP = Promise.all([
+      tag('link', { rel: 'stylesheet', href: LEAFLET + 'leaflet.css', integrity: 'sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==' }),
+      window.L ? Promise.resolve() : tag('script', { src: LEAFLET + 'leaflet.js', integrity: 'sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==' }),
+    ]).catch(e => { leafletP = null; throw e; });
+    return leafletP;
   }
   api.loadLeaflet = loadLeaflet; // 탐색 전용 페이지의 map.js도 같은 로더를 쓴다
   if (document.getElementById('mapApp')) loadLeaflet().catch(() => {}); // 큰 map.js의 다운로드·실행을 기다리지 않고 미리 받은 라이브러리를 시작한다.
