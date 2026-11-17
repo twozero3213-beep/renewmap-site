@@ -3,8 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com oapi.map.naver.com nrbe.map.naver.net nrbe.pstatic.net; style-src 'self' https://cdnjs.cloudflare.com 'unsafe-hashes' 'sha256-H7dQF5ax9lLTUTM/FW7YC+KypydYJF03Qhs1DNfoWeQ='; img-src 'self' data: https://tile.openstreetmap.org https://api.vworld.kr map.pstatic.net nrbe.map.naver.net nrbe.pstatic.net static.naver.net ssl.pstatic.net oapi.map.naver.com; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io oapi.map.naver.com nrbe.map.naver.net nrbe.pstatic.net map.pstatic.net kr-col-ext.nelo.navercorp.com; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
-<script src="frame-guard.js"></script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9nxwWoDSGzwKbzP3upjVaroFxmP3c1Fxn9CdhIDqvCg=' 'sha256-HGjaHQ2NSGADyinRymFDMw/yWIOsSKX/dZPZu54rluI=' https://cdnjs.cloudflare.com oapi.map.naver.com nrbe.map.naver.net nrbe.pstatic.net; style-src 'self' https://cdnjs.cloudflare.com 'unsafe-hashes' 'sha256-H7dQF5ax9lLTUTM/FW7YC+KypydYJF03Qhs1DNfoWeQ='; img-src 'self' data: https://tile.openstreetmap.org https://api.vworld.kr map.pstatic.net nrbe.map.naver.net nrbe.pstatic.net static.naver.net ssl.pstatic.net oapi.map.naver.com; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io oapi.map.naver.com nrbe.map.naver.net nrbe.pstatic.net map.pstatic.net kr-col-ext.nelo.navercorp.com; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
+<script data-source="frame-guard.js">
+// 다른 사이트가 이 화면을 iframe으로 감싸면(클릭재킹) 최상위 창으로 연다.
+// GitHub Pages는 X-Frame-Options·CSP frame-ancestors 응답 헤더를 넣을 수 없고, meta CSP의 frame-ancestors는 무시된다(감사 2026-10-29 H4).
+// 같은 사이트 안의 iframe(현장 앱 field/vw-frame.html)은 그대로 둔다.
+// 모든 화면 <head>에서 동기로 도는 유일한 스크립트라 여기서 'js' 표시를 붙인다. 등장 효과는 이 표시가 있을 때만 숨겼다가 보인다(스크립트가 막혀도 내용은 보인다)
+document.documentElement.classList.add('js');
+(function () {
+  if (window.top === window.self) return;
+  let same = false;
+  try { same = window.top.location.origin === window.location.origin; } catch (e) { same = false; }
+  if (same) return;
+  try { window.top.location = window.location.href; } catch (e) { document.documentElement.style.display = 'none'; }
+})();
+</script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>동네 찾기·지도 | 리뉴맵</title>
 <meta name="description" content="전국 행정동 3,559곳(2025년 경계 기준)을 지도와 조건으로 찾아보세요. 공공데이터 값과 출처·기준일이 붙은 문서를 한글·워드·엑셀·PDF로 받습니다.">
@@ -25,7 +38,38 @@
 <link rel="preconnect" href="https://oapi.map.naver.com">
 <link rel="preconnect" href="https://nrbe.pstatic.net">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-<script src="map-start.js?v=20261112-maprecovery"></script>
+<script data-source="map-start.js">
+/* 지도 SDK는 화면·통계 스크립트가 끝나기를 기다리지 않고 받는다. */
+(function () {
+  'use strict';
+  window.renewNaverReady = new Promise(resolve => {
+    let ended = false;
+    const done = ok => { ended = true; clearTimeout(timer); resolve(ok); };
+    const timer = setTimeout(() => done(false), 5000);
+    const config = document.createElement('script');
+    config.fetchPriority = 'high';
+    config.src = 'field/naver-map-key.js';
+    config.onerror = () => done(false);
+    config.onload = () => {
+      if (ended) return;
+      const key = window.RENEWMAP_NAVER_KEY;
+      if (!/^[A-Za-z0-9]{6,40}$/.test(key || '')) { done(false); return; }
+      window.navermap_authFailure = () => {
+        window.renewNaverAuthFailed = true;
+        done(false);
+        window.dispatchEvent(new Event('renew-navermap-auth-failed'));
+      };
+      const sdk = document.createElement('script');
+      sdk.fetchPriority = 'high';
+      sdk.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${key}`;
+      sdk.onload = () => done(!!window.naver?.maps?.Map);
+      sdk.onerror = () => done(false);
+      document.head.appendChild(sdk);
+    };
+    document.head.appendChild(config);
+  });
+})();
+</script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" crossorigin="anonymous" integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" crossorigin="anonymous" integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==">
 <link rel="stylesheet" href="pretendard-map.css">

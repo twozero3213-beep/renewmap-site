@@ -3,9 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- CSP(docs/legal/security_baseline.md 2-1). 인라인 스크립트·스타일 없음(JSON-LD는 실행되지 않는 데이터). 이 페이지는 외부 주소를 부르지 않는다 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; form-action 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'self'; manifest-src 'self'">
-<script src="frame-guard.js"></script>
+<!-- CSP(docs/legal/security_baseline.md 2-1). 프레임 보호·지도 부팅은 고정 코드 해시만 허용(JSON-LD는 실행되지 않는 데이터). 이 페이지는 외부 주소를 부르지 않는다 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-HGjaHQ2NSGADyinRymFDMw/yWIOsSKX/dZPZu54rluI='; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; form-action 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'self'; manifest-src 'self'">
+<script data-source="frame-guard.js">
+// 다른 사이트가 이 화면을 iframe으로 감싸면(클릭재킹) 최상위 창으로 연다.
+// GitHub Pages는 X-Frame-Options·CSP frame-ancestors 응답 헤더를 넣을 수 없고, meta CSP의 frame-ancestors는 무시된다(감사 2026-10-29 H4).
+// 같은 사이트 안의 iframe(현장 앱 field/vw-frame.html)은 그대로 둔다.
+// 모든 화면 <head>에서 동기로 도는 유일한 스크립트라 여기서 'js' 표시를 붙인다. 등장 효과는 이 표시가 있을 때만 숨겼다가 보인다(스크립트가 막혀도 내용은 보인다)
+document.documentElement.classList.add('js');
+(function () {
+  if (window.top === window.self) return;
+  let same = false;
+  try { same = window.top.location.origin === window.location.origin; } catch (e) { same = false; }
+  if (same) return;
+  try { window.top.location = window.location.href; } catch (e) { document.documentElement.style.display = 'none'; }
+})();
+</script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>리뉴맵 | 숫자마다 출처가 붙은 도시재생 기초조사</title>
 <meta name="description" content="동 이름을 넣으면 인구·사업체·건물 노후 쇠퇴 3요건과 맞는 도시재생 사업을 공식 통계로 보여 주고, 출처가 붙은 1쪽 문서를 만들어 줍니다.">
