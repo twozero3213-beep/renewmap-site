@@ -97,7 +97,8 @@
 #handoverStatus {
   white-space: pre-line;
 }
-#handoverAttention {
+#handoverAttention,
+#handoverChanges {
   padding-left: 24px;
   overflow-wrap: anywhere;
 }

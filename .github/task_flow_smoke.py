@@ -163,6 +163,20 @@ def main():
             expect(page.locator('#handoverPreview')).to_be_hidden()
             expect(page.locator('#downloadHandover')).to_be_hidden()
             result['checks'].append('new_revision_clears_previous_handover')
+            page.locator('#handoverTask').click()
+            expect(page.locator('#handoverPreview')).to_be_visible()
+            page.locator('#handoverPreview details summary').click()
+            expect(page.locator('#handoverComparisonStatus')).to_contain_text('승인 기록과 현재')
+            expect(page.locator('#handoverChanges')).to_contain_text('기록 차이가 없거나')
+            page.locator('#deliveryFiles').set_input_files({'name': 'delivery-revised.txt', 'mimeType': 'text/plain', 'buffer': b'synthetic revised delivery only'})
+            page.locator('#fileForm button').click()
+            expect(page.locator('#handoverPreview')).to_be_hidden()
+            page.locator('#handoverTask').click()
+            expect(page.locator('#handoverChanges')).to_contain_text('현재 판에만 있는 파일')
+            expect(page.locator('#handoverChanges')).to_contain_text('delivery-revised.txt')
+            assert not re.search(r'files/[a-f0-9]{64}', page.locator('#handoverChanges').inner_text())
+            assert page.evaluate('async()=> (await TaskStore.history(document.querySelector("#taskPick").value)).at(-1).decision') is None
+            result['checks'].append('handover_compares_approved_files_without_approving_current_revision')
             page.locator('#decisionForm button').click()
             page.wait_for_function('() => document.querySelector("#taskState").textContent.includes("최종 승인 기록됨")')
             result['checks'].append('file_reattach_invalidates_decision_without_false_blocker')
@@ -195,14 +209,16 @@ def main():
             result['checks'].append('backup_zip_actual_bytes')
             assert page.evaluate('async()=> (await TaskStore.history(document.querySelector("#taskPick").value)).at(-1).hash') == manifest['head_hash']
             result['checks'].append('handover_matches_zip_and_preserves_history')
-            for width, zoom in [(1280, 1), (390, 1), (320, 1), (640, 2)]:
+            for width, zoom in [(1280, 1), (360, 1), (390, 1), (768, 1), (1440, 1), (320, 1), (640, 2)]:
                 page.set_viewport_size({'width': width, 'height': 900})
                 page.evaluate('(z) => document.documentElement.style.zoom=String(z)', zoom)
                 for step in range(3):
                     page.locator(f'[data-step="{step}"]').click()
                     assert page.evaluate('() => document.documentElement.scrollWidth<=innerWidth+1')
+                if width in (390, 1440):
+                    page.locator('#handoverSummary').screenshot(path=str(args.output / f'handover-{width}.png'))
                 page.screenshot(path=str(args.output / f'tasks-{width}-{zoom}.png'))
-            result['checks'].append('layout_320_390_1280_zoom200')
+            result['checks'].append('layout_320_360_390_768_1280_1440_zoom200')
             downloads = []
             page.on('download', lambda d: downloads.append(d.suggested_filename))
             page.evaluate('''async()=>{

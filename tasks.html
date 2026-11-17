@@ -14,7 +14,7 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="pretendard.css" />
     <link rel="stylesheet" href="styles.css?v=20261114-m1" />
-    <link rel="stylesheet" href="tasks.css?v=20261117-handover" />
+    <link rel="stylesheet" href="tasks.css?v=20261117-changes" />
     <script src="frame-guard.js"></script>
     <script src="task-cloud-callback.js?v=20261115-auth"></script>
     <!-- R1(2026-11-13): 다른 화면과 같은 머리 메뉴·아래 탭(site.js). 인증·검토 화면에서는 외부 방문 분석을 실행하지 않는다 -->
@@ -25,7 +25,7 @@
     <script src="task-store.js?v=20261112-taskreview" defer></script>
     <script src="field/store.js" defer></script>
     <script src="docgen.js?v=20261114-e2" defer></script>
-    <script src="tasks-files.js?v=20261117-handover" defer></script>
+    <script src="tasks-files.js?v=20261117-changes" defer></script>
     <script src="task-cloud-config.js?v=20261114-server" defer></script>
     <script src="task-cloud.js?v=20261115-auth" defer></script>
     <script src="task-cloud-ui.js?v=20261115-auth" defer></script>
@@ -38,7 +38,7 @@
     <script src="revisit-photos.js?v=20261113-revisit" defer></script>
     <script src="revisit-report-ui.js?v=20261113-revisit" defer></script>
     <script src="task-followup-ui.js?v=20261114-followup" defer></script>
-    <script src="tasks-app.js?v=20261117-handover" defer></script>
+    <script src="tasks-app.js?v=20261117-changes" defer></script>
   <link rel="stylesheet" href="rm6.css?v=20261114-d9">
 </head>
   <body>
@@ -313,6 +313,12 @@
           <p id="handoverStatus" role="status">저장한 과업을 선택하면 인수인계 요약을 확인할 수 있습니다.</p>
           <div id="handoverPreview" hidden>
             <ul id="handoverAttention"></ul>
+            <details>
+              <summary>이전 승인 기록과 달라진 점</summary>
+              <p id="handoverComparisonStatus"></p>
+              <ul id="handoverChanges"></ul>
+              <p class="task-help">파일 이름을 기준으로 내용과 연결 기록을 비교합니다.<br>전체 파일 지문은 인수인계 TXT에서 확인하세요.<br>같은 파일이어도 현재 판의 승인을 대신하지 않습니다.</p>
+            </details>
             <button id="downloadHandover" type="button" hidden>인수인계 요약 받기(TXT)</button>
             <p class="task-help">현재 이 기기에서 선택한 과업판의 요약입니다.<br>요약 파일은 복원용 백업이 아닙니다. 공유 전에 작성자·의견에 개인정보가 있는지 확인해 주세요.</p>
           </div>

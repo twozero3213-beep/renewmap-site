@@ -434,6 +434,11 @@
   function showHandover(guide) {
     $("handoverStatus").textContent = guide.summary;
     $("handoverAttention").replaceChildren(...guide.attention.map(li));
+    $("handoverComparisonStatus").textContent = guide.comparison.summary;
+    const changes = guide.comparison.items.map(item => item
+      .replace(/^((?:이전 판에만 있는 파일|현재 판에만 있는 파일): ".*") \/ files\/[a-f0-9]{64}$/, "$1")
+      .replace(/^(파일 내용 변경: ".*") \/ 이전 files\/[a-f0-9]{64} \/ 현재 files\/[a-f0-9]{64}$/, "$1"));
+    $("handoverChanges").replaceChildren(...(changes.length ? changes : ["기록 차이가 없거나 비교할 이전 승인 기록이 없습니다. 현재 판의 검토 상태는 위에서 확인하세요."]).map(li));
     $("handoverPreview").hidden = false;
     $("downloadHandover").hidden = false;
   }
