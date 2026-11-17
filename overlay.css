@@ -50,3 +50,6 @@
 .ov-label.leaflet-tooltip { padding: 2px 6px; font-size: 13px; font-weight: 700; color: var(--ink); background: var(--veil); border: 1px solid var(--line-strong); box-shadow: none; }
 .ov-label.leaflet-tooltip::before { display: none; }
 @media (max-width: 480px) { .ov-sel { padding-left: 0; } .ov-sel > label { flex: 1 1 100%; } }
+
+.ov-join { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }
+.ov-join > summary { min-height: 44px; padding: 10px 0; font-weight: 700; cursor: pointer; }

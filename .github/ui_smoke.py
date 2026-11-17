@@ -128,6 +128,64 @@ def verify_document_actions(page, output, width, kind):
         assert [line for line in target.read_text(encoding='utf-8-sig').splitlines() if line.strip()] == ['합성 첫 문단','합성 둘째 문단'], 'DOCX 글자 내보내기에 스타일 또는 불필요한 글자가 포함됐습니다.'
 
 
+def verify_key_reconciliation(page, output, width):
+    import csv
+    import hashlib
+    import io
+    def workbook():
+        content=io.BytesIO()
+        with zipfile.ZipFile(content,'w',zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr('[Content_Types].xml','<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>')
+            archive.writestr('_rels/.rels','<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="root" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>')
+            archive.writestr('xl/workbook.xml','<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="자료" r:id="s1"/><sheet name="제목만" r:id="s2"/></sheets></workbook>')
+            archive.writestr('xl/_rels/workbook.xml.rels','<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="s1" Target="worksheets/sheet1.xml"/><Relationship Id="s2" Target="worksheets/sheet2.xml"/></Relationships>')
+            archive.writestr('xl/worksheets/sheet1.xml','<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>ID</t></is></c><c r="B1" t="inlineStr"><is><t>메모</t></is></c></row><row r="2"><c r="A2" t="inlineStr"><is><t>001</t></is></c><c r="B2" t="inlineStr"><is><t>첫 자료</t></is></c></row><row r="4"><c r="A4" t="inlineStr"><is><t>D</t></is></c></row><row r="5"><c r="A5" t="inlineStr"><is><t>D</t></is></c></row><row r="6"><c r="B6" t="inlineStr"><is><t>빈키</t></is></c></row><row r="7"><c r="A7" t="inlineStr"><is><t>=1+2</t></is></c></row></sheetData></worksheet>')
+            archive.writestr('xl/worksheets/sheet2.xml','<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>ID</t></is></c></row><row r="3"><c r="A3" t="inlineStr"><is><t></t></is></c></row></sheetData></worksheet>')
+        return content.getvalue()
+    page.locator('[data-overlay-load]').click()
+    a=workbook();b='키,이메일\n001,a@example.org\nD,b@example.org\nRIGHT,c@example.org\n=1+2,d@example.org\n'.encode()
+    page.locator('#ovFile').set_input_files({'name':'synthetic-A.xlsx','mimeType':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','buffer':a})
+    page.locator('[data-ov-join] summary').click()
+    page.locator('#ovRefFile').set_input_files({'name':'synthetic-B.csv','mimeType':'text/csv','buffer':b})
+    page.wait_for_function('() => document.querySelector("[name=ovKeyB]").options.length===2')
+    page.locator('[name=ovKeyA]').select_option('0');page.locator('[name=ovKeyB]').select_option('0')
+    page.locator('[data-ov-keys]').click()
+    assert page.locator('[data-ov-key-result] tbody tr').count()==5
+    assert '원본 엑셀 행 번호가 아닙니다' in page.locator('[data-ov-key-result] caption').inner_text()
+    with page.expect_download() as downloaded:
+        page.locator('[data-ov-keys-csv]').click()
+    target=output/f'synthetic-key-review-{width}.csv';downloaded.value.save_as(target)
+    text=target.read_text(encoding='utf-8-sig');rows=list(csv.reader(io.StringIO(text)))
+    assert [r[1] for r in rows if r and r[0]=='# A 파일 SHA-256']==[hashlib.sha256(a).hexdigest()]
+    assert [r[1] for r in rows if r and r[0]=='# B 파일 SHA-256']==[hashlib.sha256(b).hexdigest()]
+    records=[r for r in rows if r and r[0] in ('A','B')]
+    assert len(records)==9 and len([r for r in records if r[3]=='키 일치'])==4
+    assert any(r[2]=='001' for r in records) and any(r[2]=="'=1+2" for r in records)
+    assert 'example.org' not in text and '이메일' not in text
+    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+    clipped=page.locator('[data-ov-join]').evaluate('''root => {
+      const bounds=root.getBoundingClientRect();
+      return [...root.querySelectorAll('p,label,input,select,button')].filter(e=>e.checkVisibility()&&!e.closest('.ov-scroll')).filter(e=>{const b=e.getBoundingClientRect();return b.right>bounds.right+1||b.left<bounds.left-1}).map(e=>e.id||e.tagName);
+    }''')
+    assert not clipped, f'대조 도구 안쪽 잘림: {clipped}'
+    page.locator('[data-ov-join]').screenshot(path=str(output/f'synthetic-key-review-{width}.png'))
+    page.locator('#ovSheet').select_option('1')
+    assert page.locator('[data-ov-keys-csv]').is_disabled()
+    assert page.locator('[data-ov-key-result]').inner_text()==''
+    page.locator('[data-ov-keys]').click()
+    assert page.locator('[data-ov-keys-csv]').is_disabled()
+    page.locator('#ovSheet').select_option('0')
+    page.locator('[name=ovKeyA]').select_option('0');page.locator('[name=ovKeyB]').select_option('0');page.locator('[data-ov-keys]').click()
+    assert page.locator('[data-ov-keys-csv]').is_enabled()
+    page.locator('[name=ovKeyB]').select_option('-1');assert page.locator('[data-ov-keys-csv]').is_disabled()
+    page.locator('[name=ovKeyB]').select_option('0');page.locator('[data-ov-keys]').click()
+    page.locator('#ovRefFile').set_input_files({'name':'replacement.csv','mimeType':'text/csv','buffer':b'ID\nNEW\n'})
+    assert page.locator('[data-ov-keys-csv]').is_disabled()
+    assert page.locator('[data-ov-key-result]').inner_text()==''
+    assert page.locator('[data-ov-join] a').get_attribute('href')=='tasks.html?step=delivery'
+    page.locator('[data-ov-clear]').click()
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--base', help='배포 후에는 실제 사이트 주소로 같은 검사를 실행한다')
@@ -241,6 +299,9 @@ def main():
                             page.wait_for_function('() => [...document.querySelectorAll("#mapApp .leaflet-tile-pane img")].some(img => img.complete && img.naturalWidth>0)')
                             assert not page.locator('#mapApp .map-naver').count()
                         check(route, width)
+                        if route == 'explore.html':
+                            verify_key_reconciliation(page,args.output,width)
+                            check(route,width,'key_reconciliation')
                         if route in ('box.html','docs.html'):
                             verify_document_actions(page,args.output,width,'box' if route == 'box.html' else 'docs')
                             check(route,width,'document_actions')

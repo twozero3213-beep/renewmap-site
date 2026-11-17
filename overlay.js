@@ -318,16 +318,51 @@
     const all = [...byCode.values()].sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0)).map(g => ({ ...g, sum: Number(g.sum.toFixed(6)) }));
     return { rows: feats.length > 80 ? all.filter(g => g.count > 0) : all, outside };
   }
-  const csvCell = v => { let s = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const csvCell = v => { let s = String(v == null ? '' : v); if (/^\s*[=+\-@]|^[\t\r]/.test(s)) s = "'" + s; return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
   function toCsv(rows, valueLabel) {
     const head = ['코드', '이름', '점 개수'].concat(valueLabel ? [`${valueLabel} 합계`] : []);
     return [head].concat(rows.map(g => [g.code, g.name, g.count].concat(valueLabel ? [g.sum] : []))).map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
 
+
+  const KEY_STATES = { same: '키 일치', duplicate: '중복키 · 검토 필요', empty: '빈키', unmatched: '상대 키 없음' };
+  function reconcileKeys(a, b, ac, bc) {
+    for (const [table, col] of [[a, ac], [b, bc]]) {
+      if (!Number.isInteger(col) || col < 0 || col >= table.headers.length || table.excluded.has(col)) throw new Error('개인정보 제외 열이 아닌 키 열을 골라 주세요.');
+    }
+    const index = (table, col) => {
+      const keys = new Map();
+      table.rows.forEach((r, i) => { const key = String(r[col] ?? '').trim(); if (!key) return; const old = keys.get(key); keys.set(key, { count: (old?.count || 0) + 1, row: i + 1 }); });
+      return keys;
+    };
+    const ai = index(a, ac), bi = index(b, bc), rows = [];
+    for (const [side, table, col, mine, other] of [['A', a, ac, ai, bi], ['B', b, bc, bi, ai]]) {
+      table.rows.forEach((r, i) => {
+        const key = String(r[col] ?? '').trim(), x = mine.get(key), y = other.get(key);
+        const state = !key ? 'empty' : (x.count > 1 || (y?.count || 0) > 1) ? 'duplicate' : y ? 'same' : 'unmatched';
+        rows.push({ side, row: i + 1, key, state, peer: state === 'same' ? y.row : null, aCount: ai.get(key)?.count || 0, bCount: bi.get(key)?.count || 0 });
+      });
+    }
+    return { rows, aRows: a.rows.length, bRows: b.rows.length };
+  }
+  function reconcileCsv(result, meta) {
+    const rows = [
+      ['# 대조 방식', '앞뒤 공백만 제거한 문자열 정확 대조. 양쪽 유일 키만 일치. 동일 건물·주소 변환·담당자 승인 아님.'],
+      ['# 자료 A', meta.aFile, meta.aSheet, meta.aKey], ['# 자료 B', meta.bFile, meta.bSheet, meta.bKey],
+      ['# A 파일 SHA-256', meta.aHash || '미기록'], ['# B 파일 SHA-256', meta.bHash || '미기록'],
+      ['# 파일 지문', '바이트 변경 대조용입니다. 출처 진위·사용 권한·담당자 승인을 증명하지 않습니다.'],
+      ['# 엑셀로 열기', '키 열을 텍스트로 가져오세요. 숫자 자동 변환은 앞자리 0과 긴 식별자를 바꿀 수 있습니다.'],
+      ['# 자료행', '각 시트의 제목·빈행을 뺀 자료를 1부터 셉니다. 원본 엑셀 행 번호가 아닙니다.'],
+      ['자료', '자료행', '키', '결과', '상대 자료행', 'A 키 건수', 'B 키 건수'],
+      ...result.rows.map(r => [r.side, r.row, r.key, KEY_STATES[r.state], r.peer, r.aCount, r.bCount])
+    ];
+    return rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+  }
+
   // ── 7. 화면 조각(순수 함수): 양식·미리보기·점 계산·안내·집계 표. 아래 브라우저 연결부가 부르고 노드 시험도 직접 부른다 ──
   const COLORS = { 남색: '#1f4e9c', 주황: '#b45309', 보라: '#6d3fa0', 청록: '#0b7a75', 진회색: '#374151' }, SIZES = { 작게: 4, 보통: 6, 크게: 9 };
-  const SHELL_HTML = `<details class="ov" id="overlay"><summary>내 GIS 파일 겹쳐 보기<small>부서 엑셀·CSV 대장을 같은 지도에</small></summary>
+  const SHELL_HTML = `<details class="ov" id="overlay"><summary>내 GIS 파일 겹쳐 보기<small>두 자료 키 대조와 지도 겹치기</small></summary>
 <div class="ov-body">
 <div class="ov-privacy"><p><strong>파일은 이 브라우저 안에서만 처리합니다.</strong></p><p>서버로 보내지 않고, 저장하지 않습니다.</p><p>새로고침하거나 ‘지우기’를 누르면 사라집니다.</p></div>
 <div class="ov-pick"><label for="ovFile">엑셀(.xlsx) 또는 CSV 파일</label><input id="ovFile" type="file" accept=".xlsx,.csv,.txt"><p class="ov-hint">글자 깨짐은 UTF-8·CP949를 자동으로 가립니다.<br>예전 .xls는 엑셀에서 .xlsx로 저장해 올려 주세요.</p></div>
@@ -341,6 +376,18 @@
 <fieldset class="ov-fs" data-ov-style><legend>2. 모양</legend></fieldset>
 <div class="ov-actions"><button type="button" class="btn" data-ov-place>지도에 얹기</button><button type="button" class="btn ghost" data-ov-clear>지우기</button></div>
 <div data-ov-result></div>
+<details class="ov-join" data-ov-join><summary>두 자료 공통키 대조</summary>
+<p class="ov-hint">자료 A는 위에서 고른 파일입니다.<br>같은 뜻의 식별자가 있는 자료 B를 올리고 키 열을 직접 고르세요.<br>공통키가 없으면 주소 변환이나 공간 조인이 필요하며 이 도구로 연결할 수 없습니다.</p>
+<div class="ov-pick"><label for="ovRefFile">자료 B (.xlsx·CSV)</label><input id="ovRefFile" type="file" accept=".xlsx,.csv,.txt"></div>
+<p class="ov-status" data-ov-ref-status role="status" aria-live="polite"></p>
+<div class="ov-sheet" data-ov-ref-sheet hidden><label for="ovRefSheet">자료 B 시트</label><select id="ovRefSheet"></select></div>
+<div class="ov-warn" data-ov-ref-pii hidden></div>
+<div class="ov-sel"><label>자료 A 키 열<select name="ovKeyA"><option value="-1">선택 안 함</option></select></label><label>자료 B 키 열<select name="ovKeyB"><option value="-1">선택 안 함</option></select></label></div>
+<p class="ov-hint">앞뒤 공백만 제거해 비교합니다.<br>양쪽에서 한 번씩 나온 같은 문자열만 ‘키 일치’로 표시합니다.<br>같은 건물인지, 주소·기준일·자료 단위가 맞는지는 별도로 확인하세요.<br>엑셀 키는 텍스트로 준비하세요. 숫자로 저장돼 사라진 앞자리 0이나 표시 형식은 복구하지 않습니다.<br>CSV도 키 열을 텍스트로 가져와야 앞자리 0과 긴 식별자를 지킬 수 있습니다.<br>키가 주소·조사 ID이면 민감할 수 있으니 전달 전 권한과 내용을 확인하세요.</p>
+<div class="ov-actions"><button type="button" class="btn ghost" data-ov-keys>공통키 대조</button><button type="button" class="btn ghost" data-ov-keys-csv disabled>전체 대조 CSV 받기</button></div>
+<div data-ov-key-result></div>
+<p class="ov-hint">이동 전에 대조 CSV를 받고 원본 A·B도 함께 보관하세요.<br><a href="tasks.html?step=delivery">기존 과업의 납품 파일</a>에서 파일을 연결한 뒤 필요한 검토 의견을 남길 수 있습니다.<br>이동만으로 파일이 첨부되거나 검토가 완료되지는 않습니다.</p>
+</details>
 </div></div></details>`;
   const isCoord = method => method === 'latlon' || method === 'xy';
   const visibleCols = table => table.headers.map((_, c) => c).filter(c => !table.excluded.has(c));
@@ -429,7 +476,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
   const NO_MAP_HTML = '<p class="ov-hint">지도가 아직 준비되지 않았습니다. 지도가 나타난 뒤 다시 눌러 주세요.</p>';
   const NO_DONG_HTML = `<p class="ov-hint"><strong>동별 집계를 하려면 시군구를 먼저 고르세요.</strong><br>지도에서 시군구를 누르면 그 지역의 읍·면·동 경계가 나타나고, 표가 만들어집니다.</p>`;
 
-  const api = { CRS, MAX_DRAW, MAX_LABELS, decodeText, parseCSV, toTable, parseXlsx, readFileBytes, toNum, findPII, excludeColumns, detectColumns, tmInverse, toWgs84, inKorea, locate, compileFeatures, featureAt, aggregate, toCsv,
+  const api = { CRS, MAX_DRAW, MAX_LABELS, decodeText, parseCSV, toTable, parseXlsx, readFileBytes, toNum, findPII, excludeColumns, detectColumns, tmInverse, toWgs84, inKorea, locate, compileFeatures, featureAt, aggregate, toCsv, reconcileKeys, reconcileCsv,
     optionsHtml, fileInfo, piiHtml, locFormHtml, styleFormHtml, previewHtml, pickStyle, readCodes, toDots, planDots, tipText, noteLines, aggItems, aggTableHtml };
   if (typeof document === 'undefined') return api;
 
@@ -441,17 +488,19 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
     map.eachLayer(l => { const f = l.feature, c = f && f.properties && String(f.properties.code); if (f && f.geometry && c && c.length === len && !seen.has(c)) seen.set(c, f); });
     return compileFeatures([...seen.values()]);
   }
-  function saveCsv(rows, valueLabel) {
-    const blob = new Blob(['﻿', toCsv(rows, valueLabel)], { type: 'text/csv;charset=utf-8' }), a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = '우리파일_동별집계.csv'; document.body.appendChild(a); a.click(); a.remove();
+  function saveCsv(text, name) {
+    const blob = new Blob(['﻿', text], { type: 'text/csv;charset=utf-8' }), a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
+
+  const fileHash = async bytes => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('');
 
   function boot() {
     const app = document.getElementById('overlayApp'); if (!app) return;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const S = { sheets: null, table: null, pii: [], det: null, method: null, pts: null, codes: null, loc: null, agg: null, valueLabel: '' };
-    let group = null, timer = 0;
+    let group = null, timer = 0, fileEpoch = 0, refEpoch = 0, keyResult = null;
     app.innerHTML = SHELL_HTML;
     const $ = sel => app.querySelector(sel);
     const status = (msg, bad) => { const el = $('[data-ov-status]'); el.textContent = msg || ''; el.classList.toggle('is-bad', !!bad); };
@@ -464,7 +513,46 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
     let renderer = null;
     const clearLayer = () => { if (group) { group.remove(); group = null; } if (renderer) { renderer.remove(); renderer = null; } };
     const syncMethod = () => { const m = pickedMethod(); app.querySelectorAll('[data-ov-m]').forEach(el => { el.hidden = el.dataset.ovM !== m; }); };
+    const clearKeys = () => { keyResult = null; $('[data-ov-key-result]').replaceChildren(); $('[data-ov-keys-csv]').disabled = true; };
+    const keyStatus = text => { $('[data-ov-ref-status]').textContent = text; };
+    function keyForms() {
+      clearKeys();
+      $('[name="ovKeyA"]').innerHTML = S.table ? optionsHtml(S.table.headers, visibleCols(S.table), -1, true) : '<option value="-1">선택 안 함</option>';
+      $('[name="ovKeyB"]').innerHTML = S.ref ? optionsHtml(S.ref.table.headers, visibleCols(S.ref.table), -1, true) : '<option value="-1">선택 안 함</option>';
+    }
+    function refSheet(i) {
+      const table = toTable(S.ref.sheets[i].rows), pii = findPII(table);
+      excludeColumns(table, pii); S.ref.table = table; S.ref.sheet = S.ref.sheets[i].name;
+      $('[data-ov-ref-pii]').hidden = !pii.length; $('[data-ov-ref-pii]').innerHTML = piiHtml(pii);
+      keyForms(); keyStatus(`${S.ref.name} · ${S.ref.sheet} · ${table.rows.length.toLocaleString('ko-KR')}행. 키 열을 확인하세요.`);
+    }
+    async function loadReference(file) {
+      const epoch = ++refEpoch; S.ref = null; keyForms(); keyStatus('');
+      $('[data-ov-ref-pii]').hidden = true; $('[data-ov-ref-sheet]').hidden = true;
+      if (!file) return;
+      keyStatus('자료 B를 읽는 중입니다.');
+      try {
+        const bytes = await file.arrayBuffer(), parsed = await readFileBytes(bytes, file.name), hash = await fileHash(bytes);
+        if (epoch !== refEpoch) return;
+        S.ref = { name: file.name, sheets: parsed.sheets, hash };
+        $('#ovRefSheet').innerHTML = parsed.sheets.map((sheet, i) => `<option value="${i}">${esc(sheet.name)}</option>`).join('');
+        $('[data-ov-ref-sheet]').hidden = parsed.sheets.length < 2; refSheet(0);
+      } catch (e) { if (epoch === refEpoch) { S.ref = null; keyForms(); keyStatus(e.message || '자료 B를 읽지 못했습니다.'); } }
+    }
+    function compareKeys() {
+      clearKeys();
+      if (!S.table || !S.ref?.table) { keyStatus('자료 A와 자료 B를 모두 올려 주세요.'); return; }
+      try {
+        keyResult = reconcileKeys(S.table, S.ref.table, +val('ovKeyA'), +val('ovKeyB'));
+        const same = keyResult.rows.filter(r => r.state === 'same').length;
+        const rows = keyResult.rows.filter(r => r.state !== 'same');
+        $('[data-ov-key-result]').innerHTML = `<p>자료 A ${keyResult.aRows.toLocaleString('ko-KR')}행 · 자료 B ${keyResult.bRows.toLocaleString('ko-KR')}행.<br>키 일치 ${same.toLocaleString('ko-KR')}행 · 검토 필요 ${rows.length.toLocaleString('ko-KR')}행. 양쪽 자료행을 각각 셉니다.</p>` +
+          `<div class="ov-scroll" tabindex="0" role="region" aria-label="공통키 검토 목록"><table class="ov-table"><caption>검토 필요 앞 50행 · 전체 결과는 CSV로 받습니다. 자료행은 제목·완전 빈행을 뺀 1부터의 순번이며 원본 엑셀 행 번호가 아닙니다.</caption><thead><tr><th>자료</th><th>자료행</th><th>키</th><th>결과</th></tr></thead><tbody>${rows.slice(0, 50).map(r => `<tr><td>${r.side}</td><td>${r.row}</td><td>${esc(r.key || '(빈값)')}</td><td>${KEY_STATES[r.state]}</td></tr>`).join('')}</tbody></table></div>`;
+        $('[data-ov-keys-csv]').disabled = false; keyStatus('키 대조 목록을 만들었습니다. 일치는 대상의 동일성이나 담당자 승인을 뜻하지 않습니다.');
+      } catch (e) { keyStatus(e.message); }
+    }
     function reset() {
+      fileEpoch++; refEpoch++; S.ref = null; keyForms(); keyStatus(''); $('#ovRefFile').value = ''; $('[data-ov-ref-sheet]').hidden = true; $('[data-ov-ref-pii]').hidden = true;
       clearLayer(); Object.assign(S, { sheets: null, table: null, pii: [], det: null, pts: null, codes: null, loc: null, agg: null, valueLabel: '' });
       $('[data-ov-after]').hidden = true; $('[data-ov-result]').innerHTML = ''; status('');
     }
@@ -475,23 +563,25 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       $('[data-ov-loc]').innerHTML = locFormHtml(T.headers, cols, S.det);
       $('[data-ov-style]').innerHTML = styleFormHtml(T.headers, cols, S.det.numeric);
       $('[data-ov-prev]').innerHTML = previewHtml(T, cols);
-      syncMethod();
+      syncMethod(); keyForms();
     }
     async function load(file) {
-      reset();
+      reset(); const epoch = fileEpoch;
       if (!file) return;
       status('읽는 중입니다…');
       try {
-        const r = await readFileBytes(await file.arrayBuffer(), file.name);
-        S.sheets = r.sheets; S.encoding = r.encoding; S.fileName = file.name;
+        const bytes = await file.arrayBuffer(), r = await readFileBytes(bytes, file.name), hash = await fileHash(bytes);
+        if (epoch !== fileEpoch) return;
+        S.sheets = r.sheets; S.encoding = r.encoding; S.fileName = file.name; S.fileHash = hash;
         $('#ovSheet').innerHTML = S.sheets.map((s, i) => `<option value="${i}">${esc(s.name)}</option>`).join('');
         $('[data-ov-sheet]').hidden = S.sheets.length < 2;
         useSheet(0);
-      } catch (e) { reset(); status(e.message || '파일을 읽지 못했습니다.', true); }
+      } catch (e) { if (epoch === fileEpoch) { reset(); status(e.message || '파일을 읽지 못했습니다.', true); } }
     }
     function useSheet(i) {
       clearLayer(); S.pts = S.codes = S.agg = null; $('[data-ov-result]').innerHTML = '';
-      S.table = toTable(S.sheets[i].rows);
+      S.table = null; keyForms(); $('[data-ov-prev]').innerHTML = ''; $('[data-ov-info]').textContent = '';
+      S.table = toTable(S.sheets[i].rows); S.sheetName = S.sheets[i].name;
       S.pii = findPII(S.table); excludeColumns(S.table, S.pii);
       S.det = detectColumns(S.table);
       $('[data-ov-after]').hidden = false; buildForms();
@@ -545,6 +635,9 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
     app.addEventListener('change', ev => {
       const t = ev.target;
       if (t.id === 'ovFile') { load(t.files && t.files[0]); t.value = ''; }
+      else if (t.id === 'ovRefFile') { loadReference(t.files && t.files[0]); t.value = ''; }
+      else if (t.id === 'ovRefSheet') { try { refSheet(+t.value); } catch (e) { S.ref = null; keyForms(); keyStatus(e.message); } }
+      else if (/^ovKey[AB]$/.test(t.name || '')) { clearKeys(); keyStatus('키 열을 바꿨습니다. 다시 대조하세요.'); }
       else if (t.id === 'ovSheet') { try { useSheet(+t.value); } catch (e) { status(e.message, true); } }
       else if (t.name === 'ovMethod') syncMethod();
       else if (S.table && /^ov(Color|Size|Num|Label)$/.test(t.name || '') && (S.pts || S.codes)) { S.valueLabel = labelOf(styleOf()); drawLayer(false); result(); }
@@ -553,7 +646,9 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       const b = ev.target.closest('button'); if (!b) return;
       if (b.hasAttribute('data-ov-place')) place();
       else if (b.hasAttribute('data-ov-clear')) { reset(); $('#ovFile').value = ''; status('지웠습니다. 메모리에 남은 파일이 없습니다.'); }
-      else if (b.hasAttribute('data-ov-csv') && S.agg) saveCsv(S.agg.rows, S.valueLabel);
+      else if (b.hasAttribute('data-ov-csv') && S.agg) saveCsv(toCsv(S.agg.rows, S.valueLabel), '우리파일_동별집계.csv');
+      else if (b.hasAttribute('data-ov-keys')) compareKeys();
+      else if (b.hasAttribute('data-ov-keys-csv') && keyResult) saveCsv(reconcileCsv(keyResult, { aFile: S.fileName, aHash: S.fileHash, aSheet: S.sheetName, aKey: S.table.headers[+val('ovKeyA')], bFile: S.ref.name, bHash: S.ref.hash, bSheet: S.ref.sheet, bKey: S.ref.table.headers[+val('ovKeyB')] }), '공통키_대조목록.csv');
     });
     const box = $('details');
     box.addEventListener('dragover', ev => { ev.preventDefault(); });

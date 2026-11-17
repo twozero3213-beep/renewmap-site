@@ -81,7 +81,7 @@ document.documentElement.classList.add('js');
 <!-- 2026-11-13: 동 요약 신청요건 한 줄(.sr-req)·시작 묶음 단추(.map-bundles) 스타일로 버전을 올림 -->
 <link rel="stylesheet" href="map.css?v=20261117-oa-scope">
 <link rel="stylesheet" href="programs.css?v=20261114-d3">
-<link rel="stylesheet" href="overlay.css?v=20261113-d2">
+<link rel="stylesheet" href="overlay.css?v=20261118-keys2">
 <link rel="stylesheet" href="v4.css?v=20261114-d3"><!-- 2026-11-12: 768~1099px 지도 정리 규칙을 더해 캐시 버전을 붙임 -->
 <link rel="stylesheet" href="workspace.css?v=20261113-d2">
 <script src="site.js" defer></script>
@@ -101,7 +101,7 @@ document.documentElement.classList.add('js');
 <script src="decline-req.js?v=20261113-v93" defer></script>
 <script src="map.js?v=20261118-audit" defer></script>
 <script src="explore-layout.js?v=20261113" defer></script>
-<script src="workspace.js?v=20261117-core-split" defer></script>
+<script src="workspace.js?v=20261118-keys2" defer></script>
 <script src="report.js?v=20261114-e2" defer></script>
 <link rel="stylesheet" href="rm6.css?v=20261114-d9">
 </head>
@@ -153,7 +153,7 @@ document.documentElement.classList.add('js');
           <div class="hero-map"><div id="mapApp"></div><!-- 2026-11-12: 지도 화면에 자료 기준연도가 잘 안 보여 "최신이 아니다"로 오해받았다(docs/research/data_refresh_2026-11-12.md 4절 3번). 연도는 하드코딩하지 않고 map.js가 index_map.json의 출처 메타에서 채운다(원칙 1). 못 읽으면 빈 채로 숨는다 --><p class="hero-basis" data-basis></p><noscript><p>지도는 자바스크립트가 켜져 있어야 보입니다.</p></noscript></div>
           <!-- R3 2: 동네 현황 카드는 지도·고른 동 카드 뒤(좁은 화면 DOM 순서). 넓은 화면은 explore-layout.js가 왼쪽 패널로 옮긴다 -->
           <p id="heroLive" class="hero-live" aria-live="polite"></p>
-          <div id="overlayApp" class="ov-slot"><button type="button" class="btn ghost" data-overlay-load>내 GIS 파일 겹쳐 보기</button></div><noscript><p>내 GIS 파일 겹쳐 보기는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
+          <div id="overlayApp" class="ov-slot"><button type="button" class="btn ghost" data-overlay-load>GIS 파일 겹치기·공통키 대조</button></div><noscript><p>내 GIS 파일 겹쳐 보기는 자바스크립트가 켜져 있어야 보입니다.</p></noscript>
         </div>
       </section>
       <section id="report" class="workspace-panel" data-workspace-panel="evidence" aria-labelledby="reportTitle">
