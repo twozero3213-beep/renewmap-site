@@ -576,7 +576,7 @@
     for (const it of items) { const c = it.cell; if (c && !seenF.has(c.formula_id)) { seenF.add(c.formula_id); fRows.push([it.label, `${c.formula_id}: ${c.formula_text}`, c.rule_version]); } }
     items.filter(i => i.fact).forEach(i => fRows.push([i.label, i.fact.formula, i.fact.rule_version]));
     blocks.push(block('h1', '붙임 2. 계산식·규칙 버전'));
-    blocks.push(block('table', '', { rows: fRows, widths: [26, 56, 18], caption: '붙임 2 표. 지표별 계산식' }));
+    blocks.push(block('table', '', { rows: fRows, widths: [26, 56, 18], caption: '붙임 2 표. 지표별 계산식', formulaAppendix: true }));
     // 붙임 3. 출처 목록: 본문 [n]의 주석. 문서 맨 끝에 작은 글자로 둔다
     blocks.push(block('h1', '붙임 3. 출처 목록'));
     src.list.forEach((s, n) => { blocks.push(block('para', sourceLine(n + 1, s, brief.biz), { small: true })); blocks.push(block('para', s.url, { small: true })); });   // '끝' 표시는 쓰지 않는다
@@ -776,6 +776,21 @@
         if (b.text) out += para('small', b.text, 'small');
       }
       else if (b.kind === 'box') { out += table(b.rows, b.widths, '', false, b.refs) + para('gap', '', 'gap'); }
+      else if (b.formulaAppendix) {
+        // 일부 한글 뷰어는 긴 인라인 표를 쪽 경계에서 자른다. 머리행을 반복하고 줄바꿈 오차를 위해 반 쪽 안에서 나눈다.
+        const head = b.rows[0];
+        let rows = [head], caption = b.caption;
+        for (const row of b.rows.slice(1)) {
+          const candidate = { ...b, rows: [...rows, row] };
+          if (rows.length > 1 && estimateHeightMm({ kind: 'full', blocks: [candidate] }) > PAGE_MM / 2) {
+            out += table(rows, b.widths, caption, true) + para('gap', '', 'gap');
+            rows = [head];
+            caption = b.caption + ' (계속)';
+          }
+          rows.push(row);
+        }
+        out += table(rows, b.widths, caption, true) + para('gap', '', 'gap');
+      }
       else if (b.kind === 'table') { out += table(b.rows, b.widths, b.caption, true) + para('gap', '', 'gap'); }
       else if (b.kind === 'h1') out += para('h1', b.text, 'h1');
       else if (b.kind === 'h2') out += para('h2', b.text, 'h2');
