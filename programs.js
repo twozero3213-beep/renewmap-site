@@ -80,27 +80,45 @@
   const scheduleHTML = () => `<dl class="pg-sched">${SCHEDULE.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
 
   // 사업 목록 화면(programs.html)
-  // 2026-11-13: 9개 사업을 한 표로(11-13 평가: 한 장씩 넘겨서는 사업끼리 비교할 수 없다). 요건 문구는 아래 카드와 같은 원문 옮김이다
-  function compareHTML() {
-    // data-label: 휴대폰에서 표를 카드처럼 쌓을 때 칸 이름을 앞에 붙인다(v7 7회차: 표가 옆으로 잘려 '신청 요건' 열이 안 보였다)
-    const row = p => `<tr><th scope="row"><a href="#${esc(p.id)}">${esc(p.name)}</a></th><td data-label="맡는 곳">${esc(p.owner)}</td><td data-label="지원 규모·기간">${esc(p.money)}</td><td data-label="신청 요건"><ul>${p.needs.map(n => `<li>${esc(n.t)}</li>`).join('')}</ul></td></tr>`;
-    // 2026-11-13 우지예: '9종이 다 도시재생 사업이 맞나?' 확인 → 국토부 2027 도시재생 신규 공모는 3개 유형(지역특화재생·노후주거지정비(일반·빈집)·인정사업)이다
-    //     [검증 2026-11-13 국토부 2027 신규사업 공모 보도(2026-09-11 착수)]. 혁신지구와 나머지 4개는 따로 신청하는 사업이라 표 안에서 두 묶음으로 나눈다.
-    //     사업 목록·요건 문구는 그대로이고, 줄 순서와 묶음 제목만 바뀐다
-    const core = PROGRAMS.filter(p => CORE.includes(p.id)), rest = PROGRAMS.filter(p => !CORE.includes(p.id));
-    // 묶음마다 tbody 하나: 제목 칸은 scope="rowgroup"이라 화면 낭독기가 그 묶음의 줄에만 제목을 붙인다(#88 검토)
-    const group = (t, sub, list) => `<tbody><tr class="pg-group"><th colspan="4" scope="rowgroup">${esc(t)}<small>${esc(sub)}</small></th></tr>${list.map(row).join('')}</tbody>`;
-    return `<section class="pg-compare" id="compare" data-page-label="사업 한눈에"><h2>도시재생 공모 ${core.length}종 + 함께 볼 사업 ${rest.length}종</h2>` +
-      `<div class="table-wrap" tabindex="0" role="region" aria-label="재생 사업 비교 표"><table><thead><tr><th scope="col">사업</th><th scope="col">맡는 곳</th><th scope="col">지원 규모·기간</th><th scope="col">신청 요건(공식 문서 옮김)</th></tr></thead>` +
-      group('국토교통부 2027년 도시재생 신규 공모', '3개 유형(노후주거지정비는 일반정비형·빈집정비형 2가지). 국토교통부 2026-09-11 공고, 연말까지 접수', core) +
-      group('함께 볼 만한 다른 지원사업', '도시재생 신규 공모와 따로 신청합니다. 맡는 곳·시기가 사업마다 다릅니다', rest) + `</table></div></section>`;
-  }
-  // R2 12: 사업 9종을 접이 9개로 두고 '위 표' 되돌림 링크·'동네로 맞춰 보기' 단추를 9번 반복했다(위 찾기 칸과 겹침) → 표 아래 펼친 목록, 사업마다 목적·하는 일·출처 한 줄씩
+  // 2026-11-19: 비교 표와 그 아래 목록이 같은 사업을 두 번 적어 쪽이 3,245px(휴대폰 6,706px)였다 → 목록 하나.
+  //     넓은 화면은 왼쪽 목록(이름·맡는 곳·지원 규모)과 오른쪽 상세(요건·목적·하는 일·출처), 휴대폰은 사업마다 펼치기. 요건 줄과 출처는 한 번씩만 나온다.
+  //     2026-11-13 우지예 확인: 국토부 2027 도시재생 신규 공모는 3개 유형(지역특화재생·노후주거지정비(일반·빈집)·인정사업)이라 두 묶음으로 나눈다
   function listHTML(base) {
     const line = s => esc(s).replace(/&lt;br&gt;/g, ' ');
-    return `<section class="pg-list" id="list" data-page-label="사업별 목적과 하는 일"><h2>사업별 목적과 리뉴맵에서 하는 일</h2>` +
-      PROGRAMS.map(p => `<article class="pg-item" id="${esc(p.id)}"><h3>${esc(p.name)}</h3><p><b>목적</b> ${line(p.aim)}</p>` +
-        `<p><b>하는 일</b> ${line(p.use)}${p.tool ? ` <a href="${esc(base)}${esc(p.tool[0])}">${esc(p.tool[1])}</a>` : ''}</p><p class="pg-src"><b>출처</b> ${srcLine(p)}</p></article>`).join('') + `</section>`;
+    const item = p => { const id = esc(p.id); return `<h3 class="pgx-head" id="${id}"><button type="button" id="pgxb-${id}" aria-expanded="false" aria-controls="pgxd-${id}"><span class="pgx-name">${esc(p.name)}</span><span class="pgx-meta">${esc(p.owner)} · ${esc(p.money)}</span></button></h3>` +
+      `<div class="pgx-body" id="pgxd-${id}" role="region" aria-labelledby="pgxb-${id}" hidden><p class="pgx-title" aria-hidden="true">${esc(p.name)}</p>` +
+      `<h4>신청 요건 <small>공식 문서 옮김</small></h4><ul>${p.needs.map(n => `<li>${esc(n.t)}</li>`).join('')}</ul>` +
+      `<dl><div><dt>목적</dt><dd>${line(p.aim)}</dd></div><div><dt>리뉴맵에서 하는 일</dt><dd>${line(p.use)}${p.tool ? ` <a href="${esc(base)}${esc(p.tool[0])}">${esc(p.tool[1])}</a>` : ''}</dd></div>` +
+      `<div><dt>출처</dt><dd class="pg-src">${srcLine(p)}</dd></div></dl></div>`; };
+    const core = PROGRAMS.filter(p => CORE.includes(p.id)), rest = PROGRAMS.filter(p => !CORE.includes(p.id));
+    const group = (t, sub, list) => `<h2 class="pgx-group">${esc(t)}<small>${esc(sub)}</small></h2>${list.map(item).join('')}`;
+    return group(`도시재생 공모 ${core.length}종`, '국토교통부 2027년 도시재생 신규 공모. 3개 유형(노후주거지정비는 일반정비형·빈집정비형 2가지). 국토교통부 2026-09-11 공고, 연말까지 접수', core) +
+      group(`함께 볼 사업 ${rest.length}종`, '도시재생 신규 공모와 따로 신청합니다. 맡는 곳·시기가 사업마다 다릅니다', rest);
+  }
+  // 넓은 화면은 상세가 늘 하나 열려 있다(오른쪽 칸이 비지 않게). 휴대폰은 사업마다 따로 펼치고 접는다. 주소 #사업id(지도 문서 칸 링크)는 그 사업을 연다
+  function initList(box, win) {
+    const heads = [...box.querySelectorAll('.pgx-head button')], wide = win.matchMedia('(min-width: 1024px)');
+    const isOn = b => b.getAttribute('aria-expanded') === 'true';
+    const set = (b, on) => { b.setAttribute('aria-expanded', String(on)); box.querySelector('#' + b.getAttribute('aria-controls')).hidden = !on; };
+    const only = b => heads.forEach(x => set(x, x === b));
+    const sync = () => { if (wide.matches) only(heads.find(isOn) || heads[0]); };
+    const fromHash = () => { const b = heads.find(x => '#' + x.parentElement.id === win.location.hash); if (b) { if (wide.matches) only(b); else set(b, true); } };
+    heads.forEach(b => b.addEventListener('click', () => (wide.matches ? only(b) : set(b, !isOn(b)))));
+    fromHash(); sync();
+    wide.addEventListener('change', sync);
+    win.addEventListener('hashchange', fromHash);
+  }
+  // '목록에서 고르기'(home.js initPick이 만든 시·도·구·동 칸)는 글자 단추로 연다. 찾기 칸 하나가 첫 행동이다
+  function initPickToggle(doc) {
+    const form = doc.getElementById('homeSearch'), t = form && form.querySelector('.pgx-pick-toggle'), row = form && form.querySelector('.pick-row');
+    if (!t || !row) return;
+    row.id = 'pgxPick'; t.setAttribute('aria-controls', row.id); t.hidden = false;
+    t.addEventListener('click', () => {
+      if (!row.isConnected) { t.hidden = true; return; }   // 목록을 못 받으면 home.js가 칸을 지운다
+      const on = !form.classList.contains('is-pick');
+      form.classList.toggle('is-pick', on); t.setAttribute('aria-expanded', String(on));
+      if (on) row.querySelector('select').focus();
+    });
   }
   // 동 하나에 맞대 본 표(지도 화면 문서 칸)
   // 사업마다 한 줄 결론(v9 2차 마을기업 대표: '확인 필요'가 18번 나와 받을 수 있는 사업이 무엇인지 답을 못 얻었다)
@@ -174,10 +192,13 @@
       return [r.name, num(r.met) ? r.met : '', num2(r.aging), num2(r.biz), flag(r.bizDecl), num2(r.pop), flag(r.popDecl), num(r.shortfall) ? r.shortfall : '', c[8], c[9], uniq(cs.map(x => x.reference_date)), uniq(cs.map(x => x.source_name)), uniq(cs.map(x => x.cell_id))].map(q).join(',');
     })].join('\r\n');
   }
-  const api = { districtRows, districtHTML, districtCSV, PROGRAMS, SOURCES, SCHEDULE, SOC, factsOf, checkNeed, checkProgram, checkAll, scheduleHTML, listHTML, compareHTML, dongHTML, socRows, socHTML, socCSV };
+  const api = { districtRows, districtHTML, districtCSV, PROGRAMS, SOURCES, SCHEDULE, SOC, factsOf, checkNeed, checkProgram, checkAll, scheduleHTML, listHTML, dongHTML, socRows, socHTML, socCSV };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   root.RenewPrograms = api;
   const box = document.getElementById('programs');
-  if (box) { box.innerHTML = compareHTML() + listHTML(''); const s = document.getElementById('schedule'); if (s) s.innerHTML = scheduleHTML(); }
+  if (box) {
+    box.innerHTML = listHTML(''); initList(box, root); initPickToggle(document);
+    const s = document.getElementById('schedule'); if (s) s.innerHTML = scheduleHTML();
+  }
 })(typeof window !== 'undefined' ? window : globalThis);

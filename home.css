@@ -52,7 +52,7 @@
 /* 작업 시작 화면은 긴 소개 대신 검색과 도구를 같은 화면에서 연결한다. */
 /* 2026-11-12: 시범 지역 표시(index.html 주석 참고). 정보 표시라 단추처럼 보이지 않게 옅은 바탕의 알약 모양 */
 .app-home footer { padding-block: 16px; }
-.app-home footer p { margin-block: 4px 0; font-size: 13px; }
+.app-home footer p { margin-block: 4px 0; font-size: var(--t-cap); }
 /* ── 2026-11-12 홈 가독성·순서 (회의 "가독성", PR #33에 이어서) ──
    근거: 공개 사이트 홈에서 잰 값 — 글자와 바탕 대비는 모두 4.5:1 이상이었지만, 14px 이하 글자가 31곳
    (메뉴·바로가기·안내·접힌 도구·바닥글), 휴대폰에서 누르는 링크 8개가 36~40px로 손가락 기준 44px보다 작았다.
@@ -72,3 +72,34 @@
 }
 /* 2026-11-12: '누가 쓰나요' 대상 6칸(index.html 주석). 도구 카드(.start-tool-grid)와 같은 카드 모양을 써서 새 디자인 규칙을 늘리지 않는다.
    넓은 화면 3열 → 900px 이하 2열 → 600px 이하 1열. 글자는 위 2)의 15px 기준, 누르는 곳은 44px 이상 */
+
+/* 2026-11-19 보관함(box.html, .box-v4 안만): 안내 한 줄 + 자세히, 넓은 화면 7:5(검토 후보 | 받은 문서·현장 기록·결재 결과) */
+.box-v4 h1 { margin-bottom: 4px; }
+.box-v4 .box-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 0 12px; margin: 0 0 16px; font-size: 15px; color: var(--dim); }
+.box-v4 .box-notice > p { margin: 0; }
+.box-v4 details.box-more { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
+.box-v4 .box-more > summary { display: inline-flex; align-items: center; min-height: 44px; color: var(--green); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.box-v4 .box-notice .box-top-link { margin: 0 0 0 auto; }
+.box-v4 .box-more[open] { flex-basis: 100%; }
+.box-v4 .box-more p { margin: 0 0 8px; line-height: 1.6; }
+.box-v4 .box-grid { display: grid; gap: 16px; }
+.box-v4 .box-side { display: grid; gap: 16px; align-content: start; }
+.box-v4 .box-card { margin: 0; padding: 16px 20px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
+.box-v4 .box-card h2 { margin: 0 0 4px; }
+.box-v4 .box-card .box-list { margin: 8px 0 0; }
+.box-v4 .box-card .box-list li { border: 0; padding: 0; background: none; }
+.box-v4 .box-card .box-list li + li { padding-top: 12px; border-top: 1px solid var(--line); border-radius: 0; }
+.box-v4 .box-card .box-empty { margin: 0; }
+.box-v4 .box-card-link { margin: 8px 0 0; font-size: 15px; }
+.box-v4 .box-card-link a { display: inline-flex; align-items: center; min-height: 44px; }
+.box-v4 .box-card.outcome-sum { margin: 0; }
+.box-v4 .box-card.outcome-sum .hint { margin: 4px 0 0; font-size: 15px; }
+.box-v4 .box-card .box-list li.box-empty-card { justify-items: start; gap: 12px; padding: 4px 0; }
+.box-v4 .box-empty-card p { margin: 0; color: var(--dim); line-height: 1.6; }
+.box-v4 .box-empty-card b { color: var(--ink); font-size: 17px; }
+.box-v4 .box-cands .pg-acts { margin: 16px 0 0; }
+.box-v4 .box-cands details { margin-top: 8px; }
+.box-v4 [data-candidate-msg]:empty { display: none; }
+@media (min-width: 1024px) {
+  .box-v4 .box-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: stretch; }
+}

@@ -475,4 +475,15 @@
     $("out").hidden = true; $("planTable").replaceChildren();
     say("계산 파일의 새 판을 받았습니다. '새 판으로 열기'를 누른 뒤 다시 계산하세요.");
   });
+  // 2026-11-19 견본 크게 보기: 그림 링크(스크립트가 없으면 새 탭)와 단추가 대화상자로 원래 크기(640px)를 연다. Esc·닫기 뒤 초점은 연 자리로
+  const zoom = $("sampleDlg"), zoomLink = document.querySelector(".redev-sample a");
+  if (zoom && typeof zoom.showModal === "function" && zoomLink) {
+    let opener = null;
+    const openZoom = (e) => { e.preventDefault(); opener = e.currentTarget; zoom.showModal(); };
+    zoomLink.addEventListener("click", openZoom);
+    $("sampleZoom").addEventListener("click", openZoom);
+    $("sampleZoom").hidden = false;
+    $("sampleClose").addEventListener("click", () => zoom.close());
+    zoom.addEventListener("close", () => { if (opener) opener.focus(); });
+  }
 })();

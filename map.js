@@ -816,10 +816,11 @@
   //     그대로 쓴다(원칙 1). 요건을 묶는 규칙(decline-3req)은 승인 전이라 '참고'·'판정 아님'을 이 줄 아래 한 번 밝힌다.
   //     값이 없으면 0개로 만들지 않고 '추가확인'으로 둔다(원칙 4). 재사용: 지도 패널 외 다른 화면에서도 rows만 있으면 쓸 수 있다
   const REQ_CODE = 'DECLINE_MET_COUNT';
-  function reqLineHTML(rows, dong) {
+  // opt.go === false: 지도 서랍처럼 꼬리에 '근거 문서 열기' 주 단추를 따로 둔 곳에서는 같은 단추를 한 번 더 그리지 않는다
+  function reqLineHTML(rows, dong, opt) {
     const r = (rows || []).find(x => x.ind && x.ind.code === REQ_CODE);
     if (!r) return '';
-    const go = `<a class="btn sr-req-go" href="#report" data-set-mode="onepage">${icon('book')}1쪽 근거 문서 보기</a>`;
+    const go = opt && opt.go === false ? '' : `<a class="btn sr-req-go" href="#report" data-set-mode="onepage">${icon('book')}1쪽 근거 문서 보기</a>`;
     // 2026-11-13: 가운뎃점 사슬(하한·승인 전·판정 아님)을 누가 무엇을 하는지 두 문장으로(11-13 평가: 승인 주체가 없고 사슬이 AI 티)
     // v7 7회차: 맺음말 두 문장(하한·담당자 승인 전)을 실무자가 못 읽었다 → 한 줄. 승인 상태는 기준 원문 대조 쪽(rules.html)에 그대로 있다
     const jump = isNum(r.year) && dong ? seriesJump(seriesOf(dong, 'DECLINE_AGING_20Y_PCT'), r.year) : null;
@@ -1317,7 +1318,7 @@
   });
   // countUp이 쓰는 값은 지도 없는 화면(about.html)에서도 있어야 한다. 아래 '지도 없으면 끝'보다 먼저 둔다(2026-10-30: about에서 초기화 전 접근 오류로 등장 효과가 멈췄다)
   const shown = new Map();
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches, coarse = matchMedia('(pointer: coarse)').matches, wide = matchMedia('(min-width: 900px)'), narrow = matchMedia('(max-width: 1099px)');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches, coarse = matchMedia('(pointer: coarse)').matches, wide = matchMedia('(min-width: 900px)'), narrow = matchMedia('(max-width: 1023px)');
 
   // ── 브라우저 ──
   const app = document.getElementById('mapApp'); if (!app) return;
@@ -1369,18 +1370,29 @@
     forecast: v && v.level === 'emd' ? forecastOf(v.emdCode) || null : null, sg: v ? (v.gu || v.sigungu || null) : null });
   const extraAsked = new Set();
   let timer = null, autoT = null, lastLegend = '', lastLive = '', lastDong = null, wantCard = null;
-  const fold = { tools: false, list: false, more: false, listUser: null };   // 지도 아래 접힌 칸(받기·목록)의 펼침 상태. 다시 그려도 지킨다
+  const fold = { tools: false, listUser: null, intro: false, legend: false };   // 지도 아래 접힌 칸(받기·목록)의 펼침 상태. 다시 그려도 지킨다
+  const miFold = {};   // '모든 지표' 묶음별 펼침: 사용자가 제목 줄을 누른 것만 기억한다(없으면 지금 지표의 묶음만 펼침)
 
-  app.innerHTML = `<div class="map-top" data-top></div><div class="map-stage" data-stage><div class="map-canvas is-wait" data-map-slot>전국 자료를 불러오는 중입니다.</div>` +
-    `<section class="map-panel" data-panel id="dongCard" hidden aria-label="선택한 지역의 세부항목 척도표"></section></div><div class="map-legend-line-box" data-legend-line></div><div class="map-dongs" data-dongs></div><div class="map-pick" data-pick></div><div class="map-bottom" data-bottom></div>`;
+  // 2026-11-19 화면 정리: 위치 줄(where)·연도 막대(ctl)를 따로 두고, 아래 칸(bottom)은 출처 한 줄·도구 접기·안내 문구를 고정 자리로 둔다.
+  // 왜: 도구 안의 GIS 겹치기(#overlayApp)는 overlay.js가 상태를 들고 있어 render마다 다시 만들면 입력이 사라진다 → 도구 틀은 한 번만 만들고 안쪽만 바꾼다
+  app.innerHTML = `<div class="map-where" data-where></div><div class="map-top" data-top></div><div class="map-stage" data-stage><div class="map-canvas is-wait" data-map-slot>전국 자료를 불러오는 중입니다.</div>` +
+    `<section class="map-panel" data-panel id="dongCard" hidden aria-label="선택한 지역의 세부항목 척도표"></section></div><div class="map-legend-line-box" data-legend-line></div><div class="map-ctlbox" data-ctl></div><div class="map-dongs" data-dongs></div><div class="map-pick" data-pick></div>` +
+    `<div class="map-bottom" data-bottom><div class="map-prov" data-prov></div><details class="map-tools rm-disclosure" data-fold="tools"><summary>도구 <small>지도 저장·수질·GIS 파일 겹치기·쓰는 법</small></summary><div data-tools></div><div class="map-tools-gis" data-gis></div></details><p class="map-live" aria-live="polite" data-live></p></div>`;
   const $ = s => app.querySelector(s), top = $('[data-top]'), stage = $('[data-stage]'), panel = $('[data-panel]'), pick = $('[data-pick]'), bottom = $('[data-bottom]'), dongBox = $('[data-dongs]'), legendLine = $('[data-legend-line]');
+  const where = $('[data-where]'), ctlBox = $('[data-ctl]'), provBox = $('[data-prov]'), toolsBox = $('[data-tools]'), liveEl = $('[data-live]');
   const heroLive = document.getElementById('heroLive');
+  // 지도 설명 두 줄(.hero-head .lead)과 자료 기준 줄(.hero-basis)은 '현재 지도 자료' 접힌 칸 안으로 옮긴다(문구는 그대로, 위치만). GIS 겹치기는 도구 칸 안으로
+  const provExtra = document.createElement('div');
+  provExtra.className = 'map-prov-extra';
+  provExtra.append(...['#map .hero-head .lead', '#map .hero-basis'].map(s => document.querySelector(s)).filter(Boolean));
+  const gisEl = document.getElementById('overlayApp');
+  if (gisEl) $('[data-gis]').append(gisEl);
   // R4 1: 키보드로 지도 동 모양 18개를 모두 지나야 카드에 닿았다(검색 → 카드 Tab 47번). 지도 앞에 건너뛰기 링크를 둔다(.skip 모양: 초점을 받을 때만 보임).
   //   넓은 화면은 지도가 DOM 맨 뒤라 조작 줄(top) 맨 앞에, 좁은 화면은 지도(stage) 맨 앞에 둔다(render가 옮긴다). 고른 동 카드는 동 단계에서만 있어 그때만 보인다
   // href는 '#map…'으로 시작하면 안 된다: #mapApp의 'a[href^="#map"]' 처리가 경로를 전국으로 되돌린다
   const skipEl = document.createElement('a');
   skipEl.className = 'skip map-skip'; skipEl.href = '#dongCard'; skipEl.hidden = true; skipEl.textContent = '지도 건너뛰고 고른 동 카드로';
-  skipEl.addEventListener('click', e => { e.preventDefault(); const h = panel.querySelector('.map-h3'); if (h) h.focus(); });
+  skipEl.addEventListener('click', e => { e.preventDefault(); const h = (panel.hidden ? dongBox : panel).querySelector('.map-h3'); if (h) h.focus(); });   // 넓은 화면은 동을 고르기 전 카드 대신 목록 제목
 
   // 자료 불러오기 실패: 경고(role=alert)와 다시 시도 단추. 주소의 고른 곳(코드)을 함께 적어 어디서 막혔는지 알린다
   function loadErrorHTML() {
@@ -1392,7 +1404,6 @@
     return `<div class="map-empty" role="status">${mascot ? '<img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true">' : ''}<h3>${esc(title)}</h3>${lines.map(l => `<p>${esc(l)}</p>`).join('')}</div>`;
   }
   const seg = (key, list, cur, label) => `<div class="dash-seg map-seg" role="group" aria-label="${label}">${list.map(([val, txt]) => `<button type="button" data-${key}="${val}" aria-pressed="${cur === val}">${txt}</button>`).join('')}</div>`;
-  const selectHTML = (key, label, list, cur, topOpt) => `<label class="map-select">${label}<select data-${key}>${topOpt ? `<option value="">${topOpt}</option>` : ''}${list.map(o => `<option value="${esc(o.code)}" ${String(o.code) === String(cur) ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select></label>`;
 
   // 현재 단계에서 지도에 색을 칠할 항목(시군구 summary 또는 행정동)과 연도 범위
   function model(v) {
@@ -1449,7 +1460,7 @@
     const unit = district ? '시·군·구' : m && m.kind === 'emd' ? '읍·면·동(행정구역)' : '시·군·구 요약 · 읍·면·동 원자료';
     const status = !ready ? (m && m.kind === 'wait' ? '자료를 불러오는 중' : '자료 없음 · 추가확인')
       : `값 있음 ${rows.length}곳 · 자료 없음 ${items.length - rows.length}곳${ind.held ? ' · 보류' : ind.pending ? ' · 수집 중' : ''}`;
-    return `<details class="map-hint map-provenance"${open ? ' open' : ''}><summary>현재 지도 자료 · ${esc(ind.chip || ind.label)}${mode === 'trend' && hasTrend(ind) ? ' · 5년 변화' : ''}</summary><dl>`
+    return `<details class="map-hint map-provenance"${open ? ' open' : ''}><summary><span class="mp-sum">현재 지도 자료 · ${esc(ind.chip || ind.label)}${mode === 'trend' && hasTrend(ind) ? ' · 5년 변화' : ''}</span> <span class="mp-more">ⓘ 자세히</span></summary><dl>`
       + `<dt>공간 단위</dt><dd>${esc(unit)}</dd><dt>출처·방법</dt><dd>${esc(sources.join(' · '))}</dd><dt>기준일</dt><dd>${esc(dateText)}</dd><dt>현재 범위</dt><dd>${esc(status)}</dd></dl>`
       + `<p>${district && m && m.kind === 'emd' ? '같은 시·군·구 값을 여러 동 경계에 표시하며, 한 곳으로 셉니다.' : '현재 지도 범위의 지역 수입니다.'}<br>법정동·개별 건물 자료와 구분해서 봅니다.${ind.src === 'forecast' ? '<br>추세 전망은 관측값이 아닙니다.' : ''}</p><a href="data.html">전체 데이터 출처·확인 방법</a></details>`;
   }
@@ -1461,14 +1472,40 @@
     // 2026-11-13 우지예: '모든 지표' 칩이 '가장 가까운 ○○ 직선거리'처럼 길어 한 줄에 하나씩 쌓여 읽기 어려웠다 →
     //     칩에는 '○○ 직선거리'로 줄여 쓴다('직선'을 빼면 걸어서 가는 거리로 읽혀 남긴다, #86 검토). 범례·출처·문서는 원래 이름 그대로
     const chipName = i => i.chip || String(i.label).replace(/^가장 가까운 (.+?) 직선거리$/, '$1 직선거리');
-    const chipOf = i => { const ok = avail(i);   // avail은 수집 중(pending)을 이미 뺀다
-      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" title="${esc(i.label)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(chipName(i))}${ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`}</button>`; };
-    if (bkey !== BUNDLE_ALL) return bundles + `<div class="dash-chips map-inds" role="group" aria-label="${esc(BUNDLES.find(b => b.key === bkey).label)} 지표">${inBundle.map(chipOf).join('')}</div>` + provenanceHTML(ind, m, source, mode, !!app.querySelector('.map-provenance[open]'));
-    const tabs = `<div class="map-groups" role="group" aria-label="지표 묶음">${GROUPS.filter(([k]) => k === g || list.some(i => i.group === k)).map(([k, l]) => `<button type="button" data-group="${k}" aria-pressed="${k === g}">${gIco(k)}${esc(l)}</button>`).join('')}</div>`;
-    const chips = `<div class="dash-chips map-inds" role="group" aria-label="${esc(GROUPS.find(x => x[0] === g)[1])} 지표">${list.filter(i => i.group === g).map(chipOf).join('')}</div>`;   // v9: 같은 칩 단추 문자열이 위와 한 벌 더 있었다
-    return bundles + tabs + chips + provenanceHTML(ind, m, source, mode, !!app.querySelector('.map-provenance[open]'));
+    const tag = (i, ok) => (ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : '수집 중'}</small>`);   // avail은 수집 중(pending)을 이미 뺀다
+    const chipOf = i => { const ok = avail(i);
+      return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" title="${esc(i.label)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(chipName(i))}${tag(i, ok)}</button>`; };
+    if (bkey !== BUNDLE_ALL) {
+      // 2026-11-19: 휴대폰은 칩 6개까지만 먼저 보이고 나머지는 '+N개 더 보기'(고른 칩이 뒤쪽이면 모두). 가로 스크롤 줄은 쓰지 않는다(칩은 줄바꿈)
+      const cut = narrow.matches && !state.chipsMore && inBundle.length > 6 && inBundle.findIndex(i => i.code === ind.code) < 6 ? 6 : inBundle.length;
+      const more = cut < inBundle.length ? `<button type="button" class="dash-chip map-chips-more" data-chips-more>+${inBundle.length - cut}개 더 보기</button>` : '';
+      return bundles + `<div class="dash-chips map-inds" role="group" aria-label="${esc(BUNDLES.find(b => b.key === bkey).label)} 지표">${inBundle.slice(0, cut).map(chipOf).join('')}${more}</div>`;
+    }
+    // 2026-11-19 대표 지적('모든 지표'가 가로 스크롤 탭 줄 + 칩 20여 개로 지저분했다): 묶음 7개를 접는 목록으로, 지표는 한 줄씩(44px).
+    // 맨 위 검색 칸이 이름으로 줄을 거른다(거른 결과가 있는 묶음만 펼침). 수집 중·보류는 chipShown이 이미 숨긴다(지금 고른 것만 남는다)
+    const rowOf = i => { const ok = avail(i);
+      return `<button type="button" class="mi-row${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" data-mi-text="${esc((chipName(i) + i.label).replace(/\s+/g, '').toLowerCase())}" title="${esc(i.label)}" aria-pressed="${i.code === ind.code}"${ok ? '' : ' aria-disabled="true"'}><span class="mi-name">${esc(chipName(i))}</span>${tag(i, ok)}</button>`; };
+    const groups = GROUPS.filter(([k]) => k === g || list.some(i => i.group === k)).map(([k, l]) => {
+      const rows = list.filter(i => i.group === k);
+      return `<details class="mi-group rm-disclosure" data-mi-group="${k}"${miFold[k] ?? k === g ? ' open' : ''}><summary>${gIco(k)}<span class="mi-gname">${esc(l)}</span><small class="mi-gn">${rows.length}개</small></summary><div class="mi-rows" role="group" aria-label="${esc(l)} 지표">${rows.map(rowOf).join('')}</div></details>`;
+    }).join('');
+    return bundles + `<div class="mi" data-mi><label class="mi-search"><span>지표 이름 검색</span><input type="search" data-mi-q value="${esc(state.miQ || '')}" placeholder="예: 도서관, 인구" autocomplete="off" enterkeyhint="search"></label><p class="mi-none" data-mi-none role="status" hidden>맞는 지표가 없습니다.</p>${groups}</div>`;
   }
-  function panelHTML(v, m) {
+  // '모든 지표' 검색: 다시 그리지 않고 줄만 숨긴다(입력 칸 초점·글자 그대로). 찾은 줄이 있는 묶음만 펼치고, 검색을 지우면 원래 펼침으로
+  function miFilter() {
+    const box = app.querySelector('[data-mi]'); if (!box) return;
+    const q = String(state.miQ || '').replace(/\s+/g, '').toLowerCase(), g = curInd().group;
+    let any = false;
+    box.querySelectorAll('.mi-group').forEach(d => {
+      let n = 0;
+      d.querySelectorAll('.mi-row').forEach(r => { const hit = !q || r.dataset.miText.includes(q); r.hidden = !hit; if (hit) n++; });
+      d.hidden = !!q && !n;
+      d.open = q ? n > 0 : (miFold[d.dataset.miGroup] ?? d.dataset.miGroup === g);
+      if (n) any = true;
+    });
+    box.querySelector('[data-mi-none]').hidden = any;
+  }
+  function panelHTML(v, m, bare) {
     const ind = curInd(), mode = effMode(ind), scale = scaleFor(ind, mode), here = v.crumbs[v.crumbs.length - 1].label;
     if (m.kind === 'wait') return `<div class="map-panel-wait${v.dong ? ' has-dong' : ''}">읍·면·동 자료를 불러오는 중입니다.</div>`;   // has-dong: 동 카드 높이를 미리 잡아 둔다(R5 2, rm6.css)
     if (m.kind === 'noemd' || m.nodata) return emptyHTML(`${here} · 읍·면·동 자료 준비 중`, [m.kind === 'noemd' ? '이 지역의 읍·면·동 자료가 아직 없습니다.' : '경계는 있지만 지표 시계열이 아직 없습니다.', '준비되기 전에는 숫자를 보여 드리지 않습니다.']);
@@ -1476,22 +1513,58 @@
       : `<h4 class="map-h4">${esc(here)} 읍·면·동 분포 · ${esc(ind.label)} <small>순위 아님${m.year ? ` · ${esc(m.year)}년` : ''}</small></h4>${strip(m.items, it ? it.code : null, ind, scale)}`;
     const boundaries = new Set(((m.geo || {}).features || []).map(f => String((f.properties || {}).code)));
     const missingBoundaries = m.items.filter(x => !boundaries.has(x.code)).length;
-    if (!it) return `<h3 class="map-h3" tabindex="-1">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3><p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.${missingBoundaries ? `<br>지도 경계가 없는 ${missingBoundaries}개 동은 ‘읍·면·동 목록’에서 이름으로 고를 수 있습니다.` : ''}</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}동별 사업 요건 비교 보기</a></p>${reorgNote(v)}${forecastChart(ind, m.ext, v.gu || v.sigungu, null)}${dist}${hubHTML(v)}`;
-    const rows = rowsFor(v, m, it), D = window.RenewDashboard, dy = rows.find(r => r.ind.series && r.year)?.year;
-    // R3 3: 카드는 '동 이름 · 쇠퇴 3요건 세 줄 · 1쪽 근거 문서 단추'까지만 보이고, 나머지(경로·보고서 링크·후보 저장·세부 지표·정밀 사례)는
-    // '자세한 근거' 접기 하나에 둔다(휴대폰 카드 1,334px → 요약만 약 500px). 넓은 화면도 같은 구조다. 접힘 상태는 다시 그려도 지킨다(fold.more)
-    const req = reqLineHTML(rows, m.json.dongs.find(d => codeOf(d) === it.code)); // 2026-11-13: 동 이름 바로 아래에 신청요건(첫 약속 D23의 답을 맨 먼저)
-    return `<div class="map-panel-head"><h3 class="map-h3" tabindex="-1" data-code="${esc(it.code)}">${esc(it.name)} <small>${esc(it.kind || '행정동')}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` + req +
+    // 2026-11-19: 동을 고르기 전 안내는 한 줄만 두고, 분포·사업 비교·정밀 사례는 접어 둔다(목록이 바로 아래 오게). 문구는 그대로 접힌 칸 안에
+    // bare: 넓은 화면 왼쪽 목록 위에 붙일 때(목록 제목이 이름·개수를 이미 보인다)
+    if (!it) return (bare ? '' : `<h3 class="map-h3" tabindex="-1">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3>`) + '<p class="map-guide">지도나 목록에서 동을 고르면 요약이 열립니다.</p>' +
+      `<details class="map-intro rm-disclosure" data-fold="intro"${fold.intro ? ' open' : ''}><summary>분포·사업 요건 비교 더 보기</summary>` +
+      `<p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.${missingBoundaries ? `<br>지도 경계가 없는 ${missingBoundaries}개 동은 ‘읍·면·동 목록’에서 이름으로 고를 수 있습니다.` : ''}</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}동별 사업 요건 비교 보기</a></p>${reorgNote(v)}${forecastChart(ind, m.ext, v.gu || v.sigungu, null)}${dist}${hubHTML(v)}</details>`;
+    const rows = rowsFor(v, m, it), D = window.RenewDashboard, dy = rows.find(r => r.ind.series && r.year)?.year, dong = m.json.dongs.find(d => codeOf(d) === it.code) || null;
+    // 2026-11-19 대표 지적('자세한 근거'가 카드 안에 접힌 칸으로 겹쳐 길었다): 오른쪽 서랍(휴대폰은 지도 아래 카드)을 머리·탭·꼬리로 나눈다.
+    // 머리 = 이름·닫기, 탭 = 요약(쇠퇴 3요건 세 줄)·지표 전체(척도표)·재생 사업, 꼬리 = 주 단추 하나('근거 문서 열기' = 예전 1쪽 근거 문서 단추).
+    // 경로·연도·경계 안내 같은 보조 문구는 'ⓘ 자세히' 한 칸에 모은다(문구는 그대로)
+    const req = reqLineHTML(rows, dong, { go: false }); // 2026-11-13: 동 이름 바로 아래에 신청요건(첫 약속 D23의 답을 맨 먼저)
+    const tab = MP_TABS.some(t => t[0] === state.mpTab) ? state.mpTab : 'sum';
+    const info = `<details class="mp-info"><summary>ⓘ 자세히 <small>${boundaries.has(it.code) ? '경로·기준연도' : '지도 경계 없음'}</small></summary>` +
       (boundaries.has(it.code) ? '' : '<p class="map-note" data-boundary-missing role="status">이 동의 지도 경계가 없어 선택 위치를 표시하지 못합니다. 지표 자료는 아래에서 확인할 수 있습니다.</p>') +
-      '<p class="map-copy"><button type="button" class="btn ghost" data-copy-map>이 지도 링크 복사</button><span class="map-copy-msg" role="status" aria-live="polite" data-copy-map-msg></span></p>' +
-      `<details class="map-more rm-disclosure" data-fold="more"${fold.more ? ' open' : ''}><summary>자세한 근거</summary>` +
       `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>${reorgNote(v)}` +
-      (req.includes('data-biz-zero') ? `<p class="map-note">${esc(BIZ_BOUNDARY)}</p>` : '') +
-      `<p class="map-report-link"><a href="#report">${icon('book')}여러 쪽 보고서</a><a href="#report" data-set-mode="programs">${icon('flag')}맞는 재생 사업 보기</a></p>` +
-      '<p><button type="button" class="btn ghost" data-candidate-save>검토 후보 저장</button></p><p data-candidate-status role="status"></p>' +
-      forecastChart(ind, m.ext, v.gu || v.sigungu, m.json.dongs.find(d => codeOf(d) === it.code) || null) + scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist + hubHTML(v) + `</details>`;
+      (req.includes('data-biz-zero') ? `<p class="map-note">${esc(BIZ_BOUNDARY)}</p>` : '') + '</details>';
+    const pane = (k, html) => `<div class="mp-pane" role="tabpanel" id="mp-pane-${k}" aria-labelledby="mp-tab-${k}" tabindex="0"${k === tab ? '' : ' hidden'}>${html}</div>`;
+    return `<div class="map-panel-head mp-head"><h3 class="map-h3" tabindex="-1" data-code="${esc(it.code)}">${esc(it.name)} <small>${esc(it.kind || '행정동')}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` +
+      `<div class="mp-tabs" role="tablist" aria-label="${esc(it.name)} 보기">${MP_TABS.map(([k, l]) => `<button type="button" role="tab" id="mp-tab-${k}" data-mp-tab="${k}" aria-controls="mp-pane-${k}" aria-selected="${k === tab}" tabindex="${k === tab ? 0 : -1}">${l}</button>`).join('')}</div>` +
+      '<div class="mp-body">' +
+      pane('sum', req + '<p class="map-copy"><button type="button" class="btn ghost" data-copy-map>이 지도 링크 복사</button><button type="button" class="btn ghost" data-candidate-save>검토 후보 저장</button></p><p class="map-copy-msg" role="status" aria-live="polite" data-copy-map-msg></p><p data-candidate-status role="status"></p>' + info) +
+      pane('all', forecastChart(ind, m.ext, v.gu || v.sigungu, dong) + scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist) +
+      pane('biz', `<p class="map-guide">이 동의 신청요건에 맞는 재생 사업은 문서 탭에서 비교합니다.</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}맞는 재생 사업 보기</a></p>` + hubHTML(v)) +
+      '</div>' +
+      `<div class="mp-foot"><a class="btn mp-go" href="#report" data-set-mode="onepage">${icon('book')}근거 문서 열기</a></div>`;
   }
+  const MP_TABS = [['sum', '요약'], ['all', '지표 전체'], ['biz', '재생 사업']];
   const rowsFor = (v, m, it) => dongRows(inds(), m.json.dongs.find(d => codeOf(d) === it.code), livingMap(m.living).get(it.code), m.selYear, m.ext);
+  // 2026-11-19: 넓은 화면 왼쪽 패널의 주 목록 = 지금 단계의 아래 지역(전국 → 시·도, 시·도·시 → 시·군·구·일반구, 시·군·구 → 읍·면·동).
+  // 시·도·시·군·구 고르기 칸(select)과 접힌 '읍·면·동 목록'을 대신한다. 줄마다 지도와 같은 색 견본·값(출처 값 그대로). 순서는 자료 순서(값 순 아님, D13)
+  function areaListHTML(v, m, it) {
+    const here = v.crumbs[v.crumbs.length - 1].label;
+    const sw = x => `<i class="ma-sw${isNum(x.value) || typeof x.value === 'string' ? '' : ' is-hatch'}"${isNum(x.value) || typeof x.value === 'string' ? ` data-bg="${esc(x.color)}"` : ''} aria-hidden="true"></i>`;
+    const cells = x => `${sw(x)}<span class="ma-name">${esc(x.name)}</span><span class="ma-val">${m.summaryWaiting ? '' : esc(x.text || '')}</span>`;   // 기다리는 중 문구는 범례 줄에 한 번만
+    const head = (n, unit) => `<h3 class="map-h3 ma-h" tabindex="-1">${esc(here)} <small>${n}개 ${unit}</small></h3>`;
+    if (v.level === 'nation') {
+      const list = state.index.sido || [];
+      return head(list.length, '시·도') + `<ul class="ma-list">${list.map(s => `<li><a class="ma-row" href="${esc(toHash({ sido: s.code2 }))}"><span class="ma-name">${esc(s.name)}</span></a></li>`).join('')}</ul>`;
+    }
+    if (m.kind === 'sg') return head(m.items.length, '시·군·구') + `<ul class="ma-list">${m.items.map(x => { const r = leafRoute(state.index, x.code); return r ? `<li><a class="ma-row" href="${esc(toHash(r))}">${cells(x)}</a></li>` : ''; }).join('')}</ul>`;
+    if (m.kind !== 'emd' || m.nodata) return panelHTML(v, m, true);   // 불러오는 중·자료 준비 중 안내
+    return head(m.items.length, '읍·면·동') + (it ? '' : panelHTML(v, m, true)) +
+      `<ul class="ma-list" aria-label="읍·면·동">${m.items.map(x => `<li><button type="button" class="ma-row" data-dong="${esc(x.code)}" aria-pressed="${x.code === v.dong}">${cells(x)}</button></li>`).join('')}</ul>`;
+  }
+  // 고른 동의 가운데가 오른쪽 서랍 밑이면 서랍 왼쪽의 보이는 지도 가운데로 옮긴다
+  function revealDong(code) {
+    if (!M || !M.emd || panel.hidden || getComputedStyle(panel).position !== 'absolute') return;
+    let lay = null;
+    M.emd.eachLayer(l => { if (String(((l.feature || {}).properties || {}).code) === code) lay = l; });
+    if (!lay || !lay.getBounds) return;
+    const p = M.map.latLngToContainerPoint(lay.getBounds().getCenter()), edge = panel.offsetLeft - 16;
+    if (p.x > edge - 24) M.map.panBy([p.x - edge / 2, 0], { animate: !reduced && !state.naver });
+  }
   // ── 동네 보고서(#report): 출처 기록 문장 + 그래프 + 출처표. 인쇄는 브라우저 인쇄(@media print), HWPX·XLSX는 메일 요청 ──
   const report = document.getElementById('reportApp');
   const initialReportMode = new URLSearchParams(location.search).get('report');
@@ -1565,7 +1638,7 @@
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261119-r1'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261119-r2'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
@@ -1666,7 +1739,7 @@
         {name:`${stem}.xlsx`,kind:'xlsx',bytes:DG.workbookBytes(full)},
       ],inputJSON:built.inputJSON,comparison,templateVersion:JSON.parse(built.inputJSON).templates.version,
       reviewRows:DG.deliveryReview(built.brief,true).rows,context:{code:cur.it.code,region:built.brief.region,year:built.brief.year}};
-      if (!window.RenewTaskLink) await import('./task-link.js?v=20261112-tasks');
+      if (!window.RenewTaskLink) await import('./task-link.js?v=20261119-r2');
       if (!current()) throw new Error('파일 준비 중 선택이나 입력이 바뀌었습니다. 현재 문서에서 다시 눌러 주세요.');
       const packet = await window.RenewTaskLink.capture(request);
       if (!current()) throw new Error('선택이 바뀌어 화면 이동을 멈췄습니다. 보관한 파일 묶음은 보관함에서 다시 열 수 있습니다.');
@@ -1886,14 +1959,15 @@
     heroLive.innerHTML = `<span class="hl-k">${icon(ind.icon)}${esc(ind.label)}</span>${body}${autoT ? '<span class="hl-auto">연도·지표가 자동으로 바뀝니다 · 지도를 만지면 멈춥니다</span>' : ''}`;
     heroLive.querySelectorAll('[data-count]').forEach(countUp);
   }
-  // 좁은 화면(≤1099px)과 넓은 화면의 덩어리 순서. 넓은 화면 틀(explore-layout.js)이 .map-top·.map-bottom을 #mapApp 밖으로 옮긴 뒤에는 건드리지 않는다
+  // 좁은 화면(≤1023px)과 넓은 화면의 덩어리 순서. 넓은 화면 틀(explore-layout.js)이 .map-top·.map-bottom을 #mapApp 밖으로 옮긴 뒤에는 건드리지 않는다
   let arranged = null;
   function arrange() {
     const n = narrow.matches;
     if (arranged === n || top.parentNode !== app) return;
     arranged = n;
-    if (n) app.append(stage, legendLine, dongBox, panel, pick, top, bottom);   // R5 10: 범례 한 줄은 지도 바로 아래(전체 범례는 pick 안 그대로)
-    else { stage.append(panel); app.append(top, stage, legendLine, dongBox, pick, bottom); }
+    // 2026-11-19: 휴대폰은 위치 줄 → 지도 → 범례 한 줄 → 고른 동 카드(지도 바로 아래) → 동 목록 → 지표 단추 → 현황 한 줄 → 연도 → 출처·도구
+    if (n) app.append(where, stage, legendLine, panel, dongBox, pick, ...(heroLive ? [heroLive] : []), ctlBox, top, bottom);
+    else { stage.append(panel); app.append(where, top, stage, legendLine, ctlBox, dongBox, pick, bottom); }
   }
   // R5 3: 칩으로 지표를 바꾸면 주소(?ind=)도 따라간다 → 지금 지도를 메신저·서류에 그대로 건다. 기본 지표면 지우고, report·panel 같은 다른 값과 #경로는 그대로 둔다
   function syncIndUrl() {
@@ -1904,7 +1978,7 @@
     } catch (e) { /* 주소를 못 바꿔도 지도는 그대로 쓴다 */ }
   }
   // 연도 막대: 재생 단추 + 연도 끌기. 시·군·구(재생 연도 목록)와 읍·면·동(연도 범위) 두 곳이 같은 모양을 쓴다
-  const yearHTML = (on, min, max, year) => `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${on}" aria-label="${on ? '재생 멈춤' : `${min}년부터 ${max}년까지 재생`}">${icon(on ? 'pause' : 'play')}</button><label>연도 <b>${esc(year ?? '')}</b><input type="range" data-year min="${min}" max="${max}" step="1" value="${year ?? max}"></label></div>`;
+  const yearHTML = (on, min, max, year) => `<div class="map-year"><button type="button" class="map-play" data-play aria-pressed="${on}" aria-label="${on ? '재생 멈춤' : `${min}년부터 ${max}년까지 재생`}">${icon(on ? 'pause' : 'play')}</button><label><span class="map-year-k">연도</span> <b>${esc(year ?? '')}</b><input type="range" data-year min="${min}" max="${max}" step="1" value="${year ?? max}"></label></div>`;
   // '지도 저장·수질 겹쳐 보기' 접이. v7.14(9회차): 받기·수질·쓰는 법은 접어 두고 펼침 상태는 다시 그려도 지킨다(fold).
   // 2026-11-13 우지예: 단추가 무엇을 하는지 설명이 없어 이해가 어려웠다 → 단추 위에 한 줄씩 설명. median: 시·군·구 색이 중앙값일 때 계산법도 적는다
   function toolsHTML(median) {
@@ -1913,7 +1987,7 @@
       (state.water && state.waterData !== undefined ? waterNoteHTML(state.waterData) : '') + (state.water ? waterAutoHTML(state.waterAuto) : '');
     const move = coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, 휠이나 + − 버튼으로 확대합니다.';
     const hint = `<details class="map-hint"><summary>ⓘ ${median ? '색 계산법·' : ''}지도 쓰는 법</summary>${median ? '<p>시·군·구 색 = 그 안 읍·면·동 값의 중앙값(가중 없음)</p>' : ''}<p>${move}<br>지도에서 구·군을 누르면 그 안의 읍·면·동이 보이고(시·도 → 구·군 → 읍·면·동), 동을 누르면 그 동의 요약이 열립니다.<br>지도가 불편하면 '읍·면·동 목록'에서 이름으로 고를 수 있습니다.</p></details>`;
-    return `<details class="map-tools" data-fold="tools"${fold.tools ? ' open' : ''}><summary>지도 저장·수질 겹쳐 보기</summary>${save}${water}${hint}</details>`;
+    return save + water + hint;   // 2026-11-19: 감싸는 '도구' 접기 틀은 고정 자리(app 맨 아래)라 안쪽만 돌려준다
   }
 
   function render() {
@@ -1921,11 +1995,13 @@
     if (wantInd) { const code = wantedInd(wantInd, inds()); if (code) { state.ind = code; state.year = null; wantInd = null; } else if (state.living !== undefined) wantInd = null; }   // 생활 지표 도착 전에는 기다리고, 도착했는데 없으면 버린다
     if (!wantInd) syncIndUrl();
     const v = resolve(state.index, state.route);
+    // 도구 틀(GIS 겹치기 포함)은 고정 자리라 비우지 않는다. 그 밖의 칸만 비운다
+    const clear = () => { where.innerHTML = top.innerHTML = pick.innerHTML = ctlBox.innerHTML = dongBox.innerHTML = provBox.innerHTML = legendLine.innerHTML = ''; panel.hidden = true; };
     if (state.index === null) {   // 자료 파일을 못 불러왔다(네트워크·차단). '준비 중'이라 말하면 이미 고른 동네를 서비스에 자료가 없는 것으로 오해한다
-      top.innerHTML = pick.innerHTML = bottom.innerHTML = legendLine.innerHTML = ''; panel.hidden = true;
+      clear();
       stage.innerHTML = loadErrorHTML(); if (report) report.innerHTML = loadErrorHTML(); return;
     }
-    if (v.level === 'empty') { top.innerHTML = pick.innerHTML = bottom.innerHTML = legendLine.innerHTML = ''; panel.hidden = true; stage.innerHTML = emptyHTML('전국 데이터 준비 중', ['출처 기록에서 내보낸 숫자만 이 자리에 보여 드립니다.', '준비되면 전국에서 읍·면·동까지 내려가 볼 수 있습니다.'], true); return; }
+    if (v.level === 'empty') { clear(); stage.innerHTML = emptyHTML('전국 데이터 준비 중', ['출처 기록에서 내보낸 숫자만 이 자리에 보여 드립니다.', '준비되면 전국에서 읍·면·동까지 내려가 볼 수 있습니다.'], true); return; }
     const ind = curInd(), mode = effMode(ind), m = model(v), src = state.index.source && state.index.source.name, ok = avail(ind);
     const summaryNotice = m.summaryWaiting ? (state.index.summaryError ? '추가 지표 자료를 불러오지 못했습니다. 새로고침해 주세요.' : '추가 지표 자료를 불러오는 중입니다.') : '';
     const it = m.kind === 'emd' && v.dong ? m.items.find(x => x.code === v.dong) : null;
@@ -1945,52 +2021,63 @@
     // 연도 막대를 끄는 중이면 막대를 다시 만들지 않는다(다시 만들면 끌기가 한 칸에서 끊긴다)
     const lkey = ind.code + mode, median = ok && !ind.pending && m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind), legend = (summaryNotice ? `<div class="map-legend" role="status"><b>${esc(ind.label)}</b><p>${esc(summaryNotice)}</p></div>` : legendHTML(ind, mode, src, m.year, ok)).replace('class="map-legend"', `class="map-legend${lkey !== lastLegend && !reduced ? ' is-new' : ''}"`); lastLegend = lkey;
     arrange();
-    const sliding = top.contains(document.activeElement) && document.activeElement.matches('[data-year]');
+    const desk = !narrow.matches;
+    // 출처 한 줄('현재 지도 자료 · ⓘ 자세히') 안에 지도 설명·자료 기준 줄을 붙인다(provExtra는 다시 그려도 같은 노드)
+    const prov = open => { provBox.innerHTML = provenanceHTML(ind, m, src, mode, open); const d = provBox.firstElementChild; if (d) d.append(provExtra); };
+    const sliding = ctlBox.contains(document.activeElement) && document.activeElement.matches('[data-year]');
     if (sliding) {
-      const yb = top.querySelector('.map-year b'); if (yb) yb.textContent = m.year ?? '';
-      const provenance = app.querySelector('.map-provenance');
-      if (provenance) provenance.outerHTML = provenanceHTML(ind, m, src, mode, provenance.open);
+      const yb = ctlBox.querySelector('.map-year b'); if (yb) yb.textContent = m.year ?? '';
+      prov(!!provBox.querySelector('.map-provenance[open]'));
     }
     else {
       const ctl = `<div class="map-ctl">${hasTrend(ind) ? seg('mode', MODES, state.mode, '현재 또는 5년 변화') : ''}${hzCtl}${yearCtl}</div>`, inds = indCtlHTML(ind, m, src, mode);
-      // R3 2: 휴대폰·태블릿(≤1099px)은 지도 → 고른 동 카드 → 지표 단추·범례 → 이동줄·연도·시점 → 나머지를 DOM 순서 그대로 그린다(CSS order·display:contents 없이).
-      // 키보드·화면 낭독기 순서가 보이는 순서와 같다. 넓은 화면은 왼쪽 384px 패널 틀(explore-layout.js)이 .map-top·.map-bottom을 통째로 옮기므로 예전 묶음 그대로
-      top.innerHTML = narrow.matches ? crumbs + ctl : crumbs + inds + ctl;
-      pick.innerHTML = narrow.matches ? inds + legend : '';
+      // R3 2: 휴대폰·태블릿(≤1023px)은 DOM 순서 그대로 그린다(CSS order·display:contents 없이). 키보드·화면 낭독기 순서가 보이는 순서와 같다.
+      // 넓은 화면은 왼쪽 패널 틀(explore-layout.js)이 .map-top(지표)·.map-bottom(출처·도구)을, 지도 위로 범례·연도 막대를 옮긴다
+      where.innerHTML = crumbs;
+      top.innerHTML = desk ? inds : '';
+      pick.innerHTML = desk ? '' : inds;
+      ctlBox.innerHTML = ctl;
+      prov(!!provBox.querySelector('.map-provenance[open]'));
+      miFilter();
     }
     skipEl.hidden = v.level !== 'emd';
     const skipHome = narrow.matches ? stage : top;
     if (skipEl.parentNode !== skipHome || skipHome.firstChild !== skipEl) skipHome.prepend(skipEl);
-    const opts = (list, key) => list.map(x => ({ code: x[key], name: x.name }));
-    const kids = v.sido ? childrenOf(state.index, v.sido.code2) : [];
-    const sidoSel = selectHTML('sido', '시·도', opts(state.index.sido || [], 'code2'), v.sido && v.sido.code2, '전국');
-    const sgSel = kids.length && !(v.sido.kind === '특별자치시' && kids.length === 1) ? selectHTML('sg', '시·군·구', opts(kids, 'code5'), v.sigungu && v.sigungu.code5, '고르기') : '';
-    const guSel = v.sigungu && childrenOf(state.index, v.sigungu.code5).length ? selectHTML('gu', '일반구·행정시', opts(childrenOf(state.index, v.sigungu.code5), 'code5'), v.gu && v.gu.code5, '고르기') : '';
     const chips = m.kind === 'emd' ? `<div class="dash-chips dash-dongs map-list" role="group" aria-label="읍·면·동">${m.items.map(x => `<button type="button" class="dash-chip" data-dong="${esc(x.code)}" aria-pressed="${x.code === v.dong}">${esc(x.name)}</button>`).join('')}</div>` : '';
-    // R4 2: 휴대폰·태블릿(≤1099px)은 지도 위 동 모양이 44px보다 작은 것이 많다(390px 해운대구 18동 중 10동, 좌3동 21×40). 기존 '읍·면·동 목록'(44px 단추)을
+    // R4 2: 휴대폰·태블릿(≤1023px)은 지도 위 동 모양이 44px보다 작은 것이 많다(390px 해운대구 18동 중 10동, 좌3동 21×40). 기존 '읍·면·동 목록'(44px 단추)을
     //   지도 바로 아래로 옮겨 쓴다(새 목록을 만들지 않는다). 동을 고르기 전에는 펼쳐 두고, 고른 뒤에는 접어 카드가 지도 바로 아래에 오게 한다. 사용자가 누른 뒤에는 그 선택(fold.listUser)을 따른다
-    const listOpen = narrow.matches ? (fold.listUser ?? !it) : fold.list;
-    const dongList = `<details class="map-dong-list${narrow.matches ? ' map-more' : ''}" data-fold="list"${listOpen ? ' open' : ''}><summary>읍·면·동 목록</summary>${chips}</details>`;
+    const listOpen = fold.listUser ?? !it;
+    const dongList = `<details class="map-dong-list map-more" data-fold="list"${listOpen ? ' open' : ''}><summary>읍·면·동 목록</summary>${chips}</details>`;
     // R5 2: 자료가 오기 전(wait)에도 목록 자리를 비워 두지 않으면 도착 때 지도 아래 전부가 117px 밀린다(390 딥링크 CLS 0.16)
-    dongBox.innerHTML = narrow.matches ? (m.kind === 'emd' ? dongList : m.kind === 'wait' ? '<div class="map-dongs-wait" aria-hidden="true"></div>' : '') : '';
-    bottom.innerHTML = (narrow.matches ? '' : legend) + toolsHTML(median) +
-      `<div class="map-selects">${sidoSel}${sgSel}${guSel}</div>${narrow.matches ? '' : dongList}<p class="map-live" aria-live="polite">${esc(liveText(v, it, ind, mode))}</p>`;
-    legendLine.innerHTML = narrow.matches ? (summaryNotice ? `<span role="status">${esc(summaryNotice)}</span>` : legendLineHTML(ind, mode, ok)) : '';
-    styleData(bottom); styleData(pick); styleData(legendLine);   // 범례 색 견본(data-bg)은 좁은 화면에서 pick 안에 있다
+    // 넓은 화면: 시·도·시·군·구 고르기 칸 대신 지금 단계의 아래 지역 목록이 왼쪽 패널의 주 목록이다(areaListHTML)
+    dongBox.innerHTML = desk ? areaListHTML(v, m, it) : (m.kind === 'emd' ? dongList : m.kind === 'wait' ? '<div class="map-dongs-wait" aria-hidden="true"></div>' : '');
+    toolsBox.innerHTML = toolsHTML(median);
+    liveEl.textContent = liveText(v, it, ind, mode);
+    // R5 10: 범례 한 줄(색 이름 · 구간 견본 · 자료 없음) + 구간·기준 문장은 그 아래 접힌 칸 하나에만(2026-11-19: 전체 범례가 두 번 그려졌다)
+    legendLine.innerHTML = summaryNotice ? `<span role="status">${esc(summaryNotice)}</span>` : legendLineHTML(ind, mode, ok) +
+      `<details class="map-legend-more" data-fold="legend"${fold.legend ? ' open' : ''}><summary>구간·기준 보기</summary>${legend}</details>`;
+    styleData(dongBox); styleData(legendLine);
     const inEmd = v.level === 'emd';
-    panel.hidden = !inEmd;
-    if (inEmd) {
-      // R4 1: 카드 제목에 초점이 있으면(동을 고른 직후) 다시 그려도 잃지 않게 한다. 늦게 오는 자료(순이동·시세)가 render를 부른다
-      const keepCard = panel.contains(document.activeElement) && document.activeElement.classList.contains('map-h3');
+    // 넓은 화면의 오른쪽 서랍은 동을 골랐을 때만 연다(고르기 전 안내는 왼쪽 목록 위). 휴대폰은 지도 아래 카드 그대로
+    panel.hidden = !inEmd || (desk && !it && !(m.kind === 'wait' && v.dong));
+    if (!panel.hidden) {
+      // R4 1: 카드 제목에 초점이 있으면(동을 고른 직후) 다시 그려도 잃지 않게 한다. 늦게 오는 자료(순이동·시세)가 render를 부른다. 탭 단추 초점도 같다
+      const a = document.activeElement, keepCard = panel.contains(a) && a.classList.contains('map-h3'), keepTab = panel.contains(a) && a.dataset.mpTab;
       panel.innerHTML = panelHTML(v, m);
       if (keepCard || (wantCard && it && it.code === wantCard)) { panel.querySelector('.map-h3')?.focus({ preventScroll: true }); wantCard = null; }
+      else if (keepTab) panel.querySelector(`[data-mp-tab="${keepTab}"]`)?.focus({ preventScroll: true });
       panel.classList.toggle('is-sheet', !!it && !wide.matches);
       panel.classList.toggle('is-new', !!it && it.code !== lastDong && !reduced);
       document.body.classList.toggle('sheet-open', !!it && !wide.matches);
     } else document.body.classList.remove('sheet-open');
+    const newDong = !!it && it.code !== lastDong;
     lastDong = it ? it.code : null;
     if (state.mapErr) { const s = stage.querySelector('[data-map-slot]'); if (s) s.outerHTML = emptyHTML('지도를 불러오지 못했습니다', ['네트워크를 확인한 뒤 다시 열어 주세요.', '아래 목록으로는 계속 고를 수 있습니다.']); }
     else drawMap(v, m);
+    // 2026-11-19: 넓은 화면은 고른 동이 오른쪽 서랍 밑에 숨지 않게 지도를 옮기고(새 구로 맞출 때는 fitView가 서랍 폭만큼 비운다),
+    // 휴대폰은 지도 바로 아래 카드로 내려 보인다(움직임 줄이기 설정이면 바로)
+    if (newDong && desk && M && !M.fitting) revealDong(it.code);
+    if (newDong && !desk) panel.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
     heroLiveHTML(v, m, ind);
     yearbar(v, m, ind, mode);
     renderReport(v, m, it);
@@ -2070,8 +2157,9 @@
     if (nv) { nv.className = 'map-naver'; el.appendChild(nv); el.classList.add('has-naver'); }
     const hatch = boundaryHatch();
     // 동네 찾기 넓은 화면은 지도가 화면 남은 높이 전체라(explore-layout.js) 페이지 스크롤과 다투지 않으므로 휠 확대를 처음부터 켠다(2026-11-13 v7)
-    const wideApp = document.body.classList.contains('explore-page') && window.matchMedia('(min-width: 1100px)').matches;
-    const map = L.map(el, { dragging: !coarse, scrollWheelZoom: wideApp, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false, zoomControl: false,
+    const wideApp = document.body.classList.contains('explore-page') && window.matchMedia('(min-width: 1024px)').matches;
+    // maxBoundsViscosity 1: 네이버 배경이 범위 끝에서 멈출 때 경계층도 그 밖으로 끌려 나가지 않게 한다(범위는 followWithNaver가 SDK에서 읽어 건다)
+    const map = L.map(el, { dragging: !coarse, scrollWheelZoom: wideApp, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false, zoomControl: false, maxBoundsViscosity: nv ? 1 : 0,
       // 2026-11-13 우지예: 휠로 확대·축소할 때 조금씩 끊긴다 → 휠 눈금 여러 개를 한 번에 모아(60ms) 덜 자주, 한 번에 조금 더 크게 움직인다.
       //     왜: 기본값(40ms·60px)에서는 휠 한 번에 0.25단계씩 여러 번 확대되며, 그때마다 전국 시군구 경계·동 경계·동 이름을 다시 그렸다
       wheelDebounceTime: 60, wheelPxPerZoomLevel: 100 });
@@ -2084,6 +2172,14 @@
     L.control.scale({ position: 'bottomleft', imperial: false, maxWidth: 120 }).addTo(map);   // v7.9: 축척 막대(8회차 GIS 평가)
     L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
     add3dControl(map);
+    // 2026-11-19: 넓은 화면은 범례 한 줄(구간·기준 접기 포함)과 연도 막대를 카드 하나로 묶어 지도 왼쪽 아래 조작 칸(축척·저작권 위)에 얹는다.
+    // 따로 띄우면 서랍을 연 좁은 지도에서 둘이 겹쳤다. 휴대폰은 지도 아래 그대로
+    if (legendLine.closest('.mx-map')) {
+      const key = document.createElement('div'), lg = L.control({ position: 'bottomleft' });
+      key.className = 'map-key'; key.append(legendLine, ctlBox);
+      lg.onAdd = () => { L.DomEvent.disableClickPropagation(key); L.DomEvent.disableScrollPropagation(key); return key; };
+      lg.addTo(map);
+    }
     if (nv) followWithNaver(map, el, nv);
     // 칸 크기가 바뀌면(업무 패널 열기·휴대폰 순서) 경계층도 다시 재야 바탕과 어긋나지 않는다. 네이버 동기화는 resize 이벤트로 따라간다
     if ('ResizeObserver' in window) new ResizeObserver(() => map.invalidateSize({ pan: false })).observe(el);
@@ -2118,8 +2214,22 @@
   }
   // 네이버 배경(nv)을 Leaflet 지도와 같은 중심·확대로 따라 움직인다. 네이버 지도는 스스로 움직이지 않는다
   function followWithNaver(map, el, nv) {
-    let N, nmap = null, stopped = false, resizeObserver = null, linkObserver = null;
+    let N, nmap = null, stopped = false, resizeObserver = null, linkObserver = null, fixing = false, fixes = 0;
     const events = 'move zoom moveend zoomend viewreset resize';
+    // 2026-11-19: 최소 확대에서 끌면 네이버 배경은 자기 범위 끝에서 멈추는데 Leaflet 경계층은 계속 움직여 둘이 어긋났다(대표 화면).
+    // 움직임이 끝날 때 두 중심이 1px 넘게 다르면 경계층을 네이버 중심으로 되돌린다. 서로 되돌리기를 반복하지 않게 사용자가 다시 움직일 때까지 2번만
+    // 네이버 좌표: LatLng는 lat()·lng(), Point(범위 꼭짓점일 수 있다)는 y·x
+    const ll = p => window.L.latLng(typeof p.lat === 'function' ? p.lat() : p.y, typeof p.lng === 'function' ? p.lng() : p.x);
+    const realign = () => {
+      if (!nmap || stopped || fixing || fixes >= 2) return;
+      try {
+        const to = ll(nmap.getCenter());
+        if (map.project(to).distanceTo(map.project(map.getCenter())) <= 1) return;
+        fixing = true; fixes++; map.panTo(to, { animate: false });
+      } catch { /* 중심을 못 읽으면 다음 움직임에서 다시 본다 */ }
+      finally { fixing = false; }
+    };
+    const userMove = () => { fixes = 0; };
     const destroy = target => {
       if (!target || typeof target.destroy !== 'function') return;
       try { target.destroy(); }
@@ -2128,7 +2238,7 @@
     const dispose = () => {
       stopped = true;
       window.removeEventListener('renew-navermap-auth-failed', fallback);
-      map.off(events, sync); map.off('unload', dispose);
+      map.off(events, sync); map.off('unload', dispose); map.off('moveend', realign); map.off('dragstart zoomstart', userMove);
       if (resizeObserver) resizeObserver.disconnect();
       if (linkObserver) linkObserver.disconnect();
       const previous = nmap; nmap = null; destroy(previous);
@@ -2137,7 +2247,7 @@
       if (stopped) return;
       dispose(); state.naver = false;
       nv.remove(); el.classList.remove('has-naver');
-      map.options.zoomSnap = 0.25; map.setMinZoom(0);
+      map.options.zoomSnap = 0.25; map.setMinZoom(0); map.setMaxBounds(null);   // 네이버 범위 제한은 대체 배경(브이월드·OSM)에 쓰지 않는다
       addBaseTiles(map);
     };
     const sync = () => {
@@ -2147,7 +2257,7 @@
     };
     // 인증 실패 콜백과 달리 이 이벤트는 이미 열린 배경을 회복하는 앱 내부 신호다.
     window.addEventListener('renew-navermap-auth-failed', fallback);
-    map.on(events, sync); map.on('unload', dispose);
+    map.on(events, sync); map.on('unload', dispose); map.on('moveend', realign); map.on('dragstart zoomstart', userMove);
     if ('ResizeObserver' in window) {
       resizeObserver = new ResizeObserver(() => {
         if (!nmap || stopped) return;
@@ -2166,8 +2276,13 @@
         N = window.naver.maps;
         const c = map.getCenter();
         nmap = new N.Map(nv, { center: new N.LatLng(c.lat, c.lng), zoom: map.getZoom(), tileTransition: false, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
-          disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false });
+          disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false,
+          // 2026-11-19: 넓은 화면의 동 서랍이 지도 오른쪽 전체 높이를 덮으므로 NAVER 로고를 왼쪽 아래(저작권 표시 옆)로 옮긴다(로고는 가리지 않는다)
+          ...(N.Position && N.Position.BOTTOM_LEFT ? { logoControlOptions: { position: N.Position.BOTTOM_LEFT } } : {}) });
         if (stopped) { const previous = nmap; nmap = null; destroy(previous); return; }
+        // 네이버가 정한 이동 범위(없으면 null)를 경계층에도 같게 건다. 좌표는 손으로 적지 않고 SDK에서 읽는다
+        const b = typeof nmap.getOptions === 'function' ? nmap.getOptions('maxBounds') : null;
+        if (b && typeof b.getMin === 'function' && typeof b.getMax === 'function') map.setMaxBounds(window.L.latLngBounds(ll(b.getMin()), ll(b.getMax())));
         N.Event.once(nmap, 'tilesloaded', () => { if (!stopped) mapPainted(); });
       } catch { fallback(); }
     });
@@ -2411,32 +2526,54 @@
 
   app.addEventListener('toggle', e => { const d = e.target; if (d && d.dataset && d.dataset.fold) fold[d.dataset.fold] = d.open; }, true);
   // 좁은 화면의 동 목록은 처음에 '동을 고르기 전이면 펼침'이라 toggle(코드가 연 것도 옴)로는 사용자의 선택을 못 가린다 → 제목 줄 누름만 따로 기록
-  app.addEventListener('click', e => { const sm = e.target.closest && e.target.closest('.map-dong-list > summary'); if (sm) fold.listUser = !sm.parentNode.open; }, true);
+  app.addEventListener('click', e => {
+    const sm = e.target.closest && e.target.closest('.map-dong-list > summary, .mi-group > summary'); if (!sm) return;
+    if (sm.parentNode.dataset.miGroup) miFold[sm.parentNode.dataset.miGroup] = !sm.parentNode.open; else fold.listUser = !sm.parentNode.open;
+  }, true);
+  // 서랍 탭(요약·지표 전체·재생 사업): 다시 그리지 않고 칸만 바꾼다. 고른 탭은 다음 동에도 이어진다
+  function mpTab(k, focus) {
+    state.mpTab = k;
+    panel.querySelectorAll('[data-mp-tab]').forEach(t => { const on = t.dataset.mpTab === k; t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
+    panel.querySelectorAll('.mp-pane').forEach(p => { p.hidden = p.id !== 'mp-pane-' + k; });
+  }
+  panel.addEventListener('keydown', e => {   // 탭 목록 화살표·Home·End(WAI-ARIA 탭 패턴)
+    const t = e.target.closest('[data-mp-tab]'); if (!t) return;
+    const keys = MP_TABS.map(x => x[0]), i = keys.indexOf(t.dataset.mpTab);
+    const j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: keys.length - 1 }[e.key];
+    if (j === undefined) return;
+    e.preventDefault(); mpTab(keys[(j + keys.length) % keys.length], true);
+  });
   app.addEventListener('click', async e => {
     const a = e.target.closest('a[href^="#map"]');
     if (a) { e.preventDefault(); go(parseHash(a.getAttribute('href')) || {}); return; }
     const b = e.target.closest('button'); if (!b) return;
     if (b.classList.contains('is-planned')) return; // 수집 중·보류: 지도를 회색으로 바꾸지 않는다
-    if (b.dataset.bundle || b.dataset.group || b.dataset.ind || b.dataset.mode) { stopPlay(); stopAuto(true); } // 화면 낭독기 등은 click만 보내 pointerdown 멈춤이 안 걸린다
-    // 2026-11-13: 시작 묶음 단추. 묶음의 첫 지표(지금 볼 수 있는 것)로 지도를 바꾼다. '모든 지표'는 지금 지표를 그대로 두고 예전 탭·칩을 연다
-    if (b.dataset.bundle) { state.bundle = b.dataset.bundle; const v = resolve(state.index, state.route), pick = (bundleList(state.bundle, inds().filter(i => chipShown(i, null, v))) || []).find(i => !i.pending && avail(i)); if (pick) { state.ind = pick.code; state.year = null; } render(); app.querySelector(`[data-bundle="${b.dataset.bundle}"]`)?.focus({ preventScroll: true }); return; }
-    if (b.dataset.group) { const v = resolve(state.index, state.route), list = inds().filter(i => i.group === b.dataset.group), pick = list.find(i => chipShown(i, null, v)) || list.find(avail) || list[0]; if (pick) state.ind = pick.code; state.year = null; render(); app.querySelector(`[data-group="${b.dataset.group}"]`)?.focus({ preventScroll: true }); }
+    if (b.dataset.bundle || b.dataset.ind || b.dataset.mode) { stopPlay(); stopAuto(true); } // 화면 낭독기 등은 click만 보내 pointerdown 멈춤이 안 걸린다
+    // 2026-11-13: 시작 묶음 단추. 묶음의 첫 지표(지금 볼 수 있는 것)로 지도를 바꾼다. '모든 지표'는 지금 지표를 그대로 두고 묶음별 목록을 연다(고른 줄이 보이게)
+    if (b.dataset.bundle) {
+      state.bundle = b.dataset.bundle; const v = resolve(state.index, state.route), pick = (bundleList(state.bundle, inds().filter(i => chipShown(i, null, v))) || []).find(i => !i.pending && avail(i)); if (pick) { state.ind = pick.code; state.year = null; }
+      render(); app.querySelector(`[data-bundle="${b.dataset.bundle}"]`)?.focus({ preventScroll: true });
+      if (state.bundle === BUNDLE_ALL) app.querySelector('.mi-row[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest' });
+      return;
+    }
+    if (b.dataset.mpTab) mpTab(b.dataset.mpTab, false);
+    else if (b.hasAttribute('data-chips-more')) { state.chipsMore = true; const n = app.querySelectorAll('.map-inds [data-ind]').length; render(); app.querySelectorAll('.map-inds [data-ind]')[n]?.focus({ preventScroll: true }); }
     else if (b.dataset.ind) { state.ind = b.dataset.ind; state.year = null; render(); app.querySelector(`[data-ind="${CSS.escape(b.dataset.ind)}"]`)?.focus({ preventScroll: true }); }
     else if (b.dataset.mode) { state.mode = b.dataset.mode; state.year = null; render(); app.querySelector(`[data-mode="${b.dataset.mode}"]`)?.focus({ preventScroll: true }); }
     else if (b.dataset.horizon) { state.horizon = +b.dataset.horizon; render(); app.querySelector(`[data-horizon="${b.dataset.horizon}"]`)?.focus({ preventScroll: true }); }
-    else if (b.dataset.dong) go({ ...state.route, dong: b.dataset.dong }, `.map-list [data-dong="${b.dataset.dong}"]`);
+    else if (b.dataset.dong) go({ ...state.route, dong: b.dataset.dong }, `[data-dong="${b.dataset.dong}"]`);
     else if (b.hasAttribute('data-candidate-save')) {
       const c = currentDong(), msg = panel.querySelector('[data-candidate-status]'); if (!c || !msg) return;
       const rows = rowsFor(c.v, c.m, c.it), snapshot = snapshotOf(c.it, rows, new Date()), route = toHash(state.route);
       b.disabled = true;
       try {
-        if (!window.RenewCandidates) await import('./candidates.js?v=20261119-r1');
+        if (!window.RenewCandidates) await import('./candidates.js?v=20261119-r2');
         const saved = window.RenewCandidates.save(localStorage, snapshot, route, rows);
         msg.textContent = saved ? '보관함(아래 탭·바닥글)에서 단계·메모와 근거를 확인하세요.' : '이미 저장한 후보입니다. 기존 근거와 메모를 보존했습니다.';
       } catch (err) { msg.textContent = '저장하지 못했습니다. ' + err.message; }
       finally { b.disabled = false; }
     }
-    else if (b.hasAttribute('data-close')) go({ ...state.route, dong: null }, `.map-list [data-dong]`);
+    else if (b.hasAttribute('data-close')) closeDong();
     else if (b.hasAttribute('data-play')) { play(); app.querySelector('[data-play]')?.focus({ preventScroll: true }); }
     else if (b.hasAttribute('data-copy-map')) copyMapLink();
     else if (b.hasAttribute('data-map-png')) mapPng();
@@ -2450,18 +2587,18 @@
       render(); app.querySelector('[data-water]')?.focus({ preventScroll: true });
     }
   });
-  app.addEventListener('input', e => { const r = e.target.closest('[data-year]'); if (r) { stopPlay(); state.year = +r.value; state.yearByAuto = false; render(); app.querySelector('[data-year]')?.focus({ preventScroll: true }); } });
-  app.addEventListener('change', e => {
-    const s = e.target.closest('select'); if (!s) return;
-    const val = s.value;
-    if ('sido' in s.dataset) go(val ? { sido: val } : {}, '[data-sido]');
-    else if ('sg' in s.dataset) go({ sido: state.route.sido, sigungu: val || null }, '[data-sg]');
-    else if ('gu' in s.dataset) go({ sido: state.route.sido, sigungu: state.route.sigungu, gu: val || null }, '[data-gu]');
+  app.addEventListener('input', e => {
+    const q = e.target.closest('[data-mi-q]'); if (q) { state.miQ = q.value; miFilter(); return; }
+    const r = e.target.closest('[data-year]'); if (r) { stopPlay(); state.year = +r.value; state.yearByAuto = false; render(); app.querySelector('[data-year]')?.focus({ preventScroll: true }); }
   });
-  addEventListener('keydown', e => { if (e.key === 'Escape' && panel.classList.contains('is-sheet')) go({ ...state.route, dong: null }); });
+  // 지표 검색 칸에서 Enter = 걸러진 첫 줄 고르기
+  app.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches && e.target.matches('[data-mi-q]')) { e.preventDefault(); [...app.querySelectorAll('.mi-row:not(.is-planned)')].find(r => !r.hidden && !r.closest('[hidden]'))?.click(); } });
+  // 닫으면 초점은 목록의 그 동으로 돌아간다(없으면 첫 동)
+  function closeDong() { const code = state.route.dong; go({ ...state.route, dong: null }, code ? `[data-dong="${code}"]` : '[data-dong]'); }
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !panel.hidden && state.route.dong && (panel.classList.contains('is-sheet') || panel.contains(document.activeElement))) closeDong(); });
   addEventListener('hashchange', () => { const r = parseHash(location.hash); if (r) { stopPlay(); stopAuto(true); if (state.yearByAuto) { state.year = null; state.yearByAuto = false; } state.route = r; render(); } }); // 검색으로 동에 오면 자동 재생 중이던 해가 아니라 최신 해
   wide.addEventListener('change', render);
-  narrow.addEventListener('change', () => { lastLegend = ''; render(); });   // 폭이 1100px을 넘나들면 덩어리 순서·내용을 다시 짠다
+  narrow.addEventListener('change', () => { lastLegend = ''; render(); });   // 폭이 1024px을 넘나들면 덩어리 순서·내용을 다시 짠다
 
   // 우리 동네 찾기: dong_index.json이 있으면 동까지, 없으면 시·도·시군구 이름으로
   const form = document.getElementById('heroSearch');
@@ -2474,7 +2611,7 @@
   }
   if (form) {
     const q = form.querySelector('input'), msg = form.querySelector('[data-search-msg]');
-    const pick = () => { const e = findEntry(entries, q.value); if (msg) msg.textContent = e ? `${e.label.split(' · ')[0]}${roJosa(e.label.split(' · ')[0])} 이동했습니다.` : '찾지 못했습니다. 동 이름이나 구 이름으로 다시 찾아 보세요.'; if (e && e.href) { location.href = e.href; return; } if (e) { go(e.route); app.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); } };
+    const pick = () => { const e = findEntry(entries, q.value); if (msg) msg.textContent = e ? `${e.label.split(' · ')[0]}${roJosa(e.label.split(' · ')[0])} 이동했습니다.` : '찾지 못했습니다. 동 이름이나 구 이름으로 다시 찾아 보세요.'; if (e && e.href) { location.href = e.href; return; } if (e) { go(e.route); if (!e.route.dong) app.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); } };   // 동이면 render가 카드로 내린다
     form.addEventListener('submit', e => { e.preventDefault(); pick(); });
     q.addEventListener('focus', touch);
     const dl = form.querySelector('datalist');
@@ -2499,7 +2636,7 @@
     state.index = index && Array.isArray(index.sigungu) ? index : null;
     heroBasis(index);
     if (!state.index) { render(); return; }
-    if (deepLink && !matchMedia('(min-width: 1100px)').matches) app.scrollIntoView({ block: 'start' }); // 넓은 화면은 한 화면 배치라 옮기지 않는다. 기본 경로(부산)로 열 때도 옮기지 않는다(v9: 검색·탭을 건너뛰었다)
+    if (deepLink && !matchMedia('(min-width: 1024px)').matches) app.scrollIntoView({ block: 'start' }); // 넓은 화면은 한 화면 배치라 옮기지 않는다. 기본 경로(부산)로 열 때도 옮기지 않는다(v9: 검색·탭을 건너뛰었다)
     searchSetup();
     if (index.series_file) { // 시·군·구 연도 요약은 목록·경계 뒤에 받아 붙인다. 오기 전에는 연도 문구를 '불러오는 중'으로 두고 자동 재생을 미룬다
       index.seriesPending = true;

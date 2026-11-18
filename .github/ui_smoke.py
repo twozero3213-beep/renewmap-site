@@ -34,6 +34,7 @@ def geometry(page):
     }""")
 
 
+
 def verify_reusable_evidence(page, output, width):
     original = page.evaluate('() => localStorage.getItem(RenewCandidates.KEY)')
     try:
@@ -142,6 +143,9 @@ def verify_key_reconciliation(page, output, width):
             archive.writestr('xl/worksheets/sheet1.xml','<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>ID</t></is></c><c r="B1" t="inlineStr"><is><t>메모</t></is></c></row><row r="2"><c r="A2" t="inlineStr"><is><t>001</t></is></c><c r="B2" t="inlineStr"><is><t>첫 자료</t></is></c></row><row r="4"><c r="A4" t="inlineStr"><is><t>D</t></is></c></row><row r="5"><c r="A5" t="inlineStr"><is><t>D</t></is></c></row><row r="6"><c r="B6" t="inlineStr"><is><t>빈키</t></is></c></row><row r="7"><c r="A7" t="inlineStr"><is><t>=1+2</t></is></c></row></sheetData></worksheet>')
             archive.writestr('xl/worksheets/sheet2.xml','<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>ID</t></is></c></row><row r="3"><c r="A3" t="inlineStr"><is><t></t></is></c></row></sheetData></worksheet>')
         return content.getvalue()
+    tools = page.locator('[data-fold="tools"]')
+    if not tools.evaluate('(el) => el.open'):
+        tools.locator(':scope > summary').click()
     page.locator('[data-overlay-load]').click()
     a=workbook();b='키,이메일\n001,a@example.org\nD,b@example.org\nRIGHT,c@example.org\n=1+2,d@example.org\n'.encode()
     page.locator('#ovFile').set_input_files({'name':'synthetic-A.xlsx','mimeType':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','buffer':a})
@@ -219,6 +223,28 @@ def verify_field_basis(page, output, width):
           for(const r of await FieldStore.records())if(ids.includes(r.id))await FieldStore.deleteRecord(r);
           for(const d of await FieldStore.docs())if(ids.includes(d.record_id))await FieldStore.deleteDoc(d.id);
         }""",ids)
+    assert page.evaluate('async () => JSON.stringify(await FieldStore.records())')==original
+
+
+def verify_field_save_errors(page, width):
+    # 위치 없이 저장하면 오류 문구가 저장 단추 위 뷰포트 안에 있고 지번 칸이 열려 초점을 받는다
+    page.locator('#f button.save').click()
+    page.wait_for_function('() => document.querySelector("#msg").textContent.trim()!==""')
+    box=page.locator('#msg').bounding_box();vh=page.viewport_size['height']
+    assert box and box['y']>=0 and box['y']+box['height']<=vh,(box,vh)
+    assert page.evaluate('() => document.activeElement.id')=='jibun'
+    assert page.locator('#jibunBox').evaluate('el=>el.open')
+    # 재방문을 누르면 날짜·시작이 기기 시계로 채워지고 구간·방식은 비어 있다
+    rid='synthetic-visit-default'
+    original=page.evaluate('async () => JSON.stringify(await FieldStore.records())')
+    try:
+        page.evaluate("""async id => { const r=FieldRecord.makeRecord({lat:35.2,lng:129.1,target:'보도'},new Date('2026-11-17T00:00:00Z'),id); await FieldStore.tx(['records'],'readwrite',s=>{s.put(r)}); }""",rid)
+        page.reload(wait_until='networkidle')
+        page.get_by_role('button',name='이 지점 재방문').first.click()
+        assert page.locator('#visit-date').input_value()!='' and page.locator('#visit-start').input_value()!=''
+        assert page.locator('#visit-area').input_value()=='' and page.locator('#visit-method').input_value()==''
+    finally:
+        page.evaluate("""async id => { for(const r of await FieldStore.records())if(r.id===id)await FieldStore.deleteRecord(r); }""",rid)
     assert page.evaluate('async () => JSON.stringify(await FieldStore.records())')==original
 
 
@@ -322,11 +348,9 @@ def main():
                         if route=='explore.html':
                             page.goto(base+'explore.html#map/11/11060',wait_until='networkidle')
                             page.locator('[data-dong="11060920"]').wait_for(state='attached')
-                            listing = page.locator('[data-fold="list"]')
-                            if not listing.evaluate('(el) => el.open'):
-                                listing.locator('summary').click()
                             page.locator('[data-dong="11060920"]').click()
                             page.locator('.map-h3[data-code="11060920"]').wait_for(state='visible')
+                            page.locator('.mp-info > summary').click()
                             assert page.locator('[data-boundary-missing]').is_visible(), '경계 없는 동을 선택했지만 누락 안내가 없습니다.'
                             check(route,width,'missing_boundary')
                             page.goto(base+route,wait_until='networkidle')
@@ -338,6 +362,7 @@ def main():
                         if route == 'field/index.html':
                             verify_field_basis(page,args.output,width)
                             check(route,width,'field_basis')
+                            if width==390: verify_field_save_errors(page,width)
                         if route == 'explore.html':
                             verify_key_reconciliation(page,args.output,width)
                             check(route,width,'key_reconciliation')
@@ -351,7 +376,7 @@ def main():
                             page.locator('main a[href="about.html#usesTitle"]').click()
                             page.wait_for_url(base+'about.html#usesTitle', wait_until='networkidle')
                             page.evaluate('() => document.fonts.ready')
-                            assert page.locator('#how > .wrap > .about-use').count() == 5
+                            assert page.locator('#how > .wrap > .about-uses > .about-use').count() == 5
                             check(route, width, 'role_entry')
                             page.goto(base+route, wait_until='networkidle')
                             entry = page.locator('main a[href="field/oa.html"]').first
@@ -369,7 +394,7 @@ def main():
                             for entry, panel, detail in [('survey', '1', 'surveyChanges'), ('review', '3', None),
                                                          ('revisit', '1', 'revisitReport'), ('delivery', '2', 'handoverSummary')]:
                                 href = 'tasks.html?step='+entry+('#handoverSummary' if entry == 'delivery' else '')
-                                page.locator('#how > .wrap > .about-use a[href="'+href+'"]').click()
+                                page.locator('#how .about-use a[href="'+href+'"]').click()
                                 page.wait_for_url(base+href, wait_until='networkidle')
                                 page.wait_for_selector('#newTask')
                                 page.evaluate('() => document.fonts.ready')

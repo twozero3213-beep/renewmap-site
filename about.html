@@ -28,9 +28,9 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="site.webmanifest">
 <link rel="stylesheet" href="pretendard.css">
-<link rel="stylesheet" href="styles.css?v=20261114-m1">
-<link rel="stylesheet" href="site-v4.css?v=20261114-d3">
-<link rel="stylesheet" href="hero.css?v=20261113-d2">
+<link rel="stylesheet" href="styles.css?v=20261119-r2">
+<link rel="stylesheet" href="site-v4.css?v=20261119-r2">
+<link rel="stylesheet" href="hero.css?v=20261119-r2">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
  {"@type":"Organization","@id":"https://twozero3213-beep.github.io/renewmap-site/#org","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","logo":"https://twozero3213-beep.github.io/renewmap-site/icon-512.png","email":"renewmapteam@gmail.com","areaServed":"KR","description":"리뉴맵은 도시재생·정비 용역사와 지자체 담당자가 공개 자료와 현장 기록을 출처와 기준일이 붙은 근거 문서로 정리하는 도구입니다."},
@@ -51,9 +51,9 @@
 <script src="app.js" defer></script>
 <script src="site.js" defer></script>
 <script src="site-motion.js" defer></script>
-<link rel="stylesheet" href="content-pages.css?v=20261113-d2">
-<script src="content-pages.js?v=20261114-m1" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261119-r1">
+<link rel="stylesheet" href="content-pages.css?v=20261119-r2">
+<script src="content-pages.js?v=20261119-r2" defer></script>
+<link rel="stylesheet" href="rm6.css?v=20261119-r2">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -61,50 +61,68 @@
 
 <main id="main" class="about-page" data-content-book data-no-toc>
   <!-- R2(2026-11-13): 접는 주제 12개를 펼친 절 넷(하는 일·문서·비용과 범위·시범 상담)으로. 숫자 원칙·하지 않는 일·숫자 하나의 기록은 근거 읽는 법(evidence.html) 끝으로 옮겼다 -->
+  <!-- 2026-11-19 정리(대표 지적: 좁은 한 줄에 작은 글이 길게 이어져 스크롤이 너무 길다). 넓은 화면(1024px~)은 첫 칸 7:5, 하는 일 세 칸, 맡은 일 카드 세 칸, 질문 두 칸, 상담 양식 옆 요약 -->
   <section id="intro" class="about-top" aria-labelledby="heroTitle">
-    <div class="wrap">
+    <div class="wrap about-hero">
+      <div class="about-hero-main">
       <nav class="breadcrumb" aria-label="현재 위치"><ol><li><a href="index.html">홈</a></li><li aria-current="page">서비스 소개</li></ol></nav>
       <h1 id="heroTitle">서비스 소개</h1>
       <p class="sub">도시재생 기초조사를 출처가 붙은 문서로 정리합니다.<br>납품 뒤에도 어떤 자료를 왜 고쳤는지, 검토와 후속 점검의 근거를 함께 넘길 수 있습니다.</p>
-      <p class="about-def">리뉴맵은 도시재생·정비 용역사와 지자체 담당자가 공개 자료와 현장 기록을 출처와 기준일이 붙은 근거 문서로 정리하는 도구입니다.</p>
-      <p class="about-stage rm-status rm-note"><b>지금 나오는 결과는 참고 계산입니다.</b><br>법정 판정 규칙을 리뉴맵 담당자가 조문과 대조해 승인하기 전이라 "참고 계산"으로 표기해 쓰고, 판정과 승인은 담당 기관이 합니다.</p>
       <div class="about-cta"><a class="btn" href="explore.html?report=onepage#map/21/21090/21090700" data-track="cta_hero">무료 1쪽 예시 문서 열기</a><a class="btn ghost" href="#scope">99만원 시범 과업 범위</a></div>
+      <p class="about-stage rm-status rm-note"><b>지금 나오는 결과는 참고 계산입니다.</b><br>법정 판정 규칙을 리뉴맵 담당자가 조문과 대조해 승인하기 전이라 "참고 계산"으로 표기해 쓰고, 판정과 승인은 담당 기관이 합니다.</p>
+      </div>
+      <aside class="about-get" aria-labelledby="getTitle">
+        <p class="about-get-k" id="getTitle">무엇을 받나</p>
+        <p class="about-def">리뉴맵은 도시재생·정비 용역사와 지자체 담당자가 공개 자료와 현장 기록을 출처와 기준일이 붙은 근거 문서로 정리하는 도구입니다.</p>
+        <ul class="about-get-list">
+          <li>현장 사진과 공공 통계를 한 장에 묶고, 숫자마다 출처·기준일·계산식을 붙입니다.</li>
+          <li>"노후 건축물 50% 이상"처럼 조건을 고르면 해당하는 동이 지도에 남습니다.</li>
+        </ul>
+      </aside>
     </div>
   </section>
 
   <section id="how" aria-labelledby="howTitle">
     <div class="wrap">
       <h2 id="howTitle">하는 일</h2>
-      <p>현장 사진과 공공 통계를 한 장에 묶고, 숫자마다 출처·기준일·계산식을 붙입니다.<br>"노후 건축물 50% 이상"처럼 조건을 고르면 해당하는 동이 지도에 남습니다.</p>
       <ol id="steps" class="about-steps">
         <li><b>찍기</b> 사진을 찍으면 위치와 오차 범위(±m)가 함께 기록됩니다. 얼굴·번호판 자동 가리기는 보조 수단이라 저장 전에 직접 확인합니다.</li>
         <li><b>잇기</b> 위치로 행정동을 찾아 그 동의 공공 통계를 붙입니다. 필지·조문 대조가 필요하면 따로 확인합니다.</li>
         <li><b>받기</b> 검토용 한글 1쪽과 PDF, 근거 표를 내려받습니다.<br>공식 통계와 현장 기록을 구분하고, 제출 전 담당자가 확인합니다.<br>납품본은 과업에 연결해 보완·검토 이력을 함께 남깁니다.</li>
       </ol>
       <h3 id="usesTitle">지금 맡은 일에서 시작하세요</h3>
+      <div class="about-uses">
       <p class="about-use"><a href="explore.html">후보지의 자료 범위부터 확인하기</a><span>용역 기획자와 지자체 담당자는 동별 값을 비교하고, 출처·기준일·공간 단위를 확인합니다.<br>행정동 값은 그 안의 개별 건물이나 작은 구역의 값으로 대신 쓸 수 없습니다.</span></p>
       <p class="about-use"><a href="tasks.html?step=survey">기존 자료와 현장이 다를 때</a><span>조사자는 추가·제외·보류 사유와 사진을 변경 근거표에 남깁니다.<br>요구 항목과 제출서식 칸에 연결해 어떤 자료를 왜 고쳤는지 넘깁니다.</span></p>
       <p class="about-use"><a href="tasks.html?step=review">보완 요청과 다음 점검을 이어갈 때</a><span>검토자는 원본의 쪽·셀에 의견을 남기고, 보완본과 해소 확인을 연결합니다.<br>후속 점검은 담당자·기한을 기록하며 자동 알림은 보내지 않습니다.</span></p>
       <p class="about-use"><a href="tasks.html?step=revisit">준공 후 같은 장소를 다시 볼 때</a><span>재방문 조사자는 전후 사진·조사일·관찰 조건을 실적보고서에 연결합니다.<br>조건이 다르거나 확인되지 않은 부분도 남깁니다.</span></p>
       <p class="about-use"><a href="tasks.html?step=delivery#handoverSummary">담당자나 용역사가 바뀔 때</a><span>현재 판본의 남은 검토·후속 점검과 연결 파일을 인수인계 요약·납품 ZIP으로 받습니다.<br>과업 편집을 이어가려면 복원용 JSON 백업도 함께 보관합니다.</span></p>
-      <details><summary>복지·안전·기사 작성에 활용하기</summary>
+      <details class="about-more"><summary>복지·안전·기사 작성에 활용하기</summary>
+      <div class="about-uses">
       <p class="about-use"><a href="explore.html?ind=ELDERLY_LIVING_ALONE#map/21">한파 돌봄 순찰 대상 고르기</a><span>부산에서 구·군을 고르면 동별 독거노인 수가 지도에 칠해집니다. 순찰 대상을 고를 때 참고하세요.</span></p>
       <p class="about-use"><a href="explore.html?ind=HOSP_CLINIC_COUNT#map/21">복지 제안서 근거표</a><span>병원·의원·경로당 같은 생활 시설 수를 동별로 보고, 출처·기준일이 붙은 근거 표를 엑셀(XLSX)로 받습니다.</span></p>
       <p class="about-use"><a href="time4d.html">화재·안전 점검 건물 고르기</a><span>법정동 건물을 사용승인 연도별로 보고 점검할 건물을 고를 때 참고하세요.</span></p>
       <p class="about-use"><a href="dong/21090700.html#cite">기사·의회 자료에 숫자 옮기기</a><span>동 페이지마다 인용 한 줄이 있습니다. 출처·기준일·이용조건이 붙은 한 줄을 복사해서 붙여 넣으세요.</span></p>
+      </div>
       </details>
-      <p class="sub">행정동 쪽 3,610곳(쇠퇴진단지표 2025판 기준) 중 값이 이어진 곳은 3,562곳이고, 지도·검색에서 고를 수 있는 곳은 2025년 행정동 경계가 있는 3,559곳입니다.</p>
-      <p class="about-links"><a href="explore.html#find">조건으로 동네 찾기</a> · <a href="field/">현장 기록 시작</a> · <a href="tasks.html?step=delivery#handoverSummary">인수인계 요약 보기</a> · <a href="evidence.html">근거 읽는 법</a></p>
+      </div>
+      <p class="about-count">행정동 쪽 3,610곳(쇠퇴진단지표 2025판 기준) 중 값이 이어진 곳은 3,562곳이고, 지도·검색에서 고를 수 있는 곳은 2025년 행정동 경계가 있는 3,559곳입니다.</p>
+      <p class="about-links"><a href="explore.html#find">조건으로 동네 찾기</a><a href="field/">현장 기록 시작</a><a href="tasks.html?step=delivery#handoverSummary">인수인계 요약 보기</a><a href="evidence.html">근거 읽는 법</a></p>
     </div>
   </section>
 
   <section id="report" aria-labelledby="reportTitle">
     <div class="wrap">
       <h2 id="reportTitle">문서</h2>
-      <p>지도에서 동을 고르면 그 동의 숫자와 출처를 읽기 쉬운 문장으로 옮긴 1쪽 근거 문서가 나옵니다.<br>브라우저 인쇄로 바로 PDF가 되고, 한글·엑셀로도 받습니다. 무료이고 로그인도 없습니다.</p>
-      <p class="about-cta"><a class="btn" href="explore.html#report">근거 문서 살펴보기</a><a class="btn ghost" href="time4d.html">건물 나이 4D로 보기</a></p>
-      <p class="sub">부산은 건축물대장을 한 동씩 모아 동수·연면적·세대 기준 노후율과 건물 나이 변화를 따로 셉니다. 건물 4D에서 해마다 바뀌는 모습을 봅니다.</p>
-      <h3 id="faq">리뉴맵 이용 질문</h3>
+      <div class="about-doc">
+        <div>
+          <p>지도에서 동을 고르면 그 동의 숫자와 출처를 읽기 쉬운 문장으로 옮긴 1쪽 근거 문서가 나옵니다.<br>브라우저 인쇄로 바로 PDF가 되고, 한글·엑셀로도 받습니다. 무료이고 로그인도 없습니다.</p>
+          <p class="about-count">부산은 건축물대장을 한 동씩 모아 동수·연면적·세대 기준 노후율과 건물 나이 변화를 따로 셉니다. 건물 4D에서 해마다 바뀌는 모습을 봅니다.</p>
+        </div>
+        <p class="about-cta"><a class="btn ghost" href="explore.html#report">근거 문서 살펴보기</a><a class="btn ghost" href="time4d.html">건물 나이 4D로 보기</a></p>
+      </div>
+      <details class="rm-disclosure faq-all" open><summary><h3 id="faq">자주 묻는 질문</h3></summary>
+      <div class="faq-grid">
       <details><summary>데이터는 어디서 가져오나요?</summary><p>건축물대장, 주민등록 인구, 도시재생종합정보체계 쇠퇴진단지표 등 공공데이터를 씁니다.<br>숫자마다 출처, 조회시각, 기준일을 함께 기록합니다.</p></details>
       <details><summary>도시재생종합정보체계와 겹치지 않나요?</summary><p>리뉴맵은 공공 시스템을 대신하지 않고 그 자료를 이어 씁니다.<br>도시재생종합정보체계 쇠퇴진단지표를 그대로 가져와 건축물대장, 주민등록 인구, 생활 시설 자료와 잇고, 숫자마다 출처와 기준일을 붙여 문서로 만듭니다.<br>공식 값은 출처 시스템의 값이 기준입니다. 자료별 갱신 주기는 <a href="data.html">데이터 출처</a>에 있습니다.</p></details>
       <details><summary>법정 판정이 틀리면 어떻게 하나요?</summary><p>판정 규칙은 사람이 조문을 보고 작성·승인해야 합니다.<br>현재 공개 결과는 규칙 승인 전 검토용 참고 자료이며 법정 판정·기관 승인을 대신하지 않습니다.<br>근거 조문과 규칙 버전, 승인 대기 상태를 함께 확인하세요.<br>자료가 부족하면 '충족'으로 만들지 않고 '추가확인'으로 표시합니다.</p></details>
@@ -114,6 +132,7 @@
       <details><summary>리뉴맵은 재개발·재건축에만 쓰나요?</summary><p>아닙니다.<br>도시재생, 노후 주거지 정비, 빈 창고·공장 다시 쓰기처럼 동네를 새로 고치는 일 전반에 씁니다.<br>어느 일이든 그 동네의 공공데이터 값을 출처·기준일과 함께 모아 근거 문서로 만드는 데서 시작합니다.</p></details>
       <details><summary>현장 사진으로 1쪽 문서를 어떻게 만드나요?</summary><p>휴대폰으로 사진을 찍으면 위치를 받아 가까운 행정동을 찾고, 그 동의 공식 현황을 출처와 함께 붙여 1쪽 문서로 만듭니다.<br>위치가 틀리면 지도에서 옮길 수 있고, 옮긴 위치는 &#39;보정됨&#39;으로 남습니다.<br>기록과 가린 사진은 이 기기에 저장됩니다.<br>내보내기·공유나 설정된 팀 업로드는 사용자가 선택하며, 필지 조회에는 좌표가 외부 서비스로 전달됩니다.</p></details>
       <details><summary>도시재생 공모 기초조사에 어떻게 쓰나요?</summary><p>대상 동의 쇠퇴 3요건 값과 생활 지표를 출처·기준일이 붙은 문서로 받아 기초조사 초안에 씁니다.<br>2027년 도시재생 신규사업 신청서 제출기한은 2026년 12월 28일~30일입니다(국토교통부 「2027년 도시재생 신규사업 평가 가이드라인」 22쪽).</p></details>
+      </div></details>
     </div>
   </section>
 
@@ -121,30 +140,36 @@
     <div class="wrap">
       <h2 id="scopeTitle">비용과 범위</h2>
       <dl class="about-options">
-        <div><dt>무료 공개 도구</dt><dd>내 동네의 공개 자료를 자동 초안과 1쪽 근거 문서로 받습니다. 한글·PDF·엑셀을 직접 만들고, 출처와 추가확인 항목을 살펴보세요. <a href="explore.html#report">내 동네 문서 만들기</a></dd></div>
-        <div><dt>신청요건 근거 패키지(시범 과업)</dt><dd><strong>시범 제안가 99만원(VAT 별도)</strong>. 과업 1건, 행정동 1곳을 기준으로 하며 최종 금액은 계약 전에 확정합니다.</dd></div>
+        <div><dt>무료 공개 도구</dt><dd>내 동네의 공개 자료를 자동 초안과 1쪽 근거 문서로 받습니다. 한글·PDF·엑셀을 직접 만들고, 출처와 추가확인 항목을 살펴보세요.</dd><dd class="about-opt-go"><a href="explore.html#report">내 동네 문서 만들기</a></dd>
+          <dd><details class="about-why"><summary>현재 산출물은 승인 전 검토용 참고 자료입니다. <span class="about-why-more">ⓘ 자세히</span></summary><p class="reply-time">출처 대조·규칙 승인 등 납품 준비 상태와 제공 가능한 범위를 확인한 뒤 금액·일정·검수 기준을 계약 전에 협의합니다. 현재 화면의 산출 예시는 유료 납품 완료나 공모 선정·기관 승인을 뜻하지 않습니다.</p></details></dd></div>
+        <div><dt>신청요건 근거 패키지(시범 과업)</dt><dd><strong>시범 제안가 99만원(VAT 별도)</strong>. 과업 1건, 행정동 1곳을 기준으로 하며 최종 금액은 계약 전에 확정합니다.</dd>
+          <dd><ul class="about-scope">
+            <li>신청요건 근거 1쪽과 출처·추가확인 조서를 HWPX·PDF·XLSX로 제공합니다.</li>
+            <li>초안 검토 후 고객 요청을 한 번에 모아 보완 1회를 진행합니다. 공급자 오류 정정은 별도로 처리합니다.</li>
+            <li>검수·수락 기준: 합의한 기준일과 출처를 표기하고, 자료가 없거나 판단이 남은 항목은 추가확인 조서에 빠짐없이 남깁니다.</li>
+            <li>추가 동·새 기준일·새 지표·경계안 3종, 신규 현장조사·출장·전문가 승인은 별도 범위입니다.</li>
+          </ul></dd>
+          <dd class="about-opt-go"><a href="#contact-form" data-pilot-inquiry>99만원 유료 파일럿 견적 요청</a></dd></div>
       </dl>
-      <ul class="about-scope">
-        <li>신청요건 근거 1쪽과 출처·추가확인 조서를 HWPX·PDF·XLSX로 제공합니다.</li>
-        <li>초안 검토 후 고객 요청을 한 번에 모아 보완 1회를 진행합니다. 공급자 오류 정정은 별도로 처리합니다.</li>
-        <li>검수·수락 기준: 합의한 기준일과 출처를 표기하고, 자료가 없거나 판단이 남은 항목은 추가확인 조서에 빠짐없이 남깁니다.</li>
-        <li>추가 동·새 기준일·새 지표·경계안 3종, 신규 현장조사·출장·전문가 승인은 별도 범위입니다.</li>
-      </ul>
-      <p class="reply-time rm-note">현재 산출물은 승인 전 검토용 참고 자료입니다.<br>출처 대조·규칙 승인 등 납품 준비 상태와 제공 가능한 범위를 확인한 뒤 금액·일정·검수 기준을 계약 전에 협의합니다.<br>현재 화면의 산출 예시는 유료 납품 완료나 공모 선정·기관 승인을 뜻하지 않습니다.</p>
     </div>
   </section>
 
   <section id="contact" aria-labelledby="contactTitle">
     <div class="wrap">
       <h2 id="contactTitle">시범 상담</h2>
-      <p>도시재생·정비 용역사와 지자체 담당자를 위한 유료 파일럿을 제안합니다. 준비 중인 공모·용역과 보유 자료를 알려 주세요.</p>
-      <p><a class="btn ghost" href="#contact-form" data-pilot-inquiry>99만원 유료 파일럿 견적 요청</a></p>
-      <!-- data-endpoint가 비어 있으면 초안만 열며 사용자가 메일 앱에서 직접 전송한다. -->
+      <p class="about-contact-lead">도시재생·정비 용역사와 지자체 담당자를 위한 유료 파일럿을 제안합니다. 준비 중인 공모·용역과 보유 자료를 알려 주세요.</p>
+      <div class="about-contact">
+      <!-- data-endpoint가 비어 있으면 초안만 열며 사용자가 메일 앱에서 직접 전송한다. 견적 요청은 비용과 범위의 '견적 요청' 링크(data-pilot-inquiry)가 유형·초안을 채운다 -->
       <form class="contact" id="contact-form" data-endpoint="" data-mailto="renewmapteam@gmail.com" novalidate>
+        <div class="about-pair">
         <label>소속(회사·기관)<input name="org" autocomplete="organization" required></label>
         <label>담당자 이름<input name="name" autocomplete="name" required></label>
+        </div>
+        <div class="about-pair">
         <label>이메일 <small class="form-hint">회사·기관 대표 메일을 권합니다.</small><input name="email" type="email" autocomplete="email" required></label>
         <label>전화번호(선택) <small class="form-hint">회사·기관 대표번호만 적어 주세요. 개인 휴대전화번호는 적지 않으셔도 됩니다.</small><input name="tel" type="tel" autocomplete="tel" inputmode="tel"></label>
+        </div>
+        <div class="about-pair about-pair-msg">
         <label>문의 유형
           <select name="type">
             <option>공모 기초조사 시범 납품</option>
@@ -154,7 +179,8 @@
             <option>기타</option>
           </select>
         </label>
-        <label>내용<textarea name="message" rows="5" placeholder="대상 자치구·동, 공모 이름, 접수 일정 등을 적어 주세요. 주민등록번호·계좌·건강 정보·개인 사진은 적지 마세요."></textarea></label>
+        <label>내용<textarea name="message" rows="3" placeholder="대상 자치구·동, 공모 이름, 접수 일정 등을 적어 주세요. 주민등록번호·계좌·건강 정보·개인 사진은 적지 마세요."></textarea></label>
+        </div>
         <!-- 동의 문구 C1-v1: docs/legal/consent_texts.md 1절. <1년> 등 꺾쇠 값은 사람이 정한다(privacy_policy_v2.md와 같은 값). 선택 항목은 묶지 않고 미리 체크하지 않는다 -->
         <label class="agree"><input type="checkbox" name="agree" required data-consent="C1-v1"><span>[필수] 상담 답변을 위한 개인정보 수집·이용에 동의합니다. (만 14세 이상)</span></label>
         <details class="consent-full"><summary>동의 전문 보기</summary>
@@ -174,7 +200,7 @@
         <button class="btn" type="submit" data-track="cta_submit" disabled>메일 초안 열기(직접 전송 필요)</button>
         <noscript><p class="form-note">문의 초안을 만들려면 자바스크립트를 켜 주세요.<br>직접 문의하실 때는 <a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a>으로 보내 주세요.</p></noscript>
         <div data-contact-fallback>
-          <p class="form-note">문의 초안은 자동 전송되지 않습니다.<br>메일 앱에서 내용을 확인하고 직접 보내 주세요.<br>메일 앱이 열리지 않거나 내용이 빠지면 초안을 복사하거나 TXT로 저장해 <a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a>으로 보내실 수 있습니다.<br>이 화면에서는 실제 발송·접수 여부를 확인할 수 없습니다.</p>
+          <details class="about-why"><summary>문의 초안은 자동 전송되지 않습니다. <span class="about-why-more">ⓘ 자세히</span></summary><p class="form-note">메일 앱에서 내용을 확인하고 직접 보내 주세요. 메일 앱이 열리지 않거나 내용이 빠지면 초안을 복사하거나 TXT로 저장해 <a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a>으로 보내실 수 있습니다. 이 화면에서는 실제 발송·접수 여부를 확인할 수 없습니다.</p></details>
           <div class="actions">
             <button class="btn ghost" type="button" data-copy-inquiry disabled>문의 초안 복사</button>
             <button class="btn ghost" type="button" data-download-inquiry disabled>문의 초안 TXT 저장</button>
@@ -183,6 +209,17 @@
         <p class="form-status form-note" role="status" aria-live="polite"></p>
         <textarea rows="10" readonly data-contact-draft aria-label="직접 복사할 문의 초안" hidden></textarea>
       </form>
+      <aside class="about-ask" aria-labelledby="askTitle">
+        <p class="about-ask-k" id="askTitle">상담 전에 확인하세요</p>
+        <dl>
+          <div><dt>받는 것</dt><dd>신청요건 근거 1쪽과 출처·추가확인 조서(HWPX·PDF·XLSX), 초안 검토 후 보완 1회</dd></div>
+          <div><dt>비용</dt><dd>시범 제안가 99만원(VAT 별도). 최종 금액은 계약 전에 확정합니다.</dd></div>
+          <div><dt>회신</dt><dd>문의 초안은 자동 전송되지 않습니다. 메일 앱에서 직접 보내 주시면 이메일로 답변드립니다.</dd></div>
+          <div><dt>직접 메일</dt><dd><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></dd></div>
+          <div><dt>개인정보</dt><dd>상담 답변과 시범 납품 일정 협의에만 씁니다. 보유 기간과 처리 위탁은 동의 전문과 <a href="privacy.html">개인정보 처리방침</a>에 있습니다.</dd></div>
+        </dl>
+      </aside>
+      </div>
     </div>
   </section>
 </main>

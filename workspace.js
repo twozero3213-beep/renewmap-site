@@ -35,19 +35,31 @@
     const report = document.getElementById('reportApp'), pager = workspace.querySelector('[data-report-pages]');
     if (!report || !pager) return;
     const select = pager.querySelector('[data-report-topic]'), previous = pager.querySelector('[data-report-prev]'), next = pager.querySelector('[data-report-next]'), position = pager.querySelector('[data-report-position]');
+    // 넓은 화면은 주제를 모두 세로 목차로 보인다(지금 주제 aria-current, 본 주제는 점 표시). 이전·고르기·다음 줄은 좁은 화면이 그대로 쓴다
+    const toc = document.createElement('nav'), tocList = document.createElement('ol'), tocTitle = document.createElement('p');
+    toc.className = 'ws-toc'; toc.setAttribute('aria-label', '문서 주제 목차'); toc.hidden = true;
+    tocTitle.className = 'ws-toc-title'; tocTitle.textContent = '문서 주제';
+    toc.append(tocTitle, tocList); pager.before(toc);   // 읽는 순서: 제목 → 목차 → 본문(넓은 화면 자리는 CSS 격자가 정한다)
     let parts = [], page = 0;
+    const seen = new Set();
     function show(index, focus) {
       page = Math.max(0, Math.min(index, parts.length - 1));
+      seen.add(page);
       parts.forEach((part, i) => part.classList.toggle('workspace-report-hidden', parts.length > 1 && i !== page));
       select.value = String(page);
       previous.disabled = page === 0;
       next.disabled = page >= parts.length - 1;
       position.textContent = parts.length ? `${page + 1} / ${parts.length}` : '';
+      [...tocList.children].forEach((item, i) => {
+        const button = item.firstElementChild;
+        if (i === page) button.setAttribute('aria-current', 'true'); else button.removeAttribute('aria-current');
+        button.dataset.state = i === page ? 'current' : seen.has(i) ? 'seen' : 'new';
+      });
       if (parts[page]?.matches('details.rp-src')) parts[page].open = true;
       if (focus) {
         const heading = parts[page]?.querySelector('h3, summary, .rp-ai-head');
         if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
-        pager.scrollIntoView({ block: 'start', behavior: 'instant' });
+        (pager.offsetParent ? pager : report).scrollIntoView({ block: 'start', behavior: 'instant' });
       }
     }
     function sync() {
@@ -55,13 +67,23 @@
       if (current.length === parts.length && current.every((element, i) => element === parts[i])) return;
       const label = select.selectedOptions[0]?.textContent;
       parts = current;
-      select.replaceChildren(...parts.map((part, i) => {
+      seen.clear();
+      const names = parts.map((part, i) => part.matches('.rp-ai') ? '문장 다듬기' : part.querySelector('h3, summary')?.textContent.trim() || `주제 ${i + 1}`);
+      select.replaceChildren(...names.map((name, i) => {
         const option = document.createElement('option');
         option.value = String(i);
-        option.textContent = part.matches('.rp-ai') ? '문장 다듬기' : part.querySelector('h3, summary')?.textContent.trim() || `주제 ${i + 1}`;
+        option.textContent = name;
         return option;
       }));
+      tocList.replaceChildren(...names.map((name, i) => {
+        const item = document.createElement('li'), button = document.createElement('button');
+        button.type = 'button'; button.textContent = name;
+        button.addEventListener('click', () => show(i, true));
+        item.append(button);
+        return item;
+      }));
       pager.hidden = parts.length < 2;
+      toc.hidden = parts.length < 2;
       const remembered = [...select.options].findIndex(option => option.textContent === label);
       const firstFacts = parts.findIndex(part => !part.matches('.rp-snap, .rp-frag, .rp-src, .rp-ai'));
       show(remembered >= 0 ? remembered : Math.max(0, firstFacts), false);
@@ -90,7 +112,7 @@
       overlayButton.disabled = true;
       overlayButton.textContent = '파일 도구를 불러오는 중입니다.';
       try {
-        await import('./overlay.js?v=20261119-r1');
+        await import('./overlay.js?v=20261119-r2');
         const overlay = document.getElementById('overlay'); overlay.open = true;
         overlay.querySelector('summary').focus({ preventScroll: true });
       } catch (error) {
@@ -118,8 +140,7 @@
     syncStates();
     function show(name, focusTab) {
       active = normalizePanel(name);
-      if (active === 'filters' && !window.RenewFind) import('./find.js?v=20261118-panel').catch(() => {
-        document.getElementById('findMore').open = true;
+      if (active === 'filters' && !window.RenewFind) import('./find.js?v=20261119-r2').catch(() => {
         const slot = document.getElementById('findApp'); slot.setAttribute('role', 'alert');
         slot.textContent = '조건 도구를 불러오지 못했습니다. 새로고침한 뒤 다시 열어 주세요.';
       });
@@ -164,7 +185,6 @@
       const hash = link.getAttribute('href');
       if (!/^#(map(?:\/|$)|find$|gov$|report$)/.test(hash)) return;
       event.preventDefault();
-      if (hash === '#find') document.getElementById('findMore')?.setAttribute('open', '');
       navigate(panelFromHash(hash), false, hash, link.dataset.setMode);
       // R4 1: '1쪽 근거 문서 보기' 같은 링크를 누르면 눌렀던 단추가 숨은 패널에 있어 초점이 BODY로 돌아갔다 → 문서 패널 제목으로 옮긴다(화면도 그리로 간다)
       if (hash === '#report') { const heading = document.getElementById('reportTitle'); if (heading) { heading.tabIndex = -1; heading.focus(); } }

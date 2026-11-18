@@ -2,11 +2,6 @@
 .pg-sched { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin: 24px 0 40px; padding: 20px 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line); }
 .pg-sched dt { font-size: 15px; color: var(--dim); }
 .pg-sched dd { margin: 4px 0 0; font-weight: 700; }
-.pg-item { padding: 16px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 80px; }
-.pg-item h3 { margin: 0 0 4px; }
-.pg-item p { margin: 0; }
-.pg-item p b { margin-right: 6px; }
-.pg-item ul { margin: 0; padding-left: 20px; }
 .pg-meta { margin: 4px 0 16px; color: var(--green); font-weight: 700; }
 .pg-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 8px; }
 .pg-src { margin: 0; font-size: 15px; color: var(--dim); }
@@ -24,7 +19,7 @@
 .pg-card li small { display: block; font-size: 15px; color: var(--dim); }
 /* v9: 재생 사업 화면에서 바로 동을 골라 맞대 본다(홈 찾기 칸과 같은 home.js). 전에는 '동을 고르면'이라 해 놓고 고르는 칸이 없었다 */
 .pg-find { max-width: 640px; margin: 16px 0 24px; }
-.pg-find label { display: block; font-weight: 700; margin-bottom: 6px; }
+.pg-find label { display: block; font-weight: 700; }
 .pg-find .home-search-row { display: flex; gap: 8px; }
 /* 2026-11-13 우지예: 이름을 몰라도 고르는 '시·도 → 구·군 → 동' 목록(home.js initPick). 찾기 칸 바로 아래 한 줄, 좁으면 줄바꿈 */
 .pg-find .pick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
@@ -48,14 +43,56 @@
 .pg-verdict.is-ok { background: var(--soft); color: var(--green-press, var(--green)); }
 .pg-verdict.is-check { background: var(--amber-bg); color: var(--amber); }
 .pg-verdict.is-no { background: var(--mute-bg, #eee); color: var(--ink); }
+/* 2026-11-17 우지예: '부산광역시'처럼 칸보다 글자가 짧으면 왼쪽에 붙어 보였다 → 고르기 칸 글자를 가운데로 */
+.pg-find .pick-row select { text-align: center; text-align-last: center; }
 
-/* 2026-11-13 우지예: 사업 비교 표의 묶음 제목 줄(도시재생 공모 / 함께 볼 사업, programs.js compareHTML 주석) */
-.pg-compare tr.pg-group th { background: var(--soft, #eef4f1); text-align: left; font-size: 15px; padding: 10px 12px; }
-.pg-compare tr.pg-group th small { display: block; font-weight: 400; font-size: 13px; color: var(--dim); margin-top: 2px; }
-
-/* R3 1: 목록은 자바스크립트가 그려서 아래 꼬리글이 약 2초 뒤 통째로 밀렸다(CLS 0.44~0.94). 그리기 전 높이를 먼저 잡는다(DESIGN.md §0 '렌더 전 높이 선언').
-   #programs 실측 1,965(1440)·2,555(768)·4,678(390)px라 모든 폭에서 이 값보다 크다. 꼬리글이 첫 화면 밖에 머무는 높이만 둔다 */
-#programs { min-height: 1400px; }
-/* 목록에서 고르기 줄(home.js initPick)도 나중에 끼어든다: 시·도·구·동 칸 + 단추가 들어갈 자리(실측 147px, 휴대폰 259px) */
-.pg-find[data-pick] { min-height: 147px; }
-@media (max-width: 520px) { .pg-find[data-pick] { min-height: 259px; } }
+/* 2026-11-19 재생 사업 쪽(programs.html .pgx-page): 찾기 칸 하나가 첫 행동, 사업 9종은 목록 하나(programs.js listHTML).
+   전에는 비교 표 + 같은 내용의 목록이라 3,245px(휴대폰 6,706px)였다 */
+.pgx-page .pg-find { max-width: none; margin: 0; }
+.pgx-find-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 12px; min-height: 44px; }
+.pgx-pick-toggle { min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--green); font: inherit; font-size: var(--t-sub); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.pgx-pick-toggle::after { content: " ▾"; text-decoration: none; }
+.pgx-pick-toggle[aria-expanded="true"]::after { content: " ▴"; }
+.pgx-hint { margin: 0 0 8px; font-size: var(--t-sub); color: var(--dim); }
+/* 글자 단추가 있으면 고르기 칸은 누를 때만, 동 칸은 구·군을 고른 뒤에만 보인다(home.js가 그 전에는 동 칸을 disabled로 둔다) */
+.pg-find:has(.pgx-pick-toggle:not([hidden])):not(.is-pick) .pick-row, .pg-find:has(.pgx-pick-toggle:not([hidden])) .pick-or { display: none; }
+.pgx-page .pick-row select[aria-label="동"]:disabled { display: none; }
+.pgx-page .pg-who { margin: 16px 0 0; }
+.pgx-disc { margin: 24px 0 16px; font-size: var(--t-sub); color: var(--dim); }
+#main .pgx-group { margin: 24px 0 4px; font-size: var(--t-h3); }
+#main .pgx-group:first-child { margin-top: 0; }
+.pgx-group small { display: block; margin: 2px 0 8px; font-size: var(--t-cap); font-weight: 400; line-height: 1.5; color: var(--dim); }
+#main .pgx-head { margin: 0; font-size: inherit; scroll-margin-top: 88px; }
+.pgx-head button { position: relative; display: grid; gap: 2px; width: 100%; min-height: 56px; padding: 12px 40px 12px 16px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.pgx-head button::after { content: "▸"; position: absolute; right: 16px; top: 50%; translate: 0 -50%; color: var(--dim); transition: rotate .2s; }
+.pgx-head button:hover { background: var(--soft); }
+.pgx-head button[aria-expanded="true"] { background: var(--soft); box-shadow: inset 3px 0 0 var(--green); }
+.pgx-head button[aria-expanded="true"]::after { rotate: 90deg; color: var(--green); }
+.pgx-name { font-size: var(--t-body); font-weight: 700; line-height: 1.4; }
+.pgx-meta { font-size: var(--t-sub); font-weight: 400; line-height: 1.5; color: var(--dim); }
+.pgx-body { padding: 4px 16px 20px; }
+.pgx-title { display: none; }
+.pgx-body h4 { margin: 8px 0 4px; font-size: var(--t-sub); color: var(--dim); }
+.pgx-body h4 small { font-weight: 400; }
+.pgx-body ul { margin: 0 0 16px; padding-left: 1.2em; }
+.pgx-body li { margin: 2px 0; }
+.pgx-body dl { display: grid; gap: 12px; margin: 0; }
+.pgx-body dt { font-size: var(--t-sub); font-weight: 700; color: var(--dim); }
+.pgx-body dd { margin: 0; }
+.pgx-more-body h2 { margin: 8px 0 12px; font-size: var(--t-h3); }
+.pgx-more .pg-sched { margin: 0 0 24px; }
+@media (prefers-reduced-motion: reduce) { .pgx-head button::after { transition: none; } }
+/* 목록은 자바스크립트가 그려서 꼬리글이 밀렸다(R3 1, CLS). 접힌 목록 높이만큼 먼저 잡는다(실측 뒤 맞춤) */
+#programs.pgx { min-height: 880px; }
+@media (min-width: 1024px) {
+  .pgx-page .pgx-top { display: grid; grid-template-columns: 7fr 5fr; gap: 32px; align-items: start; }
+  .pgx-page .pgx-top .pg-who { margin: 0; }
+  /* 왼쪽 목록 440px, 오른쪽 상세는 목록 전체 높이에 걸쳐 두고 따라 내려온다(span 99: 사업 수가 바뀌어도 빈 줄은 높이 0) */
+  #programs.pgx { display: grid; grid-template-columns: 440px minmax(0, 1fr); column-gap: 40px; align-items: start; min-height: 800px; }
+  .pgx > :is(.pgx-group, .pgx-head) { grid-column: 1; }
+  .pgx > .pgx-body { grid-column: 2; grid-row: 1 / span 99; position: sticky; top: 88px; align-self: start; padding: 24px 28px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); }
+  .pgx-title { display: block; margin: 0 0 8px; font-size: var(--t-h2); font-weight: 700; line-height: 1.3; }
+  .pgx-head button::after { content: "›"; font-size: 22px; }
+  .pgx-head button[aria-expanded="true"]::after { rotate: none; }
+  .pgx-more-body { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+}

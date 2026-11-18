@@ -13,33 +13,33 @@
     <title>과업·납품 | 리뉴맵</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="pretendard.css" />
-    <link rel="stylesheet" href="styles.css?v=20261114-m1" />
-    <link rel="stylesheet" href="tasks.css?v=20261118-ds1" />
+    <link rel="stylesheet" href="styles.css?v=20261119-r2" />
+    <link rel="stylesheet" href="tasks.css?v=20261119-r2" />
     <script src="frame-guard.js"></script>
-    <script src="task-cloud-callback.js?v=20261115-auth"></script>
+    <script src="task-cloud-callback.js?v=20261119-r2"></script>
     <!-- R1(2026-11-13): 다른 화면과 같은 머리 메뉴·아래 탭(site.js). 인증·검토 화면에서는 외부 방문 분석을 실행하지 않는다 -->
-    <script src="site.js?v=20261114-task-auth" defer></script>
-    <link rel="stylesheet" href="list-pages.css?v=20261113-d2" />
-    <script src="list-pages.js?v=20261113-d2" defer></script>
-    <script src="tasks.js?v=20261114-followup" defer></script>
-    <script src="task-store.js?v=20261112-taskreview" defer></script>
+    <script src="site.js?v=20261119-r2" defer></script>
+    <link rel="stylesheet" href="list-pages.css?v=20261119-r2" />
+    <script src="list-pages.js?v=20261119-r2" defer></script>
+    <script src="tasks.js?v=20261119-r2" defer></script>
+    <script src="task-store.js?v=20261119-r2" defer></script>
     <script src="field/store.js" defer></script>
-    <script src="docgen.js?v=20261119-r1" defer></script>
-    <script src="tasks-files.js?v=20261117-changes" defer></script>
-    <script src="task-cloud-config.js?v=20261114-server" defer></script>
-    <script src="task-cloud.js?v=20261115-auth" defer></script>
-    <script src="task-cloud-ui.js?v=20261115-auth" defer></script>
-    <script src="survey-change.js?v=20261113-survey" defer></script>
-    <script src="survey-template.js?v=20261113-revisit" defer></script>
-    <script src="survey-change-ui.js?v=20261113-survey" defer></script>
-    <script src="field/record.js?v=20261118-panel" defer></script>
-    <script src="field/evidence.js?v=20261113-revisit" defer></script>
-    <script src="revisit-report.js?v=20261119-p08" defer></script>
-    <script src="revisit-photos.js?v=20261113-revisit" defer></script>
-    <script src="revisit-report-ui.js?v=20261119-p08" defer></script>
-    <script src="task-followup-ui.js?v=20261114-followup" defer></script>
-    <script src="tasks-app.js?v=20261119-p08" defer></script>
-  <link rel="stylesheet" href="rm6.css?v=20261119-r1">
+    <script src="docgen.js?v=20261119-r2" defer></script>
+    <script src="tasks-files.js?v=20261119-r2" defer></script>
+    <script src="task-cloud-config.js?v=20261119-r2" defer></script>
+    <script src="task-cloud.js?v=20261119-r2" defer></script>
+    <script src="task-cloud-ui.js?v=20261119-r2" defer></script>
+    <script src="survey-change.js?v=20261119-r2" defer></script>
+    <script src="survey-template.js?v=20261119-r2" defer></script>
+    <script src="survey-change-ui.js?v=20261119-r2" defer></script>
+    <script src="field/record.js?v=20261119-r2" defer></script>
+    <script src="field/evidence.js?v=20261119-r2" defer></script>
+    <script src="revisit-report.js?v=20261119-r2" defer></script>
+    <script src="revisit-photos.js?v=20261119-r2" defer></script>
+    <script src="revisit-report-ui.js?v=20261119-r2" defer></script>
+    <script src="task-followup-ui.js?v=20261119-r2" defer></script>
+    <script src="tasks-app.js?v=20261119-r2" defer></script>
+  <link rel="stylesheet" href="rm6.css?v=20261119-r2">
 </head>
   <body>
     <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -56,11 +56,13 @@
         적용 지침과 요구 자료를 정하고, 근거 대조부터 납품 파일·검토 이력까지
         함께 보관합니다.
       </p>
-      <p class="task-notice">
-        이 기기에 저장하는 검토 기록입니다.<br />담당자의 신원·전자서명·기관의
-        공식 승인을 인증하지 않습니다.<br />백업 파일을 받아 별도로 보관해
-        주세요. 소유자·거주자 정보는 입력하지 마세요.
-      </p>
+      <!-- 2026-11-19: 넓은 화면은 왼쪽(단계·본문) 7 : 오른쪽(안내·과업 고르기·작성자·계획 저장) 5. 오른쪽은 따라 내려온다 -->
+      <div class="task-layout">
+      <aside class="task-aside" aria-label="과업 고르기와 작성자">
+      <div class="task-notice">
+        <p>이 기기에 저장하는 검토 기록입니다. 소유자·거주자 정보는 입력하지 마세요.<br />백업 파일을 받아 별도로 보관해 주세요.</p>
+        <details class="task-more"><summary>자세히</summary><p>담당자의 신원·전자서명·기관의 공식 승인을 인증하지 않습니다.</p></details>
+      </div>
       <div class="task-toolbar">
         <label for="taskPick"
           >저장한 과업<select id="taskPick">
@@ -75,9 +77,11 @@
             placeholder="성명 또는 팀 내부 식별자"
         /></label>
       </div>
-      <p id="taskState" class="task-state" aria-live="polite">
-        새 과업을 설정하세요.
-      </p>
+      <!-- 넓은 화면 전용 저장 단추(form 속성으로 계획 칸을 보낸다). 휴대폰은 계획 칸 아래 단추를 쓴다 -->
+      <button type="submit" form="planForm" id="planSave" class="task-save">계획 저장</button>
+      </aside>
+      <div class="task-main">
+      <div class="task-stepper">
       <nav class="task-steps" aria-label="과업 단계">
         <button type="button" data-step="0" aria-current="step">
           1 과업 설정</button
@@ -85,6 +89,10 @@
         ><button type="button" data-step="2">3 납품·이력</button>
         <button type="button" data-step="3">4 검토·후속 점검</button>
       </nav>
+      <p id="taskState" class="task-state" aria-live="polite">
+        새 과업을 설정하세요.
+      </p>
+      </div>
       <p id="taskMsg" role="status" aria-live="polite"></p>
       <section data-panel="0" aria-labelledby="planTitle">
         <h2 id="planTitle">과업과 검증 계획</h2>
@@ -132,7 +140,7 @@
             <p class="task-help">대상 코드·구역 경계·분석 범위에는 조사 목적과 경계를 정한 이유를 남기세요.<br />행정동·집계구·직접 그린 구역은 서로 다른 공간 단위입니다.<br />경계나 기준일을 바꾸면 이유를 기록하고 이전 결과도 보관하세요.</p>
             <p class="task-help">인허가 건수는 실제 준공·사용 현황과 다르고, 사업 위치가 확인되지 않은 목록은 사업이 없다는 뜻이 아닙니다.<br />요구 항목마다 지정 출처·공간 단위를 적고, 근거 대조 단계에서 기준일·쪽·셀을 확인하세요.<br />자료가 없거나 맞지 않으면 추가확인으로 남깁니다.</p>
           </details>
-          <button type="submit">계획 저장</button>
+          <button type="submit" class="task-save-inline">계획 저장</button>
         </form>
       </section>
       <section data-panel="1" hidden aria-labelledby="checkTitle">
@@ -470,6 +478,8 @@
         </form>
         <p id="workMsg" role="status" aria-live="polite"></p>
       </section>
+      </div>
+      </div>
     </main>
 <footer><div class="wrap"><div class="links"><p><b>도구</b><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="time4d.html">건물 4D</a><a href="box.html">보관함</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%EC%88%AB%EC%9E%90%20%EC%98%A4%EB%A5%98%20%EC%8B%A0%EA%B3%A0">숫자 오류 신고</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 상담</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 끄기</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
   </body>

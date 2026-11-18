@@ -42,14 +42,21 @@
   const pct = v => (v === null ? '종전자산을 넣으면 계산' : `${v.toFixed(1)}%`);
   const m2 = v => `${Math.round(v).toLocaleString('ko-KR')}㎡`;
 
-  function resultHTML(r) {
+  const dl = (rows, cls) => `<dl class="${cls}">${rows.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('')}</dl>`;
+  // 2026-11-19 결과 카드: 큰 비례율 하나 → 핵심 세 줄 → 분양가 ±10% 세 칸 → 열 줄 계산 내역은 접이 안(표 대신 줄 목록이라 휴대폰에서 옆으로 넘치지 않는다).
+  // open: 다시 그릴 때 사용자가 펼쳐 둔 계산 내역을 닫지 않는다
+  function resultHTML(r, open) {
     if (r.error) return `<p class="warn">${r.error}</p>`;
+    const head = r.ratio === null
+      ? '<p class="bz-wait">종전자산을 넣으면 계산됩니다.</p><button type="button" class="btn ghost bz-go" data-biz-focus>종전자산 넣기</button>'
+      : `<p class="bz-big">${pct(r.ratio)}</p>`;
     const rows = [['지상 연면적', m2(r.above)], ['공사 연면적(지하 포함)', m2(r.total)], ['분양 전용면적 합', m2(r.net)],
       ['종후자산(분양 총액)', won(r.after)], ['공사비', won(r.build)], ['기타 사업비', won(r.other)], ['총사업비', won(r.cost)],
       ['종전자산에 돌아갈 몫(종후 − 사업비)', won(r.profit)], ['종전자산 총액', won(r.before)], ['추정 비례율', pct(r.ratio)]];
-    const sens = r.sens.map(s => `<tr><td>분양가 ${s.pct > 0 ? '+' : ''}${s.pct}%</td><td class="num">${won(s.profit)}</td><td class="num">${pct(s.ratio)}</td></tr>`).join('');
-    return `<table class="kv"><tbody>${rows.map(([a, b]) => `<tr><th scope="row">${a}</th><td class="num">${b}</td></tr>`).join('')}</tbody></table>`
-      + `<h3>분양가가 달라지면</h3><table class="grid"><thead><tr><th scope="col">경우</th><th scope="col">종전자산 몫</th><th scope="col">비례율</th></tr></thead><tbody>${sens}</tbody></table>`;
+    const sens = r.sens.map(s => `<li><b>분양가 ${s.pct > 0 ? '+' : s.pct < 0 ? '−' : ''}${Math.abs(s.pct)}%</b><span>몫 ${won(s.profit)}</span><span>비례율 ${s.ratio === null ? '–' : pct(s.ratio)}</span></li>`).join('');
+    return head + dl([['종후자산(분양 총액)', won(r.after)], ['총사업비', won(r.cost)], ['종전자산에 돌아갈 몫', won(r.profit)]], 'bz-key')
+      + `<h3 class="bz-h">분양가가 달라지면</h3><ul class="bz-sens">${sens}</ul>`
+      + `<details class="rm-disclosure bz-detail"${open ? ' open' : ''}><summary>계산 내역 보기</summary>${dl(rows, 'bz-rows')}</details>`;
   }
 
   function init() {
@@ -57,9 +64,11 @@
     const read = () => Object.fromEntries(Object.keys(DEFAULTS).map(k => [k, form.elements[k].value]));
     let priceEdited = false;
     const keptPrice = () => priceEdited ? '직접 입력한 분양가를 유지합니다.' : '가정값을 그대로 둡니다.';
-    const draw = () => { out.innerHTML = resultHTML(feasibility(read())); };
+    const draw = () => { out.innerHTML = resultHTML(feasibility(read()), !!(out.querySelector && out.querySelector('details[open]'))); };
     for (const [k, v] of Object.entries(DEFAULTS)) form.elements[k].value = v;
     form.addEventListener('input', e => { if (e.target === form.elements.price) priceEdited = true; draw(); });
+    // 결과 카드의 '종전자산 넣기' → 그 칸으로(결과 카드는 양식 안에 있다)
+    form.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-biz-focus]')) form.elements.before.focus(); });
     form.addEventListener('submit', e => { e.preventDefault(); draw(); });
     draw();
     const code7 = new URLSearchParams(location.search).get('dong');

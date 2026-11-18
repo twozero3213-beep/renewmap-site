@@ -143,14 +143,32 @@
     }).filter(p => p.d);
     return { w, h, paths };
   }
-  function chipsHTML(sel, ctx, unit) {
+  // 같은 기준의 이상·미만(안·밖) 짝은 한 줄에 두 칸 고르기로 둔다(생활 여건 8칩 → 4줄). 짝은 같은 기준값·같은 꼬리표라 한 번만 적는다
+  const PAIRS = { park: ['parkLow', '이상', '미만'], lib: ['libFar', '안', '밖'], hosp: ['hospLow', '이상', '미만'], bus: ['busLow', '이상', '미만'] };
+  const PARTNER = Object.fromEntries(Object.entries(PAIRS).flatMap(([a, [b]]) => [[a, b], [b, a]]));
+  const SHOW = 4;   // 넓은 화면에서 묶음마다 처음 보이는 줄 수. 나머지는 '더 보기'
+  // wide: 넓은 화면은 묶음마다 4줄 + 더 보기, 좁은 화면은 묶음 하나만 열리는 접이(name 묶음)
+  function chipsHTML(sel, ctx, unit, wide) {
     const flat = (sel || []).flat(), inOr = id => (sel || []).some(x => Array.isArray(x) && x.includes(id));
+    const ids = c => [c.id].concat(PAIRS[c.id] ? [PAIRS[c.id][0]] : []), picked = c => ids(c).filter(id => flat.includes(id)).length;
+    const tags = c => { const st = condState(c, ctx, unit); return (st.ok ? tagsOf(c, ctx) : [st.why]).concat(ids(c).some(inOr) ? ['또는'] : []).map(t => `<small>${esc(t)}</small>`).join(''); };
+    const btn = (c, cls, word) => { const st = condState(c, ctx, unit), on = flat.includes(c.id);
+      return `<button type="button" class="${cls}${st.ok ? '' : ' is-off'}" data-fd-cond="${esc(c.id)}" aria-pressed="${on}"${st.ok || on ? '' : ' aria-disabled="true"'}${word ? ` aria-label="${esc(chipLabel(c, ctx, st))}">${esc(word)}` : '>'}`; };
+    const row = c => {
+      const p = PAIRS[c.id], st = condState(c, ctx, unit), icon = `<span class="ws-ico" aria-hidden="true">${ico(c.e)}</span>`;
+      if (!p) return `${btn(c, 'ws-row ws-tog')}${icon}${esc(chipLabel(c, ctx, st))}${tags(c)}</button>`;
+      const lab = chipLabel(c, ctx, st), name = lab.endsWith(' ' + p[1]) ? lab.slice(0, -p[1].length - 1) : c.n;
+      return `<div class="ws-row ws-pair${st.ok ? '' : ' is-off'}" role="group" aria-label="${esc(name)}">${icon}<span class="ws-rl">${esc(name)}${tags(c)}</span><span class="ws-seg">${btn(c, 'ws-opt', p[1])}</button>${btn(condOf(p[0]), 'ws-opt', p[2])}</button></span></div>`;
+    };
     return GROUPS.map(([g, gl]) => {
-      const list = CONDS.filter(c => c.g === g);
-      return `<fieldset class="fd-grp"><legend>${esc(gl)}</legend><div class="fd-chips">${list.map(c => {
-        const st = condState(c, ctx, unit), on = flat.includes(c.id), tags = (st.ok ? tagsOf(c, ctx) : [st.why]).concat(inOr(c.id) ? ['또는'] : []);
-        return `<button type="button" class="fd-chip${st.ok ? '' : ' is-off'}${on ? ' is-on' : ''}" data-fd-cond="${esc(c.id)}" aria-pressed="${on}"${st.ok || on ? '' : ' aria-disabled="true"'}><span class="fd-e" aria-hidden="true">${ico(c.e)}</span>${esc(chipLabel(c, ctx, st))}${tags.map(t => `<small>${esc(t)}</small>`).join('')}</button>`;
-      }).join('')}</div>${g === 'estate' ? `<p class="fd-gnote">${esc(ESTATE_NOTE)} · 아파트 매매 신고 건수 최근 12개월 합을 직전 12개월과 비교(자료 원본 값) · ${esc(M.ESTATE_PROV)}</p>` : g === 'fore' ? `<p class="fd-gnote">${esc(M.FORE_FIXED)}</p>` : ''}</fieldset>`;
+      const list = CONDS.filter(c => c.g === g && !Object.values(PAIRS).some(p => p[0] === c.id)), n = list.reduce((k, c) => k + picked(c), 0);
+      const count = n ? ` <span class="ws-n">${n}개 선택</span>` : '';
+      const note = g === 'estate' ? `${esc(ESTATE_NOTE)} · 아파트 매매 신고 건수 최근 12개월 합을 직전 12개월과 비교(자료 원본 값) · ${esc(M.ESTATE_PROV)}` : g === 'fore' ? esc(M.FORE_FIXED) : '';
+      const info = note ? `<details class="ws-info" data-k="${g}-info"><summary>ⓘ 기준 설명</summary><p class="fd-gnote">${note}</p></details>` : '';
+      if (!wide) return `<details class="ws-cat rm-disclosure" name="fd-cat" data-k="${g}"><summary>${esc(gl)}${count}</summary><div class="ws-rows">${list.map(row).join('')}</div>${info}</details>`;
+      const rest = list.slice(SHOW), restOn = rest.some(c => picked(c));   // 고른 조건은 접힌 '더 보기' 안에 숨기지 않는다
+      return `<fieldset class="ws-cat" data-k="${g}"><legend>${esc(gl)}${count}</legend><div class="ws-rows">${list.slice(0, SHOW).map(row).join('')}</div>` +
+        (rest.length ? `<details class="ws-more" data-k="${g}-more"${restOn ? ' open' : ''}><summary>더 보기 · ${rest.length}개</summary><div class="ws-rows">${rest.map(row).join('')}</div></details>` : '') + `${info}</fieldset>`;
     }).join('');
   }
   const PAGE_SIZE = 10;
@@ -176,11 +194,14 @@
     const head = `<p class="fd-note">${esc(NOTE)} · ${esc(UNIT[unit])} 단위${unit === 'sg' ? ' · 시·군·구 값은 그 안 읍·면·동 값의 중앙값' : ''}</p>`;
     const groups = ev.groups || ev.use.map(id => [id]), lbl = id => chipLabel(condOf(id), ctx, condState(condOf(id), ctx, unit));
     const conds = ev.use.length ? `<p class="fd-conds">쓰는 조건: ${groups.map(g => g.map(id => esc(lbl(id))).join(' <b>또는</b> ')).join(' <b>+</b> ')}</p>` : '';
-    if (!ev.use.length) return head + skip + `<p class="fd-count is-idle"><b>–</b><small>조건 칩을 하나 이상 고르면 해당하는 곳을 모두 보여 줍니다. 여러 개를 고르면 모두 맞는 곳(AND)만 남습니다.</small></p>`;
-    const list = sortAreas(ev.hits, by), p = paginate(list, page);
-    return head + skip + conds + `<p class="fd-count" aria-live="polite">조건에 맞는 곳 <b data-ck="fd-n" data-count="${ev.hits.length}">${ev.hits.length}</b>곳 <small>/ 전체 ${esc(M.fmt(areas.length))}곳${ev.nodata ? ` · 자료가 없어 판단하지 않은 곳 ${esc(M.fmt(ev.nodata))}곳` : ''}</small></p>` +
+    // 조건이 없으면 범위 안 전체를 그대로 보여 준다(빈 칸 대신). 결과 계산(evaluate)은 여전히 아무것도 세지 않는다
+    const all = !ev.use.length, list = sortAreas(all ? areas : ev.hits, by), p = paginate(list, page);
+    const count = all ? `<p class="fd-count is-all" aria-live="polite">범위 안 전체 <b data-ck="fd-n" data-count="${areas.length}">${areas.length}</b>곳 <small>조건을 고르면 모두 맞는 곳(AND)만 남습니다.</small></p>`
+      : `<p class="fd-count" aria-live="polite">조건에 맞는 곳 <b data-ck="fd-n" data-count="${ev.hits.length}">${ev.hits.length}</b>곳 <small>/ 전체 ${esc(M.fmt(areas.length))}곳${ev.nodata ? ` · 자료가 없어 판단하지 않은 곳 ${esc(M.fmt(ev.nodata))}곳` : ''}</small></p>`;
+    if (all && !list.length) return head + skip + count;
+    return head + skip + conds + count +
       LIST_MARK + `<div class="dash-seg fd-sort" role="group" aria-label="목록 순서"><button type="button" data-fd-sort="code" aria-pressed="${by !== 'name'}">행정코드 순</button><button type="button" data-fd-sort="name" aria-pressed="${by === 'name'}">가나다 순</button></div>` +
-      (dg() ? `<p class="fd-xlsx"><button type="button" class="btn ghost" data-fd-xlsx>XLSX 내려받기</button><small>조건에 맞는 곳 ${ev.hits.length}곳(행정코드 순), 범위 전체의 해당 여부, 조건·출처 시트</small><span class="map-png-msg" data-fd-xlsx-msg role="status"></span></p>` : '') +
+      (dg() && !all ? `<p class="fd-xlsx"><button type="button" class="btn ghost" data-fd-xlsx>XLSX 내려받기</button><small>조건에 맞는 곳 ${ev.hits.length}곳(행정코드 순), 범위 전체의 해당 여부, 조건·출처 시트</small><span class="map-png-msg" data-fd-xlsx-msg role="status"></span></p>` : '') +
       (list.length ? `<div data-state="ready"><h3 class="fd-list-title" data-fd-list-start tabindex="-1">전체 ${p.total}곳 중 ${p.from}–${p.to}곳</h3><ol class="fd-list">${p.items.map(a => `<li><span class="fd-n"><b>${esc(a.name)}</b><small>${esc(a.sub)} · ${esc(a.code)}</small></span><span class="fd-b" aria-hidden="true">${emo}</span><a href="${esc(hashOf(a, ctx))}" data-fd-go>${a.dong ? '이 동 보기' : '이 지역 보기'}</a></li>`).join('')}</ol>${pagerHTML(p)}</div>`
         : `<div class="fd-empty" data-state="empty" role="status"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>조건을 모두 만족하는 곳이 없습니다.<br>조건을 하나 빼 보세요.</p><button type="button" class="btn ghost" data-fd-relax>마지막 조건 빼기</button></div>`);
   }
@@ -243,8 +264,10 @@
   function govHTML(ctx, scopeName) {
     const unit = scopeName ? 'emd' : 'sg', lbl = id => { const c = condOf(id); return ctx && ctx.index ? chipLabel(c, ctx, condState(c, ctx, unit)) : c.n; };
     const condText = p => p.note || presetConds(p, unit).map(g => (Array.isArray(g) ? g.map(lbl).join(' 또는 ') : lbl(g))).join(' + ') + (unit !== 'emd' && p.condsEmd ? ` (+ 읍·면·동 범위에서 ${p.condsEmd.map(lbl).join(', ')})` : '');
-    return `<p class="gov-note">${esc(GOV_NOTE)}<br>범위: ${scopeName ? `<b>${esc(scopeName)}</b> 안 읍·면·동` : '<b>시·도와 시·군·구를 먼저 고르세요</b>'}</p>` +
-      `<ul class="gov-cards">${PRESETS.map(p => `<li><button type="button" class="gov-card" data-gov-preset="${esc(p.id)}" aria-label="${esc(p.n)}"><span class="gov-e" aria-hidden="true">${ico(p.e)}</span><span class="gov-n">${esc(p.n)}</span><b>${esc(p.ask)}</b><span class="gov-why">→ ${esc(p.give)}</span><span class="gov-d">${esc(DECIDE)}</span></button><details class="gov-more"><summary>조건·근거 법령</summary><span class="gov-c">${esc(condText(p))}</span><span class="gov-law">${esc(p.law)}</span></details></li>`).join('')}</ul>`;
+    // 업무는 아이콘+이름 한 줄 단추. 업무의 불편(ask) → 주는 것(give)·조건·근거 법령은 접이 하나에 모은다(카드마다 접이 10개였다). '결정은 담당자가' 고지는 한 번
+    return `<p class="ws-intro">${esc(GOV_NOTE)} ${esc(DECIDE)}.<br>범위: ${scopeName ? `<b>${esc(scopeName)}</b> 안 읍·면·동` : '<b>시·도와 시·군·구를 먼저 고르세요</b>'}</p>` +
+      `<ul class="ws-presets">${PRESETS.map(p => `<li><button type="button" class="ws-preset" data-gov-preset="${esc(p.id)}"><span class="ws-ico" aria-hidden="true">${ico(p.e)}</span>${esc(p.n)}</button></li>`).join('')}</ul>` +
+      `<details class="ws-info" data-k="gov-info"><summary>ⓘ 업무별 조건·근거 법령</summary><dl class="ws-gov-list">${PRESETS.map(p => `<div><dt>${esc(p.n)}</dt><dd><b>${esc(p.ask)}</b><span class="gov-why">→ ${esc(p.give)}</span></dd><dd class="gov-c">${esc(condText(p))}</dd><dd class="gov-law">${esc(p.law)}</dd></div>`).join('')}</dl></details>`;
   }
   // 홈에서 넘어온 기본 보고서(?report=onepage 등). 모르는 값은 무시한다(심사 06, 2026-11-08)
   const entryReportMode = search => { const m = new URLSearchParams(search || '').get('report'); return M.REPORT_MODES.some(x => x[0] === m) ? m : null; };   // 보고서 종류 목록은 map.js 하나(v9: 네 곳에 따로 적혀 있었다)
@@ -254,7 +277,7 @@
     if (!url.searchParams.has('panel')) url.searchParams.set('panel', 'evidence');
     return url.pathname + url.search + url.hash;
   }
-  const api = { lazy: { asked, loaded }, REF, GROUPS, CONDS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, entryReportMode, entryReportURL, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
+  const api = { lazy: { asked, loaded }, REF, GROUPS, CONDS, PAIRS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, entryReportMode, entryReportURL, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
   if (node) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewFind = api;
@@ -262,8 +285,22 @@
   // ── 브라우저 ──
   const root = document.getElementById('findApp'); if (!root) return;
   const fetchJson = window.RenewUtil.fetchJson;
-  const st = { sel: [], by: 'code', page: 1, scope: { sido: '', sg: '' }, ctx: { index: null }, sgGeo: null, emd: new Map(), svgKey: '', lastSg: null, lastDong: null, hint: '', govKey: '' };
+  const st = { sel: [], by: 'code', page: 1, scope: { sido: '', sg: '' }, ctx: { index: null }, sgGeo: null, emd: new Map(), svgKey: '', lastSg: null, lastDong: null, hint: '', govKey: '', resOpen: false };
   const gov = document.querySelector('#gov [data-gov]');
+  // 조건 칸(왼쪽)·결과(오른쪽)·좁은 화면 요약 막대를 함께 듣는다. 옛 마크업(시험)이면 결과 칸 안에 조건 칸을 만든다
+  const host = document.getElementById('find') || root;
+  const chipsEl = host.querySelector('[data-fd-chips]') || (() => { const d = document.createElement('div'); root.before(d); return d; })();
+  const wide = matchMedia('(min-width: 1024px)');
+  const keepOpen = (box, paint) => { const open = new Set([...box.querySelectorAll('details[open][data-k]')].map(d => d.dataset.k)); paint(); box.querySelectorAll('details[data-k]').forEach(d => { if (open.has(d.dataset.k)) d.open = true; }); };
+  // 좁은 화면: 결과는 아래 막대('N곳 · 결과 보기')를 눌러 연다. 막대 단추는 한 번 만들고 글자만 바꾼다(다시 그리면 초점이 사라진다)
+  const bar = host.querySelector('[data-fd-bar]'), barBtn = bar ? document.createElement('button') : null;
+  if (barBtn) { barBtn.type = 'button'; barBtn.className = 'btn ws-bar-btn'; barBtn.setAttribute('aria-controls', 'findApp'); bar.append(barBtn); bar.hidden = false; }
+  function setBar(n) {
+    if (!barBtn) return;
+    barBtn.disabled = n === null;
+    barBtn.setAttribute('aria-expanded', String(st.resOpen));
+    barBtn.innerHTML = n === null ? '결과를 계산하는 중' : `<b>${esc(M.fmt(n))}곳</b> · 결과 보기`;
+  }
   // R8 6: 범위 선택 칸은 접힌 details 밖(explore.html 탭 맨 위)에 있다. 없는 쪽(옛 주소·시험)이면 예전처럼 안에 둔다
   const scopeEl = document.querySelector('#find [data-fd-scope]') || (() => { const d = document.createElement('div'); d.className = 'fd-scope'; root.before(d); return d; })();
   // R8 6: 범위 선택(scopeHTML이 [data-fd-sel]을 다시 그린다) 아래에 동 이름 찾기. 고른 범위 안의 동만 보이고, 전국·시·도 범위여도 이름만으로 찾는다
@@ -297,7 +334,8 @@
     const r = st.ctx.index ? M.leafRoute(st.ctx.index, b.dataset.code5) : null;
     if (r) goMap(M.toHash({ ...r, dong: b.dataset.fdGoDong })); else nameMsg.textContent = '지역 자료를 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요.';
   });
-  root.innerHTML = `<div class="fd-grid"><div class="fd-left" data-fd-chips></div><div class="fd-right"><div data-fd-out></div><div class="fd-map" data-fd-map><div class="fd-wait" data-state="loading" role="status"><img src="mascot/crew/saeum-waiting.svg" width="104" height="104" alt="" aria-hidden="true"><p>경계 자료를 불러오는 중입니다.</p></div></div><div data-fd-list></div></div></div>`;
+  // 결과 칸: 개수 → (목록 | 작은 지도). 좁은 화면은 목록 아래 지도
+  root.innerHTML = `<div data-fd-out tabindex="-1"></div><div class="ws-res-body"><div class="ws-res-list" data-fd-list></div><div class="ws-mini" data-fd-map><div class="fd-wait" data-state="loading" role="status"><img src="mascot/crew/saeum-waiting.svg" width="104" height="104" alt="" aria-hidden="true"><p>경계 자료를 불러오는 중입니다.</p></div></div></div>`;
   const $ = s => root.querySelector(s);
   const unit = () => (st.scope.sg ? 'emd' : 'sg');
   // 시·군·구 범위의 읍·면·동 파일(지도 지연 로드와 같은 캐시). 아직이면 null
@@ -322,11 +360,12 @@
     let ctx = c0, e = null;
     if (st.scope.sg) { e = emdCtx(st.scope.sg); ctx = { ...c0, emd: e && e.json, lv: e && e.lv, forecast: e && e.fc }; }
     scopeEl.querySelector('[data-fd-sel]').innerHTML = scopeHTML();
-    $('[data-fd-chips]').innerHTML = chipsHTML(st.sel, ctx, unit());
+    keepOpen(chipsEl, () => { chipsEl.innerHTML = chipsHTML(st.sel, ctx, unit(), wide.matches); });
     renderGov(ctx);
-    if (more && !more.open) return; // 접힌 조건 칸은 열 때 그린다(전국 경계 그림이 휴대폰 첫 화면에서 0.2~0.3초 멈췄다)
-    if (st.scope.sg && !e) { $('[data-fd-out]').innerHTML = '<p class="fd-wait" data-state="loading" role="status">읍·면·동 자료를 불러오는 중입니다.</p>'; $('[data-fd-list]').innerHTML = ''; return; }
+    if (st.scope.sg && !e) { setBar(null); $('[data-fd-out]').innerHTML = '<p class="fd-wait" data-state="loading" role="status">읍·면·동 자료를 불러오는 중입니다.</p>'; $('[data-fd-list]').innerHTML = ''; return; }
     const areas = areasOf(st.scope, ctx), ev = evaluate(areas, st.sel, ctx, unit());
+    setBar(ev.waiting ? null : ev.use.length ? ev.hits.length : areas.length);
+    if (!wide.matches && !st.resOpen) return; // 좁은 화면은 결과를 열 때 그린다(전국 경계 그림이 휴대폰 첫 화면에서 0.2~0.3초 멈췄다)
     const [head, list] = resultHTML(ev, areas, ctx, unit(), st.by, st.page).split(LIST_MARK); // 큰 숫자 → 지도 → 목록 순서로 놓는다
     $('[data-fd-out]').innerHTML = head; $('[data-fd-list]').innerHTML = list || '';
     if (ev.waiting) { $('[data-fd-map]').innerHTML = ''; st.svgKey = null; return; }
@@ -344,6 +383,7 @@
       st.svgKey = key;
     }
     box.querySelectorAll('path[data-code]').forEach(p => { const r = ev.res.get(p.dataset.code) || 'na'; p.setAttribute('class', 'is-' + r); });
+    box.classList.toggle('is-idle', !ev.use.length);   // 조건 없음: 모든 칸 같은 색, 맞음·맞지 않음 범례는 숨긴다
   }
   // 업무별 바로 가기: 카드 → 그 조건으로 찾기. 범위는 찾기에서 고른 시·군·구, 없으면 지도에서 마지막으로 연 시·군·구, 그것도 없으면 선택 안내
   const scopeName = () => { const s = st.scope.sg ? (st.ctx.index.sigungu || []).find(x => String(x.code5) === st.scope.sg) : null; return s ? s.name : null; };
@@ -374,15 +414,12 @@
     st.hint = st.scope.sg ? '' : '시·도와 시·군·구를 고르면 그 안 읍·면·동에서 찾습니다.';
     render();
     const f = st.scope.sg ? root.querySelector('[data-fd-out]') : scopeEl.querySelector('[data-fd-sido]'); if (!f) return;
-    // 작업공간 규칙: 화면을 강제로 스크롤하지 않는다(모바일 탭 전환이 표시를 바꾼다). 초점만 옮긴다
-    (st.scope.sg ? root.querySelector('[data-fd-sort="code"]') : f)?.focus({ preventScroll: true });
+    // 작업공간 규칙: 화면을 강제로 스크롤하지 않는다(모바일 탭 전환이 표시를 바꾼다). 초점만 옮긴다. 좁은 화면은 결과가 접혀 있어 개수가 보이는 아래 막대로
+    (st.scope.sg ? (wide.matches ? root.querySelector('[data-fd-sort="code"]') : barBtn) : f)?.focus({ preventScroll: true });
   }
-  const more = document.getElementById('findMore');
-  const openMore = () => more?.setAttribute('open', ''); // 업무를 고르거나 #find로 오면 접힌 조건 칸을 연다
-  more?.addEventListener('toggle', () => { if (more.open) render(); });
   ['renew-docgen', 'renew-series'].forEach(t => document.addEventListener(t, () => render()));
-  if (/^#find/.test(location.hash)) openMore();
-  if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) { openMore(); applyPreset(b.dataset.govPreset); } });
+  wide.addEventListener('change', () => render());
+  if (gov) gov.addEventListener('click', ev => { const b = ev.target.closest('[data-gov-preset]'); if (b) applyPreset(b.dataset.govPreset); });
   addEventListener('hashchange', trackHash);
   // 지금 화면의 조건·범위 그대로 XLSX를 만든다(이 브라우저 안에서만)
   function exportXlsx() {
@@ -400,13 +437,16 @@
   }
   // OR 묶음 안의 칩을 끄면 그 칩만 빠진다(한 개 남으면 보통 조건이 된다)
   const dropId = (sel, id) => sel.map(g => (Array.isArray(g) ? g.filter(x => x !== id) : g)).filter(g => (Array.isArray(g) ? g.length : g !== id)).map(g => (Array.isArray(g) && g.length === 1 ? g[0] : g));
-  root.addEventListener('click', ev => {
+  host.addEventListener('click', ev => {
     if (ev.target.closest('[data-fd-relax]')) {
       const removed = st.sel.pop(), rid = Array.isArray(removed) ? removed[0] : removed; st.page = 1; render();
-      root.querySelector(`[data-fd-cond="${CSS.escape(rid || '')}"]`)?.focus({ preventScroll: true }); return;
+      host.querySelector(`[data-fd-cond="${CSS.escape(rid || '')}"]`)?.focus({ preventScroll: true }); return;
     }
+    // 좁은 화면 막대: 결과를 열고 결과 머리로 초점을 옮긴다(초점이 화면을 그리로 데려간다)
+    if (barBtn && ev.target.closest('[data-fd-bar] button')) { st.resOpen = true; host.toggleAttribute('data-results-open', true); render(); $('[data-fd-out]').focus(); return; }
     const b = ev.target.closest('[data-fd-cond]');
-    if (b) { const id = b.dataset.fdCond, on = st.sel.flat().includes(id); if (b.getAttribute('aria-disabled') === 'true' && !on && !(LAZY[(condOf(id) || {}).src] && !asked.has(condOf(id).src))) return; st.sel = on ? dropId(st.sel, id) : [...st.sel, id]; st.page = 1; render(); root.querySelector(`[data-fd-cond="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }); return; }
+    // 짝(이상·미만)은 둘 중 하나만: 다른 쪽을 고르면 앞의 것을 뺀다(둘 다 고르면 늘 0곳이었다)
+    if (b) { const id = b.dataset.fdCond, on = st.sel.flat().includes(id); if (b.getAttribute('aria-disabled') === 'true' && !on && !(LAZY[(condOf(id) || {}).src] && !asked.has(condOf(id).src))) return; st.sel = on ? dropId(st.sel, id) : [...(PARTNER[id] ? dropId(st.sel, PARTNER[id]) : st.sel), id]; st.page = 1; render(); host.querySelector(`[data-fd-cond="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }); return; }
     if (ev.target.closest('[data-fd-xlsx]')) { exportXlsx(); return; }
     const s = ev.target.closest('[data-fd-sort]'); if (s) { st.by = s.dataset.fdSort; st.page = 1; render(); root.querySelector(`[data-fd-sort="${st.by}"]`)?.focus({ preventScroll: true }); return; }
     const p = ev.target.closest('[data-fd-page]');

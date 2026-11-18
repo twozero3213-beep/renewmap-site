@@ -19,9 +19,15 @@
   }
   const api = { itemsHTML, soonHTML };
   if (typeof module === 'object' && module.exports) { module.exports = api; return; }
-  const soon = root.document && root.document.querySelector('[data-crossing]');
+  // 홈(2026-11-19)은 펼친 4곳 + '더 보기' 안 4곳([data-crossing-more]). 더 볼 것이 없으면 접이를 숨긴 채 둔다
+  const soon = root.document && root.document.querySelector('[data-crossing]'), more = root.document && root.document.querySelector('[data-crossing-more]');
   if (soon) fetch('data/national/crossing_soon.json').then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then((d) => { soon.innerHTML = soonHTML(d.rows); }).catch(() => { soon.innerHTML = '<li class="h6-rank-wait">목록을 불러오지 못했습니다.</li>'; });
+    .then((d) => {
+      if (!more) { soon.innerHTML = soonHTML(d.rows); return; }
+      soon.innerHTML = soonHTML(d.rows, 4);
+      more.innerHTML = soonHTML((d.rows || []).slice(4), 4);
+      more.closest('details').hidden = !more.childElementCount;
+    }).catch(() => { soon.innerHTML = '<li class="h6-rank-wait">목록을 불러오지 못했습니다.</li>'; });
   const doc = root.document, lists = doc && doc.querySelectorAll('[data-rank]');
   if (!lists || !lists.length) return;
   fetch('data/national/rank_top.json').then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }).then((d) => {

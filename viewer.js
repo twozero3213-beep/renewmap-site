@@ -94,7 +94,7 @@
       async pdf(bytes, file, stage) {
         await loadScript('vendor/pdfjs/pdf.min.js'); // isEvalSupported:false: pdf.js 3.x 글꼴 처리의 코드 실행 취약점(CVE-2024-4367) 완화. 이 페이지 CSP도 unsafe-eval을 허용하지 않는다
         win.pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
-        const pdf = await win.pdfjsLib.getDocument({ data: new Uint8Array(bytes), isEvalSupported: false }).promise, n = pdf.numPages, width = Math.min(stage.clientWidth || 360, 900);
+        const pdf = await win.pdfjsLib.getDocument({ data: new Uint8Array(bytes), isEvalSupported: false }).promise, n = pdf.numPages, width = Math.min(stage.clientWidth || 360, 1200);   // 넓은 화면에서 쪽이 격자 폭(약 1,120px)까지 선명하게
         const pager = more(stage, n, n, async i => {
           const page = await pdf.getPage(i + 1), vp0 = page.getViewport({ scale: 1 }), scale = width / vp0.width, vp = page.getViewport({ scale }), dpr = win.devicePixelRatio || 1;
           const cv = el('canvas', 'doc-page'); cv.width = Math.floor(vp.width * dpr); cv.height = Math.floor(vp.height * dpr); cv.style.width = '100%'; cv.setAttribute('aria-label', `${i + 1}쪽`);

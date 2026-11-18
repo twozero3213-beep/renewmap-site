@@ -4,7 +4,7 @@
 .ov { border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
 .ov > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; min-height: 44px; padding: 12px 16px; font-weight: 700; font-size: 17px; cursor: pointer; list-style: none; }
 .ov > summary::-webkit-details-marker { display: none; }
-.ov > summary::after { content: "펼치기"; margin-left: auto; font-size: 13px; font-weight: 700; color: var(--green); }
+.ov > summary::after { content: "펼치기"; margin-left: auto; font-size: var(--t-cap); font-weight: 700; color: var(--green); }
 .ov[open] > summary::after { content: "접기"; }
 .ov > summary small { font-size: 15px; font-weight: 600; color: var(--dim); }
 .ov > summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 12px; }
@@ -28,7 +28,7 @@
 .ov-radio { display: flex; align-items: flex-start; gap: 8px; min-height: 44px; padding-top: 6px; cursor: pointer; }
 .ov-radio input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--green); }
 .ov-radio span { display: grid; gap: 1px; }
-.ov-radio small { font-size: 13px; color: var(--dim); }
+.ov-radio small { font-size: var(--t-cap); color: var(--dim); }
 .ov-sel { display: flex; flex-wrap: wrap; gap: 10px 14px; padding: 4px 0 6px 28px; min-width: 0; }
 .ov-sel > label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; font-size: 15px; font-weight: 600; min-width: 0; }
 .ov-sel > label.ov-check { display: flex; align-items: center; gap: 8px; min-height: 44px; }
@@ -38,7 +38,7 @@
 .ov-scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
 .ov-scroll:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .ov-table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
-.ov-table caption { padding: 8px 10px; text-align: left; font-size: 13px; color: var(--dim); }
+.ov-table caption { padding: 8px 10px; text-align: left; font-size: var(--t-cap); color: var(--dim); }
 .ov-table th, .ov-table td { padding: 7px 10px; border-top: 1px solid var(--line); text-align: left; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
 .ov-table th { background: var(--bg); font-weight: 700; }
 .ov-table .num { text-align: right; }
@@ -47,7 +47,7 @@
 .ov-notes { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 15px; }
 .ov-notes .is-warn { color: var(--warn); font-weight: 600; }
 .ov-h { margin: 4px 0 0; font-size: 17px; }
-.ov-label.leaflet-tooltip { padding: 2px 6px; font-size: 13px; font-weight: 700; color: var(--ink); background: var(--veil); border: 1px solid var(--line-strong); box-shadow: none; }
+.ov-label.leaflet-tooltip { padding: 2px 6px; font-size: var(--t-cap); font-weight: 700; color: var(--ink); background: var(--veil); border: 1px solid var(--line-strong); box-shadow: none; }
 .ov-label.leaflet-tooltip::before { display: none; }
 @media (max-width: 480px) { .ov-sel { padding-left: 0; } .ov-sel > label { flex: 1 1 100%; } }
 

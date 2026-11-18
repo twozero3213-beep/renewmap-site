@@ -66,9 +66,11 @@
     li.append(s, b, tag, sm); return li;
   }
   // 근거 영수증: '20년 넘은 건축물' 셀 하나의 원장 기록을 그대로 펼친다(값을 만들거나 고치지 않는다)
+  // 2026-11-19: 짧은 줄(값·출처·기준일·상태)은 펼쳐 두고, 긴 줄(주소·계산식 등)과 기록 번호는 기록 아래 접이 하나에(휴대폰에서 기록 한 장이 화면 넷이었다)
+  const SHOWN = new Set(['값', '출처', '기준일', '상태']);
   function prov(cells, name, boundary) {
-    const dl = $('h6ReceiptList'); if (!dl) return;
-    dl.replaceChildren();
+    const dl = $('h6ReceiptList'), more = $('h6ReceiptMore'), ids = $('h6ReceiptIds'); if (!dl || !more || !ids) return;
+    dl.replaceChildren(); more.replaceChildren(); ids.textContent = '';
     $('h6ReceiptDong').textContent = name;
     const c = cells.find((x) => x.indicator_code === 'DECLINE_AGING_20Y_PCT');
     if (!c) { const d = doc.createElement('div'); d.textContent = '이 동은 출처 기록이 없습니다.'; dl.append(d); return; }
@@ -79,15 +81,13 @@
     const rows = [['값', c.value === null ? '추가확인' : `${fmt(c.value)}${c.unit || ''}`], ['출처', c.source_name], ['출처 주소', c.source_url],
       ['기준일', c.reference_date], ['조회 시각', String(c.retrieved_at || '').slice(0, 16).replace('T', ' ')], ['계산식', formula],
       ['공간 단위', c.spatial_unit], ['이용 조건', c.license_type], ['상태', state]];
+    if (boundary) rows.push(['사업체 자료', boundary]);
     for (const [k, v] of rows) {
       if (v === undefined || v === null || v === '') continue;
       const box = doc.createElement('div'), dt = doc.createElement('dt'), dd = doc.createElement('dd');
-      dt.textContent = k; dd.textContent = v; box.append(dt, dd); dl.append(box);
+      dt.textContent = k; dd.textContent = v; box.append(dt, dd); (SHOWN.has(k) ? dl : more).append(box);
     }
-    const more = doc.createElement('details'), sum = doc.createElement('summary'), code = doc.createElement('p');
-    sum.textContent = '기록 번호'; code.textContent = `셀 번호 ${c.cell_id} · 규칙 판본 ${c.rule_version}`;
-    more.className = 'h6-receipt-ids'; more.append(sum, code); dl.append(more);
-    if (boundary) { const b = doc.createElement('div'), dt = doc.createElement('dt'), dd = doc.createElement('dd'); dt.textContent = '사업체 자료'; dd.textContent = boundary; b.append(dt, dd); dl.insertBefore(b, more); }
+    ids.textContent = `셀 번호 ${c.cell_id} · 규칙 판본 ${c.rule_version}`;
   }
   async function show(code8) {
     card.setAttribute('aria-busy', 'true');

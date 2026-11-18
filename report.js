@@ -39,6 +39,14 @@
       [hwpx, xlsx, docx, pptx].forEach(b => { if (b) b.disabled = !dl || dl.disabled; });
       // 보고서가 다시 그려질 때만 알림을 지운다(복사 버튼 글자가 바뀔 때마다 지우지 않는다). 형식별 안내 줄은 보고서 머리 단추와 겹쳐 쓰지 않는다
       if (dl !== anchor || !shown) { anchor = dl; shown = true; status.innerHTML = ''; }
+      // 받기 줄은 채운 단추 하나(한글 받기)와 '다른 형식' 접이 하나: 인쇄·PDF와 메일 요청을 접이 안으로, 접이 안 단추는 테두리 단추로(map.js fileTools 출력을 옮기기만 한다)
+      const more = report.querySelector('.rp-tools > .rp-more-files');
+      if (more) {
+        more.querySelectorAll('.btn:not(.ghost)').forEach(b => b.classList.add('ghost'));
+        const tools = more.parentElement, summary = more.querySelector('summary');
+        if (print && print.parentElement === tools) summary.after(print);
+        tools.querySelectorAll(':scope > .rp-mail-note').forEach(note => more.append(note));
+      }
     }
     pdf.addEventListener('click', () => report.querySelector('[data-print]')?.click());
     [hwpx, xlsx, docx, pptx].forEach(b => b && b.addEventListener('click', () => {

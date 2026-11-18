@@ -32,9 +32,9 @@ body.field { font-size: 17px; }
 .field button:not(:where(.city3d-map *)).save { min-height: 56px; font-size: 17px; margin-top: 16px; }
 /* 2026-11-18 현장 조사자 검토: 사진을 찍고도 저장까지 두 화면 넘게 내려가야 했다 → 폼을 쓰는 동안 저장 단추가 하단 탭 바로 위에 붙어 있게 */
 /* 오류 문구(#msg)와 저장 단추를 한 묶음으로 화면 아래에 붙여, 저장이 거절되면 이유가 단추 바로 위에 보인다 */
-.save-bar { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 5; background: var(--bg); box-shadow: 0 -8px 16px var(--bg); }
+.save-bar { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 5; background: var(--card); box-shadow: 0 -8px 16px var(--card); }   /* 흰 카드(#f) 안이라 카드색(전에는 쪽 바탕색이라 베이지 띠가 보였다) */
 .save-bar .msg { margin: 8px 0 0; }
-@media (min-width: 1100px) { .save-bar { bottom: 12px; } }
+@media (min-width: 1024px) { .save-bar { bottom: 12px; } }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .check { display: flex !important; gap: 10px; align-items: center; }
 /* 체크 줄은 44px 터치 영역(심사 06 §5: '가릴 곳을 모두 확인했습니다'는 법적 의미가 있는 체크). 상자는 24px 그대로, 라벨 줄 전체가 눌린다. 위 여백 12px은 margin 4 + padding 8로 같다 */
@@ -185,7 +185,7 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 .draw-step { margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: var(--soft); color: var(--soft-ink); font-weight: 600; line-height: 1.5; }
 .draw-step.is-warn { background: var(--amber-bg); color: var(--amber); }   /* 꼬임 경고만 호박색(확인 필요) */
 .draw-pt { display: grid; place-items: center; cursor: grab; }   /* 누르는 칸 44px(redev-app.js iconSize), 보이는 원은 안쪽 span */
-.draw-pt span { display: grid; place-items: center; width: 26px; height: 26px; box-sizing: border-box; border-radius: 999px; background: var(--card); border: 2px solid var(--green); color: var(--green-press); font-family: var(--font); font-size: 13px; font-weight: 700; line-height: 1; }
+.draw-pt span { display: grid; place-items: center; width: 26px; height: 26px; box-sizing: border-box; border-radius: 999px; background: var(--card); border: 2px solid var(--green); color: var(--green-press); font-family: var(--font); font-size: var(--t-cap); font-weight: 700; line-height: 1; }
 .draw-pt.is-first span { background: var(--green); color: #fff; }
 /* 휴대폰 그리기 지도 확대·축소 단추: Leaflet 기본 30px → 44px 터치 대상. #drawMap으로 나중에 붙는 leaflet.css보다 앞선다 */
 @media (max-width: 760px), (pointer: coarse) {
@@ -206,3 +206,67 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 .backup-nag button { min-height: 44px; }
 
 .basis-table table { min-width: 36rem; }
+
+/* ── 2026-11-19 화면 정리(.fr-*): 세로 길이를 줄이고 넓은 화면 폭을 쓴다. 문장은 빼지 않고 접은 칸('ⓘ 자세히')으로 옮겼다 ── */
+/* 'ⓘ 자세히': 한 줄 안내 아래의 글 단추 한 줄(44px). 상자·윗선 없이 열면 원문이 그대로 나온다 */
+.field details.fr-info { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
+.field details.fr-info > summary { display: inline-flex; align-items: center; min-height: 44px; padding: 0; font-size: 15px; font-weight: 600; color: var(--green); list-style: none; cursor: pointer; }
+.field details.fr-info > summary::-webkit-details-marker { display: none; }
+.field details.fr-info > .hint { margin: 0 0 8px; }
+.field .fr-lead { margin: 12px 0 0; color: var(--ink); }
+/* 접이(.rm-disclosure)는 바로 위 칸과 붙지 않게만 띄운다. rm6.css의 :is(...)(0,2,1)보다 앞서야 해서 body를 붙인다 */
+body.field details.rm-disclosure { margin-top: 12px; }
+body.field .card > details.rm-disclosure:last-child[open] { padding-bottom: 0; }
+/* 내보내기: 채운 단추는 사진대지 하나, 다른 형식은 선 단추 한 줄(좁으면 줄바꿈) */
+.field .fr-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.field .fr-acts button { width: auto; flex: 1 1 auto; margin: 0; }
+/* '더 남기기' 안의 세 묶음(시설 이용 조건·날씨와 시간·공공자료 대조) */
+.field .fr-sub { border-top: 1px solid var(--line); padding: 12px 0 4px; }
+.field .fr-sub:first-of-type { border-top: 0; padding-top: 0; }
+.field .fr-sub h3 { margin: 0; }
+.field .fr-warn { margin: 8px 0 0; }
+
+/* 현장 기록(index.html .fr-grid): 1024px 이상은 사진·위치와 기록 | 저장된 기록 두 칸, 1280px 이상은 세 칸(1200 격자 안).
+   v4.css·rm6.css의 공유 격자(560px 한 칸 + 목록)는 쪽 id(#main)로 덮는다. 휴대폰·태블릿은 마크업 순서(찍기 먼저) 그대로 한 칸 */
+@media (min-width: 1024px) {
+  body.fr-record #main { display: block; max-width: var(--rm-max); padding: 12px 20px 32px; }
+  body.fr-record #main .fr-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; grid-template-areas: "shoot saved" "form saved"; column-gap: 24px; align-items: start; }
+  body.fr-record #main .fr-shoot { grid-area: shoot; min-width: 0; }
+  body.fr-record #main .fr-form { grid-area: form; min-width: 0; }
+  /* 저장된 기록은 화면에 붙어 있고, 길어지면 이 칸 안에서만 내린다(쪽 안의 안쪽 스크롤은 이것 하나) */
+  body.fr-record #main .fr-saved { grid-area: saved; min-width: 0; position: sticky; top: 88px; max-height: calc(100vh - 104px); overflow-y: auto; overscroll-behavior: contain; margin-top: 0; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
+  body.fr-record #main > :is(#upBox, #install) { max-width: 560px; }
+  /* 380px 칸에서는 도넛·7일 막대(v4.css 두 칸)가 겹쳤다 → 위아래로 */
+  body.fr-record #main .fr-saved .v4-charts { grid-template-columns: minmax(0, 1fr); }
+}
+@media (min-width: 1280px) {
+  body.fr-record #main .fr-grid { grid-template-columns: minmax(340px, 1fr) minmax(340px, 1.15fr) minmax(340px, 1fr); grid-template-areas: "shoot form saved"; }
+  body.fr-record #main .fr-form { margin-top: 0; }
+}
+
+/* 구역 계산(redev.html): 1024px 이상은 입력 | 오른쪽 칸(.fr-side: 계산 전 견본, 계산 뒤 결과·경계안 비교) 두 칸.
+   rm6.css의 같은 무게 규칙(body.redev-v4 #main)보다 뒤에 와도 이기게 body.field.fr-redev로 쓴다 */
+@media (min-width: 1024px) {
+  body.field.fr-redev #main { display: grid; grid-template-columns: minmax(0, 7fr) minmax(360px, 5fr); column-gap: 32px; align-items: start; max-width: var(--rm-max); padding: 12px 20px 32px; }
+  body.field.fr-redev #main > * { grid-column: 1; }
+  body.field.fr-redev #main > :is(.breadcrumb, h1, h1 + .sub) { grid-column: 1 / -1; }
+  body.field.fr-redev #main > .fr-side { grid-column: 2; grid-row: 4; align-self: stretch; min-width: 0; }
+  body.field.fr-redev #main > .fr-main { min-width: 0; }
+  /* 결과(.fr-side)가 입력보다 몇 배 길어 왼쪽이 텅 비었다 → 결과가 있으면 입력 칸이 화면에 붙고, 넘치면 이 칸 안에서만 내린다 */
+  body.field.fr-redev #main:has(#out:not([hidden])) > .fr-main { position: sticky; top: 88px; max-height: calc(100vh - 104px); overflow-y: auto; overscroll-behavior: contain; }
+  body.field.fr-redev #f.card { max-width: none; }
+  body.field.fr-redev .fr-side > .card:first-of-type { margin-top: 0; }
+  /* 견본은 칸 안에서 화면에 붙고, 그림 전체(가로에 맞춘 원래 비율)가 첫 화면 안에 들어온다 */
+  body.field.fr-redev .fr-side > .redev-sample { position: sticky; top: 88px; margin: 0; max-width: none; }
+}
+.field .fr-intro { margin-bottom: 4px; }
+/* '계산하기'(이 쪽의 채운 단추 하나)는 폼을 쓰는 동안 화면 아래에 붙는다(현장 기록 .save-bar와 같은 방식). 휴대폰은 아래 탭 위 */
+body.fr-redev #f .save { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 5; box-shadow: 0 -8px 16px var(--card); }
+@media (min-width: 1024px) { body.fr-redev #f .save { bottom: 12px; } }
+@media (max-width: 720px) { .field .fr-alt { grid-template-columns: 1fr; } }   /* 휴대폰은 두 단추를 위아래로(글이 두 줄로 꺾이지 않게) */
+.field .redev-sample .fr-zoom { width: auto; min-height: 44px; margin-top: 8px; padding: 0 16px; }
+/* 견본 크게 보기: 원래 크기(640px), 화면이 좁으면 화면 폭 - 32px */
+.field dialog.fr-dlg { max-width: calc(100vw - 32px); width: fit-content; padding: 16px; }
+.field dialog.fr-dlg h2 { font-size: 18px; line-height: 26px; margin: 0 0 12px; }
+.field dialog.fr-dlg img { display: block; width: 640px; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.field dialog.fr-dlg button { margin-top: 12px; }

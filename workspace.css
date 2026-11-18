@@ -13,20 +13,14 @@
 .explore-page [data-workspace-ready] .workspace-panel:not([hidden]) { animation: workspace-panel-in .24s ease-out both; }
 .explore-page .evidence-workspace:not([data-workspace-ready]) .workspace-panel { display: block; margin-bottom: 20px; }
 .explore-page [data-workspace-ready] [data-workspace-panel][hidden] { display: none !important; }
-.explore-page #find { position: static; width: 100%; max-width: 1160px; max-height: none; overflow: visible; }
+.explore-page #find { position: static; width: 100%; max-width: 1200px; max-height: none; overflow: visible; }
 .explore-page .evidence-workspace:not([data-filters-open]) #find:not([hidden]) { display: block; }
 .explore-page #find .workspace-panel-inner { padding: 20px; }
 .explore-page .workspace-panel > .workspace-panel-inner { min-width: 0; padding: 20px; }
 .explore-page .workspace-panel .section-head { display: block; margin: 0 0 16px; }
 .explore-page .workspace-panel .section-head h2 { font-size: 24px; }
-.explore-page #find .section-head > p, .explore-page .workspace-panel .section-head > p { display: block; margin: 6px 0 0; font-size: 16px; color: var(--dim); }
+.explore-page .workspace-panel .section-head > p { display: block; margin: 6px 0 0; font-size: 16px; color: var(--dim); }
 .explore-page .ws-close { display: inline-flex; float: right; min-height: 44px; margin: 0 0 12px 12px; }
-.explore-page .gov-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.explore-page .gov-card { min-height: 56px; }
-.explore-page .gov-card b { font-size: 16px; }
-.explore-page .workspace-panel .fd-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.workspace-panel .fd-left { min-width: 0; padding: 0; border: 0; background: transparent; }
-.workspace-panel .fd-right { min-width: 0; position: static; }
 .workspace-panel .fd-n, .workspace-panel .fd-n b, .workspace-panel .rp-title { min-width: 0; overflow-wrap: anywhere; }
 .explore-page #map .workspace-panel-inner { padding: 16px; }
 .explore-page .workspace-panel .map-stage { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 12px; height: clamp(440px, calc(100dvh - 330px), 720px); }
@@ -34,59 +28,210 @@
 .explore-page .workspace-panel .map-canvas { height: 100%; min-height: 320px; }
 .explore-page .workspace-panel .map-panel { position: static; width: auto; height: 100%; max-height: none; margin: 0; overflow-y: auto; overscroll-behavior: contain; box-shadow: none; }
 .explore-page .workspace-panel .map-panel.is-sheet { position: fixed; height: auto; max-height: 80dvh; }
-.explore-page #report { max-width: 1060px; }
+
+/* ── 조건 탭(#find, 2026-11-19): 범위 → 업무 → 조건 | 결과·작은 지도. 줄 하나 = 누르는 칸 하나(44px 이상) ── */
+#find .ws-find-side, #find .ws-find-main { min-width: 0; }
+#find .ws-h { margin: 0 0 4px; font-size: 18px; line-height: 1.4; }
+#find .ws-intro { margin: 0 0 12px; font-size: 15px; line-height: 1.6; color: var(--dim); }
+#find .ws-intro b { color: var(--ink); }
+#find .ws-gov, #find .ws-conds { margin-top: 28px; }
+#find .fd-scope { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0; }
+#find .fd-scope .map-select { min-width: 0; font-size: 15px; }
+#find .fd-scope select, #find .fd-name input { width: 100%; max-width: none; min-height: 48px; box-sizing: border-box; }
+#find .fd-scope .map-step { justify-self: start; font-size: var(--t-cap); }
+#find .fd-name-res:empty, #find .fd-name-msg:empty { display: none; }
+#find .ws-presets { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+#find .ws-preset { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); font: inherit; font-size: 16px; font-weight: 600; line-height: 1.35; text-align: left; cursor: pointer; }
+#find .ws-ico { display: inline-flex; flex: none; justify-content: center; width: 22px; color: var(--green); }
+#find .ws-ico .map-ico { width: 20px; height: 20px; }
+/* 접이: 묶음 '더 보기'와 'ⓘ 기준 설명'은 카드 상자 없이 글 줄 하나 */
+#find details:is(.ws-info, .ws-more) { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
+#find :is(.ws-info, .ws-more) > summary { display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; list-style: none; font-size: var(--t-cap); font-weight: 600; color: var(--dim); cursor: pointer; }
+#find :is(.ws-info, .ws-more) > summary::-webkit-details-marker { display: none; }
+#find .ws-more > summary { color: var(--green); }
+#find .ws-more > summary::before { content: "▸"; transition: transform .2s; }
+#find .ws-more[open] > summary::before { transform: rotate(90deg); }
+#find .ws-info .fd-gnote, #find .ws-gov-list { margin: 0 0 8px; padding: 0 12px; font-size: var(--t-cap); line-height: 1.6; color: var(--dim); }
+#find .ws-gov-list { display: grid; gap: 12px; }
+#find .ws-gov-list > div { display: grid; gap: 2px; }
+#find .ws-gov-list dt { font-weight: 700; color: var(--ink); }
+#find .ws-gov-list dd { margin: 0; }
+#find .ws-gov-list :is(.gov-why, .gov-c, .gov-law) { display: block; font-size: inherit; }
+/* 조건 묶음과 줄 */
+#find .ws-cat { min-width: 0; margin: 16px 0 0; padding: 0; border: 0; }
+#find fieldset.ws-cat > legend { display: flex; align-items: center; gap: 8px; padding: 0 0 4px; font-size: 15px; font-weight: 700; color: var(--dim); }
+#find .ws-n { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border-radius: 999px; background: var(--soft); color: var(--green); font-size: var(--t-cap); font-weight: 700; }
+#find .ws-rows { display: grid; gap: 2px; }
+#find .ws-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; width: 100%; min-height: 44px; box-sizing: border-box; padding: 6px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); font: inherit; font-size: 16px; font-weight: 500; line-height: 1.4; text-align: left; }
+#find .ws-tog { position: relative; padding-right: 48px; cursor: pointer; }
+#find .ws-tog::after { content: ""; position: absolute; top: 50%; right: 12px; width: 22px; height: 22px; margin-top: -11px; box-sizing: border-box; border: 2px solid var(--line-strong); border-radius: 6px; background: var(--card); color: #fff; font-size: 14px; font-weight: 700; line-height: 18px; text-align: center; }
+#find .ws-tog[aria-pressed="true"] { background: var(--soft); font-weight: 700; }
+#find .ws-tog[aria-pressed="true"]::after { content: "✓"; border-color: var(--ink); background: var(--ink); }
+#find :is(.ws-tog, .ws-preset):hover { background: var(--mute-bg); }
+#find .ws-row.is-off { color: var(--dim); }
+#find .ws-row small { display: inline-flex; align-items: center; min-height: 22px; padding: 0 8px; border: 1px solid var(--tbd-line); border-radius: 999px; background: var(--tbd-bg); color: var(--warn); font-size: var(--t-cap); font-weight: 700; line-height: 1.3; }
+#find .ws-pair { flex-wrap: nowrap; padding-right: 4px; }
+#find .ws-rl { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+#find .ws-seg { display: inline-flex; flex: none; }
+#find .ws-opt { position: relative; min-width: 56px; min-height: 44px; padding: 0 12px; border: 1px solid var(--line-strong); background: var(--card); color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+#find .ws-opt:first-child { border-radius: 8px 0 0 8px; }
+#find .ws-opt + .ws-opt { margin-left: -1px; border-radius: 0 8px 8px 0; }
+#find .ws-opt[aria-pressed="true"] { z-index: 1; border-color: var(--ink); background: var(--ink); color: #fff; }
+#find .ws-opt:hover:not([aria-pressed="true"]) { background: var(--mute-bg); }
+#find .ws-opt:focus-visible { z-index: 2; }
+#find .ws-opt.is-off:not([aria-pressed="true"]) { color: var(--dim); background: var(--mute-bg); }
+.ws-tog, .ws-opt, .ws-preset { transition: background-color .18s ease, border-color .18s ease, color .18s ease; }
+/* 결과 칸 */
+#find .fd-note { margin: 0 0 12px; font-size: var(--t-cap); }
+#find :is(.fd-skip, .fd-conds, .fd-legend, .fd-n small, .fd-xlsx small, .fd-hint) { font-size: var(--t-cap); }
+#find .fd-count { margin: 0 0 12px; line-height: 1.3; }
+#find .fd-count b { font-size: 40px; line-height: 1.1; }
+#find .fd-count.is-all b { color: var(--ink); }
+#find .ws-res-body { display: grid; gap: 16px; }
+#find .ws-res-list { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-width: 0; order: 0; }   /* 목록이 먼저(map.css의 좁은 화면 order: 4를 되돌린다) */
+#find .ws-res-list > [data-state] { flex: 1 1 100%; min-width: 0; }
+#find .fd-sort { margin: 0; }
+#find .fd-xlsx { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0; }
+#find .fd-list { max-height: none; overflow: visible; }
+#find .fd-list li { min-height: 48px; box-sizing: border-box; padding: 2px 8px 2px 14px; }
+#find .fd-n { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; }
+#find .fd-n b { display: inline; }
+#find .fd-list a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; }
+#find .fd-list-title { margin: 4px 0 8px; }
+#find .fd-pager > div::before { font-size: var(--t-cap); }
+#find .ws-mini { min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--canvas); }
+#find .ws-mini .fd-svg { max-height: 360px; }
+#find .ws-mini.is-idle .fd-legend { display: none; }
+#findApp [data-fd-out]:focus:not(:focus-visible) { outline: none; }
+.ws-bar[hidden] { display: none; }
+/* 동을 고른 휴대폰에서 rm6.css의 body.sheet-open { overflow: auto }가 body를 스크롤 상자로 만들어(html이 overflow-x: clip) 아래 막대가 붙지 않았다 → 지도 탭 말고 다른 탭에서는 풀어 둔다 */
+body.explore-page.sheet-open:has(.evidence-workspace:not([data-active-panel="map"])) { overflow: visible; }
+.ws-bar-btn b { font-variant-numeric: tabular-nums; }
+
+/* ── 문서 탭(#report): 넓은 화면은 주제 목차 | 본문(880px). 받기 줄은 채운 단추 하나 + '다른 형식' 접이 ── */
+.explore-page #report { max-width: 1200px; }
 .explore-page #report .workspace-panel-inner { max-width: none; margin: 0; }
-.workspace-method { margin: 0 0 16px; padding: 12px 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; font-size: 16px; }
-.workspace-method summary { color: var(--ink); font-weight: 600; cursor: pointer; }
-.workspace-method p { margin: 12px 0; color: var(--dim); }
+#reportApp { scroll-margin-top: calc(var(--site-header-h, 64px) + 24px); }
+#report .ws-toc[hidden] { display: none; }
+#report .ws-toc-title { margin: 0 0 8px; padding: 0 12px; font-size: var(--t-cap); font-weight: 700; color: var(--dim); }
+#report .ws-toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+#report .ws-toc button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); font: inherit; font-size: 15px; font-weight: 500; line-height: 1.35; text-align: left; cursor: pointer; }
+#report .ws-toc button::before { content: ""; flex: none; width: 10px; height: 10px; box-sizing: border-box; border: 2px solid var(--line-strong); border-radius: 50%; }
+#report .ws-toc button[data-state="seen"]::before { border-color: var(--green); background: var(--soft); }
+#report .ws-toc button[aria-current="true"] { background: var(--soft); font-weight: 700; }
+#report .ws-toc button[aria-current="true"]::before { border-color: var(--green); background: var(--green); }
+#report .ws-toc button:not([aria-current="true"]):hover { background: var(--mute-bg); }
+#report .rp-mode button { white-space: nowrap; }
+#report :is(.rc-more summary, .rp-mail) { font-size: var(--t-cap); }
+#report .rp-tools .rp-mail { padding: 0; opacity: 1; }
+#report .rp-tools > .rp-more-files { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
+#report .rp-more-files > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 48px; box-sizing: border-box; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--green); font-size: 15px; font-weight: 700; list-style: none; cursor: pointer; }
+#report .rp-more-files > summary::-webkit-details-marker { display: none; }
+#report .rp-more-files > summary::after { content: "▾"; font-size: 14px; }
+#report .rp-more-files[open] > summary::after { content: "▴"; }
+#report .rp-more-files[open] { flex-basis: 100%; }
+#report .rp-more-files[open] > .btn { margin: 8px 8px 0 0; }
+#report .rp-more-files .rp-mail-note { margin: 8px 0 0; }
+/* '문서를 사용하기 전에 확인할 것'은 본문 끝 한 줄 */
+.workspace-method { margin: 24px 0 0; padding: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; font-size: 15px; }
+.workspace-method > summary { display: flex; align-items: center; min-height: 48px; color: var(--dim); font-weight: 600; list-style: none; cursor: pointer; }
+.workspace-method > summary::-webkit-details-marker { display: none; }
+.workspace-method p { margin: 0 0 8px; color: var(--dim); }
+.workspace-method a { display: inline-flex; align-items: center; min-height: 44px; }
 .export-tools { margin: 0 0 12px; }
 .export-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .export-state { margin: 0; font-size: 15px; color: var(--dim); }
 .export-state.is-error { color: var(--worse); }
-.report-pages { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 12px; align-items: end; margin: 16px 0; padding: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; scroll-margin-top: calc(var(--site-header-h, 64px) + 76px); }
+/* 주제 이동 줄(좁은 화면): ‹ 고르기 › 한 줄 48px. 넓은 화면은 목차가 맡는다 */
+.report-pages { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto 48px; gap: 8px; align-items: center; margin: 0 0 16px; padding: 0; border: 0; background: none; scroll-margin-top: calc(var(--site-header-h, 64px) + 76px); }
 .report-pages[hidden] { display: none; }
-.report-pages label { display: grid; gap: 4px; min-width: 0; font-size: 15px; font-weight: 600; }
+.report-pages label { display: block; min-width: 0; }
 .report-pages button, .report-pages select { min-width: 0; min-height: 48px; border: 1px solid var(--line-strong, #7a9089); border-radius: 8px; color: var(--ink); background: var(--card); padding: 8px 12px; font: inherit; }
-.report-pages button { cursor: pointer; }
+.report-pages select { width: 100%; font-size: 16px; font-weight: 600; }
+.report-pages button { padding: 0; font-size: 22px; line-height: 1; cursor: pointer; }
 .report-pages button:disabled { color: var(--dim); background: var(--bg); cursor: not-allowed; }
-.report-pages [data-report-position] { align-self: center; padding-top: 20px; white-space: nowrap; font-size: 15px; font-variant-numeric: tabular-nums; }
+.report-pages [data-report-position] { white-space: nowrap; font-size: 15px; color: var(--dim); font-variant-numeric: tabular-nums; }
 .workspace-report-hidden { display: none; }
 .workspace-panel .rp-g, .workspace-panel .rp-src { margin-top: 12px; }
 .workspace-panel .rp-src .table-wrap { overflow-x: auto; }
-.fd-chip { transition: transform .18s ease, border-color .18s ease, background-color .18s ease; }
 .fd-empty[data-state] { display: grid; justify-items: center; gap: 8px; margin: 12px 0; padding: 22px 14px; border: 1px dashed var(--line-strong, #7a9089); border-radius: 12px; background: var(--card); text-align: center; }
 .fd-empty[data-state] img { width: 104px; height: auto; }
 .fd-empty[data-state] p { margin: 0; color: var(--dim); }
 [data-state="loading"] { color: var(--dim); }
 [data-state="error"] { color: var(--worse); }
 @keyframes workspace-panel-in { from { opacity: 0; transform: translateY(8px); } }
-@media (max-width: 1099px) {
+@media (min-width: 1024px) {
+  /* 조건·문서 탭: 소개 줄을 탭 줄 오른쪽에 붙여 본문을 한 줄 올린다(지도 탭은 rm6.css가 소개 줄을 숨긴다) */
+  .explore-page .evidence-workspace:not([data-active-panel="map"]) { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .explore-page .evidence-workspace:not([data-active-panel="map"]) > .workspace-tabs { grid-column: 1; }
+  .explore-page .evidence-workspace:not([data-active-panel="map"]) > .workspace-context { grid-column: 2; align-items: center; margin: 0; padding: 0 24px 0 12px; border-bottom: 1px solid var(--line); background: #fff; }
+  .explore-page .evidence-workspace:not([data-active-panel="map"]) > .workspace-panels { grid-column: 1 / -1; }
+  /* 조건: 왼쪽 392px(화면 높이 안에서 따로 스크롤, 더 있으면 아래 그림자) | 오른쪽 결과 */
+  .explore-page #find .ws-find { display: grid; grid-template-columns: 392px minmax(0, 1fr); column-gap: 32px; align-items: start; padding: 20px; }
+  #find .ws-find-side { grid-column: 1; grid-row: 1 / span 2; position: sticky; top: 88px; overflow-y: auto; overscroll-behavior: contain; padding: 0 16px 16px 0; border-right: 1px solid var(--line); max-height: calc(100dvh - 140px);
+    background: linear-gradient(var(--card) 30%, transparent) top / 100% 40px no-repeat local, linear-gradient(transparent, var(--card) 70%) bottom / 100% 40px no-repeat local,
+      radial-gradient(farthest-side at 50% 0, var(--shade-16), transparent) top / 100% 12px no-repeat scroll, radial-gradient(farthest-side at 50% 100%, var(--shade-16), transparent) bottom / 100% 12px no-repeat scroll, var(--card); }
+  .explore-page #find .ws-close { grid-column: 2; grid-row: 1; justify-self: end; position: relative; z-index: 1; float: none; margin: 0; }
+  #find .ws-find-main { grid-column: 2; grid-row: 1 / span 2; }
+  #find .ws-bar { display: none; }
+  #find .fd-note { margin: 8px 0 16px; }
+  /* 문서: 목차가 있으면 목차 | 본문, 이전/다음 줄은 숨긴다 */
+  .explore-page #report .ws-doc { display: grid; grid-template-columns: minmax(0, 880px); justify-content: center; align-items: start; column-gap: 40px; padding: 20px; }
+  .explore-page #report .ws-doc:has(> .ws-toc:not([hidden])) { grid-template-columns: 232px minmax(0, 880px); grid-template-rows: auto auto 1fr auto; }
+  #report .ws-doc:has(> .ws-toc:not([hidden])) > :not(.ws-toc) { grid-column: 2; }
+  #report .ws-doc > .ws-toc { grid-column: 1; grid-row: 1 / -1; align-self: start; position: sticky; top: 88px; max-height: calc(100dvh - 104px); overflow-y: auto; }
+  #report .ws-doc > .section-head { grid-row: 1; }
+  #report .ws-doc > .export-tools { grid-row: 2; }
+  #report .ws-doc > #reportApp { grid-row: 3; }
+  #report .ws-doc > .workspace-method { grid-row: 4; }
+  #report .ws-doc:has(> .ws-toc:not([hidden])) > .report-pages { display: none; }
+}
+@media (min-width: 1280px) {
+  /* 넓은 화면: 목록 옆에 작은 지도(1024~1279px는 목록 칸이 좁아 지도를 목록 아래에 둔다) */
+  #find .ws-res-body { grid-template-columns: minmax(0, 1fr) 260px; align-items: start; }
+  #find .ws-mini { position: sticky; top: 88px; }
+}
+@media (max-width: 1023px) {
   .explore-page .workspace-panel .map-stage { display: block; height: auto; }
   .explore-page .workspace-panel .map-canvas { height: clamp(320px, 52dvh, 580px); }
   .explore-page .workspace-panel .map-panel { height: auto; margin-top: 12px; overflow: visible; }
   .explore-page .workspace-panel .map-panel.is-sheet { overflow-y: auto; }
-  .explore-page .workspace-panel .fd-grid { grid-template-columns: minmax(0, 1fr); }
+  /* 조건: 한 칸. 지도는 위 탭으로 돌아가고, 결과는 아래 막대('N곳 · 결과 보기')로 연다 */
+  .explore-page #find .ws-close { display: none; }
+  #find .fd-scope { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #find .fd-scope :is(.fd-name, .map-step, .fd-hint) { grid-column: 1 / -1; }
+  #find .ws-presets { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  #find .ws-preset { min-height: 52px; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); font-size: 15px; }
+  #find .ws-conds .ws-intro { margin-bottom: 4px; }
+  #find .ws-cat.rm-disclosure { margin: 0; }
+  #find .ws-cat.rm-disclosure > summary .ws-n { margin-left: auto; }
+  #find .ws-bar { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 5; margin: 20px 0 0; }
+  #find .ws-bar-btn { width: 100%; min-height: 52px; box-shadow: 0 6px 18px var(--shade-18); }
+  /* 입력칸을 고르는 동안은 막대를 숨기고(가상 키보드 위에 뜨지 않게), 초점 칸이 막대·아래 탭 뒤로 숨지 않게 여백을 둔다 */
+  #find .ws-find-side:has(input:focus, select:focus) ~ .ws-bar { visibility: hidden; }
+  #find .ws-find-side :is(input, select, button, summary) { scroll-margin-bottom: 150px; }
+  .explore-page #find:not([data-results-open]) #findApp { display: none; }
+  #find .ws-find-main { margin-top: 24px; }
+  #find .ws-mini .fd-svg { max-height: 300px; }
+  /* 문서: 목차 대신 ‹ 고르기 › 한 줄 */
+  #report .ws-toc { display: none; }
 }
-@media (max-width: 600px) {
+@media (max-width: 720px) {
   .explore-page .evidence-workspace { padding: 12px 12px 32px; }
-
   .explore-page .workspace-panel > .workspace-panel-inner, .explore-page #find .workspace-panel-inner, .explore-page #map .workspace-panel-inner { padding: 14px; }
-  .explore-page .gov-cards { grid-template-columns: minmax(0, 1fr); }
-  .report-pages { grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; padding: 10px; }
-  .report-pages label { grid-column: 1 / -1; grid-row: 1; }
-  .report-pages [data-report-position] { text-align: center; padding: 0; }
-  .report-pages select { width: 100%; }
   .workspace-context { font-size: 15px; }
+  /* 보고서 용도 넷은 2×2(낱말 가운데서 줄을 바꾸지 않는다) */
+  #report .rp-mode { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; box-sizing: border-box; }
 }
 @media (prefers-reduced-motion: reduce) {
   .explore-page .workspace-panel { opacity: 1; transform: none; animation: none !important; transition: none !important; }
-  .fd-chip { transition: none; }
+  .ws-tog, .ws-opt, .ws-preset, #find .ws-more > summary::before { transition: none; }
 }
 @media print {
-  .workspace-tabs, .workspace-context, .workspace-method, .report-pages, .export-tools { display: none !important; }
+  .workspace-tabs, .workspace-context, .workspace-method, .report-pages, .export-tools, .ws-toc { display: none !important; }
   .explore-page .evidence-workspace { padding: 0; }
   .explore-page [data-workspace-ready] [data-workspace-panel="filters"], .explore-page [data-workspace-ready] [data-workspace-panel="map"] { display: none !important; }
   .explore-page [data-workspace-ready] [data-workspace-panel="evidence"], .explore-page [data-workspace-ready] [data-workspace-panel="evidence"][hidden] { display: block !important; max-width: none; border: 0; }
-  .explore-page #report .workspace-panel-inner { padding: 0; }
+  .explore-page #report .workspace-panel-inner { padding: 0; display: block; }
   .workspace-report-hidden:not(.rp-ai):not(.rp-frag) { display: block !important; }
 }

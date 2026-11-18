@@ -4,13 +4,13 @@
 .dash-meta .mono { font-family: var(--font-mono); }
 .dash-meta .note { flex-basis: 100%; }
 
-/* 직방식 지역 칩: 한 줄 가로 스크롤(페이지는 넘치지 않고 칩 줄 안에서만 움직인다) */
-.dash-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; margin-bottom: 8px; scroll-snap-type: x proximity; scrollbar-width: thin; }
-.dash-chip { flex: none; scroll-snap-align: start; font: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; color: var(--ink); background: var(--card); border: 1px solid var(--line-strong); border-radius: 999px; padding: 8px 16px; cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
+/* 지역·지표 칩: 줄바꿈(2026-11-19 대표 지적: 가로 스크롤 줄과 스크롤 막대가 잘린 것처럼 보였다). 고른 칩이 늘 보인다 */
+.dash-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 0 10px; margin-bottom: 8px; }
+.dash-chip { flex: none; max-width: 100%; font: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; color: var(--ink); background: var(--card); border: 1px solid var(--line-strong); border-radius: 999px; padding: 8px 16px; cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
 .dash-chip:hover { border-color: var(--green); }
 .dash-chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-green); }
 .dash-chip.is-planned { color: var(--off-ink); background: var(--mute-bg); border-style: dashed; }
-.dash-chip.is-planned small { font-size: 13px; margin-left: 4px; }
+.dash-chip.is-planned small { font-size: var(--t-cap); margin-left: 4px; }
 .dash-chip.is-planned[aria-pressed="true"] { background: var(--off-ink); color: var(--on-green); border-style: solid; }
 .dash-dongs .dash-chip { font-size: 15px; padding: 6px 14px; }
 .dash-dongs .dash-chip[aria-pressed="true"] { background: var(--green); border-color: var(--green); }
@@ -21,7 +21,7 @@
 .dash-panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 20px; min-width: 0; }
 .dash-panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 10px; }
 .dash-panel h3 { margin: 0; font-size: 20px; }
-.dash-panel h3 small { white-space: nowrap; font-size: 13px; font-weight: 400; color: var(--dim); font-variant-numeric: tabular-nums; }
+.dash-panel h3 small { white-space: nowrap; font-size: var(--t-cap); font-weight: 400; color: var(--dim); font-variant-numeric: tabular-nums; }
 .dash-cap { font-size: 15px; color: var(--dim); margin: 0 0 12px; }
 
 /* 토스식 세그먼트 탭 */
@@ -58,19 +58,19 @@
 .dash-bars, .dash-cmp svg { width: 100%; height: auto; display: block; font-family: inherit; font-variant-numeric: tabular-nums; }
 .dash-bars { max-width: 460px; }
 .dash-grid { stroke: var(--line); stroke-dasharray: 3 3; }
-.dash-axis { font-size: 13px; fill: var(--dim); }
+.dash-axis { font-size: var(--t-cap); fill: var(--dim); }
 .dash-row { font-size: 15px; font-weight: 700; fill: var(--ink); }
-.dash-row.s { font-size: 13px; font-weight: 600; fill: var(--dim); }
-.dash-yr { font-size: 13px; fill: var(--dim); }
+.dash-row.s { font-size: var(--t-cap); font-weight: 600; fill: var(--dim); }
+.dash-yr { font-size: var(--t-cap); fill: var(--dim); }
 .dash-val { font-size: 15px; font-weight: 700; fill: var(--ink); }
-.dash-val.s { font-size: 13px; }
+.dash-val.s { font-size: var(--t-cap); }
 .dash-track { fill: var(--mute-bg); }
 .dash-track.is-hidden { fill: none; stroke: var(--track-off); stroke-dasharray: 4 3; }
 .dash-fill { transform-box: fill-box; transform-origin: left center; transform: scaleX(0); transition: transform .9s cubic-bezier(.2, .8, .2, 1); }
 #dashApp.is-in .dash-fill { transform: scaleX(1); }
 .dash-fill.y20 { fill: var(--y20); } .dash-fill.y30 { fill: var(--y30); }
 .dash-fill.b-COUNT { fill: var(--bCOUNT); } .dash-fill.b-AREA { fill: var(--bAREA); } .dash-fill.b-HH { fill: var(--bHH); }
-.dash-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 13px; color: var(--dim); margin: 0 0 10px; }
+.dash-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: var(--t-cap); color: var(--dim); margin: 0 0 10px; }
 .dash-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; }
 .dash-legend .y20 { background: var(--y20); } .dash-legend .y30 { background: var(--y30); }
 .dash-legend .b-COUNT { background: var(--bCOUNT); } .dash-legend .b-AREA { background: var(--bAREA); } .dash-legend .b-HH { background: var(--bHH); }
@@ -95,12 +95,12 @@
 .dash-map.is-wait { display: grid; place-items: center; color: var(--dim); font-size: 15px; }
 #dashboard .leaflet-container { font: inherit; }
 #dashboard .leaflet-tooltip { font-size: 15px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
-#dashboard .leaflet-control-attribution { font-size: 13px; }
+#dashboard .leaflet-control-attribution { font-size: var(--t-cap); }
 .dash-map-hint { font-size: 15px; color: var(--dim); margin: 10px 0 8px; word-break: keep-all; }
-.dash-map-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.dash-map-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--t-cap); color: var(--dim); font-variant-numeric: tabular-nums; }
 .dash-map-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 5px; vertical-align: -2px; border: 1px solid var(--shade-25); }
 .dash-map-legend i.is-hidden { border: 1px dashed var(--off-ink); } /* 지도에서도 비공개 동은 회색 + 점선 테두리 */
-.dash-map-note { font-size: 13px; color: var(--dim); margin: 6px 0 12px; }
+.dash-map-note { font-size: var(--t-cap); color: var(--dim); margin: 6px 0 12px; }
 .dash-map-list { flex-wrap: wrap; overflow: visible; }
 .dash-map-sel { font-size: 15px; margin: 4px 0 0; font-variant-numeric: tabular-nums; word-break: keep-all; }
 .dash-link { font: inherit; font-size: 15px; font-weight: 600; color: var(--green); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }

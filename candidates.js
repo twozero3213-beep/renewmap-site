@@ -124,9 +124,15 @@
         list.innerHTML = pager.slice(rows).map(r => `<li><label><input type="checkbox" data-candidate-select="${r.code}"${selected.has(r.code) ? ' checked' : ''}> ${U.esc(r.name)} 비교 선택</label>`
           + `<p class="meta">${U.esc(r.saved_at.slice(0, 10))} UTC 고정 · ${r.items.length}개 항목 · ${STAGES.find(([k]) => k === r.stage)[1]}</p><a href="explore.html${r.route}">지도에서 다시 보기</a>`
           + `<details><summary>단계·메모 편집</summary><form data-candidate-edit="${r.code}"><label>검토 단계<select name="stage">${STAGES.map(([k, v]) => `<option value="${k}"${r.stage === k ? ' selected' : ''}>${v}</option>`).join('')}</select></label>`
-          + `<label>검토 메모<textarea name="note" maxlength="1000" rows="2">${U.esc(r.note)}</textarea></label><button type="submit">단계·메모 저장</button></form></details></li>`).join('') || '<li>지도에서 동을 고르고 ‘검토 후보 저장’을 눌러 주세요.</li>';
+          + `<label>검토 메모<textarea name="note" maxlength="1000" rows="2">${U.esc(r.note)}</textarea></label><button type="submit">단계·메모 저장</button></form></details></li>`).join('')
+          || '<li class="box-empty-card"><p><b>아직 저장한 후보가 없습니다</b><br>지도에서 동을 고르고 ‘검토 후보 저장’을 눌러 주세요.</p><a class="btn" href="explore.html#map">동네 찾기에서 후보 고르기</a></li>';
         renderComparison(rows);
         host.querySelector('[data-candidate-csv]').disabled = !rows.length;
+        // 2026-11-19: 받을 것이 없으면 내보내기·비교 칸을 숨긴다(빈 보관함에 쓸 수 없는 단추 둘과 접힌 칸이 먼저 보였다)
+        const acts = host.querySelector('[data-candidate-acts]');
+        if (acts) acts.hidden = !rows.length;
+        if (xbtn) xbtn.hidden = rows.length < 2;
+        if (fold) fold.hidden = rows.length < 2;
       } catch (e) { say('후보를 열지 못했습니다. ' + e.message); }
     }
     list.addEventListener('change', e => {

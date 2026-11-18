@@ -71,7 +71,7 @@ def run(browser, base, out):
         'taskGuideline': '합성 지침 판본 1', 'taskScope': '합성 구역', 'taskRequirements': '빈집 조사 | 합성 목록 | 건물',
     }.items():
         field(key, value)
-    page.locator('#planForm button').click()
+    page.locator('#planSave:visible, #planForm > .task-save-inline:visible').click()
     version(1)
     step(1)
     page.locator('#checkResult').select_option('match')

@@ -1,0 +1,51 @@
+/* 사업성 간이 계산(2026-11-19 정리, 대표 지적: 세로가 길고 표가 옆으로 넘쳤다).
+   넓은 화면(1024px~)은 왼쪽 입력(종전자산 먼저, 나머지 일곱 칸은 두 칸씩) | 오른쪽 결과 카드(따라 내려옴).
+   휴대폰은 입력 바로 아래 결과, 분양가 ±10%는 세 장을 위아래로(표 없음). rm6.css 앞에 싣고 #main으로 좁힌다 */
+#main .bz-intro { margin: 0 0 16px; max-width: none; font-size: var(--t-sub); }
+#main .bz-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+#main .bz-inputs { margin: 0; padding: 0; border: 0; min-width: 0; }
+#main .bz-f label { display: block; margin-bottom: 4px; font-size: 15px; font-weight: 700; line-height: 1.4; }
+#main .bz-f input { width: 100%; box-sizing: border-box; }
+#main .bz-hint { margin: 4px 0 0; font-size: 14px; line-height: 1.5; color: var(--dim); }
+#main .bz-first { padding: 14px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+#main .bz-fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px 16px; margin-top: 14px; }
+#main #bizPriceNote { margin-top: 12px; }
+
+#main .bz-out { min-width: 0; padding: 18px 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+#main .bz-k { margin: 0; font-size: 16px; color: var(--dim); }
+#main .bz-big { margin: 2px 0 12px; font-size: 44px; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+#main .bz-wait { margin: 4px 0 8px; font-size: 20px; font-weight: 700; }
+#main .bz-go { margin: 0 0 12px; }
+#main #bizOut .warn { margin: 8px 0; }
+#main .bz-key, #main .bz-rows { margin: 0; }
+#main :is(.bz-key, .bz-rows) > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); }
+#main :is(.bz-key, .bz-rows) dt { color: var(--dim); font-size: 15px; }
+#main :is(.bz-key, .bz-rows) dd { margin: 0; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#main .bz-rows dt { font-size: 14px; }
+#main .bz-rows dd { font-size: 15px; }
+#main .bz-h { margin: 16px 0 8px; font-size: 16px; }
+#main .bz-sens { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+#main .bz-sens li { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-variant-numeric: tabular-nums; max-width: none; }
+#main .bz-sens b { font-size: 15px; }
+#main .bz-detail { margin-top: 12px; }
+#main .bz-limits { margin: 16px 0 0; padding: 4px 16px; }
+#main .bz-limits details { margin: 0; padding: 0; border: 0; background: none; }
+#main .bz-limits summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; min-height: 44px; cursor: pointer; font-weight: 400; font-size: var(--t-sub); }
+#main .bz-more { font-weight: 700; color: var(--green); }
+#main .bz-limits ul { margin: 0 0 8px; padding-left: 1.2em; }
+#main .bz-limits p { margin: 0 0 12px; color: var(--dim); }
+
+@media (min-width: 481px) {
+  #main .bz-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  #main .bz-grid { grid-template-columns: minmax(0, 15fr) minmax(0, 13fr); gap: 40px; }
+  #main .bz-out { position: sticky; top: 88px; }
+}
+@media (max-width: 720px) {
+  /* 휴대폰: 분양가 ±10%는 세 장을 위아래로, 한 장은 이름·몫·비례율 한 줄 */
+  #main .bz-sens { grid-template-columns: minmax(0, 1fr); }
+  #main .bz-sens li { grid-template-columns: 7.5em minmax(0, 1fr); column-gap: 12px; }
+  #main .bz-sens li b { grid-row: span 2; align-self: center; }
+  #main .bz-big { font-size: 36px; }
+}

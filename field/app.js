@@ -773,7 +773,7 @@
         const target = [...$("targets").querySelectorAll("input")].find((el) => el.value === r.target);
         if (target) { target.checked = true; $("targets").dispatchEvent(new Event("change")); }
         if (!pos) { $("jibun").value = r.jibun || ""; $("pnu").value = r.pnu || ""; }
-        $("visitBox").open = true; $("visitOn").checked = true; $("visitOn").dispatchEvent(new Event("change"));
+        $("moreBox").open = true; $("visitOn").checked = true; $("visitOn").dispatchEvent(new Event("change"));   // 관찰 조건 칸은 접힌 '더 남기기' 안에 있다(index.html moreBox)
         const [today, hm] = D.localDate(new Date(), true).split(" ");   // 기기 시계로 날짜·시작만 채운다. 구간·방식·날씨는 이전 기록에서 채우지 않는다
         if (!$("visit-date").value) $("visit-date").value = today;
         if (!$("visit-start").value) $("visit-start").value = hm;

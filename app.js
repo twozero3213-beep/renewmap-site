@@ -18,6 +18,10 @@
     if (el && el.tagName === 'A') track(el.dataset.track);
   });
 
+  // 소개(2026-11-19): 휴대폰에서는 질문 아홉 개를 '자주 묻는 질문' 하나로 접는다(접이가 줄줄이 이어지지 않게). #faq로 오면 연 채로 둔다
+  var faq = document.querySelector('details.faq-all');
+  if (faq && window.matchMedia && window.matchMedia('(max-width: 720px)').matches && location.hash !== '#faq') faq.open = false;
+
   var form = document.querySelector('form.contact');
   if (!form) return;
   var err = form.querySelector('.form-error');
@@ -149,7 +153,8 @@
       return;
     }
     var inquiry = draft();
-    status.textContent = '메일 앱 열기를 요청했습니다. 메일 앱에서 직접 보내야 합니다. 이 화면에서는 발송·접수 여부를 확인할 수 없습니다.';
+    // 감사 화면(thanks.html)과 같은 조건 문장: 메일 앱이 열렸다면 보내기까지 눌러야 접수된다
+    status.textContent = '메일 앱 열기를 요청했습니다. 메일 앱이 열렸다면 메일 보내기 버튼까지 직접 눌러야 보내집니다. 열리지 않았다면 문의 초안을 복사하거나 TXT로 저장해 ' + form.dataset.mailto + '로 보내 주세요. 이 화면에서는 발송·접수 여부를 확인할 수 없습니다.';
     try {
       location.href = 'mailto:' + form.dataset.mailto + '?subject=' + encodeURIComponent(inquiry.subject) + '&body=' + encodeURIComponent(inquiry.body);
       track('form_draft_open');

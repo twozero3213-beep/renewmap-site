@@ -343,11 +343,6 @@
     app.querySelectorAll('[data-delay]').forEach(x => { x.style.transitionDelay = x.dataset.delay + 'ms'; });
     app.querySelectorAll('[data-bg]').forEach(x => { x.style.background = x.dataset.bg; });
     if (v.kind === 'dong' && state.view === 'map') drawMap(v); else dropMap();
-    // 고른 칩이 가로 스크롤 밖에 있으면 칩 줄만 옮긴다(페이지는 움직이지 않는다)
-    app.querySelectorAll('.dash-chips').forEach(row => {
-      const on = row.querySelector('[aria-pressed="true"]');
-      if (on) row.scrollLeft = Math.max(0, on.offsetLeft - row.offsetLeft - 24);
-    });
     const f = focusSel && app.querySelector(focusSel);
     if (f) f.focus({ preventScroll: true });
     play();

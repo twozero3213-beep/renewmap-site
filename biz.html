@@ -12,8 +12,8 @@
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="pretendard.css">
-<link rel="stylesheet" href="styles.css?v=20261114-m1">
-<link rel="stylesheet" href="site-v4.css?v=20261114-d3">
+<link rel="stylesheet" href="styles.css?v=20261119-r2">
+<link rel="stylesheet" href="site-v4.css?v=20261119-r2">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
  {"@type":"ListItem","position":1,"name":"홈","item":"./"},
@@ -22,8 +22,9 @@
 <script src="app.js" defer></script>
 <script src="site.js" defer></script>
 <script src="site-motion.js" defer></script>
-<script src="biz.js?v=20261112-audit" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261119-r1">
+<script src="biz.js?v=20261119-r2" defer></script>
+<link rel="stylesheet" href="biz.css">
+<link rel="stylesheet" href="rm6.css?v=20261119-r2">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -32,30 +33,39 @@
 <nav class="breadcrumb" aria-label="현재 위치"><ol><li><a href="./">홈</a></li><li aria-current="page">사업성 간이 계산</li></ol></nav>
 <h1>사업성 간이 계산</h1>
 <p class="label-scenario">참고용 간이 추정 · 감정평가 아님 · 투자 권유 아님 · 납품 문서에 쓰지 않음</p>
-<p>정비사업 비례율은 (종후자산 − 총사업비) ÷ 종전자산 × 100입니다.<br>
-값을 바꾸면 바로 다시 계산합니다. 이 브라우저 안에서만 계산하고 어디에도 보내지 않습니다.</p>
-<p id="bizPriceNote" class="sub">분양가 기본값은 가정값입니다. 행정동 페이지에서 들어오면 그 시·군·구 아파트 실거래 ㎡당 중위가를 넣습니다.</p>
-<form id="bizForm" class="biz-form">
-  <label>구역 면적(㎡) <input name="area" type="number" min="0" step="1" inputmode="decimal"></label>
-  <label>계획 용적률(%) <input name="far" type="number" min="0" step="1" inputmode="decimal"></label>
-  <label>전용률: 지상 연면적 중 분양 전용면적(%) · 가정 <input name="netRatio" type="number" min="0" max="100" step="1" inputmode="decimal"></label>
-  <label>분양가(전용 ㎡당, 만원) <input name="price" type="number" min="0" step="1" inputmode="decimal"></label>
-  <label>공사비(연면적 ㎡당, 만원) · 가정, 시공사 견적으로 바꾸세요 <input name="cost" type="number" min="0" step="1" inputmode="decimal"></label>
-  <label>지하 연면적(지상 대비 %) · 가정 <input name="underRatio" type="number" min="0" step="1" inputmode="decimal"></label>
-  <label>기타 사업비(공사비 대비 %) · 가정 <input name="otherRatio" type="number" min="0" step="1" inputmode="decimal"></label>
-  <label>종전자산 총액(억원) · 감정평가액을 넣으세요 <input name="before" type="number" min="0" step="0.1" inputmode="decimal"></label>
+<p class="bz-intro">정비사업 비례율은 (종후자산 − 총사업비) ÷ 종전자산 × 100입니다. 값을 바꾸면 바로 다시 계산합니다. 이 브라우저 안에서만 계산하고 어디에도 보내지 않습니다.</p>
+<!-- 2026-11-19 정리(대표 지적: 세로가 길다). 넓은 화면은 왼쪽 입력 | 오른쪽 결과 카드(따라 내려옴), 휴대폰은 입력 바로 아래 결과 -->
+<form id="bizForm" class="bz-grid">
+  <fieldset class="bz-inputs">
+    <legend class="sr-only">계산 입력값</legend>
+    <div class="bz-f bz-first"><label for="bzBefore">종전자산 총액(필수·감정평가액, 억원)</label><input id="bzBefore" name="before" type="number" min="0" step="0.1" inputmode="decimal" aria-describedby="bzBeforeHint"><p class="bz-hint" id="bzBeforeHint">감정평가액을 넣으세요.</p></div>
+    <div class="bz-fields">
+      <div class="bz-f"><label for="bzArea">구역 면적(㎡)</label><input id="bzArea" name="area" type="number" min="0" step="1" inputmode="decimal"></div>
+      <div class="bz-f"><label for="bzFar">계획 용적률(%)</label><input id="bzFar" name="far" type="number" min="0" step="1" inputmode="decimal"></div>
+      <div class="bz-f"><label for="bzNet">전용률(%)</label><input id="bzNet" name="netRatio" type="number" min="0" max="100" step="1" inputmode="decimal" aria-describedby="bzNetHint"><p class="bz-hint" id="bzNetHint">지상 연면적 중 분양 전용면적 · 가정</p></div>
+      <div class="bz-f"><label for="bzPrice">분양가(전용 ㎡당, 만원)</label><input id="bzPrice" name="price" type="number" min="0" step="1" inputmode="decimal" aria-describedby="bizPriceNote"></div>
+      <div class="bz-f"><label for="bzCost">공사비(연면적 ㎡당, 만원)</label><input id="bzCost" name="cost" type="number" min="0" step="1" inputmode="decimal" aria-describedby="bzCostHint"><p class="bz-hint" id="bzCostHint">가정, 시공사 견적으로 바꾸세요</p></div>
+      <div class="bz-f"><label for="bzUnder">지하 연면적(지상 대비 %)</label><input id="bzUnder" name="underRatio" type="number" min="0" step="1" inputmode="decimal" aria-describedby="bzUnderHint"><p class="bz-hint" id="bzUnderHint">가정</p></div>
+      <div class="bz-f"><label for="bzOther">기타 사업비(공사비 대비 %)</label><input id="bzOther" name="otherRatio" type="number" min="0" step="1" inputmode="decimal" aria-describedby="bzOtherHint"><p class="bz-hint" id="bzOtherHint">가정</p></div>
+    </div>
+    <p id="bizPriceNote" class="bz-hint">분양가 기본값은 가정값입니다. 행정동 페이지에서 들어오면 그 시·군·구 아파트 실거래 ㎡당 중위가를 넣습니다.</p>
+  </fieldset>
+  <section class="bz-out" aria-labelledby="bzTitle">
+    <h2 class="bz-k" id="bzTitle">추정 비례율</h2>
+    <div id="bizOut" role="region" aria-label="사업성 계산 결과" aria-live="polite"></div>
+    <div class="rm-note bz-limits">
+      <details><summary>감정평가가 아닌 단순 계산입니다. 한계와 시세 출처 <span class="bz-more">ⓘ 자세히</span></summary>
+      <ul>
+      <li>종전자산은 감정평가법인이 정합니다. 리뉴맵은 감정평가를 하지 않습니다(감정평가 및 감정평가사에 관한 법률).</li>
+      <li>공사비·전용률·지하 비율·기타 사업비 기본값은 출처 없는 가정입니다. 실제 견적과 정비계획으로 바꿔 넣으세요.</li>
+      <li>분양가 기본값은 기존 아파트 매매 실거래 중위가(시·군·구, 전용면적 기준)이고, 신축 분양가와 다릅니다.</li>
+      <li>조합원·일반 분양 구분, 임대주택, 기부채납, 금융비용 시점, 세금은 넣지 않은 단순 계산입니다.</li>
+      </ul>
+      <p>시세 출처: 국토교통부 아파트 매매 실거래가 자료(공공데이터포털 15126469, 이용허락범위 제한 없음).</p>
+      </details>
+    </div>
+  </section>
 </form>
-<h2>결과</h2>
-<div id="bizOut" class="table-wrap" tabindex="0" role="region" aria-label="사업성 계산 결과" aria-live="polite"></div>
-<h2>한계</h2>
-<ul class="plain">
-<li>종전자산은 감정평가법인이 정합니다. 리뉴맵은 감정평가를 하지 않습니다(감정평가 및 감정평가사에 관한 법률).</li>
-<li>공사비·전용률·지하 비율·기타 사업비 기본값은 출처 없는 가정입니다. 실제 견적과 정비계획으로 바꿔 넣으세요.</li>
-<li>분양가 기본값은 기존 아파트 매매 실거래 중위가(시·군·구, 전용면적 기준)이고, 신축 분양가와 다릅니다.</li>
-<li>조합원·일반 분양 구분, 임대주택, 기부채납, 금융비용 시점, 세금은 넣지 않은 단순 계산입니다.</li>
-</ul>
-<p class="sub">시세 출처: 국토교통부 아파트 매매 실거래가 자료(공공데이터포털 15126469, 이용허락범위 제한 없음).</p>
-<p class="actions"><a class="btn ghost" href="rank.html">동네 순위</a></p>
 </main>
 <footer><div class="wrap"><div class="links"><p><b>도구</b><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="time4d.html">건물 4D</a><a href="box.html">보관함</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%EC%88%AB%EC%9E%90%20%EC%98%A4%EB%A5%98%20%EC%8B%A0%EA%B3%A0">숫자 오류 신고</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 상담</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 끄기</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 </body>

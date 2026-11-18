@@ -2,62 +2,76 @@
 .rank-page .page { min-width: 0; }
 .rank-page .pg-band .breadcrumb { font-size: 15px; }
 .rank-page .pg-band .label-scenario { max-width: 100%; margin: 0; padding: 4px 8px; line-height: 1.5; }
-.rank-page .pg-band .rank-intro { margin: 8px 0 0; font-size: 16px; line-height: 1.6; }
-/* R1 8: 조건 셋과 '우리 동네 몇 위?'를 한 줄(넓은 화면 4칸). 두 폼은 그대로 두고 칸만 한 격자에 세운다 */
-.rank-page .rank-bar { display: grid; grid-template-columns: minmax(0, 1.3fr) repeat(2, minmax(0, 1fr)) minmax(0, 1.4fr); gap: 12px; align-items: end; margin: 0 0 8px; }
+.rank-page .pg-band .rank-intro, .rank-page .rank-intro { max-width: none; margin: 8px 0 0; font-size: 15px; line-height: 1.6; color: var(--dim); }
+/* 조건 한 줄(2026-11-19): [점수 종류][시·도][시·군·구][우리 동네 + 찾기]. 두 폼은 그대로 두고 칸만 한 격자에 세운다 */
+.rank-page .rank-bar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: end; margin: 0 0 8px; }
 .rank-page .rank-bar .rank-form { display: contents; }
-.rank-page .rank-bar .rank-find { margin: 0; padding: 0; border: 0; background: none; max-width: none; }
-.rank-page .rank-bar .rank-find label { font-size: 15px; font-weight: 400; color: var(--dim); margin-bottom: 6px; }
+.rank-page .rank-bar .rank-find { grid-column: 1 / -1; margin: 0; padding: 0; border: 0; background: none; max-width: none; }
+.rank-page .rank-bar .rank-find label { font-size: 15px; font-weight: 400; color: var(--dim); line-height: 20px; margin-bottom: 4px; }
 .rank-page .rank-form label, .rank-page .rank-form select { min-width: 0; }
 .rank-page .rank-form label { display: grid; gap: 4px; font-size: var(--t-sub); line-height: 20px; }   /* 라벨 한 줄 + 칸 48 = 72(R2 7) */
-.rank-page .rank-bar .rank-find label { line-height: 20px; margin-bottom: 4px; }
-/* R5 9: 위 label{display:grid}가 확인란에도 걸려 상자가 글 위 가운데에 뜨고 줄 높이 13px였다 → 상자는 글 왼쪽, 누르는 칸은 44px */
+/* 휴대폰: 첫 줄 [점수 종류][낮은 점수부터], 둘째 줄 [시·도][시·군·구] */
+.rank-page .rank-form label.rank-asc { grid-column: 2; grid-row: 1; }
+/* R5 9: 위 label{display:grid}가 확인란에도 걸려 상자가 글 위 가운데에 떴다 → 상자는 글 왼쪽, 누르는 칸은 44px. 넓은 화면은 표 머리 정렬 단추가 대신한다 */
 .rank-page .rank-form label.rank-asc { display: flex; align-items: center; gap: 10px; min-height: 44px; }
 .rank-page .rank-form label.rank-asc input { width: 22px; height: 22px; flex: none; margin: 0; }
 .rank-page .rank-form select { font-size: 16px; }
-.rank-page #rankMsg { margin: 12px 0 4px; font-weight: 600; }
+.rank-page #rankMsg { margin: 8px 0 6px; font-weight: 600; }
 .rank-page #rankSens { margin: 8px 0 12px; font-size: 15px; line-height: 1.6; }
 .rank-page #rankSens:empty { display: none; }
 .rank-page .rank-table-help { margin: 8px 0; color: var(--dim); font-size: 15px; line-height: 1.6; }
-.rank-page .rank-table-note { margin: 12px 0 0; color: var(--dim); font-size: 15px; line-height: 1.6; }
+.rank-page .rank-table-note { margin: 0 0 8px; color: var(--dim); font-size: 15px; line-height: 1.6; }
 .rank-page #rankOut { min-width: 0; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
 .rank-page table.rank-table { min-width: 63rem; table-layout: fixed; font-size: 15px; }
-.rank-page table.rank-table caption { caption-side: top; padding: 0 0 12px; color: var(--dim); font-size: 15px; line-height: 1.6; text-align: left; white-space: normal; }
-.rank-page table.rank-table th, .rank-page table.rank-table td { padding: 8px 10px; }
+/* 캡션은 표 아래 한 줄(제목·범위 뜻·단위) + '읽는 법'. 첫 줄이 위로 올라온다 */
+.rank-page table.rank-table caption { caption-side: bottom; padding: 8px 0 0; color: var(--dim); font-size: 15px; line-height: 1.6; text-align: left; white-space: normal; }
+.rank-page table.rank-table caption small { font-size: 15px; }
+.rank-page table.rank-table caption .rank-how { display: inline-flex; align-items: center; min-height: 32px; margin: 0; padding: 0 2px; font-weight: 600; }
+.rank-page table.rank-table th, .rank-page table.rank-table td { padding: 4px 10px; }
 .rank-page table.rank-table th { vertical-align: bottom; line-height: 1.4; white-space: normal; overflow-wrap: break-word; }
 .rank-page table.rank-table th:not(:nth-child(2)), .rank-page table.rank-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .rank-page table.rank-table th:nth-child(1) { width: 4rem; }
-.rank-page table.rank-table th:nth-child(2) { width: auto; text-align: left; }   /* 남는 폭은 동 이름 칸이 받는다('순위 범위' 칸이 늘어나지 않게) */
+.rank-page table.rank-table th:nth-child(2) { width: 12.5rem; text-align: left; }   /* 행정동 약 200px, 나머지 칸이 남는 폭을 나눈다 */
 .rank-page table.rank-table th:nth-child(3) { width: 7rem; }
-.rank-page table.rank-table th:nth-child(4) { width: 7.5rem; }   /* '순위 범위' 열 120px(R2 7: 215px로 넓었다) */
-.rank-page table.rank-table th:nth-child(n+5):nth-child(-n+8) { width: 5rem; }
-.rank-page table.rank-table th:nth-child(9) { width: 9rem; }
-.rank-page table.rank-table th small { font-size: 13px; font-weight: 400; }
+.rank-page table.rank-table th:nth-child(4) { width: 7.5rem; }
 .rank-page table.rank-table td { vertical-align: middle; }
 .rank-page table.rank-table td:nth-child(2) { white-space: normal; overflow-wrap: anywhere; }
-.rank-page table.rank-table td:nth-child(2) a { display: flex; align-items: center; min-height: 44px; line-height: 1.5; }
-.rank-page .list-pages { margin: 12px 0; }
+/* 줄 높이 약 33px(동 링크 24 + 위아래 4). 1440×900 첫 화면에 12줄 이상(WCAG 2.5.8 최소 24px) */
+.rank-page table.rank-table td:nth-child(2) a { display: flex; align-items: center; min-height: 24px; margin: 0; padding: 0; line-height: 1.4; }
+/* 점수 열 머리 = 정렬 단추 */
+.rank-page .rank-sort { display: inline-flex; align-items: flex-end; justify-content: flex-end; gap: 2px; width: 100%; min-height: 44px; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 700; text-align: right; cursor: pointer; }
+.rank-page .rank-sort:hover { color: var(--green); }
+.rank-page th.rank-score { padding-top: 0; padding-bottom: 0; }
+/* 쪽 넘김 + 다음 할 일 한 줄 */
+.rank-page .rank-pagerow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin: 8px 0 0; }
+.rank-page .rank-pagerow .actions { order: 2; display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.rank-page .rank-pagerow .rank-methods { order: 1; }
+.rank-page .rank-pagerow .rank-methods[open] { order: 3; flex: 1 1 100%; }
+.rank-page .rank-pagerow details.rank-methods { border-top: 0; margin: 0; width: auto; }
+.rank-page .list-pages { margin: 0; }
 .rank-page .list-pages button, .rank-page .list-pages select { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); background: var(--card); color: var(--ink); font: inherit; font-size: 16px; }
+/* '1 / 11쪽'은 단추처럼 보이지 않게 글자로(쪽 고르기 기능은 그대로) */
+.rank-page .list-pages select { border-color: transparent; background: none; padding: 8px 4px; cursor: pointer; }
+.rank-page .list-pages select:hover { border-color: var(--line); }
 .rank-page .list-pages button:not(:disabled):hover { background: var(--soft); color: var(--green); }
 .rank-page .list-pages button:disabled { background: var(--off-bg); color: var(--off-ink); cursor: not-allowed; }
-.rank-page .list-pages [role="status"] { color: var(--dim); }
-.rank-page .rank-methods { margin: 24px 0 0; padding: 4px 16px; font-size: 16px; line-height: 1.7; }
-.rank-page .rank-methods summary { min-height: 44px; padding: 10px 0; }
+.rank-page .rank-methods { margin: 12px 0 0; font-size: 16px; line-height: 1.7; }
 .rank-page .rank-methods h2 { margin: 20px 0 8px; }
 .rank-page .rank-methods p { margin: 8px 0; }
 .rank-page .rank-methods .sub { margin: 16px 0 12px; font-size: 15px; }
 .rank-page .rank-methods code { overflow-wrap: anywhere; }
-@media (max-width: 960px) { .rank-page .rank-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); } .rank-page .rank-bar .rank-find { grid-column: 1 / -1; } }
-@media (max-width: 640px) {
-  .rank-page .rank-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .rank-page .rank-form label:first-child { grid-column: 1 / -1; }
-  .rank-page table.rank-table { min-width: 56rem; }
-  .rank-page table.rank-table th:nth-child(1) { width: 3.25rem; }
-  .rank-page table.rank-table th:nth-child(2) { width: 8.5rem; }
-  .rank-page table.rank-table th:nth-child(3) { width: 5.5rem; }
+@media (min-width: 721px) {
+  .rank-page .rank-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rank-page .rank-form label.rank-asc { grid-column: auto; grid-row: auto; }
 }
-@media (min-width: 1160px) {
+/* 넓은 화면: 조건 넷이 한 줄, 표는 옆으로 밀지 않고 폭에 맞춘다 */
+@media (min-width: 1024px) {
+  .rank-page .rank-bar { grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr)) minmax(0, 1.5fr); }
+  .rank-page .rank-bar .rank-find { grid-column: auto; }
+  .rank-page .rank-form label.rank-asc { display: none; }
+  .rank-page table.rank-table { min-width: 0; width: 100%; }
   .rank-page .rank-table-help { display: none; }
+  .rank-page .rank-pagerow .actions { margin-left: auto; }
 }
 /* v9 휴대폰: 넓은 표를 밀어야 '무게를 바꾼 순위 범위'가 보였다 → 순위·동·점수·범위 네 칸만 화면에 맞추고, 세부 점수는 동 페이지에서 본다 */
 @media (max-width: 720px) {
@@ -65,14 +79,13 @@
   .rank-page table.rank-table th:nth-child(n+5), .rank-page table.rank-table td:nth-child(n+5) { display: none; }
   .rank-page table.rank-table th:nth-child(1) { width: 3rem; }
   .rank-page table.rank-table th:nth-child(2) { width: auto; }
-  .rank-page table.rank-table th:nth-child(3) { width: 4.5rem; }
+  .rank-page table.rank-table th:nth-child(3) { width: 5rem; }
   .rank-page table.rank-table th:nth-child(4) { width: 5.5rem; }
-  .rank-page table.rank-table th, .rank-page table.rank-table td { padding: 8px 6px; }
+  .rank-page table.rank-table th, .rank-page table.rank-table td { padding: 4px 6px; }
+  .rank-page table.rank-table th:nth-child(3) { width: 5.5rem; }
+  .rank-page table.rank-table td:nth-child(2) a { min-height: 28px; }
 }
-/* R1 8: 1440×900 첫 화면에 표 6줄 이상. 행정동 링크가 이미 44px라 칸 위아래 여백과 rm6.css의 표 링크 여백을 겹치지 않는다 */
 .rank-page .pg-band { padding-bottom: 12px; margin-bottom: 16px; }
-.rank-page table.rank-table th, .rank-page table.rank-table td { padding-top: 4px; padding-bottom: 4px; }
-.rank-page table.rank-table td a { padding: 0; }
 
-/* R3 1: 표는 점수 파일을 받은 뒤 그려서 아래 설명·꼬리글이 통째로 밀렸다(CLS 0.18~0.3). 첫 줄이 오기 전 높이를 먼저 잡는다(표 실측 841px) */
+/* R3 1: 표는 점수 파일을 받은 뒤 그려서 아래 설명·꼬리글이 통째로 밀렸다(CLS 0.18~0.3). 첫 줄이 오기 전 높이를 먼저 잡는다 */
 #rankOut { min-height: 640px; }

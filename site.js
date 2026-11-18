@@ -5,6 +5,8 @@
   const inField = /\/field\//.test(location.pathname);
   const nested = inField || /\/dong\//.test(location.pathname);
   const atHome = !nested && /(?:\/|\/index\.html)$/.test(location.pathname);
+  // 404.html은 어느 깊이의 없는 주소에서도 같은 글로 열린다 → 상대 경로 대신 body data-base(절대 경로)를 쓰고, 지금 위치 표시는 하지 않는다
+  const fixedBase = document.body?.dataset?.base;
   if (atHome && /^#(?:find|gov|report|map(?:\/|$))/.test(location.hash)) {
     location.replace('explore.html' + location.hash);
     return;
@@ -21,7 +23,7 @@
   }
   // 주 메뉴 4개(redesign 4장): 찾기·업무별·현장·보관함. 모든 화면에서 같은 이름·순서. 현장 화면은 한 단계 아래 폴더라 앞에 ../를 붙인다
   if (typeof document.createElement === 'function' && document.body && !document.querySelector('.tabbar')) {
-    const base = nested ? '../' : '';
+    const base = fixedBase || (nested ? '../' : '');
     const ico = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
     const here = location.pathname + location.hash;
     // v7(2026-11-13): 머리 메뉴와 같은 이름·순서(평가: 위는 '동네 찾기·현장 기록', 아래는 '지도·현장'이라 다른 곳인 줄 알았다). 홈은 로고로 간다
@@ -32,7 +34,7 @@
       ['field/', '현장 기록', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],
       ['box.html', '보관함', 'M3 8h18v12H3zM3 8l2-4h14l2 4M9 13h6', /box\.html$/],
     ];
-    const current = tabs.findIndex(t => t[3].test(here));
+    const current = fixedBase ? -1 : tabs.findIndex(t => t[3].test(here));
     const nav = document.createElement('nav');
     nav.className = 'tabbar';
     nav.setAttribute('aria-label', '주 메뉴');
@@ -49,8 +51,8 @@
   // HTML에 적힌 옛 메뉴는 자바스크립트가 없을 때를 위해 남기고 rm6.css가 숨긴다
   const header = document.querySelector('header.top .wrap');
   if (header && !header.querySelector('.rm-nav')) {
-    const base = nested ? '../' : '';
-    const path = location.pathname;
+    const base = fixedBase || (nested ? '../' : '');
+    const path = fixedBase ? '' : location.pathname;
     const items = [['explore.html', '동네 찾기', /explore\.html$|\/dong\//], ['rank.html', '동네 순위', /rank\.html$/], ['programs.html', '재생 사업', /programs\.html$/],
       ['field/redev.html', '구역 계산', /\/field\/redev\.html$/], ['field/', '현장 기록', /\/field\/(?:index\.html)?$/]];
     const nav = document.createElement('nav');
@@ -136,7 +138,7 @@
 
 // 현장 화면 직행과 홈 복귀 모두 기존 오프라인 판의 갱신을 확인한다. 기록 저장소는 건드리지 않는다.
 (function () {
-  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator) || !document.currentScript?.src) return;
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator) || !document.currentScript?.src || document.body?.dataset?.base) return;   // 404(data-base)는 현장 주소 아래에서 열려도 오프라인 판을 다루지 않는다
   const sw = navigator.serviceWorker, scope = new URL('field/', document.currentScript.src);
   const inField = location.pathname.startsWith(scope.pathname);
   const home = new URL('./', document.currentScript.src).pathname;

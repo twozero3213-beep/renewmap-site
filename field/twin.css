@@ -18,7 +18,7 @@
 .twin #modelInfo { overflow-wrap: anywhere; }
 .twin :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .twin #globe button,.city3d-map button { width: auto; min-height: 0; margin: 0; padding: 0; }
-.twin #globe .cesium-credit-textContainer { font-size: 13px; }
+.twin #globe .cesium-credit-textContainer { font-size: var(--t-cap); }
 @media(max-width: 800px) { .twin-layout { display: block; } .twin-map { position: static; } #globe { height: 360px; } .city3d-map { height: 520px; } .twin-editor { margin-top: 24px; } .twin header.top .wrap { gap: 16px; } }
 /* 2026-11-12: 현재 건물 3D 보기 — 보기 단추 줄·불러오는 중 표시·지도 높이(회의 "조감도 잘 보이게")
    지도 높이를 화면 높이에 맞춰 키운다(480px 고정 → 화면의 70%, 480~760px). 조감도는 가로세로가 넉넉해야 동네가 한눈에 들어온다 */

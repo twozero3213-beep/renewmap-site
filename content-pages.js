@@ -41,7 +41,8 @@
     const from = root.dataset && root.dataset.foldFrom !== undefined ? Number(root.dataset.foldFrom) : -1;
     if (from >= 0) { fold(list.slice(from), doc); return null; }   // 접는 칸 목록이 곧 차례라 차례를 따로 달지 않는다
     // 표가 곧 차례인 쪽(재생 사업: 비교표가 사업마다 링크)은 차례를 따로 만들지 않는다(v7 6회차: 밑줄 링크 10개가 표를 770px 아래로 밀었다)
-    if (list.length < 3 || 'noToc' in root.dataset) return null;
+    // 2026-11-19: 근거 세 쪽(데이터 출처·기준 원문 대조·근거 읽는 법)은 탭 줄(.rm-subnav)이 이미 맨 위에 있어 차례가 두 줄째 메뉴로 보였다
+    if (list.length < 3 || 'noToc' in root.dataset || doc.querySelector?.('.rm-subnav')) return null;
     const nav = doc.createElement('nav'), ol = doc.createElement('ol');
     nav.className = 'cp-toc'; nav.setAttribute('aria-label', '이 쪽의 차례');
     list.forEach(s => {

@@ -13,8 +13,8 @@
 <meta name="ga-id" content="">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="pretendard.css">
-<link rel="stylesheet" href="styles.css?v=20261114-m1">
-<link rel="stylesheet" href="site-v4.css?v=20261114-d3">
+<link rel="stylesheet" href="styles.css?v=20261119-r2">
+<link rel="stylesheet" href="site-v4.css?v=20261119-r2">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
  {"@type":"ListItem","position":1,"name":"홈","item":"./"},
@@ -23,9 +23,9 @@
 <script src="app.js" defer></script>
 <script src="site.js" defer></script>
 <script src="site-motion.js" defer></script>
-<link rel="stylesheet" href="content-pages.css?v=20261113-d2">
-<script src="content-pages.js?v=20261114-m1" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261119-r1">
+<link rel="stylesheet" href="content-pages.css?v=20261119-r2">
+<script src="content-pages.js?v=20261119-r2" defer></script>
+<link rel="stylesheet" href="rm6.css?v=20261119-r2">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -81,20 +81,20 @@
 
 <h2>3. 처리 위탁과 외부 서비스</h2>
 <p>현재 실제로 쓰는 것만 적습니다.</p>
-<div class="table-wrap" tabindex="0" role="region" aria-label="처리 위탁과 외부 서비스 표"><table class="wide">
+<div class="table-wrap" tabindex="0" role="region" aria-label="처리 위탁과 외부 서비스 표"><table class="wide rm-stack">
 <thead><tr><th scope="col">수탁자·서비스</th><th scope="col">업무</th><th scope="col">이전되는 항목</th><th scope="col">이전 국가·시기·방법</th></tr></thead>
 <tbody>
-<tr><td>Google LLC (Gmail)</td><td>상담 이메일 송수신·보관</td><td>폼 항목 전부</td><td>미국, 메일 발송 시, 네트워크 전송</td></tr>
-<tr><td>GitHub, Inc. (GitHub Pages)</td><td>웹사이트 호스팅, 접속 기록</td><td>접속 IP, 요청 정보</td><td>미국, 접속 시</td></tr>
-<tr><td>Supabase (리뉴맵 전용 공동 보관)</td><td>이메일 로그인, 과업별 접근 권한, 불변 이력·파일 보관</td><td>로그인 이메일·계정 ID, 이용자가 서버 보관을 누른 과업·증거 파일, 역할 변경·저장 계정·시각, 인증·접속 기록</td><td>과업 데이터베이스는 대한민국(AWS 서울 리전). 로그인·조회·서버 보관 시 HTTPS 전송. 인증 메일 등 사업자의 부가 처리 위치는 별도 확인 대상</td></tr>
-<tr><td>Cloudflare cdnjs (Leaflet)</td><td>지도 라이브러리 전송</td><td>접속 IP</td><td>해당 사업자 서버, 접속 시</td></tr>
-<tr><td>핵클 (Hackle, 수집 중지)</td><td>기존 방문 분석 기록의 확인·삭제 요청</td><td>기기 식별 값·페이지 주소·행동 등 기존 전송 기록. 실제 보관 범위 확인 필요</td><td>2026-11-17 신규 수집 중지. 기존 기록의 처리 위치·삭제 여부 확인 필요</td></tr>
-<tr><td>jsDelivr (Cesium 3D 엔진 전송)</td><td>건물 3D 화면의 3D 엔진 라이브러리 전송</td><td>접속 IP</td><td>해당 사업자 서버, 건물 3D 화면 열람 시</td></tr>
-<tr><td>OpenStreetMap 타일 서버</td><td>지도 이미지</td><td>접속 IP</td><td>OSMF 서버, 지도 열람 시</td></tr>
-<tr><td>네이버클라우드 (NAVER Maps)</td><td>동네 찾기 화면의 바탕지도</td><td>접속 IP, 보고 있는 지도 범위</td><td>대한민국, 지도 열람 시</td></tr>
-<tr><td>OpenFreeMap 타일 서버</td><td>건물 나이 4D 화면의 바탕지도</td><td>접속 IP, 보고 있는 지도 범위</td><td>해당 사업자 서버, 4D 화면 열람 시</td></tr>
-<tr><td>Mapterhorn 지형 타일 서버</td><td>건물 나이 4D 화면의 산·언덕 음영</td><td>접속 IP, 보고 있는 지도 범위</td><td>해당 사업자 서버, 4D 화면 열람 시</td></tr>
-<tr><td>국토교통부 브이월드</td><td>바탕지도(네이버 지도를 못 쓸 때), 현장 기록 화면의 배경지도(켤 때만), 건물 3D 화면(3D 지도·건물 모델)</td><td>접속 IP, 보고 있는 지도 범위(현장 배경지도는 그 근처의 대략 위치)</td><td>대한민국, 지도 열람 시</td></tr>
+<tr><td>Google LLC (Gmail)</td><td data-label="업무">상담 이메일 송수신·보관</td><td data-label="이전되는 항목">폼 항목 전부</td><td data-label="이전 국가·시기·방법">미국, 메일 발송 시, 네트워크 전송</td></tr>
+<tr><td>GitHub, Inc. (GitHub Pages)</td><td data-label="업무">웹사이트 호스팅, 접속 기록</td><td data-label="이전되는 항목">접속 IP, 요청 정보</td><td data-label="이전 국가·시기·방법">미국, 접속 시</td></tr>
+<tr><td>Supabase (리뉴맵 전용 공동 보관)</td><td data-label="업무">이메일 로그인, 과업별 접근 권한, 불변 이력·파일 보관</td><td data-label="이전되는 항목">로그인 이메일·계정 ID, 이용자가 서버 보관을 누른 과업·증거 파일, 역할 변경·저장 계정·시각, 인증·접속 기록</td><td data-label="이전 국가·시기·방법">과업 데이터베이스는 대한민국(AWS 서울 리전). 로그인·조회·서버 보관 시 HTTPS 전송. 인증 메일 등 사업자의 부가 처리 위치는 별도 확인 대상</td></tr>
+<tr><td>Cloudflare cdnjs (Leaflet)</td><td data-label="업무">지도 라이브러리 전송</td><td data-label="이전되는 항목">접속 IP</td><td data-label="이전 국가·시기·방법">해당 사업자 서버, 접속 시</td></tr>
+<tr><td>핵클 (Hackle, 수집 중지)</td><td data-label="업무">기존 방문 분석 기록의 확인·삭제 요청</td><td data-label="이전되는 항목">기기 식별 값·페이지 주소·행동 등 기존 전송 기록. 실제 보관 범위 확인 필요</td><td data-label="이전 국가·시기·방법">2026-11-17 신규 수집 중지. 기존 기록의 처리 위치·삭제 여부 확인 필요</td></tr>
+<tr><td>jsDelivr (Cesium 3D 엔진 전송)</td><td data-label="업무">건물 3D 화면의 3D 엔진 라이브러리 전송</td><td data-label="이전되는 항목">접속 IP</td><td data-label="이전 국가·시기·방법">해당 사업자 서버, 건물 3D 화면 열람 시</td></tr>
+<tr><td>OpenStreetMap 타일 서버</td><td data-label="업무">지도 이미지</td><td data-label="이전되는 항목">접속 IP</td><td data-label="이전 국가·시기·방법">OSMF 서버, 지도 열람 시</td></tr>
+<tr><td>네이버클라우드 (NAVER Maps)</td><td data-label="업무">동네 찾기 화면의 바탕지도</td><td data-label="이전되는 항목">접속 IP, 보고 있는 지도 범위</td><td data-label="이전 국가·시기·방법">대한민국, 지도 열람 시</td></tr>
+<tr><td>OpenFreeMap 타일 서버</td><td data-label="업무">건물 나이 4D 화면의 바탕지도</td><td data-label="이전되는 항목">접속 IP, 보고 있는 지도 범위</td><td data-label="이전 국가·시기·방법">해당 사업자 서버, 4D 화면 열람 시</td></tr>
+<tr><td>Mapterhorn 지형 타일 서버</td><td data-label="업무">건물 나이 4D 화면의 산·언덕 음영</td><td data-label="이전되는 항목">접속 IP, 보고 있는 지도 범위</td><td data-label="이전 국가·시기·방법">해당 사업자 서버, 4D 화면 열람 시</td></tr>
+<tr><td>국토교통부 브이월드</td><td data-label="업무">바탕지도(네이버 지도를 못 쓸 때), 현장 기록 화면의 배경지도(켤 때만), 건물 3D 화면(3D 지도·건물 모델)</td><td data-label="이전되는 항목">접속 IP, 보고 있는 지도 범위(현장 배경지도는 그 근처의 대략 위치)</td><td data-label="이전 국가·시기·방법">대한민국, 지도 열람 시</td></tr>
 </tbody></table></div>
 <p>상담 폼은 사이트 서버가 아니라 방문자의 메일 앱을 통해 팀 메일로 전달됩니다.</p>
 <p>국외 이전을 거부하실 수 있으나, 현재 모든 접수 경로(폼·직접 이메일)가 Gmail(미국)이라 거부하시면 이메일 상담을 받지 못합니다.</p>

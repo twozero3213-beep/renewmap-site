@@ -122,6 +122,12 @@
   let map = null, blds = [], fileMeta = null, year = y0 >= YEAR_FROM && y0 <= TO ? y0 : NOW, timer = null;
   const fmt = (n) => (n === null ? '-' : n.toLocaleString('ko-KR'));
 
+  // 2026-11-19: 휴대폰은 '셈하는 법' 네 항목을 접어 둔다(쪽 3,300px). 넓은 화면은 펼친 채, '셈하는 법 ↓'로 오면 연다
+  const howBody = $('t4HowBody'), wideHow = matchMedia('(min-width: 861px)');
+  const openHow = () => { howBody.open = wideHow.matches || location.hash === '#t4How'; };
+  openHow(); wideHow.addEventListener('change', openHow); addEventListener('hashchange', openHow);
+  document.querySelectorAll('a[href="#t4How"]').forEach((a) => a.addEventListener('click', () => { howBody.open = true; }));
+
   const slider = $('t4Year');
   slider.min = String(YEAR_FROM); slider.max = String(TO); slider.value = String(year);
   $('t4Ends').textContent = `${YEAR_FROM}년 ~ ${TO}년 · 올해 뒤는 지금 건물 그대로일 때`;

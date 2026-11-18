@@ -120,7 +120,7 @@ def main():
             page.locator('#taskActor').fill('합성 검사 작성자')
             for selector, value in {'taskTitle': '합성 과업 — 실제 고객 자료 아님', 'taskProgram': '합성 사업 2026', 'taskGuideline': '합성 지침 v1 https://example.test', 'taskScope': '합성 행정동 경계', 'taskRequirements': '인구 현황 | 합성 지정 자료 | 행정동'}.items():
                 page.locator('#' + selector).fill(value)
-            page.locator('#planForm button').click()
+            page.locator('#planSave:visible, #planForm > .task-save-inline:visible').click()
             page.wait_for_function('() => document.querySelector("#taskState").textContent.includes("v1")')
             page.locator('#checkForm button').click()
             page.wait_for_function('() => document.querySelector("#taskState").textContent.includes("C 입력 오류")')

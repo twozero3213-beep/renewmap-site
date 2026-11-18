@@ -39,23 +39,24 @@
   };
 
   function init(win) {
-    const doc = win.document, video = doc.querySelector('video[data-poster]');
-    if (video) {
-      // 화면 아래 시연 표지가 첫 화면 글꼴·동네 자료와 통신을 나눠 쓰지 않게 한다.
-      const showPoster = () => { video.poster = video.dataset.poster; delete video.dataset.poster; };
-      if (typeof win.IntersectionObserver === 'function') {
-        const observer = new win.IntersectionObserver(entries => {
-          if (entries.some(entry => entry.isIntersecting)) { showPoster(); observer.disconnect(); }
-        }, { rootMargin: '300px' });
-        observer.observe(video);
-      } else showPoster();
+    const doc = win.document;
+    // 56초 시연(2026-11-19): 구획 대신 단추로 여는 창. 표지와 영상 정보는 열 때 받아 첫 화면 글꼴·동네 자료와 통신을 나눠 쓰지 않는다.
+    // Esc(기본 동작)·닫기 단추·바깥 누르기로 닫고, 닫으면 영상을 멈추고 여는 단추로 돌아간다
+    const demo = doc.getElementById('h6Demo'), opener = doc.querySelector('[data-h6-demo]');
+    if (demo && opener) {
+      const video = demo.querySelector('video');
+      opener.addEventListener('click', () => {
+        if (video && video.dataset.poster) { video.poster = video.dataset.poster; delete video.dataset.poster; video.preload = 'metadata'; }
+        demo.showModal();
+      });
+      demo.addEventListener('close', () => { if (video) video.pause(); opener.focus(); });
+      demo.addEventListener('click', ev => { if (ev.target === demo) demo.close(); });   // 창 안쪽은 .h6-demo-in이 덮어 바깥(배경)만 창 자신이다
+      const close = demo.querySelector('[data-h6-close]');
+      if (close) close.addEventListener('click', () => demo.close());
     }
-    // 카드의 출처 기록 보기나 #h6Receipt 주소로 오면 접힌 기록을 연다(2026-11-18 홈 단순화)
-    const fold = doc.getElementById('h6ReceiptFold');
-    if (fold) {
-      doc.querySelectorAll('a[href="#h6Receipt"]').forEach(a => a.addEventListener('click', () => { fold.open = true; }));
-      if (win.location.hash === '#h6Receipt') fold.open = true;
-    }
+    // 휴대폰에서는 '다른 조사 도구' 링크 열한 개를 접어 둔다(넓은 화면은 펼친 한 줄, 스크립트가 없으면 펼친 채)
+    const more = doc.querySelector('details.h6-more');
+    if (more && win.matchMedia && win.matchMedia('(max-width: 720px)').matches) more.open = false;
     const form = doc.getElementById('homeSearch');
     if (!form) return;
     const input = doc.getElementById('homeQ'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg'), report = form.dataset.report || 'onepage';

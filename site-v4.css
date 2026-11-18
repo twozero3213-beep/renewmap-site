@@ -56,6 +56,6 @@ main.page:has(> .pg-band:first-child) { padding-top: 0; }
 .site-nav a:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; box-shadow: 0 0 0 5px var(--green); }
 @media (max-width: 720px) {
   .site-nav { flex: 1 0 100%; justify-content: space-between; gap: 4px; overflow: visible; }
-  .site-nav a { min-width: 44px; padding: 8px 0; font-size: 13px; }
+  .site-nav a { min-width: 44px; padding: 8px 0; font-size: var(--t-cap); }
 }
 

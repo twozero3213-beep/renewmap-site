@@ -12,22 +12,22 @@
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="pretendard.css">
-<link rel="stylesheet" href="styles.css?v=20261114-m1">
-<link rel="stylesheet" href="site-v4.css?v=20261114-d3">
-<link rel="stylesheet" href="home.css?v=20261113-d2">
-<link rel="stylesheet" href="v4.css?v=20261118-ux">
-<link rel="stylesheet" href="list-pages.css?v=20261113-d2">
+<link rel="stylesheet" href="styles.css?v=20261119-r2">
+<link rel="stylesheet" href="site-v4.css?v=20261119-r2">
+<link rel="stylesheet" href="home.css?v=20261119-r2">
+<link rel="stylesheet" href="v4.css?v=20261119-r2">
+<link rel="stylesheet" href="list-pages.css?v=20261119-r2">
 <script src="site.js" defer></script>
 <script src="site-motion.js" defer></script>
-<script src="docgen.js?v=20261119-r1" defer></script>
-<script src="field/record.js?v=20261118-panel" defer></script>
+<script src="docgen.js?v=20261119-r2" defer></script>
+<script src="field/record.js?v=20261119-r2" defer></script>
 <script src="field/store.js" defer></script>
-<script src="list-pages.js?v=20261113-d2" defer></script>
+<script src="list-pages.js?v=20261119-r2" defer></script>
 <script src="cellpack.js" defer></script>
-<script src="util.js?v=20261114-d3" defer></script>
-<script src="candidates.js?v=20261119-r1" defer></script>
-<script src="box.js?v=20261118-audit" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261119-r1">
+<script src="util.js?v=20261119-r2" defer></script>
+<script src="candidates.js?v=20261119-r2" defer></script>
+<script src="box.js?v=20261119-r2" defer></script>
+<link rel="stylesheet" href="rm6.css?v=20261119-r2">
 </head>
 <body class="app-home">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -35,39 +35,43 @@
 <main id="main" class="home box-v4">
   <nav class="breadcrumb" aria-label="현재 위치"><ol><li><a href="index.html">홈</a></li><li aria-current="page">보관함</li></ol></nav>
   <h1>보관함</h1>
-  <p class="home-sub sub">이 기기에만 저장됩니다.<br>서버로 보내지 않습니다.</p>
-  <p><a class="box-go" href="tasks.html">과업별 근거 대조·납품·최종 검토 이력 열기</a></p>
+  <!-- 2026-11-19: '이 기기에만 저장' 안내 셋(머리·검토 후보·결재 결과)을 한 줄로, 전문은 '자세히' 안에 -->
+  <div class="box-notice">
+    <p>이 기기에만 저장되고 서버로 보내지 않습니다. 브라우저 자료를 지우면 사라집니다.</p>
+    <details class="box-more"><summary>자세히</summary>
+      <p>이 기기에만 저장됩니다.<br>서버로 보내지 않습니다.</p>
+      <p>검토 단계는 업무 메모이며 법정 승인·현장 확인 상태가 아닙니다.<br>이 기기에만 저장되며 브라우저 자료를 지우면 사라집니다.<br>메모에 소유자 등 개인정보를 적지 마세요.</p>
+      <p>결과는 이 기기에만 저장되며 담당자 신원·실제 결정일·전자서명 인증을 대신하지 않습니다.</p>
+    </details>
+    <p class="box-top-link"><a class="box-go" href="tasks.html">과업별 근거 대조·납품·최종 검토 이력 열기</a></p>
+  </div>
   <div id="boxStats" class="v4-stats" aria-live="polite"></div>
-  <section data-candidates aria-labelledby="candidatesTitle">
+  <div class="box-grid">
+  <section class="box-card box-cands" data-candidates aria-labelledby="candidatesTitle">
     <h2 id="candidatesTitle">검토 후보</h2>
-    <p class="home-note">지도에서 고른 동과 저장 당시 근거를 모읍니다.<br>검토 단계는 업무 메모이며 법정 승인·현장 확인 상태가 아닙니다.<br>이 기기에만 저장되며 브라우저 자료를 지우면 사라집니다.<br>메모에 소유자 등 개인정보를 적지 마세요.</p>
+    <p class="home-note">지도에서 고른 동과 저장 당시 근거를 모읍니다.</p>
     <ul id="candidateList" class="box-list" data-candidate-list></ul>
-    <p class="pg-acts"><button type="button" class="btn ghost" data-candidate-csv disabled>후보 근거 CSV 받기</button> <button type="button" class="btn ghost" data-candidate-xlsx disabled>고른 후보 비교 XLSX 받기</button></p>
+    <p class="pg-acts" data-candidate-acts hidden><button type="button" class="btn ghost" data-candidate-csv disabled>후보 근거 CSV 받기</button> <button type="button" class="btn ghost" data-candidate-xlsx disabled>고른 후보 비교 XLSX 받기</button></p>
     <p data-candidate-msg role="status"></p>
-    <details><summary>고른 후보 나란히 비교(2~3곳)</summary><div data-candidate-compare></div></details>
+    <details data-candidate-fold hidden><summary>고른 후보 나란히 비교(2~3곳)</summary><div data-candidate-compare></div></details>
     <p><a class="box-go" href="about.html#contact">후보 동의 유료 파일럿 견적 상담</a></p>
   </section>
-  <div class="box-cols">
-    <section aria-labelledby="docsTitle"><h2 id="docsTitle">받은 문서</h2>
-    <ul id="docs" class="box-list" aria-live="polite"><li class="skel" aria-hidden="true"></li></ul></section>
-    <section aria-labelledby="recsTitle"><h2 id="recsTitle">현장 기록</h2>
+  <div class="box-side">
+    <section class="box-card" aria-labelledby="docsTitle"><h2 id="docsTitle">받은 문서</h2>
+    <ul id="docs" class="box-list" aria-live="polite"><li class="skel" aria-hidden="true"></li></ul>
+    <p class="box-card-link"><a href="docs.html">가진 파일 열기</a></p></section>
+    <section class="box-card" aria-labelledby="recsTitle"><h2 id="recsTitle">현장 기록</h2>
     <ul id="recs" class="box-list" aria-live="polite"><li class="skel" aria-hidden="true"></li></ul></section>
+    <section class="box-card outcome-sum" aria-labelledby="outcomeTitle">
+      <h2 id="outcomeTitle">결재 결과 자가 기록</h2>
+      <p id="outcomeSum" aria-live="polite"></p>
+      <p class="hint">정확한 파일 버전과 검토 증빙은 <a href="tasks.html">과업·납품</a>에서 연결하세요.</p>
+      <p class="hint" id="outcomeExpNote" hidden>동의한 결과만, 문서 내용·위치 없이 아래 단추로 받아 리뉴맵에 직접 보낼 수 있습니다.</p>
+      <button type="button" id="outcomeExp" class="ghost" hidden>개선용 결과 내보내기(<abbr title="한 줄에 기록 하나씩 담은 JSON">JSONL</abbr>)</button>
+    </section>
   </div>
-  <section class="outcome-sum" aria-labelledby="outcomeTitle">
-    <h2 id="outcomeTitle">결재 결과 자가 기록</h2>
-    <p id="outcomeSum" aria-live="polite"></p>
-    <p class="hint">결과는 이 기기에만 저장되며 담당자 신원·실제 결정일·전자서명 인증을 대신하지 않습니다.<br>정확한 파일 버전과 검토 증빙은 <a href="tasks.html">과업·납품</a>에서 연결하세요.<br>동의한 결과만, 문서 내용·위치 없이 아래 단추로 받아 리뉴맵에 직접 보낼 수 있습니다.</p>
-    <button type="button" id="outcomeExp" class="ghost">개선용 결과 내보내기(<abbr title="한 줄에 기록 하나씩 담은 JSON">JSONL</abbr>)</button>
-  </section>
+  </div>
   <p id="boxMsg" class="home-msg" role="status"></p>
-  <h2>더 보기</h2>
-  <ul class="box-links">
-    <li><a href="docs.html">가진 파일 열기</a></li>
-    <li><a href="about.html">리뉴맵 소개</a></li>
-    <li><a href="ethics.html">데이터 원칙</a></li>
-    <li><a href="privacy.html">개인정보 처리방침</a></li>
-    <li><a href="about.html#contact">도입 문의</a></li>
-  </ul>
 </main>
 <footer><div class="wrap"><div class="links"><p><b>도구</b><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="time4d.html">건물 4D</a><a href="box.html">보관함</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%EC%88%AB%EC%9E%90%20%EC%98%A4%EB%A5%98%20%EC%8B%A0%EA%B3%A0">숫자 오류 신고</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 상담</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 끄기</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 </body>

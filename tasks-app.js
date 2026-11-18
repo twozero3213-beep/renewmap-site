@@ -70,7 +70,7 @@
     busy = true;
     const controls = [
       ...document.querySelectorAll(
-        "form button,form input,form select,form textarea,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#handoverTask,#downloadHandover,#restoreTask,#restoreFile,#taskWork button,#taskWork input,#taskWork select,#taskWork textarea",
+        "form button,form input,form select,form textarea,#planSave,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#handoverTask,#downloadHandover,#restoreTask,#restoreFile,#taskWork button,#taskWork input,#taskWork select,#taskWork textarea",
       ),
     ];
     const prev = controls.map((b) => b.disabled);   // 끝나면 원래 상태로 되돌린다(처리 전부터 꺼 둔 단추를 켜지 않는다)

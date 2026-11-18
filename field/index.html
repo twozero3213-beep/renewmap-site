@@ -29,7 +29,7 @@
 <link rel="stylesheet" href="../list-pages.css">
 <link rel="stylesheet" href="../rm6.css">
 </head>
-<body class="field">
+<body class="field fr-record">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="top"><div class="wrap"><a class="logo" href="../index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 찾기</a><a href="../rank.html">동네 순위</a><a href="../programs.html">재생 사업</a><a href="redev.html">구역 계산</a><a href="./">현장 기록</a><a href="../about.html#contact">시범 상담</a></nav></div></header>
 <p id="recBadge" class="rec-badge" role="status" hidden>업무 촬영 중입니다 · 리뉴맵 현장 기록</p>
@@ -40,16 +40,24 @@
     <p>새 자료가 있습니다.<br>저장한 기록의 숫자는 바뀌지 않습니다.</p>
     <button type="button" class="ghost" id="newDataGet">새 자료 받기</button>
   </div>
+  <!-- 2026-11-19 현장 기록 넓은 화면: 한 칸(560px)에 모두 쌓여 오른쪽이 비고 세로가 2,256px였다 → 1280px 이상은 사진·위치 | 기록 | 저장된 기록 세 칸, 1024px 이상은 두 칸(field.css .fr-grid). 휴대폰은 순서 그대로 한 칸 -->
+  <div class="fr-grid">
+  <div class="fr-col fr-shoot">
   <!-- 2026-11-18 현장 조사자 검토: 한 손으로 쓰는데 안내 두 단락이 사진 찍기를 화면 중간 아래로 밀었다 → 찍기 단추를 제목 바로 아래로 -->
   <div class="pick">
     <label class="big" for="shot">사진 찍기<input id="shot" type="file" accept="image/*" capture="environment"></label>
     <label class="ghost" for="album">앨범에서 고르기<input id="album" type="file" accept="image/*"></label>
   </div>
-  <p class="hint">사람이 찍히지 않게 건물·시설 위주로 찍어 주세요.<br>사진은 휴대폰 사진첩에 남지 않습니다.</p>
-  <!-- 2026-11-17 우지예(지원센터 담당자 인터뷰): 현장에서는 휴대폰으로 사진을 찍고 메모한 뒤 사무실에 돌아와 다시 입력한다고 했다.
-       이 화면이 그 다시 입력을 줄여 준다는 점을 알린다. 내보내기 형식은 아래 단추(사진대지·CSV)에 실제로 있는 것만 적는다 -->
-  <p id="intro" class="note rm-note">사진을 찍으면 위치와 그 동의 공식 숫자가 함께 저장되어, 사무실에서 다시 옮겨 적지 않고 사진대지(한글)·CSV로 바로 받을 수 있습니다.<br>기록과 사진은 이 기기에만 저장됩니다.<br>내보내기 전에는 어디로도 보내지 않습니다.</p>
-  <p id="ready" class="hint" role="status">한 번 열어 두면 인터넷이 끊겨도 이 화면이 열립니다.</p>
+  <!-- 2026-11-19: 찍기 아래 안내 세 덩어리(8줄)를 한 줄 + 'ⓘ 자세히'로. 문장은 빼지 않고 접은 칸으로 옮겼다 -->
+  <p class="hint fr-lead">사람이 찍히지 않게 건물·시설 위주로 찍어 주세요.</p>
+  <details class="fr-info" id="aboutBox">
+    <summary>ⓘ 자세히: 저장·전송·오프라인</summary>
+    <p class="hint">사진은 휴대폰 사진첩에 남지 않습니다.</p>
+    <!-- 2026-11-17 우지예(지원센터 담당자 인터뷰): 현장에서는 휴대폰으로 사진을 찍고 메모한 뒤 사무실에 돌아와 다시 입력한다고 했다.
+         이 화면이 그 다시 입력을 줄여 준다는 점을 알린다. 내보내기 형식은 아래 단추(사진대지·CSV)에 실제로 있는 것만 적는다 -->
+    <p id="intro" class="hint">사진을 찍으면 위치와 그 동의 공식 숫자가 함께 저장되어, 사무실에서 다시 옮겨 적지 않고 사진대지(한글)·CSV로 바로 받을 수 있습니다.<br>기록과 사진은 이 기기에만 저장됩니다.<br>내보내기 전에는 어디로도 보내지 않습니다.</p>
+    <p id="ready" class="hint" role="status">한 번 열어 두면 인터넷이 끊겨도 이 화면이 열립니다.</p>
+  </details>
 
   <div id="editor" class="card" hidden>
     <canvas id="cv" aria-label="사진 편집: 끌어서 가릴 곳을 지정"></canvas>
@@ -76,7 +84,7 @@
       <button type="button" id="gps">현재 위치 받기</button>
       <button type="button" class="ghost" id="fix" disabled>위치 고치기</button>
     </div>
-    <details id="jibunBox" class="checks">
+    <details id="jibunBox" class="checks rm-disclosure">
       <summary>위치를 못 받으면 지번으로 적기</summary>
       <label for="jibun">지번</label>
       <input id="jibun" autocomplete="off" placeholder="예: 123-4">
@@ -122,19 +130,35 @@
       <p id="bldPicked" class="site-line" hidden></p>
     </div>
   </section>
+  </div>
 
-  <form id="f" class="card" novalidate>
+  <form id="f" class="card fr-col fr-form" novalidate>
     <fieldset class="chips">
       <legend>무엇을 봤나요</legend>
       <div id="targets"></div>
     </fieldset>
-    <details id="checkBox" class="checks" hidden>
+    <details id="checkBox" class="checks rm-disclosure" hidden>
       <summary>현장 확인 항목 (공공데이터로 못 보는 것)</summary>
       <p class="hint">본 항목만 고르세요.<br>판정이 아니라 본 것을 적습니다.<br>점수는 매기지 않습니다.</p>
       <ul id="checkList" class="check-list"></ul>
     </details>
-    <details id="facilityBox" class="checks">
-      <summary>시설을 누가 언제 쓸 수 있나 (운영 시간·이용 대상)</summary>
+    <label for="memo">한 줄 메모 (선택)</label>
+    <div id="phraseBox" class="phrases" hidden>
+      <div id="phrases" class="phrase-list" role="group" aria-label="자주 쓰는 한 줄"></div>
+      <p class="hint">누르면 메모 끝에 붙습니다.<br>길게 누르면 지웁니다.</p>
+    </div>
+    <textarea id="memo" rows="2" maxlength="500" placeholder="이름·전화번호는 적지 마세요" aria-describedby="memoWarn"></textarea>
+    <p id="memoWarn" class="warn fr-warn">이름·전화번호·주소 같은 개인정보는 적지 마세요.<br>보안시설은 찍거나 적지 마세요.</p>
+    <label for="checker">확인자 (소속·직위, 선택)</label>
+    <input id="checker" maxlength="40" autocomplete="organization-title" placeholder="예: 해운대구 도시재생과 주무관">
+    <p class="hint">1쪽 문서의 '확인자' 칸에 들어갑니다.<br>이름과 서명은 결재 문서에서 하세요.</p>
+    <label id="keepBox" class="check" for="keepPhrase" hidden><input id="keepPhrase" type="checkbox"><span>이 메모를 자주 쓰는 한 줄로 저장</span></label>
+    <!-- 2026-11-19: 접힌 줄 셋(시설 이용 조건·날씨와 시간·공공자료 대조)이 연달아 있어 폼이 길고 어수선했다 → 메모·확인자 뒤 '더 남기기' 하나로.
+         묶음마다 켜기 체크가 입력 칸을 연다. 재방문·검증 오류는 app.js가 이 접이를 연다 -->
+    <details id="moreBox" class="rm-disclosure">
+      <summary>더 남기기: 시설·날씨·자료 대조</summary>
+    <div id="facilityBox" class="fr-sub">
+      <h3>시설을 누가 언제 쓸 수 있나 (운영 시간·이용 대상)</h3>
       <label class="check" for="facilityOn"><input id="facilityOn" type="checkbox"><span>이번 기록에 시설 이용 조건을 남깁니다</span></label>
       <fieldset id="facilityFields" hidden disabled>
         <legend>안내자료와 방문 당시 상태</legend>
@@ -144,9 +168,9 @@
         <label for="fac-observed_state">방문 당시 상태</label><select id="fac-observed_state"></select>
         <p class="hint">현장 사진은 위에서 붙입니다.<br>한 번 닫혀 있었다고 폐쇄 시설로 판단하지 않습니다.</p>
       </fieldset>
-    </details>
-    <details id="visitBox" class="checks">
-      <summary>날씨·시간 남기기와 이전 기록 비교</summary>
+    </div>
+    <div id="visitBox" class="fr-sub">
+      <h3>날씨·시간 남기기와 이전 기록 비교</h3>
       <p id="visitPrevious" class="hint" aria-live="polite">연결한 이전 기록 없음</p>
       <button id="unlinkVisit" type="button" class="ghost" hidden>재방문 연결 풀기</button>
       <label class="check" for="visitOn"><input id="visitOn" type="checkbox"><span>이번 기록에 관찰 조건을 남깁니다</span></label>
@@ -164,20 +188,9 @@
         <label for="visit-staying">관찰 종료 시 머무는 인원 (선택)</label><input id="visit-staying" type="number" min="0" step="1" inputmode="numeric">
         <p class="hint">통행 횟수에는 같은 사람이 여러 번 포함될 수 있습니다.<br>관찰하지 않았으면 비워 두세요.<br>특이사항이 없었음을 확인했으면 '없음'으로 적어 주세요.<br>추가 조사 내용은 한글·PDF에서 여러 쪽으로 나올 수 있습니다.</p>
       </fieldset>
-    </details>
-    <label for="memo">한 줄 메모 (선택)</label>
-    <div id="phraseBox" class="phrases" hidden>
-      <div id="phrases" class="phrase-list" role="group" aria-label="자주 쓰는 한 줄"></div>
-      <p class="hint">누르면 메모 끝에 붙습니다.<br>길게 누르면 지웁니다.</p>
     </div>
-    <textarea id="memo" rows="2" maxlength="500" placeholder="이름·전화번호는 적지 마세요" aria-describedby="memoWarn"></textarea>
-    <p id="memoWarn" class="warn rm-note check">이름·전화번호·주소 같은 개인정보는 적지 마세요.<br>보안시설은 찍거나 적지 마세요.</p>
-    <label for="checker">확인자 (소속·직위, 선택)</label>
-    <input id="checker" maxlength="40" autocomplete="organization-title" placeholder="예: 해운대구 도시재생과 주무관">
-    <p class="hint">1쪽 문서의 '확인자' 칸에 들어갑니다.<br>이름과 서명은 결재 문서에서 하세요.</p>
-    <label id="keepBox" class="check" for="keepPhrase" hidden><input id="keepPhrase" type="checkbox"><span>이 메모를 자주 쓰는 한 줄로 저장</span></label>
-    <details>
-      <summary>공공자료로 맞춰 보기</summary>
+    <div class="fr-sub">
+      <h3>공공자료로 맞춰 보기</h3>
       <label for="pnu">필지 번호(PNU, 토지대장 번호 19자리)</label>
       <input id="pnu" inputmode="numeric" maxlength="19" autocomplete="off">
       <label for="item">대조 항목</label>
@@ -188,6 +201,7 @@
       </fieldset>
       <label for="observed">본 값 ('같음'·'다름'이면 필수)</label>
       <input id="observed" autocomplete="off" placeholder="예: 4층">
+    </div>
     </details>
     <div class="save-bar">
       <p id="msg" class="msg" role="status"></p>
@@ -195,28 +209,31 @@
     </div>
   </form>
 
-  <section aria-labelledby="listTitle">
+  <section aria-labelledby="listTitle" class="fr-col fr-saved">
     <h2 id="listTitle">저장된 기록</h2>
     <!-- 2026-11-14 우지예: 기록은 이 기기 브라우저(IndexedDB)에만 있어 사이트 데이터를 지우면 사라진다(docs/quality/backend_review_2026-11-14.md 6번).
          팀 서버를 정하기 전까지, 백업(ZIP)하지 않은 기록이 있으면 목록 맨 위에 알리고 바로 백업하게 한다(app.js drawBackup) -->
     <div id="backupNag" class="backup-nag" role="status" hidden><p id="backupText"></p><button type="button" id="backupNow">지금 ZIP으로 백업</button></div>
     <div id="stats" class="v4-stats" aria-live="polite"></div>
-    <p id="listEmpty" class="hint" hidden>아직 저장한 기록이 없습니다.<br>위에서 사진을 찍어 저장하면 여기에 쌓이고, 사진대지·GeoJSON·CSV로 받을 수 있습니다.</p>
+    <p id="listEmpty" class="hint" hidden>아직 저장한 기록이 없습니다.<br>사진을 찍어 저장하면 여기에 쌓이고, 사진대지·GeoJSON·CSV로 받을 수 있습니다.</p>
+    <!-- 2026-11-19: 같은 무게 단추 다섯 개와 다섯 줄 안내 → 채운 단추는 사진대지 하나, 나머지 형식은 선 단추 한 줄, 안내는 한 줄 + ⓘ -->
     <div id="listTools">
-    <div class="row">
-      <button id="sheet" type="button">보고서용 사진대지 받기(한글)</button>
+    <button id="sheet" type="button">보고서용 사진대지 받기(한글)</button>
+    <div class="fr-acts">
       <button class="ghost" id="exp" type="button">모두 내보내기(ZIP)</button>
-      <button class="ghost" id="share" type="button" hidden>공유하기</button>
-    </div>
-    <div class="row">
       <button class="ghost" id="geojson" type="button">GeoJSON 받기</button>
       <button class="ghost" id="csv" type="button">CSV 받기</button>
+      <button class="ghost" id="share" type="button" hidden>공유하기</button>
     </div>
-    <p class="hint"><abbr title="무료 지리정보 프로그램">QGIS</abbr> 같은 <abbr title="지리정보시스템">GIS</abbr> 프로그램에서 바로 열립니다.<br>고른 기록만 받습니다.<br>고르지 않으면 모두 받습니다.<br>GIS 파일에는 사진이 빠지고 사진 파일 이름만 들어갑니다.<br>사진대지는 가린 사진을 한 줄 2장으로 싣고 사진마다 위치·촬영 시각을 표로 붙입니다.</p>
+    <p class="hint">고른 기록만 받습니다. 고르지 않으면 모두 받습니다.</p>
+    <details class="fr-info">
+      <summary>ⓘ 자세히: GIS 파일·사진대지</summary>
+      <p class="hint"><abbr title="무료 지리정보 프로그램">QGIS</abbr> 같은 <abbr title="지리정보시스템">GIS</abbr> 프로그램에서 바로 열립니다.<br>GIS 파일에는 사진이 빠지고 사진 파일 이름만 들어갑니다.<br>사진대지는 가린 사진을 한 줄 2장으로 싣고 사진마다 위치·촬영 시각을 표로 붙입니다.</p>
+    </details>
     <label class="check" for="bySite"><input id="bySite" type="checkbox"><span>같은 지점끼리 모아 보기</span></label>
     </div>
     <ul id="list" class="list"></ul>
-    <details class="settings">
+    <details class="settings rm-disclosure">
       <summary>설정 · 가져오기</summary>
       <label for="radius">같은 자리로 볼 거리</label>
       <select id="radius"><option value="20">20m</option><option value="30">30m</option><option value="50">50m (임시값)</option><option value="100">100m</option></select>
@@ -230,6 +247,7 @@
       <p class="hint">리뉴맵 현장 기록에서 내보낸 ZIP만 받습니다.<br>가져온 기록에는 '가져옴'이 붙습니다. 사진의 얼굴·번호판 가림은 공유·제출 전에 다시 확인해 주세요.<br>누락·손상된 사진이나 EXIF·미확인 ICC 등 허용하지 않는 메타데이터가 있는 사진은 받지 않습니다. 확인된 표준 색상 프로파일 외에는 일부 정상 JPEG도 거절될 수 있습니다.<br>거절된 원본 ZIP은 보존하고, 현장 기록에서 사진을 다시 골라 가린 뒤 새 기록으로 저장해 주세요.<br>이 기기에 있던 기록과 원본 ZIP은 바뀌지 않습니다.</p>
     </details>
   </section>
+  </div>
   <div id="upBox" class="card" hidden>
     <h2>팀에 올리기</h2>
     <p class="hint">팀 코드를 아는 사람만 올릴 수 있습니다.<br>올린 파일은 이 화면에서 다시 볼 수 없습니다.</p>
@@ -255,16 +273,16 @@
 <section id="printDoc" class="print-doc" aria-hidden="true"></section>
 <script src="../site.js"></script>
 <script src="../site-motion.js" defer></script>
-<script src="../docgen.js?v=20261119-r1"></script>
+<script src="../docgen.js?v=20261119-r2"></script>
 <script src="upload-config.js"></script>
 <script src="upload.js"></script>
-<script src="record.js?v=20261118-panel"></script>
+<script src="record.js?v=20261119-r2"></script>
 <script src="store.js"></script>
 <script src="../list-pages.js"></script>
 <script src="../cellpack.js"></script><!-- 2026-11-08: 줄여 저장한 원장 셀(emd·living)을 app.js getJson이 되돌릴 때 쓴다 -->
-<script src="evidence.js?v=20261118-basis"></script>
+<script src="evidence.js?v=20261119-r2"></script>
 <script src="detect.js"></script>
 <script src="vworld-key.js"></script>
-<script src="app.js?v=20261118-panel"></script>
+<script src="app.js?v=20261119-r2"></script>
 </body>
 </html>

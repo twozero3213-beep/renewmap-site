@@ -1,13 +1,20 @@
 /* 문서 열기 화면 */
 .docs h1 { font-size: clamp(26px, 3vw, 34px); line-height: 1.2; margin: 8px 0 16px; }
 .docs h2 { font-size: 18px; margin: 0 0 6px; }
-.home > section.docs-card, .docs-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 18px; margin-bottom: 16px; }
+.home > section.docs-card, .docs-card, main.page > section.docs-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 20px; margin-bottom: 16px; }   /* 셋째: rm6.css의 'main.page section' 위아래 0을 이긴다 */
 .docs-card p { margin: 0 0 12px; word-break: keep-all; }
-.docs-formats { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 12px 0 0; }
+/* 형식 목록은 알약 대신 쉼표로 이은 한 줄(2026-11-19: 알약 일곱 개가 두세 줄을 차지했다) */
+.docs-formats { list-style: none; padding: 0; margin: 12px 0 0; font-size: 15px; color: var(--dim); }
+.docs-formats li { display: inline; }
+.docs-formats li + li::before { content: ", "; }
 .docs-formats + .btn { margin-top: 16px; }
-/* 머리 로고를 640px 본문 왼쪽 선에 맞춘다(UX 정비 2026-10-30. 문서 화면은 v4.css를 싣지 않아 여기 둔다) */
-.docs-formats li { padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; color: var(--ink); background: var(--bg); }
+/* 넓은 화면: 1200 격자에 '받기 | 열기' 두 칸. 파일을 열면 두 칸 모두 격자 전체 폭이라 문서 쪽이 격자 폭에 맞춰 커진다 */
+@media (min-width: 1024px) {
+  main.docs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 24px; align-items: start; }
+  main.docs > :not(.docs-card), main.docs:has(#docStage:not(:empty)) > .docs-card { grid-column: 1 / -1; }
+}
 .doc-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 120px; border: 2px dashed var(--green); border-radius: var(--radius-card); background: var(--bg); cursor: pointer; text-align: center; }
+@media (max-width: 720px) { .doc-drop { min-height: 104px; } }
 .doc-drop b { font-size: 18px; color: var(--green); }
 .doc-drop span { font-size: 15px; color: var(--dim); }
 .doc-drop.is-over { background: var(--soft); }
@@ -32,7 +39,6 @@
 .doc-slide h3 { margin: 0 0 6px; font-size: 15px; color: var(--green); }
 .doc-slide p { margin: 0 0 4px; }
 .doc-note { color: var(--dim); font-size: 15px; margin: 0; }
-.vendor-note { font-size: 13px; }
 @media print {
   .doc-print-incomplete > * { display: none !important; }
   .doc-print-incomplete::before { content: "문서 전체가 표시되지 않아 인쇄를 막았습니다. 모든 쪽을 펼치거나 원본을 받아 문서 편집기에서 인쇄하세요."; }

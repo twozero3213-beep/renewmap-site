@@ -75,6 +75,7 @@
   function tally() {
     const n = (k) => lastDocs.filter((d) => d.outcome && d.outcome.status === k).length, rec = lastDocs.filter((d) => d.outcome).length;
     $("outcomeSum").textContent = rec ? `결과 기록 ${rec}건 · 채택 ${n("approved")} · 고쳐서 씀 ${n("edited")} · 반려 ${n("rejected")} · 개선 동의 ${lastDocs.filter((d) => d.outcome && d.outcome.consent).length}` : "1쪽을 결재에 올린 뒤 결과를 고르면 여기에 모입니다.";
+    $("outcomeExp").hidden = $("outcomeExpNote").hidden = !rec;   // 결과가 하나라도 있을 때만 내보내기 단추와 그 안내
   }
   // 기록 한 건의 원본 ZIP(records.json + 가린 사진)
   async function recordZip(rec) {
