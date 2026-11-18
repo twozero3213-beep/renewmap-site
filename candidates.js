@@ -165,5 +165,5 @@
     });
     render();
   }
-  return { KEY, STAGES, load, save, update, csv, comparisonHTML, compareSheets, init };
+  return { KEY, STAGES, load, save, update, csv, csvCell: cell, comparisonHTML, compareSheets, init };
 });

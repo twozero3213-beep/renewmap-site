@@ -473,7 +473,8 @@
   const footerOf = brief => brief.inputHash ? inputHashLine(brief) + ' · ' : `작성 리뉴맵 · 자료 기준일 ${basisDate(brief.cells) || '-'} · 원천 색인 지문 ${String(brief.snapshot).slice(0, 8)} · `;
   const fileFooter = doc => (doc.brief && doc.brief.inputHash ? `작성 리뉴맵 · 자료 기준일 ${basisDate(doc.brief.cells) || '-'} · 입력 지문 ${doc.brief.inputHash.slice(0, 8)} · ` : doc.footer || '');
   const hashBlock = brief => block('para', inputHashLine(brief), { small: true, hash: true });
-  const sourceLine = (n, s) => `[${n}] ${s.name}. ${s.forecast ? '전망 대상일' : '기준일'} ${govDate(s.reference_date)} 조회일 ${govDate(s.retrieved_at)} 이용조건 ${s.license}.`;
+  // 사업체 수 자료연도가 기준일 연도보다 앞서면(brief.biz) 사업체 조사가 든 출처에 그 연도를 함께 적는다(원장 reference_date는 그대로)
+  const sourceLine = (n, s, biz) => `[${n}] ${s.name}. ${s.forecast ? '전망 대상일' : '기준일'} ${govDate(s.reference_date)}${biz && /사업체/.test(s.name) && String(s.reference_date).slice(0, 4) !== String(biz.last) ? `(사업체 수 자료연도 ${biz.last})` : ''} 조회일 ${govDate(s.retrieved_at)} 이용조건 ${s.license}.`;
 
   // 요약 문장 3~5개(템플릿 순서 고정). 셀이 없으면 그 문장은 건너뛴다. 근거서와 1쪽 요약이 같이 쓴다
   function summaryLines(brief, byCode, facts, src, crit, nTodo, fallback) {
@@ -578,7 +579,7 @@
     blocks.push(block('table', '', { rows: fRows, widths: [26, 56, 18], caption: '붙임 2 표. 지표별 계산식' }));
     // 붙임 3. 출처 목록: 본문 [n]의 주석. 문서 맨 끝에 작은 글자로 둔다
     blocks.push(block('h1', '붙임 3. 출처 목록'));
-    src.list.forEach((s, n) => { blocks.push(block('para', sourceLine(n + 1, s), { small: true })); blocks.push(block('para', s.url, { small: true })); });   // '끝' 표시는 쓰지 않는다
+    src.list.forEach((s, n) => { blocks.push(block('para', sourceLine(n + 1, s, brief.biz), { small: true })); blocks.push(block('para', s.url, { small: true })); });   // '끝' 표시는 쓰지 않는다
     if (brief.inputHash) blocks.push(hashBlock(brief));
 
     finish(blocks);
@@ -652,7 +653,7 @@
       const k = one.overview_keys.map((key, i) => [key, [brief.region, `${brief.year}년`, govDate(brief.writtenOn), TP.overview_basis][i]]);
       const h1 = one.headings, summary = lines.map((t, i) => block('para', t, { refs: refsIn(t), emph: true, strong: i === 0 })), critBlock = block('table', '', { rows: [head, ...rows], widths, caption: '표 1. 기준 대비' });
       const blocks = [block('title', one.title.replace('{dong}', brief.dongName)), block('box', '', { rows: k, widths: [22, 78] }), block('h1', h1[0]), ...summary, block('h1', h1[1]), critBlock,
-        block('para', [...one.note, bizNote(brief)].filter(Boolean).join(' ')), block('para', FIXED_NOTICE), block('h1', h1[2]), ...src.list.map((s, n) => block('para', sourceLine(n + 1, s), { small: true })),
+        block('para', [...one.note, bizNote(brief)].filter(Boolean).join(' ')), block('para', FIXED_NOTICE), block('h1', h1[2]), ...src.list.map((s, n) => block('para', sourceLine(n + 1, s, brief.biz), { small: true })),
         ...(brief.inputHash ? [hashBlock(brief)] : [])];
       finish(blocks);
       return { kind: 'onepage', title: blocks[0].text, blocks, sources: src.list, cells: brief.cells, snapshot: brief.snapshot, templateVersion: TP.version, footer: footerOf(brief),

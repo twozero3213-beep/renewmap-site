@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob: https://api.vworld.kr; font-src 'self' data:; connect-src 'self' https://sdk-api.hackle.io https://event-api.hackle.io https://monitoring.hackle.io https://static.hackle.io; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'self'; worker-src 'self' blob:; manifest-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob: https://api.vworld.kr; font-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'self'; worker-src 'self' blob:; manifest-src 'self'">
 <script src="../frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>현장 기록 | 리뉴맵</title>
@@ -76,6 +76,11 @@
       <button type="button" id="gps">현재 위치 받기</button>
       <button type="button" class="ghost" id="fix" disabled>위치 고치기</button>
     </div>
+    <details id="jibunBox" class="checks">
+      <summary>위치를 못 받으면 지번으로 적기</summary>
+      <label for="jibun">지번</label>
+      <input id="jibun" autocomplete="off" placeholder="예: 123-4">
+    </details>
     <div id="pinBox" class="pin" hidden>
       <p class="hint">지도를 눌러 실제 위치로 옮기세요.<br>옮긴 위치는 '보정됨'으로 남습니다.</p>
       <label id="basemapBox" class="check" for="basemap" hidden><input id="basemap" type="checkbox"><span>배경지도 보기(브이월드)</span></label>
@@ -172,9 +177,7 @@
     <p class="hint">1쪽 문서의 '확인자' 칸에 들어갑니다.<br>이름과 서명은 결재 문서에서 하세요.</p>
     <label id="keepBox" class="check" for="keepPhrase" hidden><input id="keepPhrase" type="checkbox"><span>이 메모를 자주 쓰는 한 줄로 저장</span></label>
     <details>
-      <summary>지번과 공공자료로 맞춰 보기</summary>
-      <label for="jibun">지번 (위치를 못 받을 때)</label>
-      <input id="jibun" autocomplete="off" placeholder="예: 123-4">
+      <summary>공공자료로 맞춰 보기</summary>
       <label for="pnu">필지 번호(PNU, 토지대장 번호 19자리)</label>
       <input id="pnu" inputmode="numeric" maxlength="19" autocomplete="off">
       <label for="item">대조 항목</label>
@@ -186,8 +189,10 @@
       <label for="observed">본 값 ('같음'·'다름'이면 필수)</label>
       <input id="observed" autocomplete="off" placeholder="예: 4층">
     </details>
-    <button type="submit" class="save">저장</button>
-    <p id="msg" class="msg" role="status"></p>
+    <div class="save-bar">
+      <p id="msg" class="msg" role="status"></p>
+      <button type="submit" class="save">저장</button>
+    </div>
   </form>
 
   <section aria-labelledby="listTitle">
@@ -250,16 +255,16 @@
 <section id="printDoc" class="print-doc" aria-hidden="true"></section>
 <script src="../site.js"></script>
 <script src="../site-motion.js" defer></script>
-<script src="../docgen.js?v=20261117-reuse"></script>
+<script src="../docgen.js?v=20261119-r1"></script>
 <script src="upload-config.js"></script>
 <script src="upload.js"></script>
-<script src="record.js?v=20261112-taskreview"></script>
+<script src="record.js?v=20261118-panel"></script>
 <script src="store.js"></script>
 <script src="../list-pages.js"></script>
 <script src="../cellpack.js"></script><!-- 2026-11-08: 줄여 저장한 원장 셀(emd·living)을 app.js getJson이 되돌릴 때 쓴다 -->
 <script src="evidence.js?v=20261118-basis"></script>
 <script src="detect.js"></script>
 <script src="vworld-key.js"></script>
-<script src="app.js?v=20261118-basis"></script>
+<script src="app.js?v=20261118-panel"></script>
 </body>
 </html>

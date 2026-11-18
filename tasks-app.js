@@ -73,6 +73,7 @@
         "form button,form input,form select,form textarea,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#handoverTask,#downloadHandover,#restoreTask,#restoreFile,#taskWork button,#taskWork input,#taskWork select,#taskWork textarea",
       ),
     ];
+    const prev = controls.map((b) => b.disabled);   // 끝나면 원래 상태로 되돌린다(처리 전부터 꺼 둔 단추를 켜지 않는다)
     controls.forEach((b) => {
       b.disabled = true;
     });
@@ -100,8 +101,8 @@
       say(e.message || "기록하지 못했습니다. 이전 버전은 유지됩니다.");
     } finally {
       busy = false;
-      controls.forEach((b) => {
-        b.disabled = false;
+      controls.forEach((b, i) => {
+        b.disabled = prev[i];
       });
     }
   }

@@ -318,7 +318,7 @@
     const all = [...byCode.values()].sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0)).map(g => ({ ...g, sum: Number(g.sum.toFixed(6)) }));
     return { rows: feats.length > 80 ? all.filter(g => g.count > 0) : all, outside };
   }
-  const csvCell = v => { let s = String(v == null ? '' : v); if (/^\s*[=+\-@]|^[\t\r]/.test(s)) s = "'" + s; return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const csvCell = v => { const s = String(v == null ? '' : v); const t = typeof v === 'number' || /^-?\d+(\.\d+)?$/.test(s.trim()) ? s : s.replace(/^[\s\uFEFF]*[=+@\t\r-]/, "'$&"); return /[",\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   function toCsv(rows, valueLabel) {
     const head = ['코드', '이름', '점 개수'].concat(valueLabel ? [`${valueLabel} 합계`] : []);
     return [head].concat(rows.map(g => [g.code, g.name, g.count].concat(valueLabel ? [g.sum] : []))).map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
@@ -477,7 +477,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
   const NO_DONG_HTML = `<p class="ov-hint"><strong>동별 집계를 하려면 시군구를 먼저 고르세요.</strong><br>지도에서 시군구를 누르면 그 지역의 읍·면·동 경계가 나타나고, 표가 만들어집니다.</p>`;
 
   const api = { CRS, MAX_DRAW, MAX_LABELS, decodeText, parseCSV, toTable, parseXlsx, readFileBytes, toNum, findPII, excludeColumns, detectColumns, tmInverse, toWgs84, inKorea, locate, compileFeatures, featureAt, aggregate, toCsv, reconcileKeys, reconcileCsv,
-    optionsHtml, fileInfo, piiHtml, locFormHtml, styleFormHtml, previewHtml, pickStyle, readCodes, toDots, planDots, tipText, noteLines, aggItems, aggTableHtml };
+    optionsHtml, fileInfo, piiHtml, locFormHtml, styleFormHtml, previewHtml, pickStyle, readCodes, toDots, planDots, tipText, noteLines, aggItems, aggTableHtml, csvCell };
   if (typeof document === 'undefined') return api;
 
   // ── 8. 브라우저 ──

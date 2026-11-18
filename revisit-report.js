@@ -591,6 +591,39 @@
       );
       return { ledger, files, inputHash, blockers, entries, photoPairs };
     }
-    return { VERSION, SCHEMA, read, verify, build };
+    // 화면 입력(f)과 최초 조사 행(initial)으로 재방문 행 한 개를 만든다. DOM을 읽지 않는 순수 함수라 시험할 수 있다.
+    // 필드 순서·이름은 저장 형식이다(기존 과업 복원이 이 모양을 읽는다). 바꾸면 revisit-report.test.cjs가 알려 준다.
+    function buildRow(f, initial) {
+      return {
+        id: f.id,
+        survey_sha256: f.surveySha256,
+        survey_row_id: initial.id,
+        site_key: initial.id,
+        completed_on: f.completedOn,
+        observed_on: f.observedOn,
+        initial_conditions: f.beforeConditions,
+        initial_conditions_source:
+          f.fromRecord && same(f.beforeConditions, f.fromRecord)
+            ? "field_record"
+            : "user_transcribed",
+        revisit_conditions: f.afterConditions,
+        result: f.result,
+        reason: f.reason,
+        photos: f.photos,
+        field_id: f.fieldId,
+        form: f.form,
+        sheet: f.sheet,
+        slot: f.slot,
+        submit_text:
+          f.text ||
+          [
+            initial.subject,
+            initial.observed_on + " " + initial.after,
+            f.observedOn + " " + f.result,
+            f.reason,
+          ].join(" · "),
+      };
+    }
+    return { VERSION, SCHEMA, read, verify, build, buildRow };
   },
 );

@@ -113,6 +113,8 @@
   // 2026-11-13 우지예: 재생 사업 화면에서 이름을 몰라도 고를 수 있게 '시·도 → 구·군 → 동' 고르기(form data-pick). 시범 지역 부산을 먼저 고른 채로 연다.
   // 목록은 같은 dong_index.json에서 만들고, 구·군·동은 가나다순(반여1·2·3동처럼 숫자는 숫자 순). 동을 고르면 찾기와 같은 곳(route)으로 간다
   const ko = (a, b) => a.localeCompare(b, 'ko', { numeric: true });
+  // 고르기도 찾기와 같이 경계가 없는 동은 지도 대신 그 동 쪽으로 보낸다(2026-11-18: 고르기만 지도로 보내 경계가 없다는 안내만 보였다)
+  const pickHref = (index, sido, sgg, dong, report) => route({ sido, sgg, dong, page: index.some(r => r[0] === dong && r[5]) }, report);
   function pickLists(index, sido, sgg) {
     const sidos = [...new Map(index.map(r => [r[0].slice(0, 2), r[4]])).entries()].sort((a, b) => ko(a[1], b[1]));
     const sggs = [...new Map(index.filter(r => r[0].slice(0, 2) === sido).map(r => [r[2], r[3]])).entries()].sort((a, b) => ko(a[1], b[1]));
@@ -138,7 +140,7 @@
     sSel.onchange = () => { sido = sSel.value; sgg = ''; paint(); };
     gSel.onchange = () => { sgg = gSel.value; paint(); dSel.focus(); };
     dSel.onchange = () => { go.disabled = !dSel.value; };
-    go.onclick = () => { if (dSel.value) win.location.href = route({ sido, sgg, dong: dSel.value }, report); };
+    go.onclick = () => { if (dSel.value) win.location.href = pickHref(index, sido, sgg, dSel.value, report); };
   }
-  return { find, route, norm, init, MSG, pickLists };
+  return { find, route, norm, init, MSG, pickLists, pickHref };
 });

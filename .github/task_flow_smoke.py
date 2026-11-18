@@ -263,7 +263,9 @@ def main():
             m=map_context.new_page()
             m.on('pageerror',lambda e:result['errors'].append(str(e)))
             m.goto(base+'explore.html?report=brief&panel=evidence#map/21/21090/21090700',wait_until='load')
-            m.locator('[data-task-package]').first.wait_for(timeout=60000)
+            # 2026-11-19 FR-57 P05: '과업에 연결'은 접힌 '파일 더 보기'(details.rp-more-files) 안에 있다. 사용자처럼 열고 누른다
+            m.wait_for_function("()=>{const b=document.querySelector('[data-task-package]');return b&&!b.disabled}",timeout=60000)   # 서식을 다 불러와 다시 그린 뒤에 연다
+            m.evaluate("()=>{const d=document.querySelector('[data-task-package]').closest('details');if(d)d.open=true}")
             m.locator('[data-task-package]').first.click()
             m.wait_for_url('**/tasks.html?packet=*',timeout=60000)
             m.wait_for_function('() => document.querySelector("#packetPick").options.length>1')

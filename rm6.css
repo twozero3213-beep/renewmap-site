@@ -101,7 +101,7 @@ header.top > .wrap:first-child { min-height: 64px; display: flex; flex-wrap: now
 /* 지도가 화면 전체인 앱 화면(동네 찾기·4D)만 폭 전체 */
 body.explore-page header.top > .wrap:first-child, body:has(.t4-app) header.top > .wrap:first-child { max-width: none; padding-left: 24px; padding-right: 24px; }
 @media (max-width: 720px) { header.top > .wrap:first-child, body.explore-page header.top > .wrap:first-child, body:has(.t4-app) header.top > .wrap:first-child { padding-left: 16px; padding-right: 16px; } }
-header.top .logo { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 800; letter-spacing: .01em; font-size: 20px; text-decoration: none; flex: none; }
+header.top .logo { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 700; letter-spacing: .01em; font-size: 20px; text-decoration: none; flex: none; }
 header.top .logo span { color: var(--green); }
 @media (max-width: 720px) { header.top .logo { font-size: 18px; } }
 /* 머리 메뉴(site.js .rm-nav) */
@@ -113,7 +113,7 @@ header.top .logo span { color: var(--green); }
 .rm-nav .rm-cta:hover { background: var(--green-press); }
 /* '메뉴' 단추: (0,2,1)이라 현장 화면의 녹색 전체 폭 단추 규칙(.field button, 0,1,1)을 이긴다 */
 header.top .rm-menu-btn { display: none; flex: none; width: auto; margin: 0 0 0 auto; min-height: 44px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-size: 16px; font-weight: 700; box-shadow: none; }
-header.top a:focus-visible, header.top button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+header.top a:focus-visible, header.top button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 2px var(--card); }
 /* site.js가 새 메뉴를 달면 HTML의 옛 메뉴를 숨긴다. 스크립트 없는 화면(404)은 옛 메뉴를 같은 모양으로 보인다 */
 header.top .wrap:has(.rm-nav) .site-nav, header.top .menu-toggle { display: none; }
 header.top .site-nav { display: flex; flex-wrap: wrap; gap: 2px; margin-left: auto; }
@@ -161,7 +161,7 @@ footer .links a { color: var(--ink); font-size: var(--t-sub); }
 .btn:not(.ghost) { background: var(--green); border-color: var(--green); color: #fff; }
 .btn:not(.ghost):hover { background: var(--green-press); border-color: var(--green-press); }
 .btn.ghost { background: #fff; color: var(--green); border: 1px solid var(--line-strong); }
-.btn:focus-visible, a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.btn:focus-visible, a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 2px var(--card); }
 .link-btn { min-height: 44px; padding: 0; border: 0; background: none; color: var(--green); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
 input[type="file"]::file-selector-button { min-height: 40px; margin-right: 10px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
 /* 파일 칸: 브라우저 언어와 상관없이 '파일 고르기' 단추. 입력은 단추 위에 투명하게 겹쳐 누르기·키보드가 그대로 된다 */
@@ -443,7 +443,7 @@ body.redev-v4 #f.card { max-width: 820px; }
   table.kv tr { padding: 14px 0; border-bottom: 1px solid var(--line); }
   table.kv th { border: 0; padding: 0 0 4px; font-size: 16px; }
   table.kv td { border: 0; padding: 2px 0; }
-  table.kv td.num { font-size: 22px; font-weight: 800; }
+  table.kv td.num { font-size: 22px; font-weight: 700; }
   table.kv td a { overflow-wrap: anywhere; font-size: var(--t-cap); }
 }
 /* R5 6: 휴대폰 카드에서 기준일 칸이 비면(caption에 적은 기준일과 같을 때) styles.css의 ::before '기준일 ' 라벨만 남아 값이 빠진 것처럼 읽혔다 → 빈 칸은 칸째 숨긴다. 표 모양일 때는 칸을 빼면 열이 어긋나므로 카드 폭에서만 */

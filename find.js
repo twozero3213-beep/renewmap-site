@@ -225,12 +225,12 @@
   // 법령·사업명은 부록 B 문구 그대로. 미확인 조문은 법무 확인 뒤 지운다
   const DECIDE = '결정은 담당자가 합니다';
   const GOV_NOTE = '업무를 고르면 조건이 켜지고 맞는 동과 근거 문서가 나옵니다. 점수·순위를 매기지 않습니다.';
-  const PRESETS = [
+  const PRESETS = [   // 1차 고객(도시재생 담당)의 업무를 앞에 둔다(2026-11-18)
+    { id: 'renewal', e: 'sum', n: '도시재생 사업 후보 찾기', ask: '인정사업·지역특화재생에 넣을 쇠퇴 동을 추릴 때', give: '쇠퇴 요건을 갖춘 동 목록과 사업별 요건 대조', conds: ['met'], law: '도시재생 활성화 및 지원에 관한 특별법 제13조 제4항' },
+    { id: 'housing', e: 'bldg', n: '노후주거지 후보 추리기', ask: '노후주거지 정비·도시재생 공모 전에 후보 동을 추릴 때', give: '쇠퇴 요건과 노후 건축물 기준을 함께 충족하는 동 목록', conds: ['aging', 'met', 'pop30', 'biz10'], law: '노후주거지정비 지원사업(국토부), 도시재생 활성화 및 지원에 관한 특별법' },
+    { id: 'depop', e: 'flag', n: '지방소멸대응기금 현황표', ask: '지방소멸대응기금 투자계획서에 현황표가 필요할 때', give: '인구감소·고령·청년 변화 표', conds: [['depop', 'concern'], 'pop30'], condsEmd: ['aged'], law: '지방소멸대응기금(행안부), 인구감소지역 지원 특별법' },
     { id: 'cctv', e: 'cctv', n: 'CCTV·보안등 설치 검토', ask: 'CCTV·보안등 추가 설치 검토 자료를 요구받았을 때', give: '동별 설치 현황 사실(밀도·경찰관서까지 거리). 범죄·안전 수준이 아닙니다.', conds: [], note: '조건 없음 · 동을 고르면 안전 인프라 카드로', action: 'safe', law: '개인정보 보호법 제25조' },
     { id: 'yearend', e: 'bldg', n: '연말 소규모 정비 검토', ask: '연말에 남은 예산, 근거 있는 소규모 정비 사업을 찾을 때', give: '노후·쇠퇴·생활 기준에 해당하는 동 목록과 첨부용 근거서', conds: ['aging', 'met', ['parkLow', 'libFar']], law: '지방재정법 제37조(투자심사)·제50조(이월)' },
-    { id: 'depop', e: 'flag', n: '지방소멸대응기금 현황표', ask: '지방소멸대응기금 투자계획서에 현황표가 필요할 때', give: '인구감소·고령·청년 변화 표', conds: [['depop', 'concern'], 'pop30'], condsEmd: ['aged'], law: '지방소멸대응기금(행안부), 인구감소지역 지원 특별법' },
-    { id: 'housing', e: 'bldg', n: '노후주거지 후보 추리기', ask: '노후주거지 정비·도시재생 공모 전에 후보 동을 추릴 때', give: '쇠퇴 요건과 노후 건축물 기준을 함께 충족하는 동 목록', conds: ['aging', 'met', 'pop30', 'biz10'], law: '노후주거지정비 지원사업(국토부), 도시재생 활성화 및 지원에 관한 특별법' },
-    { id: 'renewal', e: 'sum', n: '도시재생 사업 후보 찾기', ask: '인정사업·지역특화재생에 넣을 쇠퇴 동을 추릴 때', give: '쇠퇴 요건을 갖춘 동 목록과 사업별 요건 대조', conds: ['met'], law: '도시재생 활성화 및 지원에 관한 특별법 제13조 제4항' },
     { id: 'shop', e: 'shop', n: '상권 쇠퇴 동 찾기', ask: '사업체가 줄어든 동을 상권 활성화 검토용으로 추릴 때', give: '사업체 감소 동 목록과 근거 문서', conds: ['biz10'], law: '도시재생 활성화 및 지원에 관한 특별법 제13조 제4항' },
     { id: 'soc', e: 'tree', n: '공원·도서관 민원 회신', ask: "'우리 동네는 왜 공원·도서관이 없나' 민원에 회신할 때", give: '기준 대비 현황과 출처', conds: [['parkLow', 'libFar', 'hospLow']], law: '도시공원 및 녹지 등에 관한 법률 시행규칙 제4조, 생활SOC 최저기준' },
     { id: 'care', e: 'hosp', n: '돌봄·의료 대상지 근거', ask: '방문 의료·돌봄 사업의 대상지 선정 근거가 필요할 때', give: '고령 인구가 많고 병의원이 적은 동 목록과 출처 붙은 표', conds: ['aged', 'hospLow'], law: '법정 기준 아님 · 초고령은 65세 이상 20% 정의, 병의원 1만 명당은 화면 참고 구간' },
@@ -268,7 +268,9 @@
   const scopeEl = document.querySelector('#find [data-fd-scope]') || (() => { const d = document.createElement('div'); d.className = 'fd-scope'; root.before(d); return d; })();
   // R8 6: 범위 선택(scopeHTML이 [data-fd-sel]을 다시 그린다) 아래에 동 이름 찾기. 고른 범위 안의 동만 보이고, 전국·시·도 범위여도 이름만으로 찾는다
   scopeEl.innerHTML = '<div class="fd-sel" data-fd-sel></div><form class="fd-name" data-fd-name role="search" autocomplete="off"><label class="map-select" for="fdQ">동 이름으로 찾기</label><input id="fdQ" type="search" data-fd-q placeholder="예: 서대신1동, 반여" enterkeyhint="search"><ul class="fd-name-res" data-fd-qres></ul><p class="fd-name-msg" data-fd-qmsg role="status"></p></form>';
-  const dongList = fetchJson('data/national/dong_index.json', true).then(d => (Array.isArray(d) ? d : null));
+  // 여섯째 칸 true: 2025 경계가 없는 동(dong_extra.json). 지도에 못 올려 그 동 쪽으로 잇는다(홈·지도 찾기와 같다)
+  const dongList = Promise.all([fetchJson('data/national/dong_index.json', true), fetchJson('data/national/dong_extra.json', true)])
+    .then(([d, ex]) => (Array.isArray(d) ? d.concat((Array.isArray(ex) ? ex : []).map(r => [...r, true])) : null));
   const nameIn = scopeEl.querySelector('[data-fd-q]'), nameOut = scopeEl.querySelector('[data-fd-qres]'), nameMsg = scopeEl.querySelector('[data-fd-qmsg]');
   const NAME_MAX = 8;
   function nameSearch() {
@@ -280,9 +282,10 @@
       const sido = st.scope.sido, sg = st.scope.sg, fq = U.flat(q);
       const hits = list.filter(([c8, n, c5, sgn, sidon]) => (!sido || c8.startsWith(sido)) && (!sg || String(c5) === sg) && (U.dongHit(q, n, [sgn, sidon]) || U.flat(n).includes(fq)));
       nameMsg.textContent = hits.length ? `${hits.length}곳을 찾았습니다.${hits.length > NAME_MAX ? ` 앞의 ${NAME_MAX}곳만 보입니다. 이름을 더 적거나 범위를 좁혀 주세요.` : ''}` : '이 범위에서 그 이름의 동을 찾지 못했습니다. 범위를 넓혀 보세요.';
-      for (const [c8, n, c5, sgn, sidon] of hits.slice(0, NAME_MAX)) {
-        const li = document.createElement('li'), b = document.createElement('button');
-        b.type = 'button'; b.className = 'btn ghost'; b.dataset.fdGoDong = c8; b.dataset.code5 = c5; b.textContent = `${U.sidoShort(sidon)} ${sgn} ${n}`;
+      for (const [c8, n, c5, sgn, sidon, page] of hits.slice(0, NAME_MAX)) {
+        const li = document.createElement('li'), b = document.createElement(page ? 'a' : 'button');
+        if (page) b.href = `dong/${c8}.html`; else { b.type = 'button'; b.dataset.fdGoDong = c8; b.dataset.code5 = c5; }
+        b.className = 'btn ghost'; b.textContent = `${U.sidoShort(sidon)} ${sgn} ${n}`;
         li.append(b); nameOut.append(li);
       }
     });
@@ -433,7 +436,9 @@
     .then(([index, li, des, fi]) => {
       st.ctx = { index: ok(index, 'sigungu'), living: ok(li, 'indicators'), designations: ok(des, 'items'), migration: null, forecastIdx: ok(fi, 'horizons'), realestate: null };   // migration·realestate는 LAZY: 조건을 고를 때 받는다
       if (!st.ctx.index) { root.innerHTML = '<div class="fd-empty" data-state="error" role="alert"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>전국 자료 원본을 불러오지 못했습니다.<br>네트워크를 확인한 뒤 다시 열어 주세요.</p></div>'; return; }
-      st.sgGeo = undefined; trackHash(); render();
+      st.sgGeo = undefined; trackHash();
+      if (st.lastSg && !st.scope.sg) st.scope = { ...st.lastSg };   // 지도에서 고른 시·군·구가 있으면 범위를 거기로 시작한다(조건 탭이 '전국'으로 열리지 않게)
+      render();
     fetchJson('data/national/sigungu-overview.geojson').then(g => g && Array.isArray(g.features) ? g : fetchJson('data/national/sigungu.geojson'))
       .then(g => { st.sgGeo = g && Array.isArray(g.features) ? g : null; st.svgKey = ''; render(); });
     });

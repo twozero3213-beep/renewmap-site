@@ -37,10 +37,8 @@
   max-width: 100%;
   font: inherit;
   padding: 10px;
-  border: 1px solid #7d9990;
   border-radius: 8px;
   background: #fff;
-  color: #123b32;
 }
 .task-page textarea {
   resize: vertical;
@@ -61,8 +59,10 @@
   font-weight: 700;
 }
 .task-page button:disabled {
-  opacity: 0.55;
-  cursor: wait;
+  background: var(--off-bg);
+  border-color: transparent;
+  color: var(--off-ink);
+  cursor: not-allowed;
 }
 .task-page :focus-visible {
   outline: 3px solid var(--ink);
@@ -109,14 +109,14 @@
 }
 .task-help {
   font-size: var(--t-sub);
-  color: #49675d;
+  color: var(--dim);
 }
 .task-hash {
   overflow-wrap: anywhere;
   font: 0.85rem/1.7 monospace;
 }
 .task-page details {
-  border-top: 1px solid #bdcfc7;
+  border-top: 1px solid var(--line);
   margin: 20px 0;
   padding: 12px 0;
 }
@@ -138,13 +138,13 @@
 }
 .task-files li {
   padding: 12px 0;
-  border-bottom: 1px solid #c9d8d2;
+  border-bottom: 1px solid var(--line);
   overflow-wrap: anywhere;
 }
 .task-files small {
   display: block;
   line-height: 1.7;
-  color: #49675d;
+  color: var(--dim);
 }
 .task-actions {
   display: flex;
@@ -154,7 +154,7 @@
 }
 #taskMsg {
   white-space: pre-line;
-  color: #803e10;
+  color: var(--amber);
 }
 #taskHistory {
   padding-left: 24px;
@@ -225,7 +225,7 @@
 #revisitReport fieldset {
   min-width: 0;
   border: 0;
-  border-top: 1px solid #bdcfc7;
+  border-top: 1px solid var(--line);
   margin: 18px 0;
   padding: 12px 0 0;
 }
@@ -249,7 +249,7 @@
 #workHistory li { padding: 8px 0; }
 #workList button { width: 100%; text-align: left; background: white; color: var(--green); }
 #workList small { display: block; }
-#taskWork .work-overdue { color: #803e10; font-weight: 700; }
+#taskWork .work-overdue { color: var(--amber); font-weight: 700; }
 #workEvidenceLinks button { overflow-wrap: anywhere; max-width: 100%; }
 @media (max-width: 600px) {
   .task-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }

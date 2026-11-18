@@ -166,7 +166,7 @@
   const FORE_NOTE = '추세 외삽 · 판정·투자 조언 아님 · 승인 전 초안';
   // 지표마다 모델 이름(코호트 등)이 있으면 '추세 외삽' 자리에 그것을 쓴다
   const foreNote = ind => (ind && ind.how && ind.how !== '추세 외삽' ? FORE_NOTE.replace('추세 외삽', ind.how) : FORE_NOTE);
-  const foreLine = ind => `${foreNote(ind)}${ind.mape === null || ind.mape === undefined ? '' : ` · 백테스트 오차(전국 동 중앙값) MAPE ${fmt(ind.mape, '%')}`}${ind.disclaimer ? ` · ${ind.disclaimer}` : ''}`;
+  const foreLine = (ind, r) => `${foreNote(ind)}${ind.mape === null || ind.mape === undefined ? '' : ` · 백테스트 오차(전국 동 중앙값) MAPE ${fmt(ind.mape, '%')}`}${r && isNum(r.mape) ? ` · 이 동 백테스트 오차 ${fmt(r.mape, '%')}` : ''}${ind.disclaimer ? ` · ${ind.disclaimer}` : ''}`;
   const SAFE_NOTE = '공식 기준 없음 · 점수 아님 · 공식 시설 현황만';
   // 공식 기준이 없는 생활 지표의 고정 참고 구간(화면 표시용 눈금, 분위 아님). 자료가 ref_edges를 주면 그것을 쓴다
   const REF_EDGES = { POP_YOUTH_PCT: [10, 15, 20, 25], HOSP_CLINIC_COUNT: [1, 5, 10, 30], HOSP_PER10K: [2, 5, 10, 20], PARK_COUNT: [1, 3, 5, 10], BUS_STOP_DENSITY: [5, 10, 20, 40],
@@ -366,7 +366,8 @@
       if (!Array.isArray(row) || row.length < 3) continue;
       const [code7, name, code5, sgName, sidoName] = row, r = leafRoute(index, code5);
       if (!r || !/^\d{7,10}$/.test(String(code7)) || !String(code7).startsWith(String(code5))) continue;
-      out.push({ label: [name, sgName, sidoName].filter(Boolean).join(' · '), route: { ...r, dong: String(code7) }, name, region: [sgName, sidoName] });   // name·region: 법정동 이름으로 찾기(util.js dongHit)
+      out.push({ label: [name, sgName, sidoName].filter(Boolean).join(' · '), route: { ...r, dong: String(code7) }, name, region: [sgName, sidoName],   // name·region: 법정동 이름으로 찾기(util.js dongHit)
+        ...(row[5] ? { href: `dong/${code7}.html` } : {}) });   // 여섯째 칸 true: 2025 경계가 없는 동(dong_extra.json). 지도 대신 그 동 쪽으로(홈 찾기와 같다)
     }
     return out;
   }
@@ -462,7 +463,8 @@
     const h = e.horizon, a = fd && fd.forecast && fd.forecast[base] && isNum(h) ? fd.forecast[base][String(h)] : null;
     if (!Array.isArray(a) || !isNum(a[0]) || !isNum(a[1]) || !isNum(a[2])) return fd && fd.excluded && typeof fd.excluded[base] === 'string' ? { held: fd.excluded[base] } : null;
     const by = e.forecastIdx && isNum(e.forecastIdx.base_year) ? e.forecastIdx.base_year : null, code = by === null ? null : `FORECAST_${base}_H${h - by}`;
-    return { point: a[0], lo: Math.min(a[1], a[2]), hi: Math.max(a[1], a[2]), cell: ((fd.cells || []).find(c => c.indicator_code === code || c.indicator_code === base) || null) };
+    const bt = fd.backtest && (fd.backtest[base] || fd.backtest[base.replace(/_CHANGE_PCT$/, '')]);   // 이 동 자신의 백테스트 오차(전국 동 중앙값과 나란히 보인다)
+    return { point: a[0], lo: Math.min(a[1], a[2]), hi: Math.max(a[1], a[2]), mape: bt && isNum(bt.mape) ? bt.mape : null, cell: ((fd.cells || []).find(c => c.indicator_code === code || c.indicator_code === base) || null) };
   }
   // 기준 해당 항목 수: 확정(승인된 기준을 넘음) · 추가확인(넘었지만 기준 승인 대기) · 자료 없음. 묶음 지표(요건 충족 수)와 종합은 세지 않는다
   function tally(rows) {
@@ -568,7 +570,7 @@
       }
       if (ind.src === 'forecast') {
         const f = ind.pending ? null : fcOf(ext, ind.level === 'sg' ? null : codeOf(dong || {}), ind.fc), ok = f && !f.held;
-        return rowOf(ind, ok ? f.point : null, { year: ext && isNum(ext.horizon) ? ext.horizon : null, series: null, delta: null, cell: ok ? f.cell : null, lo: ok ? f.lo : null, hi: ok ? f.hi : null, held: f && f.held ? f.held : ind.held || null, sgLevel: ind.level === 'sg' });
+        return rowOf(ind, ok ? f.point : null, { year: ext && isNum(ext.horizon) ? ext.horizon : null, series: null, delta: null, cell: ok ? f.cell : null, lo: ok ? f.lo : null, hi: ok ? f.hi : null, mape: ok ? f.mape : null, held: f && f.held ? f.held : ind.held || null, sgLevel: ind.level === 'sg' });
       }
       if (ind.level === 'sg') { // 시군구 단위 값을 '이 동의 값'처럼 보이지 않게 sgLevel 표시
         const x = ind.pending || !ext || !ext.sg ? { value: null, year: null, text: null, cell: null } : sgExtra(ind, ext.sg, ext);
@@ -737,7 +739,7 @@
     if (r.evidenceMissing) return SERIES_NO_CELL + (ind.standard ? ` · 기준 ${ind.standard.text}` : ind.note ? ` · ${ind.note}` : '');
     // 30년 감소율 셀이 비면 까닭을 적는다(docs/quality/pop_drop30_missing_2026-11-06.md: 98%가 지금 행정동 코드 기록이 1995년 뒤 시작). 값을 지어 채우지 않는다
     if (ind.code === 'DECLINE_POP_DROP30Y_PCT' && r.value === null && r.cell) return `계산 안 함 · 1996~2025년 인구 기록이 다 있지 않음(대부분 지금 행정동 코드가 1995년 뒤에 생김) · 요건 ①은 '최근 5년 중 3년 연속 감소' 길로 볼 수 있음${ind.standard ? ` · 기준 ${ind.standard.text}` : ''}`;
-    if (ind.src === 'forecast') return `${r.held ? `보류 · ${r.held} · ` : ''}${foreLine(ind)}${isNum(r.lo) && isNum(r.hi) ? ` · 80% 구간 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}` : ''}${ind.level === 'sg' ? ' · 시·군·구 단위' : ''}`;
+    if (ind.src === 'forecast') return `${r.held ? `보류 · ${r.held} · ` : ''}${foreLine(ind, r)}${isNum(r.lo) && isNum(r.hi) ? ` · 80% 구간 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}` : ''}${ind.level === 'sg' ? ' · 시·군·구 단위' : ''}`;
     if (ind.level === 'sg') return `시·군·구 단위 자료 · 읍·면·동 값이 아닙니다${ind.group === 'estate' ? ` · ${ESTATE_NOTE}` : ''}${r.since ? ` · 지정 ${r.since}` : ''}${isNum(r.abs) ? ` · 순이동 ${fmt(r.abs, '명')}` : ''}`;
     const method = accessMethod(ind);
     if (method) return `${method}${ind.standard ? ` · 기준 ${ind.standard.text}${ind.standard.source ? ` · ${ind.standard.source}` : ''}${isPending(ind.standard) ? ` · ${ind.standard.status}${r.crossed ? ' · 기준선 넘은 쪽' : r.crossed === false ? ' · 기준선 안쪽' : ''}` : ''}` : ''}`;
@@ -1026,7 +1028,8 @@
   const copyHead = caption => `<div class="dg-tbl-h" aria-live="polite"><b>${esc(caption)}</b>${DG ? `<button type="button" class="btn ghost dg-copy" data-copy-table>${esc(DG.COPY_TABLE)}</button>` : ''}</div>`;
   // 내려받기·인쇄·보조 메일 요청. 1쪽 요약에서는 HWPX가 1쪽 문서다
   // 동네 보고서 화면에서 받는 파일은 근거서 형식이다(문서는 1쪽 요약·근거서 두 가지). 단추에 그렇게 적는다(v9: 두 화면의 HWPX가 같은 파일인데 이름만 보고는 몰랐다)
-  const fileTools = (it, year, what, one) => `<button type="button" class="btn ghost" data-print>인쇄·PDF</button>` + (DG ? `<button type="button" class="btn" data-dl="hwpx">HWPX 받기${one ? '(1쪽)' : what === '동네 보고서' ? '(근거서 형식)' : ''}</button><button type="button" class="btn" data-dl="xlsx">XLSX 받기</button><button type="button" class="btn" data-dl="docx">DOCX 받기</button><button type="button" class="btn" data-dl="pptx">PPTX 받기</button><button type="button" class="btn ghost" data-task-package>과업에 연결</button>` : '') +
+  // 주 단추는 HWPX 하나, 나머지 형식·과업 연결은 접는다(2026-11-18: 단추 6개가 같은 무게로 결과보다 먼저 나왔다)
+  const fileTools = (it, year, what, one) => `<button type="button" class="btn ghost" data-print>인쇄·PDF</button>` + (DG ? `<button type="button" class="btn" data-dl="hwpx">한글(HWPX) 받기${one ? '(1쪽)' : what === '동네 보고서' ? '(근거서 형식)' : ''}</button><details class="rp-more-files"><summary>다른 형식·과업 연결</summary><button type="button" class="btn" data-dl="xlsx">XLSX 받기</button><button type="button" class="btn" data-dl="docx">DOCX 받기</button><button type="button" class="btn" data-dl="pptx">PPTX 받기</button><button type="button" class="btn ghost" data-task-package>과업에 연결</button></details>` : '') +
     // 메일 요청은 단추가 아니라 한 줄 안내로(v9: 'HWPX 받기' 옆에 같은 모양으로 있어 둘의 차이를 몰랐다)
     `<p class="rp-mail-note">${DG ? '양식에 맞춰 사람이 다듬은 파일이 필요하면' : '이 기기에서 파일을 만들 수 없으면'} <a class="rp-mail" href="${esc(briefMailto(it, year, what))}">메일로 요청</a>하세요(무료 · 1영업일).</p>`;
   // 양식에 붙일 조각(문장 5개 이하 + 표 1개 + 출처 줄): 양식을 고르면 그 양식 항목 순서대로 만든다(data-frag-out). 양식 정의는 data/report_templates.json
@@ -1055,13 +1058,13 @@
     const sec3 = `<section class="rp-g"><h3>3. 기준 해당·확인 필요 목록</h3>${gapsHTML(rows, { open: true })}</section>`;
     const sec4 = `<section class="rp-g"><h3>4. 출처·계산식 표</h3><div class="dg-tbl">${copyHead('출처·계산식')}<div class="table-wrap"><table class="rp-tbl"><thead><tr><th>항목</th><th>값</th><th>출처</th><th>기준일</th><th>계산식</th><th>규칙 버전</th></tr></thead><tbody>${facts.map(r => { const s = srcOf(r);
       return `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name)}</td><td>${esc(s.ref || (r.year ? `${r.year}년` : '기록 없음'))}${ageSmall(s.ref)}</td><td>${esc(s.formula || '기록 없음')}</td><td>${esc(s.rule || '기록 없음')}</td></tr>`; }).join('')}</tbody></table></div></div></section>`;
-    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 사업 근거서</h3><p class="rp-tools">${fileTools(it, dy, '근거서', false)}</p></div>` +
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 사업 근거서</h3><div class="rp-tools">${fileTools(it, dy, '근거서', false)}</div></div>` +
       `${deliveryReviewHTML(brief)}<p class="rp-intro rp-src-line">${esc(srcHead('4. 출처·계산식 표'))}</p><p class="rp-intro rp-brief-head">${esc(BRIEF_HEAD)}</p><p class="rp-intro">${esc(here)} · ${esc(it.kind || '행정동')} ${esc(it.code)} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'} · 생활 지표는 항목별 기준연도</p>${fragPanelHTML(sel || '')}${sec1}${sec2}${sec3}${sec4}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
   // 1쪽 요약: 제목·개요 4줄·요약 문장 5개·기준 대비 표(8행 이하)·출처 번호·끝. one = DG.buildOnepage(...) 결과. 인쇄하면 A4 한 쪽
   function onepageHTML(v, it, one, sel) {
-    const here = v.crumbs.map(c => c.label).join(' › ');
-    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><p class="rp-tools">${fileTools(it, one.brief.year, '1쪽 요약', true)}</p></div>` +
+    const labels = v.crumbs.map(c => c.label), here = (labels[labels.length - 1] === it.name ? labels : [...labels, it.name]).join(' › '), lead = one.parts.summary[0];
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 1쪽 요약</h3>${lead ? `<p class="rp-lead">${esc(lead.text)}</p>` : ''}<div class="rp-tools">${fileTools(it, one.brief.year, '1쪽 요약', true)}</div></div>` +
       `${deliveryReviewHTML(one.brief)}<div class="dg-doc dg-onepage">${DG.docHTML(one, { copy: true }).html}</div>${fragPanelHTML(sel)}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
   // ── 기기 안 AI(Chrome 내장 AI의 Rewriter·Summarizer 전역 API). 문장을 서버로 보내지 않는다 ──
@@ -1379,6 +1382,12 @@
   skipEl.className = 'skip map-skip'; skipEl.href = '#dongCard'; skipEl.hidden = true; skipEl.textContent = '지도 건너뛰고 고른 동 카드로';
   skipEl.addEventListener('click', e => { e.preventDefault(); const h = panel.querySelector('.map-h3'); if (h) h.focus(); });
 
+  // 자료 불러오기 실패: 경고(role=alert)와 다시 시도 단추. 주소의 고른 곳(코드)을 함께 적어 어디서 막혔는지 알린다
+  function loadErrorHTML() {
+    const picked = String(location.hash || '').replace(/^#map\/?/, '').replace(/[^0-9/]/g, '');
+    return `<div class="map-empty" role="alert"><h3>자료를 불러오지 못했습니다</h3><p>인터넷 연결을 확인하고 다시 시도해 주세요.</p>${picked ? `<p>고른 곳: ${esc(picked)}</p>` : ''}<p><button type="button" class="btn" data-retry>다시 시도</button></p></div>`;
+  }
+  document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-retry]')) location.reload(); });
   function emptyHTML(title, lines, mascot) {
     return `<div class="map-empty" role="status">${mascot ? '<img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true">' : ''}<h3>${esc(title)}</h3>${lines.map(l => `<p>${esc(l)}</p>`).join('')}</div>`;
   }
@@ -1505,7 +1514,7 @@
       `<span class="rp-ai-note">선택 기능 · 기본 꺼짐 · 무료 · 로그인 없음 · 서버 전송 없음</span>` +
       `<div class="rp-ai-consent" data-ai-confirm hidden><p><b>기기 내 AI 모델 내려받기</b><br>Chrome이 AI 모델을 이 기기에 한 번 내려받습니다(Chrome 안내: 저장 공간 22GB 이상 여유 필요).<br>내려받은 뒤에도 문장은 이 기기 안에서만 처리합니다.</p><button type="button" class="btn" data-ai-go>내려받고 다듬기</button> <button type="button" class="btn ghost" data-ai-cancel>취소</button></div>` +
       `<div class="rp-ai-out" data-ai-out aria-live="polite">${pol ? `<p class="rp-ai-label">${esc(AI_LABEL)}</p><p>${esc(pol.text)}</p>` : ''}</div><p class="rp-ai-foot">${esc(AI_FOOT)}</p></div>`;
-    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 보고서</h3><p class="rp-tools">${fileTools(it, rows.find(r => r.ind.series && r.year)?.year ?? null, '동네 보고서', false)}</p></div>` +
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 보고서</h3><div class="rp-tools">${fileTools(it, rows.find(r => r.ind.series && r.year)?.year ?? null, '동네 보고서', false)}</div></div>` +
       `<p class="rp-intro rp-src-line">${esc(srcHead('출처표'))}</p><p class="rp-intro">카드의 숫자와 문장은 출처 기록의 값과 출처만 옮긴 것입니다.<br>평가나 판정은 하지 않습니다.</p>${typeof localStorage !== 'undefined' ? snapHTML(snapGet(it.code), snapshotOf(it, rows, new Date())) : ''}${byG}${src}${ai}<p class="rp-foot">${esc(REPORT_FOOT)}</p>`;
   }
   const socText = r => fmt(r.value, r.ind.unit);
@@ -1519,12 +1528,12 @@
     reportKey = key;
     document.body.classList.toggle('print-onepage', reportMode === 'onepage' && !!it); // 인쇄 때 1쪽 요약만 A4 한 쪽에 맞춘다
     if (!it && reportMode === 'programs' && window.RenewPrograms && m.kind === 'emd' && m.items && m.items.length) {
-      const here = v.crumbs[v.crumbs.length - 1].label, items = m.items.map(x => ({ name: x.name, rows: rowsFor(v, m, x) }));
-      report.innerHTML = reportModeHTML(reportMode) + window.RenewPrograms.districtHTML(here, items);
+      const here = v.crumbs[v.crumbs.length - 1].label, items = m.items.map(x => ({ name: x.name, rows: rowsFor(v, m, x), cells: (m.json.dongs.find(d => codeOf(d) === x.code) || {}).cells }));
+      report.innerHTML = reportModeHTML(reportMode) + window.RenewPrograms.districtHTML(here, items, DG);
       report.querySelector('[data-district-csv]').addEventListener('click', () => { if (DG) DG.saveBytes(`동별사업요건비교_${DG.safeName(here)}.csv`, new TextEncoder().encode(window.RenewPrograms.districtCSV(items)), 'text/csv;charset=utf-8'); });
       return;
     }
-    if (!it) { report.innerHTML = reportModeHTML(reportMode) + `<div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 ${esc(iGa(REPORT_MODES.find(x => x[0] === reportMode)[1]))} 생깁니다</h3><p><a href="${esc(toHash({ sido: v.sido && v.sido.code2, sigungu: v.sigungu && v.sigungu.code5, gu: v.gu && v.gu.code5 }))}">지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p></div>`; return; }
+    if (!it) { report.innerHTML = reportModeHTML(reportMode) + `<div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 ${esc(iGa(REPORT_MODES.find(x => x[0] === reportMode)[1]))} 생깁니다</h3><p><a href="${esc(toHash({ sido: v.sido && v.sido.code2, sigungu: v.sigungu && v.sigungu.code5, gu: v.gu && v.gu.code5 }))}">지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p>${m.kind === 'emd' && m.items && m.items.length && window.RenewPrograms ? '<p><button type="button" class="btn" data-set-mode="programs">이 구의 동 비교표 보기</button></p>' : ''}</div>`; return; }
     const rows = rowsFor(v, m, it);
     if (reportMode === 'onepage') {
       const built = docFor(v, m, it);
@@ -1548,7 +1557,7 @@
     paintFrag();
   }
   // ── 파일 만들기(docgen.js): 선택한 동의 출처 기록으로 근거서(HWPX·XLSX)와 1쪽 요약을 이 브라우저에서 바로 만든다. 서버로 보내지 않는다 ──
-  const todayISO = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+  const todayISO = () => DG.localDate();   // 서울 날짜(기기 시간대와 무관: 한국 밖·UTC 환경에서 0~9시에 하루가 어긋나지 않게)
   let taskLinkBusy = false;
   let docMemo = { key: '', val: null }, fragChoice = { id: '', variant: '' };
   // 생활·전망·순이동 자료가 아직 오는 중이면 '파일 없음'으로 적히지 않게 만들기를 미룬다
@@ -1556,7 +1565,7 @@
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261117-reuse'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261119-r1'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
@@ -1912,6 +1921,10 @@
     if (wantInd) { const code = wantedInd(wantInd, inds()); if (code) { state.ind = code; state.year = null; wantInd = null; } else if (state.living !== undefined) wantInd = null; }   // 생활 지표 도착 전에는 기다리고, 도착했는데 없으면 버린다
     if (!wantInd) syncIndUrl();
     const v = resolve(state.index, state.route);
+    if (state.index === null) {   // 자료 파일을 못 불러왔다(네트워크·차단). '준비 중'이라 말하면 이미 고른 동네를 서비스에 자료가 없는 것으로 오해한다
+      top.innerHTML = pick.innerHTML = bottom.innerHTML = legendLine.innerHTML = ''; panel.hidden = true;
+      stage.innerHTML = loadErrorHTML(); if (report) report.innerHTML = loadErrorHTML(); return;
+    }
     if (v.level === 'empty') { top.innerHTML = pick.innerHTML = bottom.innerHTML = legendLine.innerHTML = ''; panel.hidden = true; stage.innerHTML = emptyHTML('전국 데이터 준비 중', ['출처 기록에서 내보낸 숫자만 이 자리에 보여 드립니다.', '준비되면 전국에서 읍·면·동까지 내려가 볼 수 있습니다.'], true); return; }
     const ind = curInd(), mode = effMode(ind), m = model(v), src = state.index.source && state.index.source.name, ok = avail(ind);
     const summaryNotice = m.summaryWaiting ? (state.index.summaryError ? '추가 지표 자료를 불러오지 못했습니다. 새로고침해 주세요.' : '추가 지표 자료를 불러오는 중입니다.') : '';
@@ -2417,7 +2430,7 @@
       const rows = rowsFor(c.v, c.m, c.it), snapshot = snapshotOf(c.it, rows, new Date()), route = toHash(state.route);
       b.disabled = true;
       try {
-        if (!window.RenewCandidates) await import('./candidates.js?v=20261117-reuse');
+        if (!window.RenewCandidates) await import('./candidates.js?v=20261119-r1');
         const saved = window.RenewCandidates.save(localStorage, snapshot, route, rows);
         msg.textContent = saved ? '보관함(아래 탭·바닥글)에서 단계·메모와 근거를 확인하세요.' : '이미 저장한 후보입니다. 기존 근거와 메모를 보존했습니다.';
       } catch (err) { msg.textContent = '저장하지 못했습니다. ' + err.message; }
@@ -2461,7 +2474,7 @@
   }
   if (form) {
     const q = form.querySelector('input'), msg = form.querySelector('[data-search-msg]');
-    const pick = () => { const e = findEntry(entries, q.value); if (msg) msg.textContent = e ? `${e.label.split(' · ')[0]}${roJosa(e.label.split(' · ')[0])} 이동했습니다.` : '찾지 못했습니다. 동 이름이나 구 이름으로 다시 찾아 보세요.'; if (e) { go(e.route); app.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); } };
+    const pick = () => { const e = findEntry(entries, q.value); if (msg) msg.textContent = e ? `${e.label.split(' · ')[0]}${roJosa(e.label.split(' · ')[0])} 이동했습니다.` : '찾지 못했습니다. 동 이름이나 구 이름으로 다시 찾아 보세요.'; if (e && e.href) { location.href = e.href; return; } if (e) { go(e.route); app.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); } };
     form.addEventListener('submit', e => { e.preventDefault(); pick(); });
     q.addEventListener('focus', touch);
     const dl = form.querySelector('datalist');
@@ -2523,5 +2536,7 @@
     fetchJson('data/national/designations.json', true).then(j => { state.designations = j && Array.isArray(j.items) ? j : null; }),
     fetchJson('data/national/forecast/index.json', true).then(j => { state.forecastIdx = j && Array.isArray(j.horizons) ? j : null; }),
   ]).then(() => { if (state.index) render(); });
-  fetchJson('data/national/dong_index.json', true).then(di => { state.dongIndex = Array.isArray(di) ? di : null; if (state.index) searchSetup(); });
+  // 보충 목록(경계 없는 동 9곳)은 받지 못해도 본 색인으로 찾는다(home.js getIndex와 같다)
+  Promise.all([fetchJson('data/national/dong_index.json', true), fetchJson('data/national/dong_extra.json', true)])
+    .then(([di, ex]) => { state.dongIndex = Array.isArray(di) ? di.concat((Array.isArray(ex) ? ex : []).map(r => [...r, true])) : null; if (state.index) searchSetup(); });
 })();

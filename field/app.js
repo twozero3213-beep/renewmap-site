@@ -20,7 +20,18 @@
   const storeJson = (k, v) => { if (v !== undefined) return store(k, JSON.stringify(v)); try { return JSON.parse(store(k)) || null; } catch (e) { return null; } };
 
   // 오류는 role=alert로 바로 읽히게 한다(2026-11-18 접근성 검토: 저장 실패가 status로만 뒤늦게 읽혔다). 역할을 먼저 바꾸고 글을 넣는다
-  function say(text, err) { $("msg").setAttribute("role", err ? "alert" : "status"); $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; }
+  function say(text, err) {
+    $("msg").setAttribute("role", err ? "alert" : "status"); $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg";
+    if (err) $("msg").scrollIntoView({ block: "nearest" });
+  }
+  // 검증 오류가 칸을 알려 주면 그 칸을 열고 오류 문구와 이어 준 뒤 초점을 준다
+  function focusFields(fields) {
+    const el = fields && fields[0] && $(fields[0].id);
+    if (!el) return;
+    for (let d = el.closest("details"); d; d = d.parentElement && d.parentElement.closest("details")) d.open = true;
+    for (const x of fields) { const t = $(x.id); if (t) { t.setAttribute("aria-invalid", "true"); t.setAttribute("aria-describedby", "msg"); t.addEventListener("input", () => t.removeAttribute("aria-invalid"), { once: true }); } }
+    el.focus();
+  }
   let toastTimer = 0;
   function toast(text, actLabel, act, ok) {
     const t = $("toast"), b = $("toastAct");
@@ -96,7 +107,7 @@
     $("bldFind").hidden = !bjds.length;
     $("bldNote").textContent = bjds.length
       ? `법정동 ${bjds.map((b) => b.name).join("·")}의 건축물대장에서 찾습니다.\n법정동은 행정동에서 근사해 골랐습니다.\n건물 자료에 좌표가 없어 사진 위치로 거리를 재지 못합니다.\n같은 본번에서 부번이 가까운 순으로 3동씩 보여 줍니다.`
-      : "이 지역은 건물 자료가 아직 없습니다.\n지번은 아래 '자세히'에 직접 적어 주세요.";
+      : "이 지역은 건물 자료가 아직 없습니다.\n지번은 위의 '위치를 못 받으면 지번으로 적기'에 직접 적어 주세요.";
   }
   function pickedText() {
     $("bldPicked").hidden = !chosen;
@@ -268,7 +279,7 @@
     }
   }
   function locate() {
-    if (!navigator.geolocation) { $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '자세히'에 지번을 적어 주세요."; return; }
+    if (!navigator.geolocation) { $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '위치를 못 받으면 지번으로 적기'에 지번을 적어 주세요."; return; }
     $("locLine").textContent = "위치를 받는 중입니다.";
     const wait = (on) => { document.body.classList.toggle("gps-wait", on); $("gps").setAttribute("aria-busy", String(on)); };
     wait(true);
@@ -278,7 +289,7 @@
       pos = { ...gps }; corrected = false; locLine(); lookup(); drawNear();
     }, () => {
       wait(false);
-      if (!pos) { $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '자세히'에 지번을 적어 주세요."; return; }
+      if (!pos) { $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '위치를 못 받으면 지번으로 적기'에 지번을 적어 주세요."; return; }
       locLine(); $("locLine").textContent += "\n새 위치를 받지 못해 이전 위치를 그대로 씁니다.";   // '받는 중' 문구가 남지 않게
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
   }
@@ -588,6 +599,10 @@
   $("f").addEventListener("submit", async (e) => {
     e.preventDefault();
     try {
+      if ($("visitOn").checked && $("visit-start").value && !$("visit-end").value) {
+        const hm = D.localDate(new Date(), true).split(" ")[1];
+        if (hm > $("visit-start").value) $("visit-end").value = hm;
+      }
       // 붙인 사진은 '가림 확인' 칸을 거쳐야 pending에 들어오므로 photoSafe는 그 확인을 뜻한다
       const dong = place && place.code ? { code: place.code, name: place.name, sgName: place.sgName, sido: place.sido, nearby: place.nearby.map((x) => x.name), boundary: place.boundary } : null;
       const rec = R.makeRecord({ pnu: $("pnu").value, jibun: $("jibun").value, target: picked("target"), item: $("item").value, observed: $("observed").value,
@@ -615,7 +630,7 @@
         try { await S.deleteRecord(rec); toast("저장을 되돌렸습니다."); await render(); } catch (e) { toast("저장을 되돌리지 못했습니다.\n목록에서 확인해 주세요."); }
       }, true);
       recordPages.reset(); await render();
-    } catch (err) { say(err.message, true); }
+    } catch (err) { say(err.message, true); focusFields(err.fields); }
   });
 
   // ── 1쪽 문서: 한글(HWPX)은 바로 받고 보관함에도 남긴다. PDF는 인쇄 창에서 'PDF로 저장'
@@ -759,6 +774,9 @@
         if (target) { target.checked = true; $("targets").dispatchEvent(new Event("change")); }
         if (!pos) { $("jibun").value = r.jibun || ""; $("pnu").value = r.pnu || ""; }
         $("visitBox").open = true; $("visitOn").checked = true; $("visitOn").dispatchEvent(new Event("change"));
+        const [today, hm] = D.localDate(new Date(), true).split(" ");   // 기기 시계로 날짜·시작만 채운다. 구간·방식·날씨는 이전 기록에서 채우지 않는다
+        if (!$("visit-date").value) $("visit-date").value = today;
+        if (!$("visit-start").value) $("visit-start").value = hm;
         $("visitBox").scrollIntoView({ block: "start", behavior: "instant" });
         if (!pos && !r.jibun && !r.pnu) say("현재 위치를 받은 뒤 관찰 조건을 적어 주세요.");
       });

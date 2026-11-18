@@ -120,14 +120,22 @@
       throw new Error("안내된 이용 조건에는 출처와 안내자료 확인일이 필요합니다.");
     return { ...f, source_date: day || null, observed_state: state || null };
   }
+  // 화면이 어느 칸에 초점을 줄지 알도록 err.fields=[{id,msg}]를 함께 보낸다. message는 첫 문장 그대로다.
+  const fail = (msg, fields) => Object.assign(new Error(msg), fields ? { fields } : {});
   function visitRecord(input) {
     if (input == null) return null;
     if (typeof input !== "object" || Array.isArray(input)) throw new Error("관찰 조건 형식이 올바르지 않습니다.");
     const text = surveyText(input, VISIT_FIELDS), date = clean(input.date), start = clean(input.start), end = clean(input.end), weather = clean(input.weather);
-    if (!dayValid(date) || !timeValid(start) || !timeValid(end)) throw new Error("관찰 날짜와 시작·종료 시각을 올바르게 적어 주세요.");
-    if (end <= start) throw new Error("종료는 시작 이후여야 합니다. 자정을 넘으면 날짜별로 나누어 기록해 주세요.");
-    if (!text.area || !text.method) throw new Error("관찰 구간과 방식을 적어 주세요.");
-    if (weather && !WEATHER.includes(weather)) throw new Error("날씨를 목록에서 골라 주세요.");
+    const errs = [], bad = (id, msg) => errs.push({ id, msg });
+    const whenMsg = "관찰 날짜와 시작·종료 시각을 올바르게 적어 주세요.", whatMsg = "관찰 구간과 방식을 적어 주세요.";
+    if (!dayValid(date)) bad("visit-date", whenMsg);
+    if (!timeValid(start)) bad("visit-start", whenMsg);
+    if (!timeValid(end)) bad("visit-end", whenMsg);
+    if (!errs.length && end <= start) bad("visit-end", "종료는 시작 이후여야 합니다. 자정을 넘으면 날짜별로 나누어 기록해 주세요.");
+    if (!text.area) bad("visit-area", whatMsg);
+    if (!text.method) bad("visit-method", whatMsg);
+    if (weather && !WEATHER.includes(weather)) bad("visit-weather", "날씨를 목록에서 골라 주세요.");
+    if (errs.length) throw fail(errs[0].msg, errs);
     const counts = {};
     for (const key of ["passages", "staying"]) {
       const v = input[key];
@@ -156,7 +164,7 @@
     const lat = num(input.lat), lng = num(input.lng);
     if ((lat === null) !== (lng === null) || [lat, lng].some((x) => x !== null && !Number.isFinite(x))) throw new Error("위치는 위도·경도를 함께 적습니다.");
     if (lat !== null && !validPoint(lat, lng)) throw new Error("위도는 -90~90, 경도는 -180~180 범위여야 합니다.");
-    if (lat === null && !pnu && !jibun) throw new Error("위치를 켜거나 지번을 적어 주세요.");
+    if (lat === null && !pnu && !jibun) throw fail("위치를 켜거나 지번을 적어 주세요.", [{ id: "jibun", msg: "위치를 켜거나 지번을 적어 주세요." }]);
     const observed = clean(input.observed);
     if (status !== "추가확인" && !observed) throw new Error("본 값을 적어 주세요.\n모르면 '모름'을 고르세요.");
     const memo = clean(input.memo);
@@ -407,11 +415,11 @@
       features: (records || []).map((r) => ({ type: "Feature", id: r.id, geometry: validPoint(r.lat, r.lng) ? { type: "Point", coordinates: [r.lng, r.lat] } : null, properties: gisProps(r) })),
     };
   }
-  // 엑셀에서 수식으로 읽히는 글(=, +, -, @로 시작)은 앞에 '를 붙인다. 쉼표·따옴표·줄바꿈이 있으면 따옴표로 감싼다
+  // 엑셀에서 수식으로 읽히는 글(앞 공백·BOM 뒤 =, +, -, @, 탭, CR)은 앞에 '를 붙이되 '-2.81' 같은 순수 숫자는 둔다(candidates.js와 같은 규칙). 쉼표·따옴표·줄바꿈이 있으면 따옴표로 감싼다
   const csvCell = (v) => {
     if (v === null || v === undefined) return "";
     let s = String(v);
-    if (typeof v === "string" && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    if (typeof v === "string" && !/^-?\d+(?:\.\d+)?$/.test(s.trim()) && /^[\s﻿]*[=+@\t\r-]/.test(s)) s = "'" + s;
     return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   // CSV(UTF-8 BOM): 엑셀에서 한글이 깨지지 않게 BOM을 붙인다. 줄 끝은 CRLF

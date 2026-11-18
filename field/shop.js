@@ -25,7 +25,7 @@
   const avgName = (doc, gu) => (doc.kinds.general.city_avg ? `${gu} 평균` : "부산 평균");
   // 읍·면은 리를 묻지 않고 읍·면 전체를 한 줄로 센다(export_shop_change_gyeongnam.py 머리말)
   const dongText = (o) => (o.unit === "읍면" ? `${o.dong}(읍·면 전체)` : o.dong);
-  const cell = (v) => { const s = v === null || v === undefined ? "" : String(v); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const cell = (v) => { const s = v === null || v === undefined ? "" : String(v); const t = typeof v === "number" || /^-?\d+(\.\d+)?$/.test(s.trim()) ? s : s.replace(/^[\s\uFEFF]*[=+@\t\r-]/, "'$&"); return /[",\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   function toCSV(doc, gu, rows) {
     const note = [`${gu} 음식점 상권 변화 유형(참고) · 인허가 기준일 ${doc.ref_date} · ${doc.source} · ${doc.license} · ${doc.method} · 판정·추천 아님`];
     const head = [doc.kinds.general.city_avg ? "법정동·읍면" : "법정동", "법정동코드"];
@@ -38,7 +38,7 @@
     const avg = KINDS.map((k) => `${doc.kinds[k].name} ${avgName(doc, gu)}: 운영 ${avgOf(doc, k, gu).open_avg_m}개월, 폐업 ${avgOf(doc, k, gu).closed_avg_m}개월`);
     return "﻿" + [note, head, ...body, [avg.join(" / ")]].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
   }
-  const api = { KINDS, MEANING, typeText, rowsFor, gus, toCSV, avgOf, avgName, dongText };
+  const api = { KINDS, MEANING, typeText, rowsFor, gus, toCSV, avgOf, avgName, dongText, csvCell: cell };
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.RenewShop = api;
 })(this);

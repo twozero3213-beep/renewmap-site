@@ -89,10 +89,10 @@
   // R3 10: 지금 고른 법정동의 건물 목록을 CSV로. 이미 받은 건축물대장 표제부 파일(화면이 쓰는 그 자료)의 공개 항목만 옮기고 새 요청은 없다.
   // 머리줄(출처·기준일·30년 이상 건물 수·개인 정보·정렬)는 '#'로 시작하고, 그 아래 열 이름 한 줄 + 건물마다 한 줄(=화면 건물 수). 엑셀이 한글을 읽게 BOM을 붙인다
   const CSV_COLS = ['관리 건축물대장 번호', '법정동', '지번', '건물명', '주용도', '구조', '사용승인일', '사용승인 연도', '층수', '연면적(㎡)', '만 연수', '30년 이상'];
+  const csvCell = (v) => { const t = v === null || v === undefined ? '' : String(v); return `"${(/^-?\d+(\.\d+)?$/.test(t.trim()) ? t : /^[\s\uFEFF]*[=+\-@\t\r]/.test(t) ? "'" + t : t).replace(/"/g, '""')}"`; };
   function csv(bf, list) {
     // 셀이 =+-@로 시작하면 엑셀이 식으로 읽는다 → 앞에 작은따옴표. R5 11: 앞 공백·BOM 뒤의 식 문자와 탭·CR로 시작하는 칸도 막는다(candidates.js cell과 같은 방식)
     // R8 1: '-2.81' 같은 순수 숫자는 제외한다(따옴표가 붙으면 엑셀이 글자로 읽는다). '-1+2'·'=1'은 그대로 막는다
-    const q = (v) => { const t = v === null || v === undefined ? '' : String(v); return `"${(/^-?\d+(\.\d+)?$/.test(t.trim()) ? t : /^[\s\uFEFF]*[=+\-@\t\r]/.test(t) ? "'" + t : t).replace(/"/g, '""')}"`; };
     // R5 11: 안전 점검 담당자가 파일만 열어도 규모를 알게 한다(30년 이상 = over30 참인 건물 수). 판정이 아니라 사용승인일로 센 수다
     const meta = [`# 출처: ${bf.source || ''} (${bf.data_source_system || ''})`, `# 기준일: ${bf.hub_reference_date || ''} · 법정동: ${bf.name || ''}(${bf.bjd10 || ''}) · 건물 ${list.length}동`,
       `# 30년 이상 ${list.filter((b) => b.over30 === true).length}동 / 전체 ${list.length}동 (사용승인일로 센 수이며 노후 판정이 아닙니다)`,
@@ -102,11 +102,11 @@
     const key = (b) => b.use_apr_day || (Array.isArray(b.use_apr_span) ? b.use_apr_span[0] : '');
     const oldest = list.map((b, i) => [b, i, key(b)]).sort((a, b) => (a[2] === b[2] ? a[1] - b[1] : !a[2] ? 1 : !b[2] ? -1 : a[2] < b[2] ? -1 : 1)).map((x) => x[0]);
     const rows = oldest.map((b) => [b.mgm_bld_pk, bf.name, b.jibun, b.name, b.main_use, b.structure, b.use_apr_day || (Array.isArray(b.use_apr_span) ? '연도만: ' + b.use_apr_span[0].slice(0, 4) : ''),
-      aprYear(b) || '', b.floors, b.tot_area, b.age_years, b.over30 === true ? '예' : b.over30 === false ? '아니오' : ''].map(q).join(','));
-    return '\ufeff' + [...meta, CSV_COLS.map(q).join(','), ...rows].join('\r\n') + '\r\n';
+      aprYear(b) || '', b.floors, b.tot_area, b.age_years, b.over30 === true ? '예' : b.over30 === false ? '아니오' : ''].map(csvCell).join(','));
+    return '\ufeff' + [...meta, CSV_COLS.map(csvCell).join(','), ...rows].join('\r\n') + '\r\n';
   }
 
-  const api = { YEAR_FROM, BANDS, NO_DATE, aprYear, stats, crossYear, sinceYear, features, colorExpr, filterExpr, dongAt, csv, CSV_COLS };
+  const api = { YEAR_FROM, BANDS, NO_DATE, aprYear, stats, crossYear, sinceYear, features, colorExpr, filterExpr, dongAt, csv, CSV_COLS, csvCell };
   if (typeof module === 'object' && module.exports) { module.exports = api; return; }
   root.Time4D = api;
 

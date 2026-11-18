@@ -422,38 +422,26 @@
           newBlobs.set(ref.sha256, file);
         }
       }
-      const result = $("rvResult").value.trim(),
-        reason = $("rvReason").value.trim();
-      const beforeConditions = getConditions("Before");
-      const row = {
-        id: selected || crypto.randomUUID(),
-        survey_sha256: $("rvSource").value,
-        survey_row_id: initial.id,
-        site_key: initial.id,
-        completed_on: $("rvCompletion").value,
-        observed_on: $("rvDate").value,
-        initial_conditions: beforeConditions,
-        initial_conditions_source:
-          fromRecord && canonical(beforeConditions) === canonical(fromRecord)
-            ? "field_record"
-            : "user_transcribed",
-        revisit_conditions: getConditions("After"),
-        result,
-        reason,
-        photos,
-        field_id: afterField,
-        form: $("rvFormName").value.trim(),
-        sheet: $("rvSheet").value.trim(),
-        slot: $("rvCell").value.trim(),
-        submit_text:
-          $("rvText").value.trim() ||
-          [
-            initial.subject,
-            initial.observed_on + " " + initial.after,
-            $("rvDate").value + " " + result,
-            reason,
-          ].join(" · "),
-      };
+      const row = M.buildRow(
+        {
+          id: selected || crypto.randomUUID(),
+          surveySha256: $("rvSource").value,
+          completedOn: $("rvCompletion").value,
+          observedOn: $("rvDate").value,
+          beforeConditions: getConditions("Before"),
+          fromRecord,
+          afterConditions: getConditions("After"),
+          result: $("rvResult").value.trim(),
+          reason: $("rvReason").value.trim(),
+          photos,
+          fieldId: afterField,
+          form: $("rvFormName").value.trim(),
+          sheet: $("rvSheet").value.trim(),
+          slot: $("rvCell").value.trim(),
+          text: $("rvText").value.trim(),
+        },
+        initial,
+      );
       const rows = [...(report?.rows || [])];
       const index = rows.findIndex((r) => r.id === row.id);
       if (index < 0) rows.push(row);

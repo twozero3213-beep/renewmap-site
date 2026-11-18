@@ -21,7 +21,7 @@
     const k = Math.cos(((y0 + y1) / 2) * Math.PI / 180), w = (x1 - x0) * k || 1e-6, h = (y1 - y0) || 1e-6, s = width / w;
     return { width, height: Math.ceil(h * s), path: (polys) => polys.map((poly) => poly.map((ring) => "M" + ring.map(([x, y]) => `${((x - x0) * k * s).toFixed(1)},${((y1 - y) * s).toFixed(1)}`).join("L") + "Z").join("")).join("") };
   }
-  const cell = (v) => { const s = v === null || v === undefined ? "" : String(v); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const cell = (v) => { const s = v === null || v === undefined ? "" : String(v); const t = typeof v === "number" || /^-?\d+(\.\d+)?$/.test(s.trim()) ? s : s.replace(/^[\s\uFEFF]*[=+@\t\r-]/, "'$&"); return /[",\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   function toCSV(data, dong) {
     const y = data.years;
     const note = [`${dong.sigungu} ${dong.name} 집계구 ${dong.oas.length}개 · ${data.source} · ${data.license_type} · 판정 규칙 ${data.rule}(승인 전) · ${data.note}`];
@@ -29,6 +29,6 @@
     const body = dong.oas.map((o) => [o.oa, ...o.pop, ...o.biz, yn(o.pop_req.consecutive_3y_in_5y), o.pop_req.verdict, o.biz_req.peak_drop_pct_10y ?? "", yn(o.biz_req.consecutive_3y_in_5y), o.biz_req.verdict, o.met]);
     return "﻿" + [note, head, ...body].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
   }
-  const api = { MET, NOT_MET, CHECK, FILL, LABEL, groupOf, summary, pct, yn, projector, toCSV };
+  const api = { MET, NOT_MET, CHECK, FILL, LABEL, groupOf, summary, pct, yn, projector, toCSV, csvCell: cell };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.RenewOA = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -41,11 +41,11 @@
 .h6-live-where { margin: 0; color: var(--dim); font-size: 15px; }
 .h6-live-big { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 16px 0 8px; }
 .h6-live-big-k { font-weight: 700; }
-.h6-live-big b { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.h6-live-big b { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 .h6-live-rows { list-style: none; margin: 0; padding: 0; }
 .h6-live-rows li { display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: "k v t" "s s s"; gap: 2px 12px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .h6-live-rows span { grid-area: k; font-weight: 600; }
-.h6-live-rows b { grid-area: v; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.h6-live-rows b { grid-area: v; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .h6-live-rows i { grid-area: t; font-style: normal; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
 .h6-live-rows small { grid-area: s; font-size: 15px; color: var(--dim); }
 .h6-live-rows .is-none i { background: var(--amber-bg); color: var(--amber); }
@@ -65,7 +65,7 @@
 .h6-steps li:last-child { border-bottom: 1px solid var(--line); }
 .h6-steps a { display: grid; grid-template-columns: 56px minmax(0, 1fr) minmax(0, 380px); grid-template-areas: "n h img" "n p img" "n o img"; gap: 4px 28px; padding: 28px 0; color: var(--ink); text-decoration: none; align-items: start; }
 .h6-steps a:hover h3 { color: var(--green); text-decoration: underline; text-underline-offset: 4px; }
-.h6-n { grid-area: n; font-size: 40px; font-weight: 800; line-height: 1; color: var(--green); font-variant-numeric: tabular-nums; }
+.h6-n { grid-area: n; font-size: 40px; font-weight: 700; line-height: 1; color: var(--green); font-variant-numeric: tabular-nums; }
 .h6-steps h3 { grid-area: h; margin: 0; }
 .h6-steps p { grid-area: p; margin: 0; color: var(--ink); }
 .h6-steps .h6-out { grid-area: o; font-size: 15px; color: var(--dim); }
@@ -103,12 +103,12 @@
 /* 근거 영수증(11-13): 세 칸 표어 대신 실제 원장 셀 한 장. 인쇄된 계산서처럼 점선과 고정폭 숫자로 */
 .h6-receipt-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: start; margin-top: 8px; }
 .h6-receipt { margin: 0; background: #fffdf8; border: 1px solid #e3dccb; border-radius: 8px; padding: 20px 22px 16px; font-variant-numeric: tabular-nums; }
-.h6-receipt figcaption { display: flex; justify-content: space-between; gap: 12px; font-weight: 800; letter-spacing: .02em; padding-bottom: 10px; border-bottom: 2px solid var(--ink); }
+.h6-receipt figcaption { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; letter-spacing: .02em; padding-bottom: 10px; border-bottom: 2px solid var(--ink); }
 .h6-receipt dl { margin: 0; }
 .h6-receipt dl > div { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px dashed #d8cfba; font-size: 15px; }
 .h6-receipt dt { color: var(--dim); }
 .h6-receipt dd { margin: 0; overflow-wrap: anywhere; }
-.h6-receipt dl > div:first-child dd { font-size: 22px; font-weight: 800; }
+.h6-receipt dl > div:first-child dd { font-size: 22px; font-weight: 700; }
 .h6-receipt-foot { margin: 12px 0 0; font-size: 13px; color: var(--dim); }
 .h6-trust-points { list-style: none; margin: 0; padding: 0; }
 .h6-trust-points li { padding: 0 0 20px; margin: 0 0 20px; border-bottom: 1px solid var(--line); color: var(--dim); }

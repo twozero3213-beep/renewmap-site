@@ -31,8 +31,10 @@ body.field { font-size: 17px; }
 .field button:not(:where(.city3d-map *)):disabled, .field button:not(:where(.city3d-map *)).ghost:disabled { background: var(--off-bg); color: var(--off-ink); border-color: transparent; cursor: not-allowed; }
 .field button:not(:where(.city3d-map *)).save { min-height: 56px; font-size: 17px; margin-top: 16px; }
 /* 2026-11-18 현장 조사자 검토: 사진을 찍고도 저장까지 두 화면 넘게 내려가야 했다 → 폼을 쓰는 동안 저장 단추가 하단 탭 바로 위에 붙어 있게 */
-.field button:not(:where(.city3d-map *)).save { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 5; box-shadow: 0 -8px 16px var(--bg); }
-@media (min-width: 1100px) { .field button:not(:where(.city3d-map *)).save { bottom: 12px; } }
+/* 오류 문구(#msg)와 저장 단추를 한 묶음으로 화면 아래에 붙여, 저장이 거절되면 이유가 단추 바로 위에 보인다 */
+.save-bar { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 5; background: var(--bg); box-shadow: 0 -8px 16px var(--bg); }
+.save-bar .msg { margin: 8px 0 0; }
+@media (min-width: 1100px) { .save-bar { bottom: 12px; } }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .check { display: flex !important; gap: 10px; align-items: center; }
 /* 체크 줄은 44px 터치 영역(심사 06 §5: '가릴 곳을 모두 확인했습니다'는 법적 의미가 있는 체크). 상자는 24px 그대로, 라벨 줄 전체가 눌린다. 위 여백 12px은 margin 4 + padding 8로 같다 */

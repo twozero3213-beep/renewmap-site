@@ -38,7 +38,7 @@
     ['보건소', '기초 지자체', 'HEALTH_CENTER_NEAREST_M'], ['응급실 운영 의료기관', '기초 지자체', 'ER_NEAREST_M'],
   ];
   const STATE = { ok: '자료상 맞음', no: '자료상 안 맞음', check: '확인 필요' };
-  const { esc, isNum: num } = typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil;
+  const { esc, isNum: num, fmt2 } = typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil;
 
   // rows: map.js dongRows 결과 → 사업 요건에 쓰는 값만
   function factsOf(rows) {
@@ -135,27 +135,45 @@
   }
 
   // 시·군·구 안 동을 나란히(코드 순, 순위·배분 아님). 자료로 갈리는 요건만 칸으로 둔다
+  // 표가 쓰는 셀의 지표 코드. 순서가 열 순서다(머리 기준연도·표 아래 각주·CSV 출처 열이 모두 같은 셀을 본다)
+  const DIST_CODES = ['DECLINE_MET_COUNT', 'DECLINE_AGING_20Y_PCT', 'DECLINE_BIZ_DROP10Y_PCT', 'DECLINE_BIZ_DECL3IN5', 'DECLINE_POP_DROP30Y_PCT', 'DECLINE_POP_DECL3IN5'];
+  const cellIn = (it, code) => { const r = it.rows.find(x => x.ind.code === code); return (r && r.cell) || (it.cells || []).find(c => c && c.indicator_code === code) || null; };
   function districtRows(items) {
-    return items.map(({ name, rows }) => {
-      const f = factsOf(rows), val = c => { const r = rows.find(x => x.ind.code === c); return r ? r.value : null; };
+    return items.map(it => {
+      const { name, rows } = it, f = factsOf(rows), val = c => { const r = rows.find(x => x.ind.code === c); return r ? r.value : null; }, flag = c => { const x = cellIn(it, c); return x && num(x.value) ? x.value : null; };
       const state = (id, kind) => checkNeed(PROGRAMS.find(p => p.id === id).needs.find(n => n.kind === kind), f).state;
-      return { name, met: f.met, aging: f.aging, biz: val('DECLINE_BIZ_DROP10Y_PCT'), pop: val('DECLINE_POP_DROP30Y_PCT'), shortfall: f.shortfall, recognize: state('recognize', 'infraOrDecline'), oldres: state('oldres', 'oldDecline') };
+      return { name, met: f.met, aging: f.aging, biz: val('DECLINE_BIZ_DROP10Y_PCT'), bizDecl: flag('DECLINE_BIZ_DECL3IN5'), pop: val('DECLINE_POP_DROP30Y_PCT'), popDecl: flag('DECLINE_POP_DECL3IN5'), shortfall: f.shortfall,
+        recognize: state('recognize', 'infraOrDecline'), oldres: state('oldres', 'oldDecline'), cells: DIST_CODES.map(c => cellIn(it, c)) };
     });
   }
-  const pct = v => (num(v) ? `${Math.round(v * 10) / 10}%` : '–'), cnt = v => (num(v) ? `${v}개` : '–');
-  const DISTRICT_HEAD = ['읍·면·동', '쇠퇴요건(하한)', '노후 건축물', '사업체 10년 감소', '인구 30년 감소', '생활 기준 해당(초안)', '인정사업 쇠퇴·기반 요건', '노후주거지 쇠퇴 요건'];
-  const districtCells = r => [r.name, cnt(r.met), pct(r.aging), pct(r.biz), pct(r.pop), cnt(r.shortfall), STATE[r.recognize], STATE[r.oldres]];
-  function districtHTML(place, items) {
-    const list = districtRows(items);
+  // 소수 둘째 자리까지는 1쪽 요약과 같은 fmt2(2026-11-18: 표는 86.4%, 1쪽은 86.36%로 달랐다)
+  const pct = v => (num(v) ? `${fmt2(v)}%` : '–'), cnt = v => (num(v) ? `${v}개` : '–'), yes = v => (v === 1 ? '해당' : v === 0 ? '아님' : '–');
+  // 머리에 기준연도를 붙인다: 열의 셀 중 처음 만나는 base_year(셀마다 기준이 같은 한 해)
+  const baseOf = (list, i) => { const c = list.map(r => r.cells[i]).find(x => x && x.base_year != null); return c ? `(${c.base_year})` : ''; };
+  const districtHead = (list, unit) => ['읍·면·동', '쇠퇴요건(하한)', `노후 건축물${baseOf(list, 1)}${unit}`, `사업체 10년 최대 대비 감소율${baseOf(list, 2)}${unit}`, '사업체 최근 5년 중 3년 연속 감소', `인구 30년 최대 대비 감소율${baseOf(list, 4)}${unit}`, '인구 최근 5년 중 3년 연속 감소',
+    '생활 기준 해당(초안)', '인정사업 쇠퇴·기반 요건', '노후주거지 쇠퇴 요건'];
+  const districtCells = r => [r.name, cnt(r.met), pct(r.aging), pct(r.biz), yes(r.bizDecl), pct(r.pop), yes(r.popDecl), cnt(r.shortfall), STATE[r.recognize], STATE[r.oldres]];
+  // DG(docgen)가 있으면 열 머리에 출처 번호 [n]을 달고 표 아래에 1쪽 요약과 같은 출처·기준일 각주를 단다
+  function districtHTML(place, items, DG) {
+    const list = districtRows(items), src = DG && DG.Sources ? new DG.Sources() : null, head = districtHead(list, '').map((h, i) => {
+      const c = i >= 1 && i <= 6 ? list.map(r => r.cells[i - 1]).find(Boolean) : null;   // 머리 1~6열이 DIST_CODES 0~5와 짝이다
+      return h + (src && c ? src.ref(c) : '');
+    });
+    const foot = src && src.list.length ? `<p class="pg-foot">${src.list.map((s, n) => esc(DG.sourceLine(n + 1, s))).join('<br>')}</p>` : '';
     return `<section class="pg-dong"><h3>${esc(place)} 동별 사업 요건 비교</h3><p class="pg-warn">동을 행정동 코드 순으로 나란히 둔 표입니다. 순위나 사업 배분 추천이 아닙니다.<br>활성화지역, 면적, 저층 주거 비율은 동 자료로 정할 수 없어 각 사업 구역에서 확인합니다.</p>` +
-      `<p class="pg-acts"><button type="button" class="btn ghost" data-district-csv>CSV 받기</button></p><div class="table-wrap" tabindex="0" role="region" aria-label="동별 사업 요건 비교"><table><thead><tr>${DISTRICT_HEAD.map(h => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>` +
-      list.map(r => { const c = districtCells(r); return `<tr><th scope="row">${esc(c[0])}</th>${c.slice(1).map(x => `<td class="nw">${esc(x)}</td>`).join('')}</tr>`; }).join('') + `</tbody></table></div></section>`;
+      `<p class="pg-acts"><button type="button" class="btn ghost" data-district-csv>CSV 받기</button></p><div class="table-wrap" tabindex="0" role="region" aria-label="동별 사업 요건 비교"><table><thead><tr>${head.map(h => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>` +
+      list.map(r => { const c = districtCells(r); return `<tr><th scope="row">${esc(c[0])}</th>${c.slice(1).map(x => `<td class="nw">${esc(x)}</td>`).join('')}</tr>`; }).join('') + `</tbody></table></div>${foot}</section>`;
   }
+  // CSV: 값은 % 기호 없는 숫자(머리에 단위)로, 뒤에 이 행의 값이 나온 셀의 기준일·출처·셀 번호를 둔다
   function districtCSV(items) {
-    const q = s => `"${String(s).replace(/"/g, '""')}"`;
-    return '\uFEFF' + [DISTRICT_HEAD.map(q).join(','), ...districtRows(items).map(r => districtCells(r).map(q).join(','))].join('\r\n');
+    const q = s => `"${String(s).replace(/"/g, '""')}"`, list = districtRows(items), uniq = a => [...new Set(a.filter(Boolean))].join('; ');
+    const num2 = v => (num(v) ? fmt2(v) : ''), flag = v => (v === 1 ? '해당' : v === 0 ? '아님' : '');
+    const head = [...districtHead(list, '(%)'), '기준일', '출처', '셀 번호'];
+    return '\uFEFF' + [head.map(q).join(','), ...list.map(r => {
+      const cs = r.cells.filter(Boolean), c = districtCells(r);
+      return [r.name, num(r.met) ? r.met : '', num2(r.aging), num2(r.biz), flag(r.bizDecl), num2(r.pop), flag(r.popDecl), num(r.shortfall) ? r.shortfall : '', c[8], c[9], uniq(cs.map(x => x.reference_date)), uniq(cs.map(x => x.source_name)), uniq(cs.map(x => x.cell_id))].map(q).join(',');
+    })].join('\r\n');
   }
-
   const api = { districtRows, districtHTML, districtCSV, PROGRAMS, SOURCES, SCHEDULE, SOC, factsOf, checkNeed, checkProgram, checkAll, scheduleHTML, listHTML, compareHTML, dongHTML, socRows, socHTML, socCSV };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
