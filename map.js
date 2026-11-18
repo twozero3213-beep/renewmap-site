@@ -1603,6 +1603,11 @@
     const key = it ? `${reportMode}:${it.code}:${m.selYear}:${horizon()}:${m.living ? 'L' : ''}${m.ext && m.ext.forecast ? 'F' : ''}${state.migration ? 'M' : ''}${state.designations ? 'D' : ''}${state.living ? 'I' : ''}${state.forecastIdx ? 'X' : ''}${state.realestate ? 'R' : ''}` : `empty:${reportMode}:${toHash(state.route)}`;   // 빈 안내의 '지도' 링크가 지역을 따라가게(v9: 시·도를 바꿔도 첫 시·도를 가리켰다)
     const inputs = [state.index, m.json, m.living, state.living, m.ext && m.ext.forecast, state.forecastIdx, state.designations, state.migration, state.realestate, m.geo, state.templates];
     if (key === reportKey && inputs.every((x, i) => x === reportInputs[i])) return;
+    // 입력 SHA·보조 자료가 늦게 와도 같은 문서의 파일 메뉴와 키보드 초점을 유지한다.
+    const filesView = it ? `${reportMode}:${it.code}` : '';
+    const previousFiles = filesView && report.dataset.filesView === filesView ? report.querySelector('.rp-more-files') : null;
+    const summaryFocused = previousFiles && previousFiles.querySelector('summary') === document.activeElement;
+    report.dataset.filesView = filesView;
     reportInputs = inputs;
     reportKey = key;
     document.body.classList.toggle('print-onepage', reportMode === 'onepage' && !!it); // 인쇄 때 1쪽 요약만 A4 한 쪽에 맞춘다
@@ -1624,6 +1629,11 @@
       const built = docFor(v, m, it);
       report.innerHTML = reportModeHTML(reportMode) + briefHTML(v, it, rows, fragChoice, built.error ? null : built.brief);
     } else report.innerHTML = reportModeHTML(reportMode) + reportHTML(v, it, rows);
+    const files = report.querySelector('.rp-more-files');
+    if (files && previousFiles) {
+      files.open = previousFiles.open;
+      if (summaryFocused) files.querySelector('summary').focus({ preventScroll: true });
+    }
     const exportMessage = DG === undefined ? '문서 도구를 불러오는 중입니다. 준비가 끝나면 출력 버튼이 활성화됩니다.'
       : !DG ? '문서 도구를 불러오지 못했습니다. 새로고침한 뒤 다시 시도해 주세요.'
       : state.templates === null ? '문서 양식을 불러오지 못했습니다. 새로고침한 뒤 다시 시도해 주세요.'
