@@ -361,11 +361,22 @@ def main():
                                     window.RenewMap.setReportMode('brief');
                                     if (s.isConnected) throw new Error('동 카드가 다시 그려지지 않았습니다.');
                                 }""")
-                                assert summary.evaluate('s => s.parentElement.open && document.activeElement === s'), summary.evaluate("s => ({open:s.parentElement.open, focused:document.activeElement===s,activeTag:document.activeElement?.tagName,activeClass:document.activeElement?.className,hasFocus:document.hasFocus()})")
+                                # 비동기 재렌더링이 요소 참조를 바꿔도 현재 카드의 열림·초점을 같은 순간에 검사한다.
+                                info = page.evaluate("""() => {
+                                    const summaries = document.querySelectorAll('.mp-info > summary'), s = summaries[0];
+                                    return {count:summaries.length, open:!!s?.parentElement.open, focused:document.activeElement===s,
+                                            activeTag:document.activeElement?.tagName, hasFocus:document.hasFocus()};
+                                }""")
+                                assert info['count'] == 1 and info['open'] and info['focused'], info
                                 other = page.locator('[data-dong]:not([data-dong="11060920"])').first.get_attribute('data-dong')
                                 page.evaluate("code => {location.hash = location.hash.replace(/[0-9]+$/, code)}", other)
                                 page.locator(f'.map-h3[data-code="{other}"]').wait_for(state='visible')
-                                assert not summary.evaluate('s => s.parentElement.open'), summary.evaluate("s=>({open:s.parentElement.open,selected:document.querySelector('.map-h3')?.dataset.code})")
+                                info = page.evaluate("""() => {
+                                    const summaries = document.querySelectorAll('.mp-info > summary');
+                                    return {count:summaries.length, open:!!summaries[0]?.parentElement.open,
+                                            selected:summaries[0]?.closest('[data-panel]')?.querySelector('.map-h3[data-code]')?.dataset.code};
+                                }""")
+                                assert info['count'] == 1 and not info['open'] and info['selected'] == other, info
                                 check(route,width,'dong_details_rerender')
                                 page.goto(base+'explore.html?report=onepage#map/21/21090/21090700',wait_until='networkidle')
                                 page.locator('[data-workspace-tab="evidence"]').click()
