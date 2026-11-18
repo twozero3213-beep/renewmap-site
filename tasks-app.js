@@ -8,7 +8,7 @@
     $ = (id) => document.getElementById(id);
   const labels = {
     planned: "검토용 초안",
-    invalid: "C 입력 오류·검증 불가",
+    invalid: "C 입력 다시 확인",
     hold: "B 근거 부족·판단 보류",
     ready: "A 대조 완료·담당자 검토 대기",
     approved: "최종 승인 기록됨(사용자 기록)",
@@ -214,7 +214,7 @@
       ? current.checks
           .map(
             (c) =>
-              `${current.spec.requirements.find((r) => r.id === c.id)?.title || c.id}: ${c.result}${c.note ? " · " + c.note : ""}`,
+              `${current.spec.requirements.find((r) => r.id === c.id)?.title || c.id}: ${B.checkResultLabels[c.result]}${c.note ? " · " + c.note : ""}`,
           )
           .join("\n")
       : "";

@@ -6,70 +6,72 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
 <script src="frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>동네 순위 | 리뉴맵</title>
-<meta name="description" content="전국 행정동의 동네 점수·치안 점수·재생 필요 점수와 순위. 점수마다 입력 지표·무게·출처를 공개합니다. 범죄는 시·군·구 값이라 같은 구 안의 동 차이는 안전시설에서만 나옵니다. 판정·기피 지역 표시가 아닙니다.">
+<title>동네 비교 점수 | 리뉴맵</title>
+<meta name="description" content="전국 행정동의 생활 편의·인구 활력·주거 노후도·재생 필요 점수를 공개 계산식으로 견줍니다. 점수마다 지표·비중·출처를 밝힙니다. 같은 시·군·구 안에서는 안전시설 지표만 동별로 다르고, 다른 시·군·구와 비교하면 범죄 발생률도 달라질 수 있습니다. 판정이나 등급이 아닙니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/rank.html">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="pretendard.css">
-<link rel="stylesheet" href="styles.css?v=20261119-r2">
-<link rel="stylesheet" href="site-v4.css?v=20261119-r2">
-<link rel="stylesheet" href="list-pages.css?v=20261119-r2">
-<link rel="stylesheet" href="rank.css?v=20261119-r2">
+<link rel="stylesheet" href="styles.css?v=20261119-r3">
+<link rel="stylesheet" href="site-v4.css?v=20261119-r3">
+<link rel="stylesheet" href="list-pages.css?v=20261119-r3">
+<link rel="stylesheet" href="rank.css?v=20261119-r3">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
  {"@type":"ListItem","position":1,"name":"홈","item":"./"},
- {"@type":"ListItem","position":2,"name":"동네 순위"}]}
+ {"@type":"ListItem","position":2,"name":"동네 비교 점수"}]}
 </script>
 <script src="app.js" defer></script>
 <script src="site.js" defer></script>
 <script src="site-motion.js" defer></script>
 <script src="cellpack.js" defer></script><!-- 2026-11-08: 줄여 저장한 원장 셀을 util.js fetchJson이 되돌릴 때 쓴다. util.js보다 먼저 -->
-<script src="util.js?v=20261119-r2" defer></script>
-<script src="list-pages.js?v=20261119-r2" defer></script>
-<script src="rank.js?v=20261119-r2" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261119-r2">
+<script src="util.js?v=20261119-r3" defer></script>
+<script src="list-pages.js?v=20261119-r3" defer></script>
+<script src="rank.js?v=20261119-r3" defer></script>
+<link rel="stylesheet" href="rm6.css?v=20261119-r3">
 </head>
 <body class="rank-page">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 상담</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 홈" href="index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 진단</a><a href="rank.html">동네 비교 점수</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 과업 상담</a></nav></div></header>
 <main class="wrap page" id="main">
-<nav class="breadcrumb" aria-label="현재 위치"><ol><li><a href="./">홈</a></li><li aria-current="page">동네 순위</li></ol></nav>
-<h1>동네 순위</h1>
-<p class="rank-intro">점수 종류와 지역을 고르면 행정동이 높은 점수부터 줄을 섭니다. 공개 계산식으로 셈한 비교용 점수이고, 판정이나 공모 근거로 쓰지 않습니다.</p>
+<nav class="breadcrumb" aria-label="지금 보는 곳"><ol><li><a href="./">홈</a></li><li aria-current="page">동네 비교 점수</li></ol></nav>
+<h1>동네 비교 점수</h1>
+<p class="rank-intro">비교용 점수 · 판정 아님</p>
+<p class="rank-intro">점수 종류와 지역을 고르면 행정동을 점수 순으로 보여 줍니다. 공개 계산식으로 낸 비교용 점수이며, 판정이나 공모 근거로 쓰지 않습니다.</p>
 <div class="rank-bar">
-<form class="rank-form" aria-label="동네 순위 조건">
+<form class="rank-form" aria-label="점수 조건">
   <label>점수 종류 <select id="rankKind" disabled>
-    <option value="total">동네 점수</option><option value="safety">치안 점수</option><option value="living">생활 편의</option>
-    <option value="vitality">인구 활력</option><option value="housing">주거 노후도(점수가 낮을수록 낡음)</option><option value="renewal" selected>재생 필요 점수</option>
+    <option value="total">동네 종합 점수</option><option value="safety">범죄 통계·안전시설 점수</option><option value="living">생활 편의</option>
+    <option value="vitality">인구 활력</option><option value="housing">주거 노후도(낮을수록 오래됨)</option><option value="renewal" selected>재생 필요 점수</option>
   </select></label>
   <label>시·도 <select id="rankSido" disabled><option value="21">부산광역시</option></select></label>
   <label>시·군·구 <select id="rankSg" disabled><option value="">시·군·구 전체</option></select></label>
   <label class="rank-asc"><input type="checkbox" id="rankAsc"> 낮은 점수부터 보기</label>
+    <p id="rankSafetyNote" class="sub" hidden>같은 시·군·구 안에서는 동별 점수 차이가 안전시설 40%에서만 납니다. 다른 시·군·구의 동을 비교할 때는 범죄 발생률 60%도 점수 차이에 반영됩니다. 동의 안전 수준을 뜻하지 않습니다.</p>
 </form>
-<form id="rankFind" class="rank-find" role="search" autocomplete="off"><label for="rankQ">우리 동네 몇 위?</label><div class="rank-find-row"><input id="rankQ" list="rankNames" placeholder="동 이름 (예: 반여1동)" enterkeyhint="search"><button class="btn" type="submit">찾기</button></div><datalist id="rankNames"></datalist></form>
+<form id="rankFind" class="rank-find" role="search" autocomplete="off"><label for="rankQ">우리 동네 찾기</label><div class="rank-find-row"><input id="rankQ" list="rankNames" placeholder="동 이름 (예: 반여1동)" enterkeyhint="search"><button class="btn" type="submit">찾기</button></div><datalist id="rankNames"></datalist></form>
 </div>
 <p id="rankFound" class="rank-found" role="status" aria-live="polite"></p>
 <p id="rankMsg" aria-live="polite">불러오는 중입니다.</p>
-<div class="table-wrap" tabindex="0" role="region" aria-label="동네 점수 순위 표" aria-describedby="rankScrollHelp rankTableNote" id="rankOut"></div>
-<p class="rank-table-help" id="rankScrollHelp">세부 점수(고른 점수의 재료)는 표 오른쪽에 있습니다.<br>휴대폰에서는 동 이름을 누르면 동 페이지에서 볼 수 있습니다.</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="동네 비교 점수 표" aria-describedby="rankScrollHelp rankTableNote" id="rankOut"></div>
+<p class="rank-table-help" id="rankScrollHelp">세부 점수(고른 점수의 재료)는 표 오른쪽에 있습니다.<br>휴대폰에서는 동 이름을 누르면 동 페이지에서 봅니다.</p>
 <!-- 2026-11-19: 쪽 넘김(list-pages.js가 표 바로 뒤에 넣고 rank.js가 이 줄 맨 앞으로 옮긴다)·접힌 설명·다음 할 일을 한 줄에. 범위 열 설명 전문은 '읽는 법' 안으로. 펼치면 설명이 줄 아래 전체 폭 -->
 <div class="rank-pagerow"><p class="actions"><a class="btn" href="biz.html">사업성 간이 계산</a> <a class="btn ghost" href="dong/index.html">행정동 목록</a></p>
 <details class="rank-methods rm-disclosure" id="rankMethods">
 <summary>계산 방법·읽는 법·출처</summary>
-<p id="rankTableNote" class="rank-table-note">'비중을 바꿔도 나오는 순위'는 지표마다 매긴 비중을 이리저리 바꿔 1,000번 다시 계산했을 때 그 동의 순위가 대부분(90%) 들어간 범위입니다. 1~2처럼 좁으면 비중을 어떻게 잡아도 순위가 거의 같다는 뜻이고, 넓으면 비중에 따라 순위가 크게 달라진다는 뜻입니다. 가중치 변동만 반영했고 데이터·경계·계산 방법의 오차는 넣지 않았으며, 통계적 신뢰구간이 아닙니다.</p>
+<p id="rankTableNote" class="rank-table-note">'순위 범위'는 지표 비중을 1,000번 바꿔 다시 계산했을 때 순위의 90%가 들어간 범위입니다. 좁을수록 비중을 어떻게 잡아도 순위가 비슷하다는 뜻입니다. 비중 변동만 반영했으며, 통계적 신뢰구간이 아닙니다.</p>
 <p id="rankSens" class="sub"></p>
 <h2>계산 방법</h2>
-<p>점수는 각 지표를 전국 행정동 안의 백분위(0~100)로 바꿔 같은 무게로 평균한 값입니다.</p>
-<p>동네 점수는 생활 편의·인구 활력·주거 노후도·치안 네 점수의 평균입니다.</p>
-<p>치안 점수는 생활 범죄 발생률(경찰청 2025, 시·군·구 값) 60%와 동의 CCTV·보안등·비상벨 밀도·경찰관서 거리 40%입니다.</p>
-<p>범죄 값은 시·군·구 단위라 같은 구의 동은 같은 값을 받습니다. 동끼리의 차이는 시설 40%에서만 납니다.</p>
+<p>각 지표를 전국 행정동 안의 백분위(0~100)로 바꿔 같은 무게로 평균합니다.</p>
+<p>동네 종합 점수는 생활 편의·인구 활력·주거 노후도·범죄 통계·안전시설 점수 네 가지의 평균입니다.</p>
+<p>범죄 통계·안전시설 점수는 생활 범죄 발생률(경찰청 2025, 시·군·구 값) 60%와 동의 CCTV·보안등·비상벨 밀도·경찰관서 거리 40%입니다.</p>
+<p>같은 시·군·구 안에서는 동별 점수 차이가 안전시설 40%에서만 납니다. 다른 시·군·구의 동을 비교할 때는 범죄 발생률 60%도 점수 차이에 반영됩니다.</p>
 <h2>읽는 법과 한계</h2>
 <ul class="plain">
 <li>점수는 전국 안에서 어디쯤인지를 뜻합니다. 50점은 전국 가운데쯤입니다.</li>
-<li>비중을 바꿔도 나오는 순위(가중치 민감도): 모든 층의 무게를 기준의 50~150% 사이에서 1,000번 무작위로 바꿔 다시 계산했을 때 순위의 90%가 들어가는 구간입니다. 가중치 변동만 반영하며 데이터·경계·계산 방법의 오차는 포함하지 않습니다. 통계적 신뢰구간이 아닙니다. 범위가 넓으면 그 순위는 가중치 선택에 따라 크게 달라집니다(Saisana 외 2005, J. Royal Statistical Society A).</li>
+<li>순위 범위는 모든 층의 비중을 기준의 50~150% 사이에서 1,000번 무작위로 바꿔 계산했습니다(Saisana 외 2005, J. Royal Statistical Society A). 데이터·경계·계산 방법의 차이는 넣지 않았습니다.</li>
 <li>범죄는 발생 장소 기준이라 상업·유흥지구가 있는 구는 주민 인구 대비 비율이 높게 나옵니다.</li>
-<li>범죄 값은 시·군·구 단위라 같은 구의 동은 같은 범죄 값을 씁니다. 일반구는 상위 시 전체 값을 씁니다.</li>
+<li>범죄 발생률은 시·군·구 단위이며 일반구는 상위 시 전체 값을 씁니다.</li>
 <li>성범죄자 공개정보는 쓰지 않습니다(청소년성보호법 제55조). 점수가 낮다고 그곳 사람을 판단하지 않습니다.</li>
 <li>재생 필요 점수는 20년 이상 건축물 비율·인구 감소·사업체 감소·고령 비율이 클수록 높습니다.</li>
 </ul>
@@ -77,6 +79,6 @@
 </details>
 </div>
 </main>
-<footer><div class="wrap"><div class="links"><p><b>도구</b><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="time4d.html">건물 4D</a><a href="box.html">보관함</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%EC%88%AB%EC%9E%90%20%EC%98%A4%EB%A5%98%20%EC%8B%A0%EA%B3%A0">숫자 오류 신고</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 상담</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 끄기</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
+<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="explore.html">동네 진단</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="tasks.html">과업·납품</a><a href="rank.html">동네 비교 점수</a><a href="time4d.html">건물 나이 4D</a><a href="box.html">보관함</a><a href="docs.html">문서 열기</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 과업 상담</a><a href="ethics.html">AI·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 </body>
 </html>

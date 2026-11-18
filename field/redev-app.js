@@ -37,7 +37,7 @@
     $("gu").addEventListener("change", () => { showDongs($("gu").value); centreDraw(); });
     restoreDraft(gus, showDongs);
     const n = gus.reduce((s, g) => s + g.dongs.length, 0);
-    $("coverage").textContent = `부산 ${gus.length}개 구·군 ${n}개 법정동의 건축물대장을 담았습니다. 다른 시·도는 그 조례를 확인한 뒤 엽니다.`;
+    $("coverage").textContent = `공개판의 건물 단위 계산은 부산 ${gus.length}개 구·군 ${n}개 법정동에서만 됩니다. 다른 시·도는 건물 자료 공개 조건을 확인하기 전이라 열지 않았습니다.`;
   }).catch(() => {});
 
   // 행정동 쇠퇴 값은 전국 지도 자료(national/emd)에 있다. 건축물대장과 시군구 코드 체계가 달라 구·군 이름으로 잇는다
@@ -327,7 +327,7 @@
     $("lines").replaceChildren(...res.lines.map((l) => {
       const li = document.createElement("li"), b = document.createElement("b"), s = document.createElement("small");
       li.dataset.status = l.status;
-      b.textContent = `${l.label} · ${l.status}`;
+      b.textContent = `${l.label} · ${R.reviewStatusText(l)}`;
       s.textContent = `기준 ${l.rule} · 이 목록 ${l.value} · ${l.basis}`;
       li.append(b, s);
       if (l.settle) {   // 현장 확인 줄: 못 정한 건물을 몇 동 더 확인하면 정해지는지
@@ -473,7 +473,7 @@
   document.addEventListener('renewmap-field-updated', () => {
     calculation++; plansRevision++; last = null;
     $("out").hidden = true; $("planTable").replaceChildren();
-    say("계산 파일의 새 판을 받았습니다. '새 판으로 열기'를 누른 뒤 다시 계산하세요.");
+    say("계산 파일의 새 버전이 나왔습니다. '새 버전으로 열기'를 누른 뒤 다시 계산하세요.");
   });
   // 2026-11-19 견본 크게 보기: 그림 링크(스크립트가 없으면 새 탭)와 단추가 대화상자로 원래 크기(640px)를 연다. Esc·닫기 뒤 초점은 연 자리로
   const zoom = $("sampleDlg"), zoomLink = document.querySelector(".redev-sample a");

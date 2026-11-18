@@ -1,4 +1,4 @@
-/* 홈 '동네 순위' 미리보기(2026-11-13 v8). data/national/rank_top.json(export_rank_top.py가 scores.json에서 뽑은 상위 10곳)을 읽어
+/* 홈 '동네 비교 점수' 미리보기(2026-11-13 v8). data/national/rank_top.json(export_rank_top.py가 scores.json에서 뽑은 상위 10곳)을 읽어
    목록마다 5곳을 그린다. 점수를 새로 셈하지 않는다. 동을 누르면 지도에서 그 동을 연다.
    왜: 대표 지적 — 사람들이 가장 궁금해하는 순위가 꼬리글 맨 아래에 있어 찾기 힘들었다 */
 (function (root) {

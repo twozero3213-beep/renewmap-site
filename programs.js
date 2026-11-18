@@ -1,4 +1,4 @@
-/* 도시재생 사업 찾기: 사업 유형별 요건과, 한 동의 공식 자료를 그 요건에 맞대 보는 표.
+/* 재생 사업: 사업 유형별 요건과, 한 동의 공식 자료를 그 요건에 맞춰 보는 표.
    요건 문구는 아래 SOURCES의 공식 문서에서 옮겼다. 판정이 아니다. 행정동 값은 사업 구역 값이 아니므로 맞대 본 결과는 후보를 추리는 참고용이다.
    자료로 정할 수 없는 요건(활성화지역 고시, 면적, 저층 주거 비율, 빈집)은 항상 '확인 필요'로 둔다. */
 (function (root) {
@@ -130,7 +130,7 @@
   }
   function dongHTML(name, rows) {
     const list = checkAll(factsOf(rows)), vs = list.map(verdictOf), nOk = vs.filter(v => v.cls === 'ok').length, nNo = vs.filter(v => v.cls === 'no').length;
-    return `<section class="pg-dong"><h3>${esc(name)}에 맞대 본 도시재생 사업</h3>` +
+    return `<section class="pg-dong"><h3>${esc(name)} 사업 요건 대조</h3>` +
       `<p class="pg-sum">해볼 만한 후보 <b>${nOk}개</b> · 구청 확인이 필요한 사업 ${list.length - nOk - nNo}개 · 맞지 않는 요건이 있는 사업 ${nNo}개<br><small>물어볼 곳: 시·군·구 도시재생 담당 부서, 도시재생지원센터. 행정동 자료로 맞대 본 참고라 실제 요건은 사업 구역 기준으로 다시 확인합니다.</small></p>` +
       list.map((c, i) => `<div class="pg-card"><h4><a href="programs.html#${esc(c.program.id)}">${esc(c.program.name)}</a><small>${esc(c.program.money)}</small></h4><p class="pg-verdict is-${vs[i].cls}">${esc(vs[i].text)}</p><ul>${c.needs.map(n => `<li class="is-${n.state}"><b>${STATE[n.state]}</b><span>${esc(n.t)}${n.note ? `<small>${esc(n.note)}</small>` : ''}</span></li>`).join('')}</ul></div>`).join('') + `</section>`;
   }

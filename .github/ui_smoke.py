@@ -353,6 +353,31 @@ def main():
                             page.locator('.mp-info > summary').click()
                             assert page.locator('[data-boundary-missing]').is_visible(), '경계 없는 동을 선택했지만 누락 안내가 없습니다.'
                             check(route,width,'missing_boundary')
+                            if not args.base:
+                                # 같은 동에 늦게 자료가 오듯 패널을 다시 그려도 펼침과 키보드 초점이 남는다.
+                                summary = page.locator('.mp-info > summary')
+                                summary.focus()
+                                summary.evaluate("""s => {
+                                    window.RenewMap.setReportMode('brief');
+                                    if (s.isConnected) throw new Error('동 카드가 다시 그려지지 않았습니다.');
+                                }""")
+                                assert summary.evaluate('s => s.parentElement.open && document.activeElement === s')
+                                other = page.locator('[data-dong]:not([data-dong="11060920"])').first.get_attribute('data-dong')
+                                page.evaluate("code => {location.hash = location.hash.replace(/[0-9]+$/, code)}", other)
+                                page.locator(f'.map-h3[data-code="{other}"]').wait_for(state='visible')
+                                assert not summary.evaluate('s => s.parentElement.open')
+                                check(route,width,'dong_details_rerender')
+                                page.goto(base+'explore.html?report=onepage#map/21/21090/21090700',wait_until='networkidle')
+                                page.locator('[data-workspace-tab="evidence"]').click()
+                                expect_doc = page.locator('#reportApp')
+                                expect_doc.get_by_role('heading',name='반여1동 근거 1쪽',exact=True).wait_for(state='visible')
+                                assert expect_doc.get_by_role('button',name='한글로 받기',exact=True).is_visible()
+                                expect_doc.locator('.rp-more-files > summary').click()
+                                for label in ('PDF로 저장','엑셀로 받기','워드로 받기','파워포인트로 받기'):
+                                    assert expect_doc.get_by_role('button',name=label,exact=True).is_visible()
+                                expect_doc.get_by_role('button',name='사업 요건 대조',exact=True).click()
+                                expect_doc.get_by_role('heading',name='반여1동 사업 요건 대조',exact=True).wait_for(state='visible')
+                                check(route,width,'document_mode_copy')
                             page.goto(base+route,wait_until='networkidle')
                         if route=='explore.html' and not args.base:
                             page.wait_for_selector('#mapApp .leaflet-tile-pane img[src*="tile.openstreetmap.org"]',state='attached')
@@ -444,7 +469,7 @@ def main():
                             page.locator('#rankSido').select_option('')
                             page.wait_for_selector('#rankOut tbody tr')
                             assert page.locator('#rankOut tbody tr').count()==20, '한 쪽에 20개를 보여야 합니다.'
-                            selector=page.get_by_role('navigation', name='동네 순위 페이지', exact=True).locator('select')
+                            selector=page.get_by_role('navigation', name='동네 비교 점수 페이지', exact=True).locator('select')
                             last=selector.locator('option').last.get_attribute('value')
                             assert int(last)==(ranked+19)//20, '페이지 수가 전국 점수 자료와 다릅니다.'
                             selector.select_option(last)

@@ -358,7 +358,7 @@
     }
     for (const code of GROUPS[3][1]) {
       const [, v] = val(code), it = items.find(i => i.code === code);
-      rows.push([`${it ? it.label : code} (안전 인프라)`, v, '기준 없음', '시설 위치의 사실 지표. 범죄·치안 점수가 아니며 비교하지 않는다', '기준 없음', '비교 안 함']);
+      rows.push([`${it ? it.label : code} (안전 인프라)`, v, '기준 없음', '시설 위치를 나타내는 지표. 범죄 발생이나 동의 안전 수준을 뜻하지 않는다', '기준 없음', '비교 안 함']);
     }
     return { rows, rule };
   }
@@ -428,7 +428,7 @@
     const pending = brief.crit.rows.slice(1).filter(r => r[4].includes('승인 대기')).map(r => r[0]);
     if (forecast && items.some(i => i.group === '전망' && i.cell) && !(brief.fidx || {}).approved) pending.push('추세 전망 산식');
     rows.push(['규칙·산식 승인 대기', `${pending.length}건`, pending.length ? pending.join(', ') : '표시된 승인 대기 항목 없음 · 법정 적합 판정 아님']);
-    rows.push(['문서 입력묶음 지문', brief.inputHash ? '기록 있음' : '미기록', brief.inputHash ? `${brief.inputHashScheme} · ${brief.inputHash}` : '이전 문서는 원천 색인 지문만 있을 수 있음']);
+    rows.push(['문서 입력묶음 지문', brief.inputHash ? '기록 있음' : '미기록', brief.inputHash ? `${brief.inputHashScheme} · ${brief.inputHash} · 같은 입력으로 만든 문서인지 대조하는 값입니다. 내용이 사실인지는 증명하지 않습니다.` : '이전 문서는 원천 색인 지문만 있을 수 있음']);
     return { rows, note: '건수는 중복될 수 있습니다. 이 표는 자료 점검 목록이며 정확성·현장 확인·담당자 승인을 보증하지 않습니다.' };
   }
 
@@ -467,11 +467,11 @@
   const finish = blocks => { for (const b of blocks) { b.text = clean(b.text); b.rows = b.rows.map(r => r.map(x => clean(String(x)))); b.caption = clean(b.caption); } return blocks; };
   // 바닥글: 자료 기준일은 전망(FORECAST_*, 기준일이 대상일)을 뺀 셀의 가장 늦은 reference_date. dong_brief.basis_date·FOOTER와 같다
   const basisDate = cells => { const ds = (cells || []).filter(c => c.reference_date && !String(c.indicator_code || '').startsWith('FORECAST_')).map(c => c.reference_date); return ds.length ? govDate(ds.reduce((a, b) => (b > a ? b : a))) : ''; };
-  const inputHashLine = brief => brief.inputHash ? `브라우저 문서 입력묶음 SHA-256 [${brief.inputHashScheme}] ${brief.inputHash}` : '';
+  const inputHashLine = brief => brief.inputHash ? `입력 확인값(SHA-256) [${brief.inputHashScheme}] ${brief.inputHash} · 같은 입력으로 만든 문서인지 대조하는 값입니다. 내용이 사실인지는 증명하지 않습니다.` : '';
   // doc.footer는 화면 인쇄(map.js printReport)가 끝에 붙이는 지문 줄이다. 파일 꼬리말은 짧게 두고 전체 지문은 본문 맨 끝 문단(hashBlock)·HWPX 메타에 둔다
   // (꼬리말이 문서 첫 문단 XML에 들어가 글 추출·미리보기에서 64자 지문이 첫 줄로 보였다)
-  const footerOf = brief => brief.inputHash ? inputHashLine(brief) + ' · ' : `작성 리뉴맵 · 자료 기준일 ${basisDate(brief.cells) || '-'} · 원천 색인 지문 ${String(brief.snapshot).slice(0, 8)} · `;
-  const fileFooter = doc => (doc.brief && doc.brief.inputHash ? `작성 리뉴맵 · 자료 기준일 ${basisDate(doc.brief.cells) || '-'} · 입력 지문 ${doc.brief.inputHash.slice(0, 8)} · ` : doc.footer || '');
+  const footerOf = brief => brief.inputHash ? '리뉴맵 · 근거가 남는 도시재생 · 판정 아님 · 참고 계산 · ' + inputHashLine(brief) + ' · ' : `리뉴맵 · 근거가 남는 도시재생 · 판정 아님 · 참고 계산 · 자료 기준일 ${basisDate(brief.cells) || '-'} · 원천 색인 지문 ${String(brief.snapshot).slice(0, 8)} · `;
+  const fileFooter = doc => (doc.brief && doc.brief.inputHash ? `리뉴맵 · 근거가 남는 도시재생 · 판정 아님 · 참고 계산 · 자료 기준일 ${basisDate(doc.brief.cells) || '-'} · 입력 확인값(SHA-256) ${doc.brief.inputHash.slice(0, 8)} · ` : doc.footer || '');
   const hashBlock = brief => block('para', inputHashLine(brief), { small: true, hash: true });
   // 사업체 수 자료연도가 기준일 연도보다 앞서면(brief.biz) 사업체 조사가 든 출처에 그 연도를 함께 적는다(원장 reference_date는 그대로)
   const sourceLine = (n, s, biz) => `[${n}] ${s.name}. ${s.forecast ? '전망 대상일' : '기준일'} ${govDate(s.reference_date)}${biz && /사업체/.test(s.name) && String(s.reference_date).slice(0, 4) !== String(biz.last) ? `(사업체 수 자료연도 ${biz.last})` : ''} 조회일 ${govDate(s.retrieved_at)} 이용조건 ${s.license}.`;

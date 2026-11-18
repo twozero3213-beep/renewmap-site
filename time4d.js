@@ -4,7 +4,7 @@
 (function (root) {
   'use strict';
   const YEAR_FROM = 1960;
-  // v7: 동네 찾기 지도와 같은 따뜻한 단계색(새 건물은 옅은 크림, 오래될수록 벽돌색). 날짜 없는 건물은 차가운 회색으로 따로 구분한다
+  // v7: 동네 진단 지도와 같은 따뜻한 단계색(새 건물은 옅은 크림, 오래될수록 벽돌색). 날짜 없는 건물은 차가운 회색으로 따로 구분한다
   // v7 7회차: 30년 이상 한 단계면 원도심이 다 같은 적갈색이라 올해 화면에서 차이가 안 보였다 → 40년 이상을 더 짙게 나눈다
   const BANDS = [[0, '#f0e3c4', '20년 미만'], [20, '#e09a4c', '20~29년'], [30, '#a8452a', '30~39년'], [40, '#5c2214', '40년 이상']];
   const NO_DATE = '#b9bec5';
@@ -74,7 +74,7 @@
   // 그해까지 지어진 건물과 날짜 없는 건물만 보인다
   const filterExpr = (year) => ['<=', ['get', 'y'], year];
 
-  // 동네 찾기 지도에서 넘어온 좌표(?lat&lng) → 그 자리를 담은 법정동. 외곽선 색인(bldg_outline/index.json)의 bbox로 고르고, 여럿이면 bbox 중심이 가장 가까운 동
+  // 동네 진단 지도에서 넘어온 좌표(?lat&lng) → 그 자리를 담은 법정동. 외곽선 색인(bldg_outline/index.json)의 bbox로 고르고, 여럿이면 bbox 중심이 가장 가까운 동
   function dongAt(index, lng, lat) {
     let best = null, bestD = Infinity;
     for (const [code, f] of Object.entries(index.files || {})) {

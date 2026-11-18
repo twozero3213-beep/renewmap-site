@@ -4,9 +4,9 @@
 (function (root) {
   'use strict';
   const ROWS = [
-    ['DECLINE_POP_DROP30Y_PCT', '인구 감소', 20, '기준 30년 최대 대비 20% 이상 감소'],
-    ['DECLINE_BIZ_DROP10Y_PCT', '사업체 감소', 5, '기준 10년 최대 대비 5% 이상 감소'],
-    ['DECLINE_AGING_20Y_PCT', '20년 이상 건축물', 50, '기준 50% 이상'],
+    ['DECLINE_POP_DROP30Y_PCT', '인구 감소', 20, '30년 중 가장 많던 해보다 20% 이상 감소, 또는 최근 5년 중 3년 이상 연속 감소'],
+    ['DECLINE_BIZ_DROP10Y_PCT', '사업체 감소', 5, '10년 중 가장 많던 해보다 5% 이상 감소, 또는 최근 5년 중 3년 이상 연속 감소'],
+    ['DECLINE_AGING_20Y_PCT', '20년 이상 건축물', 50, '준공 20년 이상 건축물이 전체의 50% 이상'],
   ];
   const MET = 'DECLINE_MET_COUNT';
   // 1쪽 문서·동 페이지와 같은 자릿수(소수 둘째 자리)로 보인다(11-13 3차: 홈 83%, 문서 82.96%로 달라 보임)
@@ -19,7 +19,7 @@
     const met = by.get(MET), val = (code) => DR.cellValue(by.get(code));   // 미확정·비공개 셀은 셈에 안 쓴다(문서·동 페이지와 같게)
     const reqs = DR.evaluate(val);
     return {
-      met: met && typeof met.value === 'number' ? met.value : null,
+      met: met && !met.value_hidden_reason && typeof met.value === 'number' ? met.value : null,
       rows: ROWS.map(([code, label, , std], i) => {
         const q = reqs[i], c = by.get(code) || null;
         // 감소율의 바탕인 총수 셀이 비어 있으면 같은 줄 작은 글에 밝힌다(11-13 2차: 동 페이지는 '사업체 수 자료 없음'인데 홈은 0%만 보였다)
@@ -38,8 +38,8 @@
         const baseNote = noBase ? `감소율은 공표된 ${who} 수로 리뉴맵이 계산한 값입니다. ${year ? year + '년 ' : ''}${who} 수는 아직 공표 전입니다.` : '';
         // R3 11: 감소율 0%의 뜻(그 해 사업체 수가 10년 중 최대)을 같은 줄에, 출처 경계는 출처 기록 접기에(boundary)
         const zero = code === 'DECLINE_BIZ_DROP10Y_PCT' && !viaConsec ? bizZeroNote((series || {}).DECLINE_BIZ_TOTAL, q.rate) : '';
-        const notes = [viaConsec ? '최근 5년 중 3년 연속 감소로 해당' : '', zero, baseNote].filter(Boolean);
-        return { code, label, std, value: q.rate, text, over: unsure ? null : q.status === 'over', cell: c, note: notes.join(' · '), boundary: zero ? BIZ_BOUNDARY : '' };
+        const notes = [viaConsec ? '최근 5년 중 3년 이상 연속 감소로 기준 해당' : '', zero, baseNote].filter(Boolean);
+        return { code, label, std, referenceDate: (viaConsec ? by.get(q.via.code) : c)?.reference_date, value: q.rate, text, over: unsure ? null : q.status === 'over', cell: c, note: notes.join(' · '), boundary: zero ? BIZ_BOUNDARY : '' };
       }),
       ref: met ? met.reference_date : null,
     };
@@ -60,9 +60,10 @@
 
   function row(r) {
     const li = doc.createElement('li'), s = doc.createElement('span'), b = doc.createElement('b'), sm = doc.createElement('small');
-    s.textContent = r.label; b.textContent = r.text; sm.textContent = r.note ? `${r.std} · ${r.note}` : r.std;
+    s.textContent = r.label; b.textContent = r.text; sm.textContent = [r.std, r.referenceDate && `기준일 ${r.referenceDate}`, r.note].filter(Boolean).join(' · ');
     li.className = r.over === null ? 'is-none' : r.over ? 'is-over' : 'is-under';
     const tag = doc.createElement('i'); tag.textContent = r.over === null ? '추가확인' : r.over ? '기준 해당' : '해당 안 함';
+    if (r.over === null) tag.title = "자료가 모자라거나 기준을 그대로 적용할 수 없어 아직 정하지 못했습니다. 0이나 '기준 해당'으로 채우지 않습니다.";
     li.append(s, b, tag, sm); return li;
   }
   // 근거 영수증: '20년 넘은 건축물' 셀 하나의 원장 기록을 그대로 펼친다(값을 만들거나 고치지 않는다)
@@ -73,9 +74,9 @@
     dl.replaceChildren(); more.replaceChildren(); ids.textContent = '';
     $('h6ReceiptDong').textContent = name;
     const c = cells.find((x) => x.indicator_code === 'DECLINE_AGING_20Y_PCT');
-    if (!c) { const d = doc.createElement('div'); d.textContent = '이 동은 출처 기록이 없습니다.'; dl.append(d); return; }
-    // 사람에게 보이는 줄과 내부 식별자(셀 번호·규칙 판본)를 나눈다. 상태·[미확인]은 무엇이 아직인지 말로 푼다(11-13 3차)
-    const state = { 미확인: '공식 통계 원값 그대로(사람 검토 전)', 확인: '리뉴맵 담당자가 출처와 대조함', 추가확인: '자료가 모자라 확인이 더 필요함' }[c.status] || c.status;
+    if (!c) { const d = doc.createElement('div'); d.textContent = '이 동은 아직 출처 기록이 연결되지 않았습니다.'; dl.append(d); return; }
+    // 사람에게 보이는 줄과 내부 식별자(기록 번호·규칙 판본)를 나눈다. 상태·[미확인]은 무엇이 아직인지 말로 푼다(11-13 3차)
+    const state = { 미확인: '리뉴맵 대조 전 · 출처 값을 그대로 옮겼습니다.', 확인: '리뉴맵 대조 완료 · 출처 원문과 대조했습니다.', 추가확인: '추가확인 · 자료나 기준을 더 확인해야 합니다.' }[c.status] || c.status;
     // 9회차: '확인하지 못함'이 신뢰를 깎는 대표 예시로 읽혔다. 사실대로 '원천 기관이 계산해 공표한 값'임을 말한다(리뉴맵이 다시 계산하지 않는다)
     const formula = String(c.formula_text || '').replace(/\s*\[미확인\]/g, '(출처 기관이 계산해 공표한 값, 리뉴맵은 다시 계산하지 않음)');
     const rows = [['값', c.value === null ? '추가확인' : `${fmt(c.value)}${c.unit || ''}`], ['출처', c.source_name], ['출처 주소', c.source_url],
@@ -87,7 +88,7 @@
       const box = doc.createElement('div'), dt = doc.createElement('dt'), dd = doc.createElement('dd');
       dt.textContent = k; dd.textContent = v; box.append(dt, dd); (SHOWN.has(k) ? dl : more).append(box);
     }
-    ids.textContent = `셀 번호 ${c.cell_id} · 규칙 판본 ${c.rule_version}`;
+    ids.textContent = `기록 번호 ${c.cell_id} · 규칙 판본 ${c.rule_version}`;
   }
   async function show(code8) {
     card.setAttribute('aria-busy', 'true');
@@ -101,20 +102,22 @@
       const s = summarize(dong ? dong.cells : [], dong ? dong.series : null);
       $('h6LiveName').textContent = name;
       $('h6LiveWhere').textContent = `${sido} ${sggName}`;
-      $('h6Met').textContent = s.met === null ? '추가확인' : `${s.met}개 해당`;
+      const unknown = s.rows.filter(r => r.over === null).length;
+      $('h6Met').textContent = s.met === null ? '추가확인' : unknown
+        ? `최소 ${s.met}개 기준 해당 · 추가확인 ${unknown}개` : `${s.met}개 기준 해당`;
       $('h6Rows').replaceChildren(...s.rows.map(row));
       prov(dong ? dong.cells : [], name, s.rows.map((r) => r.boundary).find(Boolean));
       const sidoCode = sgg.slice(0, 2), hash = `#map/${sidoCode}/${sgg}/${code}`;
       $('h6Go').href = `explore.html?report=onepage${hash}`;
       $('h6Prog').href = `explore.html?report=programs${hash}`;
-      $('h6Note').textContent = `도시재생법 시행령 제17조 기준으로 셈한 참고 계산입니다${s.ref ? `(기준일 ${s.ref})` : ''}. 판정은 담당 기관이 원문과 대조해 정합니다.`;
+      $('h6Note').textContent = `${unknown ? `추가확인 ${unknown}개는 아직 정하지 못해 세지 않았습니다. 실제 기준 해당 수는 더 많을 수 있습니다. ` : ''}판정 아님 · 참고 계산${s.ref ? ` (기준일 ${s.ref})` : ''}. 판정은 담당 기관이 원문과 대조해 정합니다.`;
       doc.querySelectorAll('.h6-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.dong === code8)));
       // 카드 전체를 다시 읽히지 않고 새 요지 한 문장만 읽힌다(2026-11-18 접근성 검토: 카드 전체가 aria-live라 표·출처까지 다시 읽혔다)
       const say = $('h6Say');
       if (say) say.textContent = `${name}, 도시재생 쇠퇴 3요건 중 ${$('h6Met').textContent}`;
     } catch (e) {
       $('h6Met').textContent = '불러오지 못함';
-      $('h6Note').textContent = '자료를 불러오지 못했습니다. 인터넷 연결을 확인하거나 동네 찾기에서 열어 보세요.';
+      $('h6Note').textContent = '자료를 불러오지 못했습니다. 인터넷 연결을 확인하거나 동네 진단에서 열어 보세요.';
     } finally { card.removeAttribute('aria-busy'); }
   }
   doc.querySelectorAll('.h6-chip').forEach((b) => b.addEventListener('click', () => show(b.dataset.dong)));

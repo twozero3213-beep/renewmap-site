@@ -1,6 +1,6 @@
 /* 리뉴맵 전국 드릴다운 지도(첫 화면의 주인공). 전국 › 광역 › 기초 › (일반구·행정시) › 읍·면·동 — 법적 체계 그대로(SCHEMA.md '행정구역 체계').
    값은 data/national/index.json(시군구 summary)·emd/{code5}.json(행정동 시계열)·living/(생활 지표, 있으면)에서만 온다.
-   색 구간은 지표별 기준값에 고정한다. 가중 종합점수·순위·값 순 정렬을 만들지 않는다(D13). '기준 해당 항목 수'는 가중치 없는 개수다.
+   색 구간은 지표별 기준값에 고정한다. 가중 종합점수·순위·값 순 정렬을 만들지 않는다(D13). '기준선 넘은 지표 수'는 가중치 없는 개수다.
    위쪽은 노드 시험용 순수 함수, 아래쪽은 브라우저 연결부(Leaflet, dashboard.js의 loadLeaflet 재사용). */
 (function () {
   'use strict';
@@ -36,14 +36,14 @@
   // R4 7: 2·3단계(#8fcfc3·#e9ecea)가 1형 색각에서 ΔE 12.8이었다 → 2단계를 #6fbfb1로(인접 ΔE 최소 19.1)
   const DIVERGE = ['#0b7f6f', '#6fbfb1', '#e9ecea', ABOVE[0], ABOVE[1]]; // 개선 청록 ↔ 악화 주황·갈색(기준 넘은 쪽과 같은 계열), 가운데 중성
   const MIG = ['#6a4c93', '#b3a2d1', '#e9ecea', '#8fcfc3', '#0b7f6f']; // 기준 없는 변화·청년 순이동: 줄어듦(유출) 보라 ↔ 늘어남(유입) 청록, 가운데 중성(기준선 0). 주황은 '기준 넘음' 전용
-  // 지표 묶음: '정비가 필요한 신호'와 '생활 여건'을 각각 고를 수 있게 묶는다. 치안 점수·기피·순위는 만들지 않는다(D8·D13)
+  // 지표 묶음: '정비가 필요한 신호'와 '생활 여건'을 각각 고를 수 있게 묶는다. 범죄 통계·안전시설 점수·기피·순위는 만들지 않는다(D8·D13)
   // 아이콘은 이모지 대신 지표 칩과 같은 선 아이콘(ICONS) 한 벌을 쓴다(UI 검수 2026-10-28: 3D 이모지·선 아이콘·글자 기호가 섞여 있었다)
-  const GROUPS = [['aging', '쇠퇴·노후'], ['pop', '인구 변화'], ['estate', '부동산 거래'], ['life', '생활 여건'], ['safe', '안전 인프라'], ['fore', '추세 전망'], ['sum', '종합']];
+  const GROUPS = [['aging', '노후·쇠퇴'], ['pop', '인구'], ['estate', '아파트 거래'], ['life', '생활 여건'], ['safe', '안전 시설'], ['fore', '인구 전망'], ['sum', '모아 보기']];
   const GROUP_ICON = { aging: 'bldg', pop: 'people', estate: 'home', life: 'tree', safe: 'cctv', fore: 'fore', sum: 'sum' };
   const gIco = g => icon(GROUP_ICON[g]);
   const safeUrl = u => (/^https?:\/\//i.test(u || '') ? u : null);
   // 쇠퇴 요건의 기준값은 시행령 제17조 문언 그대로라 '법정'이다. 승인 대기인 것은 요건을 묶어 판정하는 규칙(decline-3req-v0.1, hero.js RULE)이다.
-  // 출처 기록의 '공식 기준 해당 항목 수'(living STD_SHORTFALL_COUNT)도 이 기준을 확정으로 센다 — 화면과 원장이 같은 수를 보이게 맞춘다
+  // 출처 기록의 '공식 기준선 넘은 지표 수'(living STD_SHORTFALL_COUNT)도 이 기준을 확정으로 센다 — 화면과 원장이 같은 수를 보이게 맞춘다
   const LAW = '도시재생법 시행령 제17조';
   const lawStd = (value, direction, text) => ({ value, direction, text, source: LAW, status: '법정' });
   const SUM = 'SUM_STD_CROSSED';
@@ -51,8 +51,8 @@
     // chip: 화면 칩 이름(11회차까지 세 번 지적: 칩·범례·카드 이름이 달랐다). label은 출처(도시재생종합정보체계) 지표 이름이라 문서·출처 기록에서 그대로
     { code: 'DECLINE_AGING_20Y_PCT', group: 'aging', icon: 'bldg', label: '노후건축물비율', chip: '20년 이상 건축물', unit: '%', edges: [30, 50, 70, 80, 90], colors: [BELOW[0], BELOW[2], ...ABOVE4],
       title: '준공 20년 이상 건축물 비율', worseUp: true, domain: [0, 100], series: true, standard: lawStd(50, 'above_bad', '준공 20년 이상 건축물 50% 이상') },
-    { code: 'DECLINE_MET_COUNT', group: 'aging', icon: 'check', label: '확정된 요건 수', unit: '개', edges: [1, 2, 3], colors: MET, labels: ['0개', '1개', '2개', '3개'],
-      title: '시행령 제17조 요건 충족 수 · 결측으로 확정 못 한 요건은 세지 않은 하한 · 판정 아님', worseUp: true, domain: [0, 3], series: true, composite: true, noPlay: true, yearNote: '해마다 확정된 요건 수가 달라 연도 비교는 하지 않습니다',
+    { code: 'DECLINE_MET_COUNT', group: 'aging', icon: 'check', label: '기준 해당 요건 수(최소)', unit: '개', edges: [1, 2, 3], colors: MET, labels: ['0개', '1개', '2개', '3개'],
+      title: '도시재생법 제13조·시행령 제17조 기준 해당 요건 수(최소) · 추가확인 요건은 세지 않음 · 판정 아님', worseUp: true, domain: [0, 3], series: true, composite: true, noPlay: true, yearNote: '해마다 기준 해당 요건 수(최소)가 달라 연도 비교는 하지 않습니다',
       dEdges: [-1.5, -0.5, 0.5, 1.5], dLabels: ['2개 이상 줄어듦', '1개 줄어듦', '변화 없음', '1개 늘어남', '2개 이상 늘어남'], standard: lawStd(2, 'above_bad', '쇠퇴 3요건 중 2개 이상') },
     { code: 'DECLINE_POP_DROP30Y_PCT', group: 'pop', icon: 'popdown', label: '인구 감소율(30년)', unit: '%', edges: [0, 10, 20, 30], colors: [BELOW[0], BELOW[2], BELOW[4], ABOVE[1], ABOVE[2]],   // R4 7: 1~3단계 인접 ΔE 9.5·8.4 → 17.9·16.5(2·3단계를 한 칸씩 짙게)
       title: '주민등록 인구 30년 최대 대비 감소율 · KOSIS', worseUp: true, domain: [-20, 60], series: true, standard: lawStd(20, 'above_bad', '30년 최대 대비 20% 이상 감소') },
@@ -61,7 +61,7 @@
       note: '공식 기준 없음 · 출처 CSV 인구변화율의 비교 기간·산식 미확인 · 참고값' },
     { code: 'DECLINE_BIZ_DROP10Y_PCT', group: 'aging', icon: 'shop', label: '사업체 감소율', unit: '%', edges: [0, 5, 10, 20], colors: [BELOW[0], BELOW[2], ...ABOVE],
       title: '사업체 10년 최대 대비 감소율', worseUp: true, domain: [-20, 40], series: true, breakSource: 'biz_source', standard: lawStd(5, 'above_bad', '10년 최대 대비 5% 이상 감소') },
-    { code: SUM, group: 'sum', icon: 'sum', label: '기준 해당 항목 수', unit: '개', edges: [1, 2, 3, 4], colors: SUMC, labels: ['0개', '1개', '2개', '3개', '4개 이상'],
+    { code: SUM, group: 'sum', icon: 'sum', label: '기준선 넘은 지표 수', unit: '개', edges: [1, 2, 3, 4], colors: SUMC, labels: ['0개', '1개', '2개', '3개', '4개 이상'],
       // v9: 카드의 '쇠퇴 3요건 N개 해당'과 수가 달라 혼란 → 무엇을 세는지 범례 제목에 밝힌다
       title: '쇠퇴·생활 지표 가운데 공식 기준선보다 나쁜 쪽에 있는 항목 수(쇠퇴 3요건 해당 수와 다른 셈) · 자료 있는 항목만 · 가중치·순위 없음', worseUp: true, domain: [0, 8], computed: true, composite: true },
   ];
@@ -77,7 +77,7 @@
   //     셀이 생기면 그 코드를 codes에 넣고 later에서 뺀다
   // 재사용: 묶음을 늘릴 때는 이 배열에 한 줄만 더한다(화면 코드는 그대로)
   const BUNDLES = [
-    { key: 'req', label: '공모 신청요건', codes: ['DECLINE_AGING_20Y_PCT', 'DECLINE_POP_DROP30Y_PCT', 'DECLINE_BIZ_DROP10Y_PCT', 'DECLINE_MET_COUNT'], later: [] },
+    { key: 'req', label: '쇠퇴 3요건', codes: ['DECLINE_AGING_20Y_PCT', 'DECLINE_POP_DROP30Y_PCT', 'DECLINE_BIZ_DROP10Y_PCT', 'DECLINE_MET_COUNT'], later: [] },
     // 2026-11-13 우지예 결정: '청년이 살 만한가' 대신 '생활 인프라 최저기준'. 소아과·편의점 자리는 뺐다.
     // 왜: 공모 서류가 묻는 생활시설은 기초생활인프라 국가적 최저기준 표(제2차 기본방침 별표2 = 2027 가이드라인 참고 2-3-1) 6종이다.
     //     인정사업 요건이 '최저기준 미달 또는 쇠퇴 2개 이상'이고 사업계획 양식이 미달지역 분석을 요구한다(docs/rule_reviews/guideline_2027_crosscheck_2026-11-09.md).
@@ -90,7 +90,7 @@
     // 2026-11-13: 생활체육시설 거리(SPORTS_CENTER_NEAREST_M, 국민체육진흥공단 15107764, 실내 생활체육 시설만) 셀이 생겨 codes로, later에서 뺐다
     // 2026-11-13: 유치원 거리(KINDER_NEAREST_M, 부산교육청 명부 + 카카오 주소검색) 셀이 생겨 어린이집 다음에 넣고 later를 비웠다 — 6종이 모두 셀을 가진다.
     //     생활안전지도 API 키가 승인 뒤에도 거절돼 교육청 파일로 바꿨다(scripts/export_facilities.py kinder). 출처가 부산뿐이라 다른 시·도에서는 칩이 숨는다
-    { key: 'soc', label: '생활 인프라 최저기준', codes: ['CHILDCARE_NEAREST_M', 'KINDER_NEAREST_M', 'SPORTS_CENTER_NEAREST_M', 'LIB_NEAREST_M', 'HEALTH_CENTER_NEAREST_M', 'PARK_AREA_PER_CAPITA', 'PARK_COUNT'],
+    { key: 'soc', label: '생활시설 최저기준', codes: ['CHILDCARE_NEAREST_M', 'KINDER_NEAREST_M', 'SPORTS_CENTER_NEAREST_M', 'LIB_NEAREST_M', 'HEALTH_CENTER_NEAREST_M', 'PARK_AREA_PER_CAPITA', 'PARK_COUNT'],
       later: [] },
     { key: 'shop', label: '상권 변화', codes: ['STORE_COUNT', 'STORE_RETAIL_COUNT', 'STORE_FOOD_COUNT', 'DECLINE_BIZ_DROP10Y_PCT'], later: [] },
   ];
@@ -204,7 +204,7 @@
     return list.some(x => x.group === 'safe') ? list : list.concat(pendingOf('safe', EXPECTED.safe)); // 안전 인프라 자료가 아직 없으면 수집 중 자리만
   }
   // 화면 지표 목록: 그룹 순서(고정) → 그룹 안에서는 정의 순서. 값으로 줄 세우지 않는다
-  // 원장이 종합(기준 해당 항목 수)을 주면 화면에서 따로 세지 않는다
+  // 원장이 종합(기준선 넘은 지표 수)을 주면 화면에서 따로 세지 않는다
   function allIndicators(li, ext) {
     const lv = livingIndicators(li), gi = g => GROUPS.findIndex(x => x[0] === g);
     const list = [...INDICATORS.filter(i => !(i.computed && lv.some(x => x.group === 'sum'))), ...lv, ...extraIndicators(ext, lv)];
@@ -466,7 +466,7 @@
     const bt = fd.backtest && (fd.backtest[base] || fd.backtest[base.replace(/_CHANGE_PCT$/, '')]);   // 이 동 자신의 백테스트 오차(전국 동 중앙값과 나란히 보인다)
     return { point: a[0], lo: Math.min(a[1], a[2]), hi: Math.max(a[1], a[2]), mape: bt && isNum(bt.mape) ? bt.mape : null, cell: ((fd.cells || []).find(c => c.indicator_code === code || c.indicator_code === base) || null) };
   }
-  // 기준 해당 항목 수: 확정(승인된 기준을 넘음) · 추가확인(넘었지만 기준 승인 대기) · 자료 없음. 묶음 지표(요건 충족 수)와 종합은 세지 않는다
+  // 기준선 넘은 지표 수: 확정(승인된 기준을 넘음) · 추가확인(넘었지만 기준 승인 대기) · 자료 없음. 묶음 지표(요건 충족 수)와 종합은 세지 않는다
   function tally(rows) {
     const r = rows.filter(x => !x.ind.composite && !x.ind.computed && (x.ind.standard || x.ind.pending));
     return { confirmed: r.filter(x => x.status === '기준 넘음').length, pending: r.filter(x => x.status === '기준 승인 대기' && x.crossed).length,
@@ -673,10 +673,8 @@
     return svg ? `<h4 class="map-h4">${esc(node.name)} 추세 전망 <small>${esc(how)} · 판정 아님</small></h4>${svg}` : '';
   }
   // 상태 개수 도넛(비율 그림). 개수를 글자로 함께 쓴다. 순위·점수 아님
-  // 한 동 패널의 세 요약(도넛·기준 해당 항목 수·확인할 항목)은 같은 항목 범위·같은 낱말을 쓴다. '공식 기준 없음'(값만)과 '자료 없음'을 섞지 않는다
-  const DONUT = [['r', '기준 해당·지정'], ['g', '기준 안'], ['y', '승인 대기'], ['b', '공식 기준 없음'], ['w', '자료 없음']];
-  // v7.9(8회차): 카드 위 3요건과 같은 낱말(기준 해당·해당 안 함·추가확인). 승인 대기·자료 없음은 둘 다 '추가확인'으로 합쳐 세고, 공식 기준이 없는 지표는 '참고값'
-  const GS_SHORT = { r: '기준 해당', g: '해당 안 함', y: '추가확인', b: '참고값', w: '추가확인' };
+  // 한 동 패널의 세 요약(도넛·기준선 넘은 지표 수·확인할 항목)은 같은 항목 범위·같은 낱말을 쓴다. '공식 기준 없음'(값만)과 '자료 없음'을 섞지 않는다
+  const DONUT = [['r', '기준 해당·지정'], ['g', '해당 안 함·지정 안 됨'], ['y', '기준 승인 대기'], ['b', '기준선 없음'], ['w', '추가확인']];
   function donutSVG(n) {
     const tot = DONUT.reduce((a, [k]) => a + (n[k] || 0), 0), R = 42, C = 2 * Math.PI * R;
     let off = 0;
@@ -715,10 +713,11 @@
   // 왜: '기준 넘음'의 뜻은 "카드에 적힌 기준선 문장(예: 노후 50% 이상, 공원 1인당 6㎡ 미만)에 들어맞음"이다.
   //     생활 여건 지표에선 '미달'이 맞지만, 쇠퇴 지표(노후 83%, 요건 충족 2개)에서 '기준 미달'로 보이면
   //     용역사·추진위가 '요건을 못 채웠다'로 반대로 읽었다(docs/quality/user_paths_2026-11-12.md 2절 1).
-  //     '기준 해당'은 백엔드 ingest/living.py의 '기준 해당 항목 수(하한)'와 같은 낱말이라 화면·자료가 한 낱말을 쓴다.
+  //     '기준 해당'은 백엔드 ingest/living.py의 '기준선 넘은 지표 수(하한)'와 같은 낱말이라 화면·자료가 한 낱말을 쓴다.
   // 재사용: 화면에서 이 낱말이 필요한 곳은 문자열을 다시 쓰지 말고 HIT를 쓴다.
   const HIT = '기준 해당';
-  const stLabel = st => (st === '기준 넘음' ? HIT : st);
+  const statusLabels = { '기준 넘음': HIT, '기준 안': '해당 안 함', '공식 기준 없음': '기준선 없음', '행정 지정': '지정', '미지정': '지정 안 됨', '자료 없음': '추가확인 · 자료 부족', '보류': '추가확인 · 공개 보류', '추세 전망': '인구 전망' };
+  const stLabel = st => statusLabels[st] || st;
   // 이 기기에 저장해 둔 예전 기준일 비교값(snapshotOf의 s)은 옛 낱말로 남아 있다.
   // 낱말만 바뀐 것을 '판정 바뀜'으로 세지 않도록 diffSnap이 읽을 때 새 낱말로 맞춘다.
   const LEGACY_LABEL = { '기준 미달': HIT, '기준 미달(승인 대기)': `${HIT}(승인 대기)` };
@@ -772,27 +771,31 @@
     const dl = cell => `<dl>${detail(cell).map(([k, val, href]) => `<div><dt>${esc(k)}</dt><dd>${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(val)}</a>` : esc(val)}</dd></div>`).join('')}</dl>`;
     const led = rows.find(r => r.ind.living && r.ind.group === 'sum' && r.value !== null), confirmed = led ? led.value : t.confirmed;
     const waiting = rows.filter(r => isPending(r.ind.standard)).map(r => r.ind.label);
-    const head = `<div class="sr-tally" role="group" aria-label="기준 해당 항목 수"><p class="sr-tally-k">기준 해당 항목 수</p>` +
-      `<p class="sr-tally-n"><span>확정 <b data-ck="t-c" data-count="${confirmed}">${confirmed}</b></span><span>추가확인 <b data-ck="t-p" data-count="${t.pending}">${t.pending}</b></span>${led ? '<span class="is-dim">최신 출처 기록 기준</span>' : ''}</p>` +
+    const head = `<div class="sr-tally" role="group" aria-label="기준선 넘은 지표 수"><p class="sr-tally-k">기준선 넘은 지표 수</p>` +
+      `<p class="sr-tally-n"><span>기준 해당 <b data-ck="t-c" data-count="${confirmed}">${confirmed}</b></span><span>기준 승인 대기 <b data-ck="t-p" data-count="${t.pending}">${t.pending}</b></span>${led ? '<span class="is-dim">최신 출처 기록 기준</span>' : ''}</p>` +
       `<details class="sr-tally-more"><summary>ⓘ 이 수를 세는 법</summary><p class="sr-tally-note">${led ? `확정은 출처 기록 '${esc(led.ind.label)}' 값이며 하한입니다.<br>쇠퇴 요건은 법정 요건 단위(인구 요건 = 30년 감소 또는 3년 연속 감소)로 셉니다.` : '확정은 법정·공식 기준선을 넘은 항목 수입니다.<br>동 페이지의 ‘쇠퇴 3요건 충족 수’는 법정 요건 단위로 세어 이 수와 다를 수 있습니다.'}` +
-      `<br>추가확인은 기준선을 넘었지만 그 기준이 아직 승인 대기인 항목입니다${waiting.length ? `(${esc(waiting.join('·'))}). 확정 수에는 넣지 않습니다` : ''}.<br>가중치·순위 없이 개수만 셉니다.</p>` +
+      `<br>기준 승인 대기는 기준선을 넘었지만 그 기준이 아직 승인되지 않은 항목입니다${waiting.length ? `(${esc(waiting.join('·'))}). 확정 수에는 넣지 않습니다` : ''}.<br>가중치·순위 없이 개수만 셉니다.</p>` +
       (led && led.cell && detail(led.cell).length ? `<div class="map-detail">${dl(led.cell)}</div>` : '') + `</details></div>`;
     const list = rows.filter(r => r.ind.group !== 'sum');
     const curG = (list.find(r => r.ind.code === o.cur) || list[0] || { ind: {} }).ind.group;
-    const gsum = g => { const rs = list.filter(r => r.ind.group === g), cnt = new Map();
-      for (const [k] of DONUT) { const c = rs.filter(r => dotOf(r) === k).length; if (!c) continue; const l = GS_SHORT[k], cur = cnt.get(l); cnt.set(l, cur ? { k: cur.k, c: cur.c + c } : { k, c }); }
-      return [...cnt].map(([l, x]) => `<span class="gs-${x.k}">${l} ${x.c}</span>`).join(''); };
+    const gsum = g => {
+      const members = list.filter(r => r.ind.group === g);
+      return DONUT.map(([key, label]) => {
+        const count = members.filter(r => dotOf(r) === key).length;
+        return count ? `<span class="gs-${key}">${label} ${count}</span>` : '';
+      }).join('');
+    };
     const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<li class="sr-group"><details${g === curG ? ' open' : ''}><summary><h4>${gIco(g)}${esc(gl)}</h4><span class="sr-gsum">${gsum(g)}</span></summary>${g === 'safe' ? `<p class="sr-group-note">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="sr-group-note">${esc(FORE_FIXED)}</p>` : ''}<ul>${list.filter(r => r.ind.group === g).map(r => {
       const ind = r.ind, tt = trendText(r.delta, ind), cls = ROW_CLASS[r.status];
       const rowsD = r.cell ? detail(r.cell) : [];
-      return `<li class="sr is-${cls}${ind.code === o.cur ? ' is-cur' : ''}"><div class="sr-h">${icon(ind.icon)}<span class="sr-l">${esc(ind.label)}${r.sgLevel ? ' <small>시·군·구</small>' : ''}</span><b class="sr-v">${esc(rowText(r))}</b><span class="sr-st st-${cls}">${esc(stLabel(r.status))}</span></div>` +
+      return `<li class="sr is-${cls}${ind.code === o.cur ? ' is-cur' : ''}"><div class="sr-h">${icon(ind.icon)}<span class="sr-l">${esc(ind.label)}${r.sgLevel ? ' <small>시·군·구</small>' : ''}</span><b class="sr-v">${esc(rowText(r))}</b>${refOf(r) ? `<small>기준일 ${esc(refOf(r))}</small>` : ''}<span class="sr-st st-${cls}">${esc(stLabel(r.status))}</span></div>` +
         (ind.categorical ? '' : `<div class="sr-m">${barSVG(r)}${tt ? `<em class="map-trend ${tt.cls}">${tt.arrow} 5년 ${esc(fmt(r.delta, ind.dEdges ? '' : '%p'))} ${esc(tt.word)}</em>` : ''}</div>`) +
         (r.series && r.series.some(p => p[1] !== null) ? trendSVG(r.series, r.year, ind.label, validStd(ind.standard) ? ind.standard.value : null, ind.unit) : '') +
         `<details class="map-detail sr-why"><summary>ⓘ 기준·출처${r.year ? ` (${esc(r.year)}년)` : ''}</summary><p class="sr-std">${esc(stdTextOf(r))}</p>${rowsD.length ? dl(r.cell) : ''}</details></li>`;
     }).join('')}</ul></details></li>`).join('');
     // 2026-11-13: 도넛(항목 상태 분류)을 맨 위에서 접힌 칸 안으로 옮김. 맨 위는 지도 패널의 reqLineHTML(쇠퇴 3요건 한 줄)이 맡는다.
     // 왜: 처음 보는 숫자가 '공식 기준 없음 29'라 사용자가 무엇을 봐야 할지 몰랐다(ux_feedback_2026-11-12.md 1절 3번). 내용은 그대로 두고 순서만 바꾼다
-    // v7: 확인할 항목·기준 해당 항목 수·한눈 요약은 '항목 수 모아 보기' 한 칸에 접는다(맨 위는 reqLineHTML의 3요건만). 순서(확인할 항목→수→한눈)는 그대로
+    // v7: 확인할 항목·기준선 넘은 지표 수·한눈 요약은 '항목 수 모아 보기' 한 칸에 접는다(맨 위는 reqLineHTML의 3요건만). 순서(확인할 항목→수→한눈)는 그대로
     return `<ol class="sr-list">${groups}</ol>` + `<details class="sr-glance-more"><summary>항목 수 모아 보기</summary>${gapsHTML(rows)}${head}${glanceHTML(rows)}</details>`;
   }
   // 기준 해당·참고 구간 밖 항목(2026-10-26, 업무 실무자용): 기준선을 넘은 항목(확정·승인 대기)과 자료가 없어 확인이 필요한 항목. 순서 고정, 순위·점수 없음
@@ -804,13 +807,15 @@
   function gapsHTML(rows, opt) {
     const g = gapRows(rows), o = opt || {};
     const line = x => { const r = x.row, ind = r.ind, c = r.cell || {}, src = c.source_name || ind.source || SOURCE_DEFAULT;
-      return `<li class="gp is-${r.value === null ? 'none' : 'over'}"><b>${esc(ind.label)}</b>${r.sgLevel ? '<small class="gp-sg">시·군·구</small>' : ''}<span class="gp-v">${esc(rowText(r))}</span><span class="gp-s">${esc(x.kind)}</span>` +
+      const label = r.value === null ? '추가확인' : isPending(ind.standard) ? '기준 승인 대기' : HIT;
+      return `<li class="gp is-${r.value === null ? 'none' : 'over'}"><b>${esc(ind.label)}</b>${r.sgLevel ? '<small class="gp-sg">시·군·구</small>' : ''}<span class="gp-v">${esc(rowText(r))}</span><span class="gp-s">${esc(label)}</span>` +
         `<small class="gp-std">${esc(validStd(ind.standard) ? `기준 ${ind.standard.text}` : stdTextOf(r).split(' · ')[0])} · 출처 ${esc(src)}${r.year ? ` · ${esc(r.year)}년` : ''}</small></li>`; };
     const nNull = g.filter(x => x.row.value === null).length;
-    return `<details class="sr-gaps"${o.open ? ' open' : ''}><summary>${icon('flag')}확인할 항목 <b>${g.length}</b>개 <small>기준 해당 ${g.length - nNull} · 자료 없음 ${nNull}</small></summary>${g.length ? `<ul>${g.map(line).join('')}</ul>` : '<p class="gp-empty">기준선을 넘거나 자료가 없는 항목이 없습니다.</p>'}` +
-      `<p class="gp-note">기준 해당은 카드에 적힌 기준선 문장(예: 50% 이상)에 들어맞는 항목, (승인 대기)는 기준이 아직 승인 전인 항목, 자료 없음은 확인이 필요한 항목입니다. 순위·점수가 아닙니다.</p></details>`;
+    const nPending = g.filter(x => x.row.value !== null && isPending(x.row.ind.standard)).length;
+    return `<details class="sr-gaps"${o.open ? ' open' : ''}><summary>${icon('flag')}확인할 항목 <b>${g.length}</b>개 <small>기준 해당 ${g.length - nNull - nPending} · 기준 승인 대기 ${nPending} · 추가확인 ${nNull}</small></summary>${g.length ? `<ul>${g.map(line).join('')}</ul>` : '<p class="gp-empty">기준선을 넘거나 자료가 없는 항목이 없습니다.</p>'}` +
+      `<p class="gp-note">기준 해당은 카드에 적힌 기준선 문장(예: 50% 이상)에 들어맞는 항목, 기준 승인 대기는 기준선의 내부 승인이 남은 항목, 추가확인은 자료가 모자라거나 기준을 그대로 적용할 수 없는 항목입니다. 순위·점수가 아닙니다.</p></details>`;
   }
-  // 2026-11-13: 동 요약 맨 위 한 줄 — "쇠퇴 3요건 중 몇 개 해당" + 1쪽 근거 문서로 가는 단추.
+  // 2026-11-13: 동 요약 맨 위 한 줄 — "쇠퇴 3요건 중 몇 개 해당" + 근거 1쪽로 가는 단추.
   // 왜: 동을 고르면 맨 위에 '공식 기준 없음 29' 같은 도넛이 먼저 나와, 첫 약속(D23 공모 신청요건 근거 1쪽)의 답이 묻혔다
   //     (docs/design/ux_feedback_2026-11-12.md 1절 3번). 숫자는 새로 세지 않고 출처 기록 '요건 충족 수(하한)'(DECLINE_MET_COUNT) 값을
   //     그대로 쓴다(원칙 1). 요건을 묶는 규칙(decline-3req)은 승인 전이라 '참고'·'판정 아님'을 이 줄 아래 한 번 밝힌다.
@@ -820,7 +825,7 @@
   function reqLineHTML(rows, dong, opt) {
     const r = (rows || []).find(x => x.ind && x.ind.code === REQ_CODE);
     if (!r) return '';
-    const go = opt && opt.go === false ? '' : `<a class="btn sr-req-go" href="#report" data-set-mode="onepage">${icon('book')}1쪽 근거 문서 보기</a>`;
+    const go = opt && opt.go === false ? '' : `<a class="btn sr-req-go" href="#report" data-set-mode="onepage">${icon('book')}근거 1쪽 보기</a>`;
     // 2026-11-13: 가운뎃점 사슬(하한·승인 전·판정 아님)을 누가 무엇을 하는지 두 문장으로(11-13 평가: 승인 주체가 없고 사슬이 AI 티)
     // v7 7회차: 맺음말 두 문장(하한·담당자 승인 전)을 실무자가 못 읽었다 → 한 줄. 승인 상태는 기준 원문 대조 쪽(rules.html)에 그대로 있다
     const jump = isNum(r.year) && dong ? seriesJump(seriesOf(dong, 'DECLINE_AGING_20Y_PCT'), r.year) : null;
@@ -905,7 +910,7 @@
       (ind.src === 'forecast' ? `<p class="map-legend-note">${esc(FORE_FIXED)}</p>` : ind.group === 'safe' ? `<p class="map-legend-note">${esc(SAFE_FIXED)}</p>` : ind.group === 'estate' ? `<p class="map-legend-note">${esc(ind.note || ESTATE_NOTE)}<br>${esc(ESTATE_PROV)}.</p>` : '') + // 수집 중에도 고정 문구는 상시
       `<p class="map-legend-note">판정 아님 · 출처 ${esc(ind.source || source || SOURCE_DEFAULT)} · ${ind.latest ? `최근 달 ${String(ind.latest).slice(0, 4)}.${String(ind.latest).slice(4, 6)}` : `기준연도 ${esc(year ?? '자료 없음')}`}</p></div>`;
   }
-  // ── 동네 보고서: 출처 기록 값으로만 만든 결정적 문장. 평가어 없음, 숫자는 셀 값 그대로 ──
+  // ── 현황 보고서: 출처 기록 값으로만 만든 결정적 문장. 평가어 없음, 숫자는 셀 값 그대로 ──
   const josa = label => josaOf(label, '은', '는');
   function reportSentences(name, rows) {
     return rows.filter(r => r.value !== null && !r.ind.composite && r.ind.group !== 'sum').map(r => {
@@ -935,7 +940,7 @@
   const BANNED = ['좋', '나쁘', '나쁜', '위험', '열악', '우수', '심각', '양호', '낙후', '추천', '유망', '피해야', '기피', '등급',
     // '순위'는 2026-11-07 D24·D26으로 뺐다(전국·시도·시군구 순위가 출처 값이 됨). 숫자는 아래 대조로 검사한다
     // 2026-11-01 추가: 판정·평가로 읽히는 말(D8·D13 낙인 금지). 중립 문장도 막힐 수 있지만 그때는 출처 기록 문장을 보여 주므로 안전 쪽 오류다
-    // '취'+'약': map.test.cjs '사업 근거서' 테스트가 화면 문구에 낙인 낱말이 섞이지 않게 이 소스 전체를 낱말 검사한다. 이 목록은 화면 문구가 아니라
+    // '취'+'약': map.test.cjs '검토용 근거서' 테스트가 화면 문구에 낙인 낱말이 섞이지 않게 이 소스 전체를 낱말 검사한다. 이 목록은 화면 문구가 아니라
     // 금지어 목록이라 그 검사를 약하게 바꾸지 않고, 낱말을 조각으로 적어 검사에 걸리지 않게 한다
     '취' + '약', '부족', '시급', '열위', '개선이 필요', '개선 필요', '높은 편', '낮은 편', '바람직', '우려', '문제'];
   // 출처 기록 문장에 없는 크기 표현: 숫자 정규식에 걸리지 않아 값을 바꿔 말해도 통과하던 것들(배수·어림·증감 강조)
@@ -1011,28 +1016,28 @@
     const fail = bad.length || banned.length || vague.length || swapped.length || flipped.length || missing.length || !t.trim();
     return fail ? { ok: false, bad, banned, vague, swapped: [...new Set(swapped)], flipped, missing } : { ok: true, text: t };
   }
-  // ── 사업 근거서(업무 실무자용, 2026-10-26): 동네 보고서의 변형. 현황 → 기준 대비 → 기준 해당·확인 필요 → 출처·계산식(펼친 상태). 평가·권고 문장 없음, 결정은 담당자가 ──
-  const BRIEF_HEAD = '예산 요구·사업계획·민원 회신 첨부용 근거 자료 · 리뉴맵 출처 기록 기반 · 판정 아님 · 결정은 담당자가';
-  const BRIEF_FOOT = '판정 아님 · 숫자마다 출처 · 결정은 담당자가';
+  // ── 검토용 근거서(업무 실무자용, 2026-10-26): 현황 보고서의 변형. 현황 → 기준 대비 → 기준 해당·확인 필요 → 출처·계산식(펼친 상태). 평가·권고 문장 없음, 판정은 담당 기관이 합니다 ──
+  const BRIEF_HEAD = '예산 요구·사업계획·민원 회신 검토용 근거서 · 리뉴맵 출처 기록 · 판정 아님 · 참고 계산';
+  const BRIEF_FOOT = '판정 아님 · 숫자마다 출처 · 판정은 담당 기관이 합니다';
   const BRIEF_MAIL = 'renewmapteam@gmail.com';
-  const REPORT_MODES = [['report', '동네 보고서'], ['brief', '사업 근거서'], ['onepage', '1쪽 요약'], ['programs', '재생 사업']];
+  const REPORT_MODES = [['report', '현황 보고서'], ['brief', '검토용 근거서'], ['onepage', '근거 1쪽'], ['programs', '사업 요건 대조']];
   // 2026-11-13 우지예: 빈 화면 문구가 '1쪽 요약가·재생 사업가'로 나왔다. 왜: 이름 뒤에 '가'를 고정으로 붙였다 → 받침이 있으면 '이', 없으면 '가'
   const iGa = label => label + josaOf(label, '이', '가');
-  const reportModeHTML = mode => `<div class="dash-seg rp-mode" role="group" aria-label="보고서 용도">${REPORT_MODES.map(([k, l]) => `<button type="button" data-rp-mode="${k}" aria-pressed="${k === mode}">${l}</button>`).join('')}</div>`;
+  const reportModeHTML = mode => `<div class="dash-seg rp-mode" role="group" aria-label="문서 종류">${REPORT_MODES.map(([k, l]) => `<button type="button" data-rp-mode="${k}" aria-pressed="${k === mode}">${l}</button>`).join('')}</div>`;
   // 파일(HWPX·XLSX)은 이 브라우저에서 바로 만든다(docgen.js). 메일 요청은 내부망에서 파일 생성이 막힐 때를 위한 보조 경로로만 남긴다
   function briefMailto(it, year, what = '근거서') {
-    const subject = `${what} HWPX·XLSX 요청 [${it.name}·${it.code}]`, body = `동: ${it.name} (${it.code})\n요청 형식: HWPX·XLSX\n기준연도: 쇠퇴 지표 ${year ?? '최신 연도'} · 생활 지표는 항목별 기준연도\n무료 · 1영업일 안에 회신합니다.`;
+    const subject = `${what} HWPX·XLSX 요청 [${it.name}·${it.code}]`, body = `동: ${it.name} (${it.code})\n요청 형식: HWPX·XLSX\n기준연도: 쇠퇴 지표 ${year ?? '최신 연도'} · 생활 지표는 항목별 기준연도`;
     return `mailto:${BRIEF_MAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
   // 출처 머리말: 원본 기관명이 앞, 가공(리뉴맵)이 뒤
   const srcHead = where => (DG ? DG.SRC_HEAD(where) : '');
   const copyHead = caption => `<div class="dg-tbl-h" aria-live="polite"><b>${esc(caption)}</b>${DG ? `<button type="button" class="btn ghost dg-copy" data-copy-table>${esc(DG.COPY_TABLE)}</button>` : ''}</div>`;
   // 내려받기·인쇄·보조 메일 요청. 1쪽 요약에서는 HWPX가 1쪽 문서다
-  // 동네 보고서 화면에서 받는 파일은 근거서 형식이다(문서는 1쪽 요약·근거서 두 가지). 단추에 그렇게 적는다(v9: 두 화면의 HWPX가 같은 파일인데 이름만 보고는 몰랐다)
+  // 현황 보고서 화면에서 받는 파일은 근거서 형식이다(문서는 1쪽 요약·근거서 두 가지). 단추에 그렇게 적는다(v9: 두 화면의 HWPX가 같은 파일인데 이름만 보고는 몰랐다)
   // 주 단추는 HWPX 하나, 나머지 형식·과업 연결은 접는다(2026-11-18: 단추 6개가 같은 무게로 결과보다 먼저 나왔다)
-  const fileTools = (it, year, what, one) => `<button type="button" class="btn ghost" data-print>인쇄·PDF</button>` + (DG ? `<button type="button" class="btn" data-dl="hwpx">한글(HWPX) 받기${one ? '(1쪽)' : what === '동네 보고서' ? '(근거서 형식)' : ''}</button><details class="rp-more-files"><summary>다른 형식·과업 연결</summary><button type="button" class="btn" data-dl="xlsx">XLSX 받기</button><button type="button" class="btn" data-dl="docx">DOCX 받기</button><button type="button" class="btn" data-dl="pptx">PPTX 받기</button><button type="button" class="btn ghost" data-task-package>과업에 연결</button></details>` : '') +
+  const fileTools = (it, year, what) => `<button type="button" class="btn ghost" data-print>PDF로 저장</button>` + (DG ? `<button type="button" class="btn" data-dl="hwpx">한글로 받기</button>${what === '현황 보고서' ? '<small>한글 파일은 근거서 형식입니다.</small>' : ''}<details class="rp-more-files"><summary>다른 형식·과업 연결</summary><button type="button" class="btn" data-dl="xlsx">엑셀로 받기</button><button type="button" class="btn" data-dl="docx">워드로 받기</button><button type="button" class="btn" data-dl="pptx">파워포인트로 받기</button><button type="button" class="btn ghost" data-task-package>과업에 연결</button></details>` : '') +
     // 메일 요청은 단추가 아니라 한 줄 안내로(v9: 'HWPX 받기' 옆에 같은 모양으로 있어 둘의 차이를 몰랐다)
-    `<p class="rp-mail-note">${DG ? '양식에 맞춰 사람이 다듬은 파일이 필요하면' : '이 기기에서 파일을 만들 수 없으면'} <a class="rp-mail" href="${esc(briefMailto(it, year, what))}">메일로 요청</a>하세요(무료 · 1영업일).</p>`;
+    `<p class="rp-mail-note">${DG ? '양식에 맞춰 사람이 다듬은 파일이 필요하면' : '이 기기에서 파일을 만들 수 없으면'} <a class="rp-mail" href="${esc(briefMailto(it, year, what))}">메일로 요청</a>하세요.</p>`;
   // 양식에 붙일 조각(문장 5개 이하 + 표 1개 + 출처 줄): 양식을 고르면 그 양식 항목 순서대로 만든다(data-frag-out). 양식 정의는 data/report_templates.json
   function fragPanelHTML(sel) {
     if (!DG || !DG.getTemplates()) return '';
@@ -1059,13 +1064,13 @@
     const sec3 = `<section class="rp-g"><h3>3. 기준 해당·확인 필요 목록</h3>${gapsHTML(rows, { open: true })}</section>`;
     const sec4 = `<section class="rp-g"><h3>4. 출처·계산식 표</h3><div class="dg-tbl">${copyHead('출처·계산식')}<div class="table-wrap"><table class="rp-tbl"><thead><tr><th>항목</th><th>값</th><th>출처</th><th>기준일</th><th>계산식</th><th>규칙 버전</th></tr></thead><tbody>${facts.map(r => { const s = srcOf(r);
       return `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name)}</td><td>${esc(s.ref || (r.year ? `${r.year}년` : '기록 없음'))}${ageSmall(s.ref)}</td><td>${esc(s.formula || '기록 없음')}</td><td>${esc(s.rule || '기록 없음')}</td></tr>`; }).join('')}</tbody></table></div></div></section>`;
-    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 사업 근거서</h3><div class="rp-tools">${fileTools(it, dy, '근거서', false)}</div></div>` +
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 검토용 근거서</h3><div class="rp-tools">${fileTools(it, dy, '검토용 근거서')}</div></div>` +
       `${deliveryReviewHTML(brief)}<p class="rp-intro rp-src-line">${esc(srcHead('4. 출처·계산식 표'))}</p><p class="rp-intro rp-brief-head">${esc(BRIEF_HEAD)}</p><p class="rp-intro">${esc(here)} · ${esc(it.kind || '행정동')} ${esc(it.code)} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'} · 생활 지표는 항목별 기준연도</p>${fragPanelHTML(sel || '')}${sec1}${sec2}${sec3}${sec4}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
   // 1쪽 요약: 제목·개요 4줄·요약 문장 5개·기준 대비 표(8행 이하)·출처 번호·끝. one = DG.buildOnepage(...) 결과. 인쇄하면 A4 한 쪽
   function onepageHTML(v, it, one, sel) {
     const labels = v.crumbs.map(c => c.label), here = (labels[labels.length - 1] === it.name ? labels : [...labels, it.name]).join(' › '), lead = one.parts.summary[0];
-    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 1쪽 요약</h3>${lead ? `<p class="rp-lead">${esc(lead.text)}</p>` : ''}<div class="rp-tools">${fileTools(it, one.brief.year, '1쪽 요약', true)}</div></div>` +
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 근거 1쪽</h3>${lead ? `<p class="rp-lead">${esc(lead.text)}</p>` : ''}<div class="rp-tools">${fileTools(it, one.brief.year, '근거 1쪽')}</div></div>` +
       `${deliveryReviewHTML(one.brief)}<div class="dg-doc dg-onepage">${DG.docHTML(one, { copy: true }).html}</div>${fragPanelHTML(sel)}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
   // ── 기기 안 AI(Chrome 내장 AI의 Rewriter·Summarizer 전역 API). 문장을 서버로 보내지 않는다 ──
@@ -1357,7 +1362,8 @@
     if (p.done === undefined && !p.hooked) { p.hooked = true; p.then(() => render()); }
     return p.done;
   }
-  const emdOf = code5 => lazy('emd:' + code5, () => Promise.all([fetchJson(`data/national/emd/${code5}.geojson`), fetchJson(`data/national/emd/${code5}.json`)])
+  const emdGeometry = code5 => fetchJson(`data/national/emd/${code5}.geojson`);
+  const emdOf = code5 => lazy('emd:' + code5, () => Promise.all([emdGeometry(code5), fetchJson(`data/national/emd/${code5}.json`)])
     .then(([geo, json]) => { if (!geo && json && Array.isArray(json.features)) geo = json; return { geo: geo && Array.isArray(geo.features) ? geo : null, json: json && Array.isArray(json.dongs) ? json : null }; }));
   // 생활 지표 파일: living/index.json이 없으면 시군구 파일도 찾지 않는다(null = 없음)
   const livingOf = code5 => (state.living ? lazy('living:' + code5, () => fetchJson(`data/national/living/${code5}.json`).then(j => (j && Array.isArray(j.dongs) ? j : null))) : null);
@@ -1520,7 +1526,7 @@
       `<p class="map-guide">지도에서 동을 누르면 세부항목별 척도표가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.${missingBoundaries ? `<br>지도 경계가 없는 ${missingBoundaries}개 동은 ‘읍·면·동 목록’에서 이름으로 고를 수 있습니다.` : ''}</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}동별 사업 요건 비교 보기</a></p>${reorgNote(v)}${forecastChart(ind, m.ext, v.gu || v.sigungu, null)}${dist}${hubHTML(v)}</details>`;
     const rows = rowsFor(v, m, it), D = window.RenewDashboard, dy = rows.find(r => r.ind.series && r.year)?.year, dong = m.json.dongs.find(d => codeOf(d) === it.code) || null;
     // 2026-11-19 대표 지적('자세한 근거'가 카드 안에 접힌 칸으로 겹쳐 길었다): 오른쪽 서랍(휴대폰은 지도 아래 카드)을 머리·탭·꼬리로 나눈다.
-    // 머리 = 이름·닫기, 탭 = 요약(쇠퇴 3요건 세 줄)·지표 전체(척도표)·재생 사업, 꼬리 = 주 단추 하나('근거 문서 열기' = 예전 1쪽 근거 문서 단추).
+    // 머리 = 이름·닫기, 탭 = 요약(쇠퇴 3요건 세 줄)·지표 전체(척도표)·재생 사업, 꼬리 = 주 단추 하나('근거 문서 열기' = 예전 근거 1쪽 단추).
     // 경로·연도·경계 안내 같은 보조 문구는 'ⓘ 자세히' 한 칸에 모은다(문구는 그대로)
     const req = reqLineHTML(rows, dong, { go: false }); // 2026-11-13: 동 이름 바로 아래에 신청요건(첫 약속 D23의 답을 맨 먼저)
     const tab = MP_TABS.some(t => t[0] === state.mpTab) ? state.mpTab : 'sum';
@@ -1532,7 +1538,7 @@
     return `<div class="map-panel-head mp-head"><h3 class="map-h3" tabindex="-1" data-code="${esc(it.code)}">${esc(it.name)} <small>${esc(it.kind || '행정동')}</small></h3><button type="button" class="map-close" data-close aria-label="척도표 닫기">닫기</button></div>` +
       `<div class="mp-tabs" role="tablist" aria-label="${esc(it.name)} 보기">${MP_TABS.map(([k, l]) => `<button type="button" role="tab" id="mp-tab-${k}" data-mp-tab="${k}" aria-controls="mp-pane-${k}" aria-selected="${k === tab}" tabindex="${k === tab ? 0 : -1}">${l}</button>`).join('')}</div>` +
       '<div class="mp-body">' +
-      pane('sum', req + '<p class="map-copy"><button type="button" class="btn ghost" data-copy-map>이 지도 링크 복사</button><button type="button" class="btn ghost" data-candidate-save>검토 후보 저장</button></p><p class="map-copy-msg" role="status" aria-live="polite" data-copy-map-msg></p><p data-candidate-status role="status"></p>' + info) +
+      pane('sum', req + '<p class="map-copy"><button type="button" class="btn ghost" data-copy-map>이 지도 링크 복사</button><button type="button" class="btn ghost" data-candidate-save>보관함에 후보로 담기</button></p><p class="map-copy-msg" role="status" aria-live="polite" data-copy-map-msg></p><p data-candidate-status role="status"></p>' + info) +
       pane('all', forecastChart(ind, m.ext, v.gu || v.sigungu, dong) + scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist) +
       pane('biz', `<p class="map-guide">이 동의 신청요건에 맞는 재생 사업은 문서 탭에서 비교합니다.</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}맞는 재생 사업 보기</a></p>` + hubHTML(v)) +
       '</div>' +
@@ -1565,7 +1571,7 @@
     const p = M.map.latLngToContainerPoint(lay.getBounds().getCenter()), edge = panel.offsetLeft - 16;
     if (p.x > edge - 24) M.map.panBy([p.x - edge / 2, 0], { animate: !reduced && !state.naver });
   }
-  // ── 동네 보고서(#report): 출처 기록 문장 + 그래프 + 출처표. 인쇄는 브라우저 인쇄(@media print), HWPX·XLSX는 메일 요청 ──
+  // ── 현황 보고서(#report): 출처 기록 문장 + 그래프 + 출처표. 인쇄는 브라우저 인쇄(@media print), HWPX·XLSX는 메일 요청 ──
   const report = document.getElementById('reportApp');
   const initialReportMode = new URLSearchParams(location.search).get('report');
   let reportKey = '', reportInputs = [], polished = null, reportMode = REPORT_MODES.some(([key]) => key === initialReportMode) ? initialReportMode : 'report'; // polished: 검증을 통과한 AI 문장만
@@ -1587,7 +1593,7 @@
       `<span class="rp-ai-note">선택 기능 · 기본 꺼짐 · 무료 · 로그인 없음 · 서버 전송 없음</span>` +
       `<div class="rp-ai-consent" data-ai-confirm hidden><p><b>기기 내 AI 모델 내려받기</b><br>Chrome이 AI 모델을 이 기기에 한 번 내려받습니다(Chrome 안내: 저장 공간 22GB 이상 여유 필요).<br>내려받은 뒤에도 문장은 이 기기 안에서만 처리합니다.</p><button type="button" class="btn" data-ai-go>내려받고 다듬기</button> <button type="button" class="btn ghost" data-ai-cancel>취소</button></div>` +
       `<div class="rp-ai-out" data-ai-out aria-live="polite">${pol ? `<p class="rp-ai-label">${esc(AI_LABEL)}</p><p>${esc(pol.text)}</p>` : ''}</div><p class="rp-ai-foot">${esc(AI_FOOT)}</p></div>`;
-    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 보고서</h3><div class="rp-tools">${fileTools(it, rows.find(r => r.ind.series && r.year)?.year ?? null, '동네 보고서', false)}</div></div>` +
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 현황 보고서</h3><div class="rp-tools">${fileTools(it, rows.find(r => r.ind.series && r.year)?.year ?? null, '현황 보고서')}</div></div>` +
       `<p class="rp-intro rp-src-line">${esc(srcHead('출처표'))}</p><p class="rp-intro">카드의 숫자와 문장은 출처 기록의 값과 출처만 옮긴 것입니다.<br>평가나 판정은 하지 않습니다.</p>${typeof localStorage !== 'undefined' ? snapHTML(snapGet(it.code), snapshotOf(it, rows, new Date())) : ''}${byG}${src}${ai}<p class="rp-foot">${esc(REPORT_FOOT)}</p>`;
   }
   const socText = r => fmt(r.value, r.ind.unit);
@@ -1610,7 +1616,7 @@
     const rows = rowsFor(v, m, it);
     if (reportMode === 'onepage') {
       const built = docFor(v, m, it);
-      report.innerHTML = reportModeHTML(reportMode) + (built.error ? `<div class="rp-empty" role="status"><h3>1쪽 요약을 아직 만들 수 없습니다</h3><p>${esc(built.error)}</p></div>` : onepageHTML(v, it, built.one, fragChoice));
+      report.innerHTML = reportModeHTML(reportMode) + (built.error ? `<div class="rp-empty" role="status"><h3>근거 1쪽을 아직 만들 수 없습니다</h3><p>${esc(built.error)}</p></div>` : onepageHTML(v, it, built.one, fragChoice));
     } else if (reportMode === 'programs' && window.RenewPrograms) {
       report.innerHTML = reportModeHTML(reportMode) + window.RenewPrograms.dongHTML(it.name, rows) + window.RenewPrograms.socHTML(rows, socText);
       report.querySelector('[data-soc-csv]').addEventListener('click', () => { if (DG) DG.saveBytes(`기반편의시설현황_${DG.safeName(it.name)}.csv`, new TextEncoder().encode(window.RenewPrograms.socCSV(it.name, rows, socText)), 'text/csv;charset=utf-8'); });
@@ -1638,7 +1644,7 @@
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261119-r2'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261119-r3'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
@@ -1739,7 +1745,7 @@
         {name:`${stem}.xlsx`,kind:'xlsx',bytes:DG.workbookBytes(full)},
       ],inputJSON:built.inputJSON,comparison,templateVersion:JSON.parse(built.inputJSON).templates.version,
       reviewRows:DG.deliveryReview(built.brief,true).rows,context:{code:cur.it.code,region:built.brief.region,year:built.brief.year}};
-      if (!window.RenewTaskLink) await import('./task-link.js?v=20261119-r2');
+      if (!window.RenewTaskLink) await import('./task-link.js?v=20261119-r3');
       if (!current()) throw new Error('파일 준비 중 선택이나 입력이 바뀌었습니다. 현재 문서에서 다시 눌러 주세요.');
       const packet = await window.RenewTaskLink.capture(request);
       if (!current()) throw new Error('선택이 바뀌어 화면 이동을 멈췄습니다. 보관한 파일 묶음은 보관함에서 다시 열 수 있습니다.');
@@ -2007,10 +2013,10 @@
     const it = m.kind === 'emd' && v.dong ? m.items.find(x => x.code === v.dong) : null;
     if (EXTRA_FILES[ind.src]) wantExtra(ind.src);   // 그 칩을 골랐다
     if (it) wantExtra('migration', 'realestate');   // 동 카드의 세부 지표 표와 문서가 쓴다
-    // 탭 제목에 지금 보는 곳을(v9 접근성: 동을 열어도 '동네 찾기·지도 | 리뉴맵' 그대로라 화면 읽기·탭 목록에서 어느 동인지 몰랐다)
+    // 탭 제목에 지금 보는 곳을(v9 접근성: 동을 열어도 '동네 진단·지도 | 리뉴맵' 그대로라 화면 읽기·탭 목록에서 어느 동인지 몰랐다)
     const here = it ? it.name : v.crumbs.length > 1 ? v.crumbs[v.crumbs.length - 1].label : '';
     document.title = here ? `${here} · ${BASE_TITLE}` : BASE_TITLE;
-    const crumbs = `<nav class="map-crumbs" aria-label="현재 위치"><ol>${v.crumbs.map((c, i) => i === v.crumbs.length - 1 && !it ? `<li aria-current="page">${esc(c.label)}</li>` : `<li><a href="${esc(c.hash)}">${esc(c.label)}</a></li>`).join('')}${it ? `<li aria-current="page">${esc(it.name)}</li>` : ''}</ol><span class="map-step">${esc(v.step)} 단계</span></nav>`;
+    const crumbs = `<nav class="map-crumbs" aria-label="지금 보는 곳"><ol>${v.crumbs.map((c, i) => i === v.crumbs.length - 1 && !it ? `<li aria-current="page">${esc(c.label)}</li>` : `<li><a href="${esc(c.hash)}">${esc(c.label)}</a></li>`).join('')}${it ? `<li aria-current="page">${esc(it.name)}</li>` : ''}</ol><span class="map-step">${esc(v.step)} 단계</span></nav>`;
     const py = m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind) && !ind.noPlay ? playYears(state.index, ind.code) : null, sgOn = v.level === 'nation' && !reduced ? !!autoT : state.playing;
     const yearCtl = py && py.years.length ? yearHTML(sgOn, py.years[0], py.years[py.years.length - 1], m.year)
       : m.kind === 'emd' && m.years && (ind.series || ind.computed) ? yearHTML(state.playing, m.years.min, m.years.max, m.year)
@@ -2063,8 +2069,13 @@
     if (!panel.hidden) {
       // R4 1: 카드 제목에 초점이 있으면(동을 고른 직후) 다시 그려도 잃지 않게 한다. 늦게 오는 자료(순이동·시세)가 render를 부른다. 탭 단추 초점도 같다
       const a = document.activeElement, keepCard = panel.contains(a) && a.classList.contains('map-h3'), keepTab = panel.contains(a) && a.dataset.mpTab;
+      const oldInfo = it && it.code === lastDong ? panel.querySelector('.mp-info') : null;
+      const keepInfoFocus = !!oldInfo && a === oldInfo.querySelector('summary');
       panel.innerHTML = panelHTML(v, m);
+      const info = oldInfo ? panel.querySelector('.mp-info') : null;
+      if (info) info.open = oldInfo.open;
       if (keepCard || (wantCard && it && it.code === wantCard)) { panel.querySelector('.map-h3')?.focus({ preventScroll: true }); wantCard = null; }
+      else if (keepInfoFocus) info?.querySelector('summary')?.focus({ preventScroll: true });
       else if (keepTab) panel.querySelector(`[data-mp-tab="${keepTab}"]`)?.focus({ preventScroll: true });
       panel.classList.toggle('is-sheet', !!it && !wide.matches);
       panel.classList.toggle('is-new', !!it && it.code !== lastDong && !reduced);
@@ -2156,7 +2167,7 @@
     // aria-hidden을 두지 않는다: 안의 법적 고지 링크가 키보드 초점을 받으므로 숨기면 이름 없는 초점이 된다(2026-10-30 배포 화면 확인)
     if (nv) { nv.className = 'map-naver'; el.appendChild(nv); el.classList.add('has-naver'); }
     const hatch = boundaryHatch();
-    // 동네 찾기 넓은 화면은 지도가 화면 남은 높이 전체라(explore-layout.js) 페이지 스크롤과 다투지 않으므로 휠 확대를 처음부터 켠다(2026-11-13 v7)
+    // 동네 진단 넓은 화면은 지도가 화면 남은 높이 전체라(explore-layout.js) 페이지 스크롤과 다투지 않으므로 휠 확대를 처음부터 켠다(2026-11-13 v7)
     const wideApp = document.body.classList.contains('explore-page') && window.matchMedia('(min-width: 1024px)').matches;
     // maxBoundsViscosity 1: 네이버 배경이 범위 끝에서 멈출 때 경계층도 그 밖으로 끌려 나가지 않게 한다(범위는 followWithNaver가 SDK에서 읽어 건다)
     const map = L.map(el, { dragging: !coarse, scrollWheelZoom: wideApp, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false, zoomControl: false, maxBoundsViscosity: nv ? 1 : 0,
@@ -2168,7 +2179,7 @@
     map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => { if (!wideApp) map.scrollWheelZoom.disable(); });
     // R4 9: 첫 화면(시·도 단계)의 자동 맞춤(fitBounds)이 줌 9 이상을 만들 때마다 상세 경계(sigungu.geojson 288KB gz)를 받았다.
     //   사용자가 직접 확대한 때와 구에 들어갈 때(drawMap)만 받는다. 맞춤 중에는 M.fitting이 켜져 있다
-    map.on('zoomend', () => { if (map.getZoom() > 8 && !(M && M.fitting)) loadSgDetail(); });
+    map.on('zoomend', () => { if (M && !M.fitting) { M.previewZoom = map.getZoom() >= 12; if (map.getZoom() > 8) loadSgDetail(); } });
     L.control.scale({ position: 'bottomleft', imperial: false, maxWidth: 120 }).addTo(map);   // v7.9: 축척 막대(8회차 GIS 평가)
     L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
     add3dControl(map);
@@ -2191,9 +2202,9 @@
     map.createPane('labels').style.zIndex = 460;
     // 2026-11-13: 확대가 끝나면 zoomend와 moveend가 잇달아 와 동 이름 자리 계산을 두 번 했다 → 한 화면 그리기(requestAnimationFrame)에 한 번만
     let labelFrame = 0;
-    map.on('zoomend moveend', () => { if (!labelFrame) labelFrame = requestAnimationFrame(() => { labelFrame = 0; cullSg(); placeDongLabels(); }); });
+    map.on('zoomend moveend', () => { if (!labelFrame) labelFrame = requestAnimationFrame(() => { labelFrame = 0; cullSg(); syncEmdOutlines(); placeDongLabels(); }); });
     // 상위 동·수질 pane은 SVG를 유지한다. 별도 Canvas가 빈 영역의 아래 경계 클릭까지 가로막지 않게 한다.
-    M = { el, map, hatch, sgRenderer: typeof hatch === 'string' ? null : L.canvas({ pane: 'sg' }), sg: null, sido: null, emd: null, emdCode: null, water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
+    M = { el, map, hatch, sgRenderer: typeof hatch === 'string' ? null : L.canvas({ pane: 'sg' }), sg: null, sido: null, emd: null, emdCode: null, outlines: new Map(), water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
     setTimeout(startAuto, 1500);
   }
   // 지금 보는 곳의 건물을 건물 나이 4D(time4d.html, 연도별 입체)로 연다. 주소에는 지도 중심 좌표만 싣고, 4D 화면이 그 자리의 법정동을 고른다.
@@ -2202,7 +2213,7 @@
     const to3d = window.L.control({ position: 'topleft' });
     to3d.onAdd = () => {
       const a = window.L.DomUtil.create('a', 'leaflet-bar map-3d');
-      a.textContent = '건물 4D(부산)';   // v9: 대구에서 눌러도 부산이 열려 '부산만'을 단추에 밝힌다
+      a.textContent = '건물 나이 4D(부산)';   // v9: 대구에서 눌러도 부산이 열려 '부산만'을 단추에 밝힌다
       a.title = '지금 보는 곳의 건물을 연도별 입체로 봅니다(부산)';
       // 컨트롤을 붙일 때는 아직 지도 시점이 없어 getCenter가 오류를 낸다. 첫 맞춤(fitBounds) 뒤 moveend부터 좌표를 싣는다
       a.href = 'time4d.html';
@@ -2220,6 +2231,16 @@
     // 움직임이 끝날 때 두 중심이 1px 넘게 다르면 경계층을 네이버 중심으로 되돌린다. 서로 되돌리기를 반복하지 않게 사용자가 다시 움직일 때까지 2번만
     // 네이버 좌표: LatLng는 lat()·lng(), Point(범위 꼭짓점일 수 있다)는 y·x
     const ll = p => window.L.latLng(typeof p.lat === 'function' ? p.lat() : p.y, typeof p.lng === 'function' ? p.lng() : p.x);
+    let bounded = false;
+    const setLimits = () => {
+      const b = nmap.getOptions && nmap.getOptions('maxBounds');
+      if (!b || !b.getMin || !b.getMax) return;
+      // 네이버는 중심, Leaflet은 화면 전체를 제한한다. 반 화면을 더하고 경계에서 픽셀 반올림할 여유를 남긴다.
+      const half = map.getSize().divideBy(2), margin = window.L.point(half.x - 1, 1 - half.y);
+      const sw = map.project(ll(b.getMin())).subtract(margin), ne = map.project(ll(b.getMax())).add(margin);
+      bounded = true;
+      map.setMaxBounds(window.L.latLngBounds(map.unproject(sw), map.unproject(ne)));
+    };
     const realign = () => {
       if (!nmap || stopped || fixing || fixes >= 2) return;
       try {
@@ -2250,9 +2271,12 @@
       map.options.zoomSnap = 0.25; map.setMinZoom(0); map.setMaxBounds(null);   // 네이버 범위 제한은 대체 배경(브이월드·OSM)에 쓰지 않는다
       addBaseTiles(map);
     };
-    const sync = () => {
+    const sync = e => {
       if (!nmap || stopped) return;
-      try { const c = map.getCenter(); nmap.setCenter(new N.LatLng(c.lat, c.lng)); nmap.setZoom(map.getZoom(), false); }
+      try {
+        if (!bounded || (e && (e.type === 'zoom' || e.type === 'resize'))) setLimits();
+        const c = map.getCenter(); nmap.setZoom(map.getZoom(), false); nmap.setCenter(new N.LatLng(c.lat, c.lng));
+      }
       catch { fallback(); }
     };
     // 인증 실패 콜백과 달리 이 이벤트는 이미 열린 배경을 회복하는 앱 내부 신호다.
@@ -2275,15 +2299,13 @@
       try {
         N = window.naver.maps;
         const c = map.getCenter();
-        nmap = new N.Map(nv, { center: new N.LatLng(c.lat, c.lng), zoom: map.getZoom(), tileTransition: false, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
+        nmap = new N.Map(nv, { center: new N.LatLng(c.lat, c.lng), zoom: map.getZoom(), minZoom: map.getMinZoom(), maxZoom: map.getMaxZoom(), tileTransition: false, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
           disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, scaleControl: false, mapDataControl: true, logoControl: true, mapTypeControl: false,
           // 2026-11-19: 넓은 화면의 동 서랍이 지도 오른쪽 전체 높이를 덮으므로 NAVER 로고를 왼쪽 아래(저작권 표시 옆)로 옮긴다(로고는 가리지 않는다)
           ...(N.Position && N.Position.BOTTOM_LEFT ? { logoControlOptions: { position: N.Position.BOTTOM_LEFT } } : {}) });
         if (stopped) { const previous = nmap; nmap = null; destroy(previous); return; }
-        // 네이버가 정한 이동 범위(없으면 null)를 경계층에도 같게 건다. 좌표는 손으로 적지 않고 SDK에서 읽는다
-        const b = typeof nmap.getOptions === 'function' ? nmap.getOptions('maxBounds') : null;
-        if (b && typeof b.getMin === 'function' && typeof b.getMax === 'function') map.setMaxBounds(window.L.latLngBounds(ll(b.getMin()), ll(b.getMax())));
-        N.Event.once(nmap, 'tilesloaded', () => { if (!stopped) mapPainted(); });
+        setLimits();
+        N.Event.once(nmap, 'tilesloaded', () => { if (!stopped) { sync(); mapPainted(); } });
       } catch { fallback(); }
     });
   }
@@ -2359,11 +2381,37 @@
     // 앞으로 올리기(bringToFront)는 DOM에서 path를 다시 붙인다. 누르는 도중에 하면 click이 사라지므로 칸 구성이 바뀔 때만 한다
     const order = [...active].join() + '|' + v.emdCode + '|' + v.dong, reorder = M.order !== order; M.order = order;
     if (M.sg) M.sg.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.sgItems.get(code), on = active.has(code);
-      l.setStyle(on ? { fillColor: it.value === null ? M.hatch : it.color, fillOpacity: 0.85, color: '#fff', weight: 0.8, dashArray: it.value === null ? '4 3' : null }
+      l.setStyle(on ? { fillColor: it.value === null ? M.hatch : it.color, fillOpacity: 0.4, color: '#4a5854', weight: 0.8, dashArray: it.value === null ? '4 3' : null }
         : { fillColor: '#c9d3cf', fillOpacity: inEmd ? 0.08 : 0.15, color: '#fff', weight: 0.5, dashArray: null });
       if (on && reorder) l.bringToFront(); });
     if (M.sido) { M.sido.setStyle({ opacity: inEmd ? 0 : 1 }); if (reorder) M.sido.bringToFront(); } // 동 단계에서는 고른 구의 굵은 테두리가 대신한다
     return { active, reorder };
+  }
+  function syncEmdOutlines() {
+    const visible = new Set();
+    if (M.previewZoom && M.map.getZoom() >= 12 && M.sg && M.sgItems.size) {
+      const view = M.map.getBounds();
+      M.sg.eachLayer(layer => {
+        const code = String(layer.feature.properties.code);
+        if (M.sgItems.has(code) && view.intersects(layer._rmBox || (layer._rmBox = layer.getBounds()))) visible.add(code);
+      });
+    }
+    for (const [code, entry] of M.outlines) {
+      if (visible.has(code)) continue;
+      if (entry.layer) entry.layer.remove();
+      M.outlines.delete(code);
+    }
+    for (const code of visible) {
+      if (M.outlines.has(code)) continue;
+      const entry = {};
+      M.outlines.set(code, entry);
+      emdGeometry(code).then(geo => {
+        if (M.outlines.get(code) !== entry) return;
+        if (!geo) { M.outlines.delete(code); return; }
+        if (!Array.isArray(geo.features)) return;
+        entry.layer = window.L.geoJSON(geo, { interactive: false, style: { fill: false, color: '#465651', weight: 1, opacity: 0.7, smoothFactor: 0 } }).addTo(M.map);
+      });
+    }
   }
   // 행정동 레이어: 시군구가 바뀔 때만 다시 만들고, 연도·지표는 setStyle로만 바꾼다(CSS transition)
   function paintEmd(v, m, reorder) {
@@ -2381,13 +2429,8 @@
         makeDongLabels(m.geo);
       }
       M.emdItems = new Map(m.items.map(it => [it.code, it]));
-      M.emdDark = new Set();
       M.emd.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.emdItems.get(code), sel = code === v.dong;
-        // v7: 고른 동은 색을 옅게 빼지 않고 더 진하게 + 굵은 검은 테두리(평가: 옅어진 고른 동이 회색 바탕지도처럼 보였다)
-        // 2026-11-14 우지예: 흰 경계선은 연한 베이지 동끼리 대비 1.2~1.7이라 거의 안 보였다(실측) → 연한 칸은 반투명 진회색 선, 진한 칸은 흰 선.
-        //     고른 동의 검은 굵은 선·구 바깥 검은 선(v7.19)은 그대로. 진한 칸 목록은 동 이름 글자색에도 쓴다(placeDongLabels)
-        const dark = !!(it && it.value !== null && isDarkFill(it.color)); if (dark) M.emdDark.add(code);
-        l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: 0.85, color: sel ? '#17191c' : dark ? '#fff' : 'rgba(38,44,41,.5)', weight: sel ? 3 : dark ? 1.5 : 1, dashArray: !it || it.value === null ? '4 3' : null });
+        l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: 0.4, color: sel ? '#17191c' : '#4a5854', weight: sel ? 3 : 1, smoothFactor: 0, dashArray: !it || it.value === null ? '4 3' : null });
         // R4 1: 낭독기가 동 모양을 지나며 지금 지표의 값을 듣게 한다(값은 마우스를 올려야 뜨는 말풍선에만 있었다). 값이 없으면 '자료 없음'
         const el = it && l.getElement && l.getElement(); if (el) el.setAttribute('aria-label', dongAria(it, curInd(), effMode(curInd())));
         if (sel && reorder) l.bringToFront(); });
@@ -2397,12 +2440,6 @@
   }
   // 2026-11-12: 동 이름표. 시군구가 바뀔 때만 다시 만들고, 확대·이동·동 고르기마다 겹치는 이름만 숨긴다(labelPoint·pickLabels)
   const LABEL_MIN_ZOOM = 12;   // 이보다 멀면 동이 수십 px라 이름이 서로 덮는다(부산 해운대구 기준 확인)
-  // 2026-11-14: 칠한 색이 진한지(밝기 0.18 미만 = 흰 글자가 더 잘 읽힘). '#rrggbb'만 본다. 칠 위 85% 불투명이라 바탕지도 영향은 작다
-  function isDarkFill(hex) {
-    const m = /^#([0-9a-f]{6})$/i.exec(String(hex || '')); if (!m) return false;
-    const [r, g, b] = [0, 2, 4].map(i => { const c = parseInt(m[1].slice(i, i + 2), 16) / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
-  }
   function makeDongLabels(geo) {
     if (M.emdLabels) { M.emdLabels.group.remove(); M.emdLabels = null; }
     if (!geo) return;
@@ -2425,8 +2462,7 @@
     const kept = pickLabels(boxes);
     for (const it of lab.items) { const el = it.marker.getElement(); if (!el) continue;
       // Leaflet 표시 아이콘은 CSS로 display:block이라 hidden 속성으로는 숨겨지지 않는다. 직접 숨긴다
-      el.style.display = kept.has(it.code) ? '' : 'none'; el.classList.toggle('is-sel', it.code === lab.dong);
-      el.classList.toggle('on-dark', !!(M.emdDark && M.emdDark.has(it.code))); }   // 2026-11-14: 진한 칸 위 동 이름은 흰 글자(map.css .on-dark)
+      el.style.display = kept.has(it.code) ? '' : 'none'; el.classList.toggle('is-sel', it.code === lab.dong); }
   }
   function syncWater() {
     if (state.water && state.waterData && !M.water) M.water = window.L.layerGroup(state.waterData.points.map(p => window.L.circleMarker([p.lat, p.lon], waterStyle(p)).bindTooltip(waterTipHTML(p, state.waterData.year)))).addTo(M.map);
@@ -2459,6 +2495,7 @@
     paintEmd(v, m, reorder);
     syncWater();
     fitView(v, m, active);
+    syncEmdOutlines();
     if (v.level === 'gu' || v.level === 'emd') loadSgDetail();   // R4 9: 구에 들어갈 때만(시·도 단계는 개요 경계로 충분)
   }
   function go(route, focusSel) {
@@ -2567,7 +2604,7 @@
       const rows = rowsFor(c.v, c.m, c.it), snapshot = snapshotOf(c.it, rows, new Date()), route = toHash(state.route);
       b.disabled = true;
       try {
-        if (!window.RenewCandidates) await import('./candidates.js?v=20261119-r2');
+        if (!window.RenewCandidates) await import('./candidates.js?v=20261119-r3');
         const saved = window.RenewCandidates.save(localStorage, snapshot, route, rows);
         msg.textContent = saved ? '보관함(아래 탭·바닥글)에서 단계·메모와 근거를 확인하세요.' : '이미 저장한 후보입니다. 기존 근거와 메모를 보존했습니다.';
       } catch (err) { msg.textContent = '저장하지 못했습니다. ' + err.message; }
@@ -2600,7 +2637,7 @@
   wide.addEventListener('change', render);
   narrow.addEventListener('change', () => { lastLegend = ''; render(); });   // 폭이 1024px을 넘나들면 덩어리 순서·내용을 다시 짠다
 
-  // 우리 동네 찾기: dong_index.json이 있으면 동까지, 없으면 시·도·시군구 이름으로
+  // 우리 동네 진단: dong_index.json이 있으면 동까지, 없으면 시·도·시군구 이름으로
   const form = document.getElementById('heroSearch');
   let entries = [];
   function searchSetup() {

@@ -112,7 +112,7 @@
       overlayButton.disabled = true;
       overlayButton.textContent = '파일 도구를 불러오는 중입니다.';
       try {
-        await import('./overlay.js?v=20261119-r2');
+        await import('./overlay.js?v=20261119-r3');
         const overlay = document.getElementById('overlay'); overlay.open = true;
         overlay.querySelector('summary').focus({ preventScroll: true });
       } catch (error) {
@@ -140,7 +140,7 @@
     syncStates();
     function show(name, focusTab) {
       active = normalizePanel(name);
-      if (active === 'filters' && !window.RenewFind) import('./find.js?v=20261119-r2').catch(() => {
+      if (active === 'filters' && !window.RenewFind) import('./find.js?v=20261119-r3').catch(() => {
         const slot = document.getElementById('findApp'); slot.setAttribute('role', 'alert');
         slot.textContent = '조건 도구를 불러오지 못했습니다. 새로고침한 뒤 다시 열어 주세요.';
       });

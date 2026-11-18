@@ -24,19 +24,19 @@ document.documentElement.classList.add('js');
 })();
 </script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>리뉴맵 | 숫자마다 출처가 붙은 도시재생 기초조사</title>
-<meta name="description" content="동 이름을 넣으면 인구·사업체·건물 노후 쇠퇴 3요건과 맞는 도시재생 사업을 공식 통계로 보여 주고, 출처가 붙은 1쪽 문서를 만들어 줍니다.">
+<title>리뉴맵 | 근거가 남는 도시재생</title>
+<meta name="description" content="동 이름을 넣으면 도시재생 쇠퇴 3요건 값이 출처·기준일과 함께 나옵니다. 동네 진단부터 현장 기록, 납품, 준공 뒤 재방문까지 같은 근거를 이어 갑니다. 로그인·설치 없이 씁니다. 판정이 아닌 참고 계산입니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/">
 <meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="리뉴맵 RENEWMAP">
-<meta property="og:title" content="리뉴맵 | 숫자마다 출처가 붙은 도시재생 기초조사">
-<meta property="og:description" content="동네의 자료와 출처·기준일을 살펴보고, 현장 확인 내용을 근거 문서로 연결합니다.">
+<meta property="og:title" content="리뉴맵 · 근거가 남는 도시재생">
+<meta property="og:description" content="동네 진단부터 준공 뒤 재방문까지, 도시재생에 쓰는 숫자마다 출처와 기준일을 붙여 다음 담당자에게 넘깁니다.">
 <meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="리뉴맵 로고와 서비스 문구">
+<meta property="og:image:alt" content="근거가 남는 도시재생 · 리뉴맵">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -46,62 +46,63 @@ document.documentElement.classList.add('js');
 <link rel="preload" as="fetch" href="data/national/dong_index.json" crossorigin="anonymous" fetchpriority="low">
 <link rel="preload" as="fetch" href="data/national/emd/21090.json" crossorigin="anonymous" fetchpriority="low">
 <link rel="preload" as="font" href="fonts/pretendard-home.woff2" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="pretendard-home.css?v=20261119-r2">
-<link rel="stylesheet" href="styles.css?v=20261119-r2">
-<link rel="stylesheet" href="site-v4.css?v=20261119-r2">
-<link rel="stylesheet" href="home6.css?v=20261119-r2">
+<link rel="stylesheet" href="pretendard-home.css?v=20261119-r3">
+<link rel="stylesheet" href="styles.css?v=20261119-r3">
+<link rel="stylesheet" href="site-v4.css?v=20261119-r3">
+<link rel="stylesheet" href="home6.css?v=20261119-r3">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
-{"@type":"WebApplication","@id":"https://twozero3213-beep.github.io/renewmap-site/#app","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","inLanguage":"ko","applicationCategory":"BusinessApplication","operatingSystem":"웹 브라우저","isAccessibleForFree":true,"description":"리뉴맵은 도시재생·정비 용역사와 지자체 담당자가 공개 자료와 현장 기록을 출처와 기준일이 붙은 근거 문서로 정리하는 도구입니다.","offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"publisher":{"@id":"https://twozero3213-beep.github.io/renewmap-site/#org"}},
+{"@type":"WebApplication","@id":"https://twozero3213-beep.github.io/renewmap-site/#app","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","inLanguage":"ko","applicationCategory":"BusinessApplication","operatingSystem":"웹 브라우저","isAccessibleForFree":true,"description":"리뉴맵은 도시재생 근거 기록 서비스입니다. 동네 진단부터 준공 뒤 재방문까지, 도시재생에 쓰는 숫자마다 출처와 기준일을 붙여 다음 담당자에게 넘깁니다.","offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"publisher":{"@id":"https://twozero3213-beep.github.io/renewmap-site/#org"}},
 {"@type":"Organization","@id":"https://twozero3213-beep.github.io/renewmap-site/#org","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","logo":"https://twozero3213-beep.github.io/renewmap-site/icon-512.png","email":"renewmapteam@gmail.com","areaServed":"KR"}]}
 </script>
-<script src="site.js?v=20261119-r2" defer></script>
-<script src="home.js?v=20261119-r2" defer></script>
+<script src="site.js?v=20261119-r3" defer></script>
+<script src="home.js?v=20261119-r3" defer></script>
 <script src="cellpack.js" defer></script>
-<script src="util.js?v=20261119-r2" defer></script>
-<script src="decline-req.js?v=20261119-r2" defer></script>
-<script src="home-live.js?v=20261119-r2" defer></script>
-<script src="home-rank.js?v=20261119-r2" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261119-r2">
+<script src="util.js?v=20261119-r3" defer></script>
+<script src="decline-req.js?v=20261119-r3" defer></script>
+<script src="home-live.js?v=20261119-r3" defer></script>
+<script src="home-rank.js?v=20261119-r3" defer></script>
+<link rel="stylesheet" href="rm6.css?v=20261119-r3">
 </head>
 <body class="app-home">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" href="index.html">RENEW<span>MAP</span></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 상담</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 홈" href="index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 진단</a><a href="rank.html">동네 비교 점수</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 과업 상담</a></nav></div></header>
 
 <main id="main" class="h6">
   <!-- 2026-11-19 홈 정리(대표 지적: 세로가 너무 길고 지저분하다). 첫 화면은 제목·검색·실제 동 카드, 그 아래는 띠 셋(하는 일 · 근거와 비용 · 상위 동).
        숫자는 HTML에 적지 않고 home-live.js·home-rank.js가 원장 자료에서 읽는다(원칙 1) -->
   <section class="h6-hero wrap" aria-labelledby="heroTitle">
     <div class="h6-copy">
-      <h1 id="heroTitle">숫자마다 출처가 붙은<br>도시재생 기초조사</h1>
-      <p class="h6-lead">동 이름을 넣으면 쇠퇴 3요건을 공식 통계로 셈해 출처와 기준일이 붙은 1쪽 근거 문서로 드립니다.</p>
+      <h1 id="heroTitle">근거가 남는 도시재생</h1>
+      <p class="h6-lead">동네 진단부터 준공 뒤 재방문까지, 도시재생에 쓰는 숫자마다 출처와 기준일을 붙여 다음 담당자에게 넘깁니다.</p>
       <form id="homeSearch" class="home-search h6-search" role="search" autocomplete="off">
-        <label for="homeQ">동네 이름</label>
+        <label for="homeQ">동 이름</label>
         <div class="home-search-row">
-          <input id="homeQ" name="q" type="search" placeholder="예: 반여1동, 홍성읍, 해운대구" enterkeyhint="search" aria-describedby="homeMsg">
+          <input id="homeQ" name="q" type="search" placeholder="동·읍·면 이름 (예: 반여1동, 홍성읍)" enterkeyhint="search" aria-describedby="homeMsg">
           <button class="btn" type="submit">찾기</button>
         </div>
         <ul id="homeHits" class="home-hits" aria-label="동네 검색 결과"></ul>
         <p id="homeMsg" class="home-msg" aria-live="polite"></p>
       </form>
+      <p class="home-msg">전국 행정동 3,559곳 · 건물 단위 계산은 부산 254개 법정동 · 로그인·설치 없이 무료</p>
       <div class="h6-try" role="group" aria-labelledby="h6TryK"><span class="h6-try-k" id="h6TryK">바로 보기</span><button type="button" class="h6-chip rm-chip" data-dong="21090700">반여1동</button><button type="button" class="h6-chip rm-chip" data-dong="21030510">초량1동</button><button type="button" class="h6-chip rm-chip" data-dong="21040530">남항동</button><button type="button" class="h6-chip rm-chip" data-dong="21100650">감천1동</button><button type="button" class="h6-chip rm-chip" data-dong="38100120">양산 물금읍</button><button type="button" class="h6-chip rm-chip" data-dong="38090580">거제 고현동</button></div><!-- 2026-11-16: 부산 밖 자료(양산·거제)도 첫 화면에서 바로 열리게 -->
-      <p class="h6-links"><a href="about.html#usesTitle">맡은 일에 맞는 도구 찾기</a><a href="tasks.html?step=delivery#handoverSummary">인수인계 요약 보기</a></p>
-      <noscript><p>검색에는 자바스크립트가 필요합니다.<br><a href="dong/index.html">행정동 목록에서 동네를 찾아 주세요.</a></p></noscript>
+      <p class="h6-links"><a href="about.html#usesTitle">맡은 일로 시작하기</a><a href="tasks.html?step=delivery#handoverSummary">인수인계 준비하기</a></p>
+      <noscript><p>검색은 자바스크립트를 켜야 됩니다.<br><a href="dong/index.html">행정동 목록에서 동네를 찾아 주세요.</a></p></noscript>
     </div>
     <p class="sr-only" id="h6Say" role="status"></p>
     <article class="h6-live" id="h6Live" aria-labelledby="h6LiveName">
-      <header class="h6-live-head"><p class="h6-live-k">지금 이 동네 · 행정동</p><h2 id="h6LiveName">반여1동</h2><p id="h6LiveWhere" class="h6-live-where">부산광역시 해운대구</p></header>
+      <header class="h6-live-head"><p class="h6-live-k">지금 보는 동네 · 행정동</p><h2 id="h6LiveName">반여1동</h2><p id="h6LiveWhere" class="h6-live-where">부산광역시 해운대구</p></header>
       <p class="h6-live-big"><span class="h6-live-big-k">도시재생 쇠퇴 3요건 중</span><b id="h6Met">-</b></p>
-      <p class="h6-live-rule">3요건 가운데 2개 이상이면 도시재생활성화지역 지정 기준에 해당합니다(도시재생법 시행령 제17조).</p>
+      <p class="h6-live-rule">3요건 중 2개 이상이 도시재생활성화지역 지정 요건입니다(도시재생법 제13조·시행령 제17조).</p>
       <ol class="h6-live-rows" id="h6Rows">
         <li><span>인구 감소</span><b>-</b><small>기준 30년 최대 대비 20% 이상 감소</small></li>
         <li><span>사업체 감소</span><b>-</b><small>기준 10년 최대 대비 5% 이상 감소</small></li>
         <li><span>20년 넘은 건축물</span><b>-</b><small>기준 50% 이상</small></li>
       </ol>
-      <details class="h6-why"><summary>참고 계산입니다. 판정은 담당 기관이 정합니다. <span class="h6-why-more">ⓘ 자세히</span></summary>
-        <p class="h6-live-note"><span id="h6Note">도시재생법 시행령 제17조 기준으로 셈한 참고 계산입니다. 판정은 담당 기관이 원문과 대조해 정합니다.</span> <a class="h6-prov" href="#h6Receipt">이 숫자의 출처 기록 보기</a></p>
+      <details class="h6-why"><summary>판정 아님 · 참고 계산 <span class="h6-why-more">ⓘ 자세히</span></summary>
+        <p class="h6-live-note"><span id="h6Note">판정은 담당 기관이 합니다.</span> <a class="h6-prov" href="#h6Receipt">출처 기록 펼쳐 보기</a></p>
       </details>
-      <p class="h6-live-go"><a class="btn" id="h6Go" href="explore.html?report=onepage#map/21/21090/21090700">1쪽 근거 문서 보기</a><a class="btn ghost" id="h6Prog" href="explore.html?report=programs#map/21/21090/21090700">맞는 재생 사업 보기</a></p>
+      <p class="h6-live-go"><a class="btn" id="h6Go" href="explore.html?report=onepage#map/21/21090/21090700">근거 1쪽 받기</a><a class="btn ghost" id="h6Prog" href="explore.html?report=programs#map/21/21090/21090700">맞는 재생 사업 보기</a></p>
     </article>
   </section>
 
@@ -109,46 +110,47 @@ document.documentElement.classList.add('js');
   <section id="tools" class="h6-flow" aria-labelledby="flowTitle">
     <div class="wrap">
       <div class="h6-band-head">
-        <div><h2 id="flowTitle">리뉴맵으로 하는 일</h2>
-        <p class="h6-sec-lead">동네 자료에서 현장 확인, 보완·검토, 납품 이력까지 근거를 이어갑니다.</p></div>
+        <div><h2 id="flowTitle">진단에서 재방문까지, 다섯 단계</h2>
+        <p class="h6-sec-lead">도시재생은 여러 해 걸리는 일입니다. 단계마다 받은 문서와 출처 기록을 과업에 연결해 다음 단계에서 다시 씁니다.</p></div>
         <button type="button" class="btn ghost h6-demo-open" data-h6-demo aria-haspopup="dialog">56초 시연 보기</button>
       </div>
       <div class="h6-flow-body">
       <ol class="h6-steps">
-        <li><a href="explore.html"><span class="h6-n">1</span><h3>동네 진단</h3><p>전국 행정동의 인구·사업체·노후·생활시설·안전을 지도에서 봅니다.</p><p class="h6-out">동 요약, 1쪽 근거 문서, 시·군·구 비교</p></a></li>
-        <li><a href="programs.html"><span class="h6-n">2</span><h3>재생 사업 맞추기</h3><p>지역특화재생부터 지방소멸대응기금, 노후 산업단지까지 9종의 요건과 일정을 한 표로 봅니다.</p><p class="h6-out">동별 사업 요건 비교표(CSV)</p></a></li>
-        <li><a href="field/redev.html"><span class="h6-n">3</span><h3>구역 계산</h3><p>지도에 구역을 그리면 필지를 모아 저층 주거 3분의 2와 20년 넘은 건물 비율을 셉니다.</p><p class="h6-out">신청요건 근거 1쪽(한글), 구역 경계 SHP, 반경 500m 생활시설표</p></a></li>
-        <li><a href="field/"><span class="h6-n">4</span><h3>현장 기록</h3><p>사진과 위치·조사일을 남기고, 저장한 사진의 파일 지문으로 내보낸 파일과 같은지 대조합니다.</p><p class="h6-out">사진대지(한글), 위치 파일, 재방문 비교</p></a></li>
-        <li><a href="tasks.html?step=review"><span class="h6-n">5</span><h3>과업 검토·납품</h3><p>다음 담당자가 남은 검토와 이전 납품본을 확인할 수 있게 정리합니다.</p><p class="h6-out">변경·재방문 보고서, 인수인계 요약·납품 ZIP</p></a></li>
+        <li><a href="explore.html"><span class="h6-n">1</span><h3>동네 진단</h3><p>전국 행정동의 인구·사업체·건축물 노후를 지도에서 봅니다. 생활 지표는 지역마다 갖춘 범위가 다릅니다.</p><p class="h6-out">근거 1쪽 · 시·군·구 비교</p></a></li>
+        <li><a href="programs.html"><span class="h6-n">2</span><h3>재생 사업</h3><p>재생 사업 9종의 요건과 일정을 한 표로 견주고, 우리 동네 값에 맞춰 봅니다.</p><p class="h6-out">동별 사업 요건 비교표(CSV)</p></a></li>
+        <li><a href="field/redev.html"><span class="h6-n">3</span><h3>구역 계산</h3><p>지번 목록이나 지도에 그린 구역으로 노후주거지정비·재개발 요건을 계산합니다. 정하지 못한 건물이 있으면 몇 동을 더 확인해야 결과가 정해지는지 셉니다.</p><p class="h6-out">신청요건 1쪽(한글) · 구역 경계 초안(SHP) · 반경 500m 생활시설 표</p></a></li>
+        <li><a href="field/"><span class="h6-n">4</span><h3>현장 기록</h3><p>사진에 위치와 그 동의 공식 통계를 붙여 남깁니다. 현장에서 남긴 기록이 사진대지(한글)·CSV로 바로 나옵니다.</p><p class="h6-out">사진대지(한글) · 위치 파일(GeoJSON·CSV) · 재방문 비교</p></a></li>
+        <li><a href="tasks.html?step=review"><span class="h6-n">5</span><h3>과업·납품</h3><p>조사 변경 사유, 검토 의견, 보완본을 과업마다 묶어 다음 담당자에게 넘깁니다.</p><p class="h6-out">조사 변경·보완 근거표 · 재방문 실적보고서 · 인수인계 요약 · 납품 묶음(ZIP)</p></a></li>
       </ol>
-      <figure class="h6-flow-shot"><img src="img/v6/step-explore.jpg" width="1280" height="800" alt="동네 찾기 화면: 왼쪽에 검색·주제·지표·범례, 가운데 금정구 지도, 오른쪽에 선두구동의 쇠퇴 3요건 카드" loading="lazy"><figcaption>동네 찾기 화면. 동을 누르면 오른쪽 카드에 요건별 값과 기준이 나옵니다.</figcaption></figure>
+      <figure class="h6-flow-shot"><img src="img/v6/step-explore.jpg" width="1280" height="800" alt="동네 진단 화면: 왼쪽에 검색·주제·지표·범례, 가운데 금정구 지도, 오른쪽에 선두구동의 쇠퇴 3요건 카드" loading="lazy"><figcaption>동네 진단 화면. 동을 누르면 오른쪽 카드에 요건별 값과 기준이 나옵니다.</figcaption></figure>
       </div>
-      <details class="rm-disclosure h6-more" open><summary>다른 조사 도구</summary><p class="h6-more-links"><a href="tasks.html?step=survey">조사 변경·보완 근거표</a><a href="tasks.html?step=revisit">준공 후 재방문 실적보고서</a><a href="tasks.html?step=delivery">과업·납품 이력</a><a href="time4d.html">건물 나이 4D</a><a href="field/oa.html">집계구로 다시 보기</a><a href="field/idle.html">오래된 창고·공장</a><a href="field/shop.html">음식점 상권 변화</a><a href="rank.html">동네 순위</a><a href="biz.html">사업성 간이 계산</a><a href="field/city3d.html">3D 지도</a><a href="field/twin.html">3D 모델 배치 비교</a></p></details>
+      <details class="rm-disclosure h6-more" open><summary>다른 도구 더 보기</summary><p class="h6-more-links"><a href="tasks.html?step=survey">조사 변경·보완 근거표</a><a href="tasks.html?step=revisit">준공 후 재방문 실적보고서</a><a href="tasks.html?step=delivery">과업·납품 이력</a><a href="time4d.html">건물 나이 4D</a><a href="field/oa.html">집계구로 보기</a><a href="field/idle.html">오래된 창고·공장</a><a href="field/shop.html">음식점 상권 변화</a><a href="rank.html">동네 비교 점수</a><a href="biz.html">사업성 간이 계산</a><a href="field/city3d.html">3D 지도</a><a href="field/twin.html">3D 모델 배치 비교</a></p></details>
     </div>
   </section>
 
   <!-- 띠 A '근거와 비용': 숫자 하나의 실제 출처 기록(펼친 채) | 믿을 수 있는 이유 셋과 비용 한 문장 -->
   <section id="trust" class="h6-band wrap" aria-labelledby="trustTitle">
     <div class="h6-band-head">
-      <div><h2 id="trustTitle">근거와 비용</h2>
-      <p class="h6-sec-lead">위 카드의 '20년 넘은 건축물' 숫자를 펼친 실제 출처 기록입니다. 1쪽 문서와 엑셀로 내보내는 모든 숫자에 같은 기록이 따라갑니다.</p></div>
+      <div><h2 id="trustTitle">숫자를 누르면 출처가 펼쳐집니다</h2>
+      <p class="h6-sec-lead">위 카드 '노후 건축물' 값에 실제로 붙은 기록입니다. 근거 1쪽과 엑셀로 받아도 같은 기록이 따라갑니다.</p></div>
     </div>
     <div class="h6-band-cols">
       <figure class="h6-receipt" id="h6Receipt">
         <figcaption><span>출처 기록</span><span id="h6ReceiptDong">반여1동</span></figcaption>
         <dl id="h6ReceiptList"><div><dt>값</dt><dd>불러오는 중</dd></div></dl>
-        <details class="h6-receipt-ids"><summary>출처 주소·계산식·기록 번호 보기</summary><dl id="h6ReceiptMore"></dl><p id="h6ReceiptIds"></p></details>
-        <p class="h6-receipt-foot">같은 자료 판본·규칙 버전으로 계산한 결과를 대조할 수 있습니다.</p>
+        <details class="h6-receipt-ids"><summary>출처 기록 펼쳐 보기</summary><dl id="h6ReceiptMore"></dl><p id="h6ReceiptIds"></p></details>
+        <p class="h6-receipt-foot">같은 자료 기준일과 규칙 판본으로 다시 계산해 결과를 대조할 수 있습니다.</p>
       </figure>
       <div class="h6-band-side">
         <ul class="h6-trust-points">
-          <li>구역 계산과 공개 문서 생성은 이 브라우저에서 처리합니다. 과업을 서버에 보관하거나 현장 기록을 공유할 때는 사용자가 선택합니다. <a href="privacy.html">개인정보 처리방침</a></li>
-          <li>자료가 모자란 값은 0으로 채우지 않고 '추가확인'으로 둡니다. <a href="evidence.html">조사 방법과 참고 논문</a></li>
-          <li>법정 판정 규칙은 리뉴맵 담당자가 조문과 대조해 승인하기 전까지 '참고 계산'으로 표시합니다. <a href="rules.html">기준 원문과 승인 상태</a></li>
+          <li><b>숫자마다 출처</b> 화면과 문서에 쓰는 공공데이터 값마다 출처·기준일·계산식이 따라갑니다. 출처가 없는 가정값은 가정이라고 적습니다. <a href="data.html">데이터 출처</a></li>
+          <li><b>모르면 추가확인</b> 자료가 모자란 값을 0이나 '기준 해당'으로 채우지 않습니다. 확인한 범위와 못 한 범위도 숫자로 밝힙니다. <a href="evidence.html">근거 읽는 법</a></li>
+          <li><b>판정은 담당 기관</b> 모든 결과에 '판정 아님'을 붙입니다. 리뉴맵 안에서 검토를 마친 계산 규칙도 마찬가지입니다. <a href="rules.html">기준 원문 대조</a></li>
+        <li>계산과 문서 만들기는 이 브라우저 안에서 합니다. 서버에 올리는 것은 직접 고를 때뿐입니다. 배경지도·필지 찾기·구역 그리기·건물 3D 지도는 위치 좌표를 브이월드로 보냅니다. <a href="privacy.html">처리 경로 보기</a></li>
         </ul>
         <div class="h6-price">
           <h3 id="priceTitle">비용</h3>
-          <p>공개 자료로 만드는 문서는 무료입니다. 시범 과업은 과업 1건·행정동 1곳 기준 99만원(VAT 별도)부터이고, 산출물·검수·보완 범위는 계약 전에 함께 정합니다. <a href="about.html#contact">시범 상담</a></p>
+          <p>공개 도구와 자동 문서는 무료입니다. 로그인도 설치도 없습니다. 시범 과업은 과업 1건·행정동 1곳 기준 시범 제안가 99만원(VAT 별도)입니다. 산출물·검수·보완 범위와 최종 금액은 계약 전에 함께 정합니다. <a href="about.html#contact">시범 과업 상담</a></p>
         </div>
       </div>
     </div>
@@ -157,15 +159,15 @@ document.documentElement.classList.add('js');
   <!-- 띠 B: 순위 상위 5곳 | 곧 노후 요건에 닿는 동네(펼친 채 4곳 + 더 보기). 판정 아님과 산식 링크는 띠 머리에 한 번 -->
   <section id="rank" class="h6-band wrap" aria-labelledby="rankTitle">
     <div class="h6-band-head">
-      <div><h2 id="rankTitle">부산 쇠퇴 지표 점수 상위 동</h2>
-      <p class="h6-sec-lead">노후 건축물·인구 감소·사업체 감소·고령 비율을 백분위로 셈한 비교용 점수입니다. 판정이 아닙니다. <a href="rank.html">점수 산식과 전체 순위</a></p></div>
+      <div><h2 id="rankTitle">부산에서 재생 필요 점수가 높은 동</h2>
+      <p class="h6-sec-lead">20년 이상 건축물·인구 감소·사업체 감소·고령 비율을 전국 백분위로 바꿔 평균한 비교용 점수입니다. 판정이 아닙니다. <a href="rank.html">계산 방법과 전체 비교</a></p></div>
     </div>
     <div class="h6-band-cols">
-      <div class="h6-rank-col"><h3>부산 행정동 가운데</h3><ol data-rank="renewal_21"></ol><p class="h6-rank-links"><a class="h6-rank-all" href="rank.html?kind=renewal&amp;sido=21">부산 전체 순위</a><a class="h6-rank-all" href="rank.html?kind=renewal&amp;sido=">전국 순위 보기</a></p></div>
+      <div class="h6-rank-col"><h3>부산 행정동 가운데</h3><ol data-rank="renewal_21"></ol><p class="h6-rank-links"><a class="h6-rank-all" href="rank.html?kind=renewal&amp;sido=21">부산 전체 보기</a><a class="h6-rank-all" href="rank.html?kind=renewal&amp;sido=">전국 보기</a></p></div>
       <div class="h6-soon">
-        <h3>곧 노후 요건에 닿는 동네</h3>
+        <h3>몇 해 안에 노후 기준에 닿는 동네</h3>
         <details class="h6-why"><summary>지금 건물이 그대로 있을 때의 달력 계산입니다. <span class="h6-why-more">ⓘ 자세히</span></summary>
-          <p class="h6-soon-text">건축물대장 사용승인일로 셈하면, 부산 법정동 가운데 지금은 '20년 넘은 건물 50%'(도시재생 쇠퇴 요건③)에 못 미치지만 몇 해 안에 닿는 곳이 있습니다. 동을 누르면 건물 나이 4D로 봅니다.</p>
+          <p class="h6-soon-text">지금은 20년 이상 건축물이 50%에 못 미치지만, 몇 해 안에 넘는 부산 법정동입니다. 지금 건물이 그대로 있다고 보고 사용승인일로 계산했습니다. 동을 누르면 건물 나이 4D로 봅니다.</p>
         </details>
         <ol class="h6-soon-list" data-crossing></ol>
         <details class="rm-disclosure h6-soon-more" hidden><summary>더 보기</summary><ol class="h6-soon-list" data-crossing-more></ol></details>
@@ -173,17 +175,16 @@ document.documentElement.classList.add('js');
     </div>
   </section>
 
-  <div class="wrap h6-privacy-row"><p class="h6-free h6-privacy">방문 분석을 중지했습니다. <a href="privacy.html#analytics">수집 중지와 기존 기록 안내</a>를 확인하세요.</p></div>
 
   <dialog class="h6-demo" id="h6Demo" aria-labelledby="demoTitle">
     <div class="h6-demo-in">
       <div class="h6-demo-head"><h2 id="demoTitle">56초 시연</h2><button type="button" class="btn ghost" data-h6-close>닫기</button></div>
-      <p class="h6-demo-lead">동 카드를 바꿔 보고, 지도에서 요건을 확인하고, 1쪽 문서를 연 뒤 건물 나이를 4D로 돌려 기준선을 넘은 해와 올해를 나란히 봅니다.</p>
-      <video class="h6-video" controls preload="none" playsinline data-poster="img/v7/demo-poster.jpg" width="1280" height="720"><source src="img/v7/demo.mp4" type="video/mp4"><a href="img/v7/demo.mp4">시연 영상 받기</a></video>
+      <p class="h6-demo-lead">동을 고르고, 지도에서 요건을 확인하고, 근거 1쪽을 연 뒤, 건물 나이 4D에서 기준선을 넘는 해를 봅니다.</p>
+      <video class="h6-video" controls preload="none" playsinline data-poster="img/v7/demo-poster.jpg" width="1280" height="720"><source src="img/v7/demo.mp4" type="video/mp4"><a href="img/v7/demo.mp4">영상 받기(MP4)</a></video>
     </div>
   </dialog>
 </main>
 
-<footer><div class="wrap"><div class="links"><p><b>도구</b><a href="explore.html">동네 찾기</a><a href="rank.html">동네 순위</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="time4d.html">건물 4D</a><a href="box.html">보관함</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%EC%88%AB%EC%9E%90%20%EC%98%A4%EB%A5%98%20%EC%8B%A0%EA%B3%A0">숫자 오류 신고</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 상담</a><a href="ethics.html">AI 윤리</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 끄기</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
+<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="explore.html">동네 진단</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="tasks.html">과업·납품</a><a href="rank.html">동네 비교 점수</a><a href="time4d.html">건물 나이 4D</a><a href="box.html">보관함</a><a href="docs.html">문서 열기</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 과업 상담</a><a href="ethics.html">AI·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 </body>
 </html>

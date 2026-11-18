@@ -1,4 +1,4 @@
-/* 앱 홈의 동네 찾기. data/national/dong_index.json([동코드8, 동, 시군구코드5, 시군구, 시도])에서 이름으로 찾아 탐색 지도로 보낸다.
+/* 앱 홈의 동네 진단. data/national/dong_index.json([동코드8, 동, 시군구코드5, 시군구, 시도])에서 이름으로 찾아 탐색 지도로 보낸다.
    순서는 자료 순서(코드 순) 그대로이고, 값 크기로 줄 세우지 않는다. */
 (function (root, factory) {
   const api = factory();

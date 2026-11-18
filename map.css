@@ -48,11 +48,10 @@
 #map .leaflet-interactive { transition: fill .6s ease, fill-opacity .6s ease, stroke .3s; } /* 지표·연도 전환은 색이 번지듯 */
 /* 2026-11-12: 동 이름표(map.js makeDongLabels). 색칠한 동 위에서도 읽히게 흰 테두리 글자, 누르기는 아래 동으로 통과 */
 .leaflet-labels-pane { pointer-events: none; }
+.has-naver .leaflet-labels-pane { display: none; } /* 네이버 바탕 지명과 겹치는 상시 이름표만 숨긴다. 선택 카드와 말풍선은 남긴다. */
 .map-dong-label { width: max-content !important; height: auto !important; transform-origin: center; margin: 0 !important; translate: -50% -50%; white-space: nowrap; font-size: var(--t-cap); font-weight: 700; line-height: 1.2; color: #12302d;
   text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff, 0 0 1px #fff; pointer-events: none; }
 .map-dong-label.is-sel { font-size: 15px; color: #0b1f1d; }
-/* 2026-11-14 우지예: 진한 갈색 칸 위 진한 글자는 대비 2.7(기준 4.5 미달)로 흰 테두리에만 기대 번져 보였다 → 진한 칸에서는 흰 글자 + 어두운 테두리(map.js isDarkFill) */
-.map-dong-label.on-dark, .map-dong-label.on-dark.is-sel { color: #fff; text-shadow: 0 0 3px rgba(40,16,4,.9), 0 0 2px rgba(40,16,4,.9), 0 0 1px rgba(40,16,4,.9); }
 #map .leaflet-tooltip { font-size: 15px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
 #map .leaflet-tooltip small { color: var(--dim); }
 #map .leaflet-control-attribution { font-size: var(--t-cap); }
@@ -517,7 +516,7 @@
 .map-legend-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0; font-size: 15px; color: var(--dim); }
 .map-legend-line b { color: var(--ink); font-weight: 700; }
 .map-legend-line i { display: inline-block; width: 16px; height: 16px; border-radius: 8px; margin-right: 3px; vertical-align: -3px; border: 1px solid var(--shade-25); }
-.map-legend-line i:not(.is-hatch) { opacity: .85; }
+#mapApp :is(.map-legend-line, .map-legend) i { opacity: .4; }
 .map-legend-line i.is-hatch { background-image: repeating-linear-gradient(45deg, var(--hatch-ink) 0 2px, var(--hatch-bg) 2px 6px); border: 1px dashed var(--off-ink); }
 #mapApp .map-legend-more { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
 #mapApp .map-legend-more > summary { display: inline-flex; align-items: center; min-height: 44px; padding: 0; font-size: var(--t-cap); font-weight: 700; color: var(--green); }

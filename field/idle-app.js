@@ -49,11 +49,13 @@
     const fill = (sel, items, pick) => sel.replaceChildren(...opts(items, pick));
     const showDongs = (gu, pick) => fill($("dong"), gus.find((s) => s.code === gu).dongs.map((d) => [d.code, d.name]), pick);
     // 시도별 묶음(optgroup). 목록 이름의 시도 앞말('경상남도 양산시')은 묶음 제목과 겹치므로 뗀다
-    $("gu").replaceChildren(...REGIONS.map(([p, label]) => {
+    const availableRegions = REGIONS.filter(([prefix]) => gus.some(s => s.code.startsWith(prefix)));
+    document.querySelector('label[for="gu"]').textContent = "구·군(" + availableRegions.map(([, label]) => label === "부산광역시" ? "부산" : label).join("·") + ")";
+    $("gu").replaceChildren(...availableRegions.map(([p, label]) => {
       const g = document.createElement("optgroup"); g.label = label;
       g.append(...opts(gus.filter((s) => s.code.startsWith(p)).map((s) => [s.code, s.name.replace(label + " ", "")]), "26200"));
       return g;
-    }).filter((g) => g.children.length));
+    }));
     showDongs("26200", "2620012000");
     $("gu").addEventListener("change", () => { showDongs($("gu").value); drawVacant($("gu").value); });
     drawVacant("26200");

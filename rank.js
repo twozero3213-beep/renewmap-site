@@ -1,4 +1,4 @@
-/* 동네 점수·순위(D24, 2026-11-07). data/national/scores.json(export_scores.py)을 읽어 고른 범위·점수로 줄 세운다.
+/* 동네 종합 점수·순위(D24, 2026-11-07). data/national/scores.json(export_scores.py)을 읽어 고른 범위·점수로 줄 세운다.
    점수 계산은 서버 스크립트가 한 번만 한다. 화면은 정렬·거르기만 한다(같은 순위가 문서와 화면에서 달라지지 않게) */
 (function (root, factory) {
   const api = factory();
@@ -8,8 +8,8 @@
   'use strict';
   const { esc, dongHit, sidoShort, josa } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
   const KINDS = {
-    total: { label: '동네 점수', get: d => d.total },
-    safety: { label: '치안 점수', get: d => d.sub.safety },
+    total: { label: '동네 종합 점수', get: d => d.total },
+    safety: { label: '범죄 통계·안전시설 점수', get: d => d.sub.safety },
     living: { label: '생활 편의', get: d => d.sub.living },
     vitality: { label: '인구 활력', get: d => d.sub.vitality },
     housing: { label: '주거 노후도(점수가 낮을수록 낡음)', get: d => d.sub.housing },
@@ -51,8 +51,8 @@
       : SUB.map(([, l]) => `<th scope="col">${l}</th>`).join('') + '<th scope="col">범죄 발생률</th>';
     const unit = renew ? '세부 열은 전국 백분위이고 클수록 쇠퇴 신호가 강합니다. ※ 인구 변화율은 원천, 기간 미확인 값입니다.' : '주거 노후도는 점수가 낮을수록 낡았고, 범죄 발생률은 시·군·구 값(주민 1,000명당)입니다.';
     // '낮은 점수부터 보기'는 점수 열 머리의 정렬 단추(rank.js init이 #rankAsc와 같이 바꾼다). rankAt이 있으면 낮은 점수부터 그린 표다
-    const sort = `<th scope="col" class="rank-score" aria-sort="${rankAt ? 'ascending' : 'descending'}"><button type="button" class="rank-sort" data-rank-sort>${esc(KINDS[kind].label.replace(/\(.*\)$/, ''))}<span aria-hidden="true"> ${rankAt ? '↑' : '↓'}</span><span class="sr-only">, ${rankAt ? '낮은' : '높은'} 점수부터. 눌러서 순서 바꾸기</span></button></th>`;
-    const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th>${sort}<th scope="col">비중을 바꿔도 나오는 순위</th>${cols}</tr></thead>`;
+    const sort = kind === 'safety' ? '<th scope="col" class="rank-score" aria-sort="descending">범죄 통계·안전시설 점수</th>' : `<th scope="col" class="rank-score" aria-sort="${rankAt ? 'ascending' : 'descending'}"><button type="button" class="rank-sort" data-rank-sort>${esc(KINDS[kind].label.replace(/\(.*\)$/, ''))}<span aria-hidden="true"> ${rankAt ? '↑' : '↓'}</span><span class="sr-only">, ${rankAt ? '낮은' : '높은'} 점수부터. 눌러서 순서 바꾸기</span></button></th>`;
+    const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th>${sort}<th scope="col">순위 범위</th>${cols}</tr></thead>`;
     const body = list.slice(0, limit).map((r, i) => {
       const s = r.d.sub, sp = r.d.safety_parts || {}, rp = r.d.renewal_parts || {};
       return `<tr${r.code7 === found ? ' class="is-found" id="rankFoundRow"' : ''}><td class="num">${rankAt ? rankAt(offset + i) : offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
@@ -61,7 +61,7 @@
           + `<td class="num">${sp.crime_rate_per_1k === null || sp.crime_rate_per_1k === undefined ? '없음' : esc(sp.crime_rate_per_1k)}</td>`) + '</tr>';
     }).join('');
     // 캡션은 표 아래 한 줄(rank.css caption-side: bottom). 범위 열의 긴 설명은 '읽는 법'(#rankMethods 안 #rankTableNote)에
-    return `<table class="grid rank-table"><caption>선택한 범위의 행정동 순위 <small>· '비중을 바꿔도 나오는 순위'는 지표 비중을 바꿔 다시 셈한 순위의 90% 구간입니다. ${unit}</small> <a class="rank-how" href="#rankMethods">읽는 법</a></caption>${head}<tbody>${body}</tbody></table>`;
+    return `<table class="grid rank-table"><caption>선택한 범위의 행정동 순위 <small>· '순위 범위'는 지표 비중을 바꿔 다시 셈한 순위의 90% 구간입니다. ${unit}</small> <a class="rank-how" href="#rankMethods">읽는 법</a></caption>${head}<tbody>${body}</tbody></table>`;
   }
 
   // rank_top.json(홈이 쓰는 상위 10곳) → 첫 화면 미리 그림. 표 모양은 tableHTML 그대로, 아직 없는 칸만 '…'. 재생 필요 점수 부산 목록이 없으면 빈 글
@@ -95,14 +95,21 @@
     const sidoOf = code7 => sidoShort((idx.sido.find(x => x.code2 === String(code7).slice(0, 2)) || {}).name);
     const names = r => `${sidoSel.value ? '' : sidoOf(r.code7) + ' '}${sgName(r.d.code5)} ${r.d.name}`;
     function draw() {
+      const safety = kindSel.value === 'safety';
+      if (ascBox) {
+        ascBox.disabled = safety;
+        if (safety) ascBox.checked = false;
+      }
+      const safetyNote = $('rankSafetyNote');
+      if (safetyNote) safetyNote.hidden = !safety;
       const scope = sgSel.value || sidoSel.value || 'all';
       const { list, rankAt } = ordered(rows(scores, kindSel.value, scope));
       const page = pager.slice(list), offset = page.length ? list.indexOf(page[0]) : 0, rk = j => (rankAt ? rankAt(j) : j + 1).toLocaleString('ko-KR');
-      msg.textContent = page.length ? `점수가 있는 ${list.length.toLocaleString('ko-KR')}개 동 중 ${rk(offset)}–${rk(offset + page.length - 1)}위를 ${rankAt ? '낮은 점수부터 ' : ''}보입니다.` : '선택한 범위에 점수가 있는 동이 없습니다.';
+      msg.textContent = page.length ? `점수가 있는 ${list.length.toLocaleString('ko-KR')}개 동 중 ${rk(offset)}~${rk(offset + page.length - 1)}위를 ${rankAt ? '낮은 점수부터 ' : ''}보입니다.` : '선택한 범위에 점수가 있는 동이 없습니다.';
       out.innerHTML = tableHTML(page, kindSel.value, names, page.length, range, scope, offset, found, rankAt);
       // R8 5: 재생 필요 점수만 재료(세부 지표 백분위) 열이 있다. 다른 점수는 오른쪽 열이 '다른 점수'라 '고른 점수의 재료'라 쓰지 않는다
       const help = $('rankScrollHelp');
-      if (help) help.innerHTML = (kindSel.value === 'renewal' && page.some(r => r.d.renewal_parts) ? '세부 점수(고른 점수의 재료)는 표 오른쪽에 있습니다.' : '표 오른쪽 열은 고른 점수가 아닌 다른 점수와 범죄 발생률입니다.<br>고른 점수의 재료는 동 이름을 눌러 동 페이지에서 볼 수 있습니다.') + '<br>휴대폰에서는 동 이름을 누르면 동 페이지에서 볼 수 있습니다.';
+      if (help) help.innerHTML = (kindSel.value === 'renewal' && page.some(r => r.d.renewal_parts) ? '세부 점수(고른 점수의 재료)는 표 오른쪽에 있습니다.' : '표 오른쪽 열은 고른 점수가 아닌 다른 점수와 범죄 발생률입니다.<br>고른 점수의 재료는 동 이름을 눌러 동 페이지에서 볼 수 있습니다.') + '<br>휴대폰에서는 동 이름을 누르면 동 페이지에서 봅니다.';
       // 고른 조건·쪽을 주소에 적는다. 동을 눌렀다 뒤로 오거나 새로 고쳐도 그대로(v9: 늘 '재생 필요·부산·1쪽'으로 돌아갔다)
       if (typeof history !== 'undefined' && history.replaceState && location.href) {   // 시험용 가짜 화면에는 주소가 없다
         const u = new URL(location.href), set = (k, v) => (v ? u.searchParams.set(k, v) : u.searchParams.delete(k));
@@ -132,14 +139,14 @@
         scores = s; idx = i;
         sidoSel.innerHTML = '<option value="">전국</option>' + i.sido.map(x => `<option value="${esc(x.code2)}">${esc(x.name)}</option>`).join('');
         const q = new URLSearchParams(location.search);
-        // 2026-11-13: 재생 서비스라 기본은 '재생 필요 점수', 시범 지역 부산(11-13 평가: 전국 '동네 점수' 1위가 과천이라 방향이 반대로 읽힘). ?sido= 로 전국을 본다
+        // 2026-11-13: 재생 서비스라 기본은 '재생 필요 점수', 시범 지역 부산(11-13 평가: 전국 '동네 종합 점수' 1위가 과천이라 방향이 반대로 읽힘). ?sido= 로 전국을 본다
         kindSel.value = Object.hasOwn(KINDS, q.get('kind')) ? q.get('kind') : 'renewal';
         if (ascBox) ascBox.checked = q.get('ord') === 'asc' || (!q.has('ord') && kindSel.value === 'housing');
         sidoSel.value = q.has('sido') ? q.get('sido') : (i.sido.some(x => x.code2 === '21') ? '21' : '');
         fillSg();
         if (q.get('sg')) sgSel.value = q.get('sg');
         kindSel.disabled = sidoSel.disabled = false;   // 자료가 온 뒤에만 고른다(불러오는 중에 고른 값이 기본값으로 덮였다, v9)
-        pager = window.RenewListPages.create(out, '동네 순위', draw, Math.max(1, Number(q.get('page')) || 1), 20, { below: true, quiet: true });
+        pager = window.RenewListPages.create(out, '동네 비교 점수', draw, Math.max(1, Number(q.get('page')) || 1), 20, { below: true, quiet: true });
         // 쪽 넘김을 '사업성 간이 계산' 줄 왼쪽으로(2026-11-19: 따로 두 줄이었다). 시험용 가짜 화면에는 querySelector가 없다
         const pageRow = document.querySelector && document.querySelector('.rank-pagerow'), navEl = out.nextElementSibling;
         if (pageRow && navEl && navEl.classList.contains('list-pages')) pageRow.prepend(navEl);
@@ -147,7 +154,7 @@
         out.addEventListener('click', e => {
           const t = e.target && e.target.closest ? e.target : null;
           if (t && t.closest('a[href="#rankMethods"]')) { $('rankMethods').open = true; return; }
-          if (!t || !t.closest('[data-rank-sort]') || !ascBox) return;
+          if (!t || !t.closest('[data-rank-sort]') || !ascBox || ascBox.disabled) return;
           ascBox.checked = !ascBox.checked; reset();
           const b = out.querySelector('[data-rank-sort]'); if (b) b.focus();
         });

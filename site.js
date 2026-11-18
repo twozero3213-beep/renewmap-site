@@ -26,11 +26,11 @@
     const base = fixedBase || (nested ? '../' : '');
     const ico = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
     const here = location.pathname + location.hash;
-    // v7(2026-11-13): 머리 메뉴와 같은 이름·순서(평가: 위는 '동네 찾기·현장 기록', 아래는 '지도·현장'이라 다른 곳인 줄 알았다). 홈은 로고로 간다
-    // R1(2026-11-13): 아래 탭은 넷(홈·동네 찾기·현장 기록·보관함, DESIGN.md). 다섯 칸이 머리 '메뉴' 시트와 같은 목록이라 두 벌로 보였다.
+    // v7(2026-11-13): 머리 메뉴와 같은 이름·순서(평가: 위는 '동네 진단·현장 기록', 아래는 '지도·현장'이라 다른 곳인 줄 알았다). 홈은 로고로 간다
+    // R1(2026-11-13): 아래 탭은 넷(홈·동네 진단·현장 기록·보관함, DESIGN.md). 다섯 칸이 머리 '메뉴' 시트와 같은 목록이라 두 벌로 보였다.
     // 순위·재생 사업·구역 계산은 머리 '메뉴'에서 연다
     const tabs = [['index.html', '홈', 'M3 11l9-8 9 8M5 9.5V20h14V9.5', /^(?!.*\/(?:field|dong)\/)[^#]*\/(?:index\.html)?(?:#.*)?$/],
-      ['explore.html#map', '동네 찾기', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html|\/dong\//],
+      ['explore.html#map', '동네 진단', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html|\/dong\//],
       ['field/', '현장 기록', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],
       ['box.html', '보관함', 'M3 8h18v12H3zM3 8l2-4h14l2 4M9 13h6', /box\.html$/],
     ];
@@ -47,19 +47,19 @@
     });
   }
   // 머리 메뉴(2026-11-13 v6→v7): 하는 일 순서의 한 벌. v7에서 넷과 상담 하나로 줄였다(정돈된 경쟁 서비스는 3~5개).
-  // 건물 4D·보관함·데이터 출처는 꼬리글(모든 화면)·지도 단추·아래 탭바로 들어간다.
+  // 건물 나이 4D·보관함·데이터 출처는 꼬리글(모든 화면)·지도 단추·아래 탭바로 들어간다.
   // HTML에 적힌 옛 메뉴는 자바스크립트가 없을 때를 위해 남기고 rm6.css가 숨긴다
   const header = document.querySelector('header.top .wrap');
   if (header && !header.querySelector('.rm-nav')) {
     const base = fixedBase || (nested ? '../' : '');
     const path = fixedBase ? '' : location.pathname;
-    const items = [['explore.html', '동네 찾기', /explore\.html$|\/dong\//], ['rank.html', '동네 순위', /rank\.html$/], ['programs.html', '재생 사업', /programs\.html$/],
+    const items = [['explore.html', '동네 진단', /explore\.html$|\/dong\//], ['rank.html', '동네 비교 점수', /rank\.html$/], ['programs.html', '재생 사업', /programs\.html$/],
       ['field/redev.html', '구역 계산', /\/field\/redev\.html$/], ['field/', '현장 기록', /\/field\/(?:index\.html)?$/]];
     const nav = document.createElement('nav');
     nav.className = 'rm-nav'; nav.id = 'rm-nav'; nav.setAttribute('aria-label', '주요 메뉴');
     const link = (href, text, on, cls) => { const a = document.createElement('a'); a.href = base + href; a.textContent = text; if (on) a.setAttribute('aria-current', 'page'); if (cls) a.className = cls; return a; };
     for (const [href, text, re] of items) nav.append(link(href, text, re.test(path)));
-    nav.append(link('about.html#contact', '시범 상담', false, 'rm-cta'));
+    nav.append(link('about.html#contact', '시범 과업 상담', false, 'rm-cta'));
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'rm-menu-btn'; btn.textContent = '메뉴';
     btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', 'rm-nav');
@@ -107,14 +107,14 @@
     // 다른 사이트 스크립트(지도 SDK 등)와 파일 못 받음(e.error 없음)은 빼고, 이 사이트 파일에서 난 예외만 알린다
     if (shown || !e.error || !String(e.filename || '').startsWith(location.origin) || !document.body) return;
     shown = true;
-    const body = `화면: ${location.pathname}\n오류: ${String(e.message || '').slice(0, 200)}\n무엇을 누르다 났는지 적어 주세요.`;
+    const body = `페이지: ${location.pathname}\n내용: ${String(e.message || '').slice(0, 200)}\n무엇을 누르다 생겼는지 적어 주세요.`;
     const a = document.createElement('a');
-    a.href = 'mailto:renewmapteam@gmail.com?subject=' + encodeURIComponent('[리뉴맵] 화면 오류') + '&body=' + encodeURIComponent(body);
-    a.textContent = '오류 알리기';
+    a.href = 'mailto:renewmapteam@gmail.com?subject=' + encodeURIComponent('[리뉴맵] 화면 문제 알림') + '&body=' + encodeURIComponent(body);
+    a.textContent = '알리기';
     const p = document.createElement('p');
     p.className = 'err-banner';
     p.setAttribute('role', 'alert');
-    p.append('화면에 오류가 났습니다. 새로고침해도 계속되면 ', a, '를 눌러 주세요.');
+    p.append('화면이 제대로 열리지 않았습니다. 새로고침해도 같으면 알려 주세요. ', a);
     document.body.append(p);
   });
 })();
@@ -150,7 +150,7 @@
     let box = document.getElementById('fieldUpdate');
     if (!box) { box = document.createElement('p'); box.id = 'fieldUpdate'; box.className = 'err-banner'; box.setAttribute('role', 'status'); document.body.append(box); }
     const button = document.createElement('button'); button.type = 'button'; button.className = 'ghost';
-    button.textContent = refresh ? '새 판으로 열기' : '다시 확인';
+    button.textContent = refresh ? '새 버전으로 열기' : '다시 확인';
     button.addEventListener('click', () => refresh ? location.reload() : check());
     box.replaceChildren(text + ' ', button);
   };
@@ -163,7 +163,7 @@
         main?.querySelectorAll('button, input[type="submit"], input[type="button"]').forEach(button => { button.disabled = true; });
         document.dispatchEvent(new Event('renewmap-field-updated'));
       }
-      notice(recording ? '새 판을 받았습니다. 입력 중인 기록을 저장한 뒤 새 판으로 열어 주세요. 저장한 기록과 사진은 유지됩니다.' : '새 판을 받았습니다. 이전 계산과 내보내기를 멈췄습니다. 입력 중인 내용이 있으면 복사한 뒤 새 판으로 열어 다시 계산해 주세요. 저장한 기록과 사진은 유지됩니다.', true);
+      notice(recording ? '새 버전이 나왔습니다. 입력 중인 내용을 저장한 뒤 새 버전으로 열어 주세요. 저장한 기록과 사진은 그대로 남습니다.' : '새 버전이 나와 이전 계산과 내보내기를 멈췄습니다. 입력한 내용을 복사해 두고 새 버전에서 다시 계산해 주세요. 저장한 기록과 사진은 그대로 남습니다.', true);
     }
     hadController = !!sw.controller;
   });
@@ -188,7 +188,7 @@
       await registration.update();
       if (!changed) document.getElementById('fieldUpdate')?.remove();
     } catch (_) {
-      if (!changed) notice('새 판 확인을 마치지 못했습니다. 현재 판으로 계속 사용할 수 있으며, 연결되면 다시 확인합니다.', false);
+      if (!changed) notice('새 버전 확인을 마치지 못했습니다. 지금 버전으로 계속 쓸 수 있고, 연결되면 다시 확인합니다.', false);
     } finally { busy = false; }
   }
   window.addEventListener('online', check);

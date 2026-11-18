@@ -85,7 +85,7 @@
     document.querySelectorAll('[data-content-book]').forEach(root => init(root));
     openFor(document, location.hash);
     window.addEventListener('hashchange', () => openFor(document, location.hash));
-    // 2026-11-13 우지예: 다른 화면에서 '시범 상담'(about.html#contact)을 누르면 상담 칸보다 위에 멈춰 다시 내려야 했다.
+    // 2026-11-13 우지예: 다른 화면에서 '시범 과업 상담'(about.html#contact)을 누르면 상담 칸보다 위에 멈춰 다시 내려야 했다.
     //     왜: 브라우저가 주소의 #칸으로 먼저 뛰고, 그 뒤에 위쪽 본문(원장 그림·지도 등)이 그려지며 쪽이 약 800px 길어졌다(1280px 실측 3,112 → 3,932px).
     //     → 처음 3초 동안 쪽 길이가 바뀌면 그 칸에 다시 맞춘다. 사람이 먼저 굴리거나 누르면 바로 멈춘다(내 손을 빼앗지 않는다)
     if (location.hash.length > 1) {

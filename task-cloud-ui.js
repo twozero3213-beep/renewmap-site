@@ -35,7 +35,7 @@
     if(doc.getElementById('taskCloud'))return doc.getElementById('taskCloud');
     const el=(tag,text)=>{const e=doc.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
     const details=el('details');details.id='taskCloud';
-    details.append(el('summary','서버 공동 보관'));
+    details.append(el('summary','팀 보관(선택 · 시험 운영)'));
     const notice=el('p','서버 설정이 있는 환경에서만 이용합니다. 실제 연결 여부는 이메일 인증 후 확인합니다. 로그인 계정은 서버 보관·접근 기록의 주체입니다. 문서에 적힌 외부 검토자의 신원·전자서명·기관 승인은 별도 확인 대상입니다.');notice.className='task-help';details.append(notice);
     markerWarning=el('p');markerWarning.id='cloudMarkerWarning';markerWarning.setAttribute('role','status');details.append(markerWarning);paintMarker();
     const status=el('p');status.id='cloudUser';status.setAttribute('aria-live','polite');details.append(status);

@@ -51,17 +51,17 @@
 
   document.querySelectorAll('[data-pilot-inquiry]').forEach(function (button) {
     button.addEventListener('click', function () {
-      form.elements.type.value = '99만원 유료 파일럿 견적 요청';
+      form.elements.type.value = '견적';
       var message = form.elements.message;
       if (!message.value.trim()) {
-        message.value = '과업 1건, 행정동 1곳의 유료 파일럿 견적을 요청합니다.\n' +
+        message.value = '과업 1건, 행정동 1곳의 시범 과업 견적을 요청합니다.\n' +
           '대상 자치구·행정동: \n공모·과업 이름: \n희망 기준일·접수 일정: \n보유 자료: \n\n' +
           '시범 제안가 99만원(VAT 별도), 계약 전 확정.\n' +
-          '범위: 신청요건 근거 1쪽과 출처·추가확인 조서(HWPX·PDF·XLSX), 초안 검토 후 보완 1회.\n' +
+          '범위: 신청요건 근거 1쪽과 출처·추가확인 목록(HWPX·PDF·XLSX), 초안 검토 후 보완 1회.\n' +
           '추가 동·새 기준일·새 지표·경계안 3종, 신규 현장조사·출장·전문가 승인은 별도 협의합니다.';
-        status.textContent = '유료 파일럿 문의 유형과 범위 초안을 넣었습니다. 대상 동과 보유 자료를 적어 주세요.';
+        status.textContent = '시범 과업 문의 유형과 범위 초안을 넣었습니다. 대상 동과 보유 자료를 적어 주세요.';
       } else {
-        status.textContent = '유료 파일럿 문의 유형을 선택했습니다. 작성하신 문의 내용은 그대로 두었습니다.';
+        status.textContent = '시범 과업 문의 유형을 선택했습니다. 작성하신 문의 내용은 그대로 두었습니다.';
       }
       message.focus();
     });

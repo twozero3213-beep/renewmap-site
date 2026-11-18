@@ -10,7 +10,7 @@
   const ORD = "부산광역시 도시 및 주거환경정비 조례(조례 제7751호, 2025. 10. 1. 시행)";
   const RULES = [{ id: "BSN-AGE-2025.10", article: "제3조제2항", approved: false }, { id: "BSN-ORD-2025.10", article: "제5조제2항제2호", approved: false }];
   const NOT_APPROVED = "승인 전 참고 · 납품용 아님";
-  const REGION_ERROR = "지금은 부산 구역만 계산할 수 있습니다. 부산 밖 PNU가 섞여 있으면 전체 계산을 멈춥니다. 목록과 선택한 동을 확인해 주세요.";
+  const REGION_ERROR = "공개 건물 자료는 부산 254개 법정동 범위입니다. 다른 지역 PNU가 섞이면 전체 계산을 멈춥니다. 목록과 선택한 동을 확인해 주세요.";
   function assertBusan(items, code) {
     if ((code !== undefined && (typeof code !== "string" || !/^26\d{8}$/.test(code))) ||
         items.some((it) => it.pnu != null && it.pnu !== "" && (typeof it.pnu !== "string" || !/^26\d{17}$/.test(it.pnu)))) {
@@ -295,7 +295,7 @@
     return { unk, toMet: need - known, toNotMet: known + unk - need + 1 };
   }
   // yes·no: 조사까지 붙인 말("노후·불량으로", "노후·불량이 아닌 것으로")
-  const settleText = (s, yes, no) => (s ? `못 정한 ${n0(s.unk)}동 중 ${yes} ${n0(s.toMet)}동이 더 확인되면 충족, ${no} ${n0(s.toNotMet)}동이 확인되면 미충족으로 정해진다. 같은 기준의 계산이며 판정이 아니다.` : "");
+  const settleText = (s, yes, no) => (s ? `몇 동 더 확인하면 계산 결과가 갈리나: 정하지 못한 ${n0(s.unk)}동 가운데 ${n0(s.toMet)}동이 더 ${yes} 확인되면 '기준 해당'으로 계산됩니다. ${n0(s.toNotMet)}동이 ${no} 확인되면 '해당 안 함'으로 계산됩니다. 대장 열람이나 현장에서 구조·사용승인일·용도를 확인하세요.` : "");
   const SETTLE_OLD = ["노후·불량으로", "노후·불량이 아닌 것으로"], SETTLE_URBAN = ["준공 20년 이상으로", "20년 미만으로"], SETTLE_LOW = ["저층 주거로", "저층 주거가 아닌 것으로"];
   const range = (lo, hi) => (fmt(lo) === fmt(hi) ? `${fmt(lo)}%` : `${fmt(lo)}~${fmt(hi)}%`);   // 반올림해 같으면 한 값(못 정한 동수는 값 옆에 따로 적는다)
 
@@ -326,6 +326,21 @@
   // blds: match().buildings, ref: 'YYYY-MM-DD'(파일 age_reference_date), district: 재정비촉진지구, areaM2: 사용자가 넣은 구역 면적(없으면 null)
   // parcel: parcel-ref.js texts() 결과(나·다·라목 참고 범위). 있어도 상태는 '현장 확인' 그대로다(규칙 승인 전·정의 일부를 자료로 못 채움)
   // areaDrawn: 면적을 사람이 넣지 않고 지도에 그린 구역에서 계산했을 때(11-13: 그린 면적이 '입력값'으로 찍힘)
+  const REVIEW_STATUS = { [MET]: "기준 해당", [NOT_MET]: "해당 안 함", [CHECK]: "추가확인" };
+  function reviewReason(line) {
+    if (line.status !== CHECK) return "";
+    if (line.label === "구역 면적" && line.value === "입력 안 함") return "면적 입력 확인";
+    if (line.value === "행정 판단") return line.value;
+    if (line.label.includes("필지")) return "지적도 확인";
+    if (line.field === "road") return "현장·도면 확인";
+    if (line.value.includes("자료 없음")) return "자료 부족";
+    return "";
+  }
+  function reviewStatusText(line) {
+    const reason = reviewReason(line);
+    return reason ? "추가확인 · " + reason : REVIEW_STATUS[line.status] || line.status;
+  }
+
   function review(blds, { ref, district = false, areaM2 = null, areaDrawn = false, parcel = null }) {
     assertBusan(blds);
     if (!blds.length) throw new Error("목록에서 찾은 건물이 없습니다.");
@@ -516,7 +531,7 @@
     const tiles = [["건물", `${n0(res.n)}동`], ["노후·불량", `${n0(res.nOld)}동`], ["못 정함", `${n0(res.nUnk)}동`], ["기준", `${res.thr}%`]];
     return `<ul class="v4-tiles">${tiles.map(([k, v]) => `<li><span>${k}</span><b>${v}</b></li>`).join("")}</ul>` +
       `<div class="v4-charts"><div class="v4-donut"><svg class="dn" viewBox="0 0 120 120" aria-hidden="true"><g transform="rotate(-90 60 60)">${arcs}</g><text x="60" y="62" class="dn-n">${tot}</text><text x="60" y="80" class="dn-k">요건 줄</text></svg>` +
-      `<ul class="gl-n">${[MET, NOT_MET, CHECK].map((k) => `<li><b class="gl-sw sw-${ST_CLS[k]}" aria-hidden="true"></b>${k} <b>${cnt[k]}</b></li>`).join("")}</ul></div>` +
+      `<ul class="gl-n">${[MET, NOT_MET, CHECK].map((k) => `<li><b class="gl-sw sw-${ST_CLS[k]}" aria-hidden="true"></b>${REVIEW_STATUS[k]} <b>${cnt[k]}</b></li>`).join("")}</ul></div>` +
       `<div class="rv-stacks">${stackHTML("건물 수", res.nOld, res.nUnk, res.n, res.thr)}${stackHTML("연면적", res.aOld, res.aUnk, res.area, res.thr)}` +
       `<p class="rv-key"><i class="rv-old"></i>노후·불량 <i class="rv-unk"></i>못 정함 <i class="rv-no"></i>아님 <i class="rv-thr"></i>기준선</p></div></div>` +
       `<dl class="rv-ref">${refRows(res).map(([k, rule, v]) => `<div><dt>${escH(k)}</dt><dd><b>${escH(v)}</b> <span>기준 ${escH(rule)}</span></dd></div>`).join("")}</dl>` +
@@ -611,8 +626,12 @@
     ];
     const blocks = [block("title", title), block("para", mark(secret, `${NOT_APPROVED} · 판정 아님 · ${RULES.map((x) => `${x.id} 초안`).join(", ")}`, true), { small: true }),
       block("box", "", { rows: box.map((r) => r.map(D.clean)), widths: [18, 82], refs: true }),
-      block("table", "", { rows: [["요건", "기준", "이 목록", "상태", "근거"], ...res.lines.map((l) => [l.label, l.rule, l.value, l.status, l.basis].map(D.clean))], widths: [20, 22, 30, 12, 16], caption: "표 1. 줄마다 따로 본 결과(종합 판정 아님)" }),
-      block("para", `현장 확인 줄은 자료로 정하지 못한 요건이다. 주민 동의(도시정비법 제36조)와 재건축진단은 다루지 않고, 건물별 근거는 같은 이름의 CSV에 있다. ${refPara(res)}`, { small: true }),
+      block("table", "", { rows: [["요건", "기준", "이 목록", "상태", "근거"], ...res.lines.map((l) => {
+        const reason = reviewReason(l);
+        const value = reason && !l.value.includes(reason) ? l.value + " · " + reason : l.value;
+        return [l.label, l.rule, value, REVIEW_STATUS[l.status] || l.status, l.basis].map(D.clean);
+      })], widths: [20, 22, 30, 12, 16], caption: "표 1. 줄마다 따로 본 결과(종합 판정 아님)" }),
+      block("para", `추가확인 줄은 현재 자료로 정하지 못한 요건이다. 주민 동의(도시정비법 제36조)와 재건축진단은 다루지 않고, 건물별 근거는 같은 이름의 CSV에 있다. ${refPara(res)}`, { small: true }),
       block("h1", "출처")];
     src.list.forEach((s, n) => blocks.push(block("para", D.sourceLine(n + 1, s), { small: true })));
     return { kind: "redev", sizes: "onepage", title, blocks, sources: src.list, writtenOn: today, footer: mark(secret, `리뉴맵 입안요건 사전검토 · ${NOT_APPROVED} · `) };
@@ -686,5 +705,5 @@
   }
 
   // 2026-11-13: ringCrosses를 화면(redev-app.js)에서도 써서, 그리는 도중에 선이 겹치면 바로 알린다
-  return { csvCell, settle, settleText, SETTLE_OLD, assertBusan, REGION_ERROR, ringCrosses, dongBounds, oneRange, answerText, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socMerge, socReceived, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { csvCell, settle, settleText, reviewStatusText, SETTLE_OLD, assertBusan, REGION_ERROR, ringCrosses, dongBounds, oneRange, answerText, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socMerge, socReceived, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });

@@ -38,7 +38,7 @@
   // 조건 정의. units: 이 조건을 셀 수 있는 단위. sgLevel: 읍·면·동 범위에서도 그 동이 속한 시·군·구 값(모든 동 같음)
   const CONDS = [
     { id: 'aging', n: '노후 건축물 비율', g: 'aging', e: 'bldg', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_AGING_20Y_PCT'), get: seriesVal('DECLINE_AGING_20Y_PCT'), op: 'ge', label: t => `노후 건축물 ${pm(t)}% 이상` },
-    { id: 'met', n: '쇠퇴 요건 충족 수', g: 'aging', e: 'sum', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_MET_COUNT'), get: seriesVal('DECLINE_MET_COUNT'), op: 'ge', label: t => `쇠퇴 요건 ${pm(t)}개 이상(하한)` },
+    { id: 'met', n: '쇠퇴 요건 기준 해당 수', g: 'aging', e: 'sum', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_MET_COUNT'), get: seriesVal('DECLINE_MET_COUNT'), op: 'ge', label: t => `쇠퇴 요건 최소 ${pm(t)}개 기준 해당` },
     { id: 'pop30', n: '인구 30년 감소', g: 'aging', e: 'people', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_POP_DROP30Y_PCT'), get: seriesVal('DECLINE_POP_DROP30Y_PCT'), op: 'ge', label: t => `인구 30년 ${pm(t)}% 이상 감소` },
     { id: 'biz10', n: '사업체 10년 감소', g: 'aging', e: 'shop', units: ['sg', 'emd'], src: 'index', th: c => over(c, 'DECLINE_BIZ_DROP10Y_PCT'), get: seriesVal('DECLINE_BIZ_DROP10Y_PCT'), op: 'ge', label: t => `사업체 10년 ${pm(t)}% 이상 감소` },
     { id: 'depop', n: '인구감소지역 지정', g: 'pop', e: 'flag', units: ['sg', 'emd'], src: 'designations', sgLevel: true, th: () => '인구감소지역', get: sgVal('designations'), op: 'eq', label: () => '인구감소지역 지정' },
@@ -202,7 +202,7 @@
     return head + skip + conds + count +
       LIST_MARK + `<div class="dash-seg fd-sort" role="group" aria-label="목록 순서"><button type="button" data-fd-sort="code" aria-pressed="${by !== 'name'}">행정코드 순</button><button type="button" data-fd-sort="name" aria-pressed="${by === 'name'}">가나다 순</button></div>` +
       (dg() && !all ? `<p class="fd-xlsx"><button type="button" class="btn ghost" data-fd-xlsx>XLSX 내려받기</button><small>조건에 맞는 곳 ${ev.hits.length}곳(행정코드 순), 범위 전체의 해당 여부, 조건·출처 시트</small><span class="map-png-msg" data-fd-xlsx-msg role="status"></span></p>` : '') +
-      (list.length ? `<div data-state="ready"><h3 class="fd-list-title" data-fd-list-start tabindex="-1">전체 ${p.total}곳 중 ${p.from}–${p.to}곳</h3><ol class="fd-list">${p.items.map(a => `<li><span class="fd-n"><b>${esc(a.name)}</b><small>${esc(a.sub)} · ${esc(a.code)}</small></span><span class="fd-b" aria-hidden="true">${emo}</span><a href="${esc(hashOf(a, ctx))}" data-fd-go>${a.dong ? '이 동 보기' : '이 지역 보기'}</a></li>`).join('')}</ol>${pagerHTML(p)}</div>`
+      (list.length ? `<div data-state="ready"><h3 class="fd-list-title" data-fd-list-start tabindex="-1">전체 ${p.total}곳 중 ${p.from}~${p.to}곳</h3><ol class="fd-list">${p.items.map(a => `<li><span class="fd-n"><b>${esc(a.name)}</b><small>${esc(a.sub)} · ${esc(a.code)}</small></span><span class="fd-b" aria-hidden="true">${emo}</span><a href="${esc(hashOf(a, ctx))}" data-fd-go>${a.dong ? '이 동 보기' : '이 지역 보기'}</a></li>`).join('')}</ol>${pagerHTML(p)}</div>`
         : `<div class="fd-empty" data-state="empty" role="status"><img src="mascot/crew/ieum-search.svg" width="104" height="104" alt="" aria-hidden="true"><p>조건을 모두 만족하는 곳이 없습니다.<br>조건을 하나 빼 보세요.</p><button type="button" class="btn ghost" data-fd-relax>마지막 조건 빼기</button></div>`);
   }
   const LIST_MARK = '<!--fd-list-->';
@@ -232,7 +232,7 @@
     const byCode = list => sortAreas(list, 'code').map(row);
     const cond = [['출처 번호', '조건', '조건 문구(기준)', '공간 단위', '출처', 'URL', '기준일', '이용조건', '비고']];
     conds.forEach((c, i) => cond.push([nums[i], c.n, chipLabel(c, ctx, sts[i]), UNIT[unit], srcs[i].name, srcs[i].url, srcs[i].date, srcs[i].license, [c.ref ? '참고 구간(공식 기준 아님)' : '', c.sgLevel ? '시·군·구 단위 값' : '', c.src === 'forecast' ? '추세 외삽(판정 아님)' : ''].filter(Boolean).join(' · ')]));
-    cond.push([]); cond.push(['', NOTE, '결과는 조건에 해당하는 곳을 행정코드 순으로 적은 것이며 순위·점수가 아닙니다. 결정은 담당자가 합니다.']);
+    cond.push([]); cond.push(['', NOTE, '결과는 조건에 해당하는 곳을 행정코드 순으로 적은 것이며 순위·점수가 아닙니다. 판정은 담당 기관이 합니다.']);
     return [{ name: '해당 지역', rows: [head, ...byCode(ev.hits)], widths: [14, 18, 12, 14, ...conds.flatMap(() => [14, 12]), 14, 10] },
       { name: '범위 전체', rows: [head, ...byCode(areas)], widths: [14, 18, 12, 14, ...conds.flatMap(() => [14, 12]), 14, 10] },
       { name: '조건·출처', rows: cond, widths: [8, 22, 40, 12, 44, 44, 12, 18, 30] }];
@@ -244,19 +244,19 @@
   // ── 업무별 바로 가기(#gov): 프리셋 = 기존 찾기 조건의 묶음(docs/gov/public_officer_usecases.md 부록 B). 결과는 조건에 해당하는 곳 전부(코드·가나다 순)이며 점수·순위·추천이 아니다(D13·D17) ──
   // 안전 인프라는 공식 기준이 없어 찾기 조건으로 만들지 않는다(값 임계치로 걸러 목록을 내면 D17이 금지한 하위 목록과 같다). 설치 현황 카드는 동 상세의 안전 인프라 묶음으로 보낸다
   // 법령·사업명은 부록 B 문구 그대로. 미확인 조문은 법무 확인 뒤 지운다
-  const DECIDE = '결정은 담당자가 합니다';
+  const DECIDE = '판정은 담당 기관이 합니다';
   const GOV_NOTE = '업무를 고르면 조건이 켜지고 맞는 동과 근거 문서가 나옵니다. 점수·순위를 매기지 않습니다.';
   const PRESETS = [   // 1차 고객(도시재생 담당)의 업무를 앞에 둔다(2026-11-18)
-    { id: 'renewal', e: 'sum', n: '도시재생 사업 후보 찾기', ask: '인정사업·지역특화재생에 넣을 쇠퇴 동을 추릴 때', give: '쇠퇴 요건을 갖춘 동 목록과 사업별 요건 대조', conds: ['met'], law: '도시재생 활성화 및 지원에 관한 특별법 제13조 제4항' },
-    { id: 'housing', e: 'bldg', n: '노후주거지 후보 추리기', ask: '노후주거지 정비·도시재생 공모 전에 후보 동을 추릴 때', give: '쇠퇴 요건과 노후 건축물 기준을 함께 충족하는 동 목록', conds: ['aging', 'met', 'pop30', 'biz10'], law: '노후주거지정비 지원사업(국토부), 도시재생 활성화 및 지원에 관한 특별법' },
-    { id: 'depop', e: 'flag', n: '지방소멸대응기금 현황표', ask: '지방소멸대응기금 투자계획서에 현황표가 필요할 때', give: '인구감소·고령·청년 변화 표', conds: [['depop', 'concern'], 'pop30'], condsEmd: ['aged'], law: '지방소멸대응기금(행안부), 인구감소지역 지원 특별법' },
-    { id: 'cctv', e: 'cctv', n: 'CCTV·보안등 설치 검토', ask: 'CCTV·보안등 추가 설치 검토 자료를 요구받았을 때', give: '동별 설치 현황 사실(밀도·경찰관서까지 거리). 범죄·안전 수준이 아닙니다.', conds: [], note: '조건 없음 · 동을 고르면 안전 인프라 카드로', action: 'safe', law: '개인정보 보호법 제25조' },
-    { id: 'yearend', e: 'bldg', n: '연말 소규모 정비 검토', ask: '연말에 남은 예산, 근거 있는 소규모 정비 사업을 찾을 때', give: '노후·쇠퇴·생활 기준에 해당하는 동 목록과 첨부용 근거서', conds: ['aging', 'met', ['parkLow', 'libFar']], law: '지방재정법 제37조(투자심사)·제50조(이월)' },
-    { id: 'shop', e: 'shop', n: '상권 쇠퇴 동 찾기', ask: '사업체가 줄어든 동을 상권 활성화 검토용으로 추릴 때', give: '사업체 감소 동 목록과 근거 문서', conds: ['biz10'], law: '도시재생 활성화 및 지원에 관한 특별법 제13조 제4항' },
-    { id: 'soc', e: 'tree', n: '공원·도서관 민원 회신', ask: "'우리 동네는 왜 공원·도서관이 없나' 민원에 회신할 때", give: '기준 대비 현황과 출처', conds: [['parkLow', 'libFar', 'hospLow']], law: '도시공원 및 녹지 등에 관한 법률 시행규칙 제4조, 생활SOC 최저기준' },
-    { id: 'care', e: 'hosp', n: '돌봄·의료 대상지 근거', ask: '방문 의료·돌봄 사업의 대상지 선정 근거가 필요할 때', give: '고령 인구가 많고 병의원이 적은 동 목록과 출처 붙은 표', conds: ['aged', 'hospLow'], law: '법정 기준 아님 · 초고령은 65세 이상 20% 정의, 병의원 1만 명당은 화면 참고 구간' },
-    { id: 'season', e: 'elder', n: '한파·폭염 대비 주거 점검', ask: '노후 주택이 많고 고령 인구가 많은 동을 점검 대상으로 고를 때', give: '노후 건축물·초고령 기준에 함께 해당하는 동 목록', conds: ['aging', 'aged'], law: '법정 기준 아님 · 노후 건축물은 도시재생법 시행령 제17조 쇠퇴 기준(20년 이상 50%), 초고령은 65세 이상 20% 정의' },
-    { id: 'brief', e: 'book', n: '의회·감사 근거 문서', ask: "의회·감사에서 '근거가 뭐냐'고 물을 때", give: '출처·기준일·계산식이 붙은 근거 문서', conds: [], note: '조건 없음 · 동을 고르면 사업 근거서로', action: 'brief', law: '지방자치법 제49조·제142조·제150조' },
+    { id: 'renewal', e: 'sum', n: "도시재생 사업 후보 찾기", ask: "인정사업·지역특화재생에 넣을 동을 추릴 때", give: "쇠퇴 요건 기준 해당 수로 고른 동 목록과 사업별 요건 대조", conds: ['met'], law: "도시재생법 제13조·시행령 제17조" },
+    { id: 'housing', e: 'bldg', n: "노후주거지 후보 추리기", ask: "노후주거지정비 공모 전에 후보 동을 고를 때", give: "쇠퇴 요건과 노후 건축물 기준을 함께 본 동 목록", conds: ['aging', 'met', 'pop30', 'biz10'], law: "노후주거지정비 지원사업(국토교통부), 도시재생법" },
+    { id: 'depop', e: 'flag', n: "지방소멸대응기금 현황표", ask: "투자계획서에 넣을 인구 현황표가 필요할 때", give: "인구 감소·고령·청년 이동 표", conds: [['depop', 'concern'], 'pop30'], condsEmd: ['aged'], law: "지방소멸대응기금(행정안전부), 인구감소지역 지원 특별법" },
+    { id: 'cctv', e: 'cctv', n: "CCTV·보안등 설치 검토", ask: "추가 설치 검토 자료를 요청받았을 때", give: "동별 설치 밀도와 경찰관서까지 거리. 범죄나 안전 수준을 뜻하지 않습니다.", conds: [], note: '조건 없음 · 동을 고르면 안전 시설 카드로', action: 'safe', law: "개인정보 보호법 제25조" },
+    { id: 'yearend', e: 'bldg', n: "소규모 정비 대상지 검토", ask: "소규모 정비 대상지를 고를 때 근거가 필요할 때", give: "노후·쇠퇴·생활 기준을 함께 본 동 목록과 검토용 근거서", conds: ['aging', 'met', ['parkLow', 'libFar']], law: "지방재정법 제37조(투자심사)" },
+    { id: 'shop', e: 'shop', n: "상권 쇠퇴 동 찾기", ask: "사업체가 줄어든 동을 상권 검토용으로 추릴 때", give: "사업체 감소 동 목록과 근거 1쪽", conds: ['biz10'], law: "도시재생법 제13조" },
+    { id: 'soc', e: 'tree', n: '공원·도서관 민원 회신', ask: "'우리 동네엔 왜 공원·도서관이 없나' 민원에 답할 때", give: '기준 대비 현황과 출처', conds: [['parkLow', 'libFar', 'hospLow']], law: '도시공원 및 녹지 등에 관한 법률 시행규칙 제4조, 생활SOC 최저기준' },
+    { id: 'care', e: 'hosp', n: "돌봄·의료 대상지 근거", ask: "방문 의료·돌봄 사업 대상지를 정할 때", give: "고령 인구가 많고 병의원이 적은 동 목록과 출처 붙은 표", conds: ['aged', 'hospLow'], law: "법정 기준 아님 · 참고 구간" },
+    { id: 'season', e: 'elder', n: "한파·폭염 주거 점검", ask: "노후 주택과 고령 인구가 많은 동을 점검 대상으로 고를 때", give: "노후 건축물·초고령 기준을 함께 본 동 목록", conds: ['aging', 'aged'], law: "법정 기준 아님 · 노후 기준은 시행령 제17조(20년 이상 50%) 참고" },
+    { id: 'brief', e: 'book', n: '의회·감사 근거 문서', ask: "'그 숫자, 근거가 뭡니까'라는 질문을 받을 때", give: '출처·기준일·계산식이 붙은 근거 문서', conds: [], note: '조건 없음 · 동을 고르면 검토용 근거서로', action: 'brief', law: '지방자치법 제49조·제142조·제150조' },
   ];
   const presetOf = id => PRESETS.find(p => p.id === id) || null;
   // 프리셋의 조건 목록: 읍·면·동 범위(unit emd)면 condsEmd를 덧붙인다. 묶음(배열)은 복사한다

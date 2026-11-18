@@ -1,6 +1,7 @@
 (function(root,factory){'use strict';const api=factory(typeof module==='object'&&module.exports?require('./tasks.js'):root.RenewTasks);if(typeof module==='object'&&module.exports)module.exports=api;else root.TaskFiles=api;})(typeof globalThis!=='undefined'?globalThis:this,function(T){
   'use strict';
   const MAX=20*1024*1024, MAX_FILES=500, MAX_JSON=40*1024*1024, HEX=/^[a-f0-9]{64}$/;
+  const checkResultLabels={match:'대조 일치',pending:'추가확인',conflict:'근거 충돌',invalid:'입력 다시 확인'};
   function needed(history){const out=new Set();for(const r of history){for(const a of [...(r.artifacts||[]),...T.workEvidence(r)])out.add(a.sha256);for(const c of r.checks||[])if(HEX.test(c.evidence_sha256||''))out.add(c.evidence_sha256);if(r.decision)out.add(r.decision.evidence.sha256);}return out;}
   function to64(bytes){let s='';for(let i=0;i<bytes.length;i+=8192)s+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(s);}
   function fields(value,names){return value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===names.length&&names.every(k=>Object.hasOwn(value,k));}
@@ -47,9 +48,8 @@
     const h=checked.history,c=h.at(-1),w=T.work(c),blockers=T.workBlockers(c);
     // 입력의 줄바꿈·방향 제어문자가 요약의 새 제목이나 결정을 꾸미지 못하게 출력에서만 인용한다.
     const q=value=>JSON.stringify(value===null||value===undefined?'':String(value)).replace(/[\u007f-\u009f\u00ad\u061c\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g,ch=>'\\u'+ch.charCodeAt(0).toString(16).padStart(4,'0'));
-    const states={planned:'계획 기록',invalid:'입력 오류',hold:'근거 부족 보류',ready:'대조 완료·검토 대기',approved:'승인 기록',rejected:'반려 기록'};
+    const states={planned:'계획 기록',invalid:'입력 다시 확인',hold:'근거 부족 보류',ready:'대조 완료·검토 대기',approved:'승인 기록',rejected:'반려 기록'};
     const statuses={open:'처리 전',submitted:'확인 대기',resolved:'해소 확인',verified:'점검 확인 완료'};
-    const results={match:'대조 일치',pending:'추가확인',conflict:'근거 상충',invalid:'입력 오류'};
     const pending=w.followups.filter(item=>item.status!=='verified'),overdue=pending.filter(item=>T.isOverdue(item,today));
     const approval=c.decision?(c.decision.kind==='approve'?'현재 승인 기록 있음':'현재 반려 기록 있음'):'현재 승인 기록 없음';
     const summary='v'+c.revision+' · '+states[c.state]+' · '+approval+' · 검토 의견 보류 '+blockers.length+'건 · 후속 점검 미완료 '+pending.length+'건(기한 지남 '+overdue.length+'건)';
@@ -84,7 +84,7 @@
         const before=oldChecks.get(id),after=newChecks.get(id);
         if(T.canonical(before||null)!==T.canonical(after||null)) {
           const fields=[['result','대조 결과'],['source','출처'],['page','쪽·셀'],['unit','단위'],['note','사유'],['evidence_sha256','근거 파일 지문']].filter(([key])=>before?.[key]!==after?.[key]).map(([,label])=>label);
-          changed.push('근거 대조 기록 변경: 항목 '+q(id)+' / 이전 '+(before?results[before.result]:'대조 기록 없음')+' / 현재 '+(after?results[after.result]:'대조 기록 없음')+' / 달라진 항목: '+fields.join(', '));
+          changed.push('근거 대조 기록 변경: 항목 '+q(id)+' / 이전 '+(before?checkResultLabels[before.result]:'대조 기록 없음')+' / 현재 '+(after?checkResultLabels[after.result]:'대조 기록 없음')+' / 달라진 항목: '+fields.join(', '));
         }
       }
       const oldFiles=new Map(baseline.artifacts.map(file=>[file.name,file])),newFiles=new Map(c.artifacts.map(file=>[file.name,file]));
@@ -117,7 +117,7 @@
     for(const item of c.spec.requirements) {
       const row=c.checks.find(r=>r.id===item.id);
       lines.push('항목 '+q(item.id)+': '+q(item.title),'요구 출처: '+q(item.source)+' / 요구 단위: '+q(item.unit),
-        '대조 결과: '+(row?results[row.result]:'대조 기록 없음'));
+        '대조 결과: '+(row?checkResultLabels[row.result]:'대조 기록 없음'));
       if(row)lines.push('실제 출처: '+q(row.source)+' / 원문 쪽·셀: '+q(row.page)+' / 실제 단위: '+q(row.unit),
         '사유: '+q(row.note),'근거 파일: '+(HEX.test(row.evidence_sha256||'')?'files/'+row.evidence_sha256:'연결 지문 없음'));
     }
@@ -177,5 +177,5 @@
       '해시는 기록된 바이트의 변경을 찾는 수단입니다. 작성자 신원·현장 촬영 사실·얼굴 가림·기관 승인·법률 적합성을 증명하지 않습니다.');
     return {text:lines.join('\n')+'\n',summary,attention,comparison};
   }
-  return{MAX,needed,make,read,from64,handover};
+  return{MAX,checkResultLabels,needed,make,read,from64,handover};
 });
