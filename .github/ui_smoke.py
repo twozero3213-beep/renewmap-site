@@ -361,11 +361,11 @@ def main():
                                     window.RenewMap.setReportMode('brief');
                                     if (s.isConnected) throw new Error('동 카드가 다시 그려지지 않았습니다.');
                                 }""")
-                                assert summary.evaluate('s => s.parentElement.open && document.activeElement === s')
+                                assert summary.evaluate('s => s.parentElement.open && document.activeElement === s'), summary.evaluate("s => ({open:s.parentElement.open, focused:document.activeElement===s,activeTag:document.activeElement?.tagName,activeClass:document.activeElement?.className,hasFocus:document.hasFocus()})")
                                 other = page.locator('[data-dong]:not([data-dong="11060920"])').first.get_attribute('data-dong')
                                 page.evaluate("code => {location.hash = location.hash.replace(/[0-9]+$/, code)}", other)
                                 page.locator(f'.map-h3[data-code="{other}"]').wait_for(state='visible')
-                                assert not summary.evaluate('s => s.parentElement.open')
+                                assert not summary.evaluate('s => s.parentElement.open'), summary.evaluate("s=>({open:s.parentElement.open,selected:document.querySelector('.map-h3')?.dataset.code})")
                                 check(route,width,'dong_details_rerender')
                                 page.goto(base+'explore.html?report=onepage#map/21/21090/21090700',wait_until='networkidle')
                                 page.locator('[data-workspace-tab="evidence"]').click()
