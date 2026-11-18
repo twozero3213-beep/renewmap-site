@@ -8,6 +8,37 @@
 - `cell_pack.omit`에 있는 `value`는 생략된 정상 값일 수 있다. 모든 원장 소비자는 `cellpack` 복원 후 집계한다. 생략을 결측으로 세지 않는다.
 - 코드/모델의 현재 구조와 운영 검수 경계는 소스 저장소 `docs/IMPLEMENTATION_STATUS.md`, 원장 요구사항은 `docs/PRD.md`를 따른다.
 
+## 부산 이전 직원 정착 지도 (2026-11-19) — `national/reloc/busan.json`
+
+`national/reloc/office/{회사 행정동 코드}.json`에는 부산 행정동 206곳의 `OFFICE_KM` 셀이 하나씩 들어 있다. 206개 회사 동에서 42,436셀을 생성하며, 화면은 선택한 회사 동 파일만 요청한다. 각 셀의 ID와 스냅샷은 회사 동과 대상 동을 구분한다.
+
+SGIS 2025 행정동 경계 단순화본의 내부 대표점을 EPSG:5186으로 투영하고 두 점 사이 평면 거리를 km로 환산한다. 출처와 이용조건은 국가데이터처 SGIS, 공공누리 제1유형이다. `boundary_source.districts`와 셀 메모에 구·군별 원본·공개 경계 SHA-256 및 원본 조회시각이 있다. 셀 조회시각은 두 원본 중 늦은 시각이다. 기준일 2025-12-31은 연도 단위 원천을 연말로 정규화한 표기다. 실제 회사 주소·교통망·통근시간은 계산에 쓰지 않는다.
+
+
+- 생성기 `backend/scripts/export_reloc_busan.py`. 기존 `Cell` → `export_cell` → `cellpack` v1 계약을 그대로 쓴다. 브라우저는 `RenewCellPack.unpack(await response.json())`, Python은 `cellpack.load_json(path)`로 **먼저 복원**한다. 복원 전 `value` 생략을 결측으로 판단하지 않는다.
+- 최상위 `{generated_at, rule_version, snapshot_id, snapshot_hash, snapshot_scheme, peds, rent, metro, dongs}`. `generated_at`은 입력 중 가장 늦은 조회일시이며 실행 시각이 아니다. 동일 입력은 동일 바이트를 만든다. `snapshot_id`는 입력의 SHA-256, `snapshot_hash`는 `file-cells-v1` 셀 지문이다.
+- `dongs[]`: `{code7, name, sigungu, sigungu_code, representative_point:[경도,위도], cells}`. `code7`은 이름과 달리 기존 living·dong_index와 같은 **SGIS 행정동 8자리 문자열**, `sigungu_code`는 SGIS 5자리, `sigungu`는 구·군 이름. 부산 경계·색인 206곳을 모두 싣는다. 대표점은 기존 `living.interior_point` 방식이다.
+- 각 셀은 `indicator_code, value, unit, source_name, source_url, retrieved_at, reference_date, formula_id, formula_text, rule_version, sample_n, coverage, status, note` 등 기존 원장 필드를 가진다. 요청의 표본수 `n`은 기존 필드명 **`sample_n`**으로 제공한다. 현장·전문의·영업시간 확인을 완료한 값이 아니므로 정상 값의 상태는 `미확인`, 결측은 `추가확인`이다.
+
+| indicator_code | 값·단위 | sample_n |
+|---|---|---|
+| `PEDS_CLINIC_COUNT` | 소아청소년과 진료과목을 기재한 의원의 동 안 개수(곳) | 동 안 해당 의원 수 |
+| `PEDS_ALL_COUNT` | 같은 진료과목의 기관 중 요양·정신·한방병원을 제외한 동 안 개수(곳) | 동 안 적격 기관 수 |
+| `PEDS_NEAREST_M` | 동 대표점에서 부산 수록 적격 기관까지 EPSG:5186 최소 직선거리(m, 소수 1자리) | 검색 대상 부산 적격 기관 수 |
+| `JEONSE_M2_MED_APT` / `_RH` / `_OFFI` | 주택 유형별 전세 보증금/전용면적 중위값(만원/㎡, 소수 1자리) | 해당 동·유형의 전세 표본 수 |
+| `WOLSE_MED_APT` / `_RH` / `_OFFI` | 주택 유형별 월세 중위값(만원, 보증금 별도) | 해당 동·유형의 월세 표본 수 |
+| `SUBWAY_AM_PEAK_BOARD` | 출근 시간대 최근접 역 평균 승차 인원(평일 07~09시), 명/평일·소수 1자리 | 수록 월~금 날짜 수(공휴일 포함) |
+
+- `APT`=아파트, `RH`=연립다세대, `OFFI`=오피스텔. 임대차는 기존 `export_rent.dong_values`를 그대로 사용한다. 전세는 월세=0이며 보증금·전용면적이 있는 계약, 월세는 월세 값이 있는 계약이다. **동·유형·지표별 표본 5건 미만은 `value:null`**, `sample_n`은 실제 수를 유지한다. 결측을 0으로 바꾸지 않는다.
+- `metro`: 승하차 출처·실제 기간·원본 SHA-256, 역 좌표 출처·조회시각·실제/기록 SHA-256과 일치 여부, 역별 좌표·기준일·평균·표본 수를 보존한다. 동 대표점→부산교통공사 1~4호선 114개 역 좌표의 EPSG:5186 최근접 역을 먼저 고르고, 그 역의 값이 없으면 `null`이다. 부역명 괄호·가운뎃점·공백만 제거한 같은 역명의 호선 게이트를 날짜별 합산한다. 동률은 좌표 원본 역번호 오름차순. 동해선·부산김해경전철·열차별 혼잡·방향·착석은 반영하지 않는다. 실제 수록 2026-01-01~09-30, 월~금 195일이다. 문화시설은 좌표와 기존 캐시 매칭이 없어 미생성한다.
+- `peds`: `{total, by_kind, qualified_n, assigned_n, unassigned_n, retrieved_at_precision:"day"}`. 원본은 조회일만 주므로 셀 `retrieved_at`의 00:00 KST는 날짜 정규화이며 실제 조회 시각은 미확인이다. `reference_date`도 조회일 스냅샷이다. 경계 미배정 기관은 동별 개수에서 빠지지만 최근접 검색 대상에는 포함한다.
+- `rent`: `{months:[YYYYMM 12개], min_n:5, geocode_cache, geocode_source, by_type:{apt,rh,offi}}`. 각 유형에는 `raw_n, assigned_n, no_public_coordinate_n, outside_boundary_n, wrong_sigungu_n, available_months, missing_months, missing_entries:[LAWD:YYYYMM], retrieved_at`이 있다. `coverage`는 해당 유형 부산 원본 대비 행정동 배정률(%)이며 표본의 모집단 대표성을 뜻하지 않는다.
+- 계약월 창은 부산 manifest에 수록된 최신 월까지 12개월이다. 현재 창은 **2025-11~2026-10**, 실제 원본은 **2026-07~10의 4개월**뿐이다. 없는 8개월을 계약 0건으로 취급하지 않는다. 임대차 `reference_date`는 창 마지막 월 말일, `retrieved_at`은 해당 유형·창 안 부산 원본의 최신 수집 시각이다.
+- 좌표는 기존 `geocode_public.json`의 SGIS 캐시만 읽는다. 구 캐시 `geocode.json`과 지오코딩 API는 쓰지 않는다. 계약의 법정 시군구와 배정된 SGIS 시군구가 다르면 제외한다. 원본 주소·기관명·개별 계약은 공개 파일에 싣지 않는다.
+- 의료기관 출처는 공공데이터포털 **15001698**(기존 생활 지표와 같은 공공누리 1유형), 임대차는 유형별 **15126474·15126473·15126475**(기존 이용허락범위 제한 없음)로 연결한다. 전문 소아과·실제 진료 가능 여부, 이동시간, 현재 매물 호가·시세를 뜻하지 않는다. 부산 밖 의료기관과 미배정 계약이 빠지고 단순화 경계 오차가 있다. 이 작업에서 원천 이용조건을 온라인 재확인하지 않았다.
+
+## 대시보드 파일 구조
+
 `dashboard.json`을 사용하는 대시보드의 지표값은 이 파일에서 온다. 이 파일은 `backend/scripts/export_dashboard.py`가 원장 셀을 `export_cell()`로 내보내 만든다. 손으로 고치지 않는다.
 
 ```json

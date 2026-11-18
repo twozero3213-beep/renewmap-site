@@ -53,7 +53,7 @@
   if (header && !header.querySelector('.rm-nav')) {
     const base = fixedBase || (nested ? '../' : '');
     const path = fixedBase ? '' : location.pathname;
-    const items = [['explore.html', '동네 진단', /explore\.html$|\/dong\//], ['rank.html', '동네 비교 점수', /rank\.html$/], ['programs.html', '재생 사업', /programs\.html$/],
+    const items = [['explore.html', '동네 진단', /explore\.html$|\/dong\//], ['rank.html', '동네 비교 점수', /rank\.html$/], ['relocate.html', '부산 이전 직원 동네 비교', /relocate\.html$/], ['programs.html', '재생 사업', /programs\.html$/],
       ['field/redev.html', '구역 계산', /\/field\/redev\.html$/], ['field/', '현장 기록', /\/field\/(?:index\.html)?$/]];
     const nav = document.createElement('nav');
     nav.className = 'rm-nav'; nav.id = 'rm-nav'; nav.setAttribute('aria-label', '주요 메뉴');

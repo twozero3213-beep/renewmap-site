@@ -44,6 +44,7 @@
 - 지도 위치: `https://twozero3213-beep.github.io/renewmap-site/explore.html#map/{시도 2자리}/{시·군·구 5자리}/{행정동 코드}` (예: `#map/21/21090/21090700`). 일반구가 있는 시는 시·군·구 5자리 뒤에 일반구 5자리가 하나 더 들어갑니다. 지표와 위치는 한 주소에 함께 쓸 수 있습니다(`?ind=…#map/…`).
 - 문서 용도: `https://twozero3213-beep.github.io/renewmap-site/explore.html?report={report|brief|onepage|programs}` = report(현황 보고서), brief(검토용 근거서), onepage(근거 1쪽), programs(사업 요건 대조).
 - 동네 비교 점수: `https://twozero3213-beep.github.io/renewmap-site/rank.html?kind={total|safety|living|vitality|housing|renewal}&sido={시도 2자리, 비우면 전국}&sg={시·군·구 5자리}&ord=asc&page={쪽 번호}` (ord=asc는 낮은 점수부터 보기. 범죄 통계·안전시설 점수에는 적용하지 않음). kind: total(동네 종합 점수), safety(범죄 통계·안전시설 점수), living(생활 편의), vitality(인구 활력), housing(주거 노후도(점수가 낮을수록 낡음)), renewal(재생 필요 점수).
+- 부산으로 옮겨 오는 기관·기업 직원의 동네 비교: `https://twozero3213-beep.github.io/renewmap-site/relocate.html`. 회사 동에서 각 동까지의 직선거리와 생활 조건을 비교합니다.
 - 건물 나이 4D: `https://twozero3213-beep.github.io/renewmap-site/time4d.html?bjd={법정동 10자리}` (예: `?bjd=2635010300`). 구역 계산 현장 화면: `https://twozero3213-beep.github.io/renewmap-site/field/redev.html?bjd={법정동 10자리}`.
 - 값 하나: `https://twozero3213-beep.github.io/renewmap-site/dong/{행정동코드}.html#{셀 번호}`. 셀 번호는 동 페이지 주요 지표 표의 행 id = `{행정동코드}:{지표코드}:{연도}` (예: `dong/21090700.html#21090700:DECLINE_AGING_20Y_PCT:2025`). 열면 그 행이 강조됩니다.
 
