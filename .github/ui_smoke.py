@@ -186,6 +186,42 @@ def verify_key_reconciliation(page, output, width):
     page.locator('[data-ov-clear]').click()
 
 
+def verify_field_basis(page, output, width):
+    original = page.evaluate('async () => JSON.stringify(await FieldStore.records())')
+    ids = ['synthetic-basis-old', 'synthetic-basis-new']
+    try:
+        page.evaluate("""async ids => {
+          const ind={code:'SYNTHETIC',label:'합성 비교 지표',value:'0%',num:0,unit:'%',spatial_unit:'행정동',formula:'old A/B',rule_version:'synthetic-v1',status:'추가확인',reference_date:'2025-12-31',src:{source_name:'합성 출처',source_url:'https://example.org/old',reference_date:'2025-12-31',retrieved_at:'2026-11-17T00:00:00Z',license_type:'미확인'}};
+          const input={lat:35.2,lng:129.1,target:'보도',dong:{code:'21090700',name:'합성 비교 동',sgName:'합성 구',sido:'부산광역시'},indicators:[ind]};
+          const old=FieldRecord.makeRecord(input,new Date('2026-11-17T00:00:00Z'),ids[0]);
+          const current=FieldRecord.makeRecord({...input,site_id:ids[0],visit_previous_id:ids[0],indicators:[{...ind,formula:'new A/C',src:{...ind.src,source_url:'https://example.org/new'}}]},new Date('2026-11-18T00:00:00Z'),ids[1]);
+          await FieldStore.tx(['records'],'readwrite',s=>{s.put(old);s.put(current)});
+        }""",ids)
+        page.reload(wait_until='networkidle')
+        detail=page.locator('#list details').filter(has=page.get_by_text('지난 기록의 자료와 비교',exact=True))
+        detail.locator('summary').click()
+        text=detail.inner_text()
+        for expected in ['synthetic-basis-old','표시값 차이 0개','기준 표기 차이 1개','출처 주소','old A/B','new A/C','https://example.org/old','https://example.org/new','0%']:
+            assert expected in text, expected
+        assert '모두 같음' not in text
+        before=page.evaluate('async () => JSON.stringify(await FieldStore.records())')
+        with page.expect_download() as downloaded:
+            detail.locator('..').get_by_role('button',name='한글 기록·비교 받기',exact=True).click()
+        target=output/f'synthetic-field-basis-{width}.hwpx';downloaded.value.save_as(target)
+        with zipfile.ZipFile(target) as archive:
+            assert archive.testzip() is None
+            text=''.join(ET.fromstring(archive.read('Contents/section0.xml')).itertext())
+            for expected in ['synthetic-basis-old','지난 기록의 자료와 비교','old A/B','new A/C','https://example.org/old','https://example.org/new']:
+                assert expected in text, expected
+        assert page.evaluate('async () => JSON.stringify(await FieldStore.records())')==before
+    finally:
+        page.evaluate("""async ids => {
+          for(const r of await FieldStore.records())if(ids.includes(r.id))await FieldStore.deleteRecord(r);
+          for(const d of await FieldStore.docs())if(ids.includes(d.record_id))await FieldStore.deleteDoc(d.id);
+        }""",ids)
+    assert page.evaluate('async () => JSON.stringify(await FieldStore.records())')==original
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--base', help='배포 후에는 실제 사이트 주소로 같은 검사를 실행한다')
@@ -299,6 +335,9 @@ def main():
                             page.wait_for_function('() => [...document.querySelectorAll("#mapApp .leaflet-tile-pane img")].some(img => img.complete && img.naturalWidth>0)')
                             assert not page.locator('#mapApp .map-naver').count()
                         check(route, width)
+                        if route == 'field/index.html':
+                            verify_field_basis(page,args.output,width)
+                            check(route,width,'field_basis')
                         if route == 'explore.html':
                             verify_key_reconciliation(page,args.output,width)
                             check(route,width,'key_reconciliation')

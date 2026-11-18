@@ -182,15 +182,56 @@
     ["passages", "관찰 중 통행 횟수(동일인 중복 가능)"], ["staying", "관찰 종료 시 머무는 인원"]].map(([k, label]) => [label, surveyValue(prev && prev.visit && prev.visit[k]), surveyValue(r.visit[k])]);
   const comparisonText = (r, prev) => { const c = compareVisits(r, prev); return c.status + (c.reasons.length ? ": " + c.reasons.join(" · ") : " (구간·요일·시각·날씨·방식·특이사항 기준)"); };
   function compareRows(cur, prev) {
-    const before = new Map(((prev && prev.indicators) || []).map((r) => [r.code, r]));
-    const both = ((cur && cur.indicators) || []).filter((r) => r.code && before.has(r.code));
-    const changed = both.filter((r) => before.get(r.code).value !== r.value || before.get(r.code).reference_date !== r.reference_date)
-      .map((r) => ({ label: r.label, before: before.get(r.code).value, after: r.value, beforeDate: before.get(r.code).reference_date, afterDate: r.reference_date }));
-    return { compared: both.length, changed };
+    const a = (prev && prev.indicators) || [], b = (cur && cur.indicators) || [];
+    const basis = [["기준일", r => r.reference_date], ["출처명", r => r.src && r.src.source_name], ["출처 주소", r => r.src && r.src.source_url],
+      ["단위", r => r.unit], ["공간단위", r => r.spatial_unit], ["산식", r => r.formula], ["규칙 판본", r => r.rule_version], ["자료 상태", r => r.status]];
+    const scope = !(prev && prev.dong && cur && cur.dong && prev.dong.code && cur.dong.code)
+      ? "행정동 코드 미기록" : prev.dong.code !== cur.dong.code ? "행정동 코드 다름" : "";
+    const codes = [...new Set([...a, ...b].map(r => r.code).filter(Boolean))];
+    const rows = codes.map(code => {
+      const old = a.filter(r => r.code === code), next = b.filter(r => r.code === code);
+      const row = { code, label: (next[0] || old[0]).label || code, before: old.map(r => r.value).join(" / "), after: next.map(r => r.value).join(" / "), reasons: [], basis: [], missing: [], details: [], valueChanged: false };
+      if (old.length > 1 || next.length > 1) { row.reasons.push("같은 지표 코드 중복: 자동 대조 보류"); row.duplicate = true; }
+      if (!old.length || !next.length) { row.reasons.push(old.length ? "이전 기록에만 수록" : "이번 기록에만 수록"); row.only = true; }
+      else if (!row.duplicate) {
+        const x = old[0], y = next[0];
+        if (scope) row.reasons.push(scope + ": 값 대조 보류");
+        else {
+          row.valueChanged = x.value !== y.value;
+          if (row.valueChanged) row.reasons.push("저장된 표시값 다름");
+          if ((x.value === undefined || x.value === null || x.value === "") || (y.value === undefined || y.value === null || y.value === "")) row.reasons.push("표시값 미기록");
+        }
+        for (const [label, get] of basis) {
+          const left = get(x), right = get(y);
+          const missing = v => v === undefined || v === null || v === "" || (label !== "자료 상태" && /^(미확인|미표시|자료 없음|확인 필요|unknown)$/i.test(String(v)));
+          const absent = missing(left) || missing(right);
+          if (absent) row.missing.push(label);
+          else if (left !== right) row.basis.push(label);
+          if (absent || left !== right) row.details.push([label, missing(left) ? "미기록·미확인" : String(left), missing(right) ? "미기록·미확인" : String(right), absent ? "기준 미기록·미확인" : "기준 표기 다름"]);
+        }
+        if ([x, y].some(r => r.reference_date && r.src && r.src.reference_date && r.reference_date !== r.src.reference_date)) {
+          row.missing.push("기준일 내부 불일치");
+          row.details.push(["행 기준일 / 출처 기준일", `${x.reference_date || "미기록"} / ${x.src && x.src.reference_date || "미기록"}`, `${y.reference_date || "미기록"} / ${y.src && y.src.reference_date || "미기록"}`, "기록 내부 기준일 불일치: 재확인"]);
+        }
+        if (row.basis.length) row.reasons.push("기준 표기 다름: " + row.basis.join("·"));
+        if (row.missing.length) row.reasons.push("기준 미기록: " + row.missing.join("·"));
+        if (!row.reasons.length) row.reasons.push("저장된 표시값·기준 표기 일치");
+      }
+      return row;
+    });
+    if ([...a, ...b].some(r => !r.code)) rows.push({ label: "지표 코드 미기록", before: "—", after: "—", reasons: ["자동 대조 보류"], basis: [], missing: [], details: [], duplicate: true });
+    const changed = rows.filter(r => r.valueChanged).map(r => ({ label: r.label, before: r.before, after: r.after,
+      beforeDate: a.find(x => x.code === r.code).reference_date, afterDate: b.find(x => x.code === r.code).reference_date }));
+    return { compared: scope ? 0 : rows.filter(r => !r.only && !r.duplicate).length, changed, rows, scope };
   }
-  const compareLine = (prev, cmp) => (cmp.changed.length
-    ? `${localDay(prev.recorded_at)} 기록 대비 바뀐 숫자 ${cmp.changed.length}개: ${cmp.changed.map((c) => `${c.label} ${c.before}(${D.govDate(c.beforeDate)})에서 ${c.after}(${D.govDate(c.afterDate)})로`).join(" · ")}${cmp.compared > cmp.changed.length ? ` · 나머지 ${cmp.compared - cmp.changed.length}개 같음` : ""}`
-    : `${localDay(prev.recorded_at)} 기록과 공식 숫자 ${cmp.compared}개 모두 같음`);
+  const basisRows = cmp => [["지표·기준 항목", "이전 기록", "이번 기록", "대조 결과"], ...cmp.rows.flatMap(r => [
+    [r.label, r.before === "" || r.before === undefined ? "미수록" : String(r.before), r.after === "" || r.after === undefined ? "미수록" : String(r.after), r.reasons.join(" / ")],
+    ...r.details.map(d => [r.label + " / " + d[0], ...d.slice(1)])])];
+  const compareLine = (prev, cmp) => {
+    const n = key => cmp.rows.filter(r => key === "basis" || key === "missing" ? r[key].length : r[key]).length;
+    const reasons = [...new Set(cmp.rows.flatMap(r => r.basis))];
+    return `${localDay(prev.recorded_at)} 기록 대비: 공통 지표 ${cmp.compared}개 · 표시값 차이 ${cmp.changed.length}개 · 기준 표기 차이 ${n("basis")}개${reasons.length ? "(" + reasons.join("·") + ")" : ""} · 기준 미기록 ${n("missing")}개 · 한쪽만 수록 ${n("only")}개 · 중복·코드 누락 ${n("duplicate")}개${cmp.scope ? " · " + cmp.scope : ""}. 저장된 기록만 대조하며 현장 변화·자료 정확성·사업 효과 판정이 아닙니다.`;
+  };
 
   // rec: makeRecord 결과. images: [{bytes, w, h, src}] (가린 사진. 이 기록 사진 다음에 고른 이전 기록 사진 {prev: 날짜 ISO}).
   // before: 같은 자리 바로 전 기록(prevAtSite, 없으면 생략). 반환: docgen의 hwpxBytes·docHTML이 받는 doc
@@ -214,7 +255,7 @@
       ...(rec.item ? [["자료와 비교", `${rec.item}: ${rec.observed || "-"} (${R.STATUS_LABEL[rec.status]})`]] : []),
       // 같은 자리 이전 기록(A4): 작성자가 묶은 것만. 반경은 묶을 때 쓴 설정값
       ...(prevDays.length ? [["같은 자리", `이전 기록 ${prevDays.length}건(${prevDays.join(", ")})${rec.site_radius_m ? ` · 반경 ${rec.site_radius_m}m 안에서 작성자가 묶음` : ""}`]] : []),
-      ...(before && cmp.compared ? [["지난 기록과 비교", compareLine(before, cmp)]] : []),
+      ...(before ? [["지난 기록과 비교", compareLine(before, cmp)]] : []),
     ];
     // 사진은 한 줄에 3장(4장이면 4장), 설명은 한 줄로 묶는다. 사진 설명(alt)은 장마다 둔다
     const own = pics.filter((p) => !p.prev).length, prev = pics.filter((p) => p.prev);
@@ -247,9 +288,12 @@
     // ③ 사진 5장을 한 줄에 작게 놓는다(4장 이하는 이미 한 줄). ②·③은 그렇게 해서 1쪽에 들어갈 때만 쓴다.
     // 들어가지 않으면 메모를 지우지 않고 ①까지만 줄인 문서를 낸다(실제 쪽 수는 PDF로 확인). 분량 추정은 docgen.estimateHeightMm(1쪽 요약과 같은 기준)
     // 이용 조건과 관찰값은 생략하지 않고 여러 쪽으로 낸다.
-    if (rec.facility || rec.visit) {
+    if (rec.facility || rec.visit || before) {
       const doc = make(ind.length, true);
       delete doc.sizes;
+      if (before) doc.blocks.push(block("h1", "지난 기록의 자료와 비교"), block("para", `이전 기록: ${before.id} · ${localTime(before.recorded_at)} / 이번 기록: ${rec.id} · ${localTime(rec.recorded_at)}`),
+        // 긴 산식·주소가 한 표를 넘으면 편집기에서 뒷행이 잘려 문단으로 이어 쓴다.
+        ...basisRows(cmp).slice(1).flatMap(row => [block("h2", row[0]), block("para", "이전 기록: " + row[1]), block("para", "이번 기록: " + row[2]), block("para", "대조 결과: " + row[3])]));
       if (rec.facility) doc.blocks.push(block("h1", "시설 이용 조건"), block("table", "", { rows: [["항목", "이전 기록", "이번 기록"], ...facilityRows(rec, before)], widths: [36, 32, 32] }),
         block("para", "안내된 이용 조건과 방문 당시 관찰은 별개다. 한 번 닫혀 있었다고 폐쇄 시설로 판정하지 않는다."));
       if (rec.visit) doc.blocks.push(block("h1", "재방문 관찰 비교"), block("para", comparisonText(rec, before)),
@@ -377,5 +421,5 @@
     const ok = (pt) => Array.isArray(pt) && Number.isFinite(pt[0]) && Number.isFinite(pt[1]);
     return (Array.isArray(polys) ? polys : []).flat().filter((r) => Array.isArray(r) && r.length <= 2000 && r.every(ok)).slice(0, 20).map((r) => r.map(([x, y]) => [x, y]));
   }
-  return { revisitText, compareVisits, facilityRows, visitRows, comparisonText, LEGAL, buildExplainer, srcKind, prevAtSite, compareRows, buildPhotoSheet, parcelFrom, ringsFrom, bjdongCandidates, findBuildings, buildingFill, lic, PAGE_LIMIT_MM, inRing, contains, findFeature, plane, distanceM, nearby, makeLocator, PICK, pickIndicators, localTime, localDay, shortSrc, oldestDate, summaryRows, buildFieldDoc, fileName, siteOf, nearbyRecords, isNewData };
+  return { revisitText, compareVisits, facilityRows, visitRows, comparisonText, LEGAL, buildExplainer, srcKind, prevAtSite, compareRows, compareLine, basisRows, buildPhotoSheet, parcelFrom, ringsFrom, bjdongCandidates, findBuildings, buildingFill, lic, PAGE_LIMIT_MM, inRing, contains, findFeature, plane, distanceM, nearby, makeLocator, PICK, pickIndicators, localTime, localDay, shortSrc, oldestDate, summaryRows, buildFieldDoc, fileName, siteOf, nearbyRecords, isNewData };
 });

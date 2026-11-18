@@ -697,6 +697,19 @@
     }
     return detail;
   }
+  function basisDetail(rec, prev) {
+    const cmp = E.compareRows(rec, prev), detail = document.createElement("details"), summary = document.createElement("summary"), note = document.createElement("p");
+    summary.textContent = "지난 기록의 자료와 비교"; note.textContent = `이전 기록: ${prev.id} · ${E.localTime(prev.recorded_at)}. ` + E.compareLine(prev, cmp); note.className = "hint";
+    detail.append(summary, note);
+    const wrap = document.createElement("div"), table = document.createElement("table"); wrap.className = "survey-table basis-table"; wrap.tabIndex = 0; wrap.setAttribute("role", "region"); wrap.setAttribute("aria-label", "지난 기록 자료 비교표, 좌우로 스크롤할 수 있습니다");
+    const rows = E.basisRows(cmp);
+    rows.forEach((row, i) => {
+      const tr = document.createElement("tr");
+      row.forEach((text, j) => { const cell = document.createElement(i === 0 || j === 0 ? "th" : "td"); if (cell.tagName === "TH") cell.scope = i === 0 ? "col" : "row"; cell.textContent = text; tr.append(cell); });
+      table.append(tr);
+    });
+    wrap.append(table); detail.append(wrap); return detail;
+  }
   // 배포 직후 예전 HTML 캐시에 페이지 스크립트가 없어도 기록·내보내기를 유지한다.
   const recordPages = window.RenewListPages?.create($("list"), "현장 기록", () => render().catch(() => say("기록을 다시 불러오지 못했습니다. 새로고침해 주세요.", true))) || { reset() {}, slice: rows => rows };
   // 2026-11-14 우지예: 백업(ZIP 내보내기·공유)한 때를 이 기기에 적어 두고, 그 뒤에 저장한 기록 수를 목록 위에 알린다(index.html backupNag 주석).
@@ -729,7 +742,8 @@
       m.className = "meta";
       m.textContent = `${E.localTime(r.recorded_at)}${r.accuracy_m !== null && r.accuracy_m !== undefined ? ` · ±${Math.round(r.accuracy_m)}m` : ""}${r.corrected ? " · 보정됨" : ""}${r.parcel ? ` · ${r.parcel}` : ""}${r.photos && r.photos.length ? ` · 사진 ${r.photos.length}장` : ""}${group.get(E.siteOf(r)).length > 1 ? ` · 같은 지점 ${group.get(E.siteOf(r)).length}건` : ""}${r.imported ? " · 가져옴" : ""}`;
       acts.className = "row";
-      for (const [label, fn] of [[r.facility || r.visit ? "한글 기록 받기" : "한글 1쪽 받기", hwpx], ["PDF로 저장", pdf], ["해명서 부록 받기", explainer]]) {
+      const prev = E.prevAtSite(rows, r);
+      for (const [label, fn] of [[prev ? "한글 기록·비교 받기" : r.facility || r.visit ? "한글 기록 받기" : "한글 1쪽 받기", hwpx], ["PDF로 저장", pdf], ["해명서 부록 받기", explainer]]) {
         const btn = document.createElement("button"); btn.type = "button"; btn.className = "ghost"; btn.textContent = label;
         btn.addEventListener("click", () => fn(r)); acts.append(btn);
       }
@@ -749,7 +763,8 @@
         if (!pos && !r.jibun && !r.pnu) say("현재 위치를 받은 뒤 관찰 조건을 적어 주세요.");
       });
       li.append(b, m);
-      if (r.facility || r.visit) li.append(surveyDetail(r, E.prevAtSite(rows, r)));
+      if (r.facility || r.visit) li.append(surveyDetail(r, prev));
+      if (prev) li.append(basisDetail(r, prev));
       acts.append(revisit); li.append(acts, pick); ul.append(li);
     }
   }

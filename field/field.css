@@ -202,3 +202,5 @@ dialog[open] { animation: toast-in .24s var(--ease); }
 .backup-nag { margin: 8px 0 12px; padding: 12px 14px; border: 1px solid #f0c48a; border-radius: 10px; background: #fff7ed; color: #7c2d12; }
 .backup-nag p { margin: 0 0 10px; white-space: pre-line; line-height: 1.55; font-weight: 600; }
 .backup-nag button { min-height: 44px; }
+
+.basis-table table { min-width: 36rem; }
