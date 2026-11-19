@@ -831,7 +831,7 @@
     const jump = isNum(r.year) && dong ? seriesJump(seriesOf(dong, 'DECLINE_AGING_20Y_PCT'), r.year) : null;
     const jumpNote = jump ? `<p class="sr-req-warn">이 해 20년 이상 건축물 비율이 앞뒤 해(중앙값 ${fmt2(jump.median)}%)와 크게 다릅니다. 출처 값을 그대로 옮긴 것이며, 출처의 계산 방식이 바뀐 해일 수 있어 이 해 판단은 원문을 확인하세요.</p>` : '';
     const rowsHtml = reqRowsHTML(rows, dong, r.year), allKnown = rowsHtml && !rowsHtml.includes('class="is-none"');   // 세 요건이 다 정해졌으면 '빼고 셌다'는 말이 맞지 않는다(11회차)
-    const foot = `<p class="sr-req-note">${allKnown ? `${r.year ? `${esc(r.year)}년 기준. ` : ''}` : `자료가 없는 요건은 빼고 셌습니다${r.year ? `(${esc(r.year)}년 기준)` : ''}. `}법정 판정이 아닌 참고 계산이며, 판정은 담당 기관이 합니다.</p>`;
+    const foot = `<p class="sr-req-note">${allKnown ? `${r.year ? `${esc(r.year)}년 기준. ` : ''}` : `정하지 못한 요건(추가확인)은 세지 않았습니다${r.year ? `(${esc(r.year)}년 기준)` : ''}. `}법정 판정이 아닌 참고 계산이며, 판정은 담당 기관이 합니다.</p>`;
     if (r.value === null) {
       return `<section class="sr-req is-none" aria-label="쇠퇴 3요건 요약"><p class="sr-req-n"><span class="sr-req-k">쇠퇴 3요건</span> 추가확인 <small>자료가 모자라 아직 셀 수 없습니다</small></p>${go}${foot}</section>`;
     }
@@ -843,7 +843,9 @@
     // 정해지지 않은 요건이 남아 결과가 바뀔 수 있으면 '기준 안'·'기준 넘음' 대신 추가확인(1쪽 문서 '확정 불가'와 같은 판단)
     // 그해 셀이 없으면(지난 해) 아래 세 줄에서 정해지지 않은 요건 수를 센다
     const nUnknown = (rowsHtml.match(/class="is-none"/g) || []).length;
-    const undecided = (r.cell && DeclineReq && DeclineReq.metStatus(r.cell) === 'none' && (r.status === '기준 안' || r.status === '기준 넘음')) || (r.status === '기준 안' && isNum(r.value) && r.value + nUnknown >= 2);
+    // 지난 해는 셀이 없어 check_years로 본다: 그 해 충족 수 셀이 추가확인이었으면 최신 해(metStatus 'none')와 같이 추가확인(3차 검증: 연도 막대만 옮겨도 판단이 뒤집혔다)
+    const metHeld = !r.cell && isNum(r.year) && ((((dong && dong.check_years) || {})[REQ_CODE]) || []).includes(r.year);
+    const undecided = ((metHeld || (r.cell && DeclineReq && DeclineReq.metStatus(r.cell) === 'none')) && (r.status === '기준 안' || r.status === '기준 넘음')) || (r.status === '기준 안' && isNum(r.value) && r.value + nUnknown >= 2);
     const st = undecided ? '추가확인' : r.status;
     // 요건이 아직 정해지지 않았으면(추가확인) '못 미친다'고 단정하지 않는다(원칙 4) → 문장을 나눈다
     const lead = st === '추가확인' ? '동 전체로는 아직 정해지지 않은 요건이 있습니다.' : '동 전체로는 2개에 못 미칩니다.';
@@ -860,8 +862,18 @@
   function reqRowsHTML(rows, dong, year) {
     const rowOf = code => rows.find(x => x.ind && x.ind.code === code);
     if (!DeclineReq || !rowOf('DECLINE_AGING_20Y_PCT')) return '';
-    const cellVal = code => { const cs = ((dong && dong.cells) || []).filter(c => c && c.indicator_code === code && isNum(c.value)); return cs.length ? cs.reduce((a, b) => (b.base_year > a.base_year ? b : a)).value : null; };
-    const val = code => { const r = rowOf(code); if (r && isNum(r.value)) return r.cell ? DeclineReq.cellValue(r.cell) : r.value; return isNum(year) ? valueAt(seriesOf(dong, code), year) : cellVal(code); };
+    // 지도 지표가 아닌 코드(3년 연속 감소 등)도 원장 셀이 있으면 그 상태를 본다(추가확인·충돌·폐기·비공개는 셈에 안 쓴다).
+    // 2026-11-20 PROF-11: 셀 원값만 읽어 반포본동 사업체 '3년 연속 감소'(값 1·추가확인)가 '기준 해당'으로 보였다. 셀이 없는 해만 연도 시계열
+    const cellAt = code => { const cs = ((dong && dong.cells) || []).filter(c => c && c.indicator_code === code); const y = isNum(year) ? year : Math.max(...cs.map(c => c.base_year).filter(isNum)); return cs.find(c => c.base_year === y) || null; };
+    // 머리 해의 원장 셀이 먼저다. 3차 통합 검토: 그 해 셀이 비어(추가확인) 지도 줄이 지난 해 값을 들고 오면 '기준 해당'으로 세어 머리와 어긋났다(부천 개편 동 등 14곳).
+    // 지난 해는 셀 대신 check_years(그 해 값은 있으나 원장이 정하지 못한 해, export_national)를 보고, 줄 값은 머리와 같은 해일 때만 쓴다
+    const held = code => isNum(year) && (((dong && dong.check_years) || {})[code] || []).includes(year);
+    const val = code => {
+      const c = cellAt(code); if (c) return DeclineReq.cellValue(c);
+      if (held(code)) return null;
+      const r = rowOf(code); if (r && isNum(r.value) && (!isNum(year) || !isNum(r.year) || r.year === year)) return r.cell ? DeclineReq.cellValue(r.cell) : r.value;
+      return isNum(year) ? valueAt(seriesOf(dong, code), year) : null;
+    };
     // 사업체 감소율은 사업체 수 마지막 값의 해로 셈한다(2025년 사업체 수는 출처에 아직 없음). 동 페이지·문서처럼 그 해를 밝힌다(v9 2차)
     const bizS = seriesOf(dong, 'DECLINE_BIZ_TOTAL'), bizLast = [...bizS].reverse().find(p => isNum(p[1]));
     const yr = isNum(year) ? year : (latestYear(seriesOf(dong, 'DECLINE_BIZ_DROP10Y_PCT')) ?? null);
@@ -1317,20 +1329,24 @@
     });
     return { firstMap, mapPainted };
   }
-  // 상세 시군구 경계는 한 번만 받는다(받는 중이면 같은 약속을 돌려준다). 실패하면 개요 경계를 그대로 둔다
+  // 상세 시군구 경계는 한 번만 받는다(받는 중이면 같은 약속을 돌려준다). 첫 지도(배경 타일) 뒤에 낮은 우선순위로 받는다.
+  // 실패하면 개요 경계를 그대로 두고, 다음 호출에서 다시 받는다(2026-11-20 FE-R2-04: 한 번 끊기면 새로 고칠 때까지 각진 개요 경계가 남았다)
   function makeSgDetailLoader(deps) {
     let sgDetailWait = null;
     return function loadSgDetail() {
       if (deps.state.sgGeoDetailed) return Promise.resolve(true);
-      return sgDetailWait || (sgDetailWait = deps.fetchJson('data/national/sigungu.geojson').then(geo => {
-        if (!geo || !Array.isArray(geo.features)) return false;
+      return sgDetailWait || (sgDetailWait = deps.fetchJson('data/national/sigungu.geojson', true).then(geo => {
+        if (!geo || !Array.isArray(geo.features)) { sgDetailWait = null; return false; }
         deps.state.sgGeo = geo; deps.state.sgGeoDetailed = true;
         deps.render();
         return true;
       }));
     };
   }
-  const api = { makeFirstMapGate, makeSgDetailLoader, indexSummaryPending, mergeIndexSeries, rentSub, geojsonOf, labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
+  // 첫 경계 파일: 전국으로 열면 개요(sigungu-overview), 시·도·구·동으로 열면 상세(sigungu) 하나만 받는다.
+  // 2026-11-20 GIS2-02·FE-R2-03: 시·도로 열어도 개요부터 그려 느린 망에서 각진 경계가 잠깐 보였고, 곧 버릴 개요까지 받았다
+  const firstGeoKind = route => (route && route.sido ? 'detail' : 'overview');
+  const api = { makeFirstMapGate, makeSgDetailLoader, firstGeoKind,indexSummaryPending, mergeIndexSeries, rentSub, geojsonOf, labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     seriesJump, livingIndicators, allIndicators, wantedInd, isAvailable, provenanceHTML, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
@@ -1630,7 +1646,7 @@
     reportKey = key;
     document.body.classList.toggle('print-onepage', reportMode === 'onepage' && !!it); // 인쇄 때 1쪽 요약만 A4 한 쪽에 맞춘다
     if (!it && reportMode === 'programs' && window.RenewPrograms && m.kind === 'emd' && m.items && m.items.length) {
-      const here = v.crumbs[v.crumbs.length - 1].label, items = m.items.map(x => ({ name: x.name, rows: rowsFor(v, m, x), cells: (m.json.dongs.find(d => codeOf(d) === x.code) || {}).cells }));
+      const here = v.crumbs[v.crumbs.length - 1].label, items = m.items.map(x => { const d = m.json.dongs.find(d => codeOf(d) === x.code) || {}; return { name: x.name, rows: rowsFor(v, m, x), cells: d.cells, series: d.series, check_years: d.check_years }; });
       report.innerHTML = reportModeHTML(reportMode) + window.RenewPrograms.districtHTML(here, items, DG);
       report.querySelector('[data-district-csv]').addEventListener('click', () => { if (DG) DG.saveBytes(`동별사업요건비교_${DG.safeName(here)}.csv`, new TextEncoder().encode(window.RenewPrograms.districtCSV(items)), 'text/csv;charset=utf-8'); });
       return;
@@ -1641,7 +1657,7 @@
       const built = docFor(v, m, it);
       report.innerHTML = reportModeHTML(reportMode) + (built.error ? `<div class="rp-empty" role="status"><h3>근거 1쪽을 아직 만들 수 없습니다</h3><p>${esc(built.error)}</p></div>` : onepageHTML(v, it, built.one, fragChoice));
     } else if (reportMode === 'programs' && window.RenewPrograms) {
-      report.innerHTML = reportModeHTML(reportMode) + window.RenewPrograms.dongHTML(it.name, rows) + window.RenewPrograms.socHTML(rows, socText);
+      report.innerHTML = reportModeHTML(reportMode) + window.RenewPrograms.dongHTML(it.name, rows, (m.json && m.json.dongs || []).find(d => codeOf(d) === it.code)) + window.RenewPrograms.socHTML(rows, socText);
       report.querySelector('[data-soc-csv]').addEventListener('click', () => { if (DG) DG.saveBytes(`기반편의시설현황_${DG.safeName(it.name)}.csv`, new TextEncoder().encode(window.RenewPrograms.socCSV(it.name, rows, socText)), 'text/csv;charset=utf-8'); });
     } else if (reportMode === 'brief') {
       const built = docFor(v, m, it);
@@ -1982,7 +1998,7 @@
     else if (m.kind === 'sg' && effMode(ind) === 'now' && hasYears(state.index, ind)) {
       const c = overCaption(state.index, ind, m.year, m.sgs), k = `${ind.code}-${scope}`;
       body = `<span class="hl-t">${esc(scope)} · ${esc(ind.standard ? ind.standard.text : ind.label)}</span>` +
-        `<span class="hl-n" title="${esc(c.text)}">${c.n ? `기준선 넘은 동 <b data-ck="hl-o-${esc(k)}" data-count="${c.over ?? 0}">0</b>곳 <small>/ 값 있는 동 <span data-ck="hl-n-${esc(k)}" data-count="${c.n}">0</span>곳</small> · <b class="hl-y">${esc(c.year)}년</b>` : `<b class="hl-y">${esc(c.year ?? '')}년</b> <small>자료 없는 해</small>`}</span>` +
+        `<span class="hl-n" title="${esc(c.text)}">${c.n ? `기준선 넘은 동 <b data-ck="hl-o-${esc(k)}" data-count="${c.over ?? 0}">0</b>곳 <small>/ 값 있는 동 <span data-ck="hl-n-${esc(k)}" data-count="${c.n}">0</span>곳</small> · <b class="hl-y">${esc(c.year)}년</b>` : state.index.seriesPending ? '<small>연도 자료를 불러오는 중입니다</small>' : `<b class="hl-y">${esc(c.year ?? '')}년</b> <small>자료 없는 해</small>`}</span>` +   // 받기 전 0곳을 '자료 없는 해'로 단정하지 않는다(GIS2-09)
         c.notes.map(n => `<span class="hl-note">${esc(n)}</span>`).join('');
     }
     else body = `<span class="hl-n"><b data-ck="hl-${esc(ind.code)}-${esc(scope)}" data-count="${crossedCount(m.items, ind)}">0</b>곳 <small>/ ${esc(scope)} ${nf(0).format(total)}개 ${unitWord}</small></span>` +
@@ -2206,8 +2222,8 @@
     L.control.zoom({ zoomInTitle: '확대', zoomOutTitle: '축소' }).addTo(map);   // 기본 단추 이름이 영어(Zoom in)였다(v9 접근성) // 네이버 배경은 애니메이션 없이 확대하므로 경계도 같이 바로 바꾼다
     // 확대는 17(골목·건물 단위)까지. 두 번 누르기를 거듭해도 그 이상 커지지 않는다. 휠 확대는 지도를 한 번 누른 뒤에만 켠다(페이지를 내리다 지도에 걸려 확대되지 않게). 지도 밖으로 나가면 다시 끈다(2026-11-07 대표 지시)
     map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => { if (!wideApp) map.scrollWheelZoom.disable(); });
-    // R4 9: 첫 화면(시·도 단계)의 자동 맞춤(fitBounds)이 줌 9 이상을 만들 때마다 상세 경계(sigungu.geojson 288KB gz)를 받았다.
-    //   사용자가 직접 확대한 때와 구에 들어갈 때(drawMap)만 받는다. 맞춤 중에는 M.fitting이 켜져 있다
+    // R4 9: 자동 맞춤(fitBounds)이 만든 줌으로는 상세 경계(sigungu.geojson 약 288KB gz)를 받지 않는다(맞춤 중에는 M.fitting이 켜져 있다).
+    //   전국 화면에서 사용자가 줌 9 이상으로 확대하면 받는다. 시·도 이하 단계는 첫 경계(firstGeoKind)와 drawMap이 이미 상세를 받는다(2026-11-19 뒤)
     map.on('zoomend', () => { if (M && !M.fitting) { M.previewZoom = map.getZoom() >= 12; if (map.getZoom() > 8) loadSgDetail(); } });
     L.control.scale({ position: 'bottomleft', imperial: false, maxWidth: 120 }).addTo(map);   // v7.9: 축척 막대(8회차 GIS 평가)
     L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
@@ -2498,7 +2514,23 @@
     else if (!M.sg) { const bx = (m.kind === 'sg' ? m.items : []).map(it => it.bbox).filter(x => Array.isArray(x) && x.length === 4); b = bx.length ? L.latLngBounds(bx.flatMap(x => [[x[1], x[0]], [x[3], x[2]]])) : null; } // 경계 전: 목록의 bbox로 같은 범위를 먼저 잡는다
     else { const fg = L.featureGroup(); M.sg.eachLayer(l => { if (active.has(String((l.feature.properties || {}).code))) fg.addLayer(l); }); b = fg.getLayers().length ? fg.getBounds() : M.sg.getBounds(); }
     const right = inEmd && wide.matches && !panel.hidden && getComputedStyle(panel).position !== 'static' ? panel.offsetWidth + 28 : 12; // 지도 위에 겹친 패널일 때만 비운다
-    const opt = { paddingTopLeft: [12, 12], paddingBottomRight: [right, 12], maxZoom: 14 };
+    let opt = { paddingTopLeft: [12, 12], paddingBottomRight: [right, 12], maxZoom: 14 };
+    // 넓은 화면은 범례·연도 카드(.map-key)가 지도 왼쪽 아래에 떠 있다. 기본으로 맞춘 경계 상자가 카드에 걸릴 때만 카드 위쪽 끝까지 아래를 비우거나 카드 오른쪽 끝까지 왼쪽을 비워, 더 크게 보이는 쪽으로 맞춘다(같으면 아래)
+    // 2026-11-20 UX2-01·FE-R2-02: 카드를 몰라 부산 첫 화면의 가덕도·다대포·사하 해안, #map/21/21030의 초량2동이 카드에 가렸다
+    // 검수: 카드는 저작권·축척 줄 위에 얹혀 있어 카드 높이가 아니라 지도 칸 끝에서 잰다. 걸리지 않을 때도 비우면 반포본동이 왼쪽 위 단추 밑으로 올라갔다
+    const card = M.el && document.body.classList.contains('mx-on') ? M.el.querySelector('.map-key') : null, kr = card && card.getBoundingClientRect();
+    if (kr && kr.height > 0 && b && b.isValid()) {
+      const mr = M.el.getBoundingClientRect(), size = M.map.getSize();
+      // 서랍과 카드를 함께 비우면 칸이 모자라기도 한다. Leaflet은 남는 칸이 음수면 최대 줌을 내므로(1024 반포본동이 줌 14) 그 후보는 버린다
+      const zoomOf = o => { const p = L.point(o.paddingTopLeft).add(o.paddingBottomRight); return p.x < size.x && p.y < size.y ? Math.min(o.maxZoom, M.map.getBoundsZoom(b, false, p)) : -Infinity; };
+      const z = zoomOf(opt), sw = M.map.project(b.getSouthWest(), z), ne = M.map.project(b.getNorthEast(), z);
+      const cx = (opt.paddingTopLeft[0] + size.x - opt.paddingBottomRight[0]) / 2, cy = (opt.paddingTopLeft[1] + size.y - opt.paddingBottomRight[1]) / 2;
+      if (z > -Infinity && mr.left + cx - (ne.x - sw.x) / 2 < kr.right && mr.top + cy + (sw.y - ne.y) / 2 > kr.top) {
+        const below = { ...opt, paddingBottomRight: [right, Math.round(mr.bottom - kr.top) + 12] }, beside = { ...opt, paddingTopLeft: [Math.round(kr.right - mr.left) + 12, 12] };
+        const zb = zoomOf(below), zs = zoomOf(beside);
+        if (zs > zb) opt = beside; else if (zb > -Infinity) opt = below;
+      }
+    }
     if (b && b.isValid()) {
       // R4 9: 이 맞춤이 만든 줌은 사용자 확대가 아니다(첫 zoomend에서 상세 경계를 받지 않는다). 움직임 없는 맞춤은 moveend가 없어 시간으로도 푼다
       M.fitting = true; M.map.once('moveend', () => { M.fitting = false; }); setTimeout(() => { if (M) M.fitting = false; }, 1500);
@@ -2517,6 +2549,7 @@
     fitView(v, m, active);
     syncEmdOutlines();
     // 전국 화면만 개요 경계. R4 9는 시·도 단계도 개요로 충분하다고 봤지만, 첫 화면이 부산(#map/21)으로 바뀐 뒤 꼭짓점 4~5개짜리 구 경계가 네이버 바탕 해안선과 어긋나 보였다(2026-11-19 대표 지적)
+    // 시·도 이하로 열었으면 첫 경계가 이미 받는 중이라 같은 약속을 돌려받는다(요청 한 번). 전국에서 시·도로 들어갈 때 여기서 받는다
     if (v.level !== 'nation') loadSgDetail();
   }
   function go(route, focusSel) {
@@ -2683,9 +2716,12 @@
     state.naver = null; loadNaver().then(ok => { state.naver = ok && !window.renewNaverAuthFailed; render(); });
   }
   // 큰 경계 파일이 타일 다운로드·첫 표시를 막지 않게, 목록의 bbox로 배경부터 맞춘 뒤 경계를 받는다.
+  // 전국으로 열면 개요, 시·도 이하로 열면 상세 하나(firstGeoKind). 대체 파일은 낮은 우선순위로 받지 않는다: 그때 renewAfter가 geoP를 기다려 서로 멈춘다
   window.renewAfter = firstMap;
-  const geoP = fetchJson('data/national/sigungu-overview.geojson', true).then(geo => geo && Array.isArray(geo.features)
-    ? { geo, detailed: false } : fetchJson('data/national/sigungu.geojson').then(geo => ({ geo, detailed: true })));
+  const geoP = firstGeoKind(state.route) === 'detail'
+    ? loadSgDetail().then(ok => (ok ? { geo: state.sgGeo, detailed: true } : fetchJson('data/national/sigungu-overview.geojson').then(geo => ({ geo, detailed: false }))))
+    : fetchJson('data/national/sigungu-overview.geojson', true).then(geo => geo && Array.isArray(geo.features)
+      ? { geo, detailed: false } : fetchJson('data/national/sigungu.geojson').then(geo => ({ geo, detailed: true })));
   // 첫 지도는 기본 쇠퇴 지표·지역 메타만 담은 index_map.json을 기다린다. 없으면 전체 index.json
   const indexP = fetchJson('data/national/index_map.json').then(c => (c && Array.isArray(c.sigungu) ? c : fetchJson('data/national/index.json')));
   window.renewAfter = Promise.all([indexP, geoP, firstMap]).then(() => {}, () => {});

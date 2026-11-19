@@ -26,8 +26,8 @@
 
 /* 토스식 세그먼트 탭 */
 .dash-seg { display: inline-flex; background: var(--canvas); border-radius: 8px; padding: 3px; }
-.dash-seg button { font: inherit; font-size: 15px; font-weight: 700; border: 0; background: transparent; color: var(--dim); border-radius: 8px; padding: 6px 14px; cursor: pointer; transition: background .2s, color .2s; }
-.dash-seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px var(--shade-18); }
+.dash-seg button { font: inherit; font-size: 15px; font-weight: 700; border: 1px solid transparent; background: transparent; color: var(--dim); border-radius: 8px; padding: 6px 14px; cursor: pointer; transition: background .2s, color .2s; }
+.dash-seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); border-color: var(--ink); box-shadow: 0 1px 3px var(--shade-18); }
 
 /* 큰 숫자 카드 */
 .dash-bigs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }

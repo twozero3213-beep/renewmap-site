@@ -20,21 +20,32 @@
   const storeJson = (k, v) => { if (v !== undefined) return store(k, JSON.stringify(v)); try { return JSON.parse(store(k)) || null; } catch (e) { return null; } };
 
   // 오류는 role=alert로 바로 읽히게 한다(2026-11-18 접근성 검토: 저장 실패가 status로만 뒤늦게 읽혔다). 역할을 먼저 바꾸고 글을 넣는다
+  let toastTimer = 0;
   function say(text, err) {
     document.querySelector(".save-bar").prepend($("msg"));
     $("msg").setAttribute("role", err ? "alert" : "status"); $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg";
-    if (err) $("msg").scrollIntoView({ block: "nearest" });
+    // 직전 '저장했습니다' 토스트가 오류와 4초간 겹치며 칸을 덮지 않게 오류가 뜨면 닫는다(3차 UX2-05)
+    if (err) { $("toast").hidden = true; clearTimeout(toastTimer); $("msg").scrollIntoView({ block: "nearest" }); }
   }
+  // 칸 오류는 위 알림에 칸 수만 쓰고 문장은 칸 아래에만 둔다(한 칸일 때 같은 문장이 알림·aria-describedby로 두 번 읽혔다, 3차 UX2-05)
+  const errText = (err) => (err.fields && err.fields.length ? `${err.fields.length}개 칸을 고쳐 주세요.` : err.message);
   // 검증 오류가 칸을 알려 주면 그 칸을 열고 오류 문구와 이어 준 뒤 초점을 준다
   function focusFields(fields) {
     const el = fields && fields[0] && $(fields[0].id);
     if (!el) return;
     for (let d = el.closest("details"); d; d = d.parentElement && d.parentElement.closest("details")) d.open = true;
-    for (const x of fields) { const t = $(x.id); if (t) { t.setAttribute("aria-invalid", "true"); t.setAttribute("aria-describedby", "msg"); t.addEventListener("input", () => t.removeAttribute("aria-invalid"), { once: true }); } }
+    // 칸마다 자기 오류 문장을 아래에 두고 aria-describedby로 잇는다(첫 칸만 설명하던 것을 고침, 3차 UX2-05)
+    for (const x of fields) {
+      const t = $(x.id); if (!t) continue;
+      let p = $("err-" + x.id);
+      if (!p) { p = document.createElement("p"); p.id = "err-" + x.id; p.className = "msg err field-err"; t.after(p); }
+      p.textContent = x.msg;
+      t.setAttribute("aria-invalid", "true"); t.setAttribute("aria-describedby", p.id);
+      t.addEventListener("input", () => { t.removeAttribute("aria-invalid"); t.removeAttribute("aria-describedby"); p.remove(); }, { once: true });
+    }
     el.before($("msg"));
     el.focus();
   }
-  let toastTimer = 0;
   function toast(text, actLabel, act, ok) {
     const t = $("toast"), b = $("toastAct");
     t.classList.toggle("ok", !!ok);
@@ -597,13 +608,26 @@
     }
   }
 
+  // 비운 종료 시각: 지금 시각이 시작보다 늦으면 지금 시각, 재방문을 누른 같은 분이면 시작+1분. 23:59 시작이나 시계가 더 이르면 비워 두어 검증이 알린다
+  function autoEnd(start, now) {
+    if (now > start) return now;
+    if (now !== start || start >= "23:59") return "";
+    const n = +start.slice(0, 2) * 60 + +start.slice(3) + 1;
+    return String(n / 60 | 0).padStart(2, "0") + ":" + String(n % 60).padStart(2, "0");
+  }
+
   // ── 저장
   $("f").addEventListener("submit", async (e) => {
     e.preventDefault();
+    // 지난 칸 오류를 지운다. 입력 없이 고쳐진 칸(자동으로 채운 종료 시각 등)이 사라진 문장을 가리키며 오류로 남지 않게 표시도 함께 뗀다
+    document.querySelectorAll(".field-err").forEach((p) => p.remove());
+    document.querySelectorAll('[aria-describedby^="err-"]').forEach((t) => { t.removeAttribute("aria-invalid"); t.removeAttribute("aria-describedby"); });
+    let endNote = "";
     try {
       if ($("visitOn").checked && $("visit-start").value && !$("visit-end").value) {
-        const hm = D.localDate(new Date(), true).split(" ")[1];
-        if (hm > $("visit-start").value) $("visit-end").value = hm;
+        const hm = D.localDate(new Date(), true).split(" ")[1], end = autoEnd($("visit-start").value, hm);
+        // 기기 시계가 아닌 값(시작+1분)도 들어가므로 저장 알림에 무엇을 넣었는지 밝힌다
+        if (end) { $("visit-end").value = end; endNote = `\n종료 시각을 ${end === hm ? "지금 시각으로" : "시작 1분 뒤로"} 넣었습니다(${end}).`; }
       }
       // 붙인 사진은 '가림 확인' 칸을 거쳐야 pending에 들어오므로 photoSafe는 그 확인을 뜻한다
       const dong = place && place.code ? { code: place.code, name: place.name, sgName: place.sgName, sido: place.sido, nearby: place.nearby.map((x) => x.name), boundary: place.boundary } : null;
@@ -628,11 +652,11 @@
       document.querySelector('input[name="status"][value="추가확인"]').checked = true; $("item").value = ""; $("keepPhrase").checked = false; clearChecks(); clearSurvey();
       site = null; siteText(); drawNear();
       say("");
-      toast("저장했습니다.", "되돌리기", async () => {
+      toast("저장했습니다." + endNote, "되돌리기", async () => {
         try { await S.deleteRecord(rec); toast("저장을 되돌렸습니다."); await render(); } catch (e) { toast("저장을 되돌리지 못했습니다.\n목록에서 확인해 주세요."); }
       }, true);
       recordPages.reset(); await render();
-    } catch (err) { say(err.message, true); focusFields(err.fields); }
+    } catch (err) { say(errText(err), true); focusFields(err.fields); }
   });
 
   // ── 1쪽 문서: 한글(HWPX)은 바로 받고 보관함에도 남긴다. PDF는 인쇄 창에서 'PDF로 저장'

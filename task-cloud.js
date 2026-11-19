@@ -30,6 +30,8 @@
     const messages={401:'로그인이 만료됐습니다. 다시 인증해 주세요.',403:'이 과업을 처리할 권한이 없습니다.',409:'서버의 과업 이력이 달라 동기화를 중단했습니다.',413:'전송할 과업 묶음이 너무 큽니다.',429:'인증 요청이 많습니다. 잠시 뒤 다시 시도해 주세요.'};
     if(path==='/auth/v1/verify'&&[400,401,403,422].includes(status))messages[status]='인증 코드를 확인하지 못했습니다. 가장 최근에 받은 코드와 이메일을 확인하거나 새 로그인 메일을 받아 주세요.';
     if(path==='/auth/v1/otp'&&status>=500)messages[status]='로그인 메일 발송 요청을 처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
+    // create_user:false라 등록되지 않은 주소는 422로 거절된다(Supabase Auth 기준 예상, 원격 응답 미확인)
+    if(path==='/auth/v1/otp'&&status===422)messages[status]='로그인 메일은 서버 운영팀에 등록된 주소에만 발송됩니다. 이메일 주소를 확인해 주세요.';
     const e=new Error(messages[status]||(status>=500?'클라우드 서버가 응답하지 못했습니다. 잠시 뒤 다시 시도해 주세요.':'클라우드 요청이 거절됐습니다. 입력과 권한을 확인해 주세요.'));e.status=status;return e;
   }
   function token(value){return typeof value==='string'&&value.trim()===value&&value.length>0&&value.length<=8192&&!/[\x00-\x20\x7f]/.test(value);}
@@ -106,7 +108,7 @@
         session=pendingLink;pendingLink=null;generation++;refreshing=null;return user();
       },
       discardLink:()=>{pendingLink=null;generation++;},
-      requestCode:async(email)=>{configured();email=mail(email);await request('/auth/v1/otp',{email,create_user:true});return true;},
+      requestCode:async(email)=>{configured();email=mail(email);await request('/auth/v1/otp',{email,create_user:false});return true;},
       verifyCode:async(email,code)=>{
         configured();email=mail(email);if(typeof code==='string')code=code.trim();if(typeof code!=='string'||!/^\d{6,10}$/.test(code))fail('이메일로 받은 숫자 인증 코드를 확인해 주세요.');
         const epoch=++generation;session=null;pendingLink=null;

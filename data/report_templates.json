@@ -1,6 +1,6 @@
 {
   "_doc": "생성 파일. 원본은 backend/scripts/export_templates.py. 직접 고치지 않는다. 사용법은 docs/gov/form_fragments.md",
-  "version": "TPL-2026-11-11.1",
+  "version": "TPL-2026-11-20.1",
   "consts": {
     "min_met": 2,
     "n_req": 3,
@@ -80,7 +80,7 @@
         "codes": [
           "DECLINE_MET_COUNT"
         ],
-        "template": "쇠퇴 3요건 중 확정된 요건 수는 {v}(기준 {min_met}개 이상)이다.{ref}"
+        "template": "쇠퇴 3요건 중 기준에 해당한 요건은 최소 {v}이다(지정 기준 {min_met}개 이상·판정 아님).{ref}"
       },
       {
         "codes": [
@@ -235,7 +235,7 @@
               "codes": [
                 "DECLINE_MET_COUNT"
               ],
-              "template": "쇠퇴 3요건 중 확정된 요건 수는 {v}(기준 {min_met}개 이상)이다.{ref}"
+              "template": "쇠퇴 3요건 중 기준에 해당한 요건은 최소 {v}이다(지정 기준 {min_met}개 이상·판정 아님).{ref}"
             },
             {
               "id": "A5",
@@ -571,7 +571,7 @@
               "codes": [
                 "DECLINE_MET_COUNT"
               ],
-              "template": "쇠퇴 3요건 중 확정된 요건 수는 {v}(기준 {min_met}개 이상)이다.{ref}"
+              "template": "쇠퇴 3요건 중 기준에 해당한 요건은 최소 {v}이다(지정 기준 {min_met}개 이상·판정 아님).{ref}"
             }
           ],
           "table": {

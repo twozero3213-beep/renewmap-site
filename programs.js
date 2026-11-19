@@ -46,17 +46,28 @@
     const d = rows.find(x => x.ind.src === 'designations');
     return { met: val('DECLINE_MET_COUNT'), aging: val('DECLINE_AGING_20Y_PCT'), shortfall: val('STD_SHORTFALL_COUNT'), desig: d ? d.value : null };
   }
+  // 미확정 셀은 확정 낱말로 나가지 않는다. decline-req.js·docgen.js와 같은 목록, 1쪽 요약과 같은 낱말 '확정 불가'
+  const UNSETTLED = ['추가확인', '충돌', '폐기'];
+  const metTxt = f => (num(f.met) ? `${f.met}개` : f.metHeld ? '확정 불가' : '값 없음');
+  // 사업 판정에 쓰는 값: 그 해 충족 수·노후 셀이 미확정(셀 상태, 지난 해는 check_years)이면 값이 있어도 판정에 쓰지 않는다.
+  // 지도 머리(추가확인)·1쪽(확정 불가)과 같은 규칙. 3차 검증: 사직동처럼 충족 수 하한 2·추가확인인 동이 비교표에서만 '자료상 맞음'이었다
+  function settledFacts(rows, dong, unsettled) {
+    const f = factsOf(rows);
+    const isHeld = unsettled || (code => { const r = rows.find(x => x.ind.code === code); if (r && r.cell) return UNSETTLED.includes(r.cell.status); return !!r && num(r.year) && ((((dong || {}).check_years || {})[code]) || []).includes(r.year); });
+    const metHeld = isHeld('DECLINE_MET_COUNT'), agingHeld = isHeld('DECLINE_AGING_20Y_PCT');
+    return { ...f, met: metHeld ? null : f.met, aging: agingHeld ? null : f.aging, metHeld, agingHeld };
+  }
   function checkNeed(n, f) {
     if (n.kind === 'human') return { state: 'check', note: n.how };
     if (n.kind === 'infraOrDecline') {
       if (num(f.met) && f.met >= 2) return { state: 'ok', note: `쇠퇴요건 ${f.met}개(하한)` };
-      return { state: 'check', note: `쇠퇴요건 ${num(f.met) ? f.met : '값 없음'}개(하한)${num(f.shortfall) ? `, 생활 기준 해당 ${f.shortfall}개(초안, 국가 최저기준 전체 아님)` : ''}` };
+      return { state: 'check', note: `쇠퇴요건 ${metTxt(f)}(하한)${num(f.shortfall) ? `, 생활 기준 해당 ${f.shortfall}개(초안, 국가 최저기준 전체 아님)` : ''}` };
     }
     if (n.kind === 'oldDecline') {
-      if (!num(f.aging)) return { state: 'check', note: '노후 건축물 값 없음' };
+      if (!num(f.aging)) return { state: 'check', note: `노후 건축물 ${f.agingHeld ? '확정 불가' : '값 없음'}` };
       const pct = `노후 건축물 ${Math.round(f.aging * 10) / 10}%`;
       if (f.aging < 50) return { state: 'no', note: `${pct}, 기준 50%` };
-      return num(f.met) && f.met >= 2 ? { state: 'ok', note: `${pct}, 쇠퇴요건 ${f.met}개(하한)` } : { state: 'check', note: `${pct}, 쇠퇴요건 ${num(f.met) ? f.met : '값 없음'}개(하한)` };
+      return num(f.met) && f.met >= 2 ? { state: 'ok', note: `${pct}, 쇠퇴요건 ${f.met}개(하한)` } : { state: 'check', note: `${pct}, 쇠퇴요건 ${metTxt(f)}(하한)` };
     }
     if (n.kind === 'desig') {
       // 고시의 공식 이름으로 적고, 인구활력+지역은 종전 지정의 지원이 유지되는 분류(고시 부칙 제3조)라 기금 대상으로 본다
@@ -128,8 +139,8 @@
     if (c.candidate) return { cls: 'ok', text: `자료로 맞는 요건 ${c.ok}개${nCheck ? `, 구청 확인이 필요한 요건 ${nCheck}개` : ''}. 해볼 만한 후보입니다.` };
     return { cls: 'check', text: '자료만으로는 정할 수 있는 요건이 없습니다. 구청에 공고 요건을 물어보세요.' };
   }
-  function dongHTML(name, rows) {
-    const list = checkAll(factsOf(rows)), vs = list.map(verdictOf), nOk = vs.filter(v => v.cls === 'ok').length, nNo = vs.filter(v => v.cls === 'no').length;
+  function dongHTML(name, rows, dong) {
+    const list = checkAll(settledFacts(rows, dong)), vs = list.map(verdictOf), nOk = vs.filter(v => v.cls === 'ok').length, nNo = vs.filter(v => v.cls === 'no').length;
     return `<section class="pg-dong"><h3>${esc(name)} 사업 요건 대조</h3>` +
       `<p class="pg-sum">해볼 만한 후보 <b>${nOk}개</b> · 구청 확인이 필요한 사업 ${list.length - nOk - nNo}개 · 맞지 않는 요건이 있는 사업 ${nNo}개<br><small>물어볼 곳: 시·군·구 도시재생 담당 부서, 도시재생지원센터. 행정동 자료로 맞대 본 참고라 실제 요건은 사업 구역 기준으로 다시 확인합니다.</small></p>` +
       list.map((c, i) => `<div class="pg-card"><h4><a href="programs.html#${esc(c.program.id)}">${esc(c.program.name)}</a><small>${esc(c.program.money)}</small></h4><p class="pg-verdict is-${vs[i].cls}">${esc(vs[i].text)}</p><ul>${c.needs.map(n => `<li class="is-${n.state}"><b>${STATE[n.state]}</b><span>${esc(n.t)}${n.note ? `<small>${esc(n.note)}</small>` : ''}</span></li>`).join('')}</ul></div>`).join('') + `</section>`;
@@ -158,38 +169,67 @@
   const cellIn = (it, code) => { const r = it.rows.find(x => x.ind.code === code); return (r && r.cell) || (it.cells || []).find(c => c && c.indicator_code === code) || null; };
   function districtRows(items) {
     return items.map(it => {
-      const { name, rows } = it, f = factsOf(rows), val = c => { const r = rows.find(x => x.ind.code === c); return r ? r.value : null; }, flag = c => { const x = cellIn(it, c); return x && num(x.value) ? x.value : null; };
-      const state = (id, kind) => checkNeed(PROGRAMS.find(p => p.id === id).needs.find(n => n.kind === kind), f).state;
-      return { name, met: f.met, aging: f.aging, biz: val('DECLINE_BIZ_DROP10Y_PCT'), bizDecl: flag('DECLINE_BIZ_DECL3IN5'), pop: val('DECLINE_POP_DROP30Y_PCT'), popDecl: flag('DECLINE_POP_DECL3IN5'), shortfall: f.shortfall,
-        recognize: state('recognize', 'infraOrDecline'), oldres: state('oldres', 'oldDecline'), cells: DIST_CODES.map(c => cellIn(it, c)) };
+      // 표의 해는 머리(충족 수) 줄의 해다. 셀(최신 해)은 그 해일 때만 쓰고, 지난 해는 그 해 줄·시계열과 check_years(원장이 그 해 정하지 못한 길)를 본다.
+      // 3차 검증: 셀이 비었는데 지도 줄의 지난 해 값(2014년 13.05%)이 '(2025)' 머리 아래 나왔고, 연도 막대를 지난 해로 두면 2025 셀 값·상태가 섞였다
+      const { name, rows } = it, f = factsOf(rows), hy = (rows.find(x => x.ind.code === 'DECLINE_MET_COUNT') || {}).year;
+      const cellAt = c => { const x = cellIn(it, c); return x && (!num(hy) || x.base_year === hy) ? x : null; };
+      const held = c => num(hy) && (((it.check_years || {})[c]) || []).includes(hy);
+      const atYear = c => { const p = (((it.series || {})[c]) || []).find(q => q[0] === hy); return p && num(p[1]) ? p[1] : null; };
+      const val = c => { const x = cellAt(c); if (x) return num(x.value) && !x.value_hidden_reason ? x.value : null; if (held(c)) return null; const r = rows.find(y => y.ind.code === c); return r && (!num(hy) || !num(r.year) || r.year === hy) ? r.value : null; };
+      const flag = c => { const x = cellAt(c); if (x) return num(x.value) && !x.value_hidden_reason ? x.value : null; return held(c) || !num(hy) ? null : atYear(c); };
+      const unset = c => { const x = cellAt(c); return x ? UNSETTLED.includes(x.status) : held(c); }, g = settledFacts(rows, it, unset);
+      const state = (id, kind) => checkNeed(PROGRAMS.find(p => p.id === id).needs.find(n => n.kind === kind), g).state;
+      return { name, year: num(hy) ? hy : null, met: f.met, aging: f.aging, biz: val('DECLINE_BIZ_DROP10Y_PCT'), bizDecl: flag('DECLINE_BIZ_DECL3IN5'), pop: val('DECLINE_POP_DROP30Y_PCT'), popDecl: flag('DECLINE_POP_DECL3IN5'), shortfall: f.shortfall,
+        recognize: state('recognize', 'infraOrDecline'), oldres: state('oldres', 'oldDecline'), cells: DIST_CODES.map(cellAt), held: DIST_CODES.map(held) };
     });
   }
   // 소수 둘째 자리까지는 1쪽 요약과 같은 fmt2(2026-11-18: 표는 86.4%, 1쪽은 86.36%로 달랐다)
   const pct = v => (num(v) ? `${fmt2(v)}%` : '–'), cnt = v => (num(v) ? `${v}개` : '–'), yes = v => (v === 1 ? '해당' : v === 0 ? '아님' : '–');
   // 머리에 기준연도를 붙인다: 열의 셀 중 처음 만나는 base_year(셀마다 기준이 같은 한 해)
-  const baseOf = (list, i) => { const c = list.map(r => r.cells[i]).find(x => x && x.base_year != null); return c ? `(${c.base_year})` : ''; };
+  const baseOf = (list, i) => { const c = list.map(r => r.cells[i]).find(x => x && x.base_year != null), y = list.map(r => r.year).find(num); return c ? `(${c.base_year})` : y ? `(${y})` : ''; };   // 셀이 없는 지난 해는 표의 해
   const districtHead = (list, unit) => ['읍·면·동', '쇠퇴요건(하한)', `노후 건축물${baseOf(list, 1)}${unit}`, `사업체 10년 최대 대비 감소율${baseOf(list, 2)}${unit}`, '사업체 최근 5년 중 3년 연속 감소', `인구 30년 최대 대비 감소율${baseOf(list, 4)}${unit}`, '인구 최근 5년 중 3년 연속 감소',
     '생활 기준 해당(초안)', '인정사업 쇠퇴·기반 요건', '노후주거지 쇠퇴 요건'];
-  const districtCells = r => [r.name, cnt(r.met), pct(r.aging), pct(r.biz), yes(r.bizDecl), pct(r.pop), yes(r.popDecl), cnt(r.shortfall), STATE[r.recognize], STATE[r.oldres]];
+  const unsetOf = (r, i) => { const c = r.cells[i]; return c && UNSETTLED.includes(c.status) ? c.status : r.held && r.held[i] ? '추가확인' : ''; };   // i: DIST_CODES 순번. 지난 해는 check_years
+  const withSt = (text, st) => (st ? `${text} (${st})` : text), flagTxt = (v, st) => (st ? '확정 불가' : yes(v));
+  // 표 머리의 해(첫 셀의 해, 셀이 없으면 표의 해). 행의 해가 다르면(폐지·개편 동: 시계열이 2022~2024에 끝남) 동 이름에 그 해를 붙인다(3차 검증)
+  const headYear = list => { const c = list.map(r => r.cells.find(Boolean)).find(Boolean); return c ? c.base_year : list.map(r => r.year).find(num); };
+  const nameOf = (r, hy) => (num(r.year) && num(hy) && r.year !== hy ? `${r.name}(${r.year}년)` : r.name);
+  const districtCells = (r, hy) => [nameOf(r, hy), withSt(cnt(r.met), unsetOf(r, 0)), withSt(pct(r.aging), unsetOf(r, 1)), withSt(pct(r.biz), unsetOf(r, 2)), flagTxt(r.bizDecl, unsetOf(r, 3)), withSt(pct(r.pop), unsetOf(r, 4)), flagTxt(r.popDecl, unsetOf(r, 5)), cnt(r.shortfall), STATE[r.recognize], STATE[r.oldres]];
+  // 사업체 수는 공표가 한 해 늦다: 각주에 자료연도를 달려고 docgen.js(buildBrief)와 같은 규칙으로 {last, ref}를 만든다. series가 없으면 null
+  function bizYears(items) {
+    for (const it of items) {
+      const c = cellIn(it, 'DECLINE_BIZ_DROP10Y_PCT'), ref = +String((c && c.reference_date) || '').slice(0, 4);
+      const last = Math.max(0, ...(((it.series || {}).DECLINE_BIZ_TOTAL) || []).filter(p => p[1] !== null && p[1] !== undefined).map(p => p[0]));
+      if (c && !c.value_hidden_reason && last && last < ref) return { last, ref };
+    }
+    return null;
+  }
   // DG(docgen)가 있으면 열 머리에 출처 번호 [n]을 달고 표 아래에 1쪽 요약과 같은 출처·기준일 각주를 단다
   function districtHTML(place, items, DG) {
     const list = districtRows(items), src = DG && DG.Sources ? new DG.Sources() : null, head = districtHead(list, '').map((h, i) => {
       const c = i >= 1 && i <= 6 ? list.map(r => r.cells[i - 1]).find(Boolean) : null;   // 머리 1~6열이 DIST_CODES 0~5와 짝이다
       return h + (src && c ? src.ref(c) : '');
     });
-    const foot = src && src.list.length ? `<p class="pg-foot">${src.list.map((s, n) => esc(DG.sourceLine(n + 1, s))).join('<br>')}</p>` : '';
+    const biz = bizYears(items), hy = headYear(list), noCells = !list.some(r => r.cells.some(Boolean));
+    // 지난 해 표는 원장 셀이 없다(공개 셀은 최신 해만). 출처를 비워 두지 않고 값이 어디서 왔는지 한 줄로 밝힌다
+    const foot = src && src.list.length ? `<p class="pg-foot">${src.list.map((s, n) => esc(DG.sourceLine(n + 1, s, biz))).join('<br>')}</p>`
+      : src && noCells && num(hy) ? `<p class="pg-foot">${esc(`${hy}년 값은 동 시계열에서 옮겼습니다. 원장 셀(출처·기준일·셀 번호)은 최신 해만 공개하므로 출처 각주는 최신 해 표에 있습니다.`)}</p>` : '';
     return `<section class="pg-dong"><h3>${esc(place)} 동별 사업 요건 비교</h3><p class="pg-warn">동을 행정동 코드 순으로 나란히 둔 표입니다. 순위나 사업 배분 추천이 아닙니다.<br>활성화지역, 면적, 저층 주거 비율은 동 자료로 정할 수 없어 각 사업 구역에서 확인합니다.</p>` +
       `<p class="pg-acts"><button type="button" class="btn ghost" data-district-csv>CSV 받기</button></p><div class="table-wrap" tabindex="0" role="region" aria-label="동별 사업 요건 비교"><table><thead><tr>${head.map(h => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>` +
-      list.map(r => { const c = districtCells(r); return `<tr><th scope="row">${esc(c[0])}</th>${c.slice(1).map(x => `<td class="nw">${esc(x)}</td>`).join('')}</tr>`; }).join('') + `</tbody></table></div>${foot}</section>`;
+      list.map(r => { const c = districtCells(r, hy); return `<tr><th scope="row">${esc(c[0])}</th>${c.slice(1).map(x => `<td class="nw">${esc(x)}</td>`).join('')}</tr>`; }).join('') + `</tbody></table></div>${foot}</section>`;
   }
   // CSV: 값은 % 기호 없는 숫자(머리에 단위)로, 뒤에 이 행의 값이 나온 셀의 기준일·출처·셀 번호를 둔다
   function districtCSV(items) {
     const q = s => `"${String(s).replace(/"/g, '""')}"`, list = districtRows(items), uniq = a => [...new Set(a.filter(Boolean))].join('; ');
-    const num2 = v => (num(v) ? fmt2(v) : ''), flag = v => (v === 1 ? '해당' : v === 0 ? '아님' : '');
-    const head = [...districtHead(list, '(%)'), '기준일', '출처', '셀 번호'];
-    return '\uFEFF' + [head.map(q).join(','), ...list.map(r => {
-      const cs = r.cells.filter(Boolean), c = districtCells(r);
-      return [r.name, num(r.met) ? r.met : '', num2(r.aging), num2(r.biz), flag(r.bizDecl), num2(r.pop), flag(r.popDecl), num(r.shortfall) ? r.shortfall : '', c[8], c[9], uniq(cs.map(x => x.reference_date)), uniq(cs.map(x => x.source_name)), uniq(cs.map(x => x.cell_id))].map(q).join(',');
+    const num2 = v => (num(v) ? fmt2(v) : ''), flag = (v, st) => (st ? '확정 불가' : v === 1 ? '해당' : v === 0 ? '아님' : '');
+    const h = districtHead(list, '(%)');   // 값 열 바로 뒤에 원장 status 열
+    const head = [h[0], h[1], '쇠퇴요건 상태', h[2], '노후 건축물 상태', h[3], '사업체 감소율 상태', h[4], '사업체 3년 연속 감소 상태', h[5], '인구 감소율 상태', h[6], '인구 3년 연속 감소 상태', ...h.slice(7), '기준일', '출처', '셀 번호'];
+    const stat = (r, i) => (r.cells[i] && r.cells[i].status) || (r.held && r.held[i] ? '추가확인' : '');
+    const hy = headYear(list);
+    return '﻿' + [head.map(q).join(','), ...list.map(r => {
+      const cs = r.cells.filter(Boolean), c = districtCells(r, hy);
+      const from = cs.length ? uniq(cs.map(x => x.source_name)) : num(r.year) ? `동 시계열 ${r.year}년(원장 셀은 최신 해만 공개)` : '';
+      return [c[0], num(r.met) ? r.met : '', stat(r, 0), num2(r.aging), stat(r, 1), num2(r.biz), stat(r, 2), flag(r.bizDecl, unsetOf(r, 3)), stat(r, 3), num2(r.pop), stat(r, 4), flag(r.popDecl, unsetOf(r, 5)), stat(r, 5), num(r.shortfall) ? r.shortfall : '', c[8], c[9], uniq(cs.map(x => x.reference_date)), from, uniq(cs.map(x => x.cell_id))].map(q).join(',');
     })].join('\r\n');
   }
   const api = { districtRows, districtHTML, districtCSV, PROGRAMS, SOURCES, SCHEDULE, SOC, factsOf, checkNeed, checkProgram, checkAll, scheduleHTML, listHTML, dongHTML, socRows, socHTML, socCSV };

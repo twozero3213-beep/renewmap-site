@@ -248,6 +248,34 @@ def verify_field_save_errors(page, width):
     assert page.evaluate('async () => JSON.stringify(await FieldStore.records())')==original
 
 
+def verify_map_key(page, base):
+    """넓은 화면 범례·연도 카드가 지도 칸 안에 있고 고른 구의 동을 덮지 않는지, 시·도로 열면 상세 경계 하나만 받는지.
+
+    2026-11-20 UX2-01·GIS2-02: 네이버 바탕에서 카드가 지도 위쪽 밖(top −187)으로 밀렸고, 맞춤이 카드를 몰라 초량2동이 가렸다.
+    로컬은 OSM 바탕이라 네이버 경로는 배포 뒤 --base로 같은 검사를 돌린다."""
+    rect = "s => { const b = document.querySelector(s).getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }"
+    for width, height in [(1280, 800), (1024, 768)]:
+        page.set_viewport_size({'width': width, 'height': height})
+        page.goto('about:blank')
+        page.goto(base+'explore.html#map/21', wait_until='networkidle')
+        page.wait_for_selector('#mapApp .mx-map .map-key', state='visible')
+        key, box = page.evaluate(rect, '#mapApp .map-key'), page.evaluate(rect, '#mapApp .mx-map')
+        assert box[0] <= key[0] and box[1] <= key[1] and key[2] <= box[2]+1 and key[3] <= box[3]+1, ('범례 카드가 지도 칸 밖', width, key, box)
+        files = page.evaluate("() => performance.getEntriesByType('resource').map(e => e.name.split('?')[0].split('/').pop()).filter(n => n.endsWith('.geojson'))")
+        assert 'sigungu.geojson' in files and 'sigungu-overview.geojson' not in files, ('시·도 첫 화면 경계 파일', width, files)
+        page.goto(base+'explore.html#map/21/21030', wait_until='networkidle')
+        page.wait_for_function("() => [...document.querySelectorAll('#mapApp .map-dong-label')].some(e => e.textContent === '초량2동')")
+        page.wait_for_timeout(1000)
+        # 네이버 바탕(이름표 창 숨김)이나 겹침 빼기로 숨긴 이름표도 자리는 잰다
+        center = page.evaluate("""() => { const pane = document.querySelector('#mapApp .leaflet-labels-pane');
+          const el = [...pane.querySelectorAll('.map-dong-label')].find(e => e.textContent === '초량2동'), pd = pane.style.display, ed = el.style.display;
+          pane.style.display = 'block'; el.style.display = ''; const b = el.getBoundingClientRect(); pane.style.display = pd; el.style.display = ed;
+          return [(b.left+b.right)/2, (b.top+b.bottom)/2]; }""")
+        key = page.evaluate(rect, '#mapApp .map-key')
+        assert not (key[0] <= center[0] <= key[2] and key[1] <= center[1] <= key[3]), ('초량2동이 범례 카드에 가림', width, center, key)
+    page.set_viewport_size({'width': 1280, 'height': 900})
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--base', help='배포 후에는 실제 사이트 주소로 같은 검사를 실행한다')
@@ -402,6 +430,9 @@ def main():
                         if route == 'explore.html':
                             verify_key_reconciliation(page,args.output,width)
                             check(route,width,'key_reconciliation')
+                            if width == 1280:
+                                verify_map_key(page,base)
+                                check(route,width,'map_key')
                         if route in ('box.html','docs.html'):
                             verify_document_actions(page,args.output,width,'box' if route == 'box.html' else 'docs')
                             check(route,width,'document_actions')

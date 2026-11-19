@@ -49,6 +49,11 @@
 /* 2026-11-12: 동 이름표(map.js makeDongLabels). 색칠한 동 위에서도 읽히게 흰 테두리 글자, 누르기는 아래 동으로 통과 */
 .leaflet-labels-pane { pointer-events: none; }
 .has-naver .leaflet-labels-pane { display: none; } /* 네이버 바탕 지명과 겹치는 상시 이름표만 숨긴다. 선택 카드와 말풍선은 남긴다. */
+/* 2026-11-20: v4.css의 has-naver 조작 칸 relative는 높이가 0이라 아래 조작 칸(범례·연도 카드·축척)이 지도 위쪽 밖으로 밀렸다(공개판 1280px .map-key top −187, 390px 축척 지도 위).
+   지도 칸 전체에 겹쳐 두고 누르기는 통과시킨다(조작 칸 자체는 leaflet.css가 다시 받는다). v4.css는 현장 셸 파일이라 #mapApp 범위에서 덮는다 */
+#mapApp .map-canvas.has-naver .leaflet-control-container { position: absolute; inset: 0; z-index: 1000; pointer-events: none; }
+/* NAVER 로고·저작권 줄(왼쪽 아래) 위로 축척·범례를 올린다. 휴대폰에서도 조작 칸이 지도 안으로 들어와 로고를 덮으므로 넓은 화면 전용에서 옮겼다(2026-11-20) */
+.map-canvas.has-naver .leaflet-bottom.leaflet-left { bottom: 22px; }
 .map-dong-label { width: max-content !important; height: auto !important; transform-origin: center; margin: 0 !important; translate: -50% -50%; white-space: nowrap; font-size: var(--t-cap); font-weight: 700; line-height: 1.2; color: #12302d;
   text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff, 0 0 1px #fff; pointer-events: none; }
 .map-dong-label.is-sel { font-size: 15px; color: #0b1f1d; }
@@ -551,7 +556,7 @@
 #mapApp .ma-row { display: flex; align-items: center; gap: 10px; box-sizing: border-box; width: 100%; min-height: 44px; padding: 8px; font: inherit; font-size: 15px; color: var(--ink); text-align: left; text-decoration: none; background: none; border: 0; border-radius: 6px; cursor: pointer; }
 #mapApp .ma-row:hover { background: var(--mute-bg); }
 #mapApp .ma-row[aria-pressed="true"] { background: var(--soft); font-weight: 700; }
-#mapApp .ma-sw { flex: none; width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--shade-25); }
+#mapApp .ma-sw { flex: none; width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--shade-25); opacity: .4; }   /* 지도 칸·범례 견본과 같은 40%(DESIGN.md, DS2-02: 목록만 100%라 같은 값이 두 색으로 보였다) */
 #mapApp .ma-sw.is-hatch { background-image: repeating-linear-gradient(45deg, var(--hatch-ink) 0 2px, var(--hatch-bg) 2px 6px); }
 #mapApp .ma-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 #mapApp .ma-val { flex: none; color: var(--dim); font-variant-numeric: tabular-nums; }
@@ -637,7 +642,6 @@ body.explore-page #heroSearch .hero-search-note, body.explore-page #heroSearch .
   body.mx-on #mapApp .mx-map > :is(.map-legend-line-box, .map-ctlbox) { position: absolute; z-index: 3; left: 12px; max-width: 340px; padding: 6px 12px; background: var(--card); border-radius: 12px; }
   body.mx-on #mapApp .mx-map > .map-ctlbox { bottom: 12px; }
   body.mx-on #mapApp .mx-map > .map-legend-line-box { bottom: 84px; }
-  .map-canvas.has-naver .leaflet-bottom.leaflet-left { bottom: 22px; }   /* NAVER 로고·저작권 줄(왼쪽 아래) 위로 축척·범례를 올린다 */
   /* 고른 동: 지도 오른쪽 전체 높이 서랍. 머리·탭·꼬리는 고정, 본문만 스크롤 */
   body.mx-on #mapApp .mx-map .map-panel, body.mx-on #mapApp .mx-map .map-panel.is-sheet { position: absolute; top: 0; right: 0; bottom: 0; left: auto; z-index: 2; display: flex; flex-direction: column; width: var(--mp-w); height: auto; max-height: none; margin: 0; padding: 0; overflow: hidden; border: 0; border-left: 1px solid var(--line); border-radius: 0; box-shadow: -8px 0 24px var(--shade-16); }
   body.mx-on #mapApp .mx-map .map-panel[hidden] { display: none; }

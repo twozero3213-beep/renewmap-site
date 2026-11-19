@@ -9,8 +9,8 @@
 // 2026-11-18: 공개판에 '몇 동 더 확인하면 정해지나'(redev.js·redev-app.js)와 사용자 편의 검토(현장 기록·구역 계산 화면)를 선택 반영해 셸 지문을 다시 맞춘다
 // 2026-11-19: 공개판에 1차 개선(P01~P10, P07 제외)을 선택 반영해 셸 지문을 다시 맞춘다
 // 2026-11-19: 공개판에 긴 안내·현장 가림(#177)과 2차 개선(#178)의 셸 자산 주소를 선택 반영해 셸 지문을 다시 맞춘다
-const CACHE = "renewmap-field-d009f86246";
-const SHELL = ["./", "index.html", "field.css?v=20261119-r8", "record.js?v=20261119-r3", "store.js", "evidence.js?v=20261119-r3", "app.js?v=20261119-r8", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js?v=20261119-r5", "../site-motion.js", "../frame-guard.js", "../docgen.js?v=20261119-r7", "../cellpack.js", "../list-pages.js", "../list-pages.css", "../rm6.css",
+const CACHE = "renewmap-field-a790d8162f";
+const SHELL = ["./", "index.html", "field.css?v=20261119-r8", "record.js?v=20261120-w3", "store.js", "evidence.js?v=20261119-r3", "app.js?v=20261120-w3", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js?v=20261119-r5", "../site-motion.js", "../frame-guard.js", "../docgen.js?v=20261119-r7", "../cellpack.js", "../list-pages.js", "../list-pages.css", "../rm6.css",
   "../data/report_templates.json", "upload.js", "upload-config.js", "detect.js", "redev.html", "redev.js", "redev-app.js", "parcel-ref.js", "twin.html", "twin.css", "twin.js", "twin-app.js", "../favicon.svg", "../icon-192.png"];
 // 설치 때는 브라우저 HTTP 캐시(Pages max-age=600)를 건너뛴다. 안 그러면 갱신 직전에 열어 둔 옛 파일이 새 캐시에 들어간다
 // 새 판은 기다리지 않고 바로 자리를 잡는다(skipWaiting·claim). 안 그러면 탭을 모두 닫기 전까지 옛 계산 파일이 나간다(2026-10-30 배포 직후 실측). 화면은 controllerchange로 새로고침을 안내한다

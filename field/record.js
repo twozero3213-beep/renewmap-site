@@ -127,13 +127,13 @@
     if (typeof input !== "object" || Array.isArray(input)) throw new Error("관찰 조건 형식이 올바르지 않습니다.");
     const text = surveyText(input, VISIT_FIELDS), date = clean(input.date), start = clean(input.start), end = clean(input.end), weather = clean(input.weather);
     const errs = [], bad = (id, msg) => errs.push({ id, msg });
-    const whenMsg = "관찰 날짜와 시작·종료 시각을 올바르게 적어 주세요.", whatMsg = "관찰 구간과 방식을 적어 주세요.";
-    if (!dayValid(date)) bad("visit-date", whenMsg);
-    if (!timeValid(start)) bad("visit-start", whenMsg);
-    if (!timeValid(end)) bad("visit-end", whenMsg);
+    // 문장은 각 칸 아래에 붙으므로 그 칸만 말한다(종료만 틀려도 날짜를 말하던 것을 고침, 3차 UX2-05)
+    if (!dayValid(date)) bad("visit-date", "관찰 날짜를 올바르게 적어 주세요.");
+    if (!timeValid(start)) bad("visit-start", "시작 시각을 올바르게 적어 주세요.");
+    if (!timeValid(end)) bad("visit-end", "종료 시각을 올바르게 적어 주세요.");
     if (!errs.length && end <= start) bad("visit-end", "종료는 시작 이후여야 합니다. 자정을 넘으면 날짜별로 나누어 기록해 주세요.");
-    if (!text.area) bad("visit-area", whatMsg);
-    if (!text.method) bad("visit-method", whatMsg);
+    if (!text.area) bad("visit-area", "관찰 구간·범위를 적어 주세요.");
+    if (!text.method) bad("visit-method", "관찰 방식을 적어 주세요.");
     if (weather && !WEATHER.includes(weather)) bad("visit-weather", "날씨를 목록에서 골라 주세요.");
     if (errs.length) throw fail(errs[0].msg, errs);
     const counts = {};

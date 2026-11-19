@@ -177,6 +177,7 @@ footer .links a { color: var(--ink); font-size: var(--t-sub); }
 .btn:not(.ghost) { background: var(--green); border-color: var(--green); color: #fff; }
 .btn:not(.ghost):hover { background: var(--green-press); border-color: var(--green-press); }
 .btn.ghost { background: #fff; color: var(--green); border: 1px solid var(--line-strong); }
+.btn:disabled, .btn:disabled:hover, .btn[aria-disabled="true"], .btn[aria-disabled="true"]:hover { background: var(--off-bg); color: var(--off-ink); border-color: transparent; cursor: not-allowed; }   /* 위 .btn:not(.ghost)(:hover)·styles.css .btn.ghost:hover와 같은 무게라 뒤에 와야 이긴다. :hover를 빼면 포인터 아래 비활성 단추가 활성 색으로 돌아간다 */
 .btn:focus-visible, a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 2px var(--card); }
 /* 2026-11-19: 스크립트가 옮긴 초점(제목 tabindex=-1)은 마우스로 올 때 상자를 그리지 않고, 키보드로 올 때만 위 P09 고리를 쓴다 */
 [tabindex="-1"]:focus:not(:focus-visible) { outline: none; box-shadow: none; }
