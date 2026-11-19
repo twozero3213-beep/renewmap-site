@@ -24,3 +24,23 @@
 @media print {
   .method-actions { display: none; }
 }
+.page .table-wrap table.rm-rule-table { min-width: 640px; table-layout: fixed; font-size: 14px; line-height: 1.5; }
+.page table.rm-rule-table :is(th, td) { padding: 8px; }
+.page table.rm-rule-table th:first-child { width: 27%; }
+.page table.rm-rule-table th:last-child { width: 25%; }
+.cp-side-toc { display: none; }
+@media (min-width: 1024px) {
+  main.page[data-section-toc] { display: grid; grid-template-columns: 220px minmax(0, 760px); justify-content: space-between; gap: 32px; align-items: start; }
+  main.page[data-section-toc] > .cp-side-toc { display: block; position: sticky; top: 88px; margin: 0; padding: 0; border: 0; background: none; }
+  main.page[data-section-toc] > .cp-side-toc ol { display: block; }
+  main.page[data-section-toc] > .cp-side-toc a { padding: 4px 0; }
+  .cp-body { min-width: 0; }
+  .cp-body .eth-flow { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .cp-body .eth-card { grid-template-columns: 28px minmax(0, 1fr); gap: 8px; padding: 12px; }
+  .cp-body .eth-card .ico { display: none; }
+  .cp-body .eth-card p { grid-column: 1 / -1; }
+}
+@media print {
+  main.page[data-section-toc] { display: block; }
+  .cp-side-toc { display: none !important; }
+}

@@ -1307,7 +1307,30 @@
     return new Set(kept.map(b => b.id));
   }
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
-  const api = { indexSummaryPending, mergeIndexSeries, rentSub, geojsonOf, labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
+  // 배경 타일까지 보인 뒤 보조 자료를 받는다. 외부 지도가 막혀도 문서·조건 검색은 8초 뒤 계속한다. 타이머를 받아 시험이 시간을 대신한다
+  function makeFirstMapGate(timers) {
+    const { setTimeout, clearTimeout } = timers;   // 꺼내서 부른다: window 함수를 다른 객체의 메서드로 부르면 브라우저가 오류를 낸다
+    let mapPainted;
+    const firstMap = new Promise(resolve => {
+      const timeout = setTimeout(resolve, 8000);
+      mapPainted = () => { clearTimeout(timeout); resolve(); };
+    });
+    return { firstMap, mapPainted };
+  }
+  // 상세 시군구 경계는 한 번만 받는다(받는 중이면 같은 약속을 돌려준다). 실패하면 개요 경계를 그대로 둔다
+  function makeSgDetailLoader(deps) {
+    let sgDetailWait = null;
+    return function loadSgDetail() {
+      if (deps.state.sgGeoDetailed) return Promise.resolve(true);
+      return sgDetailWait || (sgDetailWait = deps.fetchJson('data/national/sigungu.geojson').then(geo => {
+        if (!geo || !Array.isArray(geo.features)) return false;
+        deps.state.sgGeo = geo; deps.state.sgGeoDetailed = true;
+        deps.render();
+        return true;
+      }));
+    };
+  }
+  const api = { makeFirstMapGate, makeSgDetailLoader, indexSummaryPending, mergeIndexSeries, rentSub, geojsonOf, labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     seriesJump, livingIndicators, allIndicators, wantedInd, isAvailable, provenanceHTML, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
@@ -1329,12 +1352,7 @@
   const app = document.getElementById('mapApp'); if (!app) return;
   // low: 첫 지도에 필요 없는 자료. 경계·지도 라이브러리가 먼저 받히도록 낮은 우선순위로 받는다
   const fetchJson = window.RenewUtil.fetchJson;
-  // 배경 타일까지 보인 뒤 보조 자료를 받는다. 외부 지도가 막혀도 문서·조건 검색은 8초 뒤 계속한다.
-  let mapPainted;
-  const firstMap = new Promise(resolve => {
-    const timeout = setTimeout(resolve, 8000);
-    mapPainted = () => { clearTimeout(timeout); resolve(); };
-  });
+  const { firstMap, mapPainted } = makeFirstMapGate({ setTimeout, clearTimeout });
   // 외부 AI 서버로 문장을 보내지 않는다. 다듬기는 기기 안 AI(detectDeviceAI)로만 한다(docs/legal/ai_ethics.md ⑤). 주소 상수도 두지 않는다(v9: 읽는 곳 없는 빈 상수였다)
   // 2026-11-12: 주소에 지도 경로가 없으면 전국이 아니라 부산(시도 코드 21)에서 시작한다.
   // 왜: 회의 결정 "의미는 도시재생으로 넓히되 범위는 부산 고정"[팀]. 전국에서 시작하면 첫 화면이 대부분 '자료 없음'인 전국 지도라
@@ -1710,19 +1728,23 @@
     if (built.error) { notify({ format, status: 'error', message: built.error }); return null; }
     return { cur, built };
   }
+  // 받는 파일 형식 표: 내려받기와 과업 연결이 같은 이름·MIME·바이트를 쓴다
+  const OOXML = 'application/vnd.openxmlformats-officedocument.', FILE_MIME = { hwpx: 'application/hwp+zip', docx: OOXML + 'wordprocessingml.document', pptx: OOXML + 'presentationml.presentation', xlsx: OOXML + 'spreadsheetml.sheet' };
+  // DG는 늦게 받으므로 부를 때 읽고, 고른 형식의 바이트만 만든다
+  function filesFor(cur, one, pick, full, kinds) {
+    const stem = `${cur.it.code}_${DG.safeName(cur.it.name)}_${one ? '요약' : '근거서'}`;
+    return kinds.map(kind => ({ name: `${stem}.${kind}`, kind, mime: FILE_MIME[kind],
+      bytes: kind === 'xlsx' ? DG.workbookBytes(full) : kind === 'hwpx' ? DG.hwpxBytes(pick) : kind === 'docx' ? DG.docxBytes(pick) : DG.pptxBytes(pick) }));
+  }
   async function download(kind) {
     const prepared = await exportInput(kind); if (!prepared) return;
     const { cur, built } = prepared;
-    const one = reportMode === 'onepage', stem = `${cur.it.code}_${DG.safeName(cur.it.name)}_${one ? '요약' : '근거서'}`;
+    const one = reportMode === 'onepage';
     try {
       // 동 보고서에서 '지금 값 저장'을 했으면 본문·엑셀에 기준일 비교를 붙인다(1쪽 요약은 분량 때문에 넣지 않는다)
       const snap = typeof localStorage !== 'undefined' ? snapDoc(snapGet(cur.it.code), snapshotOf(cur.it, rowsFor(cur.v, cur.m, cur.it), new Date())) : null, full = DG.withSnap(built.doc, snap);
-      const OOXML = 'application/vnd.openxmlformats-officedocument.', pick = one ? built.one : full;
-      const file = kind === 'hwpx' ? [`${stem}.hwpx`, DG.hwpxBytes(pick), 'application/hwp+zip']
-        : kind === 'docx' ? [`${stem}.docx`, DG.docxBytes(pick), OOXML + 'wordprocessingml.document']
-        : kind === 'pptx' ? [`${stem}.pptx`, DG.pptxBytes(pick), OOXML + 'presentationml.presentation']
-        : [`${stem}.xlsx`, DG.workbookBytes(full), OOXML + 'spreadsheetml.sheet'];
-      notify({ format: kind, status: 'done', file: file[0], size: DG.saveBytes(...file), year: built.doc.brief.year, one });
+      const file = filesFor(cur, one, one ? built.one : full, full, [kind])[0];
+      notify({ format: kind, status: 'done', file: file.name, size: DG.saveBytes(file.name, file.bytes, file.mime), year: built.doc.brief.year, one });
     } catch (err) { notify({ format: kind, status: 'error', message: err.message }); }
   }
   async function printReport() {
@@ -1747,13 +1769,8 @@
       };
       const comparison = typeof localStorage !== 'undefined' ? snapDoc(snapGet(cur.it.code), snapshotOf(cur.it, rowsFor(cur.v, cur.m, cur.it), new Date())) : null;
       const full = DG.withSnap(built.doc, comparison), one = mode === 'onepage', pick = one ? built.one : full;
-      const stem = `${cur.it.code}_${DG.safeName(cur.it.name)}_${one ? '요약' : '근거서'}`;
-      const request = {files:[
-        {name:`${stem}.hwpx`,kind:'hwpx',bytes:DG.hwpxBytes(pick)},
-        {name:`${stem}.docx`,kind:'docx',bytes:DG.docxBytes(pick)},
-        {name:`${stem}.pptx`,kind:'pptx',bytes:DG.pptxBytes(pick)},
-        {name:`${stem}.xlsx`,kind:'xlsx',bytes:DG.workbookBytes(full)},
-      ],inputJSON:built.inputJSON,comparison,templateVersion:JSON.parse(built.inputJSON).templates.version,
+      // 보관 묶음 내용이 바뀌지 않게 mime은 넣지 않는다
+      const request = {files:filesFor(cur, one, pick, full, ['hwpx', 'docx', 'pptx', 'xlsx']).map(({ name, kind, bytes }) => ({ name, kind, bytes })),inputJSON:built.inputJSON,comparison,templateVersion:JSON.parse(built.inputJSON).templates.version,
       reviewRows:DG.deliveryReview(built.brief,true).rows,context:{code:cur.it.code,region:built.brief.region,year:built.brief.year}};
       if (!window.RenewTaskLink) await import('./task-link.js?v=20261119-r3');
       if (!current()) throw new Error('파일 준비 중 선택이나 입력이 바뀌었습니다. 현재 문서에서 다시 눌러 주세요.');
@@ -2006,13 +2023,15 @@
     return save + water + hint;   // 2026-11-19: 감싸는 '도구' 접기 틀은 고정 자리(app 맨 아래)라 안쪽만 돌려준다
   }
 
+  // 같은 글이면 다시 쓰지 않는다: 늦게 오는 자료가 render를 불러도 초점·펼침이 그대로 남는다
+  const setHTML = (el, html) => { if (el._html !== html) { el.innerHTML = html; el._html = html; } };
   function render() {
     if (state.index === undefined) return;
     if (wantInd) { const code = wantedInd(wantInd, inds()); if (code) { state.ind = code; state.year = null; wantInd = null; } else if (state.living !== undefined) wantInd = null; }   // 생활 지표 도착 전에는 기다리고, 도착했는데 없으면 버린다
     if (!wantInd) syncIndUrl();
     const v = resolve(state.index, state.route);
     // 도구 틀(GIS 겹치기 포함)은 고정 자리라 비우지 않는다. 그 밖의 칸만 비운다
-    const clear = () => { where.innerHTML = top.innerHTML = pick.innerHTML = ctlBox.innerHTML = dongBox.innerHTML = provBox.innerHTML = legendLine.innerHTML = ''; panel.hidden = true; };
+    const clear = () => { [where, top, ctlBox, dongBox].forEach(el => setHTML(el, '')); pick.innerHTML = provBox.innerHTML = legendLine.innerHTML = ''; panel.hidden = true; };
     if (state.index === null) {   // 자료 파일을 못 불러왔다(네트워크·차단). '준비 중'이라 말하면 이미 고른 동네를 서비스에 자료가 없는 것으로 오해한다
       clear();
       stage.innerHTML = loadErrorHTML(); if (report) report.innerHTML = loadErrorHTML(); return;
@@ -2049,10 +2068,10 @@
       const ctl = `<div class="map-ctl">${hasTrend(ind) ? seg('mode', MODES, state.mode, '현재 또는 5년 변화') : ''}${hzCtl}${yearCtl}</div>`, inds = indCtlHTML(ind, m, src, mode);
       // R3 2: 휴대폰·태블릿(≤1023px)은 DOM 순서 그대로 그린다(CSS order·display:contents 없이). 키보드·화면 낭독기 순서가 보이는 순서와 같다.
       // 넓은 화면은 왼쪽 패널 틀(explore-layout.js)이 .map-top(지표)·.map-bottom(출처·도구)을, 지도 위로 범례·연도 막대를 옮긴다
-      where.innerHTML = crumbs;
-      top.innerHTML = desk ? inds : '';
+      setHTML(where, crumbs);
+      setHTML(top, desk ? inds : '');
       pick.innerHTML = desk ? '' : inds;
-      ctlBox.innerHTML = ctl;
+      setHTML(ctlBox, ctl);
       prov(!!provBox.querySelector('.map-provenance[open]'));
       miFilter();
     }
@@ -2066,8 +2085,8 @@
     const dongList = `<details class="map-dong-list map-more" data-fold="list"${listOpen ? ' open' : ''}><summary>읍·면·동 목록</summary>${chips}</details>`;
     // R5 2: 자료가 오기 전(wait)에도 목록 자리를 비워 두지 않으면 도착 때 지도 아래 전부가 117px 밀린다(390 딥링크 CLS 0.16)
     // 넓은 화면: 시·도·시·군·구 고르기 칸 대신 지금 단계의 아래 지역 목록이 왼쪽 패널의 주 목록이다(areaListHTML)
-    dongBox.innerHTML = desk ? areaListHTML(v, m, it) : (m.kind === 'emd' ? dongList : m.kind === 'wait' ? '<div class="map-dongs-wait" aria-hidden="true"></div>' : '');
-    toolsBox.innerHTML = toolsHTML(median);
+    setHTML(dongBox, desk ? areaListHTML(v, m, it) : (m.kind === 'emd' ? dongList : m.kind === 'wait' ? '<div class="map-dongs-wait" aria-hidden="true"></div>' : ''));
+    setHTML(toolsBox, toolsHTML(median));
     liveEl.textContent = liveText(v, it, ind, mode);
     // R5 10: 범례 한 줄(색 이름 · 구간 견본 · 자료 없음) + 구간·기준 문장은 그 아래 접힌 칸 하나에만(2026-11-19: 전체 범례가 두 번 그려졌다)
     legendLine.innerHTML = summaryNotice ? `<span role="status">${esc(summaryNotice)}</span>` : legendLineHTML(ind, mode, ok) +
@@ -2335,16 +2354,7 @@
     tiles.once('load', () => { if (map.hasLayer(tiles)) mapPainted(); }).addTo(map);
   }
   const lineLatLngs = lines => lines.map(l => l.map(([x, y]) => [y, x]));
-  let sgDetailWait = null;
-  function loadSgDetail() {
-    if (state.sgGeoDetailed) return Promise.resolve(true);
-    return sgDetailWait || (sgDetailWait = fetchJson('data/national/sigungu.geojson').then(geo => {
-      if (!geo || !Array.isArray(geo.features)) return false;
-      state.sgGeo = geo; state.sgGeoDetailed = true;
-      render();
-      return true;
-    }));
-  }
+  const loadSgDetail = makeSgDetailLoader({ state, fetchJson, render });
   // 2026-11-13 우지예: 2D 지도를 휠로 확대·축소하면 조금씩 끊겼다. 잰 결과(1280px, 해운대구, 휠 20번) 자바스크립트 시간의 대부분이
   //     Leaflet이 전국 시군구 상세 경계(sigungu.geojson)의 모든 점을 확대마다 다시 계산하는 일(project·_projectLatlngs)이었다.
   //     → 시군구 단계보다 크게 확대했을 때(9 이상)는 화면 둘레(가로·세로 50% 여유) 밖의 시군구·시도 경계 조각을 지도에서 잠시 뺀다.
@@ -2506,7 +2516,8 @@
     syncWater();
     fitView(v, m, active);
     syncEmdOutlines();
-    if (v.level === 'gu' || v.level === 'emd') loadSgDetail();   // R4 9: 구에 들어갈 때만(시·도 단계는 개요 경계로 충분)
+    // 전국 화면만 개요 경계. R4 9는 시·도 단계도 개요로 충분하다고 봤지만, 첫 화면이 부산(#map/21)으로 바뀐 뒤 꼭짓점 4~5개짜리 구 경계가 네이버 바탕 해안선과 어긋나 보였다(2026-11-19 대표 지적)
+    if (v.level !== 'nation') loadSgDetail();
   }
   function go(route, focusSel) {
     stopPlay(); stopAuto(true);

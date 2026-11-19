@@ -20,6 +20,7 @@
 - [서비스 소개 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/about.html): 리뉴맵은 도시재생 근거 기록 서비스입니다. 동네 진단, 재생 사업, 구역 계산, 현장 기록, 과업·납품까지 숫자마다 출처와 기준일을 붙여 이어 갑니다. 무료 공개 도구와 시범 과업의 범위를 안내합니다.
 - [데이터 출처 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/data.html): 리뉴맵이 쓰는 공공데이터의 이름·제공 기관·이용 조건·기준 시점입니다. 값은 출처 그대로 옮기며 판정이 아닙니다.
 - [개인정보 처리방침 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/privacy.html): 리뉴맵이 상담 문의에서 수집하는 개인정보의 항목, 목적, 보유 기간, 처리 위탁과 이용자의 권리를 안내합니다.
+- [보안·자료 흐름 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/security.html): 리뉴맵 화면마다 접속하는 외부 주소, 이 기기에 남는 자료와 팀 보관 서버에 올라가는 자료, 업무망에서 직접 확인하는 방법과 인쇄용 확인 표를 안내합니다.
 - [AI·데이터 원칙 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/ethics.html): 리뉴맵이 AI와 데이터를 다루는 8가지 원칙입니다. 판정은 사람이 내리고, 점수와 순위는 계산식과 함께 공개하며, 모든 숫자에 출처와 기준일을 붙입니다.
 - [동네 비교 점수 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/rank.html): 전국 행정동의 생활 편의·인구 활력·주거 노후도·재생 필요 점수를 공개 계산식으로 견줍니다. 점수마다 지표·비중·출처를 밝힙니다. 같은 시·군·구 안에서는 안전시설 지표만 동별로 다르고, 다른 시·군·구와 비교하면 범죄 발생률도 달라질 수 있습니다. 판정이나 등급이 아닙니다.
 - [사업성 간이 계산 | 리뉴맵](https://twozero3213-beep.github.io/renewmap-site/biz.html): 정비사업 비례율을 입력값으로 간이 추정합니다. 행정동 페이지에서 들어오면 분양가 칸에 그 시·군·구 아파트 매매 실거래 ㎡당 중위가를 넣습니다. 감정평가나 투자 권유가 아닙니다.

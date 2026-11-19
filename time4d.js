@@ -175,9 +175,7 @@
   // 'CSV로 받기': 파일은 이 브라우저 안에서 만들어 바로 내려받는다(서버로 보내지 않는다)
   $('t4Csv').addEventListener('click', () => {
     if (!fileMeta) return;
-    const a = document.createElement('a'), url = URL.createObjectURL(new Blob([csv(fileMeta.bf, blds)], { type: 'text/csv;charset=utf-8' }));
-    a.href = url; a.download = `건물목록_${fileMeta.bf.name}_${fileMeta.bf.bjd10}.csv`; document.body.append(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    RenewSave.saveFile(`건물목록_${fileMeta.bf.name}_${fileMeta.bf.bjd10}.csv`, [csv(fileMeta.bf, blds)], 'text/csv;charset=utf-8');
   });
   let loadEpoch = 0;
   async function load(code) {

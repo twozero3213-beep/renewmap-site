@@ -21,6 +21,7 @@
 
   // 오류는 role=alert로 바로 읽히게 한다(2026-11-18 접근성 검토: 저장 실패가 status로만 뒤늦게 읽혔다). 역할을 먼저 바꾸고 글을 넣는다
   function say(text, err) {
+    document.querySelector(".save-bar").prepend($("msg"));
     $("msg").setAttribute("role", err ? "alert" : "status"); $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg";
     if (err) $("msg").scrollIntoView({ block: "nearest" });
   }
@@ -30,6 +31,7 @@
     if (!el) return;
     for (let d = el.closest("details"); d; d = d.parentElement && d.parentElement.closest("details")) d.open = true;
     for (const x of fields) { const t = $(x.id); if (t) { t.setAttribute("aria-invalid", "true"); t.setAttribute("aria-describedby", "msg"); t.addEventListener("input", () => t.removeAttribute("aria-invalid"), { once: true }); } }
+    el.before($("msg"));
     el.focus();
   }
   let toastTimer = 0;

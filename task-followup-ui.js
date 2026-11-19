@@ -9,11 +9,11 @@
   };
   const help = {
     reply:'원본과 다른 보완 파일을 연결합니다. 기존 납품 파일과 다른 이름으로 올려 주세요. 답변만으로 의견이 해소되지는 않습니다.',
-    resolve:'보완 답변을 검토한 해소 확인 증빙을 남깁니다. 공동 보관에서는 소유자·검토 역할 계정만 이 처리를 저장할 수 있습니다.',
+    resolve:'보완 답변을 검토한 해소 확인 증빙을 남깁니다. 팀 보관에서는 소유자·검토 역할 계정만 이 처리를 저장할 수 있습니다.',
     reopen:'다시 확인해야 하는 이유를 남깁니다. 이전 답변과 확인 증빙은 과거 과업 이력에 보존됩니다.',
     reschedule:'기한이나 담당자가 실제로 달라져야 합니다. 변경 사유와 이전 기한·담당자는 과업 이력에 남습니다.',
     submit:'실제 점검 결과와 증빙을 연결합니다. 제출 후에도 담당자의 완료 확인이 필요합니다.',
-    verify:'제출된 점검 결과를 확인한 증빙을 남깁니다. 공동 보관에서는 소유자·검토 역할 계정만 이 처리를 저장할 수 있습니다.',
+    verify:'제출된 점검 결과를 확인한 증빙을 남깁니다. 팀 보관에서는 소유자·검토 역할 계정만 이 처리를 저장할 수 있습니다.',
   };
   function mount({run,task,versions,commit,notify}) {
     let selected = '', taskId = '';
@@ -128,8 +128,8 @@
       const base=task(),isIssue=kind()==='issue';
       if(taskId!==base?.id){selected='';taskId=base?.id||'';pages.reset();}
       $('workScope').textContent=root.RenewTaskCloudConfig
-        ?'기기 사본에 먼저 기록합니다. 서버 공동 보관에서 로그인 후 저장해야 계정 권한 검사를 통과한 기록이 됩니다. 담당자 이름과 기록 작성자 입력은 신원·전자서명 인증이 아닙니다.'
-        :'기기 내 기록입니다. 공동 보관 서버가 연결되지 않아 계정 인증·공유·역할 검증은 수행하지 않습니다. 담당자 이름은 업무 표기이며 알림을 보내지 않습니다.';
+        ?'기기 사본에 먼저 기록합니다. 서버 팀 보관에서 로그인 후 저장해야 계정 권한 검사를 통과한 기록이 됩니다. 담당자 이름과 기록 작성자 입력은 신원·전자서명 인증이 아닙니다.'
+        :'기기 내 기록입니다. 팀 보관 서버가 연결되지 않아 계정 인증·공유·역할 검증은 수행하지 않습니다. 담당자 이름은 업무 표기이며 알림을 보내지 않습니다.';
       const state=work(),pending=state.issues.filter(r=>r.status!=='resolved').length,late=state.followups.filter(r=>T.isOverdue(r,today())).length;
       $('workSummary').textContent=base?`미해소 의견 ${pending}건 · 후속 점검 ${state.followups.length}건 · 기한 지난 점검 ${late}건`:'과업 계획과 검토할 납품 파일을 먼저 저장하세요.';
       $('workNew').textContent=isIssue?'새 검토 의견':'새 후속 점검';

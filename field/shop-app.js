@@ -54,10 +54,6 @@
   $("f").addEventListener("submit", (e) => { e.preventDefault(); if (docs.busan) draw($("gu").value); });
   $("csv").addEventListener("click", () => {
     if (!last) return;
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([S.toCSV(last.doc, last.gu, last.rows)], { type: "text/csv;charset=utf-8" }));
-    a.download = `${last.gu}_음식점_상권변화유형_${last.doc.ref_date}.csv`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    RenewSave.saveFile(`${last.gu}_음식점_상권변화유형_${last.doc.ref_date}.csv`, [S.toCSV(last.doc, last.gu, last.rows)], "text/csv;charset=utf-8");
   });
 })();

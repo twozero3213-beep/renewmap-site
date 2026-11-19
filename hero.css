@@ -157,7 +157,7 @@
 #intro .about-cta { margin-bottom: 16px; }
 #intro .about-stage { max-width: 760px; margin: 0; padding: 12px 16px; font-size: 15px; }
 .about-get { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; }
-#intro .about-get-k { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--dim); }
+#intro .about-get { grid-column: auto; align-self: start; }
 #intro .about-def { margin: 0 0 12px; font-size: 17px; line-height: 1.6; color: var(--ink); }
 .about-get-list { margin: 0; padding: 0 0 0 1.1em; font-size: 15px; line-height: 1.6; }
 .about-get-list li + li { margin-top: 6px; }
@@ -166,15 +166,10 @@
 #main .about-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 #main .about-steps li { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; font-size: 15px; line-height: 1.6; max-width: none; }
 #main .about-steps li b { font-size: 18px; margin-right: 6px; }
-#main #usesTitle { margin: 24px 0 12px; }
-/* 맡은 일 다섯 + 복지·안전 접이: 카드 줄(넓은 화면 세 칸, 접이는 여섯째 칸) */
+/* 맡은 일 여섯 갈래: 설명은 아래 한 칸에서 펼친다. */
 #main .about-uses { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 #main .about-uses .about-use { margin: 0; padding: 4px 16px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; max-width: none; }
 #main .about-use span { font-size: 14px; line-height: 1.55; }
-#main .about-uses > .about-more { grid-column: auto; padding: 0 16px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
-#main .about-uses > .about-more[open] { padding-bottom: 12px; }
-#main .about-more .about-uses { grid-template-columns: minmax(0, 1fr); gap: 0; }
-#main .about-more .about-use { padding: 0 0 8px; border: 0; border-radius: 0; }
 #main .about-count { margin: 16px 0 0; max-width: none; font-size: var(--t-sub); color: var(--dim); }
 /* 승인 전 안내: 한 줄 + ⓘ 자세히(원칙 9) */
 #main .about-why { margin-top: 8px; }
@@ -197,7 +192,7 @@
 #main .faq-grid > details > summary { min-height: 44px; padding: 6px 0; }
 #main .faq-grid > details p { font-size: var(--t-sub); }
 /* 비용과 범위: 무료 | 시범 과업 두 장 */
-#main .about-options { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 0; }
+#main .about-options { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 0; align-items: start; }
 #main .about-options > div { border: 1px solid var(--line); border-top: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 18px 20px; }
 #main .about-options dd { max-width: none; font-size: var(--t-sub); }
 #main .about-scope { margin: 8px 0 0; padding-left: 1.1em; font-size: var(--t-sub); line-height: 1.6; }
@@ -223,7 +218,7 @@
 @media (min-width: 721px) {
   #main .about-uses { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #main .about-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
-  #main .about-pair-msg { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); align-items: start; }
+  #main .about-pair-msg { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }
 @media (min-width: 1024px) {
   .about-page .about-hero { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px; }
@@ -241,8 +236,7 @@
   #main .about-doc .about-cta .btn { flex: 1 1 0; padding: 0 8px; font-size: 15px; }
   /* 휴대폰: 맡은 일은 상자 없이 선으로 나눈 목록 */
   #main .about-uses { gap: 0; }
-  #main .about-uses .about-use, #main .about-uses > .about-more { padding: 0 0 8px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; }
-  #main .about-uses > .about-more { padding: 0; }
+  #main .about-uses .about-use { padding: 0 0 8px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; }
   #main .about-scope { font-size: 14px; }
   .about-get { padding: 0; background: none; border: 0; }
   #main .about-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
@@ -255,4 +249,14 @@
   #main .about-count { font-size: 14px; }
   #intro .about-cta { margin-bottom: 12px; }
   #main .faq-all { margin-top: 8px; }
+}
+/* 용도별 설명은 한 칸에 모아 시작 링크를 먼저 고르게 한다. */
+#main .about-use-descriptions { margin: 12px 0; }
+#main .about-use-descriptions > div { margin: 12px 0; }
+#main .about-use-descriptions dt { font-weight: 700; }
+#main .about-use-descriptions dd { margin: 4px 0 0; max-width: none; color: var(--dim); }
+#intro .about-get > summary { font-weight: 700; }
+#main .about-uses > .about-use { padding-bottom: 4px; }
+@media print {
+  .about-use-descriptions > div { break-inside: avoid; }
 }

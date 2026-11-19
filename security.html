@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; form-action 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
+<script src="frame-guard.js"></script>
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>보안·자료 흐름 | 리뉴맵</title>
+<meta name="description" content="리뉴맵 화면마다 접속하는 외부 주소, 이 기기에 남는 자료와 팀 보관 서버에 올라가는 자료, 업무망에서 직접 확인하는 방법과 인쇄용 확인 표를 안내합니다.">
+<link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/security.html">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="pretendard.css">
+<link rel="stylesheet" href="styles.css?v=20261119-r3">
+<link rel="stylesheet" href="site-v4.css?v=20261119-r3">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+ {"@type":"ListItem","position":1,"name":"홈","item":"./"},
+ {"@type":"ListItem","position":2,"name":"보안·자료 흐름"}]}
+</script>
+<script src="site.js?v=20261119-r5" defer></script>
+<script src="site-motion.js" defer></script>
+<link rel="stylesheet" href="content-pages.css?v=20261119-r8">
+<script src="content-pages.js?v=20261119-r8" defer></script>
+<link rel="stylesheet" href="rm6.css?v=20261119-r3">
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 홈" href="index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 진단</a><a href="rank.html">동네 비교 점수</a><a href="relocate.html">부산 이전 직원 동네 비교</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 과업 상담</a></nav></div></header>
+<main class="wrap page" id="main" data-content-book data-section-toc>
+<nav class="breadcrumb" aria-label="지금 보는 곳"><ol><li><a href="./">홈</a></li><li aria-current="page">보안·자료 흐름</li></ol></nav>
+<h1>보안·자료 흐름</h1>
+<p class="sub">화면마다 어디에 접속하는지, 무엇이 이 기기에 남고 무엇이 서버로 가는지 적었습니다. 업무망에서 직접 확인하는 방법과 인쇄용 확인 표도 있습니다.</p>
+<p class="label-scenario">2026-11-19 기준</p>
+
+<section id="glance">
+<h2>한눈에</h2>
+<ul>
+<li>공개 도구는 설치와 로그인 없이 브라우저에서 씁니다.</li>
+<li>문서·CSV 만들기와 사진 가림은 이 기기 안에서 하고, 서버로 보내지 않습니다.</li>
+<li>입력한 자료가 리뉴맵 쪽 서버로 가는 것은 팀 보관을 고를 때뿐이고, 상담은 방문자의 메일 앱으로 보냅니다.</li>
+<li>지도 화면은 지도 회사에 접속 IP와 보고 있는 지도 범위가 갑니다. 필지 찾기는 그 지점의 좌표를 국토교통부 브이월드에 보냅니다. 구역 계산은 넣은 필지 번호(본번)로 브이월드에 토지특성(도로접면·필지 면적)을 묻습니다.</li>
+<li>사이트를 여는 것만으로 호스팅(GitHub Pages)에 접속 IP와 요청 주소가 남습니다.</li>
+</ul>
+</section>
+
+<section id="hosts">
+<h2>화면별 외부 접속</h2>
+<p>각 화면의 접속 허용 목록(CSP)에 적힌 외부 주소를 그대로 옮겼습니다. 사업자 이름과 목적은 <a href="privacy.html">개인정보 처리방침</a> 3절과 같습니다. 구역 계산의 토지특성 조회는 처리방침에 아직 적혀 있지 않습니다.</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="화면별 외부 접속 표"><table class="wide rm-stack">
+<thead><tr><th scope="col">화면</th><th scope="col">주소</th><th scope="col">사업자</th><th scope="col">목적</th><th scope="col">언제</th></tr></thead>
+<tbody>
+<tr data-page="about.html"><td><a href="about.html">서비스 소개</a></td><td data-label="주소"><code>cdnjs.cloudflare.com</code></td><td data-label="사업자">Cloudflare cdnjs (Leaflet)</td><td data-label="목적">지도 라이브러리 전송</td><td data-label="언제">허용 목록에만 있음(지금 화면은 요청하지 않음)</td></tr>
+<tr data-page="about.html"><td><a href="about.html">서비스 소개</a></td><td data-label="주소"><code>tile.openstreetmap.org</code></td><td data-label="사업자">OpenStreetMap 타일 서버</td><td data-label="목적">지도 이미지</td><td data-label="언제">허용 목록에만 있음(지금 화면은 요청하지 않음)</td></tr>
+<tr data-page="explore.html"><td><a href="explore.html">동네 진단</a></td><td data-label="주소"><code>cdnjs.cloudflare.com</code></td><td data-label="사업자">Cloudflare cdnjs (Leaflet)</td><td data-label="목적">지도 라이브러리 전송</td><td data-label="언제">열 때</td></tr>
+<tr data-page="explore.html"><td><a href="explore.html">동네 진단</a></td><td data-label="주소"><code>oapi.map.naver.com</code> <code>nrbe.map.naver.net</code> <code>nrbe.pstatic.net</code> <code>map.pstatic.net</code> <code>static.naver.net</code> <code>ssl.pstatic.net</code> <code>kr-col-ext.nelo.navercorp.com</code></td><td data-label="사업자">네이버클라우드 (NAVER Maps)</td><td data-label="목적">동네 찾기 화면의 바탕지도. 네이버 지도 SDK가 여는 주소</td><td data-label="언제">열 때</td></tr>
+<tr data-page="explore.html"><td><a href="explore.html">동네 진단</a></td><td data-label="주소"><code>api.vworld.kr</code></td><td data-label="사업자">국토교통부 브이월드</td><td data-label="목적">바탕지도(네이버 지도를 못 쓸 때)</td><td data-label="언제">열 때, 네이버 지도를 못 쓸 때만</td></tr>
+<tr data-page="explore.html"><td><a href="explore.html">동네 진단</a></td><td data-label="주소"><code>tile.openstreetmap.org</code></td><td data-label="사업자">OpenStreetMap 타일 서버</td><td data-label="목적">지도 이미지</td><td data-label="언제">열 때, 네이버·브이월드 지도를 못 쓸 때만</td></tr>
+<tr data-page="tasks.html"><td><a href="tasks.html">과업·납품</a></td><td data-label="주소"><code>lpzuswxkivkidkhauoki.supabase.co</code></td><td data-label="사업자">Supabase (리뉴맵 전용 공동 보관)</td><td data-label="목적">이메일 로그인, 과업별 접근 권한, 불변 이력·파일 보관</td><td data-label="언제">팀 보관을 고를 때만(팀 보관 단추를 누르거나 로그인 메일의 링크를 열 때)</td></tr>
+<tr data-page="time4d.html"><td><a href="time4d.html">건물 나이 4D</a></td><td data-label="주소"><code>tiles.openfreemap.org</code></td><td data-label="사업자">OpenFreeMap 타일 서버</td><td data-label="목적">건물 나이 4D 화면의 바탕지도</td><td data-label="언제">열 때</td></tr>
+<tr data-page="time4d.html"><td><a href="time4d.html">건물 나이 4D</a></td><td data-label="주소"><code>tiles.mapterhorn.com</code></td><td data-label="사업자">Mapterhorn 지형 타일 서버</td><td data-label="목적">건물 나이 4D 화면의 산·언덕 음영</td><td data-label="언제">열 때</td></tr>
+<tr data-page="field/index.html"><td><a href="field/">현장 기록</a></td><td data-label="주소"><code>api.vworld.kr</code></td><td data-label="사업자">국토교통부 브이월드</td><td data-label="목적">현장 기록 화면의 배경지도(켤 때만)</td><td data-label="언제">켤 때만: '배경지도 보기(브이월드)'</td></tr>
+<tr data-page="field/vw-frame.html"><td>필지 조회 창(숨은 창)</td><td data-label="주소"><code>api.vworld.kr</code></td><td data-label="사업자">국토교통부 브이월드</td><td data-label="목적">필지 찾기: 그 지점의 지번과 필지 번호 조회(처리방침 6절)</td><td data-label="언제">켤 때만: 현장 기록의 '이 위치의 필지 찾기(브이월드)', 구역 계산의 '영역 안 필지 넣기'</td></tr>
+<tr data-page="field/vw-frame.html"><td>필지 조회 창(숨은 창)</td><td data-label="주소"><code>api.vworld.kr</code></td><td data-label="사업자">국토교통부 브이월드</td><td data-label="목적">구역 계산: 넣은 필지 번호(본번)로 토지특성(도로접면·필지 면적) 조회</td><td data-label="언제">계산할 때: 구역 계산의 '계산'(목록에 필지 번호가 있을 때)</td></tr>
+<tr data-page="field/redev.html"><td><a href="field/redev.html">구역 계산</a></td><td data-label="주소"><code>cdnjs.cloudflare.com</code></td><td data-label="사업자">Cloudflare cdnjs (Leaflet)</td><td data-label="목적">지도 라이브러리 전송</td><td data-label="언제">켤 때만: '지도에서 구역 그리기'</td></tr>
+<tr data-page="field/redev.html"><td><a href="field/redev.html">구역 계산</a></td><td data-label="주소"><code>api.vworld.kr</code></td><td data-label="사업자">국토교통부 브이월드</td><td data-label="목적">지도 열람(구역 그리기 바탕지도)</td><td data-label="언제">켤 때만: '지도에서 구역 그리기'</td></tr>
+<tr data-page="field/redev.html"><td><a href="field/redev.html">구역 계산</a></td><td data-label="주소"><code>tile.openstreetmap.org</code></td><td data-label="사업자">OpenStreetMap 타일 서버</td><td data-label="목적">지도 이미지</td><td data-label="언제">켤 때만: '지도에서 구역 그리기'(브이월드 지도를 못 쓸 때)</td></tr>
+<tr data-page="field/twin.html"><td><a href="field/twin.html">3D 모델 배치 비교</a></td><td data-label="주소"><code>cdn.jsdelivr.net</code></td><td data-label="사업자">jsDelivr (Cesium 3D 엔진 전송)</td><td data-label="목적">건물 3D 화면의 3D 엔진 라이브러리 전송</td><td data-label="언제">켤 때만: '3D 지도 시작하기'</td></tr>
+<tr data-page="field/twin.html"><td><a href="field/twin.html">3D 모델 배치 비교</a></td><td data-label="주소"><code>tile.openstreetmap.org</code></td><td data-label="사업자">OpenStreetMap 타일 서버</td><td data-label="목적">지도 이미지</td><td data-label="언제">켤 때만: '3D 지도 시작하기'</td></tr>
+<tr data-page="field/city3d.html"><td><a href="field/city3d.html">건물 3D 지도</a></td><td data-label="주소"><code>map.vworld.kr</code> <code>*.vworld.kr</code></td><td data-label="사업자">국토교통부 브이월드</td><td data-label="목적">건물 3D 화면(3D 지도·건물 모델)</td><td data-label="언제">열 때</td></tr>
+</tbody></table></div>
+<p>그 밖의 화면은 이 사이트 주소(twozero3213-beep.github.io)에만 접속합니다.</p>
+<p>화면마다 둔 접속 허용 목록(CSP)이, 표 밖 주소로 자료를 불러오거나 보내는 것을 브라우저가 막게 합니다. 링크를 눌러 다른 사이트로 가는 것은 별개입니다.</p>
+</section>
+
+<section id="check">
+<h2>업무망에서 확인하는 방법</h2>
+<ol>
+<li>확인할 화면을 열고 F12로 개발자 도구를 엽니다(Chrome·Edge 기준).</li>
+<li>네트워크(Network) 탭을 고르고 새로 고침합니다.</li>
+<li>필터 칸에 <code>-domain:twozero3213-beep.github.io</code>를 넣어 이 사이트로 가는 요청을 뺍니다.</li>
+<li>남은 요청의 주소가 위 표의 그 화면 줄에 있는 주소뿐인지 봅니다.</li>
+<li>지도 켜기·필지 찾기·팀 보관 단추를 누른 뒤 늘어나는 주소도 같은 방법으로 봅니다.</li>
+</ol>
+<p>상태 칸에 (blocked:csp)로 보이는 요청은 접속 허용 목록이 막아 나가지 않은 요청입니다.</p>
+<p>사이트가 아예 열리지 않으면 업무망에서 이 사이트 주소를 먼저 허용해야 합니다.</p>
+</section>
+
+<section id="team">
+<h2>팀 보관은 고를 때만</h2>
+<p>예: 현장 사진·메모·검토 기록은 이 기기(브라우저)에만 남습니다. 과업을 골라 '현재 과업 서버 보관'을 누르면 그 과업의 이력과 연결 파일만 팀 보관 서버에 올라가고, 소유자가 계정 ID로 등록한 팀원이 로그인해 '선택 과업을 기기에 복원'으로 받아 봅니다. 동시 편집은 하지 않습니다.</p>
+<p>고르지 않은 과업은 이 기기에만 있습니다. 팀 보관 서버는 Supabase(미국 회사)가 운영하는 서울 리전 서버입니다.</p>
+<p>로그아웃해도 이 기기에 저장한 과업과 파일은 남습니다.</p>
+</section>
+
+<section id="files">
+<h2>내려받는 파일</h2>
+<p>HWPX·DOCX·PPTX·XLSX·CSV·JSON·ZIP 파일과 PDF 인쇄는 브라우저에서 만들어 바로 받습니다. 파일 내용을 서버로 보내지 않습니다.</p>
+<p>매크로를 담는 형식(.docm·.xlsm)은 만들지 않습니다.</p>
+</section>
+
+<section id="print">
+<h2>자료 전송 확인(인쇄용)</h2>
+<p>'업무망에서 확인하는 방법'대로 본 결과를 적어 두는 표입니다. Ctrl+P로 이 쪽을 인쇄해 쓰세요.</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="자료 전송 확인 표"><table class="wide">
+<thead><tr><th scope="col">항목</th><th scope="col">적는 칸</th></tr></thead>
+<tbody>
+<tr><th scope="row">확인 일시</th><td>&nbsp;</td></tr>
+<tr><th scope="row">확인한 화면</th><td>&nbsp;</td></tr>
+<tr><th scope="row">브라우저와 판</th><td>&nbsp;</td></tr>
+<tr><th scope="row">표 밖 주소 요청</th><td>없음 / 있음</td></tr>
+<tr><th scope="row">있으면 그 주소</th><td>&nbsp;</td></tr>
+<tr><th scope="row">확인한 사람</th><td>&nbsp;</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="not">
+<h2>받지 않은 것</h2>
+<ul>
+<li>리뉴맵은 클라우드 보안 인증(CSAP)·기관 보안성 검토·그 밖의 공식 인증을 거친 서비스가 아닙니다.</li>
+<li>팀 보관은 시험 운영이라 일반 가입을 받지 않습니다.</li>
+<li><a href="privacy.html">개인정보 처리방침</a>은 변호사 확인 전 초안입니다.</li>
+</ul>
+</section>
+</main>
+<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="explore.html">동네 진단</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="tasks.html">과업·납품</a><a href="rank.html">동네 비교 점수</a><a href="relocate.html">부산 이전 직원 동네 비교</a><a href="time4d.html">건물 나이 4D</a><a href="box.html">보관함</a><a href="docs.html">문서 열기</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">시범 과업 상담</a><a href="ethics.html">AI·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
+</body>
+</html>

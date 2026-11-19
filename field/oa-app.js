@@ -108,11 +108,7 @@
 
   $("csv").addEventListener("click", () => {
     if (!dong) return;
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([O.toCSV(data, dong)], { type: "text/csv;charset=utf-8" }));
     // 서울 날짜(sv-SE = YYYY-MM-DD). toISOString은 UTC라 한국 0~9시에 전날이 된다. 이 쪽은 docgen.js(localDate)를 싣지 않는다
-    a.download = `${dong.name}_집계구_쇠퇴요건_${new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" })}.csv`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    RenewSave.saveFile(`${dong.name}_집계구_쇠퇴요건_${new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" })}.csv`, [O.toCSV(data, dong)], "text/csv;charset=utf-8");
   });
 })();

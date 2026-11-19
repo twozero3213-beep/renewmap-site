@@ -39,10 +39,11 @@
     // v8: data-fold-from="n"이면 n번째 주제부터 제목만 보이는 접는 칸(대표 지적: 스크롤이 너무 길다 — 소개 13.5화면, 재생 사업 7.6화면).
     // 본문은 그대로 문서 안에 있고(찾기·앵커 유지), 차례·링크로 들어오면 그 칸을 열고, 인쇄할 때는 모두 연다
     const from = root.dataset && root.dataset.foldFrom !== undefined ? Number(root.dataset.foldFrom) : -1;
-    if (from >= 0) { fold(list.slice(from), doc); return null; }   // 접는 칸 목록이 곧 차례라 차례를 따로 달지 않는다
+    const columns = 'sectionToc' in root.dataset;
+    if (from >= 0) { fold(list.slice(from), doc); if (!columns) return null; }
     // 표가 곧 차례인 쪽(재생 사업: 비교표가 사업마다 링크)은 차례를 따로 만들지 않는다(v7 6회차: 밑줄 링크 10개가 표를 770px 아래로 밀었다)
     // 2026-11-19: 근거 세 쪽(데이터 출처·기준 원문 대조·근거 읽는 법)은 탭 줄(.rm-subnav)이 이미 맨 위에 있어 차례가 두 줄째 메뉴로 보였다
-    if (list.length < 3 || 'noToc' in root.dataset || doc.querySelector?.('.rm-subnav')) return null;
+    if (list.length < 3 || 'noToc' in root.dataset || (!columns && doc.querySelector?.('.rm-subnav'))) return null;
     const nav = doc.createElement('nav'), ol = doc.createElement('ol');
     nav.className = 'cp-toc'; nav.setAttribute('aria-label', '이 쪽의 차례');
     list.forEach(s => {
@@ -53,6 +54,13 @@
     // 첫 주제가 쪽 제목(h1) 묶음이면 차례는 그 뒤에 둔다(소개 화면에서 차례가 제목보다 먼저 보이던 것)
     const after = list[0].querySelector('h1') && list[1] ? list[1] : list[0];
     root.insertBefore(nav, after);
+    if (columns) {
+      const body = doc.createElement('div');
+      body.className = 'cp-body';
+      Array.from(root.childNodes).filter(node => node !== nav).forEach(node => body.appendChild(node));
+      nav.className = 'cp-toc cp-side-toc';
+      root.append(body);
+    }
     return nav;
   }
   function fold(list, doc) {
@@ -62,7 +70,7 @@
       // 구획 안의 격자(.wrap) 안에 접는 칸을 둔다(밖에 두면 접힌 줄이 화면 끝에서 끝까지 퍼졌다)
       const box = s.querySelector(':scope > .wrap') || s;
       const d = doc.createElement('details'), sum = doc.createElement('summary');
-      d.className = 'cp-fold';
+      d.className = 'cp-fold rm-disclosure';
       if (s.hasAttribute && s.hasAttribute('data-fold-open')) d.open = true;   // 직접 써 보는 예시가 든 구획(소개의 동네 비교)은 펼친 채로
       sum.append(h);
       d.append(sum, ...Array.from(box.childNodes));
@@ -101,6 +109,6 @@
       const t = setInterval(keep, 200);
       setTimeout(() => { clearInterval(t); quit(); }, 3000);
     }
-    window.addEventListener('beforeprint', () => document.querySelectorAll('details.cp-fold').forEach(d => { d.open = true; }));
+    window.addEventListener('beforeprint', () => document.querySelectorAll('[data-content-book] details').forEach(d => { d.open = true; }));
   }
 })();

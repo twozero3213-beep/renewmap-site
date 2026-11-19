@@ -30,11 +30,8 @@ body.field { font-size: 17px; }
 .field button:not(:where(.city3d-map *)).ghost:active { background: var(--soft-press); }
 .field button:not(:where(.city3d-map *)):disabled, .field button:not(:where(.city3d-map *)).ghost:disabled { background: var(--off-bg); color: var(--off-ink); border-color: transparent; cursor: not-allowed; }
 .field button:not(:where(.city3d-map *)).save { min-height: 56px; font-size: 17px; margin-top: 16px; }
-/* 2026-11-18 현장 조사자 검토: 사진을 찍고도 저장까지 두 화면 넘게 내려가야 했다 → 폼을 쓰는 동안 저장 단추가 하단 탭 바로 위에 붙어 있게 */
-/* 오류 문구(#msg)와 저장 단추를 한 묶음으로 화면 아래에 붙여, 저장이 거절되면 이유가 단추 바로 위에 보인다 */
-.save-bar { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 5; background: var(--card); box-shadow: 0 -8px 16px var(--card); }   /* 흰 카드(#f) 안이라 카드색(전에는 쪽 바탕색이라 베이지 띠가 보였다) */
+/* 저장은 입력 끝에 둔다. 하단에 붙이면 첫 화면의 입력 제목을 가린다. */
 .save-bar .msg { margin: 8px 0 0; }
-@media (min-width: 1024px) { .save-bar { bottom: 12px; } }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .check { display: flex !important; gap: 10px; align-items: center; }
 /* 체크 줄은 44px 터치 영역(심사 06 §5: '가릴 곳을 모두 확인했습니다'는 법적 의미가 있는 체크). 상자는 24px 그대로, 라벨 줄 전체가 눌린다. 위 여백 12px은 margin 4 + padding 8로 같다 */
@@ -260,9 +257,6 @@ body.field .card > details.rm-disclosure:last-child[open] { padding-bottom: 0; }
   body.field.fr-redev .fr-side > .redev-sample { position: sticky; top: 88px; margin: 0; max-width: none; }
 }
 .field .fr-intro { margin-bottom: 4px; }
-/* '계산하기'(이 쪽의 채운 단추 하나)는 폼을 쓰는 동안 화면 아래에 붙는다(현장 기록 .save-bar와 같은 방식). 휴대폰은 아래 탭 위 */
-body.fr-redev #f .save { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 5; box-shadow: 0 -8px 16px var(--card); }
-@media (min-width: 1024px) { body.fr-redev #f .save { bottom: 12px; } }
 @media (max-width: 720px) { .field .fr-alt { grid-template-columns: 1fr; } }   /* 휴대폰은 두 단추를 위아래로(글이 두 줄로 꺾이지 않게) */
 .field .redev-sample .fr-zoom { width: auto; min-height: 44px; margin-top: 8px; padding: 0 16px; }
 /* 견본 크게 보기: 원래 크기(640px), 화면이 좁으면 화면 폭 - 32px */

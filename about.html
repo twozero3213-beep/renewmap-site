@@ -30,7 +30,7 @@
 <link rel="stylesheet" href="pretendard.css">
 <link rel="stylesheet" href="styles.css?v=20261119-r3">
 <link rel="stylesheet" href="site-v4.css?v=20261119-r3">
-<link rel="stylesheet" href="hero.css?v=20261119-r3">
+<link rel="stylesheet" href="hero.css?v=20261119-r8">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
  {"@type":"Organization","@id":"https://twozero3213-beep.github.io/renewmap-site/#org","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","logo":"https://twozero3213-beep.github.io/renewmap-site/icon-512.png","email":"renewmapteam@gmail.com","areaServed":"KR","description":"리뉴맵은 도시재생 근거 기록 서비스입니다. 동네 진단부터 준공 뒤 재방문까지, 도시재생에 쓰는 숫자마다 출처와 기준일을 붙여 다음 담당자에게 넘깁니다."},
@@ -40,7 +40,7 @@
   {"@type":"Question","name":"도시재생종합정보체계와 겹치지 않나요?","acceptedAnswer":{"@type":"Answer","text":"리뉴맵은 공공 시스템을 대신하지 않고 그 자료를 이어 씁니다. 도시재생종합정보체계 쇠퇴진단지표를 그대로 가져와 건축물대장, 주민등록 인구, 생활 시설 자료와 잇고, 숫자마다 출처와 기준일을 붙여 문서로 만듭니다. 공식 값은 출처 시스템의 값이 기준입니다. 자료별 갱신 주기는 데이터 출처 에 있습니다."}},
   {"@type":"Question","name":"리뉴맵 결과로 판정할 수 있나요?","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 리뉴맵은 판정하지 않습니다. 결과는 참고 계산이고, 판정은 담당 기관이 합니다. 자료가 모자라면 '기준 해당'으로 만들지 않고 '추가확인'으로 둡니다. 근거 조문과 규칙 상태는 기준 원문 대조에 있습니다. 틀린 숫자를 보시면 알려 주세요."}},
   {"@type":"Question","name":"로그인이나 설치가 필요한가요?","acceptedAnswer":{"@type":"Answer","text":"공개 도구는 로그인·설치 없이 씁니다. 과업을 서버에 함께 두는 팀 보관에는 이메일 로그인이 필요합니다. 팀 보관은 지금 시험 운영 중이라 일반 가입을 받지 않습니다."}},
-  {"@type":"Question","name":"입력한 자료는 어디에 저장되나요?","acceptedAnswer":{"@type":"Answer","text":"기본은 이 기기(브라우저)입니다. 부산 이전 직원 동네 비교에서 회사 동을 고르면 공개 거리 파일의 요청 주소에 그 행정동 코드가 들어갑니다. 현장 배경지도·필지 찾기·구역 그리기·건물 3D 지도는 위치 좌표를 브이월드에 보냅니다. 다른 지도 화면은 사용하는 지도 서비스에 접속 IP와 보고 있는 지도 범위를 보냅니다. 팀 보관을 고르면 그 과업만 Supabase(미국 회사)가 운영하는 서울 리전 서버에 저장됩니다. 상담 메일은 Gmail(미국)을 거칩니다. 서비스별 전송 항목은 개인정보 처리방침에서 확인하세요."}},
+  {"@type":"Question","name":"입력한 자료는 어디에 저장되나요?","acceptedAnswer":{"@type":"Answer","text":"기본은 이 기기(브라우저)입니다. 예: 현장 사진·메모·검토 기록은 이 기기에만 남습니다. 과업을 골라 '현재 과업 서버 보관'을 누르면 그 과업의 이력과 연결 파일만 팀 보관 서버에 올라가고, 소유자가 계정 ID로 등록한 팀원이 로그인해 '선택 과업을 기기에 복원'으로 받아 봅니다. 동시 편집은 하지 않습니다. 부산 이전 직원 동네 비교에서 회사 동을 고르면 공개 거리 파일의 요청 주소에 그 행정동 코드가 들어갑니다. 현장 배경지도·필지 찾기·구역 그리기·건물 3D 지도는 위치 좌표를 브이월드에 보냅니다. 다른 지도 화면은 사용하는 지도 서비스에 접속 IP와 보고 있는 지도 범위를 보냅니다. 팀 보관을 고르면 그 과업만 Supabase(미국 회사)가 운영하는 서울 리전 서버에 저장됩니다. 상담 메일은 Gmail(미국)을 거칩니다. 서비스별 전송 항목은 개인정보 처리방침, 화면별 접속 주소는 보안·자료 흐름에서 확인하세요."}},
   {"@type":"Question","name":"담당자가 바뀌면 어떤 자료를 넘기나요?","acceptedAnswer":{"@type":"Answer","text":"이 기기에 기록된 과업의 현재 판본, 남은 검토와 후속 점검을 인수인계 요약 으로 정리합니다. 납품 ZIP에는 요약·이력·연결 파일을 함께 담습니다. 다음 담당자가 과업을 이어 편집하려면 JSON 백업을 별도로 받아 복원합니다. 새 자료는 새 판본으로 남겨 이전 납품본을 보존합니다."}},
   {"@type":"Question","name":"사진에 얼굴이나 차량번호가 찍히면요?","acceptedAnswer":{"@type":"Answer","text":"저장 전에 가립니다. 자동 가리기는 보조 수단이라 직접 한 번 더 확인해야 합니다. 소유자 개인정보는 저장하지 않습니다."}},
   {"@type":"Question","name":"한글(HWPX)로 받을 수 있나요?","acceptedAnswer":{"@type":"Answer","text":"공개 도구에서 행정동 자동 초안을 한글(HWPX) ·PDF·엑셀로 받습니다. 한/글 2018·2022에서 열리는지는 아직 확인 중입니다. 공모 서식에 맞추는 작업은 시범 과업에서 범위를 정합니다."}},
@@ -53,8 +53,8 @@
 <script src="app.js" defer></script>
 <script src="site.js?v=20261119-r5" defer></script>
 <script src="site-motion.js" defer></script>
-<link rel="stylesheet" href="content-pages.css?v=20261119-r3">
-<script src="content-pages.js?v=20261119-r3" defer></script>
+<link rel="stylesheet" href="content-pages.css?v=20261119-r8">
+<script src="content-pages.js?v=20261119-r8" defer></script>
 <link rel="stylesheet" href="rm6.css?v=20261119-r3">
 </head>
 <body>
@@ -71,23 +71,32 @@
       <h1 id="heroTitle">근거가 남는 도시재생</h1>
       <p class="sub">도시재생은 계획부터 준공 뒤 관리까지 몇 해에 걸친 일입니다.<br>그사이 담당자와 용역사가 바뀌고, 같은 숫자를 의회·감사·보완 요청에서 다시 묻습니다.<br>리뉴맵은 숫자마다 출처와 기준일을 붙이고, 현장에서 무엇을 왜 고쳤는지까지 남겨 다음 사람에게 넘깁니다.</p>
       <div class="about-cta"><a class="btn" href="explore.html?report=onepage#map/21/21090/21090700" data-track="cta_hero">근거 1쪽 예시 보기</a><a class="btn ghost" href="#scope">시범 과업 범위 보기</a></div>
-      <p class="about-stage rm-status rm-note"><b>판정 아님 · 참고 계산</b><br>계산 규칙은 법령·지침 원문과 대조해 관리하며, 승인 대기 중인 규칙도 공개합니다. 리뉴맵 내부 검토를 마친 규칙도 결과는 참고 계산으로 표시합니다. 판정은 담당 기관이 합니다.</p>
+      <details class="about-stage rm-disclosure"><summary>판정 아님 · 참고 계산</summary><p>계산 규칙은 법령·지침 원문과 대조해 관리하며, 승인 대기 중인 규칙도 공개합니다. 리뉴맵 내부 검토를 마친 규칙도 결과는 참고 계산으로 표시합니다. 판정은 담당 기관이 합니다.</p></details>
       </div>
-      <aside class="about-get" aria-labelledby="getTitle">
-        <p class="about-get-k" id="getTitle">무엇을 받나</p>
+      <details class="about-get rm-disclosure">
+        <summary id="getTitle">대상과 받는 자료</summary>
         <p class="about-def">리뉴맵은 도시재생 근거 기록 서비스입니다. 동네 진단부터 준공 뒤 재방문까지, 도시재생에 쓰는 숫자마다 출처와 기준일을 붙여 다음 담당자에게 넘깁니다.</p>
         <p>기초지자체 도시재생 담당자, 도시재생지원센터, 도시계획·도시재생 용역사를 위해 만들었습니다. 공공기관·연구원, 정비업체, 주민협의체도 같은 근거를 볼 수 있습니다.</p>
         <ul class="about-get-list">
           <li>현장 사진과 공공 통계를 한 장에 묶고, 숫자마다 출처·기준일·계산식을 붙입니다.</li>
           <li>"노후 건축물 50% 이상"처럼 조건을 고르면 해당하는 동이 지도에 남습니다.</li>
         </ul>
-      </aside>
+      </details>
     </div>
   </section>
 
   <section id="how" aria-labelledby="howTitle">
     <div class="wrap">
       <h2 id="howTitle">하는 일</h2>
+      <div class="about-uses" id="usesTitle">
+      <p class="about-use"><a href="explore.html">후보지 자료를 처음 볼 때</a></p>
+      <p class="about-use"><a href="tasks.html?step=survey">기존 자료와 현장이 다를 때</a></p>
+      <p class="about-use"><a href="tasks.html?step=review">보완 요청을 받았을 때</a></p>
+      <p class="about-use"><a href="tasks.html?step=revisit">준공 뒤 같은 곳을 다시 볼 때</a></p>
+      <p class="about-use"><a href="tasks.html?step=delivery#handoverSummary">담당자나 용역사가 바뀔 때</a></p>
+      <p class="about-use"><a href="#moreUses">복지·안전·의회 자료에도 씁니다</a></p>
+      </div>
+      <details class="rm-disclosure about-use-details" id="moreUses"><summary>활용 방법 자세히 보기</summary>
       <ol id="steps" class="about-steps">
         <li><b>진단합니다</b> 전국 행정동의 쇠퇴 3요건(인구·사업체·노후 건축물)과 생활 지표를 지도에서 봅니다.</li>
         <li><b>맞춰 봅니다</b> 재생 사업 9종의 요건에 우리 동네 값을 맞춰 봅니다.</li>
@@ -95,14 +104,14 @@
         <li><b>기록합니다</b> 현장 사진에 위치·오차(±m)와 그 동의 공식 통계를 붙입니다. 얼굴·번호판 자동 가리기는 보조 수단이라 저장 전에 직접 확인합니다.</li>
         <li><b>넘깁니다</b> 검토 의견·보완본·납품본을 이어 다음 담당자에게 넘깁니다.</li>
       </ol>
-      <h3 id="usesTitle">맡은 일에서 시작하세요</h3>
-      <div class="about-uses">
-      <p class="about-use"><a href="explore.html">후보지 자료를 처음 볼 때</a><span>동별 값을 견주고 출처·기준일·공간 단위를 확인합니다.<br>행정동 값은 그 안의 건물 값으로 대신 쓸 수 없습니다.</span></p>
-      <p class="about-use"><a href="tasks.html?step=survey">기존 자료와 현장이 다를 때</a><span>추가·제외·보류 사유와 사진을 조사 변경·보완 근거표에 남기고, 제출서식(XLSX) 칸에 이어 적습니다.<br></span></p>
-      <p class="about-use"><a href="tasks.html?step=review">보완 요청을 받았을 때</a><span>검토 의견을 원본의 쪽·칸에 달고, 보완본과 해소 확인을 잇습니다.<br>후속 점검은 담당자와 기한만 기록하며, 알림은 보내지 않습니다.</span></p>
-      <p class="about-use"><a href="tasks.html?step=revisit">준공 뒤 같은 곳을 다시 볼 때</a><span>전후 사진·조사일·관찰 조건을 재방문 실적보고서에 잇습니다.<br>조건이 달랐다면 다르다고 남깁니다.</span></p>
-      <p class="about-use"><a href="tasks.html?step=delivery#handoverSummary">담당자나 용역사가 바뀔 때</a><span>남은 검토·후속 점검과 연결 파일을 인수인계 요약과 납품 묶음(ZIP)으로 넘깁니다.<br>이어서 고치려면 백업(JSON)도 함께 넘기세요.</span></p>
-      <details class="about-more"><summary>복지·안전·의회 자료에도 씁니다</summary>
+      <p class="about-links"><a href="explore.html#find">동네 진단 열기</a><a href="field/">현장 기록 시작</a><a href="tasks.html?step=delivery#handoverSummary">인수인계 준비하기</a><a href="evidence.html">근거 읽는 법</a></p>
+      <dl class="about-use-descriptions">
+        <div><dt>후보지 자료를 처음 볼 때</dt><dd>동별 값을 견주고 출처·기준일·공간 단위를 확인합니다.<br>행정동 값은 그 안의 건물 값으로 대신 쓸 수 없습니다.</dd></div>
+        <div><dt>기존 자료와 현장이 다를 때</dt><dd>추가·제외·보류 사유와 사진을 조사 변경·보완 근거표에 남기고, 제출서식(XLSX) 칸에 이어 적습니다.</dd></div>
+        <div><dt>보완 요청을 받았을 때</dt><dd>검토 의견을 원본의 쪽·칸에 달고, 보완본과 해소 확인을 잇습니다.<br>후속 점검은 담당자와 기한만 기록하며, 알림은 보내지 않습니다.</dd></div>
+        <div><dt>준공 뒤 같은 곳을 다시 볼 때</dt><dd>전후 사진·조사일·관찰 조건을 재방문 실적보고서에 잇습니다.<br>조건이 달랐다면 다르다고 남깁니다.</dd></div>
+        <div><dt>담당자나 용역사가 바뀔 때</dt><dd>남은 검토·후속 점검과 연결 파일을 인수인계 요약과 납품 묶음(ZIP)으로 넘깁니다.<br>이어서 고치려면 백업(JSON)도 함께 넘기세요.</dd></div>
+      </dl>
       <div class="about-uses">
       <p class="about-use"><a href="explore.html?ind=ELDERLY_LIVING_ALONE#map/21">한파 돌봄 순찰 대상 고르기</a><span>부산에서 구·군을 고르면 동별 독거노인 수가 지도에 칠해집니다. 순찰 대상을 고를 때 참고하세요.</span></p>
       <p class="about-use"><a href="explore.html?ind=HOSP_CLINIC_COUNT#map/21">복지 제안서 근거표</a><span>병원·의원·경로당 같은 생활 시설 수를 동별로 보고, 출처·기준일이 붙은 근거 표를 엑셀(XLSX)로 받습니다.</span></p>
@@ -110,9 +119,7 @@
       <p class="about-use"><a href="dong/21090700.html#cite">기사·의회 자료에 숫자 옮기기</a><span>동 페이지마다 인용 한 줄이 있습니다. 출처·기준일·이용조건이 붙은 한 줄을 복사해서 붙여 넣으세요.</span></p>
       </div>
       </details>
-      </div>
       <p class="about-count">지도에서 고를 수 있는 행정동은 3,559곳입니다(2025년 경계). 건물 단위 계산은 부산 254개 법정동에서 됩니다. <a href="data.html">자세한 범위는 데이터 출처</a></p>
-      <p class="about-links"><a href="explore.html#find">동네 진단 열기</a><a href="field/">현장 기록 시작</a><a href="tasks.html?step=delivery#handoverSummary">인수인계 준비하기</a><a href="evidence.html">근거 읽는 법</a></p>
     </div>
   </section>
 
@@ -132,7 +139,7 @@
       <details><summary>도시재생종합정보체계와 겹치지 않나요?</summary><p>리뉴맵은 공공 시스템을 대신하지 않고 그 자료를 이어 씁니다.<br>도시재생종합정보체계 쇠퇴진단지표를 그대로 가져와 건축물대장, 주민등록 인구, 생활 시설 자료와 잇고, 숫자마다 출처와 기준일을 붙여 문서로 만듭니다.<br>공식 값은 출처 시스템의 값이 기준입니다. 자료별 갱신 주기는 <a href="data.html">데이터 출처</a>에 있습니다.</p></details>
       <details><summary>리뉴맵 결과로 판정할 수 있나요?</summary><p>아닙니다. 리뉴맵은 판정하지 않습니다. 결과는 참고 계산이고, 판정은 담당 기관이 합니다. 자료가 모자라면 '기준 해당'으로 만들지 않고 '추가확인'으로 둡니다. 근거 조문과 규칙 상태는 기준 원문 대조에 있습니다. 틀린 숫자를 보시면 알려 주세요.</p></details>
         <details><summary>로그인이나 설치가 필요한가요?</summary><p>공개 도구는 로그인·설치 없이 씁니다. 과업을 서버에 함께 두는 팀 보관에는 이메일 로그인이 필요합니다. 팀 보관은 지금 시험 운영 중이라 일반 가입을 받지 않습니다.</p></details>
-        <details><summary>입력한 자료는 어디에 저장되나요?</summary><p>기본은 이 기기(브라우저)입니다. 부산 이전 직원 동네 비교에서 회사 동을 고르면 공개 거리 파일의 요청 주소에 그 행정동 코드가 들어갑니다. 현장 배경지도·필지 찾기·구역 그리기·건물 3D 지도는 위치 좌표를 브이월드에 보냅니다. 다른 지도 화면은 사용하는 지도 서비스에 접속 IP와 보고 있는 지도 범위를 보냅니다. 팀 보관을 고르면 그 과업만 Supabase(미국 회사)가 운영하는 서울 리전 서버에 저장됩니다. 상담 메일은 Gmail(미국)을 거칩니다. 서비스별 전송 항목은 <a href="privacy.html">개인정보 처리방침</a>에서 확인하세요.</p></details>
+        <details><summary>입력한 자료는 어디에 저장되나요?</summary><p>기본은 이 기기(브라우저)입니다. 예: 현장 사진·메모·검토 기록은 이 기기에만 남습니다. 과업을 골라 '현재 과업 서버 보관'을 누르면 그 과업의 이력과 연결 파일만 팀 보관 서버에 올라가고, 소유자가 계정 ID로 등록한 팀원이 로그인해 '선택 과업을 기기에 복원'으로 받아 봅니다. 동시 편집은 하지 않습니다. 부산 이전 직원 동네 비교에서 회사 동을 고르면 공개 거리 파일의 요청 주소에 그 행정동 코드가 들어갑니다. 현장 배경지도·필지 찾기·구역 그리기·건물 3D 지도는 위치 좌표를 브이월드에 보냅니다. 다른 지도 화면은 사용하는 지도 서비스에 접속 IP와 보고 있는 지도 범위를 보냅니다. 팀 보관을 고르면 그 과업만 Supabase(미국 회사)가 운영하는 서울 리전 서버에 저장됩니다. 상담 메일은 Gmail(미국)을 거칩니다. 서비스별 전송 항목은 <a href="privacy.html">개인정보 처리방침</a>, 화면별 접속 주소는 <a href="security.html">보안·자료 흐름</a>에서 확인하세요.</p></details>
       <details><summary>담당자가 바뀌면 어떤 자료를 넘기나요?</summary><p>이 기기에 기록된 과업의 현재 판본, 남은 검토와 후속 점검을 <a href="tasks.html?step=delivery#handoverSummary">인수인계 요약</a>으로 정리합니다.<br>납품 ZIP에는 요약·이력·연결 파일을 함께 담습니다.<br>다음 담당자가 과업을 이어 편집하려면 JSON 백업을 별도로 받아 복원합니다.<br>새 자료는 새 판본으로 남겨 이전 납품본을 보존합니다.</p></details>
       <details><summary>사진에 얼굴이나 차량번호가 찍히면요?</summary><p>저장 전에 가립니다. 자동 가리기는 보조 수단이라 직접 한 번 더 확인해야 합니다. 소유자 개인정보는 저장하지 않습니다.</p></details>
       <details><summary>한글(HWPX)로 받을 수 있나요?</summary><p>공개 도구에서 행정동 자동 초안을 <abbr title="한글 문서 형식">한글(HWPX)</abbr>·PDF·엑셀로 받습니다. 한/글 2018·2022에서 열리는지는 아직 확인 중입니다. 공모 서식에 맞추는 작업은 시범 과업에서 범위를 정합니다.</p></details>
@@ -150,12 +157,12 @@
         <div><dt>무료 공개 도구</dt><dd>동네 진단, 재생 사업, 구역 계산, 현장 기록, 자동 문서를 무료로 씁니다. 출처와 추가확인 항목을 함께 봅니다.</dd><dd class="about-opt-go"><a href="explore.html#report">우리 동네 근거 1쪽 받기</a></dd>
           <dd><details class="about-why"><summary>판정 아님 · 참고 계산 <span class="about-why-more">ⓘ 자세히</span></summary><p class="reply-time">지금 결과물은 참고 계산입니다. 화면의 예시는 납품 실적이나 공모 선정, 기관 승인을 뜻하지 않습니다.</p></details></dd></div>
         <div><dt>시범 과업</dt><dd><strong>시범 제안가 99만원(VAT 별도)</strong>. 과업 1건·행정동 1곳·기준일 1개 기준이며, 최종 금액은 계약 전에 정합니다.</dd>
-          <dd><ul class="about-scope">
+          <dd><details class="rm-disclosure"><summary>포함 내용과 별도 협의</summary><ul class="about-scope">
             <li>근거 1쪽과 출처·추가확인 목록을 HWPX·PDF·XLSX로 드립니다.</li>
             <li>초안 검토 뒤 요청을 모아 보완을 한 번 합니다. 리뉴맵 쪽 잘못은 따로 고칩니다.</li>
             <li>검수 기준은 두 가지입니다. 합의한 기준일과 출처를 적고, 자료가 없거나 판단이 남은 항목은 추가확인 목록에 빠짐없이 남깁니다.</li>
             <li>동 추가, 새 기준일·지표, 구역안 비교, 새 현장조사·출장, 전문가 검토는 따로 정합니다.</li>
-          </ul></dd>
+          </ul></details></dd>
           <dd class="about-opt-go"><a href="#contact-form" data-pilot-inquiry>시범 과업 상담</a></dd></div>
       </dl>
     </div>
@@ -221,7 +228,7 @@
         <dl>
           <div><dt>받는 것</dt><dd>신청요건 근거 1쪽과 출처·추가확인 목록(HWPX·PDF·XLSX), 초안 검토 후 보완 1회</dd></div>
           <div><dt>비용</dt><dd>시범 제안가 99만원(VAT 별도) · 과업 1건·행정동 1곳 기준 · 최종 금액은 계약 전에 정합니다.</dd></div>
-          <div><dt>회신</dt><dd>문의 초안은 자동 전송되지 않습니다. 메일 앱에서 직접 보내 주시면 이메일로 답변드립니다.</dd></div>
+          <div><dt>회신</dt><dd>보내 주신 문의는 이메일로 답변드립니다.</dd></div>
           <div><dt>직접 메일</dt><dd><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></dd></div>
           <div><dt>개인정보</dt><dd>상담 답변과 시범 과업 일정 협의에만 씁니다. 보유 기간과 처리 위탁은 동의 전문과 <a href="privacy.html">개인정보 처리방침</a>에 있습니다.</dd></div>
         </dl>

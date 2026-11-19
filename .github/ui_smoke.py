@@ -227,7 +227,7 @@ def verify_field_basis(page, output, width):
 
 
 def verify_field_save_errors(page, width):
-    # 위치 없이 저장하면 오류 문구가 저장 단추 위 뷰포트 안에 있고 지번 칸이 열려 초점을 받는다
+    # 위치 없이 저장하면 오류 문구와 지번 칸이 함께 보이고 칸이 열려 초점을 받는다
     page.locator('#f button.save').click()
     page.wait_for_function('() => document.querySelector("#msg").textContent.trim()!==""')
     box=page.locator('#msg').bounding_box();vh=page.viewport_size['height']
@@ -412,7 +412,7 @@ def main():
                             page.locator('main a[href="about.html#usesTitle"]').click()
                             page.wait_for_url(base+'about.html#usesTitle', wait_until='networkidle')
                             page.evaluate('() => document.fonts.ready')
-                            assert page.locator('#how > .wrap > .about-uses > .about-use').count() == 5
+                            assert page.locator('#how > .wrap > .about-uses > .about-use').count() == 6
                             check(route, width, 'role_entry')
                             page.goto(base+route, wait_until='networkidle')
                             entry = page.locator('main a[href="field/oa.html"]').first
