@@ -144,15 +144,29 @@
   const home = new URL('./', document.currentScript.src).pathname;
   if (!inField && location.pathname !== home && location.pathname !== home + 'index.html') return;
   const recording = location.pathname === scope.pathname || location.pathname === scope.pathname + 'index.html';
-  let hadController = !!sw.controller, busy = false, changed = false;
+  let hadController = !!sw.controller, busy = false, changed = false, dismissed = false;
+  // 띠는 머리 바로 아래 글 흐름에 둔다(11-20 점검: 화면 아래 고정 띠가 입력칸·주 단추를 가렸다). 초점은 옮기지 않는다.
+  // 새 판 알림만 머리 밑에 붙어 따라오고(.is-urgent), 계산을 멈춘 화면에서는 닫을 수 없다. 닫은 확인 실패 띠는 다시 확인해도 띄우지 않는다
   const notice = (text, refresh) => {
-    if (!inField) return;
+    if (!inField || (dismissed && !refresh)) return;
     let box = document.getElementById('fieldUpdate');
-    if (!box) { box = document.createElement('p'); box.id = 'fieldUpdate'; box.className = 'err-banner'; box.setAttribute('role', 'status'); document.body.append(box); }
+    if (!box) {
+      box = document.createElement('p'); box.id = 'fieldUpdate'; box.setAttribute('role', 'status');
+      const top = document.querySelector('header.top');
+      if (top) top.after(box); else document.body.append(box);
+    }
+    box.className = refresh ? 'is-urgent' : '';
     const button = document.createElement('button'); button.type = 'button'; button.className = 'ghost';
     button.textContent = refresh ? '새 버전으로 열기' : '다시 확인';
     button.addEventListener('click', () => refresh ? location.reload() : check());
-    box.replaceChildren(text + ' ', button);
+    const kids = [text + ' ', button];
+    if (!refresh || recording) {
+      const close = document.createElement('button'); close.type = 'button'; close.className = 'ghost rm-dismiss'; close.textContent = '닫기';
+      close.setAttribute('aria-label', '안내 닫기');
+      close.addEventListener('click', () => { dismissed = true; box.remove(); });
+      kids.push(close);
+    }
+    box.replaceChildren(...kids);
   };
   sw.addEventListener('controllerchange', () => {
     if (hadController && inField) {

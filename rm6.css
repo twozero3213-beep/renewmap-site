@@ -99,7 +99,15 @@ table td, table th { word-break: keep-all; overflow-wrap: normal; }
 
 /* ── 3. 머리·꼬리글 ── */
 /* 모든 화면 같은 흰 머리 하나. 옛 짙은 녹색 머리(site-v4 body.field)는 지웠다 */
-header.top { position: sticky; top: 0; z-index: 40; background: rgba(255, 255, 255, .97); color: var(--ink); border-bottom: 1px solid var(--line); box-shadow: none; }
+/* 11-20 점검: 반투명(.97)이면 스크롤할 때 본문 글자가 머리 뒤로 비쳤다 → 불투명 */
+header.top { position: sticky; top: 0; z-index: 40; background: var(--card); color: var(--ink); border-bottom: 1px solid var(--line); box-shadow: none; }
+/* 현장 화면 '새 버전' 띠(site.js #fieldUpdate): 머리 바로 아래 글 흐름의 얇은 띠. 아이디 선택자라 현장 화면의 전체 폭 녹색 단추(.field button)를 이긴다 */
+#fieldUpdate { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; padding: 6px max(16px, calc((100% - var(--rm-max)) / 2 + 20px)); background: var(--err-bg); color: var(--err-ink); border-bottom: 1px solid var(--line); font-size: 15px; line-height: 1.5; }
+#fieldUpdate.is-urgent { position: sticky; top: var(--site-header-h, 65px); z-index: 34; border-bottom-color: var(--alarm); }   /* 메뉴 시트 가림(35) 아래 */
+#fieldUpdate button { flex: none; width: auto; min-height: 44px; margin: 0; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--green); font: inherit; font-weight: 700; cursor: pointer; }
+#fieldUpdate button:first-of-type { margin-left: auto; }
+#fieldUpdate button:hover { background: var(--hover-tint); }
+#fieldUpdate .rm-dismiss { border-color: transparent; background: transparent; color: var(--err-ink); }
 /* 로고·메뉴 줄은 본문과 같은 격자(1200px, 안쪽 20px)라 왼쪽 선이 제목·본문과 맞는다. 높이는 모든 화면 64px */
 header.top > .wrap:first-child { min-height: 64px; display: flex; flex-wrap: nowrap; align-items: center; gap: 20px; max-width: var(--rm-max); padding-left: 20px; padding-right: 20px; }
 /* 지도가 화면 전체인 앱 화면(동네 찾기·4D)만 폭 전체 */
@@ -561,7 +569,7 @@ tr[data-cell]:target > th { box-shadow: inset 4px 0 0 var(--green); }
 main.page td small, main.page th small { font-size: var(--t-cap); }
 
 @media print {
-  header.top, .tabbar, footer, .rm-nav, .rm-menu-btn, .print-row, .skip, nav[aria-label="위치"] { display: none !important; }   /* 시트가 열린 .rm-nav.is-open·화면 CSS의 display보다 앞서야 한다 */
+  header.top, #fieldUpdate, .tabbar, footer, .rm-nav, .rm-menu-btn, .print-row, .skip, nav[aria-label="위치"] { display: none !important; }   /* 시트가 열린 .rm-nav.is-open·화면 CSS의 display보다 앞서야 한다 */
   body { background: #fff; font-size: 14pt !important; line-height: 1.55; padding: 0; }   /* body.field(0,1,1)의 17px보다 앞서야 한다 */
   h1 { font-size: 26pt !important; margin: 0 0 6pt !important; }   /* (0,1,1) 제목 단계 규칙보다 앞서야 한다 */
   h2 { font-size: 17pt !important; break-after: avoid; }   /* 접이 제목(0,1,3) 등 화면 크기 규칙보다 앞서야 한다 */

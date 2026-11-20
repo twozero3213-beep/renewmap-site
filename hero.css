@@ -230,6 +230,19 @@
   #main .about-contact { grid-template-columns: minmax(0, 1fr) 360px; gap: 40px; }
   .about-ask { display: block; position: sticky; top: 88px; }
 }
+/* 2026-11-20 점검: 넓은 화면 첫 칸 오른쪽이 접힌 '대상과 받는 자료' 한 줄뿐이라 약 463x300px이 비어 보였다.
+   넓은 화면에서만 펼친 카드로 보이고, 휴대폰·태블릿은 접힌 채 그대로 둔다(쪽 길이 그대로).
+   여는 일과 접는 단추 대신 h2 제목을 다는 일은 content-pages.js가 한다(단추가 남으면 '접힘'으로 읽혔다).
+   카드에는 문구 표대로 쓰는 사람과 지도 조건 한 줄만 둔다. 정의 문장과 목록 첫 줄은 바로 옆 리드와 같은 말이다 */
+@media (min-width: 1024px) {
+  .about-page #intro .about-get { align-self: start; margin-top: 16px; padding: 20px 24px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+  .about-page #intro .about-get > summary[hidden] { display: none; }   /* rm6.css의 summary display:flex가 hidden을 이긴다 */
+  .about-page #intro .about-get > .about-get-title { margin: 0 0 8px; font-size: 16px; line-height: 1.5; color: var(--ink); }
+  .about-page #intro .about-get > p { margin: 0 0 12px; }
+  .about-page #intro .about-get :is(.about-def, .about-get-list > li:first-child) { display: none; }
+  .about-page #intro .about-get-list { padding: 0; list-style: none; }
+  .about-page #intro .about-get :is(p, li) { font-size: 15px; line-height: 1.55; }
+}
 @media (max-width: 720px) {
   .about-page .about-cta { display: grid; }
   #main .about-doc .about-cta { display: flex; gap: 8px; }

@@ -88,9 +88,26 @@
     const det = el.querySelector(':scope > details.cp-fold');
     if (det) det.open = true;
   }
-  if (typeof module !== 'undefined' && module.exports) module.exports = { init, titleOf, textOf, openFor };
+  // 2026-11-20 소개 첫 칸 '대상과 받는 자료': 넓은 화면은 펼친 카드인데 접는 단추(summary)가 남아 화면 읽기 프로그램이 '접힘'으로 읽었다(WCAG 4.1.2).
+  //   넓은 화면에서는 칸을 열고 단추를 숨긴 뒤 같은 이름의 h2 제목을 단다(누를 것이 없는 카드 제목). 좁은 화면은 HTML 그대로 접힌 칸,
+  //   스크립트가 없으면 어느 화면이든 눌러서 여는 칸으로 남는다
+  function wideCard(details, wide) {
+    const sum = details.querySelector(':scope > summary');
+    const head = details.ownerDocument.createElement('h2');
+    head.className = 'about-get-title';
+    head.textContent = sum.textContent;
+    sum.after(head);
+    const sync = () => { details.open = wide.matches; sum.hidden = wide.matches; head.hidden = !wide.matches; };
+    sync();
+    wide.addEventListener('change', sync);
+    return head;
+  }
+  if (typeof module !== 'undefined' && module.exports) module.exports = { init, titleOf, textOf, openFor, wideCard };
   if (typeof document !== 'undefined') {
     document.querySelectorAll('[data-content-book]').forEach(root => init(root));
+    const aboutGet = document.querySelector('.about-page #intro .about-get');
+    // 1024px는 hero.css의 넓은 화면 경계와 같아야 한다
+    if (aboutGet && window.matchMedia) wideCard(aboutGet, window.matchMedia('(min-width: 1024px)'));
     openFor(document, location.hash);
     window.addEventListener('hashchange', () => openFor(document, location.hash));
     // 2026-11-13 우지예: 다른 화면에서 '시범 과업 상담'(about.html#contact)을 누르면 상담 칸보다 위에 멈춰 다시 내려야 했다.

@@ -469,7 +469,7 @@
   // 기준선 넘은 지표 수: 확정(승인된 기준을 넘음) · 추가확인(넘었지만 기준 승인 대기) · 자료 없음. 묶음 지표(요건 충족 수)와 종합은 세지 않는다
   function tally(rows) {
     const r = rows.filter(x => !x.ind.composite && !x.ind.computed && (x.ind.standard || x.ind.pending));
-    return { confirmed: r.filter(x => x.status === '기준 넘음').length, pending: r.filter(x => x.status === '기준 승인 대기' && x.crossed).length,
+    return { confirmed: r.filter(x => x.status === '기준 넘음' && !x.unsettled).length, pending: r.filter(x => x.status === '기준 승인 대기' && x.crossed).length,
       nodata: r.filter(x => x.value === null).length, counted: r.filter(x => x.value !== null).length };
   }
   const sumValue = rows => { const t = tally(rows); return t.counted ? t.confirmed + t.pending : null; };
@@ -566,7 +566,9 @@
       if (ind.series) {
         const s = seriesOf(dong, ind.code), y = year ?? latestYear(s), d5 = seriesOf(dong, ind.code + '_DELTA5Y');
         const value = y === null ? null : valueAt(s, y), cell = ((dong && dong.cells) || []).find(c => c.indicator_code === ind.code && c.base_year === y && c.value === value) || null;
-        return rowOf(ind, value, { year: y, series: s, delta: y === null ? null : valueAt(d5, y), cell, evidenceMissing: isNum(value) && !cell });
+        // 그 해 출처 기록이 미확정(추가확인·충돌·폐기)인 값: 셀이 있으면 셀 상태, 지난 해(셀 없음)는 check_years. programs.js isHeld와 같은 규칙
+        const unsettled = isNum(value) && (cell ? !!DeclineReq && DeclineReq.cellValue(cell) === null : ((((dong && dong.check_years) || {})[ind.code]) || []).includes(y));
+        return rowOf(ind, value, { year: y, series: s, delta: y === null ? null : valueAt(d5, y), cell, evidenceMissing: isNum(value) && !cell, unsettled });
       }
       if (ind.src === 'forecast') {
         const f = ind.pending ? null : fcOf(ext, ind.level === 'sg' ? null : codeOf(dong || {}), ind.fc), ok = f && !f.held;
@@ -722,7 +724,10 @@
   // 낱말만 바뀐 것을 '판정 바뀜'으로 세지 않도록 diffSnap이 읽을 때 새 낱말로 맞춘다.
   const LEGACY_LABEL = { '기준 미달': HIT, '기준 미달(승인 대기)': `${HIT}(승인 대기)` };
   const normLabel = s => LEGACY_LABEL[s] || s;
-  const ROW_CLASS = { '기준 넘음': 'over', '기준 안': 'in', '자료 없음': 'none', '기준 승인 대기': 'wait', '공식 기준 없음': 'nostd', '수집 중': 'soon', '추세 전망': 'fore', '행정 지정': 'desig', '미지정': 'in', '보류': 'none' };
+  const ROW_CLASS = { '기준 넘음': 'over', '기준 안': 'in', '자료 없음': 'none', '기준 승인 대기': 'wait', '공식 기준 없음': 'nostd', '수집 중': 'soon', '추세 전망': 'fore', '행정 지정': 'desig', '미지정': 'in', '보류': 'none', '추가확인': 'none' };
+  // 척도표·확인할 항목에 보일 상태. 값과 기준선의 비교(r.status)는 그대로 두고, 그 해 출처 기록이 미확정(dongRows unsettled)이면
+  // '기준 해당'·'해당 안 함' 대신 추가확인(요약 탭 세 줄·동 페이지·홈 카드와 같은 낱말). 연도 막대로 지난 해를 골라도 같은 규칙이다
+  const shownSt = r => (r.unsettled && (r.status === '기준 넘음' || r.status === '기준 안') ? '추가확인' : r.status);
   // 고정 문구(docs/legal/ai_ethics.md 1부 · 총괄 지시 2026-10-24). 화면마다 상시 표시
   const FORE_FIXED = '과거 추세를 이어 본 계산입니다. 판정이나 투자·거래 조언이 아니며, 정책·경기 변화로 달라질 수 있습니다. 표시된 범위는 불확실성 구간입니다.';
   const SAFE_FIXED = 'CCTV·보안등·경찰관서까지의 거리는 확인된 시설 현황입니다. 범죄 발생이나 안전 수준을 의미하지 않으며, 지역 간 순위나 등급을 매기지 않습니다.';
@@ -735,7 +740,7 @@
   function stdTextOf(r) {
     const ind = r.ind;
     if (ind.pending) return '자료를 모으는 중입니다. 숫자를 만들지 않습니다.';
-    if (r.evidenceMissing) return SERIES_NO_CELL + (ind.standard ? ` · 기준 ${ind.standard.text}` : ind.note ? ` · ${ind.note}` : '');
+    if (r.evidenceMissing) return (r.unsettled ? '이 해 출처 기록 추가확인 · 기준 해당 여부 정하지 않음' : SERIES_NO_CELL) + (ind.standard ? ` · 기준 ${ind.standard.text}` : ind.note ? ` · ${ind.note}` : '');
     // 30년 감소율 셀이 비면 까닭을 적는다(docs/quality/pop_drop30_missing_2026-11-06.md: 98%가 지금 행정동 코드 기록이 1995년 뒤 시작). 값을 지어 채우지 않는다
     if (ind.code === 'DECLINE_POP_DROP30Y_PCT' && r.value === null && r.cell) return `계산 안 함 · 1996~2025년 인구 기록이 다 있지 않음(대부분 지금 행정동 코드가 1995년 뒤에 생김) · 요건 ①은 '최근 5년 중 3년 연속 감소' 길로 볼 수 있음${ind.standard ? ` · 기준 ${ind.standard.text}` : ''}`;
     if (ind.src === 'forecast') return `${r.held ? `보류 · ${r.held} · ` : ''}${foreLine(ind, r)}${isNum(r.lo) && isNum(r.hi) ? ` · 80% 구간 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}` : ''}${ind.level === 'sg' ? ' · 시·군·구 단위' : ''}`;
@@ -757,12 +762,12 @@
   }
   const rowText = r => r.text || fmtI(r.value, r.ind, 'now', r.ind.unit) || '–';
   // 한눈 요약: 항목마다 점 하나를 묶음별로 늘어놓는다. 도넛(비율)이 아니라 개수만 — 순위·점수 아님
-  const dotOf = r => (r.ind.pending ? 'p' : r.status === '기준 넘음' || r.status === '행정 지정' ? 'r' : r.status === '기준 안' || r.status === '미지정' ? 'g' : r.status === '기준 승인 대기' ? 'y' : r.value === null ? 'w' : 'b');
+  const dotOf = r => { const st = shownSt(r); return r.ind.pending ? 'p' : st === '기준 넘음' || st === '행정 지정' ? 'r' : st === '기준 안' || st === '미지정' ? 'g' : st === '기준 승인 대기' ? 'y' : r.value === null || st === '추가확인' ? 'w' : 'b'; };
   function glanceHTML(rows) {
     const list = rows.filter(r => !r.ind.composite && r.ind.group !== 'sum' && r.ind.group !== 'fore'), n = k => list.filter(r => dotOf(r) === k).length; // 수집 중(p)은 점만 찍고 도넛 개수에는 넣지 않는다
-    const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<span class="gl-grp"><span class="gl-k">${gIco(g)}${esc(gl)}</span>${list.filter(r => r.ind.group === g).map(r => `<i class="gl-${dotOf(r)}" title="${esc(r.ind.label)} · ${esc(stLabel(r.status))}"></i>`).join('')}</span>`).join('');
+    const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<span class="gl-grp"><span class="gl-k">${gIco(g)}${esc(gl)}</span>${list.filter(r => r.ind.group === g).map(r => `<i class="gl-${dotOf(r)}" title="${esc(r.ind.label)} · ${esc(stLabel(shownSt(r)))}"></i>`).join('')}</span>`).join('');
     const counts = Object.fromEntries(DONUT.map(([k]) => [k, n(k)]));
-    return `<div class="sr-glance" role="img" aria-label="한눈 요약. 기준 해당 또는 행정 지정 ${n('r')}개, 기준 안 ${n('g')}개, 기준 승인 대기 ${n('y')}개, 공식 기준 없음 ${n('b')}개, 자료 없음 ${n('w')}개. 항목마다 점 하나이며 순위·점수가 아닙니다.">` +
+    return `<div class="sr-glance" role="img" aria-label="한눈 요약. 기준 해당 또는 행정 지정 ${n('r')}개, 기준 안 ${n('g')}개, 기준 승인 대기 ${n('y')}개, 공식 기준 없음 ${n('b')}개, 추가확인 ${n('w')}개. 항목마다 점 하나이며 순위·점수가 아닙니다.">` +
       `<div class="gl-top">${donutSVG(counts)}<ul class="gl-n">${DONUT.map(([k, l]) => `<li><b class="gl-sw sw-${k}" aria-hidden="true"></b>${l} <b>${counts[k]}</b></li>`).join('')}</ul></div><p class="gl-dots">${groups}</p><p class="gl-note">묶음별 점 하나가 항목 하나 · 순위·점수 아님</p></div>`;
   }
   // 세부항목별 척도표. detail(cell) → [[라벨, 값, 링크]] (dashboard.js detailRows). 그룹·항목 순서 고정
@@ -786,9 +791,9 @@
       }).join('');
     };
     const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<li class="sr-group"><details${g === curG ? ' open' : ''}><summary><h4>${gIco(g)}${esc(gl)}</h4><span class="sr-gsum">${gsum(g)}</span></summary>${g === 'safe' ? `<p class="sr-group-note">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="sr-group-note">${esc(FORE_FIXED)}</p>` : ''}<ul>${list.filter(r => r.ind.group === g).map(r => {
-      const ind = r.ind, tt = trendText(r.delta, ind), cls = ROW_CLASS[r.status];
+      const ind = r.ind, tt = trendText(r.delta, ind), st = shownSt(r), cls = ROW_CLASS[st];
       const rowsD = r.cell ? detail(r.cell) : [];
-      return `<li class="sr is-${cls}${ind.code === o.cur ? ' is-cur' : ''}"><div class="sr-h">${icon(ind.icon)}<span class="sr-l">${esc(ind.label)}${r.sgLevel ? ' <small>시·군·구</small>' : ''}</span><b class="sr-v">${esc(rowText(r))}</b>${refOf(r) ? `<small>기준일 ${esc(refOf(r))}</small>` : ''}<span class="sr-st st-${cls}">${esc(stLabel(r.status))}</span></div>` +
+      return `<li class="sr is-${cls}${ind.code === o.cur ? ' is-cur' : ''}"><div class="sr-h">${icon(ind.icon)}<span class="sr-l">${esc(ind.label)}${r.sgLevel ? ' <small>시·군·구</small>' : ''}</span><b class="sr-v">${esc(rowText(r))}</b>${refOf(r) ? `<small>기준일 ${esc(refOf(r))}</small>` : ''}<span class="sr-st st-${cls}">${esc(stLabel(st))}</span></div>` +
         (ind.categorical ? '' : `<div class="sr-m">${barSVG(r)}${tt ? `<em class="map-trend ${tt.cls}">${tt.arrow} 5년 ${esc(fmt(r.delta, ind.dEdges ? '' : '%p'))} ${esc(tt.word)}</em>` : ''}</div>`) +
         (r.series && r.series.some(p => p[1] !== null) ? trendSVG(r.series, r.year, ind.label, validStd(ind.standard) ? ind.standard.value : null, ind.unit) : '') +
         `<details class="map-detail sr-why"><summary>ⓘ 기준·출처${r.year ? ` (${esc(r.year)}년)` : ''}</summary><p class="sr-std">${esc(stdTextOf(r))}</p>${rowsD.length ? dl(r.cell) : ''}</details></li>`;
@@ -799,19 +804,20 @@
     return `<ol class="sr-list">${groups}</ol>` + `<details class="sr-glance-more"><summary>항목 수 모아 보기</summary>${gapsHTML(rows)}${head}${glanceHTML(rows)}</details>`;
   }
   // 기준 해당·참고 구간 밖 항목(2026-10-26, 업무 실무자용): 기준선을 넘은 항목(확정·승인 대기)과 자료가 없어 확인이 필요한 항목. 순서 고정, 순위·점수 없음
+  // 출처 기록이 미확정인 값(shownSt 추가확인)은 기준선을 넘었든 아니든 추가확인으로 둔다(기준 해당 수에 넣지 않는다)
   function gapRows(rows) {
     return rows.filter(r => !r.ind.composite && r.ind.group !== 'sum' && r.ind.group !== 'fore' && !r.ind.categorical && !r.ind.pending)
-      .filter(r => r.crossed === true || r.value === null)
-      .map(r => ({ row: r, kind: r.value === null ? '자료 없음' : isPending(r.ind.standard) ? `${HIT}(승인 대기)` : HIT }));
+      .filter(r => r.crossed === true || r.value === null || shownSt(r) === '추가확인')
+      .map(r => ({ row: r, kind: r.value === null ? '자료 없음' : shownSt(r) === '추가확인' ? '추가확인' : isPending(r.ind.standard) ? `${HIT}(승인 대기)` : HIT }));
   }
   function gapsHTML(rows, opt) {
-    const g = gapRows(rows), o = opt || {};
+    const g = gapRows(rows), o = opt || {}, isCheck = x => x.kind === '자료 없음' || x.kind === '추가확인';
     const line = x => { const r = x.row, ind = r.ind, c = r.cell || {}, src = c.source_name || ind.source || SOURCE_DEFAULT;
-      const label = r.value === null ? '추가확인' : isPending(ind.standard) ? '기준 승인 대기' : HIT;
-      return `<li class="gp is-${r.value === null ? 'none' : 'over'}"><b>${esc(ind.label)}</b>${r.sgLevel ? '<small class="gp-sg">시·군·구</small>' : ''}<span class="gp-v">${esc(rowText(r))}</span><span class="gp-s">${esc(label)}</span>` +
+      const label = isCheck(x) ? '추가확인' : isPending(ind.standard) ? '기준 승인 대기' : HIT;
+      return `<li class="gp is-${isCheck(x) ? 'none' : 'over'}"><b>${esc(ind.label)}</b>${r.sgLevel ? '<small class="gp-sg">시·군·구</small>' : ''}<span class="gp-v">${esc(rowText(r))}</span><span class="gp-s">${esc(label)}</span>` +
         `<small class="gp-std">${esc(validStd(ind.standard) ? `기준 ${ind.standard.text}` : stdTextOf(r).split(' · ')[0])} · 출처 ${esc(src)}${r.year ? ` · ${esc(r.year)}년` : ''}</small></li>`; };
-    const nNull = g.filter(x => x.row.value === null).length;
-    const nPending = g.filter(x => x.row.value !== null && isPending(x.row.ind.standard)).length;
+    const nNull = g.filter(isCheck).length;
+    const nPending = g.filter(x => x.kind === `${HIT}(승인 대기)`).length;
     return `<details class="sr-gaps"${o.open ? ' open' : ''}><summary>${icon('flag')}확인할 항목 <b>${g.length}</b>개 <small>기준 해당 ${g.length - nNull - nPending} · 기준 승인 대기 ${nPending} · 추가확인 ${nNull}</small></summary>${g.length ? `<ul>${g.map(line).join('')}</ul>` : '<p class="gp-empty">기준선을 넘거나 자료가 없는 항목이 없습니다.</p>'}` +
       `<p class="gp-note">기준 해당은 카드에 적힌 기준선 문장(예: 50% 이상)에 들어맞는 항목, 기준 승인 대기는 기준선의 내부 승인이 남은 항목, 추가확인은 자료가 모자라거나 기준을 그대로 적용할 수 없는 항목입니다. 순위·점수가 아닙니다.</p></details>`;
   }

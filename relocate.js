@@ -94,6 +94,30 @@
     return { cell: null, type: housing, reason: `${skipped.join('·')} 표본 5건 미만 또는 자료 없음 · 계산 제외` };
   }
 
+  // ['202607', ...] → '2026년 7~10월'. 끊긴 달은 구간마다 나눠 쓴다.
+  function monthSpan(months) {
+    const runs = [];
+    for (const o of [...months].sort().map(m => +m.slice(0, 4) * 12 + +m.slice(4) - 1)) {
+      const r = runs[runs.length - 1];
+      if (r && o === r[1] + 1) r[1] = o; else runs.push([o, o]);
+    }
+    return runs.map(([a, b]) => {
+      const [y1, m1, y2, m2] = [Math.floor(a / 12), a % 12 + 1, Math.floor(b / 12), b % 12 + 1];
+      return a === b ? `${y1}년 ${m1}월` : y1 === y2 ? `${y1}년 ${m1}~${m2}월` : `${y1}년 ${m1}월~${y2}년 ${m2}월`;
+    }).join('·');
+  }
+
+  // 유형별 전월세 원장의 조회 창(rent.months)과 실제 수록 월(by_type.*.available_months)을 화면 문장으로 바꾼다.
+  function rentPeriod(rent) {
+    const ok = m => Array.isArray(m) && m.length > 0 && new Set(m).size === m.length && m.every(v => /^20\d{2}(0[1-9]|1[0-2])$/.test(v));
+    const window = rent?.months, types = ['APT', 'RH', 'OFFI'].map(t => rent?.by_type?.[t.toLowerCase()]?.available_months);
+    if (!ok(window) || !types.every(m => ok(m) && m.every(v => window.includes(v)))) throw new Error('전월세 수록 기간을 확인하지 못했습니다.');
+    const covered = types.every(m => [...m].sort().join() === [...types[0]].sort().join())
+      ? `${monthSpan(types[0])} 계약 ${types[0].length}개월`
+      : ['APT', 'RH', 'OFFI'].map((t, i) => `${HOUSING[t]} ${monthSpan(types[i])} ${types[i].length}개월`).join(', ');
+    return { covered, window: `${monthSpan(window)} ${window.length}개월`, partial: types.some(m => m.length < window.length) };
+  }
+
   function rankDongs(dongs, weights, factors = FACTORS, distances = null, housing = 'ALL') {
     const rows = dongs.map(d => {
       const cells = { ...d.cells };
@@ -112,13 +136,14 @@
     }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
   }
 
-  const api = { FACTORS, PRESETS, normalize, weightedScore, rankDongs, officeDistances, makeDongs, rentChoice };
+  const api = { FACTORS, PRESETS, normalize, weightedScore, rankDongs, officeDistances, makeDongs, rentChoice, monthSpan, rentPeriod };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (!root.document) return;
   root.RenewRelocate = api;
   const $ = id => document.getElementById(id);
   let dongs = [], presetIndex = 0, weights = { ...PRESETS[0].weights }, compared = false, adjusted = false;
-  let distances = null, requestId = 0;
+  let distances = null, requestId = 0, rentText = '';
+  const emptyResults = $('results').innerHTML; // 결과를 비울 때 450px 빈자리 대신 처음 안내 상자를 되살린다.
   const stageLabel = () => `${PRESETS[presetIndex].label} · 주거 ${HOUSING[$('housingType').value]}` + (adjusted ? ' · 중요도 직접 조정' : '');
   const format = (value, unit) => isNum(value) ? `${value.toLocaleString('ko-KR', { maximumFractionDigits: unit === 'km' ? 2 : 1 })}${unit ? ` ${unit}` : ''}` : '자료 없음';
   const valueText = f => `${f.label} ${format(f.cell?.value, f.cell?.unit)}${RENT_CODES.includes(f.code) && f.cell ? ` (표본 ${f.cell.sample_n}건)` : ''}`;
@@ -140,13 +165,18 @@
   }
   function card(d, index) {
     const { reasons, trade } = highlights(d);
+    // 처음에는 순위·점수·거리·항목 이름만 보이고, 값의 출처·기준일은 '근거 보기' 안에 모두 남긴다.
     return `<article class="relocate-card"><div class="relocate-card-head"><span class="relocate-rank">${index + 1}</span><h3>${esc(d.district)} ${esc(d.name)}</h3><strong class="relocate-score">${d.score.toFixed(1)}<span>점</span></strong></div>
-      <p class="relocate-distance" data-cell-id="${esc(d.cells.OFFICE_KM?.cell_id || '')}">회사 동까지 직선거리 <b>${format(d.cells.OFFICE_KM?.value, 'km')}</b></p>${evidence(d.cells.OFFICE_KM)}
-      <p class="relocate-coverage">반영 ${d.used}개 · 자료 누락 ${d.missing}개</p>
+      <p class="relocate-distance" data-cell-id="${esc(d.cells.OFFICE_KM?.cell_id || '')}">회사 동까지 직선거리 <b>${format(d.cells.OFFICE_KM?.value, 'km')}</b>${d.missing ? `<span class="relocate-coverage">자료 누락 ${d.missing}개</span>` : ''}</p>
+      <p class="relocate-top"><b>점수에 기여한 항목</b> ${reasons.map(f => esc(f.label)).join(' · ')}</p>${trade ? `
+      <p class="relocate-top"><b>함께 살필 점</b> ${esc(trade.label)}</p>` : ''}
+      <details class="relocate-evidence rm-disclosure"><summary>근거 보기 · 전체 ${FACTORS.length}개 항목</summary>
+      <p class="relocate-evidence-distance">회사 동까지 직선거리 ${format(d.cells.OFFICE_KM?.value, 'km')}${evidence(d.cells.OFFICE_KM)}</p>
+      <p class="relocate-help">반영 ${d.used}개 · 자료 누락 ${d.missing}개</p>
       <p class="relocate-help relocate-rent-reasons">${esc(rentReasons(d))}</p>
       <h4>점수에 기여한 항목</h4><ul class="relocate-reasons">${reasons.map(f => `<li>${esc(valueText(f))}<small class="relocate-source">${comparisonText(f)}</small>${evidence(f.cell)}</li>`).join('')}</ul>
       <div class="relocate-trade"><b>함께 살필 점</b><p>${trade ? esc(valueText(trade)) : '비교할 다른 항목이 없습니다. 중요도를 더 켜서 함께 살펴보세요.'}</p>${trade ? evidence(trade.cell) : ''}</div>
-      <details class="relocate-evidence"><summary>근거 보기 · 전체 ${FACTORS.length}개 항목</summary><dl>${d.factors.map(f => `<div><dt>${esc(f.label)} <span>중요도 ${f.weight} · ${f.lower ? '낮을수록' : '높을수록'} 높은 점수</span></dt><dd><b>${format(f.cell?.value, f.cell?.unit)}</b> · ${isNum(f.normalized) ? `부산 내 ${f.normalized.toFixed(1)}점` : '계산 제외'}${evidence(f.cell)}<small>자료 상태: ${esc(f.cell?.status || '자료 없음')}${RENT_CODES.includes(f.code) && f.cell ? ` · 표본 ${f.cell.sample_n}건` : ''}</small>${f.cell?.note ? `<p>${esc(f.cell.note)}</p>` : ''}${f.cell?.formula_text ? `<p>원값 산식: ${esc(f.cell.formula_text)}</p>` : ''}</dd></div>`).join('')}</dl></details></article>`;
+      <h4>전체 ${FACTORS.length}개 항목</h4><dl>${d.factors.map(f => `<div><dt>${esc(f.label)} <span>중요도 ${f.weight} · ${f.lower ? '낮을수록' : '높을수록'} 높은 점수</span></dt><dd><b>${format(f.cell?.value, f.cell?.unit)}</b> · ${isNum(f.normalized) ? `부산 내 ${f.normalized.toFixed(1)}점` : '계산 제외'}${evidence(f.cell)}<small>자료 상태: ${esc(f.cell?.status || '자료 없음')}${RENT_CODES.includes(f.code) && f.cell ? ` · 표본 ${f.cell.sample_n}건` : ''}</small>${f.cell?.note ? `<p>${esc(f.cell.note)}</p>` : ''}${f.cell?.formula_text ? `<p>원값 산식: ${esc(f.cell.formula_text)}</p>` : ''}</dd></div>`).join('')}</dl></details></article>`;
   }
   function printSheet(top, office) {
     const sources = [];
@@ -167,12 +197,12 @@
       <p class="relocate-print-weights">중요도(0~5): ${FACTORS.map(f => `${esc(f.label)} ${weights[f.code]}`).join(' / ')}</p>
       <p>산식: Σ(부산 내 백분위 × 중요도) ÷ Σ(값이 있는 항목의 중요도). 동률은 평균 순위, 모두 같으면 50점. 결측·중요도 0 제외. 동점은 행정동 코드순.</p>
       <ol class="relocate-print-sources">${sources.map(s => `<li>${sourceMarkup(s)}</li>`).join('')}</ol>
-      <p>원천 자료의 기준일은 항목마다 다릅니다. 거리·밀도는 산·도로·배차·학교 배정·시설 이용 가능 여부를 반영하지 않습니다. 아침 시간 역 승차 인원은 최근접 부산교통공사 역의 월~금 195일(공휴일 포함), 오전 7~9시 평균 승차 인원이며 열차 혼잡도가 아닙니다. 밤길 안전시설 수와 밀도만으로 안전을 판정할 수 없습니다. 소아청소년과는 진료과목 기재 기준이며 전문의·진료시간은 미확인입니다. 월세 보증금 별도, 주택 구성 차이 유의. 유형별 임대차는 12개월 창 중 4개월만 수록, 전체 유형 대체값은 기존 3개월 자료입니다. 학원·유흥·단란주점·문화시설은 자료 추가 예정으로 점수 제외.</p>
+      <p>원천 자료의 기준일은 항목마다 다릅니다. 거리·밀도는 산·도로·배차·학교 배정·시설 이용 가능 여부를 반영하지 않습니다. 아침 시간 역 승차 인원은 최근접 부산교통공사 역의 월~금 195일(공휴일 포함), 오전 7~9시 평균 승차 인원이며 열차 혼잡도가 아닙니다. 밤길 안전시설 수와 밀도만으로 안전을 판정할 수 없습니다. 소아청소년과는 진료과목 기재 기준이며 전문의·진료시간은 미확인입니다. 월세 보증금 별도, 주택 구성 차이 유의. ${esc(rentText)} 전체 유형 대체값은 기존 3개월 자료입니다. 학원·유흥·단란주점·문화시설은 자료 추가 예정으로 점수 제외.</p>
       <p>동네 단위 공공데이터 통계이며 특정 매물을 추천하거나 중개하지 않습니다. 거리 파일의 요청 주소에는 선택한 회사 행정동 코드가 들어갑니다. 검색어와 중요도는 이 기기에서만 처리합니다. 점수는 선택한 조건에 따른 참고 계산입니다. 감정평가, 투자 권유, 공식 안전 판정에는 쓰지 않습니다.</p>`;
   }
   function clearResults(message) {
     compared = false;
-    $('results').replaceChildren(); $('printSheet').replaceChildren(); $('printButton').disabled = true;
+    $('results').innerHTML = emptyResults; $('printSheet').replaceChildren(); $('printButton').disabled = true;
     $('resultStatus').textContent = message;
   }
   function render() {
@@ -249,6 +279,11 @@
         || new Set(reloc.dongs.map(d => d.code7)).size !== busan.length
         || busan.some(row => !reloc.dongs.some(d => d.code7 === row[0] && Array.isArray(d.cells)
           && relocCodes.every(code => d.cells.filter(c => c.indicator_code === code).length === 1)))) throw new Error('소아청소년과·주거 유형 자료를 확인하지 못했습니다.');
+      const period = rentPeriod(reloc.rent);
+      const short = `유형별 전월세 중위값은 ${period.covered} 자료입니다.`;
+      rentText = short + (period.partial ? ` 조회한 ${period.window} 가운데 나머지 달은 수록되지 않았습니다.` : '');
+      $('rentPeriod').textContent = short;
+      $('rentMethod').textContent = rentText;
       dongs = makeDongs(busan, [...documents, reloc]);
       officeOptions();
       for (const id of ['officeQuery', 'officeDong']) $(id).disabled = false;

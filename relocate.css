@@ -34,34 +34,53 @@
 .relocate-result-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .relocate-page .relocate-result-heading h2 { margin: 0; }
 .relocate-page #printButton { white-space: nowrap; font-size: 15px; }
-.relocate-cards { min-height: 450px; display: grid; gap: 20px; }
-.relocate-empty { padding: 56px 24px; border: 1px dashed var(--line-strong); border-radius: 16px; text-align: center; }
+/* 빈 안내는 결과 자리 450px를 채워 가운데에 두고(아래 빈 구멍 방지), 카드가 생기면 위로 붙인다. */
+.relocate-cards { min-height: 450px; display: grid; }
+.relocate-cards:has(.relocate-card) { align-content: start; }
+.relocate-empty { display: grid; place-content: center; padding: 56px 24px; border: 1px dashed var(--line-strong); border-radius: 16px; text-align: center; }
 .relocate-empty > p:first-child { font-size: 20px; font-weight: 700; }
-.relocate-card { padding: 24px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; min-width: 0; font-variant-numeric: tabular-nums; }
+/* 결과 10곳은 한 판 안의 줄로 잇는다(카드 사이 여백 대신 구분선). */
+.relocate-card { padding: 14px 20px 2px; background: var(--card); border: 1px solid var(--line); border-bottom-width: 0; min-width: 0; font-variant-numeric: tabular-nums; }
+.relocate-card:first-child { border-radius: 16px 16px 0 0; }
+.relocate-card:last-child { border-radius: 0 0 16px 16px; border-bottom-width: 1px; }
+.relocate-card:only-child { border-radius: 16px; }
 .relocate-card-head { display: flex; align-items: center; gap: 12px; }
-.relocate-rank { min-width: 28px; font-size: 20px; font-weight: 700; color: var(--dim); }
+.relocate-rank { min-width: 24px; font-size: 17px; font-weight: 700; color: var(--dim); }
 .relocate-page .relocate-card h3 { margin: 0; }
-.relocate-score { margin-left: auto; font-size: 28px; color: var(--green-press); white-space: nowrap; }
+.relocate-score { margin-left: auto; font-size: 24px; color: var(--green-press); white-space: nowrap; }
 .relocate-score span { font-size: 15px; margin-left: 4px; }
-.relocate-distance { margin: 16px 0 4px; font-size: 17px; }
+.relocate-distance { margin: 6px 0 0; font-size: 15px; line-height: 1.45; }
+.relocate-distance b { white-space: nowrap; }
+/* 이름표 열을 따로 두어 줄이 넘어가도 항목 글자가 이름표 아래로 파고들지 않게 한다. */
+.relocate-top { margin: 4px 0 0; font-size: 15px; line-height: 1.45; display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 8px; }
+.relocate-top b { color: var(--dim); font-weight: 600; }
+.relocate-evidence-distance { margin: 12px 0 0; font-size: 15px; }
 .relocate-source { display: block; color: var(--dim); font-size: 13px; line-height: 1.6; }
 .relocate-source a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .relocate-date { white-space: nowrap; }
-.relocate-coverage { color: var(--dim); font-size: 13px; margin: 12px 0 20px; }
+.relocate-coverage { color: var(--dim); font-size: 13px; margin-left: 8px; white-space: nowrap; }
 .relocate-card h4 { font-size: 15px; margin: 16px 0 8px; }
 .relocate-reasons { list-style: none; padding: 0; margin: 0; }
 .relocate-reasons li { padding: 8px 0; font-size: 17px; }
 .relocate-trade { margin-top: 16px; padding: 16px; border-radius: 8px; background: var(--bg); font-size: 15px; }
 .relocate-trade p { margin: 4px 0; }
-.relocate-evidence { margin-top: 16px; border-top: 1px solid var(--line); }
+.relocate-card > p:last-of-type { margin-bottom: 4px; }
+.relocate-page .relocate-card details.relocate-evidence > summary { min-height: 44px; padding: 6px 0; font-size: 15px; }
+.relocate-page .relocate-card details.relocate-evidence > h4 { margin-top: 16px; }
 .relocate-evidence dl { margin: 0; }
 .relocate-evidence dl > div { border-top: 1px solid var(--line); padding: 16px 0; }
 .relocate-evidence dt { font-size: 17px; font-weight: 600; }
 .relocate-evidence dt span, .relocate-evidence dd > small { display: block; font-size: 13px; color: var(--dim); font-weight: 400; }
 .relocate-evidence dd { margin: 8px 0 0; font-size: 15px; }
 .relocate-evidence dd p { margin: 8px 0; font-size: 13px; color: var(--dim); }
-.relocate-method { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 32px; }
-.relocate-method > p { max-width: 880px; font-size: 15px; }
+.relocate-method { border-top: 1px solid var(--line); margin-top: 56px; padding: 32px 0 8px; }
+.relocate-method p, .relocate-method-key { max-width: 880px; font-size: 15px; }
+.relocate-method-key { margin: 0; padding-left: 20px; }
+.relocate-method-key li { margin: 6px 0; }
+.relocate-method-more { margin-top: 16px; }
+/* rm6.css 접이 규칙(> :not(summary) 위 여백 0)보다 구체적으로 써야 문단 사이가 벌어진다. */
+.relocate-page .relocate-method details.relocate-method-more > p { margin: 0 0 12px; }
+.relocate-page .relocate-method details.relocate-method-more > h3 { font-size: 17px; margin: 24px 0 8px; }
 .relocate-pending { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 16px; }
 .relocate-pending span { display: block; font-size: 15px; color: var(--dim); }
 .relocate-notes { border-top: 1px solid var(--line); margin-top: 32px; padding-top: 16px; }
@@ -74,11 +93,17 @@
   .relocate-header .wrap { min-height: 60px; }
   .relocate-header span { font-size: 13px; }
   .relocate-main { padding-top: 28px; }
-  .relocate-heading { margin-bottom: 28px; }
-  .relocate-controls, .relocate-card { padding: 20px; }
+  .relocate-heading { margin-bottom: 24px; }
+  .relocate-controls { padding: 20px; }
+  .relocate-page .relocate-controls section { margin-bottom: 24px; }
+  .relocate-help, #resultStatus { margin: 8px 0; }
+  .relocate-card { padding: 10px 16px 2px; }
+  .relocate-notes { margin-top: 24px; }
   .relocate-result-heading { align-items: flex-start; flex-wrap: wrap; }
   .relocate-card-head { gap: 8px; }
-  .relocate-score { font-size: 24px; }
+  .relocate-top { font-size: 14px; grid-template-columns: minmax(0, 1fr); }
+  .relocate-score { font-size: 22px; }
+  .relocate-method { margin-top: 40px; padding-top: 24px; }
 }
 @media (prefers-reduced-motion: reduce) { .relocate-page *, .relocate-page *::before, .relocate-page *::after { scroll-behavior: auto; animation: none; transition: none; } }
 @page relocateSummary { size: A4 portrait; margin: 9mm; }
