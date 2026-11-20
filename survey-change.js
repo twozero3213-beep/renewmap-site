@@ -115,8 +115,8 @@
       const requirement = specs.get(r.requirement_id);
       submission.push([r.id, ledger.spec.title, ledger.spec.guideline, ledger.spec.scope, requirement.title, r.form, r.sheet, r.slot, r.submit_text, labels[r.change]]);
       changes.push([r.id, r.subject, labels[r.change], r.source, r.as_of, r.before, r.observed_on, r.after, r.reason, r.field_id, requirement.unit,
-        r.baseline_file?.name, r.baseline_file?.sha256, r.baseline_file && 'files/' + r.baseline_file.sha256]);
-      for (const p of r.photos) photos.push([r.id, r.subject, r.observed_on, p.name, p.sha256, 'files/' + p.sha256]);
+        r.baseline_file?.name, r.baseline_file?.sha256, r.baseline_file && tasks.zipPath(r.baseline_file.sha256, r.baseline_file.name)]);
+      for (const p of r.photos) photos.push([r.id, r.subject, r.observed_on, p.name, p.sha256, tasks.zipPath(p.sha256, p.name)]);
     }
     return [
       {name:'제출서식 연결', rows:submission, widths:[20,24,32,26,22,26,20,18,55,12]},

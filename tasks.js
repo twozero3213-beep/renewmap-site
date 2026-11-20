@@ -233,7 +233,9 @@
     const h=copy(history); await verify(h); const c=h[h.length-1];
     return freeze({schema:'renewmap-delivery-v1',id:c.id,revision:c.revision,head_hash:c.hash,spec:c.spec,state:c.state,attempts:c.attempts,artifacts:c.artifacts,artifact_set_hash:await hash(canonical(c.artifacts)),decision:c.decision,history:h});
   }
-  const api={SCHEMA,MAX_ATTEMPTS,canonical,hash,create,revise,verify,manifest,work,workEvidence,workBlockers,isOverdue};
+  // 납품 ZIP 안 경로 files/<sha>.<확장자>. 이름의 마지막 '.' 뒤가 영문·숫자 1~8자일 때만 확장자를 붙인다(납품 문서와 ZIP이 같은 규칙)
+  function zipPath(sha,name){const dot=typeof name==='string'?name.lastIndexOf('.'):-1,ext=dot>0?name.slice(dot+1).toLowerCase():'';return 'files/'+sha+(/^[a-z0-9]{1,8}$/.test(ext)?'.'+ext:'');}
+  const api={SCHEMA,MAX_ATTEMPTS,canonical,hash,create,revise,verify,manifest,work,workEvidence,workBlockers,isOverdue,zipPath};
   if(typeof module==='object' && module.exports) module.exports=api;
   else root.RenewTasks=api;
 })(typeof window!=='undefined'?window:globalThis);

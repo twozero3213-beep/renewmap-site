@@ -212,7 +212,7 @@ def run(browser, base, out, baseline):
         backup = download(page, 'backupTask', out / 'followup.json')
         with zipfile.ZipFile(archive) as zipped:
             manifest = json.loads(zipped.read('manifest.json'))
-            files = {name[6:]: zipped.read(name) for name in zipped.namelist() if name.startswith('files/')}
+            files = {name[6:].split('.')[0]: zipped.read(name) for name in zipped.namelist() if name.startswith('files/')}
         current = manifest['history'][-1]
         assert manifest['history'][:len(old)] == old
         assert first_approval in manifest['history'] and first_approval['state'] == 'approved'

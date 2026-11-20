@@ -65,8 +65,9 @@
     }
     if (n.kind === 'oldDecline') {
       if (!num(f.aging)) return { state: 'check', note: `노후 건축물 ${f.agingHeld ? '확정 불가' : '값 없음'}` };
-      const pct = `노후 건축물 ${Math.round(f.aging * 10) / 10}%`;
-      if (f.aging < 50) return { state: 'no', note: `${pct}, 기준 50%` };
+      const v = Math.round(f.aging * 10) / 10, pct = `노후 건축물 ${v}%`;
+      // 50%는 사업 구역 값으로 따진다. 동 전체가 50% 아래여도 구역은 넘을 수 있어 '안 맞음'으로 끊지 않는다(2026-11-20)
+      if (f.aging < 50) return { state: 'check', note: `동 전체 노후 ${v}%. 기준 50%는 사업 구역에서 따집니다. 구역 계산 필요`, tool: REDEV };
       return num(f.met) && f.met >= 2 ? { state: 'ok', note: `${pct}, 쇠퇴요건 ${f.met}개(하한)` } : { state: 'check', note: `${pct}, 쇠퇴요건 ${metTxt(f)}(하한)` };
     }
     if (n.kind === 'desig') {
@@ -143,7 +144,7 @@
     const list = checkAll(settledFacts(rows, dong)), vs = list.map(verdictOf), nOk = vs.filter(v => v.cls === 'ok').length, nNo = vs.filter(v => v.cls === 'no').length;
     return `<section class="pg-dong"><h3>${esc(name)} 사업 요건 대조</h3>` +
       `<p class="pg-sum">해볼 만한 후보 <b>${nOk}개</b> · 구청 확인이 필요한 사업 ${list.length - nOk - nNo}개 · 맞지 않는 요건이 있는 사업 ${nNo}개<br><small>물어볼 곳: 시·군·구 도시재생 담당 부서, 도시재생지원센터. 행정동 자료로 맞대 본 참고라 실제 요건은 사업 구역 기준으로 다시 확인합니다.</small></p>` +
-      list.map((c, i) => `<div class="pg-card"><h4><a href="programs.html#${esc(c.program.id)}">${esc(c.program.name)}</a><small>${esc(c.program.money)}</small></h4><p class="pg-verdict is-${vs[i].cls}">${esc(vs[i].text)}</p><ul>${c.needs.map(n => `<li class="is-${n.state}"><b>${STATE[n.state]}</b><span>${esc(n.t)}${n.note ? `<small>${esc(n.note)}</small>` : ''}</span></li>`).join('')}</ul></div>`).join('') + `</section>`;
+      list.map((c, i) => `<div class="pg-card"><h4><a href="programs.html#${esc(c.program.id)}">${esc(c.program.name)}</a><small>${esc(c.program.money)}</small></h4><p class="pg-verdict is-${vs[i].cls}">${esc(vs[i].text)}</p><ul>${c.needs.map(n => `<li class="is-${n.state}"><b>${STATE[n.state]}</b><span>${esc(n.t)}${n.note ? `<small>${esc(n.note)}${n.tool ? ` <a href="${esc(n.tool[0])}">${esc(n.tool[1])}</a>` : ''}</small>` : ''}</span></li>`).join('')}</ul></div>`).join('') + `</section>`;
   }
   // 2027 가이드라인 기반·편의시설 현황표. value는 map.js가 지표 단위에 맞춰 만든 글자
   function socRows(rows, format) {

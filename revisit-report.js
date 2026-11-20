@@ -443,7 +443,7 @@
         ],
       ];
       const photoText = (p) =>
-        p ? p.name + "\n" + p.sha256 + "\nfiles/" + p.sha256 : "사진 없음";
+        p ? p.name + "\n" + p.sha256 + "\n" + tasks.zipPath(p.sha256, p.name) : "사진 없음";
       for (const r of ledger.rows) {
         const first = r.initial;
         report.push([
@@ -487,7 +487,7 @@
             initial ? first.field_id : r.field_id,
             first.delivery_revision,
             first.source_hash,
-            "files/" + r.survey_sha256,
+            tasks.zipPath(r.survey_sha256, "조사변경근거.json"),   // 조사 변경 근거는 늘 이 이름으로 납품 버전에 붙는다(위 carrier 찾기)
           ]);
         }
         for (let i = 0; i < Math.max(first.photos.length, r.photos.length); i++)

@@ -246,7 +246,7 @@ def run(browser,base,out,baseline):
         backup=download(page,'backupTask',out/'revisit.json')
         with zipfile.ZipFile(archive) as z:
             m=json.loads(z.read('manifest.json'))
-            files={p[6:]:z.read(p) for p in z.namelist() if p.startswith('files/')}
+            files={p[6:].split('.')[0]:z.read(p) for p in z.namelist() if p.startswith('files/')}
         assert all(hashlib.sha256(data).hexdigest()==sha for sha,data in files.items())
         assert files[before_sha]==archive_files[before_sha] and files[after_sha]==after_image
         assert m['history'][:start]==previous and len(m['history'])==start+7

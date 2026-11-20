@@ -437,8 +437,8 @@
     $("handoverAttention").replaceChildren(...guide.attention.map(li));
     $("handoverComparisonStatus").textContent = guide.comparison.summary;
     const changes = guide.comparison.items.map(item => item
-      .replace(/^((?:이전 판에만 있는 파일|현재 판에만 있는 파일): ".*") \/ files\/[a-f0-9]{64}$/, "$1")
-      .replace(/^(파일 내용 변경: ".*") \/ 이전 files\/[a-f0-9]{64} \/ 현재 files\/[a-f0-9]{64}$/, "$1"));
+      .replace(/^((?:이전 판에만 있는 파일|현재 판에만 있는 파일): ".*") \/ files\/[a-f0-9]{64}(?:\.[a-z0-9]{1,8})?$/, "$1")
+      .replace(/^(파일 내용 변경: ".*") \/ 이전 files\/[a-f0-9]{64}(?:\.[a-z0-9]{1,8})? \/ 현재 files\/[a-f0-9]{64}(?:\.[a-z0-9]{1,8})?$/, "$1"));
     $("handoverChanges").replaceChildren(...(changes.length ? changes : ["기록 차이가 없거나 비교할 이전 승인 기록이 없습니다. 현재 판의 검토 상태는 위에서 확인하세요."]).map(li));
     $("handoverPreview").hidden = false;
     $("downloadHandover").hidden = false;
@@ -619,18 +619,10 @@
   );
   $("zipTask").addEventListener("click", () =>
     action(async () => {
-      const { saved: b, guide } = await handover(),
-        entries = [
-          { name: "인수인계.txt", data: guide.text },
-          { name: "manifest.json", data: JSON.stringify(b.manifest, null, 2) },
-          ...b.files.map((f) => ({
-            name: `files/${f.sha256}`,
-            data: B.from64(f.base64),
-          })),
-        ];
+      const { saved: b, guide } = await handover();
       D.saveBytes(
         `renewmap-delivery-${b.manifest.id}-v${b.manifest.revision}.zip`,
-        D.zipStore(entries, D.localDate()),
+        D.zipStore(B.zipEntries(b, guide.text), D.localDate()),
         "application/zip",
       );
       say("인수인계 요약·파일 목차·검토 이력이 담긴 납품 묶음을 받았습니다.");

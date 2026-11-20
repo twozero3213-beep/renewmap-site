@@ -7,6 +7,21 @@
   function fields(value,names){return value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===names.length&&names.every(k=>Object.hasOwn(value,k));}
   function fileName(name){if(typeof name!=='string'||!name.trim()||name.length>240||['.','..'].includes(name.trim())||/[\x00-\x1f\x7f/\\:]/.test(name))throw new Error('백업 파일 이름이 올바르지 않습니다.');return name;}
   function textSize(text){if(typeof text!=='string'||text.length>MAX_JSON||new TextEncoder().encode(text).byteLength>MAX_JSON)throw new Error('백업이 너무 큽니다.');}
+  // 납품 ZIP과 인수인계 TXT가 같은 경로를 쓰도록 경로는 여기서만 만든다. 같은 바이트는 이력상 첫 이름의 확장자, 이름 없는 대조 지문은 확장자 없음.
+  function filePaths(history){
+    const paths=new Map();
+    for(const r of history)for(const f of [...r.artifacts,...T.workEvidence(r),...(r.decision?[r.decision.evidence]:[])])if(!paths.has(f.sha256)){
+      paths.set(f.sha256,T.zipPath(f.sha256,f.name));
+    }
+    for(const sha of needed(history))if(!paths.has(sha))paths.set(sha,'files/'+sha);
+    return paths;
+  }
+  function zipEntries(backup,text){
+    const paths=filePaths(backup.manifest.history);
+    return [{name:'인수인계.txt',data:text},{name:'manifest.json',data:JSON.stringify(backup.manifest,null,2)},
+      {name:'SHA256SUMS.txt',data:backup.files.map(f=>f.sha256+'  '+paths.get(f.sha256)+'\n').join('')},
+      ...backup.files.map(f=>({name:paths.get(f.sha256),data:from64(f.base64)}))];
+  }
   function declaredSizes(history){const sizes=new Map();for(const r of history)for(const f of [...r.artifacts,...T.workEvidence(r),...(r.decision?[r.decision.evidence]:[])]){if(sizes.has(f.sha256)&&sizes.get(f.sha256)!==f.size)throw new Error('같은 파일의 크기 기록이 다릅니다.');sizes.set(f.sha256,f.size);}return sizes;}
   function from64(s){
     if(typeof s!=='string'||s.length>Math.ceil(MAX/3)*4||s.length%4)throw new Error('백업 파일의 데이터 형식이 올바르지 않습니다.');
@@ -45,7 +60,7 @@
     const given=T.canonical(manifest);textSize(given);
     const checked=await T.manifest(JSON.parse(given).history);
     if(T.canonical(checked)!==given)throw new Error('인수인계의 납품 목록과 이력이 다릅니다.');
-    const h=checked.history,c=h.at(-1),w=T.work(c),blockers=T.workBlockers(c);
+    const h=checked.history,c=h.at(-1),w=T.work(c),blockers=T.workBlockers(c),paths=filePaths(h);
     // 입력의 줄바꿈·방향 제어문자가 요약의 새 제목이나 결정을 꾸미지 못하게 출력에서만 인용한다.
     const q=value=>JSON.stringify(value===null||value===undefined?'':String(value)).replace(/[\u007f-\u009f\u00ad\u061c\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g,ch=>'\\u'+ch.charCodeAt(0).toString(16).padStart(4,'0'));
     const states={planned:'계획 기록',invalid:'입력 다시 확인',hold:'근거 부족 보류',ready:'대조 완료·검토 대기',approved:'승인 기록',rejected:'반려 기록'};
@@ -90,9 +105,9 @@
       const oldFiles=new Map(baseline.artifacts.map(file=>[file.name,file])),newFiles=new Map(c.artifacts.map(file=>[file.name,file]));
       for(const name of new Set([...oldFiles.keys(),...newFiles.keys()])) {
         const before=oldFiles.get(name),after=newFiles.get(name);
-        if(!after)changed.push('이전 판에만 있는 파일: '+q(name)+' / files/'+before.sha256);
-        else if(!before)changed.push('현재 판에만 있는 파일: '+q(name)+' / files/'+after.sha256);
-        else if(before.sha256!==after.sha256)changed.push('파일 내용 변경: '+q(name)+' / 이전 files/'+before.sha256+' / 현재 files/'+after.sha256);
+        if(!after)changed.push('이전 판에만 있는 파일: '+q(name)+' / '+paths.get(before.sha256));
+        else if(!before)changed.push('현재 판에만 있는 파일: '+q(name)+' / '+paths.get(after.sha256));
+        else if(before.sha256!==after.sha256)changed.push('파일 내용 변경: '+q(name)+' / 이전 '+paths.get(before.sha256)+' / 현재 '+paths.get(after.sha256));
         else {
           const fields=[['input_hash','입력 지문'],['comparison_hash','비교 지문'],['template_version','양식 판본'],['blockers','추가확인 사유']].filter(([key])=>T.canonical(before[key])!==T.canonical(after[key])).map(([,label])=>label);
           if(fields.length)changed.push('파일 바이트 동일·기록 변경: '+q(name)+' / '+fields.join(', '));
@@ -119,20 +134,20 @@
       lines.push('항목 '+q(item.id)+': '+q(item.title),'요구 출처: '+q(item.source)+' / 요구 단위: '+q(item.unit),
         '대조 결과: '+(row?checkResultLabels[row.result]:'대조 기록 없음'));
       if(row)lines.push('실제 출처: '+q(row.source)+' / 원문 쪽·셀: '+q(row.page)+' / 실제 단위: '+q(row.unit),
-        '사유: '+q(row.note),'근거 파일: '+(HEX.test(row.evidence_sha256||'')?'files/'+row.evidence_sha256:'연결 지문 없음'));
+        '사유: '+q(row.note),'근거 파일: '+(HEX.test(row.evidence_sha256||'')?paths.get(row.evidence_sha256):'연결 지문 없음'));
     }
     lines.push('', '4. 현재 결정과 이전 승인 기록');
     if(c.decision)lines.push('현재 결정: '+(c.decision.kind==='approve'?'승인 기록':'반려 기록'),
       '검토자: '+q(c.decision.reviewer)+' / 역할: '+q(c.decision.role)+' / 실제 결정일: '+q(c.decision.decided_on),
       '결정 사유: '+q(c.decision.note),'결정 대상 파일 세트: '+c.decision.artifact_set_hash,
-      '결정 증빙: '+q(c.decision.evidence.name)+' / files/'+c.decision.evidence.sha256);
+      '결정 증빙: '+q(c.decision.evidence.name)+' / '+paths.get(c.decision.evidence.sha256));
     else lines.push('현재 승인·반려 결정 기록이 없습니다.');
     const last=[...h].reverse().find(row=>row.decision?.kind==='approve');
     lines.push(last?'이력상 최근 승인 기록: v'+last.revision+' / 실제 결정일 '+q(last.decision.decided_on)+' / 파일 세트 '+last.decision.artifact_set_hash:'이력상 승인 기록이 없습니다.');
     if(last&&last.revision!==c.revision)lines.push('이전 판의 승인은 현재 판의 승인으로 이어지지 않습니다.');
     lines.push('', '5. 현재 납품 파일');
     if(!c.artifacts.length)lines.push('연결된 납품 파일이 없습니다.');
-    for(const file of c.artifacts)lines.push('파일명: '+q(file.name)+' / 기록 크기 '+file.size+' bytes / files/'+file.sha256,
+    for(const file of c.artifacts)lines.push('파일명: '+q(file.name)+' / 기록 크기 '+file.size+' bytes / '+paths.get(file.sha256),
       '입력 지문: '+(file.input_hash||'연결 없음')+' / 비교 지문: '+(file.comparison_hash||'연결 없음')+' / 양식 판본: '+q(file.template_version),
       '추가확인: '+(file.blockers.length?file.blockers.map(q).join('; '):'기록된 파일 보류 사유 없음'));
     lines.push('', '6. 검토 의견과 보완 근거');
@@ -142,10 +157,10 @@
       const origin=h[item.source.revision-1],requirement=origin.spec.requirements.find(r=>r.id===item.requirement_id);
       lines.push('의견 '+q(item.id)+': '+q(item.comment)+' / '+statuses[item.status]+' / 담당 '+q(item.assignee),
         '원본 판: v'+item.source.revision+' / '+item.source.hash+' / 당시 요구 항목 '+q(requirement?.title||item.requirement_id),
-        '원본 파일: '+q(item.source.artifact.name)+' / files/'+item.source.artifact.sha256,
+        '원본 파일: '+q(item.source.artifact.name)+' / '+paths.get(item.source.artifact.sha256),
         '쪽·셀·문단: '+q(item.source.location)+' / 조사 행: '+q(item.source.row_id));
       for(const [key,label] of [['reply','보완 답변'],['resolution','해소 확인'],['reopened','재개 사유']]) {
-        const event=item[key];if(event)lines.push(label+': '+q(event.note)+' / 기록자 '+q(event.actor)+' / '+q(event.at)+(event.evidence?' / '+q(event.evidence.name)+' / files/'+event.evidence.sha256:''));
+        const event=item[key];if(event)lines.push(label+': '+q(event.note)+' / 기록자 '+q(event.actor)+' / '+q(event.at)+(event.evidence?' / '+q(event.evidence.name)+' / '+paths.get(event.evidence.sha256):''));
       }
     }
     lines.push('', '7. 후속 점검', '미래 점검과 현재 납품의 승인 보류 사유는 별개입니다. 점검 결과 제출과 완료 확인도 구분합니다.');
@@ -156,7 +171,7 @@
         '담당: '+q(item.assignee)+' / 기한: '+item.due_on+' / 최초 연결 v'+item.source.revision+' / 당시 요구 항목 '+q(requirement?.title||item.requirement_id),
         '연결 의견 ID: '+q(item.issue_id));
       for(const [key,label] of [['schedule','기한·담당 변경 사유'],['submission','점검 결과'],['verification','완료 확인'],['reopened','재개 사유']]) {
-        const event=item[key];if(event)lines.push(label+': '+q(event.note)+' / 기록자 '+q(event.actor)+' / '+q(event.at)+(event.evidence?' / '+q(event.evidence.name)+' / files/'+event.evidence.sha256:''));
+        const event=item[key];if(event)lines.push(label+': '+q(event.note)+' / 기록자 '+q(event.actor)+' / '+q(event.at)+(event.evidence?' / '+q(event.evidence.name)+' / '+paths.get(event.evidence.sha256):''));
       }
     }
     const sizes=declaredSizes(h),catalog=new Map([...needed(h)].map(sha=>[sha,new Map()]));
@@ -166,16 +181,20 @@
     lines.push('', '8. 전체 이력의 파일 목차', '현재 납품 파일 외에 과거 대조·보완·검토 증빙도 포함합니다. 같은 바이트가 다른 이름으로 기록된 경우 판별 이름을 모두 적습니다.');
     if(!catalog.size)lines.push('연결 파일 기록이 없습니다.');
     for(const [sha,names] of catalog) {
-      lines.push('files/'+sha+' / 기록 크기: '+(sizes.has(sha)?sizes.get(sha)+' bytes':'미기록'));
+      lines.push(paths.get(sha)+' / 기록 크기: '+(sizes.has(sha)?sizes.get(sha)+' bytes':'미기록'));
       if(!names.size)lines.push('파일명: 대조 지문만 기록되어 이름이 없습니다.');
       for(const [name,revisions] of names)lines.push('파일명: '+q(name)+' / 사용 판: '+[...revisions].map(v=>'v'+v).join(', '));
     }
     lines.push('', '9. 읽기와 복원',
-      '이 TXT는 읽기용 요약입니다. 납품 ZIP의 manifest.json에 전체 이력이 있고 files/<SHA-256>에 연결 파일 바이트가 있습니다.',
+      '이 TXT는 읽기용 요약입니다. 납품 ZIP의 manifest.json에 전체 이력이 있고, files 폴더에 연결 파일이 <SHA-256>.<원래 확장자> 이름으로 들어 있습니다.',
+      '원래 확장자가 영문·숫자 1~8자가 아니면 확장자를 붙이지 않습니다. ZIP 맨 위의 SHA256SUMS.txt는 sha256sum -c로 읽는 목록입니다.',
       '작업을 복원하려면 별도로 받은 JSON 백업을 리뉴맵 과업·납품 화면의 백업 복원에서 선택하세요. 이 TXT나 납품 ZIP을 JSON 백업으로 넣지 마세요.',
       'JSON 복원은 이력·파일 지문을 검사하며 같은 과업의 다른 이력을 덮어쓰지 않습니다. 기기 저장소를 지우기 전에 JSON 백업을 별도 위치에 보관하세요.',
-      '해시는 기록된 바이트의 변경을 찾는 수단입니다. 작성자 신원·현장 촬영 사실·얼굴 가림·기관 승인·법률 적합성을 증명하지 않습니다.');
+      '파일 확인: ZIP을 푼 폴더에서 PowerShell로 아래 한 줄을 실행합니다. 아무것도 나오지 않으면 files 폴더의 파일마다 내용의 SHA-256이 파일 이름과 같습니다. 파일 수는 8절 목차와 같아야 합니다.',
+      "Get-ChildItem files | % { if((Get-FileHash $_.FullName).Hash -ne $_.BaseName){'불일치 '+$_.Name} }",
+      '과업 버전 확인값: manifest.json history에 적힌 각 hash는 그 버전에서 hash 칸을 뺀 정규 JSON(키 정렬, 공백 없음, UTF-8)의 SHA-256입니다.',
+      '파일 확인값(SHA-256)은 파일이 바뀌었는지만 알려 줍니다. 작성자 신원·현장 촬영 사실·얼굴 가림·기관 승인과 내용이 사실인지는 증명하지 않습니다.');
     return {text:lines.join('\n')+'\n',summary,attention,comparison};
   }
-  return{MAX,checkResultLabels,needed,make,read,from64,handover};
+  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,read,from64,handover};
 });

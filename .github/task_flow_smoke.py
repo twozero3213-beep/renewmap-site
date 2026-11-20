@@ -207,7 +207,7 @@ def main():
                 assert z.read('인수인계.txt') == guide_file.read_bytes()
                 for name in z.namelist():
                     if name.startswith('files/'):
-                        assert hashlib.sha256(z.read(name)).hexdigest() == name.split('/')[1]
+                        assert hashlib.sha256(z.read(name)).hexdigest() == name.split('/')[1].split('.')[0]   # r12: files/<sha>.<확장자>
             result['checks'].append('backup_zip_actual_bytes')
             assert page.evaluate('async()=> (await TaskStore.history(document.querySelector("#taskPick").value)).at(-1).hash') == manifest['head_hash']
             result['checks'].append('handover_matches_zip_and_preserves_history')

@@ -163,7 +163,7 @@ def run(browser, base, out):
 
     with zipfile.ZipFile(archive) as z:
         manifest = json.loads(z.read('manifest.json'))
-        files = {k[6:]:z.read(k) for k in z.namelist() if k.startswith('files/')}
+        files = {k[6:].split('.')[0]:z.read(k) for k in z.namelist() if k.startswith('files/')}
     assert all(hashlib.sha256(body).hexdigest() == sha for sha, body in files.items())
     assert files[source_sha] == official and files[png_sha] == PNG and field_sha in files
     assert files[hashlib.sha256(template).hexdigest()] == template
