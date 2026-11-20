@@ -31,6 +31,9 @@
     url.hash = /^#map(?:\/\d+)*$/.test(mapHash || '') ? mapHash : '#map';
     return url.pathname + url.search + url.hash;
   }
+  // 홈 '반여1동 4-1 표 초안 보기'(?frag=MLIT-DECLINE)로 오면 '양식에 붙일 표 조각' 주제를 연다. map.js는 아는 조각 id일 때만 그 양식을 미리 고르므로,
+  // 고른 값이 주소와 같은 조각 주제만 찾는다(모르는 id·조각 칸이 아직 없으면 -1)
+  const fragTopicIndex = (parts, wanted) => (wanted ? parts.findIndex(part => part.matches('.rp-frag') && part.querySelector('[data-frag-preset]')?.value === wanted) : -1);
   function initReportPages(workspace) {
     const report = document.getElementById('reportApp'), pager = workspace.querySelector('[data-report-pages]');
     if (!report || !pager) return;
@@ -40,9 +43,10 @@
     toc.className = 'ws-toc'; toc.setAttribute('aria-label', '문서 주제 목차'); toc.hidden = true;
     tocTitle.className = 'ws-toc-title'; tocTitle.textContent = '문서 주제';
     toc.append(tocTitle, tocList); pager.before(toc);   // 읽는 순서: 제목 → 목차 → 본문(넓은 화면 자리는 CSS 격자가 정한다)
-    let parts = [], page = 0;
+    let parts = [], page = 0, fragWanted = new URLSearchParams(location.search).get('frag');
     const seen = new Set();
     function show(index, focus) {
+      if (focus) fragWanted = null;   // 사람이 주제를 고르면 주소의 조각으로 다시 끌고 가지 않는다
       page = Math.max(0, Math.min(index, parts.length - 1));
       seen.add(page);
       parts.forEach((part, i) => part.classList.toggle('workspace-report-hidden', parts.length > 1 && i !== page));
@@ -86,7 +90,9 @@
       toc.hidden = parts.length < 2;
       const remembered = [...select.options].findIndex(option => option.textContent === label);
       const firstFacts = parts.findIndex(part => !part.matches('.rp-snap, .rp-frag, .rp-src, .rp-ai'));
-      show(remembered >= 0 ? remembered : Math.max(0, firstFacts), false);
+      const fragAt = fragTopicIndex(parts, fragWanted);
+      if (fragAt >= 0) fragWanted = null;
+      show(fragAt >= 0 ? fragAt : remembered >= 0 ? remembered : Math.max(0, firstFacts), false);
     }
     previous.addEventListener('click', () => show(page - 1, true));
     next.addEventListener('click', () => show(page + 1, true));
@@ -216,7 +222,7 @@
     initReportPages(workspace);
     restore();
   }
-  const api = { normalizePanel, panelFromHash, panelFromLocation, panelURL };
+  const api = { normalizePanel, panelFromHash, panelFromLocation, panelURL, fragTopicIndex };
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
     else init();

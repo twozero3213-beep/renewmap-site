@@ -1,6 +1,6 @@
 {
   "_doc": "생성 파일. 원본은 backend/scripts/export_templates.py. 직접 고치지 않는다. 사용법은 docs/gov/form_fragments.md",
-  "version": "TPL-2026-11-20.2",
+  "version": "TPL-2026-11-20.3",
   "consts": {
     "min_met": 2,
     "n_req": 3,
@@ -9,7 +9,7 @@
     "aging_thr": "50%"
   },
   "decline_rule": {
-    "id": "decline-3req-v0.1",
+    "id": "decline-3req-v0.2",
     "approved": false
   },
   "format": {
@@ -131,6 +131,7 @@
   "generic_per_group": 3,
   "criteria_notes": [
     "'기준 해당'은 값이 기준 조건에 드는 경우이다. '확정 불가'는 값이 없거나 상태가 추가확인·충돌인 경우이다.",
+    "충족 요건 수는 상태가 추가확인·충돌이어도 확정된 요건이 2개 이상이면 '기준 해당(하한)'이다. 정하지 못한 요건이 모두 해당해도 2개 미만이면 '기준 비해당'이고, 그 밖일 때만 '확정 불가'이다.",
     "'*'는 기준 상태가 승인 대기인 비교이며 승인 전 참고 값이다. 항목별 비교만 하며 합산하지 않았다."
   ],
   "forecast_lead": "{label}은 {v}(하한 {lo}, 상한 {hi})이다.{ref}",

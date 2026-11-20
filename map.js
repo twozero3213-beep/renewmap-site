@@ -42,7 +42,7 @@
   const GROUP_ICON = { aging: 'bldg', pop: 'people', estate: 'home', life: 'tree', safe: 'cctv', fore: 'fore', sum: 'sum' };
   const gIco = g => icon(GROUP_ICON[g]);
   const safeUrl = u => (/^https?:\/\//i.test(u || '') ? u : null);
-  // 쇠퇴 요건의 기준값은 시행령 제17조 문언 그대로라 '법정'이다. 승인 대기인 것은 요건을 묶어 판정하는 규칙(decline-3req-v0.1, hero.js RULE)이다.
+  // 쇠퇴 요건의 기준값은 시행령 제17조 문언 그대로라 '법정'이다. 승인 대기인 것은 요건을 묶어 판정하는 규칙(decline-3req-v0.2, hero.js RULE)이다.
   // 출처 기록의 '공식 기준선 넘은 지표 수'(living STD_SHORTFALL_COUNT)도 이 기준을 확정으로 센다 — 화면과 원장이 같은 수를 보이게 맞춘다
   const LAW = '도시재생법 시행령 제17조';
   const lawStd = (value, direction, text) => ({ value, direction, text, source: LAW, status: '법정' });
@@ -573,6 +573,9 @@
   const codeOf = d => String(d.code7 ?? d.code);
   const livingMap = lv => new Map(((lv && Array.isArray(lv.dongs)) ? lv.dongs : []).map(d => [codeOf(d), d]));
   const livingCell = (ld, code) => ((ld && ld.cells) || []).find(c => c.indicator_code === code) || null;
+  // 충족 수 '기준 해당(하한)'(D1): 하한 2 이상이고, 셀이 있으면 decline-req metFloor, 셀이 없는 지난 해는 그 해가 check_years에 있을 때(비교표 programs.js와 같다).
+  // 척도표 배지(dongRows)와 카드 머리(reqLineHTML)가 이 한 줄을 쓴다(r13 재검토: 머리만 '정하지 못한 요건이 있으면'도 더 봐서 지난 해 두 곳이 달랐다)
+  const metFloorOf = (cell, value, held) => !!DeclineReq && isNum(value) && value >= 2 && (cell ? DeclineReq.metFloor(cell) : held);
   // 한 동의 모든 지표 줄(척도표). 순서는 지표 목록 순서 그대로 — 값으로 줄 세우지 않는다
   // ext: { migration, designations, forecastIdx, forecast(이 시군구 전망 파일), horizon(전망 연도), sg(이 시군구 index 항목) }
   function dongRows(inds, dong, ld, year, ext) {
@@ -581,8 +584,12 @@
         const s = seriesOf(dong, ind.code), y = year ?? latestYear(s), d5 = seriesOf(dong, ind.code + '_DELTA5Y');
         const value = y === null ? null : valueAt(s, y), cell = ((dong && dong.cells) || []).find(c => c.indicator_code === ind.code && c.base_year === y && c.value === value) || null;
         // 그 해 출처 기록이 미확정(추가확인·충돌·폐기)인 값: 셀이 있으면 셀 상태, 지난 해(셀 없음)는 check_years. programs.js isHeld와 같은 규칙
-        const unsettled = isNum(value) && (cell ? !!DeclineReq && DeclineReq.cellValue(cell) === null : ((((dong && dong.check_years) || {})[ind.code]) || []).includes(y));
-        return rowOf(ind, value, { year: y, series: s, delta: y === null ? null : valueAt(d5, y), cell, evidenceMissing: isNum(value) && !cell, unsettled });
+        const held = ((((dong && dong.check_years) || {})[ind.code]) || []).includes(y);
+        // 충족 수(D1, 2026-11-20 대표 승인)는 하한·상한으로 본다(decline-req metStatus): 하한 2 이상이면 미확정이어도 기준 해당(하한). 지난 해(셀 없음)는 check_years
+        const met = ind.code === 'DECLINE_MET_COUNT' && !!DeclineReq;
+        const unsettled = isNum(value) && (met ? (cell ? DeclineReq.metStatus(cell) === 'none' : held && value < 2) : cell ? !!DeclineReq && DeclineReq.cellValue(cell) === null : held);
+        const floor = met && metFloorOf(cell, value, held);
+        return rowOf(ind, value, { year: y, series: s, delta: y === null ? null : valueAt(d5, y), cell, evidenceMissing: isNum(value) && !cell, unsettled, floor });
       }
       if (ind.src === 'forecast') {
         const f = ind.pending ? null : fcOf(ext, ind.level === 'sg' ? null : codeOf(dong || {}), ind.fc), ok = f && !f.held;
@@ -732,6 +739,8 @@
   //     '기준 해당'은 백엔드 ingest/living.py의 '기준선 넘은 지표 수(하한)'와 같은 낱말이라 화면·자료가 한 낱말을 쓴다.
   // 재사용: 화면에서 이 낱말이 필요한 곳은 문자열을 다시 쓰지 말고 HIT를 쓴다.
   const HIT = '기준 해당';
+  // D1(2026-11-20 대표 승인): 쇠퇴 요건 수 하한이 2 이상이면 셀이 추가확인이어도 기준 해당. 좁은 칸은 짧은 꼴, 기준·출처 칸은 긴 꼴(docgen OVER_FLOOR·FLOOR_NOTE)
+  const FLOOR = `${HIT}(하한)`, FLOOR_LONG = '정하지 못한 요건은 세지 않았고, 확정된 요건만으로 기준 해당(하한: 최소 2개 확정)';
   const statusLabels = { '기준 넘음': HIT, '기준 안': '해당 안 함', '공식 기준 없음': '기준선 없음', '행정 지정': '지정', '미지정': '지정 안 됨', '자료 없음': '추가확인 · 자료 부족', '보류': '추가확인 · 공개 보류', '추세 전망': '인구 전망' };
   const stLabel = st => statusLabels[st] || st;
   // 이 기기에 저장해 둔 예전 기준일 비교값(snapshotOf의 s)은 옛 낱말로 남아 있다.
@@ -754,6 +763,7 @@
   function stdTextOf(r) {
     const ind = r.ind;
     if (ind.pending) return ind.failed ? '자료를 불러오지 못했습니다. 숫자를 만들지 않습니다.' : '자료를 모으는 중입니다. 숫자를 만들지 않습니다.';
+    if (r.floor) return `${FLOOR_LONG} · ${stdTextOf({ ...r, floor: false, evidenceMissing: false })}`;
     if (r.evidenceMissing) return (r.unsettled ? '이 해 출처 기록 추가확인 · 기준 해당 여부 정하지 않음' : SERIES_NO_CELL) + (ind.standard ? ` · 기준 ${ind.standard.text}` : ind.note ? ` · ${ind.note}` : '');
     // 30년 감소율 셀이 비면 까닭을 적는다(docs/quality/pop_drop30_missing_2026-11-06.md: 98%가 지금 행정동 코드 기록이 1995년 뒤 시작). 값을 지어 채우지 않는다
     if (ind.code === 'DECLINE_POP_DROP30Y_PCT' && r.value === null && r.cell) return `계산 안 함 · 1996~2025년 인구 기록이 다 있지 않음(대부분 지금 행정동 코드가 1995년 뒤에 생김) · 요건 ①은 '최근 5년 중 3년 연속 감소' 길로 볼 수 있음${ind.standard ? ` · 기준 ${ind.standard.text}` : ''}`;
@@ -807,7 +817,7 @@
     const groups = GROUPS.filter(([g]) => list.some(r => r.ind.group === g)).map(([g, gl]) => `<li class="sr-group"><details${g === curG ? ' open' : ''}><summary><h4>${gIco(g)}${esc(gl)}</h4><span class="sr-gsum">${gsum(g)}</span></summary>${g === 'safe' ? `<p class="sr-group-note">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="sr-group-note">${esc(FORE_FIXED)}</p>` : ''}<ul>${list.filter(r => r.ind.group === g).map(r => {
       const ind = r.ind, tt = trendText(r.delta, ind), st = shownSt(r), cls = ROW_CLASS[st];
       const rowsD = r.cell ? detail(r.cell) : [];
-      return `<li class="sr is-${cls}${ind.code === o.cur ? ' is-cur' : ''}"><div class="sr-h">${icon(ind.icon)}<span class="sr-l">${esc(ind.label)}${r.sgLevel ? ' <small>시·군·구</small>' : ''}</span><b class="sr-v">${esc(rowText(r))}</b>${refOf(r) ? `<small>기준일 ${esc(refOf(r))}</small>` : ''}<span class="sr-st st-${cls}">${esc(stLabel(st))}</span></div>` +
+      return `<li class="sr is-${cls}${ind.code === o.cur ? ' is-cur' : ''}"><div class="sr-h">${icon(ind.icon)}<span class="sr-l">${esc(ind.label)}${r.sgLevel ? ' <small>시·군·구</small>' : ''}</span><b class="sr-v">${esc(rowText(r))}</b>${refOf(r) ? `<small>기준일 ${esc(refOf(r))}</small>` : ''}<span class="sr-st st-${cls}">${esc(r.floor ? FLOOR : stLabel(st))}</span></div>` +
         (ind.categorical ? '' : `<div class="sr-m">${barSVG(r)}${tt ? `<em class="map-trend ${tt.cls}">${tt.arrow} 5년 ${esc(fmt(r.delta, ind.dEdges ? '' : '%p'))} ${esc(tt.word)}</em>` : ''}</div>`) +
         (r.series && r.series.some(p => p[1] !== null) ? trendSVG(r.series, r.year, ind.label, validStd(ind.standard) ? ind.standard.value : null, ind.unit) : '') +
         `<details class="map-detail sr-why"><summary>ⓘ 기준·출처${r.year ? ` (${esc(r.year)}년)` : ''}</summary><p class="sr-std">${esc(stdTextOf(r))}</p>${rowsD.length ? dl(r.cell) : ''}</details></li>`;
@@ -860,18 +870,22 @@
     // 통계 범위가 다른 집계구 자료를 확인하도록 잇는다. 자료가 없는 동은 도착 화면에서 안내하며 숫자는 새로 세지 않는다(원칙 1).
     // 구역 그리기(field/redev.html)는 부산 기준 계산만 제공하므로 부산(21) 동에서만 함께 보인다. 규칙 승인을 뜻하지 않는다.
     const code = dong && /^\d{7,10}$/.test(codeOf(dong)) ? codeOf(dong) : null;
-    // 정해지지 않은 요건이 남아 결과가 바뀔 수 있으면 '기준 안'·'기준 넘음' 대신 추가확인(1쪽 문서 '확정 불가'와 같은 판단)
+    // D1(2026-11-20 대표 승인, 1쪽 문서·비교표와 같은 판단): 셀이 있으면 decline-req metStatus — 하한 2 이상은 셀이 추가확인이어도 기준 해당(하한),
+    // 상한(하한 + 정해지지 않은 요건 3 − sample_n) 2 미만은 해당 안 함, 그 밖 추가확인.
     // 그해 셀이 없으면(지난 해) 아래 세 줄에서 정해지지 않은 요건 수를 센다
     const nUnknown = (rowsHtml.match(/class="is-none"/g) || []).length;
-    // 지난 해는 셀이 없어 check_years로 본다: 그 해 충족 수 셀이 추가확인이었으면 최신 해(metStatus 'none')와 같이 추가확인(3차 검증: 연도 막대만 옮겨도 판단이 뒤집혔다)
+    // 지난 해는 셀이 없어 check_years로 본다: 그 해 충족 수 셀이 추가확인이었으면 하한 2 미만일 때 추가확인(3차 검증: 연도 막대만 옮겨도 판단이 뒤집혔다)
     const metHeld = !r.cell && isNum(r.year) && ((((dong && dong.check_years) || {})[REQ_CODE]) || []).includes(r.year);
-    const undecided = ((metHeld || (r.cell && DeclineReq && DeclineReq.metStatus(r.cell) === 'none')) && (r.status === '기준 안' || r.status === '기준 넘음')) || (r.status === '기준 안' && isNum(r.value) && r.value + nUnknown >= 2);
+    const ms = r.cell && DeclineReq ? DeclineReq.metStatus(r.cell) : null;
+    const decided = r.status === '기준 안' || r.status === '기준 넘음';
+    const floor = decided && metFloorOf(r.cell, r.value, metHeld);   // 척도표 배지와 같은 규칙
+    const undecided = decided && (ms ? ms === 'none' : r.status === '기준 안' && (metHeld || r.value + nUnknown >= 2));
     const st = undecided ? '추가확인' : r.status;
     // 요건이 아직 정해지지 않았으면(추가확인) '못 미친다'고 단정하지 않는다(원칙 4) → 문장을 나눈다
     const lead = st === '추가확인' ? '동 전체로는 아직 정해지지 않은 요건이 있습니다.' : '동 전체로는 2개에 못 미칩니다.';
     const smaller = isNum(r.value) && r.value < 2 && code ? `<p class="sr-req-more">${lead} 사업지와 통계 범위가 다를 수 있습니다. 집계구에서는 인구·사업체 두 요건의 자료만 확인합니다: <a href="field/oa.html?dong=${encodeURIComponent(code)}">집계구 자료 범위 확인</a>${String(code).startsWith('21') ? ` · <a href="field/redev.html">구역 그려 계산하기</a>` : ''}</p>` : '';
     return `<section class="sr-req is-${ROW_CLASS[st] || 'none'}" aria-label="쇠퇴 3요건 요약">` +
-      `<p class="sr-req-n"><span class="sr-req-k">쇠퇴 3요건 중</span> <b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(stLabel(st))}</small>` : ''}</p>${rowsHtml}${jumpNote}${go}${smaller}${foot}</section>`;
+      `<p class="sr-req-n"><span class="sr-req-k">쇠퇴 3요건 중</span> <b data-ck="req">${esc(fmt(r.value, ''))}개</b> 해당${std ? ` <small>공모 기준(${esc(std)}) · ${esc(floor ? FLOOR : stLabel(st))}</small>` : ''}</p>${rowsHtml}${jumpNote}${go}${smaller}${foot}</section>`;
   }
   // v7(2026-11-13): 3요건 각각의 값·상태를 홈 카드처럼 세 줄로. 평가: 카드의 세는 법이 넷(해당 수·확인할 항목·확정/추가확인·묶음별 수)이라
   // 무엇을 봐야 할지 몰랐다 → 맨 위는 '몇 개 해당'과 그 세 줄만 두고, 나머지 셈은 아래 접힌 칸으로 옮긴다. 값은 rows(출처 기록) 그대로
@@ -1078,6 +1092,8 @@
       (cur && cur.variants.length > 1 ? `<label class="map-select">내용<select data-frag-variant>${cur.variants.map(v => `<option value="${esc(v.id)}"${v.id === sel.variant ? ' selected' : ''}>${esc(v.title)}</option>`).join('')}</select></label>` : '') + `</div>` +
       `<p class="map-note">고른 양식의 항목 순서대로 문장과 표를 만들고, 복사해 한글·엑셀 양식에 붙여 넣습니다.<br>값이 없는 항목은 '자료 없음'으로 남기고, 출처 번호는 이 조각 안에서 1부터 다시 매깁니다.</p><div data-frag-out aria-live="polite"></div></section>`;
   }
+  // 2026-11-20 홈 '반여1동 4-1 표 초안 보기'(explore.html?report=brief&frag=MLIT-DECLINE): 주소의 조각 id가 양식 정의에 있으면 첫 내용으로 미리 고른다. 모르는 id는 null(무시)
+  const fragFromParam = (id, choices) => { const c = id ? (choices || []).find(x => x.id === id) : null; return c ? { id: c.id, variant: c.variants.length ? c.variants[0].id : '' } : null; };
   function deliveryReviewHTML(brief) {
     if (!DG || !brief) return '';
     const review = DG.deliveryReview(brief);
@@ -1371,7 +1387,7 @@
     seriesJump, livingIndicators, allIndicators, wantedInd, isAvailable, provenanceHTML, parseHash, toHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
     reportSentences, verifyPolished, stdTextOf, olsFit, trendSVG, donutSVG, coverLabel, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
-    gapRows, gapsHTML, reqLineHTML, BUNDLES, BUNDLE_ALL, bundleList, reorgNote, REORG, ageText, WATER_GRADES, WATER_EDGES, waterGrade, waterStyle, waterTipHTML, waterNoteHTML, waterAutoHTML, briefHTML, onepageHTML, fragPanelHTML, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
+    gapRows, gapsHTML, reqLineHTML, BUNDLES, BUNDLE_ALL, bundleList, reorgNote, REORG, ageText, WATER_GRADES, WATER_EDGES, waterGrade, waterStyle, waterTipHTML, waterNoteHTML, waterAutoHTML, briefHTML, onepageHTML, fragPanelHTML, fragFromParam, briefMailto, reportModeHTML, stdLineOf, BRIEF_HEAD, BRIEF_FOOT, REPORT_MODES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewMap = api;
@@ -1675,6 +1691,8 @@
     }
     if (!it) { report.innerHTML = reportModeHTML(reportMode) + `<div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 ${esc(iGa(REPORT_MODES.find(x => x[0] === reportMode)[1]))} 생깁니다</h3><p><a href="${esc(toHash({ sido: v.sido && v.sido.code2, sigungu: v.sigungu && v.sigungu.code5, gu: v.gu && v.gu.code5 }))}">지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p>${m.kind === 'emd' && m.items && m.items.length && window.RenewPrograms ? '<p><button type="button" class="btn" data-set-mode="programs">이 구의 동 비교표 보기</button></p>' : ''}</div>`; return; }
     const rows = rowsFor(v, m, it);
+    // 주소의 ?frag=는 양식 정의가 온 뒤 한 번만 읽는다(workspace.js가 고른 양식을 보고 그 주제를 연다)
+    if (fragWanted && DG && DG.getTemplates()) { fragChoice = fragFromParam(fragWanted, DG.fragmentChoices()) || fragChoice; fragWanted = null; }
     if (reportMode === 'onepage') {
       const built = docFor(v, m, it);
       report.innerHTML = reportModeHTML(reportMode) + (built.error ? `<div class="rp-empty" role="status"><h3>근거 1쪽을 아직 만들 수 없습니다</h3><p>${esc(built.error)}</p></div>` : onepageHTML(v, it, built.one, fragChoice));
@@ -1704,13 +1722,13 @@
   // ── 파일 만들기(docgen.js): 선택한 동의 출처 기록으로 근거서(HWPX·XLSX)와 1쪽 요약을 이 브라우저에서 바로 만든다. 서버로 보내지 않는다 ──
   const todayISO = () => DG.localDate();   // 서울 날짜(기기 시간대와 무관: 한국 밖·UTC 환경에서 0~9시에 하루가 어긋나지 않게)
   let taskLinkBusy = false;
-  let docMemo = { key: '', val: null }, fragChoice = { id: '', variant: '' };
+  let docMemo = { key: '', val: null }, fragChoice = { id: '', variant: '' }, fragWanted = new URLSearchParams(location.search).get('frag');
   // 생활·전망·순이동 자료가 아직 오는 중이면 '파일 없음'으로 적히지 않게 만들기를 미룬다
   const filesLoading = v => [state.templates, state.living, state.migration, state.designations, state.realestate, state.forecastIdx].some(x => x === undefined) || (!!state.living && livingOf(v.emdCode) === undefined) || (!!state.forecastIdx && forecastOf(v.emdCode) === undefined);
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261119-r7'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261120-r13'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);

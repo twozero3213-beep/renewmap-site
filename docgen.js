@@ -199,6 +199,8 @@
   // 법령 이름은 backend/renewmap/rules/decline.py RULE_VERSION과 같다(docgen.test.cjs가 파이썬 원본을 읽어 대조한다). 규칙 id·승인 여부는 JSON(decline_rule)에서
   const DECLINE_LAW = '도시재생 활성화 및 지원에 관한 특별법 시행령 제17조';
   const OVER = '기준 해당', INSIDE = '기준 비해당', UNKNOWN = '확정 불가', PENDING_SUFFIX = '(승인 전 참고)';
+  // D1(2026-11-20 대표 승인): dong_brief OVER_FLOOR·FLOOR_NOTE와 같은 글
+  const OVER_FLOOR = '기준 해당(하한)', FLOOR_NOTE = `'${OVER_FLOOR}'은 확정된 요건만 세어도 ${DECLINE_MIN_MET}개 이상인 경우이다(하한: 최소 ${DECLINE_MIN_MET}개 확정). 정하지 못한 요건이 있어도 결과는 바뀌지 않는다.`;
   const LIVING_CODES = new Set([...GROUPS[2][1], ...GROUPS[3][1], 'POP_AGED65_PCT', 'POP_AGED65_PCT_DELTA5Y', 'POP_YOUTH_PCT', 'POP_YOUTH_PCT_DELTA5Y']);
   const SERIES = ['DECLINE_POP_TOTAL', 'DECLINE_AGING_20Y_PCT', 'DECLINE_BIZ_TOTAL'], SERIES_YEARS = 10;
 
@@ -330,11 +332,13 @@
     const v = cell.value, hit = op === 'ge' ? v >= thr : op === 'lt' ? v < thr : v === thr;
     return hit ? OVER : INSIDE;
   }
-  function judgeMetCount(cell) {
-    const base = judge(cell, 'ge', DECLINE_MIN_MET);
-    if (base !== INSIDE) return base;
-    const undecided = DECLINE_N_REQ - (cell.sample_n !== null && cell.sample_n !== undefined ? cell.sample_n : 0);
-    return cell.value + undecided >= DECLINE_MIN_MET ? UNKNOWN : INSIDE;
+  // 충족 수(하한) 셀. 정하지 못한 요건 수 = nReq − sample_n(없으면 0). D1: 하한 ≥ 2면 셀이 미확정이어도 기준 해당(남은 요건·미확정이면 OVER_FLOOR),
+  // 상한 < 2면 기준 비해당, 그 밖 확정 불가. dong_brief judge_met_count·decline-req metStatus와 같다(met-count.test.cjs)
+  function judgeMetCount(cell, nReq = DECLINE_N_REQ, thr = DECLINE_MIN_MET) {
+    if (!cell || hidden(cell) || cell.value === null || cell.value === undefined) return UNKNOWN;
+    const undecided = nReq - (cell.sample_n || 0);
+    if (cell.value >= thr) return undecided > 0 || UNSETTLED().includes(cell.status) ? OVER_FLOOR : OVER;
+    return cell.value + undecided < thr ? INSIDE : UNKNOWN;
   }
   const verdictOf = (v, status) => (String(status).includes('승인 대기') && v !== UNKNOWN ? v + PENDING_SUFFIX : v);
   const ruleApproved = () => !!(T && T.decline_rule && T.decline_rule.approved);
@@ -541,6 +545,7 @@
     const critBlock = block('table', '', { rows: critRows, widths: [33, 12, 16, 17, 22], caption: `표 ${k + 1}. 기준 대비` });
     blocks.push(critBlock); parts.crit = critBlock;
     TP.criteria_notes.forEach(s => blocks.push(block('para', s)));
+    if (crit.rows.slice(1).some(r => r[5].startsWith(OVER_FLOOR))) blocks.push(block('para', FLOOR_NOTE));
     if (brief.biz) blocks.push(block('para', bizNote(brief)));
 
     blocks.push(block('h1', '4. 확인이 필요한 사항'));
@@ -960,12 +965,7 @@
   }
   const pend = (v, spec) => (spec.pending && !ruleApproved() && v !== UNKNOWN ? v + PENDING_SUFFIX : v);
   const verdictCell = (spec, by) => pend(judge(by.get(spec.code) || null, spec.op, spec.thr), spec);
-  // 값은 확정된 충족 수의 하한이라 확정 못 한 요건(n_req - sample_n)이 남으면 '비해당'으로 단정하지 않는다
-  function countVerdictCell(spec, by) {
-    const c = by.get(spec.code) || null; let v = judge(c, 'ge', spec.thr);
-    if (v === INSIDE && spec.n_req - (c.sample_n || 0) + c.value >= spec.thr) v = UNKNOWN;
-    return pend(v, spec);
-  }
+  const countVerdictCell = (spec, by) => pend(judgeMetCount(by.get(spec.code) || null, spec.n_req, spec.thr), spec);
   function tableCell(sp, by, facts, refs, fc) {
     if (typeof sp === 'string') return sp;
     const [k, a] = Object.entries(sp)[0];
@@ -1231,7 +1231,7 @@
   }
 
   return {
-    crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, fmtNum, roundD, plainSource, govDate, localDate, josa, valueWithUnit, fmtCell, hidden, usable, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
+    crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, fmtNum, roundD, plainSource, govDate, localDate, josa, valueWithUnit, fmtCell, hidden, usable, judgeMetCount, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
     setTemplates, getTemplates, displayName, BriefError, Sources, sourceLine, buildBrief, buildDoc, buildOnepage, deliveryReview, estimateHeightMm, basisDate, FIXED_NOTICE, docText, sentenceText, sizesFor, textRuns, withSnap, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
     tablePayload, sentencePayload, copyToClipboard, buildFragments, fragmentChoices, fragmentPayload, fragmentHTML, docHTML, COPY_TABLE, COPY_SENT, projectFeatures, mapSvg, safeName, saveBytes, svgToPng, xe,
   };

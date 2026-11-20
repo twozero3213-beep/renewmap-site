@@ -14,12 +14,19 @@
   // 한 동의 셀들 → 카드에 쓸 값(순수 함수, 시험용). 상태는 요건 단위(decline-req.js: 30년·10년 감소율 또는 '최근 5년 중 3년 연속 감소' 중 하나라도 해당이면 해당).
   // v7(11-13 6회차): 감소율 한 길만 보고 '추가확인'을 붙여, 연속 감소로 해당한 동은 머리의 'N개 해당'과 줄이 어긋났다
   const DR = typeof module === 'object' && module.exports ? require('./decline-req.js') : root.DeclineReq;
+  // D1(2026-11-20 대표 승인): 머리 판단과 낱말은 지도 머리와 같다(decline-req metStatus·metFloor).
+  // r13 재검토: 홈만 '최소 2개 기준 해당 · 추가확인 1개'(하한 동)·'최소 0개 …'(지도는 해당 안 함)로 남아 있었다
+  const MET_WORD = { over: '기준 해당', floor: '기준 해당(하한)', in: '해당 안 함', none: '추가확인' };
   function summarize(cells, series) {
     const by = new Map((cells || []).map((c) => [c.indicator_code, c]));
     const met = by.get(MET), val = (code) => DR.cellValue(by.get(code));   // 미확정·비공개 셀은 셈에 안 쓴다(문서·동 페이지와 같게)
     const reqs = DR.evaluate(val);
-    return {
-      met: met && !met.value_hidden_reason && typeof met.value === 'number' ? met.value : null,
+    const metV = met && !met.value_hidden_reason && typeof met.value === 'number' ? met.value : null;
+    const metState = metV === null ? null : DR.metFloor(met) ? 'floor' : DR.metStatus(met);
+    const s = {
+      met: metV,
+      metState,
+      head: metV === null ? '추가확인' : `${metV}개 해당 · ${MET_WORD[metState]}`,
       rows: ROWS.map(([code, label, , std], i) => {
         const q = reqs[i], c = by.get(code) || null;
         // 감소율의 바탕인 총수 셀이 비어 있으면 같은 줄 작은 글에 밝힌다(11-13 2차: 동 페이지는 '사업체 수 자료 없음'인데 홈은 0%만 보였다)
@@ -43,6 +50,11 @@
       }),
       ref: met ? met.reference_date : null,
     };
+    // 정하지 못한 줄을 밝힌다. 하한·상한으로 판단이 정해진 동은 그 줄이 어느 쪽이어도 판단이 같다(D1)
+    s.unknown = s.rows.filter((r) => r.over === null).length;
+    s.gap = !s.unknown ? '' : `추가확인 ${s.unknown}개는 아직 정하지 못해 세지 않았습니다. ${metState === 'none' || metState === null
+      ? '실제 기준 해당 수는 더 많을 수 있습니다.' : '어느 쪽으로 정해져도 2개 이상 기준에 대한 판단은 같습니다.'} `;
+    return s;
   }
   const api = { summarize, ROWS };
   if (typeof module === 'object' && module.exports) { module.exports = api; return; }
@@ -102,15 +114,13 @@
       const s = summarize(dong ? dong.cells : [], dong ? dong.series : null);
       $('h6LiveName').textContent = name;
       $('h6LiveWhere').textContent = `${sido} ${sggName}`;
-      const unknown = s.rows.filter(r => r.over === null).length;
-      $('h6Met').textContent = s.met === null ? '추가확인' : unknown
-        ? `최소 ${s.met}개 기준 해당 · 추가확인 ${unknown}개` : `${s.met}개 기준 해당`;
+      $('h6Met').textContent = s.head;
       $('h6Rows').replaceChildren(...s.rows.map(row));
       prov(dong ? dong.cells : [], name, s.rows.map((r) => r.boundary).find(Boolean));
       const sidoCode = sgg.slice(0, 2), hash = `#map/${sidoCode}/${sgg}/${code}`;
       $('h6Go').href = `explore.html?report=onepage${hash}`;
       $('h6Prog').href = `explore.html?report=programs${hash}`;
-      $('h6Note').textContent = `${unknown ? `추가확인 ${unknown}개는 아직 정하지 못해 세지 않았습니다. 실제 기준 해당 수는 더 많을 수 있습니다. ` : ''}판정 아님 · 참고 계산${s.ref ? ` (기준일 ${s.ref})` : ''}. 판정은 담당 기관이 원문과 대조해 정합니다.`;
+      $('h6Note').textContent = `${s.gap}판정 아님 · 참고 계산${s.ref ? ` (기준일 ${s.ref})` : ''}. 판정은 담당 기관이 원문과 대조해 정합니다.`;
       doc.querySelectorAll('.h6-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.dong === code8)));
       // 카드 전체를 다시 읽히지 않고 새 요지 한 문장만 읽힌다(2026-11-18 접근성 검토: 카드 전체가 aria-live라 표·출처까지 다시 읽혔다)
       const say = $('h6Say');

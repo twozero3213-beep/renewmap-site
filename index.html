@@ -32,7 +32,7 @@ document.documentElement.classList.add('js');
 <meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="리뉴맵 RENEWMAP">
 <meta property="og:title" content="리뉴맵 · 근거가 남는 도시재생">
-<meta property="og:description" content="동네 진단부터 준공 뒤 재방문까지, 도시재생에 쓰는 숫자마다 출처와 기준일을 붙여 다음 담당자에게 넘깁니다.">
+<meta property="og:description" content="공모 신청서의 4-1 도시쇠퇴현황 검토 표를 동별 초안으로 받습니다. 숫자마다 출처와 기준일을 붙이고, 확인이 더 필요한 칸은 따로 표시합니다. 준공 뒤 다시 찍은 사진과 고친 까닭까지 다음 담당자에게 넘깁니다.">
 <meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -59,8 +59,8 @@ document.documentElement.classList.add('js');
 <script src="home.js?v=20261119-r3" defer></script>
 <script src="cellpack.js" defer></script>
 <script src="util.js?v=20261120-r11" defer></script>
-<script src="decline-req.js?v=20261119-r3" defer></script>
-<script src="home-live.js?v=20261119-r3" defer></script>
+<script src="decline-req.js?v=20261120-r13" defer></script>
+<script src="home-live.js?v=20261120-r13" defer></script>
 <script src="home-rank.js?v=20261119-r3" defer></script>
 <link rel="stylesheet" href="rm6.css?v=20261120-r11">
 </head>
@@ -74,7 +74,8 @@ document.documentElement.classList.add('js');
   <section class="h6-hero wrap" aria-labelledby="heroTitle">
     <div class="h6-copy">
       <h1 id="heroTitle">근거가 남는 도시재생</h1>
-      <p class="h6-lead">동네 진단부터 준공 뒤 재방문까지, 도시재생에 쓰는 숫자마다 출처와 기준일을 붙여 다음 담당자에게 넘깁니다.</p>
+      <!-- 2026-11-20 r13: 부제는 강점 전략 메시지 A(대표 승인, 4-1 출처 열·충족 수 하한·C09와 같은 배포). 2줄 문안은 D29(2026-11-20 대표 승인). 첫 단추는 ?frag=MLIT-DECLINE로 4-1 표를 한 번에 연다 -->
+      <p class="h6-lead">공모 신청서의 4-1 도시쇠퇴현황 검토 표를 동별 초안으로 받습니다.<br>숫자마다 출처와 기준일을 붙이고, 확인이 더 필요한 칸은 따로 표시합니다.<br>준공 뒤 다시 찍은 사진과 고친 까닭까지 다음 담당자에게 넘깁니다.</p>
       <form id="homeSearch" class="home-search h6-search" role="search" autocomplete="off">
         <label for="homeQ">동 이름</label>
         <div class="home-search-row">
@@ -86,7 +87,7 @@ document.documentElement.classList.add('js');
       </form>
       <p class="home-msg">전국 행정동 3,559곳 · 건물 단위 계산은 부산 254개 법정동 · 로그인·설치 없이 무료</p>
       <div class="h6-try" role="group" aria-labelledby="h6TryK"><span class="h6-try-k" id="h6TryK">바로 보기</span><button type="button" class="h6-chip rm-chip" data-dong="21090700">반여1동</button><button type="button" class="h6-chip rm-chip" data-dong="21030510">초량1동</button><button type="button" class="h6-chip rm-chip" data-dong="21040530">남항동</button><button type="button" class="h6-chip rm-chip" data-dong="21100650">감천1동</button><button type="button" class="h6-chip rm-chip" data-dong="38100120">양산 물금읍</button><button type="button" class="h6-chip rm-chip" data-dong="38090580">거제 고현동</button></div><!-- 2026-11-16: 부산 밖 자료(양산·거제)도 첫 화면에서 바로 열리게 -->
-      <p class="h6-links"><a href="about.html#usesTitle">맡은 일로 시작하기</a><a href="tasks.html?step=delivery#handoverSummary">인수인계 준비하기</a></p>
+      <p class="h6-links"><a href="explore.html?report=brief&amp;frag=MLIT-DECLINE#map/21/21090/21090700">반여1동 4-1 표 초안 보기</a><a href="tasks.html?step=delivery#handoverSummary">인수인계 준비하기</a></p>
       <noscript><p>검색은 자바스크립트를 켜야 됩니다.<br><a href="dong/index.html">행정동 목록에서 동네를 찾아 주세요.</a></p></noscript>
     </div>
     <p class="sr-only" id="h6Say" role="status"></p>

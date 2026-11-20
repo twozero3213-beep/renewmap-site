@@ -74,7 +74,7 @@
   {
    "name": "index.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/index.json",
-   "bytes": 1667400,
+   "bytes": 1757008,
    "type": "object",
    "top_level_keys": [
     "generated_at",
@@ -90,13 +90,13 @@
     "sigungu",
     "unmatched"
    ],
-   "generated_at": "2026-11-19T01:02:55+09:00",
-   "snapshot_hash": "0028892a2768cf27ab4595981e37d0cc31644d9f2118cc883c7b50407d001c21"
+   "generated_at": "2026-11-20T23:24:31+09:00",
+   "snapshot_hash": "4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01"
   },
   {
    "name": "index_core.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/index_core.json",
-   "bytes": 1107957,
+   "bytes": 1161762,
    "type": "object",
    "top_level_keys": [
     "generated_at",
@@ -112,13 +112,13 @@
     "sigungu",
     "series_file"
    ],
-   "generated_at": "2026-11-19T01:02:55+09:00",
-   "snapshot_hash": "0028892a2768cf27ab4595981e37d0cc31644d9f2118cc883c7b50407d001c21"
+   "generated_at": "2026-11-20T23:24:31+09:00",
+   "snapshot_hash": "4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01"
   },
   {
    "name": "index_map.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/index_map.json",
-   "bytes": 347024,
+   "bytes": 400829,
    "type": "object",
    "top_level_keys": [
     "generated_at",
@@ -135,13 +135,13 @@
     "summary_codes",
     "series_file"
    ],
-   "generated_at": "2026-11-19T01:02:55+09:00",
-   "snapshot_hash": "0028892a2768cf27ab4595981e37d0cc31644d9f2118cc883c7b50407d001c21"
+   "generated_at": "2026-11-20T23:24:31+09:00",
+   "snapshot_hash": "4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01"
   },
   {
    "name": "index_series.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/index_series.json",
-   "bytes": 1323196,
+   "bytes": 1358999,
    "type": "object",
    "top_level_keys": [
     "snapshot_hash",
@@ -150,8 +150,8 @@
     "summary",
     "unmatched"
    ],
-   "generated_at": "2026-11-19T01:02:55+09:00",
-   "snapshot_hash": "0028892a2768cf27ab4595981e37d0cc31644d9f2118cc883c7b50407d001c21"
+   "generated_at": "2026-11-20T23:24:31+09:00",
+   "snapshot_hash": "4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01"
   },
   {
    "name": "migration.json",
@@ -312,14 +312,14 @@
   {
    "pattern": "https://twozero3213-beep.github.io/renewmap-site/data/national/emd/{시군구코드5}.json",
    "files": 252,
-   "snapshot_hash": "0028892a2768cf27ab4595981e37d0cc31644d9f2118cc883c7b50407d001c21",
-   "generated_at": "2026-11-19T01:02:55+09:00"
+   "snapshot_hash": "4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01",
+   "generated_at": "2026-11-20T23:24:31+09:00"
   },
   {
    "pattern": "https://twozero3213-beep.github.io/renewmap-site/data/national/living/{시군구코드5}.json",
    "files": 254,
-   "snapshot_hash": "0028892a2768cf27ab4595981e37d0cc31644d9f2118cc883c7b50407d001c21",
-   "generated_at": "2026-11-19T01:02:55+09:00"
+   "snapshot_hash": "4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01",
+   "generated_at": "2026-11-20T23:24:31+09:00"
   }
  ]
 }

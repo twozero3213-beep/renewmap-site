@@ -49,12 +49,16 @@
   // 미확정 셀은 확정 낱말로 나가지 않는다. decline-req.js·docgen.js와 같은 목록, 1쪽 요약과 같은 낱말 '확정 불가'
   const UNSETTLED = ['추가확인', '충돌', '폐기'];
   const metTxt = f => (num(f.met) ? `${f.met}개` : f.metHeld ? '확정 불가' : '값 없음');
-  // 사업 판정에 쓰는 값: 그 해 충족 수·노후 셀이 미확정(셀 상태, 지난 해는 check_years)이면 값이 있어도 판정에 쓰지 않는다.
-  // 지도 머리(추가확인)·1쪽(확정 불가)과 같은 규칙. 3차 검증: 사직동처럼 충족 수 하한 2·추가확인인 동이 비교표에서만 '자료상 맞음'이었다
+  // decline-req.js는 explore.html에서 이 파일 뒤에 실리므로 부를 때 찾는다
+  const DR = () => (typeof module === 'object' && module.exports ? require('./decline-req.js') : root.DeclineReq);
+  // 사업 판정에 쓰는 값: 그 해 노후 셀이 미확정(셀 상태, 지난 해는 check_years)이면 값이 있어도 판정에 쓰지 않는다.
+  // 충족 수는 D1(2026-11-20 대표 승인, 지도 머리·1쪽과 같은 decline-req metStatus): 하한 2 이상이면 셀이 추가확인이어도 쓰고, 정하지 못하면('none') 쓰지 않는다.
+  // 셀이 없는 지난 해는 check_years에 있고 하한이 2 미만일 때만 쓰지 않는다
   function settledFacts(rows, dong, unsettled) {
     const f = factsOf(rows);
     const isHeld = unsettled || (code => { const r = rows.find(x => x.ind.code === code); if (r && r.cell) return UNSETTLED.includes(r.cell.status); return !!r && num(r.year) && ((((dong || {}).check_years || {})[code]) || []).includes(r.year); });
-    const metHeld = isHeld('DECLINE_MET_COUNT'), agingHeld = isHeld('DECLINE_AGING_20Y_PCT');
+    const metCell = (rows.find(x => x.ind.code === 'DECLINE_MET_COUNT') || {}).cell;
+    const metHeld = metCell ? DR().metStatus(metCell) === 'none' : isHeld('DECLINE_MET_COUNT') && !(f.met >= 2), agingHeld = isHeld('DECLINE_AGING_20Y_PCT');
     return { ...f, met: metHeld ? null : f.met, aging: agingHeld ? null : f.aging, metHeld, agingHeld };
   }
   function checkNeed(n, f) {
@@ -180,7 +184,7 @@
       const flag = c => { const x = cellAt(c); if (x) return num(x.value) && !x.value_hidden_reason ? x.value : null; return held(c) || !num(hy) ? null : atYear(c); };
       const unset = c => { const x = cellAt(c); return x ? UNSETTLED.includes(x.status) : held(c); }, g = settledFacts(rows, it, unset);
       const state = (id, kind) => checkNeed(PROGRAMS.find(p => p.id === id).needs.find(n => n.kind === kind), g).state;
-      return { name, year: num(hy) ? hy : null, met: f.met, aging: f.aging, biz: val('DECLINE_BIZ_DROP10Y_PCT'), bizDecl: flag('DECLINE_BIZ_DECL3IN5'), pop: val('DECLINE_POP_DROP30Y_PCT'), popDecl: flag('DECLINE_POP_DECL3IN5'), shortfall: f.shortfall,
+      return { name, year: num(hy) ? hy : null, met: f.met, metHeld: g.metHeld, aging: f.aging, biz: val('DECLINE_BIZ_DROP10Y_PCT'), bizDecl: flag('DECLINE_BIZ_DECL3IN5'), pop: val('DECLINE_POP_DROP30Y_PCT'), popDecl: flag('DECLINE_POP_DECL3IN5'), shortfall: f.shortfall,
         recognize: state('recognize', 'infraOrDecline'), oldres: state('oldres', 'oldDecline'), cells: DIST_CODES.map(cellAt), held: DIST_CODES.map(held) };
     });
   }
@@ -192,10 +196,16 @@
     '생활 기준 해당(초안)', '인정사업 쇠퇴·기반 요건', '노후주거지 쇠퇴 요건'];
   const unsetOf = (r, i) => { const c = r.cells[i]; return c && UNSETTLED.includes(c.status) ? c.status : r.held && r.held[i] ? '추가확인' : ''; };   // i: DIST_CODES 순번. 지난 해는 check_years
   const withSt = (text, st) => (st ? `${text} (${st})` : text), flagTxt = (v, st) => (st ? '확정 불가' : yes(v));
+  // 충족 수 칸(머리 '쇠퇴요건(하한)'): 셀이 미확정이어도 D1로 정해지면 셀 상태 대신 해당 여부(지도 머리·1쪽과 같은 판단).
+  // 하한 2 이상은 지도 머리와 같은 '기준 해당(하한)'(r13 재검토: 이 표만 '기준 해당'이었다). 셀이 없는 지난 해는 check_years 보류일 때만 하한
+  const metSt = r => {
+    const st = unsetOf(r, 0), c = r.cells[0];
+    return r.metHeld ? '추가확인' : r.met >= 2 && (c ? DR().metFloor(c) : !!st) ? '기준 해당(하한)' : st && '해당 안 함';
+  };
   // 표 머리의 해(첫 셀의 해, 셀이 없으면 표의 해). 행의 해가 다르면(폐지·개편 동: 시계열이 2022~2024에 끝남) 동 이름에 그 해를 붙인다(3차 검증)
   const headYear = list => { const c = list.map(r => r.cells.find(Boolean)).find(Boolean); return c ? c.base_year : list.map(r => r.year).find(num); };
   const nameOf = (r, hy) => (num(r.year) && num(hy) && r.year !== hy ? `${r.name}(${r.year}년)` : r.name);
-  const districtCells = (r, hy) => [nameOf(r, hy), withSt(cnt(r.met), unsetOf(r, 0)), withSt(pct(r.aging), unsetOf(r, 1)), withSt(pct(r.biz), unsetOf(r, 2)), flagTxt(r.bizDecl, unsetOf(r, 3)), withSt(pct(r.pop), unsetOf(r, 4)), flagTxt(r.popDecl, unsetOf(r, 5)), cnt(r.shortfall), STATE[r.recognize], STATE[r.oldres]];
+  const districtCells = (r, hy) => [nameOf(r, hy), withSt(cnt(r.met), metSt(r)), withSt(pct(r.aging), unsetOf(r, 1)), withSt(pct(r.biz), unsetOf(r, 2)), flagTxt(r.bizDecl, unsetOf(r, 3)), withSt(pct(r.pop), unsetOf(r, 4)), flagTxt(r.popDecl, unsetOf(r, 5)), cnt(r.shortfall), STATE[r.recognize], STATE[r.oldres]];
   // 사업체 수는 공표가 한 해 늦다: 각주에 자료연도를 달려고 docgen.js(buildBrief)와 같은 규칙으로 {last, ref}를 만든다. series가 없으면 null
   function bizYears(items) {
     for (const it of items) {
@@ -230,7 +240,8 @@
     return '﻿' + [head.map(q).join(','), ...list.map(r => {
       const cs = r.cells.filter(Boolean), c = districtCells(r, hy);
       const from = cs.length ? uniq(cs.map(x => x.source_name)) : num(r.year) ? `동 시계열 ${r.year}년(원장 셀은 최신 해만 공개)` : '';
-      return [c[0], num(r.met) ? r.met : '', stat(r, 0), num2(r.aging), stat(r, 1), num2(r.biz), stat(r, 2), flag(r.bizDecl, unsetOf(r, 3)), stat(r, 3), num2(r.pop), stat(r, 4), flag(r.popDecl, unsetOf(r, 5)), stat(r, 5), num(r.shortfall) ? r.shortfall : '', c[8], c[9], uniq(cs.map(x => x.reference_date)), from, uniq(cs.map(x => x.cell_id))].map(q).join(',');
+      // 충족 수 상태 열은 표와 같은 D1 판단(r13 재검토: 표는 기준 해당(하한)인데 CSV는 원장 '추가확인'이라 어긋났다). 판단이 없는 확정 셀은 원장 상태
+      return [c[0], num(r.met) ? r.met : '', metSt(r) || stat(r, 0), num2(r.aging), stat(r, 1), num2(r.biz), stat(r, 2), flag(r.bizDecl, unsetOf(r, 3)), stat(r, 3), num2(r.pop), stat(r, 4), flag(r.popDecl, unsetOf(r, 5)), stat(r, 5), num(r.shortfall) ? r.shortfall : '', c[8], c[9], uniq(cs.map(x => x.reference_date)), from, uniq(cs.map(x => x.cell_id))].map(q).join(',');
     })].join('\r\n');
   }
   const api = { districtRows, districtHTML, districtCSV, PROGRAMS, SOURCES, SCHEDULE, SOC, factsOf, checkNeed, checkProgram, checkAll, scheduleHTML, listHTML, dongHTML, socRows, socHTML, socCSV };

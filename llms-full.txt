@@ -1,8 +1,8 @@
 # 리뉴맵 (RENEWMAP)
 
-> 리뉴맵은 도시재생 근거 기록 서비스입니다. 동네 진단부터 준공 뒤 재방문까지, 도시재생에 쓰는 숫자마다 출처와 기준일을 붙여 다음 담당자에게 넘깁니다.
+> 리뉴맵은 도시재생 근거 기록 서비스입니다. 공모 신청서의 4-1 도시쇠퇴현황 검토 표를 동별 초안으로 받습니다. 숫자마다 출처와 기준일을 붙이고, 확인이 더 필요한 칸은 따로 표시합니다. 준공 뒤 다시 찍은 사진과 고친 까닭까지 다음 담당자에게 넘깁니다.
 
-이 파일은 사이트에 보이는 내용을 모아 자동으로 만들었습니다(마지막 갱신 2026-11-19). 리뉴맵의 숫자는 공공데이터 값을 출처·기준일과 함께 옮긴 것이며, 판정·감정평가·투자 권유가 아닙니다. 성범죄자 공개정보는 쓰지 않습니다. 판정은 담당 기관이 합니다.
+이 파일은 사이트에 보이는 내용을 모아 자동으로 만들었습니다(마지막 갱신 2026-11-20). 리뉴맵의 숫자는 공공데이터 값을 출처·기준일과 함께 옮긴 것이며, 판정·감정평가·투자 권유가 아닙니다. 성범죄자 공개정보는 쓰지 않습니다. 판정은 담당 기관이 합니다.
 쇠퇴 3요건 계산 규칙은 승인 대기이고, 사람이 출처와 대조한 값은 0/42,466입니다. 확인 기록은 data.html의 #checks입니다.
 
 ## 핵심 페이지
@@ -204,10 +204,10 @@
 - dong_extra.json (555바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
 - dong_index.json (225,320바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
 - dong_successors.json (2,821바이트): 최상위 note, dongs; generated_at 없음; snapshot_hash 없음
-- index.json (1,667,400바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-19T01:02:55+09:00; snapshot_hash 0028892a2768cf27ab4595981e37d0cc31644d9f2118cc883c7b50407d001c21
-- index_core.json (1,107,957바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-19T01:02:55+09:00; snapshot_hash 0028892a2768cf27ab4595981e37d0cc31644d9f2118cc883c7b50407d001c21
-- index_map.json (347,024바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-19T01:02:55+09:00; snapshot_hash 0028892a2768cf27ab4595981e37d0cc31644d9f2118cc883c7b50407d001c21
-- index_series.json (1,323,196바이트): 최상위 snapshot_hash, generated_at, sigungu, summary, unmatched; generated_at 2026-11-19T01:02:55+09:00; snapshot_hash 0028892a2768cf27ab4595981e37d0cc31644d9f2118cc883c7b50407d001c21
+- index.json (1,757,008바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
+- index_core.json (1,161,762바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
+- index_map.json (400,829바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
+- index_series.json (1,358,999바이트): 최상위 snapshot_hash, generated_at, sigungu, summary, unmatched; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
 - migration.json (717,178바이트): 최상위 generated_at, snapshot_hash, source, sigungu, unmatched; generated_at 2026-11-07T12:06:41+09:00; snapshot_hash ec91c53f996aba9898815bec8fb3c23908f49285e9af2c0fc27f06685e58b8d6
 - pop_name_joined.json (35,143바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
 - pop_unmatched.json (904,800바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
@@ -219,8 +219,8 @@
 - scores_range.json (1,052,674바이트): 최상위 generated_at, rule_version, sensitivity, dongs; generated_at 2026-11-14T16:36:39+09:00; snapshot_hash 없음
 - water_auto.json (21,944바이트): 최상위 source, latest, cur, prev, note, sites; generated_at 없음; snapshot_hash 없음
 - water_quality.json (204,974바이트): 최상위 source, year, note, points; generated_at 없음; snapshot_hash 없음
-- https://twozero3213-beep.github.io/renewmap-site/data/national/emd/{시군구코드5}.json (252개): 파일마다 지문이 없어 index.json 지문으로 고정; generated_at 2026-11-19T01:02:55+09:00; snapshot_hash 0028892a2768cf27ab4595981e37d0cc31644d9f2118cc883c7b50407d001c21
-- https://twozero3213-beep.github.io/renewmap-site/data/national/living/{시군구코드5}.json (254개): 파일마다 지문이 없어 index.json 지문으로 고정; generated_at 2026-11-19T01:02:55+09:00; snapshot_hash 0028892a2768cf27ab4595981e37d0cc31644d9f2118cc883c7b50407d001c21
+- https://twozero3213-beep.github.io/renewmap-site/data/national/emd/{시군구코드5}.json (252개): 파일마다 지문이 없어 index.json 지문으로 고정; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
+- https://twozero3213-beep.github.io/renewmap-site/data/national/living/{시군구코드5}.json (254개): 파일마다 지문이 없어 index.json 지문으로 고정; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
 
 ## 계산 기준 판본 (승인 대기 판본으로 낸 결과에는 '승인 전 참고'를 찍는다)
 
@@ -250,7 +250,7 @@
 - PH-AGE-2025.10: 포항시 도시 및 주거환경정비 조례 (경상북도포항시조례 제2298호, 2025.10.1) 제3조제1항 (리뉴맵 내부 승인 · 우지예 · 2026-11-17 · 지역 적용 확인 중 · 결과는 납품에 쓰지 않음)
 - PH-ORD-2025.10-REDEV: 포항시 도시 및 주거환경정비 조례 (경상북도포항시조례 제2298호, 2025.10.1) 제4조제2항제2호·제2조 (리뉴맵 내부 승인 · 우지예 · 2026-11-17 · 지역 적용 확인 중 · 결과는 납품에 쓰지 않음)
 - PH-ORD-2025.10-RESENV: 포항시 도시 및 주거환경정비 조례 (경상북도포항시조례 제2298호, 2025.10.1) 제4조제2항제1호·제2조 (리뉴맵 내부 승인 · 우지예 · 2026-11-17 · 지역 적용 확인 중 · 결과는 납품에 쓰지 않음)
-- decline-3req-v0.1: 도시재생 활성화 및 지원에 관한 특별법 시행령 제17조 (승인 대기 · 결과는 납품에 쓰지 않음)
-- 동별 JSON 셀의 rule_version KR-DECLINE-PENDING = decline-3req-v0.1(승인 대기)
+- decline-3req-v0.2: 도시재생 활성화 및 지원에 관한 특별법 시행령 제17조 (승인 대기 · 결과는 납품에 쓰지 않음)
+- 동별 JSON 셀의 rule_version KR-DECLINE-PENDING = decline-3req-v0.2(승인 대기)
 - FACT-2026.10: 판정 규칙이 없는 사실 지표(순이동·주택 거래·최근 인구 등). 출처 값 그대로 (사실 지표 · 법정 판정 승인 대상 아님)
 - 동네 종합 점수 판본: SCORE-2026.11

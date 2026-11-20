@@ -440,8 +440,12 @@ def main():
                             verify_reusable_evidence(page,args.output,width)
                             check(route,width,'reusable_evidence')
                         if route == 'index.html':
-                            page.locator('main a[href="about.html#usesTitle"]').click()
-                            page.wait_for_url(base+'about.html#usesTitle', wait_until='networkidle')
+                            # r13: 홈 첫 단추는 반여1동 4-1 표 초안(?frag=MLIT-DECLINE) 한 번에 열기
+                            page.locator('main a[href*="frag=MLIT-DECLINE"]').first.click()
+                            page.wait_for_url(re.compile(r'.*explore\.html\?report=brief&frag=MLIT-DECLINE.*'), wait_until='networkidle')
+                            page.wait_for_selector('[data-frag-out] table', timeout=60000)
+                            assert '4-1' in page.locator('[data-frag-out]').inner_text()
+                            page.goto(base+'about.html#usesTitle', wait_until='networkidle')
                             page.evaluate('() => document.fonts.ready')
                             assert page.locator('#how > .wrap > .about-uses > .about-use').count() == 7   # r11: '두 자료를 같은 식별자로 맞춰 볼 때' 추가
                             check(route, width, 'role_entry')

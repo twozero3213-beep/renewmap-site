@@ -341,8 +341,8 @@
   // 법정·공식 기준선. backend/renewmap/rules/decline.py·living_std.py의 RULE_VERSION·STANDARDS와 같게 둔다(approved_by가 채워지면
   // backend/tests/test_explainer_rules.py가 실패해 여기 '승인 대기'를 고치게 한다)
   const LEGAL = {
-    DECLINE_POP_DROP30Y_PCT: { line: 20, above: true, text: "최근 30년 최대 대비 20% 이상 감소(또는 5년 중 3년 연속 감소)", law: "도시재생 활성화 및 지원에 관한 특별법 시행령 제17조", rule: "decline-3req-v0.1" },
-    DECLINE_AGING_20Y_PCT: { line: 50, above: true, text: "준공 20년 이상 건축물 비율 50% 이상", law: "도시재생 활성화 및 지원에 관한 특별법 시행령 제17조", rule: "decline-3req-v0.1" },
+    DECLINE_POP_DROP30Y_PCT: { line: 20, above: true, text: "최근 30년 최대 대비 20% 이상 감소(또는 5년 중 3년 연속 감소)", law: "도시재생 활성화 및 지원에 관한 특별법 시행령 제17조", rule: "decline-3req-v0.2" },
+    DECLINE_AGING_20Y_PCT: { line: 50, above: true, text: "준공 20년 이상 건축물 비율 50% 이상", law: "도시재생 활성화 및 지원에 관한 특별법 시행령 제17조", rule: "decline-3req-v0.2" },
     PARK_AREA_PER_CAPITA: { line: 6, above: false, text: "도시공원 확보기준 주민 1인당 6㎡ 이상(법은 도시지역 단위라 행정동 적용은 참고 비교)", law: "도시공원 및 녹지 등에 관한 법률 시행규칙 제4조", rule: "LIVING-STD-2026.10" },
   };
   // 법정 기준이 아닌 비율 지표의 참고선(2026-10-28 대표 결정: 지표별로 다르게, D20).

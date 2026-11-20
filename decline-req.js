@@ -22,14 +22,17 @@
   // v9: 홈·지도 카드는 값만 보고 '기준 해당'이라 했는데 동 페이지·1쪽 문서는 '확정 불가'였다(박달동·호현동 노후 비율)
   const UNSETTLED = ['추가확인', '충돌', '폐기'];
   const cellValue = (c) => (!c || c.value_hidden_reason || UNSETTLED.includes(c.status) ? null : num(c.value));
-  // 요건 충족 수(하한) 셀 → 'over' | 'in' | 'none'. 정해지지 않은 요건(3 − sample_n)을 모두 해당으로 쳐도 2개에 못 미칠 때만 'in'
-  // (dong_brief judge_met_count·docgen judgeMetCount와 같다. v9: 지도는 1개면 바로 '기준 안'이라 523곳이 문서와 달랐다)
+  // 요건 충족 수(하한) 셀 → 'over' | 'in' | 'none'. 정해지지 않은 요건 수 = 3 − sample_n(없으면 3).
+  // D1(2026-11-20 대표 승인): 하한 ≥ 2면 셀 상태가 미확정이어도 'over', 상한(하한 + 정해지지 않은 요건) < 2면 'in', 그 밖 'none'
+  // (dong_brief judge_met_count·docgen judgeMetCount와 같다, met-count.test.cjs. v9: 지도는 1개면 바로 '기준 안'이라 523곳이 문서와 달랐다)
   function metStatus(c) {
-    const v = cellValue(c);
+    const v = !c || c.value_hidden_reason ? null : num(c.value);
     if (v === null) return 'none';
     if (v >= 2) return 'over';
-    return v + (3 - (num(c.sample_n) ?? 0)) >= 2 ? 'none' : 'in';
+    return v + (3 - (num(c.sample_n) ?? 0)) < 2 ? 'in' : 'none';
   }
-  const api = { REQS, evaluate, cellValue, metStatus };
+  // 'over'인데 정해지지 않은 요건이 남았거나 셀이 미확정이면 화면에 '기준 해당(하한)'(docgen OVER_FLOOR와 같은 때)
+  const metFloor = (c) => metStatus(c) === 'over' && ((num(c.sample_n) ?? 0) < 3 || UNSETTLED.includes(c.status));
+  const api = { REQS, evaluate, cellValue, metStatus, metFloor };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.DeclineReq = api;
 })(typeof self !== 'undefined' ? self : this);
