@@ -39,8 +39,14 @@
   }
 
   // 재생 필요 점수의 재료(scores.json renewal_parts, 지표별 백분위). 재생 순위에서는 이 넷을 세부 열로 보인다(v9: 1위인 이유가 표에 없었다)
-  // 2026-11-19: 머리는 두 줄 이하(머리 114px였다). '(원천, 기간 미확인)'은 열 이름 대신 표 아래 ※ 한 줄로
+  // 2026-11-19: 머리는 두 줄 이하(머리 114px였다). 인구 변화율 설명은 열 이름 대신 표 아래 ※ 한 줄로
   const RENEWAL_COLS = [['DECLINE_AGING_20Y_PCT', '20년 넘은 건물'], ['DECLINE_POP_CHANGE_PCT', '인구 변화율※'], ['DECLINE_BIZ_DROP10Y_PCT', '사업체 감소'], ['POP_AGED65_PCT', '고령 인구']];
+  // C12(2026-11-20): 인구 변화율(전년 대비 1년 값)이 들어가는 점수. 재생 필요 표에만 있던 ※ 주의를 동네 종합·인구 활력 표에도 보인다
+  const POP_KINDS = ['total', 'vitality', 'renewal'];
+  const POP_NOTE = '※ 인구 변화율은 전년 대비(1년) 값이라 재건축 이주·입주 해에 크게 흔들립니다.';
+  // 이주·입주로 인구가 크게 바뀐 동(scores.json pop_note, export_scores)은 동 이름 옆 ※와 설명 한 줄. 점수는 그대로
+  // 링크가 블록(rank.css flex)이라 <br> 없이 다음 줄에 붙는다
+  const popMark = (r, kind) => (r.d.pop_note && (kind === 'total' || kind === 'vitality') ? `<small class="rank-popnote">※ ${esc(r.d.pop_note)}</small>` : '');
   // rankAt(i): 화면 i번째 줄의 실제 순위(낮은 점수부터 볼 때). 없으면 offset + i + 1
   function tableHTML(list, kind, names, limit, range, scope, offset = 0, found = null, rankAt = null) {
     const renew = kind === 'renewal' && list.some(r => r.d.renewal_parts);
@@ -49,19 +55,21 @@
     const SUB = [['living', '생활 편의'], ['vitality', '인구 활력'], ['housing', '주거 노후도'], ['safety', '치안']].filter(([k]) => k !== kind);
     const cols = renew ? RENEWAL_COLS.map(([, l]) => `<th scope="col">${esc(l)}</th>`).join('')
       : SUB.map(([, l]) => `<th scope="col">${l}</th>`).join('') + '<th scope="col">범죄 발생률</th>';
-    const unit = renew ? '세부 열은 전국 백분위이고 클수록 쇠퇴 신호가 강합니다. ※ 인구 변화율은 원천, 기간 미확인 값입니다.' : '주거 노후도는 점수가 낮을수록 낡았고, 범죄 발생률은 시·군·구 값(주민 1,000명당)입니다.';
+    const unit = (renew ? '세부 열은 전국 백분위이고 클수록 쇠퇴 신호가 강합니다.' : '주거 노후도는 점수가 낮을수록 낡았고, 범죄 발생률은 시·군·구 값(주민 1,000명당)입니다.')
+      + (POP_KINDS.includes(kind) ? ` ${POP_NOTE}` : '');
     // '낮은 점수부터 보기'는 점수 열 머리의 정렬 단추(rank.js init이 #rankAsc와 같이 바꾼다). rankAt이 있으면 낮은 점수부터 그린 표다
     const sort = kind === 'safety' ? '<th scope="col" class="rank-score" aria-sort="descending">범죄 통계·안전시설 점수</th>' : `<th scope="col" class="rank-score" aria-sort="${rankAt ? 'ascending' : 'descending'}"><button type="button" class="rank-sort" data-rank-sort>${esc(KINDS[kind].label.replace(/\(.*\)$/, ''))}<span aria-hidden="true"> ${rankAt ? '↑' : '↓'}</span><span class="sr-only">, ${rankAt ? '낮은' : '높은'} 점수부터. 눌러서 순서 바꾸기</span></button></th>`;
     const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th>${sort}<th scope="col">순위 범위</th>${cols}</tr></thead>`;
     const body = list.slice(0, limit).map((r, i) => {
       const s = r.d.sub, sp = r.d.safety_parts || {}, rp = r.d.renewal_parts || {};
-      return `<tr${r.code7 === found ? ' class="is-found" id="rankFoundRow"' : ''}><td class="num">${rankAt ? rankAt(offset + i) : offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a></td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
+      return `<tr${r.code7 === found ? ' class="is-found" id="rankFoundRow"' : ''}><td class="num">${rankAt ? rankAt(offset + i) : offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a>${popMark(r, kind)}</td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
         + (renew ? RENEWAL_COLS.map(([c]) => `<td class="num">${fmt(rp[c])}</td>`).join('')
           : SUB.map(([k]) => `<td class="num">${fmt(s[k])}</td>`).join('')
           + `<td class="num">${sp.crime_rate_per_1k === null || sp.crime_rate_per_1k === undefined ? '없음' : esc(sp.crime_rate_per_1k)}</td>`) + '</tr>';
     }).join('');
     // 캡션은 표 아래 한 줄(rank.css caption-side: bottom). 범위 열의 긴 설명은 '읽는 법'(#rankMethods 안 #rankTableNote)에
-    return `<table class="grid rank-table"><caption>선택한 범위의 행정동 순위 <small>· '순위 범위'는 지표 비중을 바꿔 다시 셈한 순위의 90% 구간입니다. ${unit}</small> <a class="rank-how" href="#rankMethods">읽는 법</a></caption>${head}<tbody>${body}</tbody></table>`;
+    // C12: 범위는 비중만 흔든 값이다. 정규화·합산 방식은 고정해 실제 불확실성보다 좁을 수 있다고 함께 적는다
+    return `<table class="grid rank-table"><caption>선택한 범위의 행정동 순위 <small>· '순위 범위'는 지표 비중을 바꿔 다시 셈한 순위의 90% 구간입니다(정규화·합산 방식은 고정, 실제 폭은 더 넓을 수 있음). ${unit}</small> <a class="rank-how" href="#rankMethods">읽는 법</a></caption>${head}<tbody>${body}</tbody></table>`;
   }
 
   // rank_top.json(홈이 쓰는 상위 10곳) → 첫 화면 미리 그림. 표 모양은 tableHTML 그대로, 아직 없는 칸만 '…'. 재생 필요 점수 부산 목록이 없으면 빈 글
@@ -117,7 +125,7 @@
         if (u.href !== location.href) history.replaceState(null, '', u);
       }
       const sm = range && range.sensitivity && range.sensitivity.summary && range.sensitivity.summary[kindSel.value];
-      sens.textContent = sm ? `${KINDS[kindSel.value].label} 전국 순위는 무게만 바꿔도 범위 폭이 중앙값 ${sm.median_width_nat.toLocaleString('ko-KR')}위입니다. 기준 상위 10곳 중 무게를 바꿔도 95% 이상 상위 10 안에 남는 곳은 ${sm.top10_stay}곳입니다.` : kindSel.value === 'housing' ? '주거 노후도는 지표가 하나라 바꿀 무게가 없습니다.' : '';
+      sens.textContent = sm ? `${KINDS[kindSel.value].label} 전국 순위는 무게만 바꿔도 범위 폭이 중앙값 ${sm.median_width_nat.toLocaleString('ko-KR')}위입니다(정규화·합산 방식은 고정, 실제 폭은 더 넓을 수 있음). 기준 상위 10곳 중 무게를 바꿔도 95% 이상 상위 10 안에 남는 곳은 ${sm.top10_stay}곳입니다.` : kindSel.value === 'housing' ? '주거 노후도는 지표가 하나라 바꿀 무게가 없습니다.' : '';
     }
     function fillSg() {
       const s2 = sidoSel.value;

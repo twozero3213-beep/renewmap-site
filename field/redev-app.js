@@ -348,7 +348,7 @@
     // 실제 결과가 생기면 견본 그림은 뺀다(휴대폰에서 결과 위를 가림). 제목으로 초점·스크롤을 옮겨 위 두 줄 답부터 읽게 한다
     document.querySelector(".redev-sample").hidden = true;
     $("outTitle").focus({ preventScroll: true });
-    $("out").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("out").scrollIntoView({ block: "start" });
   });
 
   // 확인할 건물 → 현장 기록(같은 앱). 링크에 PNU·지번을 실어 보내고, 돌아오면 이 기기의 현장 기록을 PNU로 붙여 보여 준다
@@ -421,7 +421,7 @@
     const name = `경계안 ${["A", "B", "C"].find((x) => !ps.some((p) => p.name === `경계안 ${x}`))}`;
     if (!savePlans([...ps, { name, dong: last.file.bjd10, list: $("list").value, district: $("district").checked, ref: last.res.ref }])) return planSay("이 브라우저는 저장을 막아 두었습니다.", true);
     planSay(`${name}으로 저장했어요.`);
-    renderPlans().then(() => $("plans").scrollIntoView({ behavior: "smooth", block: "start" }));
+    renderPlans().then(() => $("plans").scrollIntoView({ block: "start" }));
   });
   renderPlans();
 

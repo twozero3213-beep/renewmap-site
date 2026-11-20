@@ -31,6 +31,11 @@ document.documentElement.classList.add('js');
 <meta property="og:site_name" content="RENEWMAP">
 <meta property="og:title" content="동네 진단 | 리뉴맵">
 <meta property="og:description" content="전국 행정동 3,559곳(2025년 경계)을 업무와 조건, 지도로 찾고, 출처·기준일이 붙은 근거 문서를 한글·엑셀·워드·파워포인트·PDF로 받습니다. 문서는 이 기기에서 만듭니다. 판정이 아닌 참고 계산입니다.">
+<meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="리뉴맵 로고와 '숫자마다 근거가 붙는 도시재생 기초조사' 문구">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#ffffff">
 <meta name="ga-id" content="">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -78,23 +83,23 @@ document.documentElement.classList.add('js');
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" crossorigin="anonymous" integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==">
 <link rel="stylesheet" href="pretendard-map.css">
 <link rel="stylesheet" href="styles.css?v=20261120-w3">
-<link rel="stylesheet" href="site-v4.css?v=20261119-r3">
+<link rel="stylesheet" href="site-v4.css?v=20261120-r11">
 <link rel="stylesheet" href="dashboard.css?v=20261120-w3">
 <link rel="stylesheet" href="hero.css?v=20261120-r10">
 <!-- 2026-11-12: 동 이름표 스타일 추가에 맞춰 버전을 붙인다(옛 map.css 캐시가 이름표를 잘못 그리지 않게) -->
 <!-- 2026-11-13: 동 요약 신청요건 한 줄(.sr-req)·시작 묶음 단추(.map-bundles) 스타일로 버전을 올림 -->
-<link rel="stylesheet" href="map.css?v=20261120-w3">
+<link rel="stylesheet" href="map.css?v=20261120-r11">
 <link rel="stylesheet" href="programs.css?v=20261119-r3">
 <link rel="stylesheet" href="overlay.css?v=20261119-r3">
-<link rel="stylesheet" href="v4.css?v=20261119-r3"><!-- 2026-11-12: 768~1099px 지도 정리 규칙을 더해 캐시 버전을 붙임 -->
+<link rel="stylesheet" href="v4.css?v=20261120-r11"><!-- 2026-11-12: 768~1099px 지도 정리 규칙을 더해 캐시 버전을 붙임 -->
 <link rel="stylesheet" href="workspace.css?v=20261119-r3">
-<script src="site.js?v=20261120-r10" defer></script>
+<script src="site.js?v=20261120-r11" defer></script>
 <script src="site-motion.js" defer></script>
 <script src="cellpack.js" defer></script><!-- 2026-11-08: 줄여 저장한 원장 셀을 util.js fetchJson이 되돌릴 때 쓴다. util.js보다 먼저 -->
-<script src="util.js?v=20261119-r3" defer></script>
-<script src="dashboard.js?v=20261119-r3" defer></script>
+<script src="util.js?v=20261120-r11" defer></script>
+<script src="dashboard.js?v=20261120-r11" defer></script>
 <script src="field/vworld-key.js" defer></script>
-<script src="programs.js?v=20261120-w3" defer></script>
+<script src="programs.js?v=20261120-r11" defer></script>
 <!-- 2026-11-12: map.js 화면 낱말 바꿈('기준 미달'→'기준 해당')을 방문자 캐시가 옛 파일로 덮지 않게 버전을 올린다.
      main의 연구 적용판(20261112-research)과 합치면서 두 변경을 모두 담은 새 값으로 바꿨다(둘 중 어느 옛 값도 캐시에 남지 않게) -->
 <!-- 2026-11-12: 동 이름표(makeDongLabels)를 더해 버전을 올림 -->
@@ -103,15 +108,15 @@ document.documentElement.classList.add('js');
 <!-- 2026-11-13: 신청요건 한 줄(reqLineHTML)·도넛 접기·시작 묶음(BUNDLES)으로 버전을 올림 -->
 <!-- 2026-11-13: 최저기준 묶음에 보건소·어린이집 거리 칩을 더해 버전을 올림 -->
 <script src="decline-req.js?v=20261119-r3" defer></script>
-<script src="map.js?v=20261120-r10" defer></script>
+<script src="map.js?v=20261120-r11" defer></script>
 <script src="explore-layout.js?v=20261119-r3" defer></script>
-<script src="workspace.js?v=20261119-r3" defer></script>
+<script src="workspace.js?v=20261120-r11" defer></script>
 <script src="report.js?v=20261119-r3" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261120-r10">
+<link rel="stylesheet" href="rm6.css?v=20261120-r11">
 </head>
 <body class="explore-page">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 홈" href="index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 진단</a><a href="rank.html">동네 비교 점수</a><a href="relocate.html">부산 이전 직원 동네 비교</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 과업 상담</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 RENEWMAP 홈" href="index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 진단</a><a href="rank.html">동네 비교 점수</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 과업 상담</a></nav></div></header>
 <main id="main">
 <h1 class="sr-only">동네 진단</h1>
   <div class="evidence-workspace" data-workspace data-active-panel="map">
@@ -150,7 +155,7 @@ document.documentElement.classList.add('js');
             <p class="lead">동을 누르면 값과 기준일이 나옵니다.<br>색은 값의 크기이며 판정이 아닙니다.</p>
           </div>
           <form id="heroSearch" class="hero-search" role="search" autocomplete="off">
-            <label for="heroQ">동 찾기</label>
+            <label for="heroQ" class="sr-only">동·읍·면 이름</label>
             <div class="hero-search-row"><input id="heroQ" name="q" list="heroPlaces" placeholder="동·읍·면 이름 (예: 반여1동, 홍성읍)" enterkeyhint="search" aria-describedby="heroNote heroMsg"><button class="btn" type="submit">찾기</button></div>
             <datalist id="heroPlaces"></datalist>
             <p class="hero-search-note" id="heroNote" data-search-note></p>

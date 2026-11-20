@@ -232,7 +232,7 @@ body.field .card > details.rm-disclosure:last-child[open] { padding-bottom: 0; }
   body.fr-record #main .fr-form { grid-area: form; min-width: 0; }
   /* 저장된 기록은 화면에 붙어 있고, 길어지면 이 칸 안에서만 내린다(쪽 안의 안쪽 스크롤은 이것 하나) */
   body.fr-record #main .fr-saved { grid-area: saved; min-width: 0; position: sticky; top: 88px; max-height: calc(100vh - 104px); overflow-y: auto; overscroll-behavior: contain; margin-top: 0; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
-  body.fr-record #main > :is(#upBox, #install) { max-width: 560px; }
+  body.fr-record #main > :is(#upBox, #install, #fieldUpdate) { max-width: 560px; }
   /* 380px 칸에서는 도넛·7일 막대(v4.css 두 칸)가 겹쳤다 → 위아래로 */
   body.fr-record #main .fr-saved .v4-charts { grid-template-columns: minmax(0, 1fr); }
 }
@@ -264,3 +264,8 @@ body.field .card > details.rm-disclosure:last-child[open] { padding-bottom: 0; }
 .field dialog.fr-dlg h2 { font-size: 18px; line-height: 26px; margin: 0 0 12px; }
 .field dialog.fr-dlg img { display: block; width: 640px; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 .field dialog.fr-dlg button { margin-top: 12px; }
+/* 11-20 판정 C17: 늦게 채워지는 오늘 건수 줄과 대상 단추 칸이 아래 칸을 밀지 않게 자리를 미리 잡는다(3칸은 1280px부터) */
+body.fr-record h1 + .sub { min-height: 26px; }
+@media (min-width: 1280px) { body.fr-record #main #targets { min-height: 160px; } }
+/* 11-20 판정 C16: 새 버전 확인 실패는 본문 끝의 안내 한 줄(site.js .hint). rm6.css #fieldUpdate 띠 모양(경보색·전체 폭)을 걷는다 */
+#fieldUpdate.hint { display: block; margin: 16px 0 0; padding: 0; border: 0; background: none; color: var(--dim); }

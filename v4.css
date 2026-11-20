@@ -63,11 +63,11 @@
   .explore-page .workspace-panel .section-head h2 { font-size: 18px; }
   .explore-page #find .section-head > p { display: none; }
   .explore-page .workspace-panel .fd-map { display: none; } /* 큰 지도와 겹치는 작은 지도는 좁은 화면에서만. 맞는 동 목록은 그대로 */
-  /* 지도 칸: 제목 문단을 줄이고 검색을 한 줄로 */
+  /* 지도 칸: 제목 문단을 줄이고 검색을 한 줄로. 검색칸 라벨은 display:none으로 숨기지 않는다(이름이 빈다, 2026-11-20 C07). explore.html에서 .sr-only로 가린다(기본값, 대표 확인 대기) */
   .explore-page #map .workspace-panel-inner { padding: 14px 16px 16px; }
   .explore-page #map .hero-head { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .explore-page #heroSearch { margin: 0 0 8px; }
-  .explore-page #heroSearch label, .explore-page #heroSearch .hero-search-note { display: none; }
+  .explore-page #heroSearch .hero-search-note { display: none; }
   .explore-page #heroSearch .hero-search-msg:empty { display: none; }
   .explore-page #heroLive { display: none; }
   .explore-page .map-inds { flex-wrap: wrap; }   /* 2026-11-19: 옆으로 미는 칩 줄(스크롤 막대가 보였다)을 접어 내린다 */
@@ -226,7 +226,7 @@ body.field .card { border-radius: var(--radius-card); }
 @media (max-width: 767px) {
   .explore-page #map .hero-head { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .explore-page #heroSearch { margin: 0 0 8px; }
-  .explore-page #heroSearch label, .explore-page #heroSearch .hero-search-note { display: none; }
+  .explore-page #heroSearch .hero-search-note { display: none; }
   .explore-page #heroLive { margin-top: 12px; }   /* R3 2: 순서는 DOM(explore.html·map.js)이 정한다. order·display: contents 줄은 지웠다 */
 }
 
@@ -236,7 +236,7 @@ body.field .card { border-radius: var(--radius-card); }
 @media (min-width: 768px) and (max-width: 1023px) {
   .explore-page #map .hero-head { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .explore-page #heroSearch { margin: 0 0 8px; }
-  .explore-page #heroSearch label, .explore-page #heroSearch .hero-search-note { display: none; }
+  .explore-page #heroSearch .hero-search-note { display: none; }
   .explore-page #heroSearch .hero-search-msg:empty { display: none; }
 }
 

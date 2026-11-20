@@ -1,25 +1,106 @@
 {
   "ci": {
     "collect": {
-      "numberOfRuns": 1,
+      "numberOfRuns": 3,
       "url": [
         "https://twozero3213-beep.github.io/renewmap-site/",
         "https://twozero3213-beep.github.io/renewmap-site/explore.html",
         "https://twozero3213-beep.github.io/renewmap-site/field/",
         "https://twozero3213-beep.github.io/renewmap-site/field/redev.html",
         "https://twozero3213-beep.github.io/renewmap-site/field/oa.html",
-        "https://twozero3213-beep.github.io/renewmap-site/field/idle.html"
+        "https://twozero3213-beep.github.io/renewmap-site/field/idle.html",
+        "https://twozero3213-beep.github.io/renewmap-site/relocate.html",
+        "https://twozero3213-beep.github.io/renewmap-site/rank.html",
+        "https://twozero3213-beep.github.io/renewmap-site/programs.html",
+        "https://twozero3213-beep.github.io/renewmap-site/about.html",
+        "https://twozero3213-beep.github.io/renewmap-site/data.html",
+        "https://twozero3213-beep.github.io/renewmap-site/time4d.html",
+        "https://twozero3213-beep.github.io/renewmap-site/dong/21100660.html",
+        "https://twozero3213-beep.github.io/renewmap-site/dong/21110520.html"
       ],
-      "settings": { "onlyCategories": ["performance", "accessibility", "best-practices", "seo"] }
+      "settings": {
+        "onlyCategories": [
+          "performance",
+          "accessibility",
+          "best-practices",
+          "seo"
+        ]
+      }
     },
     "assert": {
-      "assertions": {
-        "categories:accessibility": ["error", { "minScore": 0.95 }],
-        "categories:seo": ["error", { "minScore": 0.9 }],
-        "categories:performance": ["warn", { "minScore": 0.9 }],
-        "cumulative-layout-shift": ["warn", { "maxNumericValue": 0.1 }],
-        "largest-contentful-paint": ["warn", { "maxNumericValue": 2500 }]
-      }
+      "assertMatrix": [
+        {
+          "matchingUrlPattern": ".*",
+          "assertions": {
+            "categories:accessibility": [
+              "error",
+              {
+                "minScore": 0.95
+              }
+            ],
+            "categories:seo": [
+              "error",
+              {
+                "minScore": 0.9
+              }
+            ],
+            "categories:performance": [
+              "warn",
+              {
+                "minScore": 0.9
+              }
+            ],
+            "cumulative-layout-shift": [
+              "warn",
+              {
+                "maxNumericValue": 0.1
+              }
+            ],
+            "largest-contentful-paint": [
+              "warn",
+              {
+                "maxNumericValue": 2500
+              }
+            ]
+          }
+        },
+        {
+          "matchingUrlPattern": ".*",
+          "assertions": {
+            "cumulative-layout-shift": [
+              "error",
+              {
+                "maxNumericValue": 0.164,
+                "aggregationMethod": "median"
+              }
+            ]
+          }
+        },
+        {
+          "matchingUrlPattern": "^(?!.*(/explore\\.html($|\\?)))",
+          "assertions": {
+            "largest-contentful-paint": [
+              "error",
+              {
+                "maxNumericValue": 2040,
+                "aggregationMethod": "median"
+              }
+            ]
+          }
+        },
+        {
+          "matchingUrlPattern": "/explore\\.html($|\\?)",
+          "assertions": {
+            "largest-contentful-paint": [
+              "error",
+              {
+                "maxNumericValue": 9000,
+                "aggregationMethod": "median"
+              }
+            ]
+          }
+        }
+      ]
     }
   }
 }

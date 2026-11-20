@@ -7,22 +7,30 @@
   const RENT_CODES = ['JEONSE_M2_MED', 'WOLSE_MED'];
   const RELOC_CODES = ['PEDS_CLINIC_COUNT', 'PEDS_NEAREST_M', 'SUBWAY_AM_PEAK_BOARD'];
   const RENT_MIN_N = 5;
+  const RULE = 'RELOC-RANK-2026.11-v2';
+  // 기본값(대표 확인 대기): 반경 안 동이 적을 때 넓힐 최소 후보 30곳. 기본 반경 10km는 relocate.html의 선택값(hunt 2026-11-20 C03 권고).
+  const RADIUS_MIN_N = 30;
+  // shortcut: 대표점 간격 4km 이상 기준의 고정 목록, 행정동 경계가 바뀌면 자료에서 계산
+  const WIDE_DONGS = ['21120580', '21510120', '21510130', '21510111', '21120561', '21510110']; // 가덕도동·장안읍·정관읍·일광읍·녹산동·기장읍
+  // 다섯째 값(ref): 화면에 참고로만 보이고 점수에는 넣지 않는 항목. 승차 인원은 역 거리와 무관하고, 의원 수는 전문의 여부를 모른다(hunt C02).
   const FACTORS = [
     ['JEONSE_M2_MED', '전세 보증금 ㎡당 중위값', 0, true], ['WOLSE_MED', '월세 중위값(보증금 별도)', 0, true],
-    ['OFFICE_KM', '회사 동까지 직선거리', 1, true], ['SUBWAY_NEAREST_M', '도시철도역 직선거리', 1, true], ['BUS_STOP_DENSITY', '버스정류장 밀도', 1, false], ['SUBWAY_AM_PEAK_BOARD', '아침 시간 역 승차 인원', 1, true],
+    ['OFFICE_KM', '회사 동까지 직선거리', 1, true], ['SUBWAY_NEAREST_M', '도시철도역 직선거리', 1, true], ['BUS_STOP_DENSITY', '버스정류장 밀도', 1, false], ['SUBWAY_AM_PEAK_BOARD', '아침 시간 역 승차 인원', 1, true, true],
     ['STREETLIGHT_PER_KM2', '보안등 밀도', 2, false], ['CCTV_PER_KM2', 'CCTV 밀도', 2, false], ['EMERGENCY_BELL_PER_KM2', '안전비상벨 밀도', 2, false], ['POLICE_NEAREST_M', '경찰관서 직선거리', 2, true],
     ['ELEM_SCHOOL_NEAREST_M', '초등학교 직선거리', 3, true], ['KINDER_NEAREST_M', '유치원 직선거리', 3, true], ['CHILDCARE_NEAREST_M', '어린이집 직선거리', 3, true],
-    ['PEDS_CLINIC_COUNT', '소아청소년과 진료과목 의원 수', 3, false], ['PEDS_NEAREST_M', '소아청소년과 진료과목 기관 직선거리', 4, true],
+    ['PEDS_CLINIC_COUNT', '소아청소년과 진료과목 의원 수(전문의 여부 미확인)', 3, false, true], ['PEDS_NEAREST_M', '소아청소년과 진료과목 기관 직선거리(전문의 여부 미확인)', 4, true],
     ['HOSP_PER10K', '인구 1만 명당 병원·의원', 4, false], ['ER_NEAREST_M', '응급의료센터 직선거리', 4, true], ['PHARM_NIGHT_COUNT', '평일 21시 이후 영업 등록 약국', 4, false],
     ['PARK_AREA_PER_CAPITA', '1인당 도시공원 면적', 5, false], ['SPORTS_CENTER_NEAREST_M', '실내 생활체육시설 직선거리', 5, true], ['LIB_NEAREST_M', '공공도서관 직선거리', 5, true], ['STORE_FOOD_COUNT', '음식 업소 수', 5, false]
-  ].map(([code, label, group, lower]) => ({ code, label, group, lower }));
+  ].map(([code, label, group, lower, ref = false]) => ({ code, label, group, lower, ref }));
+  // 기본값(대표 확인 대기): 그룹 중요도 [주거비, 출퇴근, 밤길, 아이, 의료, 생활·여가]는 근거 자료 없는 규범값이다.
+  // 이름에 적힌 그룹이 명목 비중 상위가 되게 맞췄다(hunt 2026-11-20 C03 A3 권고안).
   const PRESETS = [
-    { label: '주거비와 출퇴근', housing: 'OFFI', groups: [5, 5, 3, 0, 2, 3], note: '주거비와 출퇴근에 무게를 둡니다.' },
-    { label: '출퇴근과 돌봄', housing: 'APT', groups: [3, 5, 3, 4, 2, 3], note: '회사 동과의 거리, 대중교통, 학교·돌봄 시설에 무게를 둡니다.' },
-    { label: '학교와 돌봄', housing: 'APT', groups: [3, 3, 4, 5, 3, 4], note: '초등학교와 돌봄 시설에 무게를 둡니다. 학교 배정·통학로는 별도 확인이 필요합니다.' },
-    { label: '교통과 생활·여가', housing: 'APT', groups: [3, 4, 4, 0, 3, 4], note: '대중교통, 도서관, 공원 등 생활·여가 시설을 함께 봅니다.' },
-    { label: '의료와 생활·여가', housing: 'APT', groups: [3, 2, 3, 0, 5, 4], note: '의료와 생활·여가에 무게를 둡니다.' }
-  ].map(p => ({ ...p, weights: Object.fromEntries(FACTORS.map(f => [f.code, p.groups[f.group]])) }));
+    { label: '주거비와 출퇴근', housing: 'OFFI', groups: [5, 5, 1, 0, 1, 1], note: '회사 동 반경 안에서 주거비와 출퇴근 항목을 중심으로 비교합니다.' },
+    { label: '출퇴근과 돌봄', housing: 'APT', groups: [1, 5, 1, 4, 1, 1], note: '회사 동 반경 안에서 출퇴근과 학교·돌봄 시설을 중심으로 비교합니다.' },
+    { label: '학교와 돌봄', housing: 'APT', groups: [1, 1, 1, 5, 1, 1], note: '회사 동 반경 안에서 초등학교와 돌봄 시설을 중심으로 비교합니다. 학교 배정·통학로는 별도 확인이 필요합니다.' },
+    { label: '교통과 생활·여가', housing: 'APT', groups: [1, 4, 1, 0, 1, 4], note: '회사 동 반경 안에서 대중교통과 도서관·공원 등 생활·여가 시설을 중심으로 비교합니다.' },
+    { label: '의료와 생활·여가', housing: 'APT', groups: [1, 1, 1, 0, 5, 4], note: '회사 동 반경 안에서 의료와 생활·여가 시설을 중심으로 비교합니다.' }
+  ].map(p => ({ ...p, weights: Object.fromEntries(FACTORS.map(f => [f.code, f.ref ? 0 : p.groups[f.group]])) }));
 
   function normalize(values, lower) {
     const sorted = values.filter(isNum).sort((a, b) => a - b);
@@ -130,24 +138,91 @@
       const v = d.cells[f.code]?.value;
       return isNum(v) && v >= 0 ? v : null;
     }), f.lower));
+    const rentWeighted = factors.filter(f => RENT_CODES.includes(f.code) && weights[f.code] > 0).map(f => f.code);
     return rows.map((d, i) => {
       const values = factors.map((f, n) => normalized[n][i]);
-      return { ...d, ...weightedScore(values, factors.map(f => weights[f.code])), factors: factors.map((f, n) => ({ ...f, label: d.rent[f.code] ? `${HOUSING[d.rent[f.code].type]} ${f.label}` : f.label, normalized: values[n], weight: weights[f.code], cell: d.cells[f.code] })) };
-    }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
+      const rentMissing = rentWeighted.filter(code => !d.cells[code]);
+      // 주거비 중요도가 켜져 있는데 그 주거비 값이 모두 없는 동은 점수와 관계없이 자료 있는 동 뒤에 둔다(hunt C02, 결측 처리 자체는 그대로).
+      const noRent = rentWeighted.length > 0 && rentMissing.length === rentWeighted.length;
+      return { ...d, rentMissing, noRent, ...weightedScore(values, factors.map(f => weights[f.code])), factors: factors.map((f, n) => ({ ...f, label: d.rent[f.code] ? `${HOUSING[d.rent[f.code].type]} ${f.label}` : f.label, normalized: values[n], weight: weights[f.code], cell: d.cells[f.code] })) };
+    }).sort(byRank(d => d.score));
   }
 
-  const api = { FACTORS, PRESETS, normalize, weightedScore, rankDongs, officeDistances, makeDongs, rentChoice, monthSpan, rentPeriod };
+  const byRank = score => (a, b) => a.noRent - b.noRent || (score(b) ?? -1) - (score(a) ?? -1) || (a.code < b.code ? -1 : a.code > b.code ? 1 : 0);
+
+  // 회사 동 대표점에서 직선 r km 안 동만 남긴다. 그 수가 minN보다 적으면 가까운 minN곳으로 넓힌다. 순서는 ranked 그대로.
+  function gateByRadius(ranked, r, minN = RADIUS_MIN_N) {
+    const km = d => d.cells.OFFICE_KM?.value;
+    if (!isNum(r)) return { list: ranked, widened: false };
+    const inside = ranked.filter(d => isNum(km(d)) && km(d) <= r);
+    if (inside.length >= minN) return { list: inside, widened: false };
+    const near = new Set(ranked.filter(d => isNum(km(d))).sort((a, b) => km(a) - km(b) || (a.code < b.code ? -1 : 1)).slice(0, minN).map(d => d.code));
+    return { list: ranked.filter(d => near.has(d.code)), widened: true };
+  }
+
+  // 그룹별 명목 비중(그룹 중요도 합 ÷ 전체 중요도 합, %). 반올림 합이 100이 되게 나머지가 큰 그룹부터 1씩 더한다.
+  function groupShares(weights) {
+    const total = FACTORS.reduce((s, f) => s + (weights[f.code] || 0), 0);
+    if (!total) return null;
+    const raw = GROUPS.map((_, n) => 100 * FACTORS.reduce((s, f) => s + (f.group === n ? weights[f.code] || 0 : 0), 0) / total);
+    const groups = raw.map(Math.floor);
+    raw.map((v, i) => [v - groups[i], i]).sort((a, b) => b[0] - a[0]).slice(0, 100 - groups.reduce((a, b) => a + b, 0)).forEach(([, i]) => groups[i]++);
+    return { groups, office: Math.round(100 * (weights.OFFICE_KM || 0) / total) };
+  }
+
+  // 중요도를 항목마다 U(0.5,1.5)배로 runs번 흔들어 다시 셈한 순위의 5~95% 구간. 같은 seedText면 같은 결과(mulberry32).
+  // 기준 순위는 흔든 경우 가운데 하나이므로 구간에 넣어 a ≤ 표시 순위 ≤ b를 지킨다.
+  function rankRanges(list, seedText, runs = 200, top = 10) {
+    let a = 2166136261;
+    for (let i = 0; i < seedText.length; i++) a = Math.imul(a ^ seedText.charCodeAt(i), 16777619);
+    const rand = () => {
+      a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+    const n = Math.min(top, list.length), ranks = Array.from({ length: n }, () => []);
+    for (let run = 0; run < runs; run++) {
+      const mult = (list[0]?.factors || []).map(() => 0.5 + rand());
+      list.map((d, i) => {
+        let sum = 0, total = 0;
+        d.factors.forEach((f, k) => { if (f.weight > 0 && isNum(f.normalized)) { sum += f.normalized * f.weight * mult[k]; total += f.weight * mult[k]; } });
+        return { i, code: d.code, noRent: d.noRent, s: total ? sum / total : null };
+      }).sort(byRank(o => o.s)).forEach((o, rank) => { if (o.i < n) ranks[o.i].push(rank + 1); });
+    }
+    return ranks.map((r, i) => {
+      r.sort((x, y) => x - y);
+      return [Math.min(r[Math.floor(0.05 * (runs - 1))], i + 1), Math.max(r[Math.ceil(0.95 * (runs - 1))], i + 1)];
+    });
+  }
+
+  const api = { FACTORS, PRESETS, normalize, weightedScore, rankDongs, gateByRadius, groupShares, rankRanges, officeDistances, makeDongs, rentChoice, monthSpan, rentPeriod };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (!root.document) return;
   root.RenewRelocate = api;
   const $ = id => document.getElementById(id);
   let dongs = [], presetIndex = 0, weights = { ...PRESETS[0].weights }, compared = false, adjusted = false;
-  let distances = null, requestId = 0, rentText = '';
+  let distances = null, requestId = 0, rentText = '', rentMonths = {};
   const emptyResults = $('results').innerHTML; // 결과를 비울 때 450px 빈자리 대신 처음 안내 상자를 되살린다.
   const stageLabel = () => `${PRESETS[presetIndex].label} · 주거 ${HOUSING[$('housingType').value]}` + (adjusted ? ' · 중요도 직접 조정' : '');
+  const radiusKm = () => +$('radiusKm').value || null; // '전체'(all)·빈 값은 null
   const format = (value, unit) => isNum(value) ? `${value.toLocaleString('ko-KR', { maximumFractionDigits: unit === 'km' ? 2 : 1 })}${unit ? ` ${unit}` : ''}` : '자료 없음';
   const valueText = f => `${f.label} ${format(f.cell?.value, f.cell?.unit)}${RENT_CODES.includes(f.code) && f.cell ? ` (표본 ${f.cell.sample_n}건)` : ''}`;
-  const rentReasons = d => RENT_CODES.map((code, i) => `${i ? '월세' : '전세'}: ${d.rent[code].reason}`).join(' / ');
+  const rentReasons = d => RENT_CODES.map((code, i) => {
+    const { cell, type, reason } = d.rent[code];
+    const span = !cell ? '' : type === 'ALL' ? ' · 기존 3개월 자료' : ` · 수록 ${rentMonths[type]}/${rentMonths.window}개월`;
+    return `${i ? '월세' : '전세'}: ${reason}${cell ? ` · 표본 ${cell.sample_n}건` : ''}${span}`;
+  }).join(' / ');
+  const rentFlag = d => {
+    if (!d.rentMissing.length) return '';
+    if (d.noRent) return '주거비 자료 없음 · 주거비 미반영 · 자료 있는 동 뒤에 배치';
+    const name = d.rentMissing[0] === 'WOLSE_MED' ? '월세' : '전세'; // noRent가 아니면 빠진 주거비 항목은 하나뿐이다.
+    return `주거비 자료 없음(${name}) · ${name} 미반영`;
+  };
+  const shareText = () => {
+    const s = groupShares(weights);
+    return s ? `명목 비중: ${GROUPS.map((g, n) => `${g.replace(/\(.*\)/, '')} ${s.groups[n]}%${n === 1 ? `(회사 거리 ${s.office}%)` : ''}`).join(' · ')} (자료 없는 항목이 있는 동은 다름)` : '';
+  };
   const comparisonText = f => f.normalized === 50 ? '부산 내 비교에서 중간' : `부산 내 비교에서 ${((f.normalized > 50) !== f.lower) ? '높은' : '낮은'} 편`;
   const sourceText = c => `${plainSource(c?.source_name || '출처 미기록')} · ${c?.indicator_code === 'OFFICE_KM' ? '경계 기준연도 ' + c.base_year + ' · 연말 표기' : '기준일'} ${c?.reference_date || '미기록'}`;
   const sourceMarkup = text => esc(text).replace(/\d{4}-\d{2}-\d{2}/g, '<span class="relocate-date">$&</span>');
@@ -163,11 +238,13 @@
     const trade = rest.sort((a, b) => a.normalized - b.normalized || a.code.localeCompare(b.code))[0];
     return { reasons, trade };
   }
-  function card(d, index) {
+  function card(d, index, range) {
     const { reasons, trade } = highlights(d);
+    const flag = rentFlag(d);
     // 처음에는 순위·점수·거리·항목 이름만 보이고, 값의 출처·기준일은 '근거 보기' 안에 모두 남긴다.
-    return `<article class="relocate-card"><div class="relocate-card-head"><span class="relocate-rank">${index + 1}</span><h3>${esc(d.district)} ${esc(d.name)}</h3><strong class="relocate-score">${d.score.toFixed(1)}<span>점</span></strong></div>
-      <p class="relocate-distance" data-cell-id="${esc(d.cells.OFFICE_KM?.cell_id || '')}">회사 동까지 직선거리 <b>${format(d.cells.OFFICE_KM?.value, 'km')}</b>${d.missing ? `<span class="relocate-coverage">자료 누락 ${d.missing}개</span>` : ''}</p>
+    return `<article class="relocate-card"><div class="relocate-card-head"><span class="relocate-rank">${index + 1}</span><h3>${esc(d.district)} ${esc(d.name)}</h3><strong class="relocate-score">${d.score.toFixed(0)}<span>점</span></strong></div>${flag ? `
+      <p class="relocate-flag">${flag}</p>` : ''}
+      <p class="relocate-distance" data-cell-id="${esc(d.cells.OFFICE_KM?.cell_id || '')}">회사 동까지 직선거리 <b>${format(d.cells.OFFICE_KM?.value, 'km')}</b><span class="relocate-coverage">순위 범위 ${range[0]}~${range[1]}위</span>${d.missing ? `<span class="relocate-coverage">자료 누락 ${d.missing}개</span>` : ''}</p>
       <p class="relocate-top"><b>점수에 기여한 항목</b> ${reasons.map(f => esc(f.label)).join(' · ')}</p>${trade ? `
       <p class="relocate-top"><b>함께 살필 점</b> ${esc(trade.label)}</p>` : ''}
       <details class="relocate-evidence rm-disclosure"><summary>근거 보기 · 전체 ${FACTORS.length}개 항목</summary>
@@ -176,9 +253,9 @@
       <p class="relocate-help relocate-rent-reasons">${esc(rentReasons(d))}</p>
       <h4>점수에 기여한 항목</h4><ul class="relocate-reasons">${reasons.map(f => `<li>${esc(valueText(f))}<small class="relocate-source">${comparisonText(f)}</small>${evidence(f.cell)}</li>`).join('')}</ul>
       <div class="relocate-trade"><b>함께 살필 점</b><p>${trade ? esc(valueText(trade)) : '비교할 다른 항목이 없습니다. 중요도를 더 켜서 함께 살펴보세요.'}</p>${trade ? evidence(trade.cell) : ''}</div>
-      <h4>전체 ${FACTORS.length}개 항목</h4><dl>${d.factors.map(f => `<div><dt>${esc(f.label)} <span>중요도 ${f.weight} · ${f.lower ? '낮을수록' : '높을수록'} 높은 점수</span></dt><dd><b>${format(f.cell?.value, f.cell?.unit)}</b> · ${isNum(f.normalized) ? `부산 내 ${f.normalized.toFixed(1)}점` : '계산 제외'}${evidence(f.cell)}<small>자료 상태: ${esc(f.cell?.status || '자료 없음')}${RENT_CODES.includes(f.code) && f.cell ? ` · 표본 ${f.cell.sample_n}건` : ''}</small>${f.cell?.note ? `<p>${esc(f.cell.note)}</p>` : ''}${f.cell?.formula_text ? `<p>원값 산식: ${esc(f.cell.formula_text)}</p>` : ''}</dd></div>`).join('')}</dl></details></article>`;
+      <h4>전체 ${FACTORS.length}개 항목</h4><dl>${d.factors.map(f => `<div><dt>${esc(f.label)} <span>${f.ref ? '참고 · 점수 미반영' : `중요도 ${f.weight} · ${f.lower ? '낮을수록' : '높을수록'} 높은 점수`}</span></dt><dd><b>${format(f.cell?.value, f.cell?.unit)}</b>${f.ref ? '' : ` · ${isNum(f.normalized) ? `부산 내 ${f.normalized.toFixed(1)}점` : '계산 제외'}`}${evidence(f.cell)}<small>자료 상태: ${esc(f.cell?.status || '자료 없음')}${RENT_CODES.includes(f.code) && f.cell ? ` · 표본 ${f.cell.sample_n}건` : ''}</small>${f.cell?.note ? `<p>${esc(f.cell.note)}</p>` : ''}${f.cell?.formula_text ? `<p>원값 산식: ${esc(f.cell.formula_text)}</p>` : ''}</dd></div>`).join('')}</dl></details></article>`;
   }
-  function printSheet(top, office) {
+  function printSheet(top, office, ranges, scope) {
     const sources = [];
     const ref = c => {
       const text = sourceText(c);
@@ -189,47 +266,56 @@
     const rows = top.map((d, i) => {
       const { reasons, trade } = highlights(d);
       const rent = RENT_CODES.map((code, n) => `${n ? '월세' : '전세'} ${d.rent[code].cell ? HOUSING[d.rent[code].type] + (d.rent[code].reason.includes('대체') ? '*' : '') : '자료 없음'}`).join(' / ');
-      return `<tr><td>${i + 1}</td><th scope="row">${esc(d.district)} ${esc(d.name)}</th><td>${d.score.toFixed(1)}</td><td data-cell-id="${esc(d.cells.OFFICE_KM?.cell_id || '')}">${format(d.cells.OFFICE_KM?.value, 'km')}${ref(d.cells.OFFICE_KM)}</td><td>${reasons.map(f => `${esc(valueText(f))}${ref(f.cell)}`).join('<br>')}<br><small>${esc(rent)}</small></td><td>${trade ? `${esc(valueText(trade))}${ref(trade.cell)}` : '다른 활성 항목 없음'}</td><td>${d.missing}</td></tr>`;
+      const flag = rentFlag(d);
+      return `<tr><td>${i + 1}</td><th scope="row">${esc(d.district)} ${esc(d.name)}${flag ? `<br><small>${flag}</small>` : ''}</th><td>${d.score.toFixed(0)}</td><td>${ranges[i][0]}~${ranges[i][1]}위</td><td data-cell-id="${esc(d.cells.OFFICE_KM?.cell_id || '')}">${format(d.cells.OFFICE_KM?.value, 'km')}${ref(d.cells.OFFICE_KM)}</td><td>${reasons.map(f => `${esc(valueText(f))}${ref(f.cell)}`).join('<br>')}<br><small>${esc(rent)}</small></td><td>${trade ? `${esc(valueText(trade))}${ref(trade.cell)}` : '다른 활성 항목 없음'}</td><td>${d.missing}</td></tr>`;
     }).join('');
-    $('printSheet').innerHTML = `<h1>부산 이전 직원 동네 비교</h1><h2>회사: ${esc(office.district)} ${esc(office.name)} · ${esc(stageLabel())}</h2><p>부산 ${dongs.length}개 행정동 중 상위 ${top.length}곳 · 행정동 대표점 사이 직선거리(이동시간 아님)</p>
-      <table><thead><tr><th>순위</th><th>행정동</th><th>점수</th><th>회사 동까지</th><th>점수에 기여한 항목</th><th>함께 살필 점</th><th>누락</th></tr></thead><tbody>${rows}</tbody></table>
+    $('printSheet').innerHTML = `<h1>부산 이전 직원 동네 비교</h1><h2>회사: ${esc(office.district)} ${esc(office.name)} · ${esc(stageLabel())}</h2><p>${esc(scope)} · 행정동 대표점 사이 직선거리(이동시간 아님)</p>
+      <p class="relocate-print-rule">${RULE} · 반경 ${radiusKm() ? `${radiusKm()}km` : '부산 전체'} · ${esc(shareText())}</p>
+      <table><thead><tr><th>순위</th><th>행정동</th><th>점수</th><th>순위 범위</th><th>회사 동까지</th><th>점수에 기여한 항목</th><th>함께 살필 점</th><th>누락</th></tr></thead><tbody>${rows}</tbody></table>
       <p>* 선택 유형의 표본 5건 미만 또는 자료 없음으로 대체. 오피스텔→연립다세대→전체, 아파트·연립다세대→전체 순. 전체도 부족하면 계산 제외.</p>
-      <p class="relocate-print-weights">중요도(0~5): ${FACTORS.map(f => `${esc(f.label)} ${weights[f.code]}`).join(' / ')}</p>
-      <p>산식: Σ(부산 내 백분위 × 중요도) ÷ Σ(값이 있는 항목의 중요도). 동률은 평균 순위, 모두 같으면 50점. 결측·중요도 0 제외. 동점은 행정동 코드순.</p>
+      <p class="relocate-print-weights">중요도(0~5): ${FACTORS.filter(f => !f.ref).map(f => `${esc(f.label)} ${weights[f.code]}`).join(' / ')}</p>
+      <p>산식: Σ(부산 내 백분위 × 중요도) ÷ Σ(값이 있는 항목의 중요도). 동률은 평균 순위, 모두 같으면 50점. 결측·중요도 0 제외. 주거비 중요도가 켜져 있는데 주거비 값이 모두 없는 동은 자료 있는 동 뒤에 둠. 동점은 행정동 코드순. 순위 범위는 중요도를 ±50% 바꿔 다시 셈한 순위의 90% 구간(200회, 지금 순위 포함)이며 자료 오차는 반영하지 않음.</p>
       <ol class="relocate-print-sources">${sources.map(s => `<li>${sourceMarkup(s)}</li>`).join('')}</ol>
-      <p>원천 자료의 기준일은 항목마다 다릅니다. 거리·밀도는 산·도로·배차·학교 배정·시설 이용 가능 여부를 반영하지 않습니다. 아침 시간 역 승차 인원은 최근접 부산교통공사 역의 월~금 195일(공휴일 포함), 오전 7~9시 평균 승차 인원이며 열차 혼잡도가 아닙니다. 밤길 안전시설 수와 밀도만으로 안전을 판정할 수 없습니다. 소아청소년과는 진료과목 기재 기준이며 전문의·진료시간은 미확인입니다. 월세 보증금 별도, 주택 구성 차이 유의. ${esc(rentText)} 전체 유형 대체값은 기존 3개월 자료입니다. 학원·유흥·단란주점·문화시설은 자료 추가 예정으로 점수 제외.</p>
+      <p>원천 자료의 기준일은 항목마다 다릅니다. 거리·밀도는 산·도로·배차·학교 배정·시설 이용 가능 여부를 반영하지 않습니다. 아침 시간 역 승차 인원은 최근접 부산교통공사 역의 월~금 195일(공휴일 포함), 오전 7~9시 평균 승차 인원이며 열차 혼잡도가 아닙니다. 승차 인원은 참고로만 보이며 점수 미반영입니다. 밤길 안전시설 수와 밀도만으로 안전을 판정할 수 없습니다. 소아청소년과는 진료과목 기재 기준이며 전문의·진료시간은 미확인입니다. 소아청소년과 의원 수는 참고로만 보이며 점수 미반영입니다. 월세 보증금 별도, 주택 구성 차이 유의. ${esc(rentText)} 전체 유형 대체값은 기존 3개월 자료입니다. 학원·유흥·단란주점·문화시설은 자료 추가 예정으로 점수 제외.</p>
       <p>동네 단위 공공데이터 통계이며 특정 매물을 추천하거나 중개하지 않습니다. 거리 파일의 요청 주소에는 선택한 회사 행정동 코드가 들어갑니다. 검색어와 중요도는 이 기기에서만 처리합니다. 점수는 선택한 조건에 따른 참고 계산입니다. 감정평가, 투자 권유, 공식 안전 판정에는 쓰지 않습니다.</p>`;
   }
   function clearResults(message) {
     compared = false;
     $('results').innerHTML = emptyResults; $('printSheet').replaceChildren(); $('printButton').disabled = true;
-    $('resultStatus').textContent = message;
+    $('resultStatus').textContent = message; $('resultShares').textContent = '';
   }
   function render() {
     const office = dongs.find(d => d.code === $('officeDong').value);
     if (!office || !distances) { clearResults('회사 동의 거리 자료가 필요합니다.'); return; }
-    const ranked = rankDongs(dongs, weights, FACTORS, distances, $('housingType').value).filter(d => isNum(d.score));
-    const top = ranked.slice(0, 10);
+    const housing = $('housingType').value, r = radiusKm();
+    const ranked = rankDongs(dongs, weights, FACTORS, distances, housing).filter(d => isNum(d.score));
+    const { list, widened } = gateByRadius(ranked, r);
+    const top = list.slice(0, 10);
     if (!top.length) { clearResults('점수에 반영할 항목이 없습니다. 중요도를 하나 이상 켜 주세요.'); return; }
+    const ranges = rankRanges(list, [office.code, presetIndex, housing, r, ...FACTORS.map(f => weights[f.code])].join('|'));
+    const scope = !r ? `부산 ${dongs.length}개 동 중 상위 ${top.length}곳`
+      : widened ? `반경 ${r}km 안 동이 적어 가까운 ${list.length}곳으로 넓혔습니다. 그중 상위 ${top.length}곳`
+      : `회사 동 대표점에서 직선 반경 ${r}km 안 ${list.length}개 동 중 상위 ${top.length}곳`;
     compared = true;
-    $('resultStatus').textContent = `${office.district} ${office.name} 출근 · ${stageLabel()} · 부산 ${dongs.length}개 동 중 상위 ${top.length}곳. ${ranked.length < dongs.length ? `계산할 자료가 없는 ${dongs.length - ranked.length}개 동은 제외했습니다.` : ''}`;
-    $('results').innerHTML = top.map(card).join('');
-    printSheet(top, office); $('printButton').disabled = false;
+    $('resultStatus').textContent = `${office.district} ${office.name} 출근 · ${stageLabel()} · ${scope}.${WIDE_DONGS.includes(office.code) ? ' 큰 행정동이라 대표점 거리 오차가 큽니다.' : ''}${ranked.length < dongs.length ? ` 계산할 자료가 없는 ${dongs.length - ranked.length}개 동은 제외했습니다.` : ''}`;
+    $('resultShares').textContent = shareText();
+    $('results').innerHTML = top.map((d, i) => card(d, i, ranges[i])).join('');
+    printSheet(top, office, ranges, scope + (WIDE_DONGS.includes(office.code) ? ' · 큰 행정동이라 대표점 거리 오차가 큼' : '')); $('printButton').disabled = false;
   }
   $('lifeStages').innerHTML = PRESETS.map((p, i) => `<button type="button" data-preset="${i}" aria-pressed="${i === 0}">${esc(p.label)}</button>`).join('');
   $('stageHelp').textContent = PRESETS[0].note;
   $('housingType').value = PRESETS[0].housing;
-  $('weightSliders').innerHTML = GROUPS.map((g, n) => `<fieldset><legend>${g}</legend>${FACTORS.filter(f => f.group === n).map(f => `<label class="relocate-slider" for="weight-${f.code}"><span>${esc(f.label)}</span><output id="out-${f.code}" for="weight-${f.code}">${weights[f.code]}</output><input type="range" id="weight-${f.code}" data-factor="${f.code}" min="0" max="5" step="1" value="${weights[f.code]}"></label>`).join('')}</fieldset>`).join('');
+  $('weightSliders').innerHTML = GROUPS.map((g, n) => `<fieldset><legend>${g}</legend>${FACTORS.filter(f => f.group === n && !f.ref).map(f => `<label class="relocate-slider" for="weight-${f.code}"><span>${esc(f.label)}</span><output id="out-${f.code}" for="weight-${f.code}">${weights[f.code]}</output><input type="range" id="weight-${f.code}" data-factor="${f.code}" min="0" max="5" step="1" value="${weights[f.code]}"></label>`).join('')}</fieldset>`).join('');
   $('lifeStages').addEventListener('click', e => {
     const button = e.target.closest('[data-preset]'); if (!button) return;
     presetIndex = +button.dataset.preset; weights = { ...PRESETS[presetIndex].weights }; adjusted = false;
     for (const b of $('lifeStages').children) b.setAttribute('aria-pressed', String(b === button));
-    for (const f of FACTORS) { $(`weight-${f.code}`).value = weights[f.code]; $(`out-${f.code}`).value = weights[f.code]; }
+    for (const f of FACTORS.filter(f => !f.ref)) { $(`weight-${f.code}`).value = weights[f.code]; $(`out-${f.code}`).value = weights[f.code]; }
     $('stageHelp').textContent = PRESETS[presetIndex].note;
     $('housingType').value = PRESETS[presetIndex].housing;
     if (compared) render();
   });
-  $('housingType').addEventListener('change', () => { if (compared) render(); });
+  for (const id of ['housingType', 'radiusKm']) $(id).addEventListener('change', () => { if (compared) render(); });
   $('weightSliders').addEventListener('input', e => {
     const code = e.target.dataset.factor; if (!code) return;
     weights[code] = +e.target.value; $(`out-${code}`).value = weights[code]; adjusted = true;
@@ -279,7 +365,8 @@
         || new Set(reloc.dongs.map(d => d.code7)).size !== busan.length
         || busan.some(row => !reloc.dongs.some(d => d.code7 === row[0] && Array.isArray(d.cells)
           && relocCodes.every(code => d.cells.filter(c => c.indicator_code === code).length === 1)))) throw new Error('소아청소년과·주거 유형 자료를 확인하지 못했습니다.');
-      const period = rentPeriod(reloc.rent);
+      const period = rentPeriod(reloc.rent); // 아래 수록 개월 수는 이 검증을 통과한 원장 값이다.
+      rentMonths = { window: reloc.rent.months.length, ...Object.fromEntries(['APT', 'RH', 'OFFI'].map(t => [t, reloc.rent.by_type[t.toLowerCase()].available_months.length])) };
       const short = `유형별 전월세 중위값은 ${period.covered} 자료입니다.`;
       rentText = short + (period.partial ? ` 조회한 ${period.window} 가운데 나머지 달은 수록되지 않았습니다.` : '');
       $('rentPeriod').textContent = short;

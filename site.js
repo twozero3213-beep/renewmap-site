@@ -53,7 +53,8 @@
   if (header && !header.querySelector('.rm-nav')) {
     const base = fixedBase || (nested ? '../' : '');
     const path = fixedBase ? '' : location.pathname;
-    const items = [['explore.html', '동네 진단', /explore\.html$|\/dong\//], ['rank.html', '동네 비교 점수', /rank\.html$/], ['relocate.html', '부산 이전 직원 동네 비교', /relocate\.html$/], ['programs.html', '재생 사업', /programs\.html$/],
+    // R11(C18·D30 B): 부산 이전 직원 비교는 주 메뉴에서 뺐다. 홈 '다른 도구 더 보기'와 꼬리글 도구 줄에서 연다
+    const items = [['explore.html', '동네 진단', /explore\.html$|\/dong\//], ['rank.html', '동네 비교 점수', /rank\.html$/], ['programs.html', '재생 사업', /programs\.html$/],
       ['field/redev.html', '구역 계산', /\/field\/redev\.html$/], ['field/', '현장 기록', /\/field\/(?:index\.html)?$/]];
     const nav = document.createElement('nav');
     nav.className = 'rm-nav'; nav.id = 'rm-nav'; nav.setAttribute('aria-label', '주요 메뉴');
@@ -144,26 +145,31 @@
   const home = new URL('./', document.currentScript.src).pathname;
   if (!inField && location.pathname !== home && location.pathname !== home + 'index.html') return;
   const recording = location.pathname === scope.pathname || location.pathname === scope.pathname + 'index.html';
-  let hadController = !!sw.controller, busy = false, changed = false, dismissed = false;
-  // 띠는 머리 바로 아래 글 흐름에 둔다(11-20 점검: 화면 아래 고정 띠가 입력칸·주 단추를 가렸다). 초점은 옮기지 않는다.
-  // 새 판 알림만 머리 밑에 붙어 따라오고(.is-urgent), 계산을 멈춘 화면에서는 닫을 수 없다. 닫은 확인 실패 띠는 다시 확인해도 띄우지 않는다
+  let hadController = !!sw.controller, busy = false, changed = false;
+  // 11-20 판정(C16·C17): 확인 실패는 본문 끝 글 흐름의 한 줄(단추 없음)이라 사진 단추를 밀지도 가리지도 않고, 이미 있으면 다시 그리거나 다시 읽지 않는다.
+  // 새 판 알림은 계산을 멈추는 급한 안내라 화면 아래 고정 띠로 두고, 높이(--err-h)를 알려 rm6.css가 그만큼 문서 끝을 비우게 한다(가린 초점 0). 초점은 옮기지 않는다
   const notice = (text, refresh) => {
-    if (!inField || (dismissed && !refresh)) return;
+    if (!inField) return;
     let box = document.getElementById('fieldUpdate');
-    if (!box) {
-      box = document.createElement('p'); box.id = 'fieldUpdate'; box.setAttribute('role', 'status');
-      const top = document.querySelector('header.top');
-      if (top) top.after(box); else document.body.append(box);
+    if (!refresh) {
+      if (box) return;
+      box = document.createElement('p'); box.id = 'fieldUpdate'; box.className = 'hint'; box.setAttribute('role', 'status');
+      (document.getElementById('main') || document.body).append(box);
+      box.textContent = text;   // 붙인 뒤에 채워야 알림 칸으로 읽힌다
+      return;
     }
-    box.className = refresh ? 'is-urgent' : '';
+    box?.remove();
+    box = document.createElement('p'); box.id = 'fieldUpdate'; box.className = 'err-banner'; box.setAttribute('role', 'status');
+    document.body.append(box);
+    new ResizeObserver(() => document.documentElement.style.setProperty('--err-h', box.offsetHeight + 'px')).observe(box);
     const button = document.createElement('button'); button.type = 'button'; button.className = 'ghost';
-    button.textContent = refresh ? '새 버전으로 열기' : '다시 확인';
-    button.addEventListener('click', () => refresh ? location.reload() : check());
+    button.textContent = '새 버전으로 열기';
+    button.addEventListener('click', () => location.reload());
     const kids = [text + ' ', button];
-    if (!refresh || recording) {
+    if (recording) {   // 기록 화면은 저장할 수 있으니 닫을 수 있다. 계산을 멈춘 화면은 닫을 수 없다
       const close = document.createElement('button'); close.type = 'button'; close.className = 'ghost rm-dismiss'; close.textContent = '닫기';
       close.setAttribute('aria-label', '안내 닫기');
-      close.addEventListener('click', () => { dismissed = true; box.remove(); });
+      close.addEventListener('click', () => box.remove());
       kids.push(close);
     }
     box.replaceChildren(...kids);
@@ -202,7 +208,7 @@
       await registration.update();
       if (!changed) document.getElementById('fieldUpdate')?.remove();
     } catch (_) {
-      if (!changed) notice('새 버전 확인을 마치지 못했습니다. 지금 버전으로 계속 쓸 수 있고, 연결되면 다시 확인합니다.', false);
+      if (!changed) notice('새 버전 확인을 마치지 못했습니다. 지금 버전으로 계속 쓸 수 있고, 연결이 돌아오거나 이 화면으로 다시 돌아오면 다시 확인합니다.', false);
     } finally { busy = false; }
   }
   window.addEventListener('online', check);

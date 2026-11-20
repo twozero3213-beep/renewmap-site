@@ -108,12 +108,19 @@
     const workspace = document.querySelector('[data-workspace]');
     if (!workspace) return;
     const overlayButton = workspace.querySelector('[data-overlay-load]');
+    // 2026-11-20 C18: #overlay는 map.js가 접힌 '도구' 칸(details.map-tools) 안으로 옮긴다 → 바로가기로 오면 도구 칸도 열고 그 칸으로 한 번 옮긴다(새 해시는 만들지 않는다)
+    let overlayJump = false;
+    const openOverlay = overlay => {
+      overlay.open = true;
+      const tools = overlay.closest('details.map-tools'); if (tools) tools.open = true;
+      if (overlayJump) { overlayJump = false; overlay.scrollIntoView({ block: 'start' }); }
+    };
     overlayButton?.addEventListener('click', async () => {
       overlayButton.disabled = true;
       overlayButton.textContent = '파일 도구를 불러오는 중입니다.';
       try {
         await import('./overlay.js?v=20261119-r3');
-        const overlay = document.getElementById('overlay'); overlay.open = true;
+        const overlay = document.getElementById('overlay'); openOverlay(overlay);
         overlay.querySelector('summary').focus({ preventScroll: true });
       } catch (error) {
         const slot = document.getElementById('overlayApp'); slot.setAttribute('role', 'alert');
@@ -194,8 +201,9 @@
       window.RenewMap?.setReportMode(new URLSearchParams(location.search).get('report') || 'report');
       show(panelFromLocation(location.hash, location.search));
       if (location.hash === '#overlay') {
+        overlayJump = true;
         const overlay = document.getElementById('overlay');
-        if (overlay) overlay.open = true; else overlayButton?.click();
+        if (overlay) openOverlay(overlay); else overlayButton?.click();
       }
     };
     window.addEventListener('hashchange', restore);

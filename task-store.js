@@ -3,7 +3,13 @@
   'use strict';
   const T=typeof module==='object' && module.exports?require('./tasks.js'):root.RenewTasks;
   const NAME='renewmap-tasks', VERSION=1;
-  let opening=null;
+  let opening=null, kept=false;
+  // 첫 저장이 끝나면 한 번만 브라우저에 기기 기록 자동 삭제를 막아 달라(persist)고 요청한다(C01). 거절·미지원·예외는 저장과 무관하므로 무시한다
+  function keep() {
+    if(kept) return;
+    kept=true;
+    new Promise(ok=>ok(root.navigator?.storage?.persist?.())).catch(()=>{});
+  }
   const snapshot=value=>JSON.parse(T.canonical(value));
   function freeze(value) { if(value && typeof value==='object') { Object.values(value).forEach(freeze); Object.freeze(value); } return value; }
   function db() {
@@ -47,7 +53,7 @@
           if(restore || !head) heads.add(candidate); else heads.put(candidate);
         } catch(error) { abort(error); }
       };
-      t.oncomplete=()=>resolve(freeze(candidate));
+      t.oncomplete=()=>{ keep(); resolve(freeze(candidate)); };
       t.onerror=t.onabort=()=>reject(failure || t.error || new Error('과업 저장에 실패했습니다.'));
       const q=heads.get(candidate.id);
       q.onsuccess=()=>{

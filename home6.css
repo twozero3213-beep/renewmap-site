@@ -13,6 +13,8 @@
   .h6-hero .h6-try { margin-top: 28px; }
   .h6-hero .h6-links { margin-top: 16px; }
 }
+/* 2026-11-20 C17: 카드 자료가 늦게 오면 '최소 N개 · 추가확인 N개'가 두 줄로 늘고 왼쪽 묶음이 가운데 맞춤으로 따라 내려가 밀렸다(CLS 0.14~0.17). 숫자 고정 높이 대신 위쪽 정렬 */
+@media (min-width: 1024px) { #h6Met { min-height: 2lh; } .h6-hero { align-items: start; } }
 .h6-lead { font-size: 18px; color: var(--dim); margin: 0 0 20px; }
 .h6-search label { display: block; font-weight: 700; margin-bottom: 8px; }
 .h6-search .home-search-row { display: flex; gap: 8px; }

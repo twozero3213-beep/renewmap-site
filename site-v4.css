@@ -12,9 +12,6 @@ header.top .menu a { position: relative; }
 header.top .menu a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px; background: var(--green); transform: scaleX(0); transform-origin: 0 50%; transition: transform .3s var(--out); }
 header.top .menu a:hover::after, header.top .menu a[aria-current]::after { transform: scaleX(1); }
 
-/* 읽은 만큼 차는 맨 위 선(긴 문서 화면) */
-.read-prog { position: fixed; inset: 0 0 auto 0; height: 3px; z-index: 60; background: var(--lime); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); pointer-events: none; }
-
 /* 버튼: 손을 대면 색이 바뀌고 누르면 눌린다 */
 .btn { transition: transform .15s var(--ease), background-color .15s var(--ease), border-color .15s var(--ease); }
 .btn:active { transform: scale(.98); }
@@ -35,14 +32,14 @@ header.top .menu a:hover::after, header.top .menu a[aria-current]::after { trans
 .motion .pg-band > :not(h1) { animation: v4-rise .8s var(--out) .1s both; }
 .motion .about-top h1 { animation: v4-rise .9s var(--out) both; }
 .motion .about-top .about-def, .motion .about-top .about-cta { animation: v4-rise .9s var(--out) .12s both; }
-@keyframes v4-rise { from { opacity: 0; transform: translateY(22px); } }
+/* 2026-11-20 C08: opacity를 뺐다. 이미 그려진 제목·글이 사라졌다 다시 나타나 LCP가 늦었다(rank 모바일 스로틀 로컬 중앙값 4.7초→3.2초, site-motion을 막은 값과 같음). 22px 올라오기만 남긴다(기본값, 대표 확인 대기) */
+@keyframes v4-rise { from { transform: translateY(22px); } }
 /* R1 10: 스크롤 나타남(.rv)은 뺐다. 내용 화면에서 아직 안 나타난 칸이 빈칸으로 남고 전체 캡처·인쇄에서도 비었다 */
 
 @media (prefers-reduced-motion: reduce) {
   .btn, header.top, .table-wrap tbody tr { transition: none; }
-  .read-prog { display: none; }
 }
-@media print { .motion .rv { opacity: 1; transform: none; } .read-prog { display: none; } .pg-band, .about-top { color: var(--print-ink); background: none; } .pg-band::before { display: none; } .pg-band h1, .pg-band p { color: var(--print-ink); } }
+@media print { .pg-band, .about-top { color: var(--print-ink); background: none; } .pg-band::before { display: none; } .pg-band h1, .pg-band p { color: var(--print-ink); } }
 /* 첫 띠는 머리띠 바로 아래에 붙인다(문서 화면 main.page의 위 여백만큼 올림) */
 main.page:has(> .pg-band:first-child) { padding-top: 0; }
 

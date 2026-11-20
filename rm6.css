@@ -127,14 +127,14 @@ header.top .logo span { color: var(--green); }
 /* '메뉴' 단추: (0,2,1)이라 현장 화면의 녹색 전체 폭 단추 규칙(.field button, 0,1,1)을 이긴다 */
 header.top .rm-menu-btn { display: none; flex: none; width: auto; margin: 0 0 0 auto; min-height: 44px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-size: 16px; font-weight: 700; box-shadow: none; }
 header.top a:focus-visible, header.top button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 2px var(--card); }
-/* site.js가 새 메뉴를 달면 HTML의 옛 메뉴를 숨긴다. 스크립트 없는 화면(404)은 옛 메뉴를 같은 모양으로 보인다 */
+/* site.js가 새 메뉴를 달면 HTML의 옛 메뉴를 숨긴다. 스크립트 없는 화면은 옛 메뉴를 같은 모양으로 보인다 */
 header.top .wrap:has(.rm-nav) .site-nav, header.top .menu-toggle { display: none; }
 header.top .site-nav { display: flex; flex-wrap: wrap; gap: 2px; margin-left: auto; }
 header.top .site-nav a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: var(--t-nav); padding: 10px 12px; min-height: 44px; display: inline-flex; align-items: center; }
 header.top .site-nav a[aria-current="page"] { color: var(--green); box-shadow: inset 0 -3px 0 var(--green); }
 header.top .site-nav a[href$="about.html#contact"] { background: var(--card); color: var(--green); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 14px; font-weight: 700; }
-/* R3 1: ≤1023px에서는 site.js가 옛 메뉴를 '메뉴' 단추로 바꾼다. 그 전 한 순간 옛 메뉴가 두 줄로 꺾여 머리가 93px였다가 64px로 줄며 본문이 28px 올라갔다(768px CLS) → 스크립트가 켜져 있으면 처음부터 숨긴다 */
-@media (max-width: 1023px) and (scripting: enabled) { header.top .site-nav { display: none; } }
+/* R3 1: ≤1023px에서는 site.js가 옛 메뉴를 '메뉴' 단추로 바꾼다. 그 전 한 순간 옛 메뉴가 두 줄로 꺾여 머리가 93px였다가 64px로 줄며 본문이 28px 올라갔다(768px CLS) → 스크립트가 켜져 있으면 처음부터 숨긴다. ≤720px 특정도 충돌 수정(2026-11-20 C17): (scripting) 미디어 대신 frame-guard.js가 head에서 붙이는 html.js로 나눈다(scripting을 모르는 브라우저도 첫 프레임이 같다) */
+@media (max-width: 1023px) { html.js header.top .site-nav { display: none; } }
 /* 아래 탭(홈·동네 찾기·현장 기록·보관함)은 휴대폰·태블릿에서만 */
 .tabbar a { white-space: nowrap; }
 @media (min-width: 1024px) {
@@ -154,15 +154,18 @@ header.top .site-nav a[href$="about.html#contact"] { background: var(--card); co
   /* 메뉴 시트 뒤를 가린다(R1 4). 가림을 누르면 site.js가 닫는다 */
   body:has(.rm-nav.is-open)::after { content: ""; position: fixed; inset: 0; z-index: 35; background: rgba(23, 25, 28, .32); }
   /* 스크립트 없는 화면의 옛 메뉴: 두 줄로 펼쳐져 옆으로 밀리던 것(11-13 4차) → 한 줄, 메뉴 줄만 옆으로 */
-  header.top .wrap:not(:has(.rm-nav)) { flex-wrap: wrap; row-gap: 0; }
-  header.top .wrap:not(:has(.rm-nav)) .site-nav { flex: 1 0 100%; flex-wrap: nowrap; overflow-x: auto; margin: 0 -4px; padding-bottom: 4px; scrollbar-width: thin; }
-  header.top .wrap:not(:has(.rm-nav)) .site-nav a { flex: none; font-size: 15px; padding: 8px 10px; }
+  html:not(.js) header.top .wrap:not(:has(.rm-nav)) { flex-wrap: wrap; row-gap: 0; }
+  html:not(.js) header.top .wrap:not(:has(.rm-nav)) .site-nav { flex: 1 0 100%; flex-wrap: nowrap; overflow-x: auto; margin: 0 -4px; padding-bottom: 4px; scrollbar-width: thin; }
+  html:not(.js) header.top .wrap:not(:has(.rm-nav)) .site-nav a { flex: none; font-size: 15px; padding: 8px 10px; }
 }
 @media (max-width: 720px) {
   /* 휴대폰에서는 옛 메뉴를 3칸 두 줄로(한 줄로 화면 밖까지 이어졌다) */
-  header.top .wrap:not(:has(.rm-nav)) .site-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; gap: 0 6px; }
-  header.top .wrap:not(:has(.rm-nav)) .site-nav a { justify-content: center; text-align: center; font-size: var(--t-sub); }
+  html:not(.js) header.top .wrap:not(:has(.rm-nav)) .site-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; gap: 0 6px; }
+  html:not(.js) header.top .wrap:not(:has(.rm-nav)) .site-nav a { justify-content: center; text-align: center; font-size: var(--t-sub); }
 }
+/* 고정 안내(.err-banner)가 뜨면 그 높이만큼 초점 스크롤 여백과 문서 끝 여백을 비운다(WCAG 2.4.11·C43). body:has(.tabbar)와 특정도가 같아 그 블록 뒤에 둔다. --err-h는 site.js가 잰다 */
+html:has(body > .err-banner) { scroll-padding-bottom: calc(88px + var(--err-h, 12rem) + env(safe-area-inset-bottom)); }
+body:has(> .err-banner) { padding-bottom: calc(88px + var(--err-h, 12rem) + env(safe-area-inset-bottom)); }
 /* 2026-11-19: 본문 끝 → 꼬리글 사이는 이 24px 하나(전에는 본문 56 + 꼬리글 56이 회색 띠로 보였다) */
 footer { background: #fff; border-top: 1px solid var(--line); margin-top: 24px; }
 footer .links { display: grid; gap: 0; margin-bottom: 8px; }
@@ -250,7 +253,6 @@ main table caption { caption-side: top; text-align: left; padding: 0 0 8px; font
 .pg-band .breadcrumb, .pg-band .breadcrumb a { color: var(--ink); }
 .pg-band p { color: var(--dim); }
 .pg-band a { color: var(--green); }
-.read-prog { display: none; }
 /* 긴 화면 차례(content-pages.js): 넘기기 대신 펼친 본문 + 맨 위 차례. 번호 알약 대신 밑줄 글자 링크(v7) */
 .cp-toc { max-width: calc(var(--rm-max) - 40px); margin: 8px auto 32px; padding: 16px 20px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
 .cp-toc ol { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 24px; }

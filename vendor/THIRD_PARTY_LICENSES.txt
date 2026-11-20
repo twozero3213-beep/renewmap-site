@@ -1,0 +1,95 @@
+리뉴맵 공개 사이트 vendor/ 제3자 라이선스 전문 (2026-11-20)
+
+어느 파일이 어느 구성요소인지는 NOTICE.md 표에 있다. 이 파일은 NOTICE.md가 가리키는 라이선스 전문과 저작권 줄을 모은다.
+라이선스 전문과 저작권 줄은 각 항목 '출처'에 적은 고정 버전의 업스트림 LICENSE에서 그대로 복사했다.
+
+========================================================================
+1. MIT License
+========================================================================
+아래 각 구성요소의 저작권 줄과 이 절 끝의 허락 문구 전문이 그 구성요소의 MIT 고지다.
+
+- JSZip 3.10.1 (office/jszip.min.js; MIT 또는 GPLv3 가운데 MIT를 고름)
+  Copyright (c) 2009-2016 Stuart Knightley, David Duponchel, Franz Buchinger, António Afonso
+  출처: https://unpkg.com/jszip@3.10.1/LICENSE.markdown
+- pako 1.0 (JSZip 3.10.1 안에 묶여 있음, office/jszip.min.js)
+  Copyright (C) 2014-2017 by Vitaly Puzrin and Andrei Tuputcyn
+  출처: https://unpkg.com/pako@1.0.11/LICENSE
+- buffer 6.0.3 (vision/tesseract/worker.min.js 안에 묶여 있음)
+  Copyright (c) Feross Aboukhadijeh, and other contributors.
+  출처: https://unpkg.com/buffer@6.0.3/LICENSE
+- regenerator-runtime 0.13 (vision/tesseract/tesseract.min.js·worker.min.js 안에 묶여 있음)
+  Copyright (c) 2014-present, Facebook, Inc.
+  출처: https://unpkg.com/regenerator-runtime@0.13.11/LICENSE
+- zlib.js 0.3.1 (vision/tesseract/worker.min.js 안에 묶여 있음)
+  Copyright (c) 2012 imaya
+  출처: https://unpkg.com/zlibjs@0.3.1/LICENSE
+- OpenFreeMap 스타일 프로젝트 (openfreemap/positron.json을 받은 곳). LICENSE.md는 MIT라고만 밝히고 저작권자 줄은 두지 않았다.
+  출처: https://github.com/hyperknot/openfreemap-styles/blob/946a6bb10a0b625d9937344857db7b14c12945f0/LICENSE.md
+- rhwp 0.8.7의 MIT 전문과 저작권 줄은 rhwp/LICENSE에 따로 있다.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+========================================================================
+2. BSD 3-Clause License
+========================================================================
+아래 각 구성요소의 저작권 줄과 이 절 끝의 조건 전문이 그 구성요소의 BSD-3 고지다.
+
+- ieee754 1.2.1 (vision/tesseract/worker.min.js 안에 묶여 있음)
+  Copyright 2008 Fair Oaks Labs, Inc.
+  출처: https://unpkg.com/ieee754@1.2.1/LICENSE
+- OpenMapTiles positron 스타일 코드 (openfreemap/positron.json)
+  Copyright (c) 2024, MapTiler.com & OpenMapTiles contributors.
+  Copyright (c) 2015, CartoDB Inc.
+  All rights reserved.
+  출처: https://github.com/openmaptiles/positron-gl-style/blob/v1.9/LICENSE.md
+- MapLibre GL JS 5.24.1의 BSD-3 전문과 저작권 줄은 maplibre/LICENSE.txt에 따로 있다.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+========================================================================
+3. CC-BY 4.0 (positron 스타일 디자인)
+========================================================================
+openfreemap/positron.json의 지도 모양(디자인)은 OpenMapTiles positron 스타일이며 CC-BY 4.0을 따른다.
+라이선스: Creative Commons Attribution 4.0 International, https://creativecommons.org/licenses/by/4.0/
+원 디자인 출처(업스트림 LICENSE.md 원문):
+  Derived from "CartoDB Basemaps" (https://github.com/CartoDB/CartoDB-basemaps)
+  designed by Stamen and Paul Norman for CartoDB Inc., licensed under CC-BY 3.0.
+수정: 2026-11-13 OpenFreeMap에서 받은 스타일을 고쳤다. 글자를 한국어 이름(name:ko) 먼저 보이게 하고 도로 번호 방패를 뺐다.
+지도 화면 구석의 출처 표시는 타일 제공처(OpenFreeMap)가 주는 OpenMapTiles·OpenStreetMap 표기를 그대로 보여 준다.
+
+========================================================================
+4. Apache License 2.0
+========================================================================
+전문: vision/tesseract/core/LICENSE (Apache License, Version 2.0 전문)
+이 전문이 적용되는 구성요소:
+- pdf.js 3.11.174 (pdfjs/)
+- SheetJS Community Edition 0.20.3 (office/xlsx.mini.min.js)
+- docx-preview 0.4.1 (office/docx-preview.min.js)
+- MediaPipe Tasks Vision 1.1.1 (vision/mediapipe/)
+- BlazeFace 짧은 거리 얼굴 모델 (vision/models/blaze_face_short_range.tflite)
+- Tesseract.js 7.0.0 (vision/tesseract/tesseract.min.js·worker.min.js)과 tesseract.js-core 7.0.0 (vision/tesseract/core/)
+- tessdata_fast 영어 모델 (vision/models/eng.traineddata.gz)

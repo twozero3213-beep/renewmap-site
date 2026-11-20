@@ -577,8 +577,8 @@
     }
     $("phraseBox").hidden = !list.length;
   }
+  $("keepBox").hidden = !canStore;   // 처음부터 보이게 두고 못 쓸 때만 숨긴다(C17: 늦게 펼쳐져 아래 칸을 밀었다)
   if (canStore) {
-    $("keepBox").hidden = false;
     $("targets").addEventListener("change", () => { store(TARGET_KEY, picked("target")); drawPhrases(); });
     drawPhrases();
   }
@@ -964,9 +964,7 @@
   showTools();
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(() => { $("ready").textContent = "오프라인 준비를 마치지 못했습니다.\n인터넷 연결과 브라우저 설정을 확인해 주세요."; });
-    // 이미 옛 판이 있던 기기에서만 알린다(첫 설치는 알릴 것이 없다). 쓰던 기록은 기기 저장소에 남아 새로고침해도 그대로다
-    let hadCtrl = !!navigator.serviceWorker.controller;
-    navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadCtrl) toast("새 버전이 나왔습니다.\n새로고침하면 반영됩니다.", "새로고침", () => location.reload()); hadCtrl = true; });
+    // 새 버전 안내는 site.js 고정 띠 하나로 한다. 여기서도 띄우던 토스트는 같은 말을 두 번 읽고, 띠 밑에 깔린 '새로고침' 단추로 초점이 갔다(11-20 C16)
     // ready는 앱 셸을 다 저장한 서비스 워커가 켜져야 풀린다. 현장에 나가기 전에 오프라인으로 열리는지 보이게 한다(감사 이수진2)
     navigator.serviceWorker.ready.then(() => { $("ready").textContent = "오프라인 준비됨.\n인터넷이 끊겨도 이 화면이 열립니다."; });
   } else { $("ready").textContent = "이 브라우저에서는 오프라인으로 열 수 없습니다.\n인터넷에 연결한 상태로 사용해 주세요."; }

@@ -29,7 +29,7 @@
 <link rel="manifest" href="site.webmanifest">
 <link rel="stylesheet" href="pretendard.css">
 <link rel="stylesheet" href="styles.css?v=20261120-w3">
-<link rel="stylesheet" href="site-v4.css?v=20261119-r3">
+<link rel="stylesheet" href="site-v4.css?v=20261120-r11">
 <link rel="stylesheet" href="hero.css?v=20261120-r10">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
@@ -51,15 +51,15 @@
 ]}
 </script>
 <script src="app.js" defer></script>
-<script src="site.js?v=20261120-r10" defer></script>
+<script src="site.js?v=20261120-r11" defer></script>
 <script src="site-motion.js" defer></script>
 <link rel="stylesheet" href="content-pages.css?v=20261119-r8">
 <script src="content-pages.js?v=20261120-r10" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261120-r10">
+<link rel="stylesheet" href="rm6.css?v=20261120-r11">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 홈" href="index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 진단</a><a href="rank.html">동네 비교 점수</a><a href="relocate.html">부산 이전 직원 동네 비교</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 과업 상담</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 RENEWMAP 홈" href="index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 진단</a><a href="rank.html">동네 비교 점수</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 과업 상담</a></nav></div></header>
 
 <main id="main" class="about-page" data-content-book data-no-toc>
   <!-- R2(2026-11-13): 접는 주제 12개를 펼친 절 넷(하는 일·문서·비용과 범위·시범 과업 상담)으로. 숫자 원칙·하지 않는 일·숫자 하나의 기록은 근거 읽는 법(evidence.html) 끝으로 옮겼다 -->
@@ -90,6 +90,7 @@
       <h2 id="howTitle">하는 일</h2>
       <div class="about-uses" id="usesTitle">
       <p class="about-use"><a href="explore.html">후보지 자료를 처음 볼 때</a></p>
+      <p class="about-use"><a href="explore.html#overlay">두 자료를 같은 식별자로 맞춰 볼 때</a></p>
       <p class="about-use"><a href="tasks.html?step=survey">기존 자료와 현장이 다를 때</a></p>
       <p class="about-use"><a href="tasks.html?step=review">보완 요청을 받았을 때</a></p>
       <p class="about-use"><a href="tasks.html?step=revisit">준공 뒤 같은 곳을 다시 볼 때</a></p>
@@ -107,6 +108,7 @@
       <p class="about-links"><a href="explore.html#find">동네 진단 열기</a><a href="field/">현장 기록 시작</a><a href="tasks.html?step=delivery#handoverSummary">인수인계 준비하기</a><a href="evidence.html">근거 읽는 법</a></p>
       <dl class="about-use-descriptions">
         <div><dt>후보지 자료를 처음 볼 때</dt><dd>동별 값을 견주고 출처·기준일·공간 단위를 확인합니다.<br>행정동 값은 그 안의 건물 값으로 대신 쓸 수 없습니다.</dd></div>
+        <div><dt>두 자료를 같은 식별자로 맞춰 볼 때</dt><dd>두 CSV·엑셀에서 고른 식별 열을 이 브라우저 안에서 글자 그대로 맞춰 중복·빈칸·짝 없는 행을 검토 CSV로 받습니다.<br>파일은 서버로 보내지 않습니다. 공통 식별자가 없으면 주소 변환·공간 조인이 필요해 연결하지 않습니다.<br>일치는 같은 건물이라는 뜻이 아닙니다.</dd></div>
         <div><dt>기존 자료와 현장이 다를 때</dt><dd>추가·제외·보류 사유와 사진을 조사 변경·보완 근거표에 남기고, 제출서식(XLSX) 칸에 이어 적습니다.</dd></div>
         <div><dt>보완 요청을 받았을 때</dt><dd>검토 의견을 원본의 쪽·칸에 달고, 보완본과 해소 확인을 잇습니다.<br>후속 점검은 담당자와 기한만 기록하며, 알림은 보내지 않습니다.</dd></div>
         <div><dt>준공 뒤 같은 곳을 다시 볼 때</dt><dd>전후 사진·조사일·관찰 조건을 재방문 실적보고서에 잇습니다.<br>조건이 달랐다면 다르다고 남깁니다.</dd></div>
@@ -156,13 +158,19 @@
       <dl class="about-options">
         <div><dt>무료 공개 도구</dt><dd>동네 진단, 재생 사업, 구역 계산, 현장 기록, 자동 문서를 무료로 씁니다. 출처와 추가확인 항목을 함께 봅니다.</dd><dd class="about-opt-go"><a href="explore.html#report">우리 동네 근거 1쪽 받기</a></dd>
           <dd><details class="about-why"><summary>판정 아님 · 참고 계산 <span class="about-why-more">ⓘ 자세히</span></summary><p class="reply-time">지금 결과물은 참고 계산입니다. 화면의 예시는 납품 실적이나 공모 선정, 기관 승인을 뜻하지 않습니다.</p></details></dd></div>
-        <div><dt>시범 과업</dt><dd><strong>시범 제안가 99만원(VAT 별도)</strong>. 과업 1건·행정동 1곳·기준일 1개 기준이며, 최종 금액은 계약 전에 정합니다.</dd>
+        <div><dt>시범 과업</dt><dd><strong>시범 제안가 99만원(부가세가 붙어도 총액 108만 9천원 이내, 최종 금액은 계약 전 확정)</strong>. 과업 1건·행정동 1곳·기준일 1개 기준입니다. 그 밖의 범위는 별도 견적입니다.</dd>
+          <dd>웹 도구는 무료이며 가용성을 보장하지 않습니다. 시범 과업 결과물은 파일로 납품합니다.</dd>
           <dd><details class="rm-disclosure"><summary>포함 내용과 별도 협의</summary><ul class="about-scope">
-            <li>근거 1쪽과 출처·추가확인 목록을 HWPX·PDF·XLSX로 드립니다.</li>
-            <li>초안 검토 뒤 요청을 모아 보완을 한 번 합니다. 리뉴맵 쪽 잘못은 따로 고칩니다.</li>
-            <li>검수 기준은 두 가지입니다. 합의한 기준일과 출처를 적고, 자료가 없거나 판단이 남은 항목은 추가확인 목록에 빠짐없이 남깁니다.</li>
+            <li>무료 자동 문서(5개 형식)에 더해 사람이 아래 일을 하고, 검토 납품본(무료 자동 문서 + 사람이 확인한 검토표)으로 드립니다.</li>
+            <li>① 추가확인 항목을 원자료로 다시 확인하고 상태와 사유를 적은 검토표. 확인 항목 수는 견적 때 함께 정합니다.</li>
+            <li>② 공통키 검토. '두 자료 공통키 대조'에서 받은 대조 CSV(개인정보 열이 자동으로 빠진 본)만 받아 짝이 없거나 겹친 건을 공공 원자료로 확인합니다. 원본 파일과 소유자 명부는 받지 않습니다.</li>
+            <li>③ 공모 서식 반영. 한글(HWPX)로 드리며, 한/글에서 열리는지 확인하기 전에는 '열림 확인 후 제공'으로 둡니다.</li>
+            <li>④ 검수 기준은 두 가지입니다. 합의한 기준일과 출처를 적고, 자료가 없거나 판단이 남은 항목은 추가확인 목록에 빠짐없이 남깁니다. 초안 검토 뒤 요청을 모아 보완을 한 번 합니다.</li>
+            <li>납품 후 30일 안에 알려 주신 리뉴맵 쪽 오류는 무상으로 고칩니다.</li>
+            <li>기관이 보유한 개인정보는 받지 않습니다.</li>
             <li>동 추가, 새 기준일·지표, 구역안 비교, 새 현장조사·출장, 전문가 검토는 따로 정합니다.</li>
-          </ul></details></dd>
+          </ul><p class="reply-time">공식 값은 도시재생종합정보체계 값을 그대로 쓰고, 리뉴맵은 원자료 재확인·출처표·서식 반영을 합니다.</p></details></dd>
+          <dd class="about-opt-go"><a href="pilot-scope.html">시범 과업 범위 1쪽</a></dd>
           <dd class="about-opt-go"><a href="#contact-form" data-pilot-inquiry>시범 과업 상담</a></dd></div>
       </dl>
     </div>
@@ -195,14 +203,14 @@
         </label>
         <label>내용<textarea name="message" rows="3" placeholder="대상 자치구·동, 공모 이름, 접수 일정 등을 적어 주세요. 주민등록번호·계좌·건강 정보·개인 사진은 적지 마세요."></textarea></label>
         </div>
-        <!-- 동의 문구 C1-v1: docs/legal/consent_texts.md 1절. <1년> 등 꺾쇠 값은 사람이 정한다(privacy_policy_v2.md와 같은 값). 선택 항목은 묶지 않고 미리 체크하지 않는다 -->
+        <!-- 동의 문구 C1-v1: docs/legal/consent_texts.md 1절. 보유 기간은 privacy.html·privacy_policy_v2.md와 같은 값. 선택 항목은 묶지 않고 미리 체크하지 않는다 -->
         <label class="agree"><input type="checkbox" name="agree" required data-consent="C1-v1"><span>[필수] 상담 답변을 위한 개인정보 수집·이용에 동의합니다. (만 14세 이상)</span></label>
         <details class="consent-full"><summary>동의 내용 보기</summary>
           <p><b>개인정보 수집·이용 동의</b></p>
           <ul>
             <li>수집 항목: 회사·기관명, 담당자 이름, 이메일, 문의 유형, 문의 내용, 회사·기관 대표 전화번호(선택)</li>
             <li>이용 목적: 상담 문의에 대한 답변, 시범 납품 일정 협의</li>
-            <li>보유 기간: 마지막 연락일부터 &lt;1년&gt;. 기간이 지나면 지체 없이 파기합니다.</li>
+            <li>보유 기간: 마지막 연락일부터 1년. 기간이 지나면 지체 없이 파기합니다.</li>
             <li>처리 위탁·국외 이전: 문의는 Google LLC의 이메일 서비스(Gmail, 미국)로 전송·보관됩니다.</li>
             <li>동의를 거부할 수 있습니다. 거부하면 이 신청 양식으로 상담 신청을 할 수 없습니다. 이 경우 renewmapteam@gmail.com으로 직접 메일을 보내실 수 있습니다. 사이트 이용에는 불이익이 없습니다.</li>
             <li>자세한 내용은 <a href="privacy.html">개인정보 처리방침</a>에서 확인할 수 있습니다.</li>
@@ -226,8 +234,8 @@
       <aside class="about-ask" aria-labelledby="askTitle">
         <p class="about-ask-k" id="askTitle">상담 전에 확인하세요</p>
         <dl>
-          <div><dt>받는 것</dt><dd>신청요건 근거 1쪽과 출처·추가확인 목록(HWPX·PDF·XLSX), 초안 검토 후 보완 1회</dd></div>
-          <div><dt>비용</dt><dd>시범 제안가 99만원(VAT 별도) · 과업 1건·행정동 1곳 기준 · 최종 금액은 계약 전에 정합니다.</dd></div>
+          <div><dt>받는 것</dt><dd>검토 납품본(무료 자동 문서 + 사람이 확인한 검토표), 초안 검토 후 보완 1회</dd></div>
+          <div><dt>비용</dt><dd>시범 제안가 99만원(부가세가 붙어도 총액 108만 9천원 이내, 최종 금액은 계약 전 확정) · 과업 1건·행정동 1곳 기준</dd></div>
           <div><dt>회신</dt><dd>보내 주신 문의는 이메일로 답변드립니다.</dd></div>
           <div><dt>직접 메일</dt><dd><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></dd></div>
           <div><dt>개인정보</dt><dd>상담 답변과 시범 과업 일정 협의에만 씁니다. 보유 기간과 처리 위탁은 동의 전문과 <a href="privacy.html">개인정보 처리방침</a>에 있습니다.</dd></div>

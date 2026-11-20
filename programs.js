@@ -38,7 +38,7 @@
     ['보건소', '기초 지자체', 'HEALTH_CENTER_NEAREST_M'], ['응급실 운영 의료기관', '기초 지자체', 'ER_NEAREST_M'],
   ];
   const STATE = { ok: '자료상 맞음', no: '자료상 안 맞음', check: '확인 필요' };
-  const { esc, isNum: num, fmt2 } = typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil;
+  const { esc, isNum: num, fmt2, csvCell } = typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil;
 
   // rows: map.js dongRows 결과 → 사업 요건에 쓰는 값만
   function factsOf(rows) {
@@ -159,7 +159,7 @@
       list.map(r => `<tr><th scope="row">${esc(r.item)}</th><td class="nw">${esc(r.scope)}</td><td>${r.value ? `${esc(r.label)} ${esc(r.value)}` : '–'}</td><td>${esc(r.status)}</td></tr>`).join('') + `</tbody></table></div></section>`;
   }
   function socCSV(name, rows, format) {
-    const q = s => `"${String(s).replace(/"/g, '""')}"`;
+    const q = csvCell;   // 행정동·출처·시설 칸은 외부 공공데이터에서 온다: '='로 시작하면 엑셀이 식으로 읽는다(CQ-07)
     return '﻿' + [['행정동', '시설', '조사 범위', '지표', '행정동 값', '출처', '상태'].map(q).join(','), ...socRows(rows, format).map(r => [name, r.item, r.scope, r.label, r.value, r.source, r.status].map(q).join(','))].join('\r\n');
   }
 
@@ -220,7 +220,7 @@
   }
   // CSV: 값은 % 기호 없는 숫자(머리에 단위)로, 뒤에 이 행의 값이 나온 셀의 기준일·출처·셀 번호를 둔다
   function districtCSV(items) {
-    const q = s => `"${String(s).replace(/"/g, '""')}"`, list = districtRows(items), uniq = a => [...new Set(a.filter(Boolean))].join('; ');
+    const q = csvCell, list = districtRows(items), uniq = a => [...new Set(a.filter(Boolean))].join('; ');
     const num2 = v => (num(v) ? fmt2(v) : ''), flag = (v, st) => (st ? '확정 불가' : v === 1 ? '해당' : v === 0 ? '아님' : '');
     const h = districtHead(list, '(%)');   // 값 열 바로 뒤에 원장 status 열
     const head = [h[0], h[1], '쇠퇴요건 상태', h[2], '노후 건축물 상태', h[3], '사업체 감소율 상태', h[4], '사업체 3년 연속 감소 상태', h[5], '인구 감소율 상태', h[6], '인구 3년 연속 감소 상태', ...h.slice(7), '기준일', '출처', '셀 번호'];

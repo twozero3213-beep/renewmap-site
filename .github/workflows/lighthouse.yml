@@ -1,5 +1,11 @@
-# 배포가 끝날 때마다 공개 사이트를 휴대폰 기준으로 잰다(GoogleChrome/lighthouse-ci).
-# 접근성·검색 점수가 떨어지면 실패, 속도·화면 밀림은 경고만 남긴다. 보고서는 실행 결과 파일로만 남기고 외부에 올리지 않는다.
+# 배포가 끝날 때마다 공개 사이트를 휴대폰(lighthouserc.json)과 데스크톱(lighthouserc.desktop.json)으로 잰다(GoogleChrome/lighthouse-ci).
+# 접근성·검색 점수가 떨어지거나 화면 밀림(CLS)·가장 큰 그림(LCP)이 래칫 상한을 넘으면 실패(빨간 X)한다(2026-11-20 C11).
+# 배포는 막지 않는다(pages.yml의 deploy.needs는 ui뿐). 원래 목표(CLS 0.1, LCP 2.5초)와 성능 점수는 경고로 남긴다.
+# 상한은 고칠 때마다 낮춘다. 보고서는 실행 결과 파일로만 남기고 외부에 올리지 않는다.
+# 래칫 첫 상한(기본값, 대표 확인 대기): 2026-11-20 공개 사이트(13c1efb0)를 같은 URL로 3회씩 잰 URL별 중앙값의 최댓값 × 1.1.
+#   휴대폰 CLS 0.164(최댓값 dong/21110520 0.149), LCP 2040ms(data 1848), explore LCP 9000ms(8176)
+#   데스크톱 CLS 0.213(field/ 0.193), LCP 580ms(index 526), explore LCP 1960ms(1776)
+#   로컬 Lighthouse 12.8.2로 잰 값이라 Actions 러너 값과 다를 수 있다. 첫 수동 실행 결과로 다시 맞춘다.
 name: lighthouse
 on:
   deployment_status:
@@ -13,12 +19,19 @@ jobs:
   audit:
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'github-pages') }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { form: mobile, config: lighthouserc.json }
+          - { form: desktop, config: lighthouserc.desktop.json }
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           sparse-checkout: .github
       - uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # 12.6.2
         with:
-          configPath: ./.github/lighthouserc.json
+          configPath: ./.github/${{ matrix.config }}
           uploadArtifacts: true
+          artifactName: lighthouse-${{ matrix.form }}
           temporaryPublicStorage: false

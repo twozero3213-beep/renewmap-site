@@ -3,7 +3,14 @@
 (function (root) {
   "use strict";
   const NAME = "renewmap-field", VERSION = 3, STORES = ["records", "photos", "docs"];
-  let opening = null;
+  let opening = null, kept = false;
+  // 첫 쓰기가 끝나면 한 번만 브라우저에 '이 기기 기록을 자동으로 지우지 말아 달라'(persist)고 요청한다(C01).
+  // 거절·미지원·예외는 저장 결과와 무관하므로 무시한다. 거절 때 안내는 기존 '백업하지 않은 기록 n건' 알림이 맡는다
+  function keep() {
+    if (kept) return;
+    kept = true;
+    new Promise((ok) => ok(root.navigator?.storage?.persist?.())).catch(() => {});
+  }
   function db() {
     if (!opening) opening = new Promise((resolve, reject) => {
       const q = indexedDB.open(NAME, VERSION);
@@ -20,7 +27,7 @@
     return new Promise((resolve, reject) => {
       const t = d.transaction(stores, mode);
       const r = fn(...stores.map((s) => t.objectStore(s)));
-      t.oncomplete = () => resolve(r && r.result);
+      t.oncomplete = () => { if (mode === "readwrite") keep(); resolve(r && r.result); };
       t.onerror = () => reject(t.error);
       t.onabort = () => reject(t.error);
     });

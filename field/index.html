@@ -25,13 +25,13 @@
 <link rel="stylesheet" href="../styles.css">
 <link rel="stylesheet" href="../site-v4.css">
 <link rel="stylesheet" href="../v4.css">
-<link rel="stylesheet" href="field.css?v=20261119-r8">
+<link rel="stylesheet" href="field.css?v=20261120-r11">
 <link rel="stylesheet" href="../list-pages.css">
 <link rel="stylesheet" href="../rm6.css">
 </head>
 <body class="field fr-record">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 홈" href="../index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 진단</a><a href="../rank.html">동네 비교 점수</a><a href="../relocate.html">부산 이전 직원 동네 비교</a><a href="../programs.html">재생 사업</a><a href="redev.html">구역 계산</a><a href="./">현장 기록</a><a href="../about.html#contact">시범 과업 상담</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 RENEWMAP 홈" href="../index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 진단</a><a href="../rank.html">동네 비교 점수</a><a href="../programs.html">재생 사업</a><a href="redev.html">구역 계산</a><a href="./">현장 기록</a><a href="../about.html#contact">시범 과업 상담</a></nav></div></header>
 <p id="recBadge" class="rec-badge" role="status" hidden>업무 촬영 중입니다 · 리뉴맵 현장 기록</p>
 <main id="main">
   <nav class="breadcrumb" aria-label="지금 보는 곳"><ol><li><a href="../index.html">홈</a></li><li aria-current="page">현장 기록</li></ol></nav>
@@ -152,7 +152,7 @@
     <label for="checker">확인자 (소속·직위, 선택)</label>
     <input id="checker" maxlength="40" autocomplete="organization-title" placeholder="예: ○○구 도시재생과 주무관">
     <p class="hint">1쪽 문서의 '확인자' 칸에 들어갑니다.<br>이름과 서명은 결재 문서에서 하세요.</p>
-    <label id="keepBox" class="check" for="keepPhrase" hidden><input id="keepPhrase" type="checkbox"><span>이 메모를 자주 쓰는 한 줄로 저장</span></label>
+    <label id="keepBox" class="check" for="keepPhrase"><input id="keepPhrase" type="checkbox"><span>이 메모를 자주 쓰는 한 줄로 저장</span></label>
     <!-- 2026-11-19: 접힌 줄 셋(시설 이용 조건·날씨와 시간·공공자료 대조)이 연달아 있어 폼이 길고 어수선했다 → 메모·확인자 뒤 '더 남기기' 하나로.
          묶음마다 켜기 체크가 입력 칸을 연다. 재방문·검증 오류는 app.js가 이 접이를 연다 -->
     <details id="moreBox" class="rm-disclosure">
@@ -217,7 +217,7 @@
     <div id="stats" class="v4-stats" aria-live="polite"></div>
     <p id="listEmpty" class="hint" hidden>아직 저장한 기록이 없습니다.<br>사진을 찍어 저장하면 여기에 쌓이고, 사진대지·GeoJSON·CSV로 받을 수 있습니다.</p>
     <!-- 2026-11-19: 같은 무게 단추 다섯 개와 다섯 줄 안내 → 채운 단추는 사진대지 하나, 나머지 형식은 선 단추 한 줄, 안내는 한 줄 + ⓘ -->
-    <div id="listTools">
+    <div id="listTools" hidden>
     <button id="sheet" type="button">사진대지 받기(한글)</button>
     <div class="fr-acts">
       <button class="ghost" id="exp" type="button">모두 내보내기(ZIP)</button>
@@ -271,7 +271,7 @@
   <button type="button" id="noticeOk">확인했습니다</button>
 </dialog>
 <section id="printDoc" class="print-doc" aria-hidden="true"></section>
-<script src="../site.js?v=20261120-r10"></script>
+<script src="../site.js?v=20261120-r11"></script>
 <script src="../site-motion.js" defer></script>
 <script src="../docgen.js?v=20261119-r7"></script>
 <script src="upload-config.js"></script>
@@ -283,6 +283,6 @@
 <script src="evidence.js?v=20261119-r3"></script>
 <script src="detect.js"></script>
 <script src="vworld-key.js"></script>
-<script src="app.js?v=20261120-w3"></script>
+<script src="app.js?v=20261120-r11"></script>
 </body>
 </html>

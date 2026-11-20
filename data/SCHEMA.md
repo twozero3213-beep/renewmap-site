@@ -116,7 +116,7 @@ SGIS 2025 행정동 경계 단순화본의 내부 대표점을 EPSG:5186으로 �
 - `migration.json`: `{generated_at, snapshot_hash, source, sigungu:[{code5, mois_code5, name, series:{YOUTH_NET_MIGRATION:[[y,v]], YOUTH_NET_MIGRATION_PER1K:[[y,v]]}, cells}], unmatched:[...]}`. 시군구 단위만 있고 행정동 자료는 없다. 일반구는 KOSIS가 시 단위까지만 줘서 unmatched. 결측은 null. 순위·TOP 목록 없음.
 - `spatial_unit`에 `시군구` 추가(migrations/003). `DEPOP_STATUS` 값은 문자열이라 DB `cells.value`(double)에는 아직 못 넣는다(텍스트 열 추가 전).
 
-## 안전 인프라 (living 레이어, group "안전 인프라", D17)
+## 안전 인프라 (living 레이어, group "안전 인프라")
 - `CCTV_PER_KM2`(대/㎢), `STREETLIGHT_PER_KM2`(개/㎢), `POLICE_NEAREST_M`(m). 모두 `standard:{value:null,status:"기준 없음"}`. 시설 위치의 사실 지표이며 범죄·치안 점수가 아니고 순위·등급을 매기지 않는다. 보안등은 시군구 좌표 보유율 80% 미만이면 null(추가확인), 80~95%는 값과 coverage. 경찰관서 좌표는 주소→카카오 지오코딩(약관 확인 대기).
 - `dashboard.json`(정밀 사례): 부산 16개 구·군 전부 `수집됨`, dongs는 리 포함 법정동 254개.
 
@@ -149,7 +149,7 @@ SGIS 2025 행정동 경계 단순화본의 내부 대표점을 EPSG:5186으로 �
 
 ## 건축·정비·복지·안전비상벨 (2026-10-26, living 확장)
 - `indicators[].group`: "건축·정비"(PERMIT_COUNT_3Y, DEMOLITION_COUNT_3Y, OLD_PUBLIC_FACILITY_COUNT, REDEV_PROJECTS → 화면 '정비 신호'), "안전 인프라"(+EMERGENCY_BELL_PER_KM2, ELDERLY_PED_ACCIDENT_ZONES), "복지"(ELDERLY_LIVING_ALONE → 화면 '인구 변화'). 모두 standard null·기준 없음.
-- `indicators[].hidden_until_decision`(+hidden_reason): true면 셀은 있으나 화면에 내지 않는다. 현재 EMERGENCY_BELL_PER_KM2만(대표 결정 대기, D17).
+- `indicators[].hidden_until_decision`(+hidden_reason): true면 셀은 있으나 화면에 내지 않는다. 현재 EMERGENCY_BELL_PER_KM2만(화면 공개 여부 확인 중).
 - 부산만 있는 지표(허가·철거·노후시설·독거노인·정비)는 부산 행정동에만 셀. value 있고 status 추가확인이면 하한(위치를 다 못 가림). DEMOLITION_COUNT_3Y는 원천 철거멸실대장이 2021-12-31 이후 미갱신이라 전부 null. 허가·철거는 법정동 단위라 관할 법정동이 한 행정동에만 속할 때만 행정동 값, `living/{code5}.json`에 `sigungu_cells[]`·`bjdong_cells[{code10,name,cells}]` 추가.
 - 보고서 템플릿 `report_templates.json`(TPL-2026-10-27.2): 파이썬(`report_quality/templates.py`)과 JS(`docgen.js`)가 같은 파일을 읽는다. `doc_style`(나눔고딕·글자 크기)·`onepage.sizes`가 보고서 서식이다(GOV_DOC_STYLE.md 6장). 양식 조각 정의는 `docs/gov/form_fragments.md`.
 

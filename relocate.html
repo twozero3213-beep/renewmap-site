@@ -9,21 +9,32 @@
 <title>부산 이전 직원 동네 비교 | 리뉴맵</title>
 <meta name="description" content="회사 위치와 생활에서 중요하게 보는 항목을 골라 부산 행정동을 비교합니다. 공공데이터의 원값과 출처를 함께 확인할 수 있습니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/relocate.html">
+<meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/relocate.html">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="리뉴맵 RENEWMAP">
+<meta property="og:title" content="부산 이전 직원 동네 비교 | 리뉴맵">
+<meta property="og:description" content="회사 위치와 생활에서 중요하게 보는 항목을 골라 부산 행정동을 비교합니다. 공공데이터의 원값과 출처를 함께 확인할 수 있습니다.">
+<meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="근거가 남는 도시재생 · 리뉴맵">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="pretendard.css">
 <link rel="stylesheet" href="styles.css?v=20261120-w3">
-<link rel="stylesheet" href="site-v4.css?v=20261119-r5">
-<link rel="stylesheet" href="relocate.css?v=20261120-r10">
-<link rel="stylesheet" href="rm6.css?v=20261120-r10" media="screen">
-<script src="site.js?v=20261120-r10" defer></script>
+<link rel="stylesheet" href="site-v4.css?v=20261120-r11">
+<link rel="stylesheet" href="relocate.css?v=20261120-r11">
+<link rel="stylesheet" href="rm6.css?v=20261120-r11" media="screen">
+<script src="site.js?v=20261120-r11" defer></script>
 <script src="cellpack.js" defer></script>
-<script src="util.js?v=20261114-d3" defer></script>
-<script src="relocate.js?v=20261120-r10" defer></script>
+<script src="util.js?v=20261120-r11" defer></script>
+<script src="relocate.js?v=20261120-r11" defer></script>
 </head>
 <body class="relocate-page">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 홈" href="index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 진단</a><a href="rank.html">동네 비교 점수</a><a href="relocate.html" aria-current="page">부산 이전 직원 동네 비교</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 과업 상담</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 RENEWMAP 홈" href="index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html">동네 진단</a><a href="rank.html">동네 비교 점수</a><a href="programs.html">재생 사업</a><a href="field/redev.html">구역 계산</a><a href="field/">현장 기록</a><a href="about.html#contact">시범 과업 상담</a></nav></div></header>
 <main id="main" class="wrap relocate-main">
   <div class="relocate-heading">
     <h1>부산 이전 직원 동네 비교</h1>
@@ -38,6 +49,9 @@
         <label for="officeDong">회사가 있는 행정동</label>
         <select id="officeDong" required disabled aria-describedby="officeHelp"><option value="">행정동을 선택해 주세요</option></select>
         <p id="officeHelp" class="relocate-help">동 대표점 사이의 직선거리입니다.<br>회사 주소까지의 거리나 이동시간은 아닙니다.</p>
+        <label for="radiusKm">비교할 반경</label>
+        <select id="radiusKm" aria-describedby="radiusHelp"><option value="5">직선 5km</option><option value="10" selected>직선 10km</option><option value="15">직선 15km</option><option value="all">부산 전체</option></select>
+        <p id="radiusHelp" class="relocate-help">회사 동 대표점에서 반경 안의 동만 비교합니다.<br>반경 안 동이 30곳보다 적으면 가까운 30곳으로 넓힙니다.</p>
       </section>
       <section aria-labelledby="stageTitle">
         <h2 id="stageTitle">어떤 생활 조건이 중요한가요?</h2>
@@ -50,7 +64,7 @@
         <p id="rentPeriod" class="relocate-help">유형별 전월세 수록 기간을 불러오고 있습니다.</p>
         <details id="weightDetails" class="relocate-weights">
           <summary>중요도 직접 조정</summary>
-          <p class="relocate-help">0으로 두면 계산에서 빠지고, 5로 두면 가장 큰 비중을 차지합니다.</p>
+          <p class="relocate-help">0으로 두면 계산에서 빠집니다.<br>각 항목은 켜진 항목 중요도 합에서 차지하는 비율만큼 반영됩니다.<br>승차 인원과 소아청소년과 의원 수는 참고로만 보여 조정하지 않습니다.</p>
           <div id="weightSliders"></div>
         </details>
       </section>
@@ -60,6 +74,7 @@
     <section class="relocate-results" aria-labelledby="resultsTitle">
       <div class="relocate-result-heading"><div><h2 id="resultsTitle">생활 조건에 따른 비교 결과</h2></div><button id="printButton" type="button" class="btn ghost" disabled>인쇄·PDF</button></div>
       <p id="resultStatus" role="status" aria-live="polite" aria-atomic="true">회사 위치를 선택한 뒤 동네 비교를 눌러 주세요.</p>
+      <p id="resultShares" class="relocate-help"></p>
       <div id="results" class="relocate-cards"><div class="relocate-empty"><p>출근할 동과 생활 조건을 고르면<br>계산한 점수가 높은 동네부터 10곳을 보여 드립니다.</p></div></div>
     </section>
   </div>
@@ -69,18 +84,23 @@
       <li>지표마다 값이 있는 부산 행정동끼리 비교해 0~100점의 백분위로 바꿉니다.</li>
       <li>모든 시설 거리는 동 대표점에서의 직선거리입니다.</li>
       <li>밤길 안전시설 항목은 보안등·CCTV 등의 분포를 보여 줍니다.<br>실제 범죄 위험이나 안전 여부를 판정할 수 없습니다.</li>
+      <li>회사 동 대표점에서 고른 반경 안의 동끼리 순위를 매깁니다.<br>직선거리라 강·산을 건너는 경로는 반영하지 않습니다.</li>
+      <li>'순위 범위'는 중요도를 ±50% 바꿔 다시 셈한 순위의 90% 구간입니다.<br>지금 순위를 포함하며, 자료 오차는 반영하지 않습니다.</li>
     </ul>
     <details class="relocate-method-more rm-disclosure"><summary>계산식과 자료 한계 더 보기</summary>
     <p>주거비와 거리는 값이 낮을수록, 시설 수·밀도·면적은 값이 높을수록 점수가 올라갑니다.</p>
     <p>점수 = Σ(지표 백분위 × 선택한 중요도) ÷ Σ(값이 있는 지표의 중요도).<br>같은 값은 평균 순위로 계산하고, 값이 하나이거나 모두 같으면 50점입니다.<br>동점은 반올림 전 점수, 행정동 코드순으로 정렬합니다.</p>
     <p>자료가 없는 항목은 그 동의 계산에서 빼고 나머지 중요도를 다시 나눕니다.<br>누락이 많으면 비교 항목이 달라지므로 근거를 함께 확인해 주세요.<br>중요도가 0인 항목은 누락 개수에도 넣지 않습니다.</p>
+    <p>주거비 중요도가 켜져 있는데 주거비 값이 모두 없는 동은 점수와 관계없이 자료 있는 동 뒤에 둡니다.<br>전세·월세 가운데 하나만 없는 동도 카드에 '주거비 자료 없음'으로 표시합니다.</p>
+    <p>명목 비중은 켜진 중요도 합에서 각 그룹이 차지하는 몫입니다.<br>자료 없는 항목이 있는 동은 그 몫이 달라집니다.</p>
     <p>‘점수에 기여한 항목’은 백분위와 중요도를 곱한 값이 큰 순서입니다.<br>‘함께 살필 점’은 그 세 항목을 뺀 나머지 중 백분위가 가장 낮은 항목입니다.</p>
     <p>전세는 ㎡당 보증금, 월세는 보증금을 제외한 계약 월세입니다.<br>주택 유형·면적 구성이 동마다 달라 같은 조건의 매물 가격으로 읽을 수 없습니다.</p>
     <p id="rentMethod">유형별 전월세 수록 기간을 불러오고 있습니다.</p>
     <p>전체 유형 대체값은 기존 2026년 8~10월 자료로, 수록 기간과 좌표 출처가 다릅니다.<br>카드의 ‘근거 보기’에서 대체 사유와 각 값의 원장 메모를 함께 확인해 주세요.</p>
-    <p>소아청소년과는 해당 진료과목을 기재한 의원 수와 적격 기관까지의 직선거리입니다.<br>요양·정신·한방병원은 제외하며 전문의 수·실제 소아 진료시간·예약 가능 여부는 확인하지 않았습니다.</p>
+    <p>소아청소년과는 해당 진료과목을 기재한 의원 수와 적격 기관까지의 직선거리입니다.<br>요양·정신·한방병원은 제외하며 전문의 수·실제 소아 진료시간·예약 가능 여부는 확인하지 않았습니다.<br>의원 수는 참고로만 보이고 점수에 넣지 않습니다.</p>
     <p>산·하천·도로·대중교통 노선과 실제 이동시간, 학교 배정·시설 이용 가능 여부는 반영하지 않습니다.</p>
-    <p>아침 시간 역 승차 인원은 가장 가까운 부산교통공사 1~4호선 역에서 오전 7~9시에 승차한 인원을 월~금 195일(공휴일 포함)로 나눈 값입니다.<br>열차 혼잡도·착석 가능성을 뜻하지 않으며, 동해선·부산김해경전철은 제외합니다.</p>
+    <p>아침 시간 역 승차 인원은 가장 가까운 부산교통공사 1~4호선 역에서 오전 7~9시에 승차한 인원을 월~금 195일(공휴일 포함)로 나눈 값입니다.<br>열차 혼잡도·착석 가능성을 뜻하지 않으며, 동해선·부산김해경전철은 제외합니다.<br>역까지 거리와 관계가 없어 참고로만 보이고 점수에 넣지 않습니다.</p>
+    <p>순위 산식 판 RELOC-RANK-2026.11-v2는 2026년 11월 20일에 바꿨습니다.<br>승차 인원·의원 수를 점수에서 빼고 반경 거르기와 순위 범위를 더했습니다.<br>생활 조건별 시작 중요도는 예시로 둔 값이며 직접 바꿀 수 있습니다.</p>
     <h3>자료 추가 예정</h3><ul class="relocate-pending">
       <li><b>학원 수</b><span>자료 추가 예정 · NEIS 학원·교습소</span></li>
       <li><b>유흥·단란주점</b><span>자료 추가 예정 · 지방행정인허가 유흥주점·단란주점</span></li>

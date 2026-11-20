@@ -175,6 +175,8 @@
 /* 지도 위 큰 연도·진행 막대(전국·시도 단계). 지도 조작을 막지 않게 pointer-events 없음 */
 .map-yearbar { position: absolute; top: 10px; right: 10px; z-index: 800; pointer-events: none; background: var(--veil); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 8px 14px 10px; width: min(260px, 60%); display: grid; gap: 4px; }
 .map-yearbar[hidden] { display: none; }
+/* 배경 타일(OSM)을 못 받았을 때 한 번 뜨는 안내(map.js addBaseTiles). 확대 단추 아래 Leaflet 조작 칸에 쌓이고, 지도 조작은 막지 않는다 */
+#mapApp .map-tile-err { margin-bottom: 0; max-width: min(260px, 60vw); padding: 6px 10px; background: var(--veil); border: 1px solid var(--line); border-radius: var(--radius-card); font-size: var(--t-cap); line-height: 1.45; color: var(--ink); pointer-events: none; }
 .yb-y { font-size: 34px; font-weight: 700; line-height: 1.1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); }
 .yb-track { display: flex; gap: 2px; height: 8px; }
 .yb-track i { flex: 1; border-radius: 2px; background: var(--yb-track); transition: background-color .3s; }

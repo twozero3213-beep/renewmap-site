@@ -143,6 +143,13 @@
   const MAP_COLORS = ['#e4f2eb', '#a9d6c1', '#62ae91', '#21846a', '#0b4f42'];
   const MAP_NULL = '#c3ccc9';
   const MAP_NOTE = '색은 노후 건축물 비율 구간이며, 판정이 아닙니다.';
+  const TILE_ERR = '배경 지도를 받지 못했습니다. 표와 근거는 그대로 볼 수 있습니다.';
+  // OSM 공용 타일은 SLA가 없어 예고 없이 막힐 수 있다(C13). map.js 브이월드 타일처럼 once('tileerror')로 한 번만 알린다
+  function osmTiles(L, onFail) {
+    return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).once('tileerror', onFail);
+  }
   function binIndex(v) {
     if (!isNum(v)) return -1;
     let i = 0;
@@ -184,7 +191,7 @@
   }
 
   const api = { BASES, NOTE, formatValue, digitsOf, shortHash, cellOf, cellView, barRatio, parseHash, toHash, resolve, refDates, safeUrl, detailRows, barsSVG, compareHTML, bigCardsHTML, detailHTML, emptyHTML,
-    MAP_STEPS, MAP_COLORS, MAP_NULL, binIndex, legendItems, validCenter, mapModel, tooltipHTML, legendHTML };
+    MAP_STEPS, MAP_COLORS, MAP_NULL, TILE_ERR, osmTiles, binIndex, legendItems, validCenter, mapModel, tooltipHTML, legendHTML };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewDashboard = api;
@@ -212,11 +219,18 @@
   const root = document.getElementById('dashboard'), app = root && root.querySelector('#dashApp');
   if (!app) return;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const state = { data: null, route: parseHash(location.hash) || {}, year: 20, open: null, seen: reduced, view: 'card', basis: 'COUNT', geo: null, mapErr: false };   // 법정동 경계 파일은 만든 적이 없다 → 중심점으로 그린다(v9: 없는 파일을 매번 받아 404가 났다)
+  const state = { data: null, route: parseHash(location.hash) || {}, year: 20, open: null, seen: reduced, view: 'card', basis: 'COUNT', geo: null, mapErr: false, tileErr: false };   // 법정동 경계 파일은 만든 적이 없다 → 중심점으로 그린다(v9: 없는 파일을 매번 받아 404가 났다)
   // 손가락이 주 입력인 기기: 한 손가락은 페이지 스크롤, 두 손가락(핀치)으로 지도 이동·확대
   const coarse = matchMedia('(pointer: coarse)').matches;
   let mapState = {};
   function dropMap() { if (mapState.map) mapState.map.remove(); mapState = {}; }
+  const hintHTML = () => `${state.tileErr ? TILE_ERR + '<br>' : ''}${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, + − 버튼으로 확대합니다.'}<br>지도 대신 아래 동 이름을 눌러도 됩니다.`;
+  // 바탕 타일만 못 받은 것이라 색 구간·동 목록·근거는 그대로 둔다. 다시 그려도 안내가 남게 state에 적는다
+  function tileFailed() {
+    state.tileErr = true;
+    const hint = app.querySelector('[data-map-hint]');
+    if (hint) hint.innerHTML = hintHTML();
+  }
   function mapBodyHTML(v) {
     const d = v.dong, it = mapModel(v, state.year, state.basis, state.geo).items.find(x => x.code === d.code);
     const seg = (key, list, cur, label) => `<div class="dash-seg" role="group" aria-label="${label}">${list.map(([val, txt]) =>
@@ -224,7 +238,7 @@
     return `<div class="dash-panel dash-map-wrap"><div class="dash-panel-head"><h3>${esc(v.sigungu.name)} 노후율 지도 <small>법정동</small></h3>` +
       `<div class="dash-map-ctl">${seg('year', YEARS.map(y => [y, y + '년']), state.year, '노후 기준 연수')}${seg('basis', BASES, state.basis, '노후율 기준')}</div></div>` +
       `<div data-map-slot></div>` +
-      `<p class="dash-map-hint">${coarse ? '두 손가락으로 지도를 움직이고 확대합니다.' : '끌어서 움직이고, + − 버튼으로 확대합니다.'}<br>지도 대신 아래 동 이름을 눌러도 됩니다.</p>` +
+      `<p class="dash-map-hint" data-map-hint aria-live="polite">${hintHTML()}</p>` +
       legendHTML() +
       `<div class="dash-chips dash-dongs dash-map-list" role="group" aria-label="${esc(v.sigungu.name)} 법정동">${v.dongs.map(x =>
         `<button type="button" class="dash-chip" data-dong="${esc(x.code)}" aria-pressed="${x.code === d.code}">${esc(x.name)}</button>`).join('')}</div>` +
@@ -257,9 +271,7 @@
       L.control.zoom({ zoomInTitle: '확대', zoomOutTitle: '축소' }).addTo(map);
       // 동네 지도(map.js)와 같게: 확대 17까지, 휠은 지도를 누른 뒤에만
       map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => map.scrollWheelZoom.disable());
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(map);
+      osmTiles(L, tileFailed).addTo(map);
       mapState = { el, map, sg: v.sigungu.code, layer: L.featureGroup().addTo(map), fit: true };
     }
     mapState.el.setAttribute('aria-label', label);

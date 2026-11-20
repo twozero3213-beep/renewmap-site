@@ -443,7 +443,7 @@ def main():
                             page.locator('main a[href="about.html#usesTitle"]').click()
                             page.wait_for_url(base+'about.html#usesTitle', wait_until='networkidle')
                             page.evaluate('() => document.fonts.ready')
-                            assert page.locator('#how > .wrap > .about-uses > .about-use').count() == 6
+                            assert page.locator('#how > .wrap > .about-uses > .about-use').count() == 7   # r11: '두 자료를 같은 식별자로 맞춰 볼 때' 추가
                             check(route, width, 'role_entry')
                             page.goto(base+route, wait_until='networkidle')
                             entry = page.locator('main a[href="field/oa.html"]').first

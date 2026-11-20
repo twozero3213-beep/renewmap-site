@@ -25,10 +25,17 @@
     return cp.unpack(j);
   };
   const cache = {};
+  // 2026-11-20 CQ-08: 404(파일 없음)만 '없음'이고, 통신 끊김·5xx·깨진 JSON은 '받지 못함'이다. 반환은 둘 다 null로 두고(받는 쪽이 값을 그대로 쓴다) 실패만 따로 기억한다.
+  // 전에는 둘을 구분하지 못해 일시적인 통신 실패가 칩에 '수집 중', 근거서에 '파일 없음'으로 적혔다
+  const failed = new Set();
   const fetchJson = (url, low) => cache[url] || (cache[url] = (low && root.renewAfter ? root.renewAfter : Promise.resolve())
-    .then(() => fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' })).then(r => (r.ok ? r.json() : null)).then(unpackCells)
-    .catch(e => { if (root.console && e instanceof Error && /cell_pack|cellpack|출처 번호/.test(e.message)) console.error(url, e); return null; })
+    .then(() => fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' })).then(r => (r.ok ? r.json() : r.status === 404 ? null : Promise.reject(new Error('HTTP ' + r.status)))).then(unpackCells)
+    .then(v => { failed.delete(url); return v; }, e => { failed.add(url); if (root.console && e instanceof Error && /cell_pack|cellpack|출처 번호/.test(e.message)) console.error(url, e); return null; })
     .then(v => { if (v === null) delete cache[url]; return v; }));   // 실패는 기억하지 않는다(v9: 한 번 끊기면 새로 고칠 때까지 그 자료가 계속 '없음'이었다)
+  const fetchFailed = url => failed.has(url);
+  // CSV 한 칸(candidates.js와 같은 규칙). 엑셀은 =+-@·탭·CR로 시작하는 칸을 식으로 읽어 막되, '-2.81' 같은 순수 숫자는 그대로 둔다
+  const CSV_NUM = /^-?\d+(?:\.\d+)?$/;
+  const csvCell = value => { const t = String(value ?? ''); return '"' + (CSV_NUM.test(t.trim()) ? t : t.replace(/^[\s﻿]*[=+@\t\r-]/, "'$&")).replace(/"/g, '""') + '"'; };
   // 동 이름 찾기(홈·동네 순위·동네 찾기 공통). 행정동은 법정동 이름에 번호를 붙인 것이 많아('우1동', '광안2동'),
   // 사람들이 아는 법정동 이름('우동')이나 구 이름을 붙인 말('해운대 우동')로도 찾게 한다(v9 페르소나: 세 화면 모두 못 찾았다)
   const flat = s => String(s || '').replace(/[\s·]+/g, '').toLowerCase();
@@ -63,7 +70,7 @@
     return `${last[0]}년 사업체 수(${last[1].toLocaleString('ko-KR')}개)가 최근 10년 중 가장 많아 감소율이 0%입니다.`;
   };
   const BIZ_BOUNDARY = '사업체 출처 경계: 2019년까지는 쇠퇴진단지표(전국사업체조사 조사 기반), 2020년부터는 SGIS 전국사업체조사(등록 기반)라 이어서 비교할 때는 주의가 필요합니다.';
-  const api = { esc, isNum, roundD, fmt2, plainSource, fetchJson, unpackCells, flat, dongStem, dongHit, sidoShort, josa, bizZeroNote, BIZ_BOUNDARY };
+  const api = { esc, isNum, roundD, fmt2, plainSource, fetchJson, fetchFailed, csvCell, unpackCells, flat, dongStem, dongHit, sidoShort, josa, bizZeroNote, BIZ_BOUNDARY };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root && root.document) { root.RenewUtil = api; root.renewFetch = fetchJson; }
 })(typeof window !== 'undefined' ? window : globalThis);

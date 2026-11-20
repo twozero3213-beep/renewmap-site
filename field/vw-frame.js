@@ -6,7 +6,8 @@
   const KEY = window.RENEWMAP_VWORLD_KEY || "", DOMAIN = "https://twozero3213-beep.github.io/renewmap-site/";
   let n = 0;
   window.addEventListener("message", (e) => {
-    if (e.source !== window.parent) return;
+    // 다른 사이트가 이 창을 감싸 키 할당량을 쓰지 못하게 출처도 본다. sandbox 안 self.origin은 'null'이라 URL 기준인 location.origin과 비교한다(SEC-L1)
+    if (e.source !== window.parent || e.origin !== location.origin) return;
     const { id, lng, lat } = e.data || {};
     const reply = (body) => window.parent.postMessage({ id, ...body }, "*");   // 부모는 e.source로 이 창인지 확인한다
     if (!KEY) return reply({ error: "키 없음" });

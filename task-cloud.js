@@ -32,6 +32,8 @@
     if(path==='/auth/v1/otp'&&status>=500)messages[status]='로그인 메일 발송 요청을 처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
     // create_user:false라 등록되지 않은 주소는 422로 거절된다(Supabase Auth 기준 예상, 원격 응답 미확인)
     if(path==='/auth/v1/otp'&&status===422)messages[status]='로그인 메일은 서버 운영팀에 등록된 주소에만 발송됩니다. 이메일 주소를 확인해 주세요.';
+    // 새 과업은 운영팀이 승인한 계정만, 계정별 과업 수 한도 안에서 보관한다(202611210001: 42501→403, 22023→400)
+    if(path==='/rest/v1/rpc/renewmap_sync_task'){messages[403]='이 과업을 처리할 권한이 없습니다. 새 과업을 올리려면 운영팀의 팀 보관 승인이 필요합니다.';messages[400]='팀 보관 서버가 이 과업 묶음을 받지 않았습니다. 기록 형식과 계정 과업 수 한도를 확인해 주세요.';}
     const e=new Error(messages[status]||(status>=500?'클라우드 서버가 응답하지 못했습니다. 잠시 뒤 다시 시도해 주세요.':'클라우드 요청이 거절됐습니다. 입력과 권한을 확인해 주세요.'));e.status=status;return e;
   }
   function token(value){return typeof value==='string'&&value.trim()===value&&value.length>0&&value.length<=8192&&!/[\x00-\x20\x7f]/.test(value);}
