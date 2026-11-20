@@ -6,11 +6,11 @@
 // 2026-11-16: #138과 main(셸 파일·글꼴 변경)을 합친 뒤 테스트가 알려 준 지문으로 맞춘다
 // 2026-11-17: field.css(입력 칸 밑 도움말 간격)를 고쳐 테스트가 알려 준 새 지문으로 맞춘다
 // 2026-11-17: 현장 기록 첫 안내 문구(index.html)를 고쳐 테스트가 알려 준 새 지문으로 맞춘다
-// 2026-11-18: 공개판에 '몇 동 더 확인하면 정해지나'(redev.js·redev-app.js)와 사용자 편의 검토(현장 기록·구역 계산 화면)를 선택 반영해 셸 지문을 다시 맞춘다
-// 2026-11-19: 공개판에 1차 개선(P01~P10, P07 제외)을 선택 반영해 셸 지문을 다시 맞춘다
-// 2026-11-19: 공개판에 긴 안내·현장 가림(#177)과 2차 개선(#178)의 셸 자산 주소를 선택 반영해 셸 지문을 다시 맞춘다
-const CACHE = "renewmap-field-b2131305b2";
-const SHELL = ["./", "index.html", "field.css?v=20261120-r11", "record.js?v=20261120-w3", "store.js", "evidence.js?v=20261120-r13", "app.js?v=20261120-r12", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js?v=20261120-r11", "../site-motion.js", "../frame-guard.js", "../docgen.js?v=20261120-r13", "../cellpack.js", "../list-pages.js", "../list-pages.css", "../rm6.css",
+// 2026-11-17: #152(경상 구역 계산)와 main(초기 지도·현장 자동 로딩 개선 90186f154)을 합친 뒤 테스트가 알려 준 지문으로 맞춘다
+// 2026-11-18: 신청요건 현장 확인 줄에 '몇 동 더 확인하면 정해지나'(redev.js·redev-app.js)를 더해 테스트가 알려 준 지문으로 맞춘다
+// 2026-11-18: 사용자 편의 검토(현장 기록 찍기 단추 위로·저장 단추 고정·구역 계산 선택 입력 접기 등)를 반영해 테스트가 알려 준 지문으로 맞춘다
+const CACHE = "renewmap-field-257be5658e";
+const SHELL = ["./", "index.html", "field.css?v=20261120-r11", "record.js?v=20261120-w3", "store.js", "evidence.js?v=20261120-r13", "app.js?v=20261121-r14", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js?v=20261120-r11", "../site-motion.js", "../frame-guard.js", "../docgen.js?v=20261121-r14", "../cellpack.js", "../list-pages.js", "../list-pages.css", "../rm6.css",
   "../data/report_templates.json", "upload.js", "upload-config.js", "detect.js", "redev.html", "redev.js", "redev-app.js", "parcel-ref.js", "twin.html", "twin.css", "twin.js", "twin-app.js", "../favicon.svg", "../icon-192.png"];
 // 설치 때는 브라우저 HTTP 캐시(Pages max-age=600)를 건너뛴다. 안 그러면 갱신 직전에 열어 둔 옛 파일이 새 캐시에 들어간다
 // 새 판은 기다리지 않고 바로 자리를 잡는다(skipWaiting·claim). 안 그러면 탭을 모두 닫기 전까지 옛 계산 파일이 나간다(2026-10-30 배포 직후 실측). 화면은 controllerchange로 새로고침을 안내한다
@@ -30,8 +30,14 @@ self.addEventListener("fetch", (e) => {
     }));
     return;
   }
-  e.respondWith(caches.match(e.request, { cacheName: CACHE }).then((hit) => hit || fetch(e.request, KEEP.test(e.request.url) ? { cache: "no-cache" } : undefined).then((res) => {
-    if (res.ok && KEEP.test(e.request.url)) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
-    return res;
-  })));
+  const keep = KEEP.test(e.request.url);
+  const save = (res) => { if (res.ok && keep) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); } return res; };
+  // 자료(data/)는 온라인이면 늘 출처에 다시 묻고(no-cache: 안 바뀌었으면 304) 저장본을 바꾼다. 캐시 이름 지문은 셸 파일만 세어,
+  // 자료만 바뀐 배포 뒤에도 저장본(옛 쇠퇴 값)으로 계산·1쪽을 만들던 것을 막는다(r14 tech_quality 1). 저장본은 통신이 안 될 때(오프라인 현장)만 쓴다
+  if (keep && /\/data\//.test(e.request.url)) {
+    e.respondWith(fetch(e.request, { cache: "no-cache" }).then(save, async (error) => (await caches.match(e.request, { cacheName: CACHE })) || Promise.reject(error)));
+    return;
+  }
+  // 셸(지문으로 판이 갈림)과 자동 가림 도구(vendor/vision, 약 20MB)는 저장본 먼저
+  e.respondWith(caches.match(e.request, { cacheName: CACHE }).then((hit) => hit || fetch(e.request, keep ? { cache: "no-cache" } : undefined).then(save)));
 });

@@ -1017,7 +1017,8 @@
       text: [fr.lead, ...fr.sentences, fr.caption, t.text, ...fr.sources].join('\n') };
   }
   function fragmentHTML(fr) {
-    const tbl = docHTML({ blocks: [block('table', '', { rows: fr.rows, widths: fr.widths, caption: fr.caption })], parts: {} }, { copy: true }).html;
+    // 5칸 이상(4-1 쇠퇴 3요건 6칸)은 휴대폰에서 줄마다 카드로 쌓는다(rm6.css rm-stack). '해당 여부' 칸이 화면 밖에 있었다(r14 출시 감사)
+    const tbl = docHTML({ blocks: [block('table', '', { rows: fr.rows, widths: fr.widths, caption: fr.caption })], parts: {} }, { copy: true, stack: fr.rows[0].length > 4 }).html;
     return `<div class="dg-frag"><p class="dg-lead">${he(fr.lead)}${fr.verified ? ` · 양식 확인 상태: ${he(fr.verified)}` : ''}</p><p class="dg-small">${he(fr.form)}</p>` +
       fr.sentences.map((s, i) => `<p class="dg-p">${he(s)}<small class="dg-fi">${fr.formItems[i] ? `양식 항목: ${he(fr.formItems[i])}` : ''}</small>${copySentBtn(`data-frag-sentence="${i}"`, `조각 ${i + 1}번째`, s)}</p>`).join('') +
       tbl + fr.sources.map(s => `<p class="dg-small">${he(s)}</p>`).join('') + `<p><button type="button" class="btn ghost dg-copy" data-frag-all>조각 전체 복사(문장·표·출처)</button></p></div>`;
@@ -1038,7 +1039,7 @@
       else if (b.kind === 'box') out += `<table class="dg-box"><tbody>${b.rows.map(r => `<tr><th scope="row">${he(r[0])}</th><td>${b.refs ? runsHTML(r[1]) : he(r[1])}</td></tr>`).join('')}</tbody></table>`;
       else if (b.kind === 'table') {
         const n = tables.push(b) - 1;
-        out += `<div class="dg-tbl"><div class="dg-tbl-h" aria-live="polite"><b>${he(b.caption)}</b>${opt.copy ? `<button type="button" class="btn ghost dg-copy" data-copy-table="${n}">${COPY_TABLE}</button>` : ''}</div><div class="table-wrap"><table class="dg-table"><thead><tr>${b.rows[0].map(c => `<th scope="col">${he(c)}</th>`).join('')}</tr></thead><tbody>${b.rows.slice(1).map(r => `<tr>${r.map(c => `<td>${he(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+        out += `<div class="dg-tbl"><div class="dg-tbl-h" aria-live="polite"><b>${he(b.caption)}</b>${opt.copy ? `<button type="button" class="btn ghost dg-copy" data-copy-table="${n}">${COPY_TABLE}</button>` : ''}</div><div class="table-wrap"><table class="dg-table${opt.stack ? ' rm-stack' : ''}"><thead><tr>${b.rows[0].map(c => `<th scope="col">${he(c)}</th>`).join('')}</tr></thead><tbody>${b.rows.slice(1).map(r => `<tr>${r.map((c, i) => `<td${opt.stack ? ` data-label="${he(b.rows[0][i])}"` : ''}>${he(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
       }
       else if (b.kind === 'h1') out += `<h4 class="dg-h1">${he(b.text)}</h4>`;
       else if (b.kind === 'h2') out += `<h5 class="dg-h2">${he(b.text)}</h5>`;

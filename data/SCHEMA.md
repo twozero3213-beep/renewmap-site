@@ -152,7 +152,7 @@ SGIS 2025 행정동 경계 단순화본의 내부 대표점을 EPSG:5186으로 �
 - `indicators[].group`: "건축·정비"(PERMIT_COUNT_3Y, DEMOLITION_COUNT_3Y, OLD_PUBLIC_FACILITY_COUNT, REDEV_PROJECTS → 화면 '정비 신호'), "안전 인프라"(+EMERGENCY_BELL_PER_KM2, ELDERLY_PED_ACCIDENT_ZONES), "복지"(ELDERLY_LIVING_ALONE → 화면 '인구 변화'). 모두 standard null·기준 없음.
 - `indicators[].hidden_until_decision`(+hidden_reason): true면 셀은 있으나 화면에 내지 않는다. 현재 EMERGENCY_BELL_PER_KM2만(화면 공개 여부 확인 중).
 - 부산만 있는 지표(허가·철거·노후시설·독거노인·정비)는 부산 행정동에만 셀. value 있고 status 추가확인이면 하한(위치를 다 못 가림). DEMOLITION_COUNT_3Y는 원천 철거멸실대장이 2021-12-31 이후 미갱신이라 전부 null. 허가·철거는 법정동 단위라 관할 법정동이 한 행정동에만 속할 때만 행정동 값, `living/{code5}.json`에 `sigungu_cells[]`·`bjdong_cells[{code10,name,cells}]` 추가.
-- 보고서 템플릿 `report_templates.json`(TPL-2026-10-27.2): 파이썬(`report_quality/templates.py`)과 JS(`docgen.js`)가 같은 파일을 읽는다. `doc_style`(나눔고딕·글자 크기)·`onepage.sizes`가 보고서 서식이다(GOV_DOC_STYLE.md 6장). 양식 조각 정의는 `docs/gov/form_fragments.md`.
+- 보고서 템플릿 `report_templates.json`(판 번호는 파일의 `version` 칸): 파이썬(`report_quality/templates.py`)과 JS(`docgen.js`)가 같은 파일을 읽는다. `doc_style`(나눔고딕·글자 크기)·`onepage.sizes`가 보고서 서식이다(GOV_DOC_STYLE.md 6장). 양식 조각 정의는 `docs/gov/form_fragments.md`.
 
 ## 지역 SOC 점 (2026-11-07) — `soc_busan.json`
 - 신청요건 화면 '영역 안 생활 SOC 세기'가 읽는다. `sources[]`(kind·name·id·url·retrieved_at·부산 행 수·뺀 행 수·기준일 범위), `points[]` = `[source 순번, 이름, 종류, 위도, 경도, 데이터기준일자, 관리번호(공원·주차장만)]`(`fields`에 같은 순서), `crs` EPSG:4326.

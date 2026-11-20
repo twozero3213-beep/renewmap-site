@@ -1692,7 +1692,7 @@
     if (!it) { report.innerHTML = reportModeHTML(reportMode) + `<div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 ${esc(iGa(REPORT_MODES.find(x => x[0] === reportMode)[1]))} 생깁니다</h3><p><a href="${esc(toHash({ sido: v.sido && v.sido.code2, sigungu: v.sigungu && v.sigungu.code5, gu: v.gu && v.gu.code5 }))}">지도</a>에서 읍·면·동을 누르거나 우리 동네를 찾아 주세요.</p>${m.kind === 'emd' && m.items && m.items.length && window.RenewPrograms ? '<p><button type="button" class="btn" data-set-mode="programs">이 구의 동 비교표 보기</button></p>' : ''}</div>`; return; }
     const rows = rowsFor(v, m, it);
     // 주소의 ?frag=는 양식 정의가 온 뒤 한 번만 읽는다(workspace.js가 고른 양식을 보고 그 주제를 연다)
-    if (fragWanted && DG && DG.getTemplates()) { fragChoice = fragFromParam(fragWanted, DG.fragmentChoices()) || fragChoice; fragWanted = null; }
+    if (fragWanted && DG && DG.getTemplates()) { const f = fragFromParam(fragWanted, DG.fragmentChoices()); fragChoice = f || fragChoice; fragJump = !!f; fragWanted = null; }
     if (reportMode === 'onepage') {
       const built = docFor(v, m, it);
       report.innerHTML = reportModeHTML(reportMode) + (built.error ? `<div class="rp-empty" role="status"><h3>근거 1쪽을 아직 만들 수 없습니다</h3><p>${esc(built.error)}</p></div>` : onepageHTML(v, it, built.one, fragChoice));
@@ -1718,17 +1718,23 @@
       report.querySelector('.rp-head')?.after(note);
     }
     paintFrag();
+    // r14 출시 감사: ?frag=로 오면 문서 맨 위(표는 두 화면 아래)에 내렸다. 자료 대기 안내까지 걷힌 뒤 표로 한 번 내린다.
+    // workspace.js가 MutationObserver로 조각 주제를 고른 뒤에 재도록 다음 그림 차례에
+    if (fragJump && fragCur && !exportMessage) {
+      fragJump = false;
+      requestAnimationFrame(() => report.querySelector('.dg-frag .dg-tbl')?.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' }));
+    }
   }
   // ── 파일 만들기(docgen.js): 선택한 동의 출처 기록으로 근거서(HWPX·XLSX)와 1쪽 요약을 이 브라우저에서 바로 만든다. 서버로 보내지 않는다 ──
   const todayISO = () => DG.localDate();   // 서울 날짜(기기 시간대와 무관: 한국 밖·UTC 환경에서 0~9시에 하루가 어긋나지 않게)
   let taskLinkBusy = false;
-  let docMemo = { key: '', val: null }, fragChoice = { id: '', variant: '' }, fragWanted = new URLSearchParams(location.search).get('frag');
+  let docMemo = { key: '', val: null }, fragChoice = { id: '', variant: '' }, fragWanted = new URLSearchParams(location.search).get('frag'), fragJump = false;
   // 생활·전망·순이동 자료가 아직 오는 중이면 '파일 없음'으로 적히지 않게 만들기를 미룬다
   const filesLoading = v => [state.templates, state.living, state.migration, state.designations, state.realestate, state.forecastIdx].some(x => x === undefined) || (!!state.living && livingOf(v.emdCode) === undefined) || (!!state.forecastIdx && forecastOf(v.emdCode) === undefined);
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261120-r13'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261121-r14'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);

@@ -146,7 +146,7 @@
           location.href = 'thanks.html';
         })
         .catch(function () {
-          err.textContent = '전송에 실패했습니다. 다시 시도하거나 문의 초안을 복사·저장해 ' + form.dataset.mailto + '로 직접 보내 주세요.';
+          err.textContent = '전송에 실패했습니다. 다시 시도하거나 문의 초안을 복사·저장해 ' + form.dataset.mailto + '으로 직접 보내 주세요.';
           err.hidden = false;
           fallback.hidden = false;
         })
@@ -155,7 +155,7 @@
     }
     var inquiry = draft();
     // 감사 화면(thanks.html)과 같은 조건 문장: 메일 앱이 열렸다면 보내기까지 눌러야 접수된다
-    status.textContent = '메일 앱 열기를 요청했습니다. 메일 앱이 열렸다면 메일 보내기 버튼까지 직접 눌러야 보내집니다. 열리지 않았다면 문의 초안을 복사하거나 TXT로 저장해 ' + form.dataset.mailto + '로 보내 주세요. 이 화면에서는 발송·접수 여부를 확인할 수 없습니다.';
+    status.textContent = '메일 앱 열기를 요청했습니다. 메일 앱이 열렸다면 메일 보내기 버튼까지 직접 눌러야 보내집니다. 열리지 않았다면 문의 초안을 복사하거나 TXT로 저장해 ' + form.dataset.mailto + '으로 보내 주세요. 이 화면에서는 발송·접수 여부를 확인할 수 없습니다.';
     try {
       location.href = 'mailto:' + form.dataset.mailto + '?subject=' + encodeURIComponent(inquiry.subject) + '&body=' + encodeURIComponent(inquiry.body);
       track('form_draft_open');

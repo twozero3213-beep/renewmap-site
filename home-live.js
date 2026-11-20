@@ -36,7 +36,10 @@
         // 감소율은 국토부 쇠퇴진단 원천이 직접 준 값이다. 바탕 총수(2025년 사업체 수 등)가 아직 원천에 없어도 그 값으로 판단한다 —
         // 동 페이지·지도·1쪽 문서가 모두 그렇게 한다. v9: 홈만 '추가확인'으로 바꿔, 사업체 총수가 빈 2,238개 동에서 화면끼리 어긋났다
         const unsure = q.status === 'none';
-        const text = viaConsec ? '3년 연속 감소' : q.rate === null ? '–' : `${fmt(q.rate)}%`;   // 상태 칸이 '추가확인'이라 값 칸에 또 쓰지 않는다(v9: 두 번 읽혔다)
+        // r14 출시 감사: 미확정 셀은 판단에 쓰지 않지만 값은 4-1 표처럼 보인다(흐리게, 상태 칸 '추가확인'). 공개 보류 값은 그대로 숨긴다
+        const raw = unsure && c && !c.value_hidden_reason && typeof c.value === 'number' ? c.value : null;
+        const shown = q.rate === null ? raw : q.rate;
+        const text = viaConsec ? '3년 연속 감소' : shown === null ? '–' : `${fmt(shown)}%`;
         const who = label.replace(' 감소', '');
         // 총수가 비면 같은 줄에 밝힌다. 0은 채운 값이 아니라 원천 감소율이라는 것도 같이(8회차: '0으로 채우지 않는다'와 부딪혀 보였다)
         // R2 11: '총수는 원천에 없음 · 0%'가 지어낸 0처럼 읽혔다 → 감소율이 기관 공표값이고 총수가 공표 전임을 문장으로

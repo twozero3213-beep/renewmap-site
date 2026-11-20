@@ -60,9 +60,9 @@ document.documentElement.classList.add('js');
 <script src="cellpack.js" defer></script>
 <script src="util.js?v=20261120-r11" defer></script>
 <script src="decline-req.js?v=20261120-r13" defer></script>
-<script src="home-live.js?v=20261120-r13" defer></script>
+<script src="home-live.js?v=20261121-r14" defer></script>
 <script src="home-rank.js?v=20261119-r3" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261120-r11">
+<link rel="stylesheet" href="rm6.css?v=20261121-r14">
 </head>
 <body class="app-home">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -87,7 +87,9 @@ document.documentElement.classList.add('js');
       </form>
       <p class="home-msg">전국 행정동 3,559곳 · 건물 단위 계산은 부산 254개 법정동 · 로그인·설치 없이 무료</p>
       <div class="h6-try" role="group" aria-labelledby="h6TryK"><span class="h6-try-k" id="h6TryK">바로 보기</span><button type="button" class="h6-chip rm-chip" data-dong="21090700">반여1동</button><button type="button" class="h6-chip rm-chip" data-dong="21030510">초량1동</button><button type="button" class="h6-chip rm-chip" data-dong="21040530">남항동</button><button type="button" class="h6-chip rm-chip" data-dong="21100650">감천1동</button><button type="button" class="h6-chip rm-chip" data-dong="38100120">양산 물금읍</button><button type="button" class="h6-chip rm-chip" data-dong="38090580">거제 고현동</button></div><!-- 2026-11-16: 부산 밖 자료(양산·거제)도 첫 화면에서 바로 열리게 -->
-      <p class="h6-links"><a href="explore.html?report=brief&amp;frag=MLIT-DECLINE#map/21/21090/21090700">반여1동 4-1 표 초안 보기</a><a href="tasks.html?step=delivery#handoverSummary">인수인계 준비하기</a></p>
+      <!-- r14 출시 감사: 둘째 단추(옛 인수인계 요약 바로가기)는 처음 온 사람에게 저장한 과업이 없어 막다른 길이었다. 가격과 상담은 첫 화면에 한 줄로(문구는 app.js 초안의 짧은 형과 같다) -->
+      <p class="h6-links"><a href="explore.html?report=brief&amp;frag=MLIT-DECLINE#map/21/21090/21090700">반여1동 4-1 표 초안 보기</a><a href="pilot-scope.html">시범 과업 범위·비용</a></p>
+      <p class="h6-price-line">과업 1건·행정동 1곳 기준 시범 제안가 99만원, 부가세 포함 총액 108만 9천원 이내, 계약 전 확정 · <a href="about.html#contact">시범 과업 상담</a></p>
       <noscript><p>검색은 자바스크립트를 켜야 됩니다.<br><a href="dong/index.html">행정동 목록에서 동네를 찾아 주세요.</a></p></noscript>
     </div>
     <p class="sr-only" id="h6Say" role="status"></p>
