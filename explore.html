@@ -89,7 +89,7 @@ document.documentElement.classList.add('js');
 <link rel="stylesheet" href="hero.css?v=20261121-r16">
 <!-- 2026-11-12: 동 이름표 스타일 추가에 맞춰 버전을 붙인다(옛 map.css 캐시가 이름표를 잘못 그리지 않게) -->
 <!-- 2026-11-13: 동 요약 신청요건 한 줄(.sr-req)·시작 묶음 단추(.map-bundles) 스타일로 버전을 올림 -->
-<link rel="stylesheet" href="map.css?v=20261121-r16">
+<link rel="stylesheet" href="map.css?v=20261122-r18">
 <link rel="stylesheet" href="programs.css?v=20261121-r16">
 <link rel="stylesheet" href="overlay.css?v=20261119-r3">
 <link rel="stylesheet" href="v4.css?v=20261120-r11"><!-- 2026-11-12: 768~1099px 지도 정리 규칙을 더해 캐시 버전을 붙임 -->
@@ -109,7 +109,7 @@ document.documentElement.classList.add('js');
 <!-- 2026-11-13: 신청요건 한 줄(reqLineHTML)·도넛 접기·시작 묶음(BUNDLES)으로 버전을 올림 -->
 <!-- 2026-11-13: 최저기준 묶음에 보건소·어린이집 거리 칩을 더해 버전을 올림 -->
 <script src="decline-req.js?v=20261121-r16" defer></script>
-<script src="map.js?v=20261122-r17" defer></script>
+<script src="map.js?v=20261122-r18" defer></script>
 <script src="explore-layout.js?v=20261119-r3" defer></script>
 <script src="workspace.js?v=20261121-r16" defer></script>
 <script src="report.js?v=20261121-r16" defer></script>
@@ -189,7 +189,7 @@ document.documentElement.classList.add('js');
             <span data-report-position role="status" aria-live="polite"></span>
             <button type="button" data-report-next aria-label="다음 주제">›</button>
           </nav>
-          <div id="reportApp"><div class="rp-empty" role="status"><img src="mascot/crew/taggy-default.svg" width="120" height="120" alt="" aria-hidden="true"><h3>문서를 불러오는 중입니다.</h3></div></div>
+          <div id="reportApp"><div class="rp-empty" role="status"><img src="mascot/crew/taggy-default.svg" width="120" height="120" alt="" aria-hidden="true"><h3>문서를 불러오는 중입니다.</h3><p class="wait-alt">오래 걸리면 <a href="dong/index.html">행정동 목록</a>에서 지도 없이 볼 수 있습니다.</p></div></div>
           <details class="workspace-method ws-method"><summary>쓰기 전에 확인하세요</summary><p>지표마다 출처·기준일·공간 단위가 다릅니다.<br>행정동 값을 그 안의 건물이나 구역 값으로 쓰지 마세요.<br>공공데이터와 현장 확인은 따로 적습니다.<br>기준 비교는 법정 판정을 대신하지 않습니다.</p><a href="evidence.html">근거 읽는 법</a></details>
           <noscript><p>문서는 자바스크립트를 켜야 보입니다. <a href="dong/index.html">행정동 목록</a>에서 동을 찾아 주세요.</p></noscript>
         </div>

@@ -1652,7 +1652,8 @@
   }
   function panelHTML(v, m, bare) {
     const ind = curInd(), mode = effMode(ind), scale = scaleFor(ind, mode), here = v.crumbs[v.crumbs.length - 1].label;
-    if (m.kind === 'wait') return `<div class="map-panel-wait${v.dong ? ' has-dong' : ''}">읍·면·동 자료를 불러오는 중입니다.</div>`;   // has-dong: 동 카드 높이를 미리 잡아 둔다(R5 2, rm6.css)
+    // r18: 자료가 늦거나 화면을 읽는 도구(AI 에이전트)가 여기서 멈출 때 갈 곳 — 스크립트 없이 열리는 동 쪽(dong/{코드}.html). 빠른 연결에서는 깜빡이지 않게 4초 뒤에 보인다(map.css .wait-alt). 같은 링크가 두 번 나오지 않게 고른 동 카드(bare)에만 둔다
+    if (m.kind === 'wait') return `<div class="map-panel-wait${v.dong ? ' has-dong' : ''}">읍·면·동 자료를 불러오는 중입니다.${v.dong && bare ? ` <a class="wait-alt" href="dong/${esc(v.dong)}.html">오래 걸리면 지도 없이 이 동 숫자 보기</a>` : ''}</div>`;   // has-dong: 동 카드 높이를 미리 잡아 둔다(R5 2, rm6.css)
     if (m.kind === 'emdfail') return `<div class="map-empty" role="alert"><h3>${esc(here)} 자료를 받지 못했습니다.</h3><p>인터넷 연결을 확인하고 다시 받아 주세요.</p><p><button type="button" class="btn" data-emd-retry="${esc(v.emdCode)}">다시 받기</button></p></div>`;
     if (m.kind === 'noemd' || m.nodata) return emptyHTML(`${here} · 읍·면·동 자료 준비 중`, [m.kind === 'noemd' ? '이 지역의 읍·면·동 자료가 아직 없습니다.' : '경계는 있지만 지표 시계열이 아직 없습니다.', '준비되기 전에는 숫자를 보여 드리지 않습니다.']);
     const it = m.items.find(x => x.code === v.dong), dist = ind.level === 'sg' ? `<p class="map-note">${esc(ind.label)}은(는) 시·군·구 단위 자료라 읍·면·동 분포가 없습니다.</p>`

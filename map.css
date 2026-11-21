@@ -115,6 +115,9 @@
 .map-h4 { margin: 18px 0 6px; font-size: 15px; color: var(--dim); }
 .map-note { font-size: 15px; color: var(--dim); margin: 4px 0 8px; }
 .map-panel-wait { color: var(--dim); font-size: 15px; }
+/* r18: 기다림이 4초를 넘을 때만 보이는 대신 갈 곳. 그 전에는 visibility로 감춰 초점·읽기 순서에도 들지 않는다. 반짝임 띠(::after) 위에 둔다 */
+.wait-alt { display: block; position: relative; z-index: 1; margin-top: 8px; visibility: hidden; animation: wait-alt 0s 4s forwards; }
+@keyframes wait-alt { to { visibility: visible; } }
 
 /* 기준 미달 항목 수 */
 .sr-tally { background: var(--bg); border-radius: var(--radius-card); padding: 12px 14px; margin: 8px 0 4px; }
