@@ -291,20 +291,50 @@
       li.append(body); ul.append(li);
     }
   }
+  // 위치 다듬기(2026-11-21): 휴대폰 GPS는 첫 값 뒤 몇 초 사이에 오차가 좁아진다. 첫 값을 바로 보여 주고
+  // 최대 GPS_WAIT 동안 더 들으며 오차가 가장 작은 값만 쓴다. GPS_GOOD 이하가 오면 바로 멈춘다. 캐시 값은 받지 않는다(maximumAge 0)
+  const GPS_GOOD = 15, GPS_WAIT = 15000, GPS_WIDE = 50;
+  let gpsStop = null;                                               // 앞선 요청 끄기(다시 누르면 옛 요청의 타이머가 새 요청을 끊지 않게 요청마다 따로 쥔다)
   function locate() {
     if (!navigator.geolocation) { $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '위치를 못 받으면 지번으로 적기'에 지번을 적어 주세요."; return; }
+    if (gpsStop) gpsStop();
     $("locLine").textContent = "위치를 받는 중입니다.";
     const wait = (on) => { document.body.classList.toggle("gps-wait", on); $("gps").setAttribute("aria-busy", String(on)); };
     wait(true);
-    navigator.geolocation.getCurrentPosition((p) => {
+    let best = null, looked = null, timer = null, done = false, id = null;
+    const stop = () => {
+      if (done) return false;
+      done = true; clearTimeout(timer);
+      if (id !== null) navigator.geolocation.clearWatch(id);
+      if (gpsStop === stop) gpsStop = null;
       wait(false);
-      gps ={ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy };
-      pos = { ...gps }; corrected = false; locLine(); lookup(); drawNear();
-    }, () => {
-      wait(false);
-      if (!pos) { $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '위치를 못 받으면 지번으로 적기'에 지번을 적어 주세요."; return; }
-      locLine(); $("locLine").textContent += "\n새 위치를 받지 못해 이전 위치를 그대로 씁니다.";   // '받는 중' 문구가 남지 않게
-    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
+      return true;
+    };
+    gpsStop = stop;
+    const finish = () => {
+      if (!stop()) return;
+      if (!best) {
+        if (!pos) { $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '위치를 못 받으면 지번으로 적기'에 지번을 적어 주세요."; return; }
+        locLine(); $("locLine").textContent += "\n새 위치를 받지 못해 이전 위치를 그대로 씁니다.";   // '받는 중' 문구가 남지 않게
+        return;
+      }
+      locLine();
+      if (corrected) return;                                        // 사람이 고친 위치는 그대로 둔다
+      if (looked !== best) { lookup(); drawNear(); }               // 처음 찾은 값보다 좁은 값으로 바뀌었으면 행정동을 다시 찾는다
+      if (best.accuracy > GPS_WIDE) $("locLine").textContent += "\n오차가 넓습니다. 실외에서 휴대폰 위치(GPS)를 켜고 다시 받거나 '위치 고치기'로 맞춰 주세요.";
+    };
+    id = navigator.geolocation.watchPosition((p) => {
+      if (done) return;
+      if (corrected && best) { stop(); return; }                   // 기다리는 사이 사람이 위치를 고쳤으면 그 값을 덮지 않고 듣기만 멈춘다
+      const c = p.coords;
+      if (best && c.accuracy >= best.accuracy) return;
+      best = { lat: c.latitude, lng: c.longitude, accuracy: c.accuracy };
+      gps = best; pos = { ...gps }; corrected = false; locLine();
+      if (!looked) { looked = best; lookup(); drawNear(); }      // 첫 값으로 바로 행정동을 찾아 기다리지 않게 한다
+      if (c.accuracy <= GPS_GOOD) finish();
+      else $("locLine").textContent += "\n더 정확한 위치를 기다리는 중입니다.";
+    }, () => { if (!best) finish(); }, { enableHighAccuracy: true, timeout: GPS_WAIT, maximumAge: 0 });
+    timer = setTimeout(finish, GPS_WAIT);
   }
   $("gps").addEventListener("click", locate);
 
