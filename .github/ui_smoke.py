@@ -419,12 +419,12 @@ def main():
                                 page.locator('[data-workspace-tab="evidence"]').click()
                                 expect_doc = page.locator('#reportApp')
                                 # r16 4차 P1: 문서 제목도 화면과 같은 '반여1동 근거 1쪽'이라 제목이 둘(화면 머리 .rp-title · 문서 미리보기 .dg-title)이다. 화면 머리를 본다
-                                expect_doc.locator('h3.rp-title', has_text='반여1동 근거 1쪽').wait_for(state='visible')
-                                assert expect_doc.get_by_role('button',name='한글로 받기',exact=True).is_visible()
+                                expect_doc.locator('h3.rp-title', has_text='반여1동 한 장 요약').wait_for(state='visible')
+                                assert expect_doc.get_by_role('button',name='한글 파일로 받기',exact=True).is_visible()
                                 expect_doc.locator('.rp-more-files > summary').click()
                                 for label in ('PDF로 저장','엑셀로 받기','워드로 받기','파워포인트로 받기'):
                                     assert expect_doc.get_by_role('button',name=label,exact=True).is_visible()
-                                expect_doc.get_by_role('button',name='사업 요건 대조',exact=True).click()
+                                expect_doc.get_by_role('button',name='이 동에 맞는 재생 사업',exact=True).click()
                                 expect_doc.get_by_role('heading',name='반여1동 사업 요건 대조',exact=True).wait_for(state='visible')
                                 check(route,width,'document_mode_copy')
                             page.goto(base+route,wait_until='networkidle')

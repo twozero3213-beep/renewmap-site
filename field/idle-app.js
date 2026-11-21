@@ -62,15 +62,16 @@
   }).catch(() => say("구·군 목록을 불러오지 못했습니다.\n영도구 청학동만 볼 수 있습니다.", true));
 
   function draw(res, file) {
+    const label = (g) => g === "unknown" ? "추가확인(완공된 날 없음)" : I.LABEL[g];   // 화면은 쉬운 말, 받는 CSV는 I.LABEL 그대로
     $("outTitle").textContent = `${res.name} 창고·공장 ${n(res.rows.length)}동`;
     $("outBase").textContent = `전체 ${n(res.total)}동 중 주용도에 창고·공장이 들어간 건물 · 건축물대장 기준일 ${res.hub} · 경과 기준일 ${res.ref}`;
-    $("outCount").replaceChildren(...["old", "unknown", "young"].map((g) => { const li = document.createElement("li"); li.textContent = `${I.LABEL[g]} ${n(res.count[g])}동`; return li; }));
+    $("outCount").replaceChildren(...["old", "unknown", "young"].map((g) => { const li = document.createElement("li"); li.textContent = `${label(g)} ${n(res.count[g])}동`; return li; }));
     $("rows").replaceChildren(...res.rows.map((r) => {
       const tr = document.createElement("tr");
       const td = (t) => { const c = document.createElement("td"); c.textContent = t ?? ""; return c; };
       const go = document.createElement("td");
       if (r.pnu) { const a = document.createElement("a"); a.href = `./?pnu=${encodeURIComponent(r.pnu)}&jibun=${encodeURIComponent(r.jibun || "")}`; a.textContent = "기록하기"; go.append(a); }
-      tr.append(td(r.jibun), td(r.main_use), td(r.use_apr_day || (r.use_apr_span || []).join("~") || "없음"), td(r.tot_area == null ? "" : n(r.tot_area)), td(I.LABEL[r.group]), go);
+      tr.append(td(r.jibun), td(r.main_use), td(r.use_apr_day || (r.use_apr_span || []).join("~") || "없음"), td(r.tot_area == null ? "" : n(r.tot_area)), td(label(r.group)), go);
       return tr;
     }));
     $("src").textContent = `출처: ${file.source} · ${file.license}`;

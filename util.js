@@ -81,7 +81,7 @@
   const BIZ_BOUNDARY = '사업체 출처 경계: 2019년까지는 쇠퇴진단지표(전국사업체조사 조사 기반), 2020년부터는 SGIS 전국사업체조사(등록 기반)라 이어서 비교할 때는 주의가 필요합니다.';
   // r16 공통 사전: 추가확인 셀의 까닭 한 줄. 원장 note의 '추가확인:' 뒤 글을 화면 문장으로 옮긴다(새 숫자는 note에 있는 것만).
   // tag: '전국 공통'(모든 동이 같은 규칙 문제, 사람이 풀 수 없음) | '이 동 자료'(이 동의 출처 자료 문제). 화면은 '(tag) text'로 쓴다
-  const BIZ_WHY = '2020년에 사업체 통계 방식이 바뀌어 10년 비교가 끊깁니다. 규칙 승인 전까지 추가확인으로 둡니다.';
+  const BIZ_WHY = '2020년에 사업체 통계 방식이 바뀌어 10년 비교가 끊깁니다. 계산 방법을 정하기 전까지 추가확인으로 둡니다.';
   const WHY = [
     [/사업체 출처 경계/, () => ['전국 공통', BIZ_WHY]],
     [/행정동 경계 변경 추정\(([^)]*)\)/, m => {
@@ -106,7 +106,16 @@
     for (const [re, to] of WHY) { const m = re.exec(raw); if (m) { const [tag, text] = to(m); return { tag, text }; } }
     return { tag: '이 동 자료', text: raw };
   }
-  const api = { esc, isNum, roundD, fmt2, plainSource, fetchJson, fetchFailed, csvCell, unpackCells, flat, dongStem, members, dongHit, sidoShort, josa, bizZeroNote, BIZ_BOUNDARY, BIZ_WHY, checkWhy };
+  // r19(09 5절): 추가확인 값은 큰 숫자 자리에 짧은 까닭을 쓴다(예: '경계 변경으로 비교 끊김'). 원장 note의 '추가확인:' 뒤 글로 고르고, 모르는 글은 한 가지 말
+  const WHY_SHORT = [[/사업체 출처 경계/, '2020년 통계 방식이 바뀌어 비교 끊김'], [/행정동 경계 변경 추정/, '경계 변경으로 비교 끊김'], [/년 창 중 \d{4}년부터 자료/, '비교 기간 자료가 모자람'],
+    [/년 창 중 빈 해 있음/, '비교 기간에 빈 해가 있음'], [/시계열 결측|개년 (사업체|인구) 결측|원천 값 없음/, '출처에 값이 빠짐'], [/SGIS 경계에 없는 코드/, '경계에 없는 동 코드'],
+    [/정비사업 이주·철거/, '정비사업 이주·철거'], [/미확정 요건/, '정하지 못한 요건이 있음']];
+  function whyShort(cell) {
+    if (!checkWhy(cell)) return null;
+    const note = String(cell.note || ''), raw = note.slice(note.lastIndexOf('추가확인:') + 5), hit = WHY_SHORT.find(([re]) => re.test(raw));
+    return hit ? hit[1] : '출처 자료를 더 확인해야 함';
+  }
+  const api = { esc, isNum, roundD, fmt2, plainSource, fetchJson, fetchFailed, csvCell, unpackCells, flat, dongStem, members, dongHit, sidoShort, josa, bizZeroNote, BIZ_BOUNDARY, BIZ_WHY, checkWhy, whyShort };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root && root.document) { root.RenewUtil = api; root.renewFetch = fetchJson; }
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -72,6 +72,29 @@
    "snapshot_hash": null
   },
   {
+   "name": "glance.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/glance.json",
+   "bytes": 1901,
+   "type": "object",
+   "top_level_keys": [
+    "kind",
+    "base_year",
+    "dongs",
+    "met2",
+    "aging50",
+    "pop30_check",
+    "biz_check",
+    "pickable",
+    "boundary_year",
+    "sido",
+    "sources",
+    "rule_version",
+    "snapshot_hash"
+   ],
+   "generated_at": null,
+   "snapshot_hash": "4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01"
+  },
+  {
    "name": "index.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/index.json",
    "bytes": 1976507,

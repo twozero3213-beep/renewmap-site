@@ -185,7 +185,7 @@
           // 첫 문장만 굵게: CSS ::first-line은 화면의 첫 줄에만 걸려 휴대폰에서 문장 중간에 끊겼다(#87 검토) → <b>와 글 마디로 나눈다
           const nm = names(list[at]), b = document.createElement('b');
           b.textContent = `${nm}${josa(nm)} ${list.length.toLocaleString('ko-KR')}개 동 중 ${(rankAt ? rankAt(at) : at + 1).toLocaleString('ko-KR')}위입니다(${KINDS[kindSel.value].label} ${fmt(list[at].score)}점).`;
-          foundMsg.replaceChildren(b, document.createElement('br'), '이 순위는 여러 지표를 합친 점수로 줄 세운 것이라, 공모 신청요건(쇠퇴 3요건) 중 기준 해당 요건 수와는 다른 기준입니다. 신청요건은 표에서 동 이름을 눌러 확인하세요.');
+          foundMsg.replaceChildren(b, document.createElement('br'), '이 순위는 여러 지표를 합친 점수로 줄 세운 것이라, 쇠퇴를 보는 세 가지 기준(인구·사업체·오래된 건물) 중 기준을 넘은 수와는 다릅니다. 세 가지 기준은 표에서 동 이름을 눌러 확인하세요.');
           const tr = document.getElementById('rankFoundRow'); if (tr) tr.scrollIntoView({ block: 'center' });
         };
         if (findForm) findForm.addEventListener('submit', find);

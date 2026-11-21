@@ -4,7 +4,7 @@
    위쪽은 노드 시험용 순수 함수, 아래쪽은 브라우저 연결부(Leaflet, dashboard.js의 loadLeaflet 재사용). */
 (function () {
   'use strict';
-  const { esc, isNum, fmt2, roundD, dongHit, plainSource, josa: josaOf, bizZeroNote, BIZ_BOUNDARY, checkWhy } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
+  const { esc, isNum, fmt2, roundD, dongHit, plainSource, josa: josaOf, bizZeroNote, BIZ_BOUNDARY, checkWhy, whyShort } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
   const DeclineReq = typeof module !== 'undefined' && module.exports ? require('./decline-req.js') : window.DeclineReq;
   // HWPX·XLSX·복사용 표·1쪽 요약·지도 이미지. 브라우저에서는 첫 지도 뒤에 받는다(아래 loadDocgen): undefined = 아직, null = 못 받음
   let DG = typeof module !== 'undefined' && module.exports ? require('./docgen.js') : (typeof window !== 'undefined' && window.RenewDocgen) || undefined;
@@ -36,13 +36,13 @@
   // R4 7: 2·3단계(#8fcfc3·#e9ecea)가 1형 색각에서 ΔE 12.8이었다 → 2단계를 #6fbfb1로(인접 ΔE 최소 19.1)
   const DIVERGE = ['#0b7f6f', '#6fbfb1', '#e9ecea', ABOVE[0], ABOVE[1]]; // 개선 청록 ↔ 악화 주황·갈색(기준 넘은 쪽과 같은 계열), 가운데 중성
   const MIG = ['#6a4c93', '#b3a2d1', '#e9ecea', '#8fcfc3', '#0b7f6f']; // 기준 없는 변화·청년 순이동: 줄어듦(유출) 보라 ↔ 늘어남(유입) 청록, 가운데 중성(기준선 0). 주황은 '기준 넘음' 전용
-  // 지표 묶음: '정비가 필요한 신호'와 '생활 여건'을 각각 고를 수 있게 묶는다. 범죄 통계·안전시설 점수·기피·순위는 만들지 않는다(D8·D13)
+  // 지표 묶음: '정비가 필요한 신호'와 '생활 여건'을 각각 고를 수 있게 묶는다. 범죄 통계·안전시설 점수·순위는 만들지 않는다(D8·D13)
   // 아이콘은 이모지 대신 지표 칩과 같은 선 아이콘(ICONS) 한 벌을 쓴다(UI 검수 2026-10-28: 3D 이모지·선 아이콘·글자 기호가 섞여 있었다)
   const GROUPS = [['aging', '노후·쇠퇴'], ['pop', '인구'], ['estate', '부동산 거래'], ['life', '생활 여건'], ['safe', '안전 시설'], ['fore', '인구 전망'], ['sum', '모아 보기']];
   const GROUP_ICON = { aging: 'bldg', pop: 'people', estate: 'home', life: 'tree', safe: 'cctv', fore: 'fore', sum: 'sum' };
   const gIco = g => icon(GROUP_ICON[g]);
   const safeUrl = u => (/^https?:\/\//i.test(u || '') ? u : null);
-  // 쇠퇴 요건의 기준값은 시행령 제17조 문언 그대로라 '법정'이다. 승인 대기인 것은 요건을 묶어 판정하는 규칙(decline-3req-v0.2, hero.js RULE)이다.
+  // 쇠퇴 요건의 기준값은 시행령 제17조 문언 그대로라 '법정'이다. 정하지 못한 것은 요건을 묶어 세는 규칙(decline-3req-v0.2: 조문 숫자 대조 전, 계산 방법·해석 미결)이다.
   // 출처 기록의 '공식 기준선 넘은 지표 수'(living STD_SHORTFALL_COUNT)도 이 기준을 확정으로 센다 — 화면과 원장이 같은 수를 보이게 맞춘다
   const LAW = '도시재생법 시행령 제17조';
   const lawStd = (value, direction, text) => ({ value, direction, text, source: LAW, status: '법정' });
@@ -51,8 +51,8 @@
     // chip: 화면 칩 이름(11회차까지 세 번 지적: 칩·범례·카드 이름이 달랐다). label은 출처(도시재생종합정보체계) 지표 이름이라 문서·출처 기록에서 그대로
     { code: 'DECLINE_AGING_20Y_PCT', group: 'aging', icon: 'bldg', label: '20년 이상 건축물 비율', chip: '20년 이상 건축물', unit: '%', edges: [30, 50, 70, 80, 90], colors: [BELOW[0], BELOW[2], ...ABOVE4],
       title: '준공 20년 이상 건축물 비율', worseUp: true, domain: [0, 100], series: true, standard: lawStd(50, 'above_bad', '준공 20년 이상 건축물 50% 이상') },
-    { code: 'DECLINE_MET_COUNT', group: 'aging', icon: 'check', label: '기준 해당 요건 수(최소)', unit: '개', edges: [1, 2, 3], colors: MET, labels: ['0개', '1개', '2개', '3개'],
-      title: '도시재생법 제13조·시행령 제17조 기준 해당 요건 수(최소) · 추가확인 요건은 세지 않음 · 판정 아님', worseUp: true, domain: [0, 3], series: true, composite: true, noPlay: true, yearNote: '해마다 기준 해당 요건 수(최소)가 달라 연도 비교는 하지 않습니다',
+    { code: 'DECLINE_MET_COUNT', group: 'aging', icon: 'check', label: '기준을 넘은 수(확실한 것만)', unit: '개', edges: [1, 2, 3], colors: MET, labels: ['0개', '1개', '2개', '3개'],
+      title: '도시재생법 제13조·시행령 제17조의 세 기준 가운데 넘은 수(확실한 것만) · 추가확인인 기준은 세지 않음 · 참고용 계산', worseUp: true, domain: [0, 3], series: true, composite: true, noPlay: true, yearNote: '해마다 기준을 넘은 수(확실한 것만)가 달라 연도 비교는 하지 않습니다',
       dEdges: [-1.5, -0.5, 0.5, 1.5], dLabels: ['2개 이상 줄어듦', '1개 줄어듦', '변화 없음', '1개 늘어남', '2개 이상 늘어남'], standard: lawStd(2, 'above_bad', '쇠퇴 3요건 중 2개 이상') },
     { code: 'DECLINE_POP_DROP30Y_PCT', group: 'pop', icon: 'popdown', label: '인구 감소율(30년)', unit: '%', edges: [0, 10, 20, 30], colors: [BELOW[0], BELOW[2], BELOW[4], ABOVE[1], ABOVE[2]],   // R4 7: 1~3단계 인접 ΔE 9.5·8.4 → 17.9·16.5(2·3단계를 한 칸씩 짙게)
       title: '주민등록 인구 30년 최대 대비 감소율 · KOSIS', worseUp: true, domain: [-20, 60], series: true, standard: lawStd(20, 'above_bad', '30년 최대 대비 20% 이상 감소') },
@@ -79,7 +79,7 @@
   //     셀이 생기면 그 코드를 codes에 넣고 later에서 뺀다
   // 재사용: 묶음을 늘릴 때는 이 배열에 한 줄만 더한다(화면 코드는 그대로)
   const BUNDLES = [
-    { key: 'req', label: '쇠퇴 3요건', codes: ['DECLINE_AGING_20Y_PCT', 'DECLINE_POP_DROP30Y_PCT', 'DECLINE_BIZ_DROP10Y_PCT', 'DECLINE_MET_COUNT'], later: [] },
+    { key: 'req', label: '쇠퇴 세 기준', codes: ['DECLINE_AGING_20Y_PCT', 'DECLINE_POP_DROP30Y_PCT', 'DECLINE_BIZ_DROP10Y_PCT', 'DECLINE_MET_COUNT'], later: [] },
     // 2026-11-13 우지예 결정: '청년이 살 만한가' 대신 '생활 인프라 최저기준'. 소아과·편의점 자리는 뺐다.
     // 왜: 공모 서류가 묻는 생활시설은 기초생활인프라 국가적 최저기준 표(제2차 기본방침 별표2 = 2027 가이드라인 참고 2-3-1) 6종이다.
     //     인정사업 요건이 '최저기준 미달 또는 쇠퇴 2개 이상'이고 사업계획 양식이 미달지역 분석을 요구한다(docs/rule_reviews/guideline_2027_crosscheck_2026-11-09.md).
@@ -881,15 +881,16 @@
   // 2026-11-13: 동 요약 맨 위 한 줄 — "쇠퇴 3요건 중 몇 개 해당" + 근거 1쪽로 가는 단추.
   // 왜: 동을 고르면 맨 위에 '공식 기준 없음 29' 같은 도넛이 먼저 나와, 첫 약속(D23 공모 신청요건 근거 1쪽)의 답이 묻혔다
   //     (docs/design/ux_feedback_2026-11-12.md 1절 3번). 숫자는 새로 세지 않고 출처 기록 '요건 충족 수(하한)'(DECLINE_MET_COUNT) 값을
-  //     그대로 쓴다(원칙 1). 요건을 묶는 규칙(decline-3req)은 승인 전이라 '참고'·'판정 아님'을 이 줄 아래 한 번 밝힌다.
+  //     그대로 쓴다(원칙 1). 요건을 묶는 규칙(decline-3req)은 조문 숫자 대조 전이라 '참고'·'판정 아님'을 이 줄 아래 한 번 밝힌다.
   //     값이 없으면 0개로 만들지 않고 '추가확인'으로 둔다(원칙 4). 재사용: 지도 패널 외 다른 화면에서도 rows만 있으면 쓸 수 있다
   const REQ_CODE = 'DECLINE_MET_COUNT';
   // opt.go === false: 지도 서랍처럼 꼬리에 '4-1 표 초안 보기' 주 단추를 따로 둔 곳에서는 같은 단추를 한 번 더 그리지 않는다
   // r16: 주 단추는 4-1 표 초안(brief + 4-1 양식). 홈 첫 단추와 같은 곳이다(D29)
   const FRAG_41 = 'MLIT-DECLINE';
-  const goFrag = cls => `<a class="btn ${cls}" href="#report" data-set-mode="brief" data-frag="${FRAG_41}">${icon('book')}4-1 표 초안 보기</a>`;
+  const goFrag = cls => `<a class="btn ${cls}" href="#report" data-set-mode="brief" data-frag="${FRAG_41}">${icon('book')}동네 현황표 보기</a>`;
   // D1 판단(over·floor·in·none) → 카드 띠 class
   const MET_CLS = { over: 'over', floor: 'over', in: 'in', none: 'none' };
+  const MET_TAG = { none: '추가확인' }, MET_TAG_CLS = { over: ' over', floor: ' over', in: '', none: ' check' };   // 상태 꼬리표 .tag 모양(rm6.css)
   function reqLineHTML(rows, dong, opt) {
     const r = (rows || []).find(x => x.ind && x.ind.code === REQ_CODE);
     if (!r) return '';
@@ -897,12 +898,12 @@
     const jump = isNum(r.year) && dong ? seriesJump(seriesOf(dong, 'DECLINE_AGING_20Y_PCT'), r.year) : null;
     const jumpNote = jump ? `<p class="sr-req-warn">이 해 20년 이상 건축물 비율이 앞뒤 해(중앙값 ${fmt2(jump.median)}%)와 크게 다릅니다. 출처 값을 그대로 옮겼습니다. 이 해 값은 원문을 확인해 주세요.</p>` : '';
     const rowsHtml = reqRowsHTML(rows, dong, r.year), allKnown = rowsHtml && !rowsHtml.includes('class="is-none"');   // 세 요건이 다 정해졌으면 '빼고 셌다'는 말이 맞지 않는다(11회차)
-    // r16 공통 사전 고지: 결과 묶음마다 규칙 승인 대기 한 줄과 '판정은 담당 기관이 합니다' 한 줄
-    const foot = `<p class="sr-req-note">${allKnown ? `${r.year ? `${esc(r.year)}년 기준. ` : ''}` : `추가확인 요건은 세지 않았습니다${r.year ? `(${esc(r.year)}년 기준)` : ''}. `}쇠퇴 3요건 계산 규칙은 승인 대기입니다. 판정은 담당 기관이 합니다.</p>`;
+    // r16 공통 사전 고지(r19 '총괄안': 규칙 상태에 '승인'을 쓰지 않는다): 결과 묶음마다 규칙 상태 한 줄과 '판정은 담당 기관이 합니다' 한 줄
+    const foot = `<p class="sr-req-note">${allKnown ? `${r.year ? `${esc(r.year)}년 기준. ` : ''}` : `추가확인 요건은 세지 않았습니다${r.year ? `(${esc(r.year)}년 기준)` : ''}. `}쇠퇴 세 기준 계산 규칙: 조문 숫자 대조 전 · 계산 방법과 해석은 정하지 못함 · 참고용 계산입니다. 판단은 구청·담당 기관이 합니다.</p>`;
     const law = DeclineReq ? `<small>${esc(DeclineReq.MET_LAW)}</small>` : '';
     if (r.value === null || !DeclineReq) {
       const h = DeclineReq ? DeclineReq.metHead(null) : { head: '쇠퇴 3요건 · 추가확인', sub: '자료가 모자라 아직 셀 수 없습니다.' };
-      return `<section class="sr-req is-none" aria-label="쇠퇴 3요건 요약"><p class="sr-req-n">${esc(h.head)}<small>${esc(h.sub)}</small>${law}</p>${go}${foot}</section>`;
+      return `<section class="sr-req is-none" aria-label="쇠퇴를 보는 세 가지 기준 요약"><p class="sr-req-n">${esc(h.plain || h.head)} <span class="tag check">${esc(MET_TAG.none)}</span><small>${esc(h.sub)}</small>${law}</p>${go}${foot}</section>`;
     }
     // 2026-11-17 우지예(지원센터 담당자 인터뷰): "구 단위 지표로는 사업이 타당한지 판단할 수 없고, 사업지 안의 지표를 다시 봐야 한다".
     // 통계 범위가 다른 집계구 자료를 확인하도록 잇는다. 자료가 없는 동은 도착 화면에서 안내하며 숫자는 새로 세지 않는다(원칙 1).
@@ -921,12 +922,13 @@
     const st = undecided ? '추가확인' : r.status;
     // r16 공통 사전 결론 머리(decline-req metHead): 추가확인이 남으면 '최소 n개 해당 · 추가확인 m개'('1개 해당'이 탈락으로 읽혔다)
     const h = DeclineReq.metHead(r.value, nUnknown, floor ? 'floor' : st === '기준 넘음' ? 'over' : st === '기준 안' ? 'in' : 'none');
-    const headHtml = esc(h.head.replace(/^쇠퇴 3요건 중 /, '')).replace(/(\d+)개 해당/, '<b data-ck="req">$1개</b> 해당');
+    // r19(09 3절): '최소 N개 해당 · 추가확인 K개' 대신 쉬운 문장, 상태 꼬리표는 옆에 그대로(09 1절 '상태 낱말')
+    const headHtml = esc(h.plain.replace(/^세 가지 중 /, '')).replace(/^(\d+)가지/, '<b data-ck="req">$1가지</b>') + ` <span class="tag${MET_TAG_CLS[h.state]}">${esc(h.chip)}</span>`;
     // 요건이 아직 정해지지 않았으면(추가확인) '못 미친다'고 단정하지 않는다(원칙 4) → 문장을 나눈다
     const lead = h.state === 'none' ? '동 전체로는 아직 정해지지 않은 요건이 있습니다.' : `동 전체로는 ${DeclineReq.MIN_MET}개에 못 미칩니다.`;
     const smaller = (h.state === 'none' || h.state === 'in') && code ? `<p class="sr-req-more">${lead} 사업지는 통계 범위가 다를 수 있습니다. <a href="field/oa.html?dong=${encodeURIComponent(code)}">집계구 자료 보기</a>${String(code).startsWith('21') ? ` · <a href="field/redev.html">구역 그려 계산하기(부산)</a>` : ''}</p>` : '';
-    return `<section class="sr-req is-${MET_CLS[h.state]}" aria-label="쇠퇴 3요건 요약">` +
-      `<p class="sr-req-n"><span class="sr-req-k">쇠퇴 3요건 중</span> ${headHtml}${h.sub ? `<small>${esc(h.sub)}</small>` : ''}${law}</p>${rowsHtml}${jumpNote}${go}${smaller}${foot}</section>`;
+    return `<section class="sr-req is-${MET_CLS[h.state]}" aria-label="쇠퇴를 보는 세 가지 기준 요약">` +
+      `<p class="sr-req-n"><span class="sr-req-k">쇠퇴를 보는 세 가지 기준(인구·사업체·오래된 건물) 중</span> ${headHtml}${h.sub ? `<small>${esc(h.sub)}</small>` : ''}${law}</p>${rowsHtml}${jumpNote}${go}${smaller}${foot}</section>`;
   }
   // v7(2026-11-13): 3요건 각각의 값·상태를 홈 카드처럼 세 줄로. 평가: 카드의 세는 법이 넷(해당 수·확인할 항목·확정/추가확인·묶음별 수)이라
   // 무엇을 봐야 할지 몰랐다 → 맨 위는 '몇 개 해당'과 그 세 줄만 두고, 나머지 셈은 아래 접힌 칸으로 옮긴다. 값은 rows(출처 기록) 그대로
@@ -934,6 +936,14 @@
   const REQ_ST = { over: '기준 해당', in: '해당 안 함', none: '추가확인' };   // 홈 카드와 같은 세 낱말(v7 7회차: 화면마다 상태 단어가 달랐다)
   // year: 머리 '몇 개 해당'(요건 충족 수 행)의 해. 연도 막대를 옮겼으면 세 줄도 그 해 값으로 센다
   // (v9: 3년 연속 감소 줄이 늘 최신 셀을 읽어, 2022년을 고르면 머리는 1개인데 줄은 '해당'이 둘로 어긋났다)
+  // 세 기준 줄의 출처 한 줄: '기관·자료 이름 · ○○년 기준 · 조회 ○○년 ○월'. 이름의 괄호 풀이(API 이름 등)는 '이 숫자는 어디서 왔나요?' 펼침에 남긴다.
+  // bizYear: 사업체 수 자료연도가 기준연도보다 앞서면 '사업체 수 ○○년 자료'로 적는다(r16 B8과 같은 뜻, 기준일과 한 덩어리로 읽히지 않게)
+  const srcShort = s => String(s || '').replace(/\((?:[^()]|\([^()]*\))*\)/g, '').replace(/\s+·\s+/g, ' · ').trim();
+  function srcLine(c, bizYear) {
+    if (!c || !c.source_name) return '';
+    const y = bizYear ? `사업체 수 ${bizYear}년 자료` : isNum(c.base_year) ? `${c.base_year}년 기준` : '', m = /^(\d{4})-(\d{2})/.exec(c.retrieved_at || '');
+    return `<small class="sr-sub sr-src">${[esc(srcShort(c.source_name)), y, m ? `조회 ${m[1]}년 ${+m[2]}월` : ''].filter(Boolean).join(' · ')}</small>`;
+  }
   function reqRowsHTML(rows, dong, year) {
     const rowOf = code => rows.find(x => x.ind && x.ind.code === code);
     if (!DeclineReq || !rowOf('DECLINE_AGING_20Y_PCT')) return '';
@@ -966,12 +976,18 @@
       const peak = q.key === 'pop' && q.rate !== null ? /30년 최대 인구 ([\d,]+)명\((\d{4})년\)/.exec(((rowOf('DECLINE_POP_DROP30Y_PCT') || {}).cell || {}).formula_text || '') : null;
       // R3 11: 감소율 0%가 지어낸 값처럼 읽혔다 → 그 해 사업체 수가 10년 중 최대라는 뜻을 시계열로 확인되는 때만 한 줄(출처 경계는 '자세한 근거' 안)
       const zero = q.key === 'biz' && !viaC ? bizZeroNote(bizS.filter(p => !isNum(year) || p[0] <= year), shown) : '';
-      const notes = [q.key === 'biz' && bizLast && isNum(yr) && bizLast[0] < yr ? `사업체 수 ${bizLast[0]}년 자료` : '', peak ? `${peak[2]}년 최대 ${peak[1]}명 대비` : '', zero].filter(Boolean);
+      const notes = [peak ? `${peak[2]}년 최대 ${peak[1]}명 대비` : '', zero].filter(Boolean);
       // r16: 추가확인 줄에는 까닭 한 줄(원장 note, util.checkWhy). 길(가목·나목) 가운데 까닭이 적힌 첫 셀
-      const why = q.status === 'none' ? whyText(paths.map(p => checkWhy(cellAt(p[0]))).find(Boolean)) : '';
+      const whyCell = q.status === 'none' ? paths.map(p => cellAt(p[0])).find(c => checkWhy(c)) : null, why = whyCell ? whyText(checkWhy(whyCell)) : '';
+      // r19(09 5절): 추가확인이면 큰 숫자 자리에 짧은 까닭, 계산값은 그 아래 회색 괄호(셈에 넣지 않음). 기준 문장과 같은 줄에 두지 않는다
+      const short = whyCell ? whyShort(whyCell) : '';
+      const big = short ? `<b class="sr-why-b">${esc(short)}</b>` : `<b${dim ? ' class="is-unsettled"' : ''}>${esc(text)}</b>`;
+      const calc = short && isNum(shown) ? `<small class="sr-sub sr-calc">(계산값 ${esc(fmt2(shown))}% · 셈에 넣지 않음)</small>` : '';
+      // r19(09 0절 3): 근거는 누르지 않아도 보이게 — 줄마다 출처 기관·자료 이름 · 자료 기준연도 · 조회 연월(사업체는 자료연도를 따로 적어 기준일과 섞이지 않게)
+      const src = srcLine(q.via ? cellAt(q.via.code) || cellAt(paths[0][0]) : cellAt(paths[0][0]), q.key === 'biz' && bizLast && isNum(yr) && bizLast[0] < yr ? bizLast[0] : null);
       // 보조 글은 이름 칸이 아니라 줄 전체 폭 한 줄(sr-sub)로: 좁은 칸에서 4줄로 꺾였다. 낭독은 '인구 감소 34.81%, 추가확인, 까닭'
-      return `<li class="is-${q.status}"><span>${esc(q.name)}</span><b${dim ? ' class="is-unsettled"' : ''}>${esc(text)}</b><em>${q.status === 'none' ? '<span class="sr-only">, </span>' : ''}${REQ_ST[q.status]}</em>` +
-        `${why ? `<small class="sr-sub sr-why-tag">${esc(why)}</small>` : ''}${notes.length ? `<small class="sr-sub"${zero ? ' data-biz-zero' : ''}>${esc(notes.join(' · '))}</small>` : ''}</li>`;
+      return `<li class="is-${q.status}"><span>${esc(q.name)}</span>${big}<em>${q.status === 'none' ? '<span class="sr-only">, </span>' : ''}${REQ_ST[q.status]}</em>` +
+        `${calc}${why ? `<small class="sr-sub sr-why-tag">${esc(why)}</small>` : ''}${notes.length ? `<small class="sr-sub"${zero ? ' data-biz-zero' : ''}>${esc(notes.join(' · '))}</small>` : ''}${src}</li>`;
     }).join('');
     return `<ul class="sr-req-rows">${li}</ul>`;
   }
@@ -1035,7 +1051,7 @@
   // 전에는 "출력 숫자가 원문 어딘가에 있는가"만 봐서, 두 지표의 값을 맞바꾸거나("고령 30%, 청년 12%" → "고령 12%, 청년 30%")
   // 기준 방향을 뒤집어도("선을 넘습니다" → "안에 있습니다") 통과했다. 공모 서류에 그대로 쓰이면 법정 요건 판단이 틀린 근거가 된다.
   // 출처 기록 문장 구조(sents)를 받으면 지표별로 ①숫자 짝 ②기준 방향 ③값 누락을 대조한다. 실패하면 AI 문장을 버리고 출처 기록 문장을 보인다(안전 쪽).
-  const BANNED = ['좋', '나쁘', '나쁜', '위험', '열악', '우수', '심각', '양호', '낙후', '추천', '유망', '피해야', '기피', '등급',
+  const BANNED = ['좋', '나쁘', '나쁜', '위험', '열악', '우수', '심각', '양호', '낙후', '추천', '유망', '피해야', '등급',
     // '순위'는 2026-11-07 D24·D26으로 뺐다(전국·시도·시군구 순위가 출처 값이 됨). 숫자는 아래 대조로 검사한다
     // 2026-11-01 추가: 판정·평가로 읽히는 말(D8·D13 낙인 금지). 중립 문장도 막힐 수 있지만 그때는 출처 기록 문장을 보여 주므로 안전 쪽 오류다
     // '취'+'약': map.test.cjs '검토용 근거서' 테스트가 화면 문구에 낙인 낱말이 섞이지 않게 이 소스 전체를 낱말 검사한다. 이 목록은 화면 문구가 아니라
@@ -1115,13 +1131,14 @@
     return fail ? { ok: false, bad, banned, vague, swapped: [...new Set(swapped)], flipped, missing } : { ok: true, text: t };
   }
   // ── 검토용 근거서(업무 실무자용, 2026-10-26): 현황 보고서의 변형. 현황 → 기준 대비 → 기준 해당·확인 필요 → 출처·계산식(펼친 상태). 평가·권고 문장 없음, 판정은 담당 기관이 합니다 ──
-  const BRIEF_HEAD = '근거서 · 예산 요구·사업계획·민원 회신 검토용 · 판정 아님 · 참고 계산';
-  const BRIEF_FOOT = '판정 아님 · 판정은 담당 기관이 합니다.';   // 화면 아래 고지 줄이라 합니다체(r16 4차 P5). 문서 본문 끝의 고정 문구(docgen FIXED_NOTICE)는 이다체
+  const BRIEF_HEAD = '출처 모음(근거서) · 예산 요구·사업계획·민원 회신 검토용 · 참고용 계산입니다. 판단은 구청·담당 기관이 합니다';   // r19(09 3절)
+  const BRIEF_FOOT = '참고용 계산입니다. 판단은 구청·담당 기관이 합니다.';   // 화면 아래 고지 줄이라 합니다체(r16 4차 P5). 문서 본문 끝의 고정 문구(docgen FIXED_NOTICE)는 이다체
   // 근거 1쪽 화면 머리 한 줄은 문서 '1. 요약' 첫 문장(이다체)을 화면 말투로 옮겨 보인다. 요약 문장 틀(report_templates.json summary)의 끝맺음만 다룬다. 종이에는 문서 문장 그대로다
   const screenLead = s => String(s).replace(/이다(?=[(.])/g, '입니다').replace(/한다\./g, '합니다.').replace(/않는다\./g, '않습니다.').replace(/둔다\./g, '둡니다.').replace(/있다\./g, '있습니다.');
   const BRIEF_MAIL = 'renewmapteam@gmail.com';
   // r16: 4-1 표가 든 근거서를 맨 앞에. 키(report·brief·onepage·programs)는 주소·저장 값이라 그대로 둔다
-  const REPORT_MODES = [['brief', '4-1 표·근거서'], ['onepage', '근거 1쪽'], ['report', '현황 보고서'], ['programs', '사업 요건 대조']];
+  // r19(09 3절): 탭 이름은 쉬운 말. 받는 파일의 이름(근거서·근거 1쪽)은 r16대로 문서 안에만 둔다
+  const REPORT_MODES = [['brief', '동네 현황표·출처 모음'], ['onepage', '한 장 요약'], ['report', '현황 보고서'], ['programs', '이 동에 맞는 재생 사업']];
   // 2026-11-13 우지예: 빈 화면 문구가 '1쪽 요약가·재생 사업가'로 나왔다. 왜: 이름 뒤에 '가'를 고정으로 붙였다 → 받침이 있으면 '이', 없으면 '가'
   const iGa = label => label + josaOf(label, '이', '가');
   // r16: 종류마다 쓰임 한 줄(무엇을 받는 화면인지 한 번에)
@@ -1140,7 +1157,7 @@
   // 주 단추는 HWPX 하나, 나머지 형식·과업 연결은 접는다(2026-11-18: 단추 6개가 같은 무게로 결과보다 먼저 나왔다)
   // r16: 근거 1쪽 밖(4-1 표·근거서·현황 보고서)에서 받는 한글 파일은 근거서라 단추에 그렇게 적는다
   // r16: 채운 단추는 문서 화면마다 하나. 4-1 표 한글 받기가 있는 화면(primary=false)에서는 근거서 받기도 테두리 단추
-  const fileTools = (it, year, what, primary = true) => `<button type="button" class="btn ghost" data-print>PDF로 저장</button>` + (DG ? `<button type="button" class="btn${primary ? '' : ' ghost'}" data-dl="hwpx">${what === '근거 1쪽' ? '한글로 받기' : '근거서 한글로 받기'}</button>${what === '현황 보고서' ? '<small>한글 파일은 근거서 형식으로 받습니다.</small>' : ''}<details class="rp-more-files"><summary>다른 파일 형식 · 과업에 연결</summary><button type="button" class="btn ghost" data-dl="xlsx">엑셀로 받기</button><button type="button" class="btn ghost" data-dl="docx">워드로 받기</button><button type="button" class="btn ghost" data-dl="pptx">파워포인트로 받기</button><button type="button" class="btn ghost" data-task-package>과업에 연결</button></details>` : '') +
+  const fileTools = (it, year, what, primary = true) => `<button type="button" class="btn ghost" data-print>PDF로 저장</button>` + (DG ? `<button type="button" class="btn${primary ? '' : ' ghost'}" data-dl="hwpx">${primary ? '한글 파일로 받기' : '출처 모음 전체를 한글로 받기'}</button>${what === '현황 보고서' ? '<small>한글 파일은 근거서 형식으로 받습니다.</small>' : ''}<details class="rp-more-files"><summary>다른 파일 형식 · 과업에 연결</summary><button type="button" class="btn ghost" data-dl="xlsx">엑셀로 받기</button><button type="button" class="btn ghost" data-dl="docx">워드로 받기</button><button type="button" class="btn ghost" data-dl="pptx">파워포인트로 받기</button><button type="button" class="btn ghost" data-task-package>과업에 연결</button></details>` : '') +
     // 메일 요청은 단추가 아니라 한 줄 안내로(v9: 'HWPX 받기' 옆에 같은 모양으로 있어 둘의 차이를 몰랐다)
     `<p class="rp-mail-note">${DG ? '양식에 맞춰 사람이 다듬은 파일이 필요하면' : '이 기기에서 파일을 만들 수 없으면'} <a class="rp-mail" href="${esc(briefMailto(it, year, what))}">메일로 요청</a>하세요.</p>`;
   // 양식에 붙일 조각(문장 5개 이하 + 표 1개 + 출처 줄): 양식을 고르면 그 양식 항목 순서대로 만든다(data-frag-out). 양식 정의는 data/report_templates.json
@@ -1148,14 +1165,14 @@
     if (!DG || !DG.getTemplates()) return '';
     const ch = DG.fragmentChoices(), cur = sel && sel.id ? ch.find(c => c.id === sel.id) : null, is41 = !!cur && cur.id === FRAG_41;
     // r16: 4-1 양식이면 '4-1 표 초안', 다른 양식이면 '양식에 붙일 문장·표'. 기본은 4-1 양식이라 '양식을 고르세요' 빈 칸은 고른 양식이 없을 때만
-    const tools = cur ? `<p class="rp-frag-tools">${typeof DG.fragmentHwpx === 'function' ? `<button type="button" class="btn" data-frag-hwpx>${is41 ? '4-1 표' : '이 표'} 한글로 받기</button>` : ''}<button type="button" class="btn ghost" data-frag-print>${is41 ? '4-1 표만' : '이 표만'} 인쇄</button></p>` : '';
-    return `<section class="rp-g rp-frag" aria-labelledby="fragTitle"><h3 id="fragTitle">${is41 ? '4-1 표 초안' : '양식에 붙일 문장·표'}</h3>${is41 ? '<p class="map-note">공모 신청서 4-1 도시쇠퇴현황 검토 칸에 붙이는 표입니다.</p>' : ''}` +
-      `<div class="rp-frag-ctl"><label class="map-select">양식<select data-frag-preset>${cur ? '' : '<option value="">양식을 고르세요</option>'}${ch.map(c => `<option value="${esc(c.id)}"${cur && c.id === cur.id ? ' selected' : ''}>${esc(c.title)}</option>`).join('')}</select></label>` +
+    const tools = cur ? `<p class="rp-frag-tools">${typeof DG.fragmentHwpx === 'function' ? `<button type="button" class="btn" data-frag-hwpx>한글 파일로 받기</button>` : ''}<button type="button" class="btn ghost" data-frag-print>이 표만 인쇄</button></p>` : '';
+    return `<section class="rp-g rp-frag" aria-labelledby="fragTitle"><h3 id="fragTitle">${is41 ? '신청서용 동네 현황표' : '양식에 붙일 문장·표'}</h3>${is41 ? '<p class="map-note">공모 신청서 4-1 도시쇠퇴현황 검토 표 칸에 붙이는 표입니다.</p>' : ''}` +
+      `<div class="rp-frag-ctl"><label class="map-select">양식<select data-frag-preset>${cur ? '' : '<option value="">양식을 고르세요</option>'}${ch.map(c => `<option value="${esc(c.id)}"${cur && c.id === cur.id ? ' selected' : ''}>${esc(c.title.split(' · ')[0])}</option>`).join('')}</select></label>` +
       (cur && cur.variants.length > 1 ? `<label class="map-select">내용<select data-frag-variant>${cur.variants.map(v => `<option value="${esc(v.id)}"${v.id === sel.variant ? ' selected' : ''}>${esc(v.title)}</option>`).join('')}</select></label>` : '') + `</div>` +
       `<p class="map-note">양식 항목 순서대로 문장과 표를 만듭니다. 복사해 한/글·엑셀 양식에 붙여 넣어 주세요.<br>값이 없는 칸은 '자료 없음'으로 두고, 출처 번호는 이 표 안에서 1부터 매깁니다.</p>${tools}<div data-frag-out aria-live="polite"></div></section>`;
   }
   // r16 2차: 근거 1쪽 아래에 4-1 조각 전체를 다시 붙이면 쪽이 4,500px였다 → 4-1 표·근거서로 가는 한 줄만
-  const fragLinkHTML = () => `<p class="map-note rp-frag-link"><a href="#report" data-set-mode="brief" data-frag="${FRAG_41}">4-1 표 초안 보기</a> · 공모 신청서 4-1 도시쇠퇴현황 검토 칸에 붙이는 표입니다.</p>`;
+  const fragLinkHTML = () => `<p class="map-note rp-frag-link"><a href="#report" data-set-mode="brief" data-frag="${FRAG_41}">동네 현황표 보기</a> · 공모 신청서 4-1 도시쇠퇴현황 검토 칸에 붙이는 표입니다.</p>`;
   // 2026-11-20 홈 '반여1동 4-1 표 초안 보기'(explore.html?report=brief&frag=MLIT-DECLINE): 주소의 조각 id가 양식 정의에 있으면 첫 내용으로 미리 고른다. 모르는 id는 null(무시)
   const fragFromParam = (id, choices) => { const c = id ? (choices || []).find(x => x.id === id) : null; return c ? { id: c.id, variant: c.variants.length ? c.variants[0].id : '' } : null; };
   function deliveryReviewHTML(brief) {
@@ -1173,18 +1190,18 @@
     const std = facts.filter(r => validStd(r.ind.standard));
     const sec2 = `<section class="rp-g"><h3>2. 기준 대비</h3>${std.length ? `<div class="dg-tbl">${copyHead('기준 대비')}<div class="table-wrap"><table class="rp-tbl"><caption class="sr-only">기준 대비 · ${esc(it.name)}</caption><thead><tr><th>항목</th><th>값</th><th>기준</th><th>상태</th></tr></thead><tbody>${std.map(r => { const { label, why } = rowState(r); return `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${esc(belowLead(r.ind) + r.ind.standard.text)}${r.ind.standard.source ? ` · ${esc(r.ind.standard.source)}` : ''}</td><td>${esc(label)}${why ? `<br><small>${esc(why)}</small>` : ''}</td></tr>`; }).join('')}</tbody></table></div></div>` : '<p class="map-note">기준이 있는 항목의 값이 없습니다.</p>'}` +
       // r16: 상태는 지도·근거 1쪽·4-1 표와 같은 규칙(shownSt). 정하지 못한 셀은 '추가확인'(반여1동 인구가 근거서에서만 '기준 해당'이었다)
-      `<p class="map-note">상태는 기준과의 사실 비교입니다. 추가확인 셀은 확정 수에 넣지 않습니다. 확정 수도 승인 대기 규칙으로 낸 참고 계산입니다.</p></section>`;
+      `<p class="map-note">상태는 기준과의 사실 비교입니다. 추가확인 셀은 확정 수에 넣지 않습니다. 확정 수도 조문 숫자 대조 전 규칙으로 낸 참고용 계산입니다.</p></section>`;
     const sec3 = `<section class="rp-g"><h3>3. 기준 해당·추가확인 목록</h3>${gapsHTML(rows, { open: true })}</section>`;
     const sec4 = `<section class="rp-g"><h3>4. 출처·계산식</h3><div class="dg-tbl">${copyHead('출처·계산식')}<div class="table-wrap"><table class="rp-tbl"><caption class="sr-only">출처·계산식 · ${esc(it.name)}</caption><thead><tr><th>항목</th><th>값</th><th>출처</th><th>기준일</th><th>계산식</th><th>규칙 판본</th></tr></thead><tbody>${facts.map(r => { const s = srcOf(r);
       return `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name)}</td><td>${esc(s.ref || (r.year ? `${r.year}년` : '출처 기록 없음'))}${ageSmall(s.ref)}</td><td>${esc(s.formula ? (DG && DG.readerText ? DG.readerText(s.formula) : s.formula) : '출처 기록 없음')}</td><td>${esc(s.rule || '출처 기록 없음')}</td></tr>`; }).join('')}</tbody></table></div></div></section>`;
     const frag = fragPanelHTML(sel || '');
-    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 4-1 표·근거서</h3><div class="rp-tools">${fileTools(it, dy, '4-1 표·근거서', !frag.includes('data-frag-hwpx'))}</div></div>` +
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 현황표·출처 모음</h3><div class="rp-tools">${fileTools(it, dy, '4-1 표·근거서', !frag.includes('data-frag-hwpx'))}</div></div>` +
       `${deliveryReviewHTML(brief)}<p class="rp-intro rp-src-line">${esc(srcHead('4. 출처·계산식'))}</p><p class="rp-intro rp-brief-head">${esc(BRIEF_HEAD)}</p><p class="rp-intro">${esc(here)} · 행정동 ${esc(it.code)} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'} · 생활 지표는 항목별 기준연도</p>${frag}${sec1}${sec2}${sec3}${sec4}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
   // 1쪽 요약: 제목·개요 4줄·요약 문장 5개·기준 대비 표(8행 이하)·출처 번호·끝. one = DG.buildOnepage(...) 결과. 인쇄하면 A4 한 쪽
   function onepageHTML(v, it, one) {
     const labels = v.crumbs.map(c => c.label), here = (labels[labels.length - 1] === it.name ? labels : [...labels, it.name]).join(' › '), lead = one.parts.summary[0];
-    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 근거 1쪽</h3>${lead ? `<p class="rp-lead">${esc(screenLead(lead.text))}</p>` : ''}<div class="rp-tools">${fileTools(it, one.brief.year, '근거 1쪽')}</div></div>` +
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 한 장 요약</h3>${lead ? `<p class="rp-lead">${esc(screenLead(lead.text))}</p>` : ''}<div class="rp-tools">${fileTools(it, one.brief.year, '근거 1쪽')}</div></div>` +
       `${deliveryReviewHTML(one.brief)}<div class="dg-doc dg-onepage">${DG.docHTML(one, { copy: true }).html}</div>${fragLinkHTML()}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
   // ── 기기 안 AI(Chrome 내장 AI의 Rewriter·Summarizer 전역 API). 문장을 서버로 보내지 않는다 ──
@@ -1688,7 +1705,7 @@
       pane('biz', `<p class="map-guide">이 동의 값에 맞춘 재생 사업 요건은 문서 탭에서 봅니다.</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}사업 요건 대조 보기</a></p>` + hubHTML(v)) +
       '</div>' +
       // r16: 꼬리 주 단추는 4-1 표 초안(홈 첫 단추와 같은 곳). 근거 1쪽·사업 요건 대조는 글자 링크로(동 이름 → 근거 1쪽 → 한글 3번 안)
-      `<div class="mp-foot">${goFrag('mp-go')}<p class="mp-foot-more"><a href="#report" data-set-mode="onepage">근거 1쪽</a> · <a href="#report" data-set-mode="programs">사업 요건 대조</a></p></div>`;
+      `<div class="mp-foot">${goFrag('mp-go')}<p class="mp-foot-more"><a href="#report" data-set-mode="onepage">한 장 요약</a> · <a href="#report" data-set-mode="programs">이 동에 맞는 재생 사업 보기</a></p></div>`;
   }
   const MP_TABS = [['sum', '요약'], ['all', '지표 전체'], ['biz', '사업 요건 대조']];
   const rowsFor = (v, m, it) => dongRows(inds(), m.json.dongs.find(d => codeOf(d) === it.code), livingMap(m.living).get(it.code), m.selYear, m.ext);
@@ -1785,8 +1802,8 @@
     if (reportMode === 'onepage') {
       const built = docFor(v, m, it);
       // r14 감사: 정상으로 만드는 중인데 '아직 만들 수 없습니다 … 다시 눌러 주세요'로 실패처럼 보였다 → 만드는 중(저절로 다시 그린다)과 받지 못함을 나눈다
-      report.innerHTML = reportModeHTML(reportMode) + (built.loading ? '<div class="rp-empty" role="status" aria-busy="true"><h3>근거 1쪽을 만드는 중입니다.</h3></div>'
-        : built.error ? `<div class="rp-empty" role="alert"><h3>근거 1쪽을 만들 자료를 받지 못했습니다.</h3><p>${esc(built.error)}</p><p><button type="button" class="btn" data-retry>다시 시도</button></p></div>` : onepageHTML(v, it, built.one));
+      report.innerHTML = reportModeHTML(reportMode) + (built.loading ? '<div class="rp-empty" role="status" aria-busy="true"><h3>한 장 요약을 만드는 중입니다.</h3></div>'
+        : built.error ? `<div class="rp-empty" role="alert"><h3>한 장 요약을 만들 자료를 받지 못했습니다.</h3><p>${esc(built.error)}</p><p><button type="button" class="btn" data-retry>다시 시도</button></p></div>` : onepageHTML(v, it, built.one));
     } else if (reportMode === 'programs' && window.RenewPrograms) {
       report.innerHTML = reportModeHTML(reportMode) + window.RenewPrograms.dongHTML(it.name, rows, (m.json && m.json.dongs || []).find(d => codeOf(d) === it.code)) + window.RenewPrograms.socHTML(rows, socText);
       report.querySelector('[data-soc-csv]').addEventListener('click', () => { if (DG) DG.saveBytes(`기반편의시설현황_${DG.safeName(it.name)}.csv`, new TextEncoder().encode(window.RenewPrograms.socCSV(it.name, rows, socText)), 'text/csv;charset=utf-8'); });
@@ -1825,7 +1842,7 @@
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261121-r16'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261122-r19'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
@@ -2023,7 +2040,7 @@
   }
   function copyFrag(b) {
     if (!fragCur) return;
-    const p = b.hasAttribute('data-frag-all') ? DG.fragmentPayload(fragCur) : DG.sentencePayload(fragCur.sentences[+b.dataset.fragSentence]);
+    const p = b.hasAttribute('data-frag-all') ? DG.fragmentPayload(fragCur) : DG.sentencePayload(DG.fragmentSentenceText(fragCur, +b.dataset.fragSentence));
     DG.copyToClipboard(p).then(() => copyDone(b, true), () => copyDone(b, false));
   }
   function copySentence(b) {
@@ -2130,10 +2147,9 @@
     const node = v.gu || v.sigungu, mois = node ? String(node.mois_code5 || node.code5) : v.emdCode; // dashboard.json은 행안부 코드
     const sg = (dash.sigungu || []).find(s => String(s.code) === mois && s.status === '수집됨'); if (!sg) return '';
     const dongs = (dash.dongs || []).filter(d => d.sigungu_code === sg.code).sort((a, b) => String(a.code).localeCompare(String(b.code)));
-    // 정밀 사례 칸(#dashboard)은 소개 화면에만 있다 → about.html로 보낸다(v9: 같은 화면 해시라 눌러도 아무 일 없었다)
+    // r19(사이트 현황 조사): 정밀 사례 칸(#dashboard)을 그리는 화면이 이제 없어(about.html에도 없음) 링크가 소개 쪽 맨 위로 떨어졌다 → 링크 없이 값만 보인다
     return `<h4 class="map-h4">정밀 사례 · 건축물대장 3기준 <small>법정동 · 건축HUB</small></h4><p class="map-note">이 구는 건축물대장을 동수·연면적·세대 기준으로 따로 모았습니다.<br>법정동은 행정동과 경계가 달라 따로 보여 줍니다.</p>` +
-      `<ul class="map-hub">${dongs.map(d => { const c = D.cellView(D.cellOf(d, 20, 'COUNT')); return `<li><a href="about.html#dashboard/${esc(sg.code)}/${esc(d.code)}">${esc(d.name)}</a><span>20년 동수 ${esc(c.text)}</span></li>`; }).join('')}</ul>` +
-      `<p><a class="map-hub-more" href="about.html#dashboard/${esc(sg.code)}">정밀 사례 전체 보기</a></p>`;
+      `<ul class="map-hub">${dongs.map(d => { const c = D.cellView(D.cellOf(d, 20, 'COUNT')); return `<li>${esc(d.name)}<span>20년 동수 ${esc(c.text)}</span></li>`; }).join('')}</ul>`;
   }
   // 첫 화면 왼쪽 문구: 지금 보이는 범위에서 기준선을 넘은 곳의 개수(순위 아님)
   // 2026-11-12: 지도 아래 "자료 기준" 한 줄. 화면에 기준연도가 안 보여 자료가 오래됐다는 오해가 있었다.
@@ -2702,6 +2718,8 @@
     const L = window.L, inEmd = v.level === 'emd';
     const key = v.level + ':' + m.kind + ':' + (v.emdCode || (v.sigungu && v.sigungu.code5) || (v.sido && v.sido.code2) || '');
     if (M.fitKey === key || m.kind === 'wait') return;
+    // 숨은 탭에서 만든 지도는 크기를 0으로 기억한다. 탭을 연 바로 그 렌더에서는 ResizeObserver가 아직 돌지 않아 flyToBounds가 NaN 좌표로 던졌다(r19 ?preset=cctv) → 맞추기 전에 다시 잰다
+    if (M.el && M.el.clientWidth && !M.map.getSize().x) M.map.invalidateSize({ pan: false });
     let b = null;
     if (m.kind === 'emd' && M.emd) b = M.emd.getBounds();
     else if (!M.sg) { const bx = (m.kind === 'sg' ? m.items : []).map(it => it.bbox).filter(x => Array.isArray(x) && x.length === 4); b = bx.length ? L.latLngBounds(bx.flatMap(x => [[x[1], x[0]], [x[3], x[2]]])) : null; } // 경계 전: 목록의 bbox로 같은 범위를 먼저 잡는다
@@ -2866,7 +2884,7 @@
       const rows = rowsFor(c.v, c.m, c.it), snapshot = snapshotOf(c.it, rows, new Date()), route = toHash(state.route);
       b.disabled = true;
       try {
-        if (!window.RenewCandidates) await import('./candidates.js?v=20261121-r16');
+        if (!window.RenewCandidates) await import('./candidates.js?v=20261122-r19');
         const saved = window.RenewCandidates.save(localStorage, snapshot, route, rows);
         msg.textContent = saved ? '보관함에 담았습니다. 이 기기에만 저장됩니다.' : '이미 보관함에 있습니다.';
       } catch (err) { msg.textContent = '저장하지 못했습니다. ' + err.message; }

@@ -75,7 +75,7 @@
     $('start').disabled=!!viewer;
     for(const k of ['focus','bird','top','rotate','zoom']) $(k).disabled=!viewer;
     const proofs=selected ? state.verifications.filter(v=>v.model_key===T.modelKey(selected)) : [];
-    $('verificationInfo').textContent=`이 모델·배치에 대한 대조 ${proofs.length}건, 다른 판의 대조 ${state.verifications.length-proofs.length}건.\n최종검수 전입니다. 허용오차·측량 기준은 승인되지 않았습니다.${proofs.length ? `\n최근 치수 차이(모델−현장): ${proofs.at(-1).difference_m.toFixed(4)}m` : ''}`;
+    $('verificationInfo').textContent=`이 모델·배치에 대한 대조 ${proofs.length}건, 다른 판의 대조 ${state.verifications.length-proofs.length}건.\n최종검수 전입니다. 허용오차·측량 기준은 아직 정하지 않았습니다.${proofs.length ? `\n최근 치수 차이(모델−현장): ${proofs.at(-1).difference_m.toFixed(4)}m` : ''}`;
     $('recordLocation').disabled=!records.find(r=>r.id===$('record').value && Number.isFinite(r.lat) && Number.isFinite(r.lng));
   }
   function fill() {
@@ -84,7 +84,7 @@
     for(const k of ['source','license','reference','origin','pnu','building_id']) $(k).value=m?.[k==='reference' ? 'reference_date' : k] || '';
     $('kind').value=m?.kind || (state.selection==='current' ? '현황 자료(미검수)' : '계획');
     for(const k of placeKeys) $(k).value=m?.placement[k] ?? (k==='scale' ? 1 : ['heading','pitch','roll'].includes(k) ? 0 : '');
-    $('modelInfo').textContent=m ? `${m.name}\n${m.kind}, 자료 기준일 ${m.reference_date}\nSHA-256 ${m.sha256}` : `${state.selection==='current' ? '현재' : state.selection+'안'} 모델 없음`;
+    $('modelInfo').textContent=m ? `${m.name}\n${m.kind}, ${m.reference_date} 기준 자료\nSHA-256 ${m.sha256}` : `${state.selection==='current' ? '현재' : state.selection+'안'} 모델 없음`;
     document.querySelector(`input[name=view][value="${state.selection}"]`).checked=true;
     for(const k of ['demolition','construction','completion']) $(k).value=state.phases[k] || '';
     sync(); showRecord();
@@ -96,7 +96,7 @@
       // R3 14: 판 1.134.0 고정 파일의 sha384(jsDelivr 공개 sha256과 대조함). 파일이 바뀌면 브라우저가 실행·적용을 거부한다. 판을 올리면 두 값도 다시 계산한다
       const SRI={'Cesium.js':'sha384-LLAEyo5IccCQlVs0GUoxBYQ8sdsLCY+lPmN474d/bnEMnG8GykMkaCrQCmBrnR9d','Widgets/widgets.css':'sha384-ghEeMdcWWzRv/BPeUcX835vcKDGrxvROXisl/Btpv3GeekBUXTSPVcFJpI1Tcrgp'};
       const css=document.createElement('link'); css.rel='stylesheet'; css.href=base+'Widgets/widgets.css'; css.integrity=SRI['Widgets/widgets.css']; css.crossOrigin='anonymous'; document.head.append(css);
-      await new Promise((resolve,reject)=>{ const s=document.createElement('script'); s.src=base+'Cesium.js'; s.integrity=SRI['Cesium.js']; s.crossOrigin='anonymous'; s.onload=resolve; s.onerror=()=>{s.remove();reject(Error('3D 엔진을 받지 못했습니다. 인터넷 연결을 확인하세요. 현장 기록·장면 파일은 계속 사용할 수 있습니다.'));}; document.head.append(s); });
+      await new Promise((resolve,reject)=>{ const s=document.createElement('script'); s.src=base+'Cesium.js'; s.integrity=SRI['Cesium.js']; s.crossOrigin='anonymous'; s.onload=resolve; s.onerror=()=>{s.remove();reject(Error('3D 엔진을 받지 못했습니다. 인터넷 연결을 확인하세요. 현장 사진 기록·장면 파일은 계속 사용할 수 있습니다.'));}; document.head.append(s); });
     }
     Cesium.Ion.defaultAccessToken='';
     try {
@@ -122,7 +122,7 @@
       message('3D 지도를 열었습니다. 지형·주변 건물은 미제공이며 모델 배치는 미검수입니다.');
     } catch(err) {
       if(viewer && !viewer.isDestroyed()) viewer.destroy(); viewer=null; primitives={}; $('globe').replaceChildren();
-      throw Error(`3D 지도를 열지 못했습니다. 장면 파일과 현장 기록은 계속 쓸 수 있습니다. ${err.message}`);
+      throw Error(`3D 지도를 열지 못했습니다. 장면 파일과 현장 사진 기록은 계속 쓸 수 있습니다. ${err.message}`);
     }
   });
   $('modelForm').onsubmit=action(async()=>{
@@ -171,26 +171,26 @@
   async function showRecord() {
     const epoch=++photoEpoch,r=records.find(x=>x.id===$('record').value),m=state.models[state.selection];
     photoURLs.forEach(u=>URL.revokeObjectURL(u));photoURLs=[];$('photos').replaceChildren();
-    $('recordInfo').textContent=r ? `${r.recorded_at}\n${r.jibun || r.pnu || '지번 미확인'} / ${r.status}\n${m ? T.recordMatch(m,r) : '모델 없음'}\nGPS 정확도: ${r.accuracy_m ?? '미확인'}m. 사진은 기기 안에서만 읽습니다.` : '현장 기록을 선택하세요.';
+    $('recordInfo').textContent=r ? `${r.recorded_at}\n${r.jibun || r.pnu || '지번 미확인'} / ${r.status}\n${m ? T.recordMatch(m,r) : '모델 없음'}\nGPS 정확도: ${r.accuracy_m ?? '미확인'}m. 사진은 기기 안에서만 읽습니다.` : '현장 사진 기록을 선택하세요.';
     sync();
     if(!r) return;
     try {
       for(const id of (r.photos || []).slice(0,R.MAX_PHOTOS)) {
         const blob=await FieldStore.photo(id); if(epoch!==photoEpoch) return;
-        if(blob instanceof Blob && blob.type==='image/jpeg') {const url=URL.createObjectURL(blob),img=document.createElement('img');photoURLs.push(url);img.src=url;img.alt=`${r.recorded_at} 현장 기록 사진`; $('photos').append(img);}
+        if(blob instanceof Blob && blob.type==='image/jpeg') {const url=URL.createObjectURL(blob),img=document.createElement('img');photoURLs.push(url);img.src=url;img.alt=`${r.recorded_at} 현장 사진`; $('photos').append(img);}
       }
     } catch(err) { message(`현장 사진을 읽지 못했습니다: ${err.message}`,true); }
   }
   $('recordsRefresh').onclick=action(async()=>{
-    records=await FieldStore.records();$('record').replaceChildren(new Option(records.length ? '기록 선택' : '이 기기에 현장 기록 없음',''));
+    records=await FieldStore.records();$('record').replaceChildren(new Option(records.length ? '기록 선택' : '이 기기에 현장 사진 기록 없음',''));
     for(const r of records) $('record').add(new Option(`${r.recorded_at} / ${r.jibun || r.pnu || '지번 미확인'}`,r.id));
-    await showRecord();message(`현장 기록 ${records.length}건을 읽었습니다.`);
+    await showRecord();message(`현장 사진 기록 ${records.length}건을 읽었습니다.`);
   });
   $('record').onchange=showRecord;
   $('recordLocation').onclick=()=>{const r=records.find(x=>x.id===$('record').value);if(r){$('longitude').value=r.lng;$('latitude').value=r.lat;message('GPS를 배치 입력에 옮겼습니다. 건물 원점·고도·위치 오차를 별도로 확인하세요.');}};
   $('verification').onsubmit=action(async()=>{
     const m=state.models[state.selection],r=records.find(x=>x.id===$('record').value);
-    if(!m || !r || T.recordMatch(m,r)==='대응 미확인') throw Error('모델과 같은 PNU의 현장 기록을 선택하세요. 특정 건물 대응은 별도로 확인해야 합니다.');
+    if(!m || !r || T.recordMatch(m,r)==='대응 미확인') throw Error('모델과 같은 필지 번호의 현장 사진 기록을 선택하세요. 특정 건물 대응은 별도로 확인해야 합니다.');
     const v=Object.fromEntries(['reference_m','model_m','basis','checker'].map(k=>[k,$(k).value]));
     v.record_id=r.id;v.photo_sha256=[];
     for(const id of (r.photos || [])) {

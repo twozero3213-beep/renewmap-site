@@ -41,20 +41,7 @@
 
   function init(win) {
     const doc = win.document;
-    // 56초 시연(2026-11-19): 구획 대신 단추로 여는 창. 표지와 영상 정보는 열 때 받아 첫 화면 글꼴·동네 자료와 통신을 나눠 쓰지 않는다.
-    // Esc(기본 동작)·닫기 단추·바깥 누르기로 닫고, 닫으면 영상을 멈추고 여는 단추로 돌아간다
-    const demo = doc.getElementById('h6Demo'), opener = doc.querySelector('[data-h6-demo]');
-    if (demo && opener) {
-      const video = demo.querySelector('video');
-      opener.addEventListener('click', () => {
-        if (video && video.dataset.poster) { video.poster = video.dataset.poster; delete video.dataset.poster; video.preload = 'metadata'; }
-        demo.showModal();
-      });
-      demo.addEventListener('close', () => { if (video) video.pause(); opener.focus(); });
-      demo.addEventListener('click', ev => { if (ev.target === demo) demo.close(); });   // 창 안쪽은 .h6-demo-in이 덮어 바깥(배경)만 창 자신이다
-      const close = demo.querySelector('[data-h6-close]');
-      if (close) close.addEventListener('click', () => demo.close());
-    }
+    // r19: 56초 시연 창은 뺐다(r16부터 단추가 숨겨져 있었고, 영상이 4-1 표가 아닌 옛 흐름이다). 다시 찍으면 홈이 아닌 소개 쪽에 둔다
     const form = doc.getElementById('homeSearch');
     if (!form) return;
     const input = doc.getElementById('homeQ'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg'), report = form.dataset.report || 'onepage';

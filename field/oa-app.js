@@ -59,7 +59,7 @@
       tr.addEventListener("click", () => select(o.oa));
       return tr;
     }));
-    $("src").textContent = `출처: ${data.source} · ${data.license_type} · 계산 규칙 ${data.rule}(승인 대기). ${data.note}`;
+    $("src").textContent = `출처: ${data.source} · ${data.license_type} · 계산 규칙 ${data.rule}(조문 숫자 대조 전 · 계산 방법과 해석은 정하지 못함 · 참고용 계산). ${data.note}`;
     $("out").hidden = false;
   }
 

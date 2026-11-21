@@ -206,8 +206,10 @@
   const DECLINE_N_REQ = 3, DECLINE_MIN_MET = 2, DECLINE_PREFIX = '쇠퇴 3요건 · ';
   // 법령 이름은 backend/renewmap/rules/decline.py RULE_VERSION과 같다(docgen.test.cjs가 파이썬 원본을 읽어 대조한다). 규칙 id·승인 여부는 JSON(decline_rule)에서
   const DECLINE_LAW = '도시재생 활성화 및 지원에 관한 특별법 시행령 제17조';
-  // r16 OD1: 화면·문서·파일이 같은 상태 낱말(기준 해당·해당 안 함·추가확인)을 쓴다. 승인 대기 규칙 비교는 표 안에서 '*' 하나(PENDING_NOTE가 뜻을 적는다)
-  const OVER = '기준 해당', INSIDE = '해당 안 함', UNKNOWN = '추가확인', PENDING_SUFFIX = '*', PENDING_NOTE = '* 승인 대기 규칙으로 낸 참고 값이다.';
+  // r16 OD1: 화면·문서·파일이 같은 상태 낱말(기준 해당·해당 안 함·추가확인)을 쓴다. 확정 전 규칙 비교는 표 안에서 '*' 하나(PENDING_NOTE가 뜻을 적는다)
+  const OVER = '기준 해당', INSIDE = '해당 안 함', UNKNOWN = '추가확인', PENDING_SUFFIX = '*', PENDING_NOTE = '* 확정 전 규칙으로 낸 참고 값이다.';
+  // r19(대표 '총괄안' 결정): 쇠퇴 3요건 규칙의 기준 상태 칸에 '승인'을 쓰지 않는다(dong_brief DECLINE_PENDING·_pending_status와 같다)
+  const DECLINE_PENDING = '법정(규칙 조문 숫자 대조 전)', pendingStatus = s => /승인 대기|대조 전/.test(String(s));
   const DECL_COND = '최근 5년 중 3년 이상 연속 감소가 있음';   // 연속 감소 요건의 기준 칸(시행령 문언 '3년 이상 연속'. 옛 '해당 구간 있음'은 무엇이 기준인지 몰랐다)
   // D1(2026-11-20 대표 승인): dong_brief OVER_FLOOR·FLOOR_NOTE와 같은 글
   const OVER_FLOOR = '기준 해당(하한)', FLOOR_NOTE = `'${OVER_FLOOR}'은 확정된 요건만 세어도 ${DECLINE_MIN_MET}개 이상인 경우이다. 추가확인 요건은 세지 않았다.`;
@@ -232,7 +234,7 @@
   // r16 공통 사전의 문서판: 추가확인 셀의 까닭 한 줄. 분류(tag)는 util.js checkWhy와 같고(parity.test.cjs가 대조) 글은 문서 말투(이다체)다.
   // 원장 note의 '추가확인:' 뒤 글을 문장으로 옮긴다(새 숫자는 note에 있는 것만). dong_brief.why_of·tests/js/fragments_reference.js와 같은 표.
   // tag: '전국 공통'(모든 동이 같은 규칙 문제, 사람이 풀 수 없음) | '이 동 자료'(이 동의 출처 자료 문제). 현장 화면·docgen은 util.js를 안 실어 여기 한 벌 더 있다
-  const BIZ_WHY = '2020년에 사업체 통계 방식이 바뀌어 10년 비교가 끊긴다. 규칙 승인 전까지 추가확인으로 둔다.';
+  const BIZ_WHY = '2020년에 사업체 통계 방식이 바뀌어 10년 비교가 끊긴다. 계산 방법을 정하기 전까지 추가확인으로 둔다.';
   const WHY = [
     [/사업체 출처 경계/, () => ['전국 공통', BIZ_WHY]],
     [/행정동 경계 변경 추정\(([^)]*)\)/, m => {
@@ -411,7 +413,7 @@
     if (cell.value >= thr) return undecided > 0 || UNSETTLED().includes(cell.status) ? OVER_FLOOR : OVER;
     return cell.value + undecided < thr ? INSIDE : UNKNOWN;
   }
-  const verdictOf = (v, status) => (String(status).includes('승인 대기') && v !== UNKNOWN ? v + PENDING_SUFFIX : v);
+  const verdictOf = (v, status) => (pendingStatus(status) && v !== UNKNOWN ? v + PENDING_SUFFIX : v);
   const ruleApproved = () => !!(T && T.decline_rule && T.decline_rule.approved);
 
   // 연속 감소 값은 '예/아니요' 대신 본 기간을 함께 적는다(designer-explore#16). 사업체는 자료연도(biz.last)가 기간 끝
@@ -433,7 +435,7 @@
     const rows = [['항목', '값', '기준', '기준 출처·설명', '기준 상태', '해당 여부']], rule = new Map(), why = new Map();
     const val = code => { const c = by.get(code) || null; return [c, critValue(c, biz)]; };
     const tag = (name, v, c, count) => { const w = count ? countWhy(v, c, by) : whyFor(v, c); if (w) why.set(name, w); return w ? `${UNKNOWN}(${w.tag})` : v; };   // why: 행 이름 → 추가확인 까닭(표 아래 각주)
-    const dStatus = ruleApproved() ? '법정' : '법정(규칙 승인 대기)', dSrc = `${DECLINE_LAW} · 규칙 ${(T.decline_rule || {}).id}`;
+    const dStatus = ruleApproved() ? '법정' : DECLINE_PENDING, dSrc = `${DECLINE_LAW} · 규칙 ${(T.decline_rule || {}).id}`;
     for (const [code, op, thr, name] of DECLINE_CRITERIA) {
       const [c, v] = val(code), unit = c ? c.unit : '', cond = op === 'ge' ? `${fmtNum(thr)}${unit} 이상` : DECL_COND, ver = tag(`${DECLINE_PREFIX}${name}`, verdictOf(judge(c, op, thr), dStatus), c);
       rows.push([`${DECLINE_PREFIX}${name}`, v, cond, dSrc, dStatus, ver]); rule.set(code, { cond, verdict: ver, status: dStatus });
@@ -484,8 +486,8 @@
       // 까닭은 표 아래 각주와 같은 글(docWhy, 원장 note 원문이 아니다: '미해당 확정 불가' 같은 내부 글이 문서에 나왔다)
       else if (st === '추가확인' && it.group !== '전망') { const w = docWhy(c); rows.push([it.group, it.label, w ? `상태 추가확인(${w.tag}): ${w.text}` : '상태 추가확인', '출처 자료·산식 대조']); }
     }
-    const pending = crit.rows.slice(1).filter(r => r[4].includes('승인 대기')), decline = pending.filter(r => r[0].startsWith(DECLINE_PREFIX));
-    if (decline.length) rows.push(['기준 대비', `${DECLINE_PREFIX.replace(/[ ·]+$/, '')} 기준 ${decline.length}개 항목`, `기준 상태 ${decline[0][4]}: ${decline[0][3]}`, '시행령 조문과 규칙 승인 여부']);
+    const pending = crit.rows.slice(1).filter(r => pendingStatus(r[4])), decline = pending.filter(r => r[0].startsWith(DECLINE_PREFIX));
+    if (decline.length) rows.push(['기준 대비', `${DECLINE_PREFIX.replace(/[ ·]+$/, '')} 기준 ${decline.length}개 항목`, `기준 상태 ${decline[0][4]}: ${decline[0][3]}`, '시행령 조문 숫자 대조와 계산 방법·해석 결정']);
     for (const r of pending) if (!decline.includes(r)) rows.push(['기준 대비', r[0], `기준 상태 ${r[4]}`, '기준 원문 대조와 승인 여부']);
     if (items.some(i => i.group === '전망' && i.cell) && !(fidx || {}).approved) rows.push(['전망', '추세 전망 전체', '산식 승인 전 초안', '산식 승인 여부와 백테스트 오차 구간']);
     for (const [k, why] of missing) {
@@ -524,7 +526,7 @@
     const grains = [...new Set(items.filter(i => i.cell || i.fact).map(i => i.cell ? i.cell.spatial_unit || '미기록' : '시군구'))].sort();
     rows.push(['기준일 구성', `${dates.length}개`, dates.length ? dates.map(govDate).join(', ') + ' · 기준일 차이를 해석에 반영' : '기준일 기록 없음']);
     rows.push(['공간 단위 구성', `${grains.length}개`, `${grains.length ? grains.join(', ') : '공간 단위 기록 없음'} · 해당 지침이 정한 통계단위·통합분석 범위·사업구역 경계는 추가확인이다. 구·동 통계의 이름만 바꾸어 사업구역·개별 건물·필지 자체의 값으로 쓰지 않는다. 현장 기록도 별도로 대조한다.`]);
-    const pending = brief.crit.rows.slice(1).filter(r => r[4].includes('승인 대기')).map(r => r[0]);
+    const pending = brief.crit.rows.slice(1).filter(r => pendingStatus(r[4])).map(r => r[0]);
     if (forecast && items.some(i => i.group === '전망' && i.cell) && !(brief.fidx || {}).approved) pending.push('추세 전망 산식');
     rows.push(['규칙·산식 승인 대기', `${pending.length}건`, pending.length ? pending.join(', ') : '표시된 승인 대기 항목 없음 · 법정 적합 판정 아님']);
     rows.push(['문서 확인값(SHA-256)', brief.inputHash ? '기록 있음' : '미기록', brief.inputHash ? `${brief.inputHash} · ${HASH_MEANS}` : '이전 문서는 출처 색인 지문만 있을 수 있음']);
@@ -645,7 +647,7 @@
     }
 
     blocks.push(block('h1', '3. 기준 대비'));
-    const mark = ((T && T.onepage) || {}).pending_mark || '*';   // 표 안의 승인 대기 표시(PENDING_SUFFIX와 같은 '*'). 표 아래 문장이 뜻을 적는다(1쪽 요약과 같은 표기)
+    const mark = ((T && T.onepage) || {}).pending_mark || '*';   // 표 안의 확정 전 규칙 표시(PENDING_SUFFIX와 같은 '*'). 표 아래 문장이 뜻을 적는다(1쪽 요약과 같은 표기)
     const critRows = [['항목', '값', '기준', '해당 여부', '기준 상태'], ...crit.rows.slice(1).map(r => [r[0], tight(r[1]), r[2], r[5].replace(PENDING_SUFFIX, mark), r[4]])];
     const critBlock = block('table', '', { rows: critRows, widths: [33, 12, 16, 17, 22], caption: `표 ${k + 1}. 기준 대비` });
     blocks.push(critBlock); parts.crit = critBlock;
@@ -776,9 +778,10 @@
     for (let n = picked.length; n >= nMin; n--) { doc = make(n); if (estimateHeightMm(doc) <= PAGE_MM - ONEPAGE_SLACK_MM) break; }
     return doc || make(0);
   }
-  // 문장 복사: [n]을 원본 기관명이 앞에 오는 출처 문구로 풀어 양식에 붙여도 출처가 남게 한다
+  // 문장 복사: [n]을 원본 기관명이 앞에 오는 출처 문구로 풀어 양식에 붙여도 출처가 남게 한다. 사업체 수 자료연도는 출처 목록과 같은 꼬리(B8)
   function sentenceText(doc, b) {
-    return b.text.replace(/\[(\d+)\]/g, (m, n) => { const s = doc.sources[n - 1]; return s ? ` (출처: ${s.name}, ${s.forecast ? '전망 대상일' : '기준일'} ${govDate(s.reference_date)})` : ''; });
+    const biz = (doc.brief || {}).biz;
+    return b.text.replace(/\[(\d+)\]/g, (m, n) => { const s = doc.sources[n - 1]; return s ? ` (출처: ${s.name}, ${s.forecast ? '전망 대상일' : '기준일'} ${govDate(s.reference_date)}${bizTail(s.name, s.reference_date, biz)})` : ''; });
   }
 
   // ══════════════════════════════════════ HWPX(export/hwpx.py 구조)
@@ -1086,7 +1089,7 @@
   const whyCell = (v, w, whys) => { if (w && whys) whys.push(w); return w ? `${UNKNOWN}(${w.tag})` : v; };
   const verdictCell = (spec, by, whys) => { const c = by.get(spec.code) || null, v = pend(judge(c, spec.op, spec.thr), spec); return whyCell(v, whyFor(v, c), whys); };
   const countVerdictCell = (spec, by, whys) => { const c = by.get(spec.code) || null, v = pend(judgeMetCount(c, spec.n_req, spec.thr), spec); return whyCell(v, countWhy(v, c, by), whys); };
-  // 표 칸에 승인 대기 표시 '*'가 있으면 표 아래에 뜻을 적는다(dong_brief._starred와 같다)
+  // 표 칸에 확정 전 규칙 표시 '*'가 있으면 표 아래에 뜻을 적는다(dong_brief._starred와 같다)
   const starred = rows => rows.slice(1).some(r => r.some(x => String(x).endsWith(PENDING_SUFFIX)));
   function tableCell(sp, by, facts, refs, fc, biz, whys) {
     if (typeof sp === 'string') return sp;
@@ -1098,6 +1101,17 @@
     if (k === 'value') return !c && f ? f.value : critValue(c, biz);
     if (k === 'date') return d ? govDate(d.reference_date) : '-';
     return refs.ref(d) || '-';          // k === 'ref'
+  }
+  // r19(08b 쟁점 2): 조각 문장의 상태를 문장 안에 넣는다 → [상태를 넣은 템플릿, 문장 뒤에 이을 까닭 글]. 끝이 '이다.{ref}'인 템플릿만.
+  // 추가확인은 '이다'를 '이나 추가확인이다(…)'로 바꾸고 까닭을 잇는다(dong_brief._with_state와 같다)
+  const STATE_END = '이다.{ref}';
+  function withState(template, st, by) {
+    if (!st || !template.endsWith(STATE_END)) return [template, ''];
+    const c = by.get(st.code) || null, v = judge(c, st.op, st.thr), S = tpl().sentence_state;
+    if (v !== UNKNOWN && st.unknown_only) return [template, ''];
+    const head = template.slice(0, -STATE_END.length);
+    if (v === UNKNOWN) { const w = whyFor(v, c); return [`${head}${S[UNKNOWN]}.{ref}`, w ? S.why + w.text : '']; }
+    return [`${head}이다${S[v]}.{ref}`, ''];
   }
   function buildFragments(brief, ids) {
     const TP = tpl(), out = [];
@@ -1120,20 +1134,23 @@
             if (sp.codes[0] === 'DEPOP_STATUS') kw.sg = depopSg(kw.sg, cs[0]);
           }
           const s = fill(sp.template, kw);
-          if (sentenceLen(s) <= SENTENCE_MAX) { sents.push({ text: s, formItem: sp.form_item || '' }); fcUsed = fcUsed || !!sp.forecast; }
+          // 길이는 상태 글을 넣기 전 본문으로 잰다
+          if (sentenceLen(s) <= SENTENCE_MAX) { const [t, why] = withState(sp.template, sp.state, by); sents.push({ text: fill(t, kw) + clean(why), formItem: sp.form_item || '' }); fcUsed = fcUsed || !!sp.forecast; }
         }
         const tb = v.table, fc = forecastCells(by, 'DECLINE_POP_TOTAL'), whys = [];
         const rows = [tb.columns.slice(), ...tb.rows.map(r => r.map(sp => clean(String(tableCell(sp, by, facts, refs, fc, brief.biz, whys)))))];
         // notes: 표 아래 '추가확인 까닭'·범례·'*' 뜻(복사·HWPX에 함께 나간다). sourceDates: 바닥글 자료 기준일(인용한 출처만)
         out.push({ id: frag.id, variant: v.id, title: `${frag.title} · ${v.title}`, form: frag.form, verified: frag.verified, formItem: tb.form_item || '', lead: `${brief.region} ${brief.year}년 기준`,
           sentences: sents.map(x => clean(x.text)), formItems: sents.map(x => x.formItem), caption: tb.caption, rows, widths: tb.widths, notes: [...whyBlocks(whys), ...(starred(rows) ? [PENDING_NOTE] : [])].map(clean), whys,
-          sources: refs.lines(v.source_foot, brief.biz).map(clean), sourceDates: refs.items.map(x => ({ reference_date: x.date, forecast: x.forecast })) });
+          sources: refs.lines(v.source_foot, brief.biz).map(clean), sourceDates: refs.items.map(x => ({ name: x.name, reference_date: x.date, forecast: x.forecast })), biz: brief.biz });
       }
     }
     return out;
   }
   // 드롭다운 항목: 양식 3종, 변형이 둘 이상이면 변형 고르기
   const fragmentChoices = () => ((tpl().fragments) || []).map(f => ({ id: f.id, title: f.title, form: f.form, verified: f.verified, variants: f.variants.map(v => ({ id: v.id, title: v.title })) }));
+  // 조각 문장 한 개 복사: [n]을 출처 문구로 푼다(r19: 화면 문장을 그대로 복사해 '[1]'이 남았다. 1쪽 문장 복사와 같은 sentenceText)
+  const fragmentSentenceText = (fr, i) => sentenceText({ sources: fr.sourceDates || [], brief: { biz: fr.biz } }, { text: fr.sentences[i] });
   // 조각 전체(문장·표·출처)를 한 번에 복사하는 내용
   function fragmentPayload(fr) {
     const t = tablePayload(fr.rows, fr.caption), notes = fr.notes || [];
@@ -1390,7 +1407,7 @@
 
   return {
     crc32, zipStore, dosStamp, BANNED_GLYPHS, clean, readerText, fmtNum, roundD, plainSource, govDate, localDate, josa, valueWithUnit, fmtCell, hidden, usable, judgeMetCount, SRC_HEAD, SENTENCE_MAX, GROUPS, LABEL, DECLINE_CRITERIA, DECLINE_LAW, PURPOSES,
-    setTemplates, getTemplates, displayName, BriefError, Sources, sourceLine, buildBrief, buildDoc, buildOnepage, deliveryReview, estimateHeightMm, basisDate, FIXED_NOTICE, docText, sentenceText, sizesFor, textRuns, withSnap, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
+    setTemplates, getTemplates, displayName, BriefError, Sources, sourceLine, buildBrief, buildDoc, buildOnepage, deliveryReview, estimateHeightMm, basisDate, FIXED_NOTICE, docText, sentenceText, fragmentSentenceText, sizesFor, textRuns, withSnap, headerXml, sectionXml, hwpxBytes, docxBytes, pptxBytes, xlsxBytes, workbookSheets, workbookBytes, colName, repPoint,
     tablePayload, sentencePayload, copyToClipboard, buildFragments, fragmentChoices, fragmentPayload, fragmentHTML, fragmentDoc, fragmentHwpx, docWhy, whyFor, critValue, docHTML, COPY_TABLE, COPY_SENT, projectFeatures, mapSvg, safeName, saveBytes, svgToPng, xe,
   };
 });

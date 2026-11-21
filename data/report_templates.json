@@ -1,6 +1,6 @@
 {
   "_doc": "생성 파일. 원본은 backend/scripts/export_templates.py. 직접 고치지 않는다. 사용법은 docs/gov/form_fragments.md",
-  "version": "TPL-2026-11-22.1",
+  "version": "TPL-2026-11-22.2",
   "consts": {
     "min_met": 2,
     "n_req": 3,
@@ -109,7 +109,7 @@
         "template": "{sg}의 인구감소지역 지정 구분은 '{v}'이다.{ref}"
       }
     ],
-    "pending": "쇠퇴 3요건 비교는 승인 대기 규칙으로 낸 참고 값이다.",
+    "pending": "쇠퇴 3요건 비교는 조문 숫자 대조 전 규칙으로 낸 참고 값이다.",
     "fallback": "확인이 필요한 사항 {n}건은 4장에 있다.",
     "min": 3,
     "max": 5,
@@ -132,7 +132,7 @@
   "criteria_notes": [
     "'기준 해당'은 값이 기준 조건에 드는 경우이다. '해당 안 함'은 들지 않는 경우이다. '추가확인'은 값이 없거나 출처 자료에 확인할 점이 있는 경우이다.",
     "기준 해당 요건 수는 확정된 요건만 세어도 2개 이상이면 '기준 해당(하한)'이다. 추가확인 요건이 모두 해당해도 2개 미만이면 '해당 안 함'이다. 그 밖일 때만 '추가확인'이다.",
-    "* 승인 대기 규칙으로 낸 참고 값이다. 항목별 비교만 하며 합산하지 않았다."
+    "* 확정 전 규칙으로 낸 참고 값이다. 항목별 비교만 하며 합산하지 않았다."
   ],
   "forecast_lead": "{label}은 {v}(하한 {lo}, 상한 {hi})이다.{ref}",
   "forecast_notes": [
@@ -190,8 +190,14 @@
     "sources_max": 5,
     "note": [
       "비교는 항목별이며 합산하지 않았다.",
-      "* 승인 대기 규칙으로 낸 참고 값이다."
+      "* 확정 전 규칙으로 낸 참고 값이다."
     ]
+  },
+  "sentence_state": {
+    "기준 해당": "(기준 해당·참고 계산)",
+    "해당 안 함": "(해당 안 함·참고 계산)",
+    "추가확인": "이나 추가확인이다(판정 아님·리뉴맵 참고 계산)",
+    "why": " 까닭: "
   },
   "fragments": [
     {
@@ -211,7 +217,12 @@
                 "DECLINE_POP_TOTAL",
                 "DECLINE_POP_DROP30Y_PCT"
               ],
-              "template": "주민등록 인구는 {v}이고 30년 최대 대비 감소율은 {v2}이다.{ref}"
+              "template": "주민등록 인구는 {v}이고 30년 최대 대비 감소율은 {v2}이다.{ref}",
+              "state": {
+                "code": "DECLINE_POP_DROP30Y_PCT",
+                "op": "ge",
+                "thr": 20
+              }
             },
             {
               "id": "A2",
@@ -220,7 +231,12 @@
                 "DECLINE_BIZ_TOTAL",
                 "DECLINE_BIZ_DROP10Y_PCT"
               ],
-              "template": "사업체 수는 {v}이고 10년 최대 대비 감소율은 {v2}이다.{ref}"
+              "template": "사업체 수는 {v}이고 10년 최대 대비 감소율은 {v2}이다.{ref}",
+              "state": {
+                "code": "DECLINE_BIZ_DROP10Y_PCT",
+                "op": "ge",
+                "thr": 5
+              }
             },
             {
               "id": "A3",
@@ -228,7 +244,12 @@
               "codes": [
                 "DECLINE_AGING_20Y_PCT"
               ],
-              "template": "준공 20년 이상 건축물 비율은 {v}이다.{ref}"
+              "template": "준공 20년 이상 건축물 비율은 {v}이다.{ref}",
+              "state": {
+                "code": "DECLINE_AGING_20Y_PCT",
+                "op": "ge",
+                "thr": 50
+              }
             },
             {
               "id": "A4",
@@ -242,12 +263,12 @@
               "id": "A5",
               "form_item": "Ⅱ.4 쇠퇴진단 및 잠재력 분석",
               "codes": [],
-              "template": "쇠퇴 3요건 비교는 승인 대기 규칙으로 낸 참고 값이다.",
+              "template": "쇠퇴 3요건 비교는 조문 숫자 대조 전 규칙으로 낸 참고 값이다.",
               "when": "rule_pending"
             }
           ],
           "table": {
-            "caption": "표. 4-1 도시쇠퇴현황 검토 양식 기준 Ⅰ~Ⅲ · 값은 행정동 전체 기준이며 사업 대상구역만 따로 계산한 값이 아니다 · 여러 행정동에 걸친 사업은 사업 구역 전체로 다시 집계해야 한다(비율을 더하지 않는다 · 리뉴맵은 집계하지 않음)",
+            "caption": "표. 4-1 도시쇠퇴현황 검토 양식 기준 Ⅰ~Ⅲ · 값은 행정동 전체 기준이며 사업 대상구역만 따로 계산한 값이 아니다 · 여러 행정동에 걸친 사업은 사업 구역 전체로 다시 집계해야 한다(비율을 더하지 않는다 · 리뉴맵은 집계하지 않음). 요건 셈은 리뉴맵의 참고 계산이며 법정 판정이 아니다. 사업구역과 행정동의 차이, 동 경계 변경, 사업체 요건, 기준연도와 원자료 일치는 구청이 원자료로 확인한다.",
             "form_item": "공통서식 4-1 도시쇠퇴현황 검토 양식",
             "columns": [
               "양식 항목",
@@ -411,7 +432,13 @@
                 "DECLINE_POP_TOTAL",
                 "DECLINE_POP_DROP30Y_PCT"
               ],
-              "template": "주민등록 인구는 {v}이고 30년 최대 대비 감소율은 {v2}이다.{ref}"
+              "template": "주민등록 인구는 {v}이고 30년 최대 대비 감소율은 {v2}이다.{ref}",
+              "state": {
+                "code": "DECLINE_POP_DROP30Y_PCT",
+                "op": "ge",
+                "thr": 20,
+                "unknown_only": true
+              }
             },
             {
               "id": "B3",
@@ -557,7 +584,13 @@
               "codes": [
                 "DECLINE_AGING_20Y_PCT"
               ],
-              "template": "준공 20년 이상 건축물 비율은 {v}이다.{ref}"
+              "template": "준공 20년 이상 건축물 비율은 {v}이다.{ref}",
+              "state": {
+                "code": "DECLINE_AGING_20Y_PCT",
+                "op": "ge",
+                "thr": 50,
+                "unknown_only": true
+              }
             },
             {
               "id": "C2",
@@ -566,7 +599,13 @@
                 "DECLINE_POP_TOTAL",
                 "DECLINE_POP_DROP30Y_PCT"
               ],
-              "template": "주민등록 인구는 {v}이고 30년 최대 대비 감소율은 {v2}이다.{ref}"
+              "template": "주민등록 인구는 {v}이고 30년 최대 대비 감소율은 {v2}이다.{ref}",
+              "state": {
+                "code": "DECLINE_POP_DROP30Y_PCT",
+                "op": "ge",
+                "thr": 20,
+                "unknown_only": true
+              }
             },
             {
               "id": "C3",
@@ -575,7 +614,13 @@
                 "DECLINE_BIZ_TOTAL",
                 "DECLINE_BIZ_DROP10Y_PCT"
               ],
-              "template": "사업체 수는 {v}이고 10년 최대 대비 감소율은 {v2}이다.{ref}"
+              "template": "사업체 수는 {v}이고 10년 최대 대비 감소율은 {v2}이다.{ref}",
+              "state": {
+                "code": "DECLINE_BIZ_DROP10Y_PCT",
+                "op": "ge",
+                "thr": 5,
+                "unknown_only": true
+              }
             },
             {
               "id": "C4",

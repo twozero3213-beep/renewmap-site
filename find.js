@@ -253,13 +253,15 @@
     { id: 'depop', e: 'flag', n: "지방소멸대응기금 현황표", ask: "투자계획서에 넣을 인구 현황표가 필요할 때", give: "인구 감소·고령·청년 이동 표", conds: [['depop', 'concern'], 'pop30'], condsEmd: ['aged'], law: "지방소멸대응기금(행정안전부), 인구감소지역 지원 특별법" },
     { id: 'cctv', e: 'cctv', n: "CCTV·보안등 설치 검토", ask: "추가 설치 검토 자료를 요청받았을 때", give: "동별 설치 밀도와 경찰관서까지 거리. 범죄나 안전 수준을 뜻하지 않습니다.", conds: [], note: '조건 없음 · 동을 고르면 안전 시설 카드로', action: 'safe', law: "개인정보 보호법 제25조" },
     { id: 'yearend', e: 'bldg', n: "소규모 정비 대상지 검토", ask: "소규모 정비 대상지를 고를 때 근거가 필요할 때", give: "20년 이상 건축물·쇠퇴·생활 기준을 함께 본 동 목록과 근거서", conds: ['aging', 'met', ['parkLow', 'libFar']], law: "지방재정법 제37조(투자심사)" },
-    { id: 'shop', e: 'shop', n: "상권 쇠퇴 동 찾기", ask: "사업체가 줄어든 동을 상권 검토용으로 추릴 때", give: "사업체 감소 동 목록과 근거 1쪽(사업체 감소는 전국 공통 추가확인이라 목록은 참고용입니다)", conds: ['biz10'], law: "도시재생법 제13조" },
+    { id: 'shop', e: 'shop', n: "상권 쇠퇴 동 찾기", ask: "사업체가 줄어든 동을 상권 검토용으로 추릴 때", give: "사업체 감소 동 목록과 한 장 요약(사업체 감소는 전국 공통 추가확인이라 목록은 참고용입니다)", conds: ['biz10'], law: "도시재생법 제13조" },
     { id: 'soc', e: 'tree', n: '공원·도서관 민원 회신', ask: "'우리 동네엔 왜 공원·도서관이 없나' 민원에 답할 때", give: '기준 대비 현황과 출처', conds: [['parkLow', 'libFar', 'hospLow']], law: '도시공원 및 녹지 등에 관한 법률 시행규칙 제4조, 생활SOC 최저기준' },
     { id: 'care', e: 'hosp', n: "돌봄·의료 대상지 근거", ask: "방문 의료·돌봄 사업 대상지를 정할 때", give: "고령 인구가 많고 병의원이 적은 동 목록과 출처 붙은 표", conds: ['aged', 'hospLow'], law: "법정 기준 아님 · 참고 구간" },
-    { id: 'season', e: 'elder', n: "한파·폭염 주거 점검", ask: "노후 주택과 고령 인구가 많은 동을 점검 대상으로 고를 때", give: "20년 이상 건축물·초고령 기준을 함께 본 동 목록", conds: ['aging', 'aged'], law: "법정 기준 아님 · 노후 기준은 시행령 제17조(20년 이상 50%) 참고" },
+    { id: 'season', e: 'elder', n: "노후 주거·고령 비율로 추리기", ask: "노후 주택과 고령 인구가 많은 동을 점검 대상으로 고를 때", give: "20년 이상 건축물·초고령 기준을 함께 본 동 목록", conds: ['aging', 'aged'], law: "법정 기준 아님 · 노후 기준은 시행령 제17조(20년 이상 50%) 참고" },
     { id: 'brief', e: 'book', n: '의회·감사 근거 문서', ask: "'그 숫자, 근거가 뭡니까'라는 질문을 받을 때", give: '출처·기준일·계산식이 붙은 근거서', conds: [], note: '조건 없음 · 동을 고르면 4-1 표·근거서로', action: 'brief', law: '지방자치법 제49조·제142조·제150조' },
   ];
   const presetOf = id => PRESETS.find(p => p.id === id) || null;
+  // r19(09 6절 8): 홈 입구에서 한 번에 열기 — explore.html?panel=filters&preset=care. 없는 이름은 무시한다
+  const presetFromSearch = search => (presetOf(new URLSearchParams(search || '').get('preset')) || {}).id || null;
   // 프리셋의 조건 목록: 읍·면·동 범위(unit emd)면 condsEmd를 덧붙인다. 묶음(배열)은 복사한다
   const presetConds = (p, unit) => p.conds.map(g => (Array.isArray(g) ? [...g] : g)).concat(unit === 'emd' ? p.condsEmd || [] : []);
   function govHTML(ctx, scopeName) {
@@ -278,7 +280,7 @@
     if (!url.searchParams.has('panel')) url.searchParams.set('panel', 'evidence');
     return url.pathname + url.search + url.hash;
   }
-  const api = { lazy: { asked, loaded }, REF, GROUPS, CONDS, PAIRS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, GOV_NOTE, DECIDE, entryReportMode, entryReportURL, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
+  const api = { lazy: { asked, loaded }, REF, GROUPS, CONDS, PAIRS, NOTE, ESTATE_NOTE, PAGE_SIZE, PRESETS, presetFromSearch, GOV_NOTE, DECIDE, entryReportMode, entryReportURL, condOf, condState, tagsOf, areasOf, evaluate, sortAreas, paginate, pageRange, shapes, chipsHTML, resultHTML, hashOf, boundaryState, presetOf, presetConds, govHTML, condSource, exportSheets };
   if (node) module.exports = api;
   if (typeof document === 'undefined') return;
   window.RenewFind = api;
@@ -482,6 +484,7 @@
       st.sgGeo = undefined; trackHash();
       if (st.lastSg && !st.scope.sg) st.scope = { ...st.lastSg };   // 지도에서 고른 시·군·구가 있으면 범위를 거기로 시작한다(조건 탭이 '전국'으로 열리지 않게)
       render();
+      const want = presetFromSearch(location.search); if (want) applyPreset(want);
     fetchJson('data/national/sigungu-overview.geojson').then(g => g && Array.isArray(g.features) ? g : fetchJson('data/national/sigungu.geojson'))
       .then(g => { st.sgGeo = g && Array.isArray(g.features) ? g : null; st.svgKey = ''; render(); });
     });

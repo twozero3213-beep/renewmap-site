@@ -193,4 +193,6 @@ SGIS 2025 행정동 경계 단순화본의 내부 대표점을 EPSG:5186으로 �
 
 | 파일 | 쓰는 화면 | 계산값 | 출처 칸 | 기준일 칸 | 셀로 만들지 않은 이유 | 다음 회차 셀화 계획 |
 |---|---|---|---|---|---|---|
+| `proof_sample.json` | 홈 근거표 조각, `field/redev.html` 예시 주소 넣기 | 반여동 주소 60개(`input`)를 `field/redev.js`로 계산한 결과의 3행(`rows`, 칸 이름 `columns`)과 요약(`summary`·`check_cells`·`missing`). 생성 `backend/scripts/export_proof_sample.py`(node로 redev.js를 부름) | `source.name`·`source.url`·`source.license` | `source.reference_date`·`source.retrieved_at` | 건물 파일(`buildings/2635010300.json`)에서 그대로 다시 계산한 견본이라 새 값이 없다 | 셀로 만들지 않는다. 건물 파일이 바뀌면 생성기를 다시 돌린다 |
 | `housing_support.json` | `relocate.html` 부산 주거비 지원 제도 표 | 없음. 제도 이름·대상·내용·신청 방법·접수 기간을 원문 공고에서 옮긴 안내 글이고, 접수 상태(접수 중·마감)는 화면이 오늘 날짜와 `start`·`end`로 계산한다. 자격은 판정하지 않는다 | `items[].source`·`items[].url` | `checked_at` | 숫자 지표가 아니라 제도 안내 글이다 | 셀로 만들지 않는다. 제도가 바뀌면 `checked_at`과 항목을 함께 고친다 |
+| `national/glance.json` | 홈 한눈 띠(`glance.js`) | 세 가지 기준 중 2개 이상인 읍·면·동 수와 그 분모, 20년 넘은 건물 50% 이상·인구 30년 비교 추가확인·사업체 추가확인 수, 시·도별 `dongs`·`met2`, 지도·검색에서 고를 수 있는 동 수(`pickable`). `scripts/export_glance.py`가 `national/emd` 셀(`DECLINE_MET_COUNT` 등)에서 센다 | `sources[].name`·`rule_version`·`snapshot_hash` | `base_year`·`sources[].base_year`·`sources[].retrieved_at` | 원장 셀을 센 개수라 새 계산이 없다. 출처는 세어 온 셀과 같은 원장 지문(`snapshot_hash`)으로 잇는다 | 셀로 만들지 않는다. 원장이 바뀌면 `rebuild_derived`가 다시 센다 |

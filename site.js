@@ -28,10 +28,11 @@
     const here = location.pathname + location.hash;
     // v7(2026-11-13): 머리 메뉴와 같은 이름·순서(평가: 위는 '동네 진단·현장 기록', 아래는 '지도·현장'이라 다른 곳인 줄 알았다). 홈은 로고로 간다
     // R1(2026-11-13): 아래 탭은 넷(홈·동네 진단·현장 기록·보관함, DESIGN.md). 다섯 칸이 머리 '메뉴' 시트와 같은 목록이라 두 벌로 보였다.
-    // 순위·재생 사업·구역 계산은 머리 '메뉴'에서 연다
+    // r19(09 6절 1): 머리 메뉴 셋(대상지 계산·동네 현황·현장 사진 기록)에 홈·보관함을 더한 다섯. 순위·재생 사업은 꼬리글 도구 줄에서 연다
     const tabs = [['index.html', '홈', 'M3 11l9-8 9 8M5 9.5V20h14V9.5', /^(?!.*\/(?:field|dong)\/)[^#]*\/(?:index\.html)?(?:#.*)?$/],
-      ['explore.html#map', '동네 진단', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html|\/dong\//],
-      ['field/', '현장 기록', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],
+      ['field/redev.html', '대상지 계산', 'M5 3h14v18H5zM8 7h8M8 11h2M14 11h2M8 15h2M14 15h2', /\/field\/redev\.html$/],
+      ['explore.html#map', '동네 현황', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html|\/dong\//],
+      ['field/', '현장 사진 기록', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],
       ['box.html', '보관함', 'M3 8h18v12H3zM3 8l2-4h14l2 4M9 13h6', /box\.html$/],
     ];
     const current = fixedBase ? -1 : tabs.findIndex(t => t[3].test(here));
@@ -54,8 +55,9 @@
     const base = fixedBase || (nested ? '../' : '');
     const path = fixedBase ? '' : location.pathname;
     // R11(C18·D30 B): 부산 이전 직원 비교는 주 메뉴에서 뺐다. 홈 '다른 도구 더 보기'와 꼬리글 도구 줄에서 연다
-    const items = [['explore.html', '동네 진단', /explore\.html$|\/dong\//], ['rank.html', '동네 비교 점수', /rank\.html$/], ['programs.html', '재생 사업', /programs\.html$/],
-      ['field/redev.html', '구역 계산', /\/field\/redev\.html$/], ['field/', '현장 기록', /\/field\/(?:index\.html)?$/]];
+    // r19(09 6절 1): 셋과 상담 하나. 동네 비교 점수·재생 사업은 꼬리글 도구 줄과 동네 현황 안에서 연다
+    const items = [['field/redev.html', '대상지 계산', /\/field\/redev\.html$/], ['explore.html', '동네 현황', /explore\.html$|\/dong\//],
+      ['field/', '현장 사진 기록', /\/field\/(?:index\.html)?$/]];
     const nav = document.createElement('nav');
     nav.className = 'rm-nav'; nav.id = 'rm-nav'; nav.setAttribute('aria-label', '주요 메뉴');
     const link = (href, text, on, cls) => { const a = document.createElement('a'); a.href = base + href; a.textContent = text; if (on) a.setAttribute('aria-current', 'page'); if (cls) a.className = cls; return a; };
@@ -64,7 +66,7 @@
     const more = document.createElement('p');
     more.className = 'rm-nav-more';
     more.append(link('about.html', '서비스 소개'), ' · ', link('about.html#scope', '비용과 범위'));
-    nav.append(more, link('about.html#contact', '시범 과업 상담', false, 'rm-cta'));
+    nav.append(more, link('about.html#contact', '상담하기', false, 'rm-cta'));
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'rm-menu-btn'; btn.textContent = '메뉴';
     btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', 'rm-nav');

@@ -165,7 +165,6 @@
 .map-hub { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 15px; }
 .map-hub li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding: 4px 0; }
 .map-hub span { color: var(--dim); font-variant-numeric: tabular-nums; }
-.map-hub-more { font-size: 15px; font-weight: 700; }
 
 /* 빈 상태(마스코트는 usage.md 6.2: 320×200, 240px 아래로 줄이지 않는다) */
 .map-empty { text-align: center; background: var(--card); border: 1px dashed var(--line-mid); border-radius: var(--radius-card); padding: 28px 20px; }
@@ -731,3 +730,9 @@ body.explore-page #heroSearch .hero-search-note, body.explore-page #heroSearch .
   html:has(body.explore-page.sheet-open) { scroll-padding-bottom: calc(190px + env(safe-area-inset-bottom)); }   /* 카드 안 초점이 붙은 꼬리(약 105px)·아래 탭 뒤로 숨지 않게(WCAG 2.4.11) */
   .explore-page #mapApp .mp-foot { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 4; margin: 12px -18px -20px; padding: 8px 18px 4px; background: var(--card); border-radius: 0 0 12px 12px; box-shadow: 0 -6px 16px var(--shade-16); }
 }
+/* r19(09 5절): 세 기준 줄 — 추가확인이면 큰 숫자 자리에 까닭(17px/600), 계산값·출처 줄은 보조 15px 회색. 출처는 누르지 않아도 보인다 */
+.sr-req-rows li .sr-why-b { font-size: 17px; font-weight: 600; color: var(--ink); text-align: right; }
+.sr-req-rows li:has(.sr-why-b) { grid-template-columns: auto minmax(0, 1fr) auto; }   /* 까닭 글이 길어 이름 칸이 한 글자씩 꺾였다(390px): 이름은 제 폭, 까닭이 남는 폭에서 줄바꿈 */
+.sr-req-rows li .sr-calc, .sr-req-rows li .sr-src { font-size: 15px; color: var(--dim); }
+/* r19(사이트 현황 조사): 390px에서 양식 고르기 칸 글자가 칸 밖으로 잘렸다 → 한 줄을 다 쓰고, 고르는 이름은 양식 이름 앞부분만(map.js fragPanelHTML) */
+.rp-frag-ctl .map-select { min-width: 0; flex: 1 1 260px; }

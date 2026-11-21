@@ -132,7 +132,7 @@
   slider.min = String(YEAR_FROM); slider.max = String(TO); slider.value = String(year);
   $('t4Ends').textContent = `${YEAR_FROM}년 ~ ${TO}년 · 올해 뒤는 지금 건물 그대로일 때`;
   // 색 칸은 CSSOM으로 칠한다(style 속성은 CSP가 막는다)
-  $('t4Legend').replaceChildren(...[...BANDS.map(([, c, t]) => [c, t]), [NO_DATE, '사용승인일 없음']].map(([c, t]) => {
+  $('t4Legend').replaceChildren(...[...BANDS.map(([, c, t]) => [c, t]), [NO_DATE, '완공된 날 없음']].map(([c, t]) => {
     const li = document.createElement('li'), i = document.createElement('i');
     i.style.background = c; li.append(i, t); return li;
   }));
@@ -151,9 +151,9 @@
     $('t4App').classList.toggle('is-future', year > NOW);   // 올해 뒤는 지도 위에도 '가정' 표시(10회차: 미래 캡처가 사실처럼 돌 수 있다)
     // 동 목록·구역 계산의 대장 건물 수와 여기 숫자의 차이(사용승인일 없는 건물)를 그 자리에서 밝힌다(v7 평가: 5,207과 5,144가 왜 다른지 몰랐다)
     const spanOnly = blds.filter((b) => !b.use_apr_day && Array.isArray(b.use_apr_span) && b.use_apr_span.length).length;
-    $('t4NoDate').textContent = [s.noDate ? `사용승인일이 없는 ${fmt(s.noDate)}동은 회색으로 세우고 비율에서 뺍니다.` : '',
+    $('t4NoDate').textContent = [s.noDate ? `완공된 날이 없는 ${fmt(s.noDate)}동은 회색으로 세우고 비율에서 뺍니다.` : '',
       // 원장(소개·구역 계산)과 몇 동 차이 나는지 밝힌다(v9: 반여동 92.6%·5,143동과 92.7%·5,144동이 설명 없이 달랐다)
-      spanOnly ? `사용승인일이 연도만 적힌 ${fmt(spanOnly)}동은 그해로 셉니다. 소개·구역 계산(건축물대장 원장)은 이 건물을 날짜 없음으로 두어 비율이 조금 다를 수 있습니다.` : ''].filter(Boolean).join(' ');
+      spanOnly ? `완공된 날이 연도만 적힌 ${fmt(spanOnly)}동은 그해로 셉니다. 소개·대상지 계산(건축물대장)은 이 건물을 날짜 없음으로 두어 비율이 조금 다를 수 있습니다.` : ''].filter(Boolean).join(' ');
     if (map && map.getLayer('b3d')) {
       map.setPaintProperty('b3d', 'fill-extrusion-color', colorExpr(year));
       map.setFilter('b3d', filterExpr(year));
@@ -205,7 +205,7 @@
       map.setZoom(map.getZoom() + 0.6);   // 기울여 보면 화면 아래쪽이 비어 한 단계 당겨 본다
       $('t4Status').textContent = `${bf.name} 건물을 세웠습니다. 부속 건물까지 모두 세우고, 숫자는 날짜 있는 주건축물로 셉니다.`;
       $('t4Name').textContent = bf.name;
-      $('t4Src').innerHTML = `외곽선·높이: ${esc(outline.name)}(기준일 ${esc(outline.base_date)}, ${esc(outline.license_type)}) · 사용승인일: ${esc(bf.source)}(기준일 ${esc(bf.hub_reference_date)})`;
+      $('t4Src').innerHTML = `외곽선·높이: ${esc(outline.name)}(기준일 ${esc(outline.base_date)}, ${esc(outline.license_type)}) · 완공된 날(사용승인일): ${esc(bf.source)}(기준일 ${esc(bf.hub_reference_date)})`;
       marks(); paint();
       $('t4Csv').disabled = !blds.length;
       return true;
@@ -255,7 +255,7 @@
           box.className = 't4-pop';
           const line = (k, v) => { const r = document.createElement('p'), b = document.createElement('b'); b.textContent = k; r.append(b, ` ${v}`); return r; };
           const yr = yearOf();
-          box.append(line('사용승인', p.y > 0 ? `${p.y}년 · ${yr}년에 ${yr - p.y}년째` : p.y === 0 ? '날짜 없음' : '건축물대장과 잇지 못함'),
+          box.append(line('완공', p.y > 0 ? `${p.y}년 · ${yr}년에 ${yr - p.y}년째` : p.y === 0 ? '날짜 없음' : '건축물대장과 잇지 못함'),
             line('용도', p.use || '-'), line('높이', `${Math.round(p.h)}m`));
           new maplibregl.Popup({ maxWidth: '260px' }).setLngLat(e.lngLat).setDOMContent(box).addTo(map);
         });

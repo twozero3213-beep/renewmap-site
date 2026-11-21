@@ -23,6 +23,7 @@
   // 구·군 → 법정동 목록(buildings/index.json). 부산 조례 기준만 계산하므로 부산(26)만 싣는다. 목록을 못 받으면 HTML의 해운대구 8개 동 그대로 쓴다
   const BUSAN = "26";
   const index = getJson("buildings/index.json").catch(() => null);
+  let guPick = null;   // {gus, showDongs}: 색인을 받은 뒤 pickDong이 구·동 칸을 고친다
   index.then((idx) => {
     if (!idx) return;
     const gus = idx.sigungu.filter((s) => s.code.startsWith(BUSAN) && s.dongs.length);
@@ -34,6 +35,7 @@
     const from = want && gus.find((s) => s.dongs.some((d) => d.code === want));
     fill($("gu"), gus.map((s) => [s.code, s.name]), from ? from.code : "26350");
     showDongs(from ? from.code : "26350", from ? want : $("dong").value);
+        guPick = { gus, showDongs };
     $("gu").addEventListener("change", () => { showDongs($("gu").value); centreDraw(); });
     restoreDraft(gus, showDongs);
     let back = null;
@@ -131,6 +133,44 @@
     $("f").requestSubmit();
   });
 
+  // 동 이름을 앞에 적은 주소(반여동 1291)면 구·동 칸을 그 동으로 고른다(r19: 구 고르기·동 고르기 두 번을 없앤다).
+  // 지금 구·군에 그 이름이 있으면 그 구에서, 없으면 색인 전체에서 찾는다. 같은 이름의 법정동이 여러 구·군에 있으면 고르게 묻고 false
+  async function pickDong(items = R.parseList($("list").value).items) {
+    await index;
+    if (!guPick) return true;
+    const names = [...new Set(items.map((it) => it.dong).filter(Boolean))];
+    if (!names.length) return true;
+    const { gus, showDongs } = guPick, cur = gus.find((s) => s.code === $("gu").value);
+    const inCur = cur ? names.map((n) => cur.dongs.find((d) => d.name === n)).filter(Boolean) : [];
+    if (inCur.length) {
+      if (!inCur.some((d) => d.code === $("dong").value)) $("dong").value = inCur[0].code;
+      return true;
+    }
+    const hits = gus.filter((s) => s.dongs.some((d) => d.name === names[0]));
+    if (hits.length > 1) {
+      say(`${names[0]}은(는) ${hits.map((s) => s.name).join(", ")}에 있습니다.\n구·군을 골라 주세요.`, true);
+      $("gu").focus();
+      return false;
+    }
+    if (!hits.length) return true;   // 색인에 없는 동 이름은 계산 결과의 '못 찾은 주소'에 까닭과 함께 적힌다
+    $("gu").value = hits[0].code;
+    showDongs(hits[0].code, hits[0].dongs.find((d) => d.name === names[0]).code);
+    centreDraw(); saveDraft();
+    say(`${hits[0].name} ${names[0]}을(를) 골랐습니다.`);
+    return true;
+  }
+  let pickWait = 0;
+  $("list").addEventListener("input", () => { clearTimeout(pickWait); pickWait = setTimeout(() => pickDong(), 400); });
+
+  // 예시 주소 넣기: 홈 근거표 조각과 같은 반여동 주소 60개(data/proof_sample.json의 input, backend/scripts/export_proof_sample.py)로 바로 계산한다
+  $("example").addEventListener("click", async () => {
+    let sample;
+    try { sample = await getJson("proof_sample.json"); } catch (err) { return say("예시 주소를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true); }
+    $("list").value = sample.input.join("\n");
+    $("area").value = ""; delete $("area").dataset.src;
+    $("f").requestSubmit();
+  });
+
   // 파일은 이 기기에서만 읽는다. 한국어 엑셀 CSV는 EUC-KR이 많아 UTF-8로 깨지면 다시 읽는다
   $("listFile").addEventListener("change", async () => {
     const f = $("listFile").files[0];
@@ -141,10 +181,10 @@
     if (text.includes("�")) text = new TextDecoder("euc-kr").decode(buf);
     let got;
     try { got = R.listFromFile(f.name, text); } catch (err) { return say("파일을 읽지 못했습니다.\nCSV나 GeoJSON인지 확인해 주세요.", true); }
-    if (got.n === 0) return say("파일에서 PNU나 지번 열을 찾지 못했습니다.", true);
+    if (got.n === 0) return say("파일에서 필지 고유번호나 지번 열을 찾지 못했습니다.", true);
     $("list").value = got.text;
     saveDraft();
-    say(got.n === null ? `${f.name}을 목록에 넣었습니다.` : `${f.name}에서 ${n0(got.n)}필지를 넣었습니다.${got.skipped ? `\nPNU·지번이 없는 ${n0(got.skipped)}개는 뺐습니다.` : ""}`);
+    say(got.n === null ? `${f.name}을 목록에 넣었습니다.` : `${f.name}에서 ${n0(got.n)}필지를 넣었습니다.${got.skipped ? `\n필지 고유번호·번지가 없는 ${n0(got.skipped)}개는 뺐습니다.` : ""}`);
   });
 
   // 나·다·라목 참고 범위: 브이월드 토지특성을 격리 창(vw-frame)으로 그때그때 묻는다. 약관 제19조(저장·제공 금지)로 파일을 만들지 않는다.
@@ -326,7 +366,11 @@
     last = null; $("out").hidden = true;
     saveDraft();
     const p = R.parseList($("list").value);
-    if (!p.items.length) return say("지번을 한 줄에 하나씩 넣어 주세요.", true);
+        if (!p.items.length) return say("주소(번지)를 한 줄에 하나씩 넣어 주세요.", true);
+        if (p.items.some((it) => it.dong)) {   // 동 이름을 앞에 적었으면 구·동부터 맞춘다. 여러 구에 같은 이름이 있으면 묻고 멈춘다
+          if (!(await pickDong(p.items))) return;
+          if (request !== calculation) return;
+        }
     const areaRaw = $("area").value.trim(), areaM2 = areaRaw === "" ? null : Number(areaRaw);
     if (areaM2 !== null && !(areaM2 >= 0)) return say("구역 면적은 숫자로 넣어 주세요.", true);
     const refIn = $("ref").value;
@@ -338,7 +382,7 @@
     }
     if (request !== calculation) return;
     const m = R.match(p.items, file);
-    if (!m.buildings.length) return say(`목록에서 찾은 건물이 없습니다.\n${file.name} 지번이 맞는지 확인해 주세요.`, true);
+    if (!m.buildings.length) return say(`목록에서 찾은 건물이 없습니다.\n${file.name}의 번지가 맞는지 확인해 주세요.`, true);
     // 기준일은 자료 기준일보다 앞설 수 없다. 그 사이에 지은 건물을 대장 스냅숏으로는 가려낼 수 없어 분모가 틀어진다
     if (refIn && refIn < file.age_reference_date) return say(`경과 기준일은 자료 기준일(${D.govDate(file.age_reference_date)}) 이후로 넣어 주세요.\n그 전 날짜는 그 뒤에 지은 건물이 섞여 바르게 셀 수 없습니다.`, true);
     // 나·다·라목 참고 범위(1365 트윈의 호수밀도·접도율·과소필지 흡수). 토지특성 파일이 없거나 못 받으면 예전처럼 '현장 확인'만 쓴다
@@ -346,9 +390,10 @@
     if (request !== calculation) return;
     const res = R.review(m.buildings, { ref: refIn || file.age_reference_date, district: $("district").checked, areaM2, areaDrawn: $("area").dataset.src === "drawn", parcel });
     last = { res, m, file };
-    const skipped = [...(p.bad.length ? [`지번으로 읽지 못한 칸 ${n0(p.bad.length)}개`] : []), ...(m.missing.length ? [`대장에 없는 지번 ${n0(m.missing.length)}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})`] : []),
-      ...(m.otherDong.length ? [`계산에 넣지 못한 다른 동 지번 ${n0(m.otherDong.length)}개(같은 구·군 법정동 이름이 아니거나 ${R.MERGE_MAX}개 동을 넘음: ${m.otherDong.slice(0, 3).join(", ")}${m.otherDong.length > 3 ? " 등" : ""})`] : [])];
+    const skipped = [...(p.bad.length ? [`주소로 읽지 못한 칸 ${n0(p.bad.length)}개`] : []), ...(m.missing.length ? [`대장에 없는 주소 ${n0(m.missing.length)}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})`] : []),
+      ...(m.otherDong.length ? [`계산에 넣지 못한 다른 동 주소 ${n0(m.otherDong.length)}개(같은 구·군 법정동 이름이 아니거나 ${R.MERGE_MAX}개 동을 넘음: ${m.otherDong.slice(0, 3).join(", ")}${m.otherDong.length > 3 ? " 등" : ""})`] : [])];
     say(skipped.length ? `제외: ${skipped.join(" · ")}` : "");
+    $("outLead").innerHTML = R.leadHTML(res, m, file, { bad: p.bad });   // 값은 모두 이스케이프한 글(redev.js escH)
     // 요건 한 줄에 이름·값·상태 칩(rm6.css .sr-req-rows: 홈·지도 카드와 같은 모양). 상태는 칩 글자가 전하고 색은 보조다
     $("outAnswer").replaceChildren(...R.answerRows(res).map((r) => {
       const li = document.createElement("li"), k = document.createElement("span"), v = document.createElement("b"), t = document.createElement("em");
@@ -402,14 +447,14 @@
     if (!t.items.length) { box.replaceChildren(); return; }
     const h = document.createElement("h3"), p = document.createElement("p"), ul = document.createElement("ul");
     h.textContent = `확인할 건물 ${n0(t.items.length)}동 · 현장 기록이 붙은 건물 ${n0(t.withRecord)}동`;
-    p.className = "hint"; p.textContent = "사용승인일이 없는 건물입니다. 목조·블록·벽돌·조적부터 보입니다. 판정에는 쓰지 않고 확인 순서만 정합니다.";
+    p.className = "hint"; p.textContent = "완공된 날(사용승인일)이 없는 건물입니다. 목조·블록·벽돌·조적부터 보입니다. 판정에는 쓰지 않고 확인 순서만 정합니다.";
     const old = res.lines.find((l) => l.settle), stop = document.createElement("p");   // 정해지는 지점을 알면 목록을 다 돌기 전에 확인을 멈출 수 있다
     stop.className = "hint rv-settle"; stop.textContent = old ? `${old.label}: ${R.settleText(old.settle, ...R.SETTLE_OLD)}` : "";
     ul.className = "todo-list";
     for (const [i, it] of t.items.slice(0, TODO_SHOW).entries()) {
       const li = document.createElement("li"), s = document.createElement("span");
       li.hidden = i >= TODO_FIRST;
-      s.textContent = `${it.b.jibun || "지번 없음"} · ${it.b.structure || "구조 없음"} · ${it.b.main_use || "용도 없음"}`;
+      s.textContent = `${it.b.jibun || "번지 없음"} · ${it.b.structure || "구조 없음"} · ${it.b.main_use || "용도 없음"}`;
       li.append(s);
       if (it.records.length) {
         const r = document.createElement("b");

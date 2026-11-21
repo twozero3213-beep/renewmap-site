@@ -6,14 +6,14 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob: https://api.vworld.kr; font-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'self'; worker-src 'self' blob:; manifest-src 'self'">
 <script src="../frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>현장 기록 | 리뉴맵</title>
+<title>현장 사진 기록 | 리뉴맵</title>
 <meta name="description" content="현장 사진에 위치·오차와 그 행정동의 공공 통계·리뉴맵 계산값(출처·기준일)을 붙여 사진대지(한글)·CSV·GeoJSON으로 받습니다. 기록과 사진은 이 기기에 저장됩니다. 로그인·설치 없이 씁니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/field/">
 <meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/field/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="리뉴맵 RENEWMAP">
-<meta property="og:title" content="현장 기록 | 리뉴맵">
+<meta property="og:title" content="현장 사진 기록 | 리뉴맵">
 <meta property="og:description" content="현장 사진에 위치·오차와 그 행정동의 공공 통계·리뉴맵 계산값(출처·기준일)을 붙여 사진대지(한글)·CSV·GeoJSON으로 받습니다. 기록과 사진은 이 기기에 저장됩니다. 로그인·설치 없이 씁니다.">
 <meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -25,17 +25,17 @@
 <link rel="stylesheet" href="../styles.css">
 <link rel="stylesheet" href="../site-v4.css">
 <link rel="stylesheet" href="../v4.css">
-<link rel="stylesheet" href="field.css?v=20261121-r16">
+<link rel="stylesheet" href="field.css?v=20261122-r19">
 <link rel="stylesheet" href="../list-pages.css">
 <link rel="stylesheet" href="../rm6.css">
 </head>
 <body class="field fr-record">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 RENEWMAP 홈" href="../index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 진단</a><a href="../rank.html">동네 비교 점수</a><a href="../programs.html">재생 사업</a><a href="redev.html">구역 계산</a><a href="./">현장 기록</a><a href="../about.html#contact">시범 과업 상담</a></nav></div></header>
-<p id="recBadge" class="rec-badge" role="status" hidden>업무 촬영 중입니다 · 리뉴맵 현장 기록</p>
+<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 RENEWMAP 홈" href="../index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="redev.html">대상지 계산</a><a href="../explore.html">동네 현황</a><a href="./">현장 사진 기록</a><a href="../about.html#contact">상담하기</a></nav></div></header>
+<p id="recBadge" class="rec-badge" role="status" hidden>업무 촬영 중입니다 · 리뉴맵 현장 사진 기록</p>
 <main id="main">
-  <nav class="breadcrumb" aria-label="지금 보는 곳"><ol><li><a href="../index.html">홈</a></li><li aria-current="page">현장 기록</li></ol></nav>
-  <h1>현장 기록</h1><p class="sub"><span id="today" class="today"></span></p>
+  <nav class="breadcrumb" aria-label="지금 보는 곳"><ol><li><a href="../index.html">홈</a></li><li aria-current="page">현장 사진 기록</li></ol></nav>
+  <h1>현장 사진 기록</h1><p class="sub"><span id="today" class="today"></span></p>
   <div id="newData" class="note rm-note" role="status" hidden>
     <p>새 자료가 있습니다.<br>저장한 기록의 숫자는 바뀌지 않습니다.</p>
     <button type="button" class="ghost" id="newDataGet">새 자료 받기</button>
@@ -52,7 +52,7 @@
     <label class="ghost" for="album">앨범에서 고르기<input id="album" type="file" accept="image/*"></label>
   </div>
   <!-- 2026-11-19: 찍기 아래 안내 세 덩어리(8줄)를 한 줄 + 'ⓘ 자세히'로. 문장은 빼지 않고 접은 칸으로 옮겼다 -->
-  <p class="hint fr-lead">찍고 저장하면 위치·오차와 그 동의 공공 통계·리뉴맵 계산값이 출처·기준일과 함께 기록에 붙습니다. 기록은 이 기기에 남습니다.</p>
+  <p class="hint fr-lead">찍고 저장하면 위치·오차와 그 동의 공공 통계·리뉴맵 계산값이 어디서 온 숫자인지(출처·기준일)와 함께 기록에 붙습니다. 기록은 이 기기에 남습니다.</p>
   <details class="fr-info" id="aboutBox">
     <summary>ⓘ 자세히: 촬영·저장·전송·오프라인</summary>
     <p class="hint">사람이 찍히지 않게 건물·시설 위주로 찍어 주세요.</p>
@@ -202,7 +202,7 @@
       <h3>이 동의 통계</h3>
       <p id="factsBase" class="hint"></p>
       <ul id="factList"></ul>
-      <p class="hint">판정 아님 · 참고 계산<br>공공데이터 값과 출처를 그대로 옮겼습니다.</p>
+      <p class="hint">참고용 계산입니다. 판단은 구청·담당 기관이 합니다.<br>공공데이터 값과 출처를 그대로 옮겼습니다.</p>
     </div>
     <div id="bld" class="facts" hidden>
       <h3>가까운 건물 · 건물 자료는 부산 254개 법정동</h3>
@@ -215,7 +215,7 @@
       <div id="bldFind">
         <label for="bldQ">지번으로 찾기</label>
         <input id="bldQ" autocomplete="off" placeholder="예: 113-2, 산113-2" aria-describedby="bldHelp">
-        <p id="bldHelp" class="hint">다른 지역에서는 건물 후보가 나오지 않습니다. 지번을 직접 적어 주세요.<br>같은 지번의 건물은 용도·구조·층수·사용승인일을 대조해 고르세요.</p>
+        <p id="bldHelp" class="hint">다른 지역에서는 건물 후보가 나오지 않습니다. 지번을 직접 적어 주세요.<br>같은 지번의 건물은 용도·구조·층수·완공된 날(사용승인일)을 대조해 고르세요.</p>
         <ul id="bldList" class="bld-list" aria-live="polite"></ul>
         <p id="bldRange" class="hint" role="status"></p>
         <div id="bldPages" class="row" hidden>
@@ -262,7 +262,7 @@
       <label for="importZip">다른 사람이 내보낸 ZIP 가져오기</label>
       <input id="importZip" type="file" accept=".zip,application/zip">
       <p id="importResult" class="hint" role="status" aria-live="polite"></p>
-      <p class="hint">리뉴맵 현장 기록에서 내보낸 ZIP만 받습니다.<br>가져온 기록에는 '가져옴'이 붙습니다. 사진의 얼굴·번호판 가림은 공유·제출 전에 다시 확인해 주세요.<br>누락·손상된 사진이나 EXIF·미확인 ICC 등 허용하지 않는 메타데이터가 있는 사진은 받지 않습니다. 확인된 표준 색상 프로파일 외에는 일부 정상 JPEG도 거절될 수 있습니다.<br>거절된 원본 ZIP은 보존하고, 현장 기록에서 사진을 다시 골라 가린 뒤 새 기록으로 저장해 주세요.<br>이 기기에 있던 기록과 원본 ZIP은 바뀌지 않습니다.</p>
+      <p class="hint">리뉴맵 현장 사진 기록에서 내보낸 ZIP만 받습니다.<br>가져온 기록에는 '가져옴'이 붙습니다. 사진의 얼굴·번호판 가림은 공유·제출 전에 다시 확인해 주세요.<br>누락·손상된 사진이나 EXIF·미확인 ICC 등 허용하지 않는 메타데이터가 있는 사진은 받지 않습니다. 확인된 표준 색상 프로파일 외에는 일부 정상 JPEG도 거절될 수 있습니다.<br>거절된 원본 ZIP은 보존하고, 현장 사진 기록에서 사진을 다시 골라 가린 뒤 새 기록으로 저장해 주세요.<br>이 기기에 있던 기록과 원본 ZIP은 바뀌지 않습니다.</p>
     </details>
   </section>
   </div>
@@ -278,7 +278,7 @@
     <button type="button" class="ghost" id="installGo">홈 화면에 추가</button>
   </div>
 </main>
-<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="../explore.html">동네 진단</a><a href="../programs.html">재생 사업</a><a href="../field/redev.html">구역 계산</a><a href="../field/">현장 기록</a><a href="../tasks.html">과업·납품</a><a href="../rank.html">동네 비교 점수</a><a href="../relocate.html">부산 이전 직원 동네 비교</a><a href="../time4d.html">건물 나이 4D</a><a href="../box.html">보관함</a><a href="../docs.html">문서 열기</a></p><p><b>근거</b><a href="../data.html">데이터 출처</a><a href="../rules.html">기준 원문 대조</a><a href="../evidence.html">근거 읽는 법</a><a href="../dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="../about.html">서비스 소개</a><a href="../about.html#contact">시범 과업 상담</a><a href="../ethics.html">AI·데이터 원칙</a><a href="../privacy.html">개인정보 처리방침</a><a href="../privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
+<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="../explore.html">동네 현황</a><a href="../programs.html">재생 사업</a><a href="../field/redev.html">대상지 계산</a><a href="../field/">현장 사진 기록</a><a href="../tasks.html">과업·납품</a><a href="../rank.html">동네 비교 점수</a><a href="../relocate.html">부산 이전 직원 동네 비교</a><a href="../time4d.html">건물 나이 4D</a><a href="../box.html">보관함</a><a href="../docs.html">문서 열기</a></p><p><b>근거</b><a href="../data.html">데이터 출처</a><a href="../rules.html">기준 원문 대조</a><a href="../evidence.html">근거 읽는 법</a><a href="../dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="../about.html">서비스 소개</a><a href="../about.html#contact">상담하기</a><a href="../ethics.html">AI·데이터 원칙</a><a href="../privacy.html">개인정보 처리방침</a><a href="../privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 <div id="toast" class="toast" role="status" hidden><svg class="toast-ok" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11"/><path d="M7 12.5l3.2 3.2L17 9"/></svg><span id="toastText"></span><button type="button" id="toastAct" hidden></button></div>
 <dialog id="notice" aria-labelledby="noticeTitle">
   <h2 id="noticeTitle">촬영 사실 표시</h2>
@@ -294,9 +294,9 @@
   <button type="button" class="ghost" id="bigClose">닫기</button>
 </dialog>
 <section id="printDoc" class="print-doc" aria-hidden="true"></section>
-<script src="../site.js?v=20261121-r16"></script>
+<script src="../site.js?v=20261122-r19"></script>
 <script src="../site-motion.js" defer></script>
-<script src="../docgen.js?v=20261121-r16"></script>
+<script src="../docgen.js?v=20261122-r19"></script>
 <script src="upload-config.js"></script>
 <script src="upload.js"></script>
 <script src="record.js?v=20261121-r16"></script>
@@ -306,6 +306,6 @@
 <script src="evidence.js?v=20261120-r13"></script>
 <script src="detect.js"></script>
 <script src="vworld-key.js"></script>
-<script src="app.js?v=20261121-r16"></script>
+<script src="app.js?v=20261122-r19"></script>
 </body>
 </html>

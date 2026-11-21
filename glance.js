@@ -1,0 +1,65 @@
+/* 한눈 띠(09 총괄 설계 4절): [data-glance="national"]에 전국 숫자와 시·도 17칸 격자를 그린다.
+   숫자는 data/national/glance.json(scripts/export_glance.py가 원장에서 센 값)에서만 온다. 값이 없거나 못 받으면 그리지 않고
+   section 안에 적어 둔 글(스크립트 없을 때의 문장)을 그대로 둔다. util.js 다음에 싣는다. 외부 요청 없음. */
+(function (root) {
+  'use strict';
+  // util.js를 싣지 않은 쪽에서 오류를 내지 않게 비워 두고, 아래 브라우저 연결부가 RenewUtil이 없으면 그리지 않는다
+  const { esc, isNum, sidoShort } = (typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil) || {};
+  // 시·도 칸 배치: 북→남(줄), 서→동(칸)을 어림한 4칸 격자. 값으로 줄 세우지 않는다(08a)
+  const LAYOUT = [['23', '11', '31', '32'], ['34', '29', '33', '37'], ['35', '25', '22', '26'], ['24', '36', '38', '21'], ['39']];
+  const TITLE = '전국 동네 3곳 중 2곳은 인구가 줄고, 건물 절반이 20년을 넘었습니다';
+  const n = v => v.toLocaleString('ko-KR');
+  const pct = (a, b) => Math.round(a / b * 1000) / 10;
+  const bar = (w, note) => `<span class="rm-glance-bar${note ? ' is-note' : ''}" aria-hidden="true"><i data-w="${w}"></i></span>`;
+  const place = code => { for (let r = 0; r < LAYOUT.length; r++) { const c = LAYOUT[r].indexOf(code); if (c >= 0) return [r + 1, c + 1]; } return null; };
+
+  function valid(d) {
+    return !!d && isNum(d.dongs) && d.dongs > 0 && ['met2', 'aging50', 'pop30_check', 'biz_check', 'pickable', 'base_year'].every(k => isNum(d[k]))
+      && Array.isArray(d.sido) && d.sido.length > 0 && d.sido.every(s => s && isNum(s.dongs) && s.dongs > 0 && isNum(s.met2));
+  }
+
+  function render(d) {
+    if (!valid(d)) return '';
+    const bizAll = d.biz_check === d.dongs;
+    const cells = d.sido.map(s => ({ s, at: place(String(s.code2)) }))
+      .sort((a, b) => (a.at ? a.at[0] * 10 + a.at[1] : 99) - (b.at ? b.at[0] * 10 + b.at[1] : 99))   // 격자 순서(읽는 순서 = 보이는 순서)
+      .map(({ s, at }) => `<li${at ? ` data-r="${at[0]}" data-c="${at[1]}"` : ''}><a href="explore.html#map/${esc(s.code2)}"><b>${esc(sidoShort(s.name))}</b>`
+        + `<span>${n(s.met2)}/${n(s.dongs)}</span>${bar(pct(s.met2, s.dongs))}</a></li>`).join('');
+    const gap = d.dongs - d.pickable;
+    const src = (d.sources || []).map(s => `<li>${esc(s.name)} · ${esc(s.base_year)}년 자료 · ${s.retrieved_at ? '조회 ' + esc(s.retrieved_at) : '조회일 기록 없음'}</li>`).join('');
+    return `<h2>${TITLE}</h2>`
+      + `<p class="rm-glance-num"><b>${n(d.met2)}곳</b> / ${n(d.dongs)}곳</p>${bar(pct(d.met2, d.dongs))}`
+      + `<p class="rm-glance-tail">참고용 계산 · 확실한 것만 센 수(${bizAll ? '사업체 기준은' : '추가확인인 기준은'} 세지 않음) · 도시재생 지역 지정 판단이 아닙니다 · ${d.base_year}년 자료</p>`
+      + '<ul class="rm-glance-bars">'
+      + `<li><span>20년 넘은 건물이 절반 이상 <b>${n(d.aging50)}곳</b></span>${bar(pct(d.aging50, d.dongs))}</li>`
+      + `<li><span>인구 30년 비교가 끊겨 5년 기준으로만 센 곳 <b>${n(d.pop30_check)}곳</b></span>${bar(pct(d.pop30_check, d.dongs), true)}</li>`
+      + `<li><span>사업체 기준 추가확인 <b>${n(d.biz_check)}곳</b>${bizAll ? '(전국 공통)' : ''}</span>${bar(pct(d.biz_check, d.dongs), true)}</li></ul>`
+      + '<details class="rm-glance-sido"><summary>시·도별로 보기</summary>'
+      + '<p class="rm-glance-legend">막대 길이는 기준을 함께 넘은 읍·면·동의 비율입니다. 칸을 누르면 그 시·도의 동을 봅니다.</p>'
+      + `<ol class="rm-glance-grid">${cells}</ol></details>`
+      + '<details class="rm-glance-src"><summary>이 숫자는 어디서 왔나요?</summary>'
+      + '<p>법 제13조제4항은 도시재생활성화지역을 지정할 때 세 가지 기준(인구·사업체·오래된 건물) 가운데 2개 이상을 갖추라고 정합니다. '
+      + '리뉴맵은 읍·면·동마다 그 기준값을 셌을 뿐 지정 여부를 판단하지 않습니다. '
+      + `사업체 기준은 2020년 통계 방식이 바뀌어 ${bizAll ? '전국 모두' : n(d.biz_check) + '곳이'} 추가확인입니다. `
+      + `인구 30년 비교가 끊긴 ${n(d.pop30_check)}곳은 5년 연속 감소 기준으로만 셌습니다.</p>`
+      + `<p>분모는 값이 있는 읍·면·동 ${n(d.dongs)}곳입니다. 지도·검색에서 고를 수 있는 동은 ${isNum(d.boundary_year) ? d.boundary_year + '년 ' : ''}경계 기준 ${n(d.pickable)}곳${gap ? `(분할·신설 시점 차이 ${n(Math.abs(gap))}곳)` : ''}입니다.</p>`
+      + (src ? `<ul>${src}</ul>` : '')
+      + `<p>계산 규칙 상태: 조문 숫자 대조 전 · 계산 방법과 해석은 정하지 못함 · 참고용 계산${d.rule_version ? ` · 규칙 판 ${esc(d.rule_version)}` : ''}${d.snapshot_hash ? ` · 자료 지문 ${esc(String(d.snapshot_hash).slice(0, 12))}` : ''}</p></details>`;
+  }
+
+  if (typeof module === 'object' && module.exports) { module.exports = { render, LAYOUT, TITLE }; return; }
+  const el = root.document && root.document.querySelector('[data-glance="national"]');
+  if (!el || !root.RenewUtil) return;
+  root.RenewUtil.fetchJson('data/national/glance.json').then(d => {
+    const html = render(d);
+    if (!html) { el.classList.add('rm-glance-off'); return; }
+    el.innerHTML = html;
+    // CSP style-src 'self'라 style 속성 대신 CSSOM으로 넣는다
+    el.querySelectorAll('[data-w]').forEach(i => { i.style.width = i.dataset.w + '%'; });
+    el.querySelectorAll('[data-r]').forEach(li => { li.style.gridRow = li.dataset.r; li.style.gridColumn = li.dataset.c; });
+    const sido = el.querySelector('.rm-glance-sido'), wide = root.matchMedia('(min-width: 721px)');
+    const sync = () => { sido.open = wide.matches; };
+    sync();
+    if (wide.addEventListener) wide.addEventListener('change', sync); else wide.addListener(sync);   // site.js와 같은 옛 Safari 처리
+  });
+})(typeof window !== 'undefined' ? window : globalThis);

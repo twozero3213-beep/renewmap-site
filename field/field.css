@@ -303,3 +303,14 @@ body.field details.fr-fold > summary { min-height: 44px; }
 #drawMap:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 #drawMap:focus-visible::after { content: ""; position: absolute; left: 50%; top: 50%; z-index: 650; width: 28px; height: 28px; margin: -14px 0 0 -14px; pointer-events: none;
   background: linear-gradient(var(--ink), var(--ink)) center / 2px 100% no-repeat, linear-gradient(var(--ink), var(--ink)) center / 100% 2px no-repeat; }
+/* 2026-11-22 r19 대상지 계산: 결과 맨 위 한 덩어리(redev.js leadHTML). 두 값과 동수·분모는 같은 글자 크기(08c 쟁점 1), 긴 번지 목록은 휴대폰에서 줄을 꺾는다 */
+.field .fr-example { margin: 8px 0 4px; }
+.field #outLead { margin: 4px 0 12px; }
+.field #outLead > div { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.field #outLead h3 { margin: 0 0 8px; font-size: 18px; line-height: 1.5; }
+.field #outLead p, .field #outLead li { margin: 0 0 4px; font-size: 17px; line-height: 1.5; overflow-wrap: anywhere; }
+.field #outLead .hint { font-size: 15px; }
+.field #outLead ul { margin: 0 0 8px; padding-left: 1.2em; }
+.field #outLead .rd-found { font-size: 18px; }
+.field #outLead .rd-status { margin-top: 8px; }
+.field #out > #csv { margin: 0 0 12px; }

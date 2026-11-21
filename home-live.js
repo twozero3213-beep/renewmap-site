@@ -154,7 +154,7 @@
       const sidoCode = sgg.slice(0, 2), hash = `#map/${sidoCode}/${sgg}/${code}`;
       // 첫 화면 주 단추도 고른 동의 4-1 표로(r16: 카드는 새 동인데 단추만 반여1동이라 남의 동 표를 받았다). 첫 값은 HTML 그대로 반여1동(D29)
       const brief = `explore.html?report=brief&frag=MLIT-DECLINE${hash}`, top = $('h6Brief');
-      if (top) { top.href = brief; top.textContent = `${name} 4-1 표 초안 보기`; }
+      if (top) { top.href = brief; top.textContent = `${name} 동네 현황표 보기`; }
       $('h6Go41').href = brief;
       $('h6Go').href = `explore.html?report=onepage${hash}`;
       $('h6Prog').href = `explore.html?report=programs${hash}`;

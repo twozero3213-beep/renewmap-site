@@ -6,6 +6,9 @@
 /* Hallmark · waive 7b · --card and --on-green stay #ffffff · DESIGN.md 1.1 measured every RenewMap text pair on this white, ink 12.09:1 */
 /* 리뉴맵 랜딩 공통 스타일. 색은 V23 시제품(reference/v23) 값을 따른다. */
 [hidden] { display: none !important; }
+/* 웹 글꼴이 늦게 와도 글자가 밀리지 않게, 맑은 고딕을 Pretendard 크기에 맞춘 대체 글꼴(동 쪽 CLS 0.14 → 0.005, 2026-11-22 실측).
+   값은 지금 부분집합 글꼴로 잰 것이라 글꼴을 바꾸면 다시 잰다. 맑은 고딕이 없는 기기는 다음 글꼴로 넘어가 지금과 같다 */
+@font-face { font-family: "Pretendard Fallback"; src: local("Malgun Gothic"); size-adjust: 88.3%; ascent-override: 107.6%; descent-override: 27.2%; line-gap-override: 0%; }
 :root {
   /* 색 토큰: docs/design/redesign_2026-10-27.md 6.1(대비는 그 표의 계산값). 이름은 기존 것을 그대로 쓴다 */
   --bg: #f5f7f6;
@@ -61,7 +64,7 @@
   --shadow: 0 18px 50px rgba(16,47,45,.10);
   --max: 1080px;
   /* 글꼴: 미리고지(miri-goji.streamlit.app)와 같은 순서. 굵기는 본문 400, 제목·버튼 600/700만 쓴다(pretendard.css에 이 셋만 싣는다) */
-  --font: Pretendard, Inter, "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font: Pretendard, "Pretendard Fallback", Inter, "Noto Sans KR", "Malgun Gothic", sans-serif;
   --skel-hi: rgba(255,255,255,.6);
 }
 * { box-sizing: border-box; }
@@ -148,7 +151,7 @@ form.contact label { font-weight: 700; font-size: 15px; display: grid; gap: 6px;
 form.contact input, form.contact textarea, form.contact select { font: inherit; min-height: 48px; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: var(--radius-btn); background: var(--card); color: var(--ink); width: 100%; }
 form.contact .agree { font-weight: 400; display: flex; gap: 8px; align-items: flex-start; }
 form.contact .agree input { width: auto; margin-top: 6px; }
-form.contact .form-hint { display: block; font-weight: 400; font-size: var(--t-cap); color: var(--dim); }
+form.contact .form-hint { display: block; font-weight: 400; font-size: var(--t-sub); color: var(--dim); }
 form.contact .consent-full { margin: -6px 0 0; padding: 10px 16px; font-size: 15px; font-weight: 400; background: var(--bg); }
 form.contact .consent-full summary { font-size: 15px; color: var(--green); }
 form.contact .consent-full ul { margin: 8px 0 0; padding-left: 1.2em; } form.contact .consent-full li { margin-bottom: 4px; }
@@ -203,7 +206,7 @@ footer .links a { display: inline-flex; align-items: center; min-height: 44px; }
 .eth-note { font-size: 15px; color: var(--dim); }
 
 /* 주 메뉴 4개(찾기·업무별·현장·보관함). 1024px 미만은 하단 탭, 이상은 머리 메뉴만(rm6.css) */
-.tabbar { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+.tabbar { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 .tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 64px; color: var(--dim); text-decoration: none; font-size: 15px; font-weight: 600; transition: color .12s var(--ease), background-color .12s var(--ease); }
 .tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tabbar a:hover { color: var(--ink); }

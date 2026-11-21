@@ -69,7 +69,7 @@
     return id !== null && id===R.buildingId(r.building?.mgm_bld_pk) ? '건물 ID 일치' : '필지만 일치';
   }
   function verification(m,v,now=new Date().toISOString()) {
-    if(!v.record_id || !Array.isArray(v.photo_sha256) || !v.photo_sha256.length || v.photo_sha256.some(h=>!/^[a-f0-9]{64}$/.test(h))) throw Error('사진 해시가 있는 현장 기록을 먼저 선택하세요.');
+    if(!v.record_id || !Array.isArray(v.photo_sha256) || !v.photo_sha256.length || v.photo_sha256.some(h=>!/^[a-f0-9]{64}$/.test(h))) throw Error('사진 해시가 있는 현장 사진 기록을 먼저 선택하세요.');
     for(const k of ['reference_m','model_m']) if(v[k]==='' || !Number.isFinite(Number(v[k])) || Number(v[k])<=0) throw Error('실측 길이와 모델 길이를 양수(m)로 입력하세요.');
     if(!Number.isFinite(Date.parse(now))) throw Error('대조 기록 시각이 필요합니다.');
     return {model_key:modelKey(m),record_id:text(v.record_id,'기록 ID'),photo_sha256:[...v.photo_sha256],checker:text(v.checker,'확인자 소속·직위'),basis:text(v.basis,'기준점·치수 대조 근거'),reference_m:Number(v.reference_m),model_m:Number(v.model_m),difference_m:Number(v.model_m)-Number(v.reference_m),recorded_at:now,status:'최종검수 전'};
@@ -81,7 +81,7 @@
     checkGLB(bytes);
     if(R.sha256Hex(bytes)!==m.sha256) throw Error('모델 SHA-256이 파일과 다릅니다.');
     if(!['현황 자료(미검수)','추정','계획'].includes(m.kind)) throw Error('모델 자료 구분이 필요합니다.');
-    if(m.pnu && !/^\d{19}$/.test(m.pnu)) throw Error('PNU는 19자리입니다.');
+    if(m.pnu && !/^\d{19}$/.test(m.pnu)) throw Error('필지 번호(PNU)는 19자리입니다.');
     return {name:text(m.name,'모델 이름'),data:m.data,sha256:m.sha256,source:text(m.source,'출처·제작자'),license:text(m.license,'이용조건'),reference_date:day(m.reference_date),kind:m.kind,origin:text(m.origin,'모델 원점·축·단위'),pnu:m.pnu || '',building_id:text(m.building_id || '','대장 건물 ID',false),placement:placement(m.placement)};
   }
   function scene(v) {

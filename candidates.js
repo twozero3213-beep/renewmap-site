@@ -129,7 +129,7 @@
           + `<p class="meta">${U.esc(kstDay(r.saved_at))} 저장 · ${r.items.length}개 항목 · ${STAGES.find(([k]) => k === r.stage)[1]}</p><a href="explore.html${r.route}">지도에서 다시 보기</a>`
           + `<details><summary>단계·메모 편집</summary><form data-candidate-edit="${r.code}"><label>검토 단계<select name="stage">${STAGES.map(([k, v]) => `<option value="${k}"${r.stage === k ? ' selected' : ''}>${v}</option>`).join('')}</select></label>`
           + `<label>검토 메모<textarea name="note" maxlength="1000" rows="2">${U.esc(r.note)}</textarea></label><button type="submit">단계·메모 저장</button></form></details></li>`).join('')
-          || '<li class="box-empty-card"><p><b>아직 담은 후보가 없습니다.</b><br>동네 진단에서 동을 골라 ‘보관함에 담기’를 누르세요.</p><a class="btn" href="explore.html#map">동네 진단 열기</a></li>';
+          || '<li class="box-empty-card"><p><b>아직 담은 후보가 없습니다.</b><br>동네 현황에서 동을 골라 ‘보관함에 담기’를 누르세요.</p><a class="btn" href="explore.html#map">동네 현황 열기</a></li>';
         renderComparison(rows);
         host.querySelector('[data-candidate-csv]').disabled = !rows.length;
         // 2026-11-19: 받을 것이 없으면 내보내기·비교 칸을 숨긴다(빈 보관함에 쓸 수 없는 단추 둘과 접힌 칸이 먼저 보였다)

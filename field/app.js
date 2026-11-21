@@ -164,7 +164,7 @@
   }
   function pickedText() {
     $("bldPicked").hidden = !chosen;
-    if (chosen) $("bldPicked").textContent = `자동 채움 · 건축물대장 기준일 ${D.govDate(chosen.reference_date)}\n${chosen.bjd_name} ${chosen.jibun || ""} · 사용승인 ${chosen.use_apr_day ? D.govDate(chosen.use_apr_day) : "자료 없음"} · ${chosen.main_use || "-"} · ${chosen.structure || "-"} · ${chosen.floors === null ? "층수 자료 없음" : `지상 ${chosen.floors}층`}\n지번이나 필지 번호를 고치면 자동 채움을 지웁니다.`;
+    if (chosen) $("bldPicked").textContent = `자동 채움 · 건축물대장 기준일 ${D.govDate(chosen.reference_date)}\n${chosen.bjd_name} ${chosen.jibun || ""} · 완공 ${chosen.use_apr_day ? D.govDate(chosen.use_apr_day) : "자료 없음"} · ${chosen.main_use || "-"} · ${chosen.structure || "-"} · ${chosen.floors === null ? "층수 자료 없음" : `지상 ${chosen.floors}층`}\n지번이나 필지 번호를 고치면 자동 채움을 지웁니다.`;
   }
   const same = (b, f) => {
     if (!chosen || chosen.bjd10 !== f.bjd10) return false;
@@ -187,7 +187,7 @@
     for (const { b, f } of hits) {
       const li = document.createElement("li"), btn = document.createElement("button"), on = same(b, f);
       btn.type = "button"; btn.className = on ? "" : "ghost"; btn.setAttribute("aria-pressed", String(on));
-      btn.textContent = `${f.name} ${b.jibun}\n${b.main_use || "주용도 자료 없음"} · ${b.structure || "구조 자료 없음"} · ${b.floors == null ? "층수 자료 없음" : `지상 ${b.floors}층`} · 사용승인 ${b.use_apr_day ? D.govDate(b.use_apr_day) : "자료 없음"}`;
+      btn.textContent = `${f.name} ${b.jibun}\n${b.main_use || "주용도 자료 없음"} · ${b.structure || "구조 자료 없음"} · ${b.floors == null ? "층수 자료 없음" : `지상 ${b.floors}층`} · 완공 ${b.use_apr_day ? D.govDate(b.use_apr_day) : "자료 없음"}`;
       btn.addEventListener("click", () => {
         chosen = on ? null : E.buildingFill(b, f);
         $("jibun").value = chosen ? chosen.jibun || "" : ""; $("pnu").value = chosen ? chosen.pnu || "" : "";
@@ -239,7 +239,7 @@
     if (at !== pos) return;
     if (!p) { parcel = null; out.textContent = r.error === "필지 없음" ? "이 위치에서 필지를 찾지 못했습니다.\n지번을 직접 적어 주세요." : "필지를 찾지 못했습니다.\n인터넷 연결을 확인하거나 지번을 직접 적어 주세요."; return; }
     parcel = { ...p, rings: E.ringsFrom(r.geometry) };
-    out.textContent = `${p.addr || p.jibun} · PNU ${p.pnu}\n브이월드 연속지적도에서 찾았습니다.\n위치 오차만큼 옆 필지일 수 있으니 확인해 주세요.`;
+    out.textContent = `${p.addr || p.jibun} · 필지 번호 ${p.pnu}\n브이월드 연속지적도에서 찾았습니다.\n위치 오차만큼 옆 필지일 수 있으니 확인해 주세요.`;
     $("jibun").value = p.jibun; $("pnu").value = p.pnu; chosen = null; pickedText();
     $("bldQ").value = p.jibun; searchBld();
     if (!$("pinBox").hidden) plane = drawPin();
@@ -642,7 +642,7 @@
     if (!fromPnu) { if (document.readyState === "complete") show(); else window.addEventListener("load", show, { once: true }); }
   }
   $("item").append(new Option("고르지 않음", ""));
-  for (const v of R.ITEMS) $("item").append(new Option(v, v));
+  for (const v of R.ITEMS) $("item").append(new Option(v === "사용승인일" ? "완공된 날(사용승인일)" : v, v));
   // 입안요건의 '확인할 건물'에서 왔으면(?pnu=&jibun=) 그 건물을 채우고 항목을 사용승인일로 둔다. 기록의 pnu로 계산표에 다시 붙는다
   const fromBld = new URLSearchParams(location.search);
   if (fromPnu) { $("pnu").value = fromBld.get("pnu"); $("jibun").value = fromBld.get("jibun") || ""; $("item").value = "사용승인일"; checkBanner(fromBld.get("pnu"), fromBld.get("jibun") || ""); }
@@ -881,7 +881,7 @@
     wrap.append(table); detail.append(wrap); return detail;
   }
   // 배포 직후 예전 HTML 캐시에 페이지 스크립트가 없어도 기록·내보내기를 유지한다.
-  const recordPages = window.RenewListPages?.create($("list"), "현장 기록", () => render().catch(() => say("기록을 다시 불러오지 못했습니다. 새로고침해 주세요.", true))) || { reset() {}, slice: rows => rows };
+  const recordPages = window.RenewListPages?.create($("list"), "현장 사진 기록", () => render().catch(() => say("기록을 다시 불러오지 못했습니다. 새로고침해 주세요.", true))) || { reset() {}, slice: rows => rows };
   // 2026-11-14 우지예: 백업(ZIP 내보내기·공유)한 때를 이 기기에 적어 두고, 그 뒤에 저장한 기록 수를 목록 위에 알린다(index.html backupNag 주석).
   //     localStorage가 막힌 브라우저에서는 백업 때를 모르므로 기록이 있으면 늘 알린다(사라질 위험을 숨기지 않는다)
   const BACKUP_KEY = "renewmap-field-last-backup";
@@ -990,7 +990,7 @@
   $("share").addEventListener("click", async () => {
     try {
       const z = await buildZip(), file = new File([z.bytes], z.name, { type: "application/zip" });
-      await navigator.share({ files: [file], title: "리뉴맵 현장 기록" });
+      await navigator.share({ files: [file], title: "리뉴맵 현장 사진 기록" });
       markBackup();   // 공유로 넘긴 ZIP도 백업으로 친다
     } catch (e) { if (e.name !== "AbortError") toast(e.code === "FIELD_PHOTO" ? e.message : "공유하지 못했습니다.\n모두 내보내기(ZIP)를 쓰세요."); }
   });
@@ -1131,6 +1131,6 @@
     if (!a) return;
     const u = new URL(a.href, location.href);
     if (u.protocol !== location.protocol || (u.origin === location.origin && u.pathname.startsWith(location.pathname.replace(/[^/]*$/, "")))) return;
-    e.preventDefault(); toast("인터넷이 연결되면 열립니다. 현장 기록은 계속 쓸 수 있습니다.");
+    e.preventDefault(); toast("인터넷이 연결되면 열립니다. 현장 사진 기록은 계속 쓸 수 있습니다.");
   }, true);
 })();

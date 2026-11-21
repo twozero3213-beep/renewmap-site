@@ -9,8 +9,8 @@
 // 2026-11-17: #152(경상 구역 계산)와 main(초기 지도·현장 자동 로딩 개선 90186f154)을 합친 뒤 테스트가 알려 준 지문으로 맞춘다
 // 2026-11-18: 신청요건 현장 확인 줄에 '몇 동 더 확인하면 정해지나'(redev.js·redev-app.js)를 더해 테스트가 알려 준 지문으로 맞춘다
 // 2026-11-18: 사용자 편의 검토(현장 기록 찍기 단추 위로·저장 단추 고정·구역 계산 선택 입력 접기 등)를 반영해 테스트가 알려 준 지문으로 맞춘다
-const CACHE = "renewmap-field-e4ac1df1f4";
-const SHELL = ["./", "index.html", "field.css?v=20261121-r16", "record.js?v=20261121-r16", "store.js", "evidence.js?v=20261120-r13", "app.js?v=20261121-r16", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js?v=20261121-r16", "../site-motion.js", "../frame-guard.js", "../docgen.js?v=20261121-r16", "../cellpack.js", "../list-pages.js", "../list-pages.css", "../rm6.css",
+const CACHE = "renewmap-field-65cc2c2127";   // 2026-11-22 main(r16)과 도로명 주소 입력(redev.js·redev-app.js)을 합쳐 새 지문 — 테스트가 알려 준 값으로 바꾼다
+const SHELL = ["./", "index.html", "field.css?v=20261122-r19", "record.js?v=20261121-r16", "store.js", "evidence.js?v=20261120-r13", "app.js?v=20261122-r19", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js?v=20261122-r19", "../site-motion.js", "../frame-guard.js", "../docgen.js?v=20261122-r19", "../cellpack.js", "../list-pages.js", "../list-pages.css", "../rm6.css",
   "../data/report_templates.json", "upload.js", "upload-config.js", "detect.js", "redev.html", "redev.js", "redev-app.js", "parcel-ref.js", "twin.html", "twin.css", "twin.js", "twin-app.js", "../favicon.svg", "../icon-192.png"];
 // 설치 때는 브라우저 HTTP 캐시(Pages max-age=600)를 건너뛴다. 안 그러면 갱신 직전에 열어 둔 옛 파일이 새 캐시에 들어간다
 // 새 판은 기다리지 않고 바로 자리를 잡는다(skipWaiting·claim). 안 그러면 탭을 모두 닫기 전까지 옛 계산 파일이 나간다(2026-10-30 배포 직후 실측). 화면은 controllerchange로 새로고침을 안내한다

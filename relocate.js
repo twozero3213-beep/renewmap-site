@@ -68,7 +68,7 @@
           c.area_code !== row.code7 || c.unit !== 'km' || c.snapshot_id !== doc.snapshot_id ||
           c.cell_id !== `${officeCode}:${row.code7}:OFFICE_KM:${doc.snapshot_id.slice(-12)}` ||
           (row.code7 === officeCode && isNum(c.value) && c.value !== 0) || !c.source_url || !c.source_name || !c.reference_date || !c.retrieved_at || !c.rule_version || !c.formula_text) {
-        throw new Error('행정동 거리 원장의 코드와 출처를 확인할 수 없습니다.');
+        throw new Error('행정동 거리 자료의 코드와 출처를 확인할 수 없습니다.');
       }
       cells.set(row.code7, !c.value_hidden_reason && !['폐기', '충돌'].includes(c.status) && isNum(c.value) && c.value >= 0 ? c : null);
     }
