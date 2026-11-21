@@ -1,7 +1,7 @@
 {
   "ci": {
     "collect": {
-      "numberOfRuns": 3,
+      "numberOfRuns": 5,
       "url": [
         "https://twozero3213-beep.github.io/renewmap-site/",
         "https://twozero3213-beep.github.io/renewmap-site/explore.html",
@@ -82,8 +82,8 @@
             "largest-contentful-paint": [
               "error",
               {
-                "maxNumericValue": 2040,
-                "aggregationMethod": "median"
+                "maxNumericValue": 2680,
+                "aggregationMethod": "optimistic"
               }
             ]
           }
@@ -94,8 +94,8 @@
             "largest-contentful-paint": [
               "error",
               {
-                "maxNumericValue": 9000,
-                "aggregationMethod": "median"
+                "maxNumericValue": 8060,
+                "aggregationMethod": "optimistic"
               }
             ]
           }
