@@ -38,7 +38,7 @@
   const MIG = ['#6a4c93', '#b3a2d1', '#e9ecea', '#8fcfc3', '#0b7f6f']; // 기준 없는 변화·청년 순이동: 줄어듦(유출) 보라 ↔ 늘어남(유입) 청록, 가운데 중성(기준선 0). 주황은 '기준 넘음' 전용
   // 지표 묶음: '정비가 필요한 신호'와 '생활 여건'을 각각 고를 수 있게 묶는다. 범죄 통계·안전시설 점수·기피·순위는 만들지 않는다(D8·D13)
   // 아이콘은 이모지 대신 지표 칩과 같은 선 아이콘(ICONS) 한 벌을 쓴다(UI 검수 2026-10-28: 3D 이모지·선 아이콘·글자 기호가 섞여 있었다)
-  const GROUPS = [['aging', '노후·쇠퇴'], ['pop', '인구'], ['estate', '아파트 거래'], ['life', '생활 여건'], ['safe', '안전 시설'], ['fore', '인구 전망'], ['sum', '모아 보기']];
+  const GROUPS = [['aging', '노후·쇠퇴'], ['pop', '인구'], ['estate', '부동산 거래'], ['life', '생활 여건'], ['safe', '안전 시설'], ['fore', '인구 전망'], ['sum', '모아 보기']];
   const GROUP_ICON = { aging: 'bldg', pop: 'people', estate: 'home', life: 'tree', safe: 'cctv', fore: 'fore', sum: 'sum' };
   const gIco = g => icon(GROUP_ICON[g]);
   const safeUrl = u => (/^https?:\/\//i.test(u || '') ? u : null);
@@ -175,7 +175,7 @@
     // 독거노인 수(부산 206동, 2026-11-14 값 10·50·90% 577·1,067·2,127명)는 한 색이라 동끼리 견줄 수 없었다(페르소나 점검: 한파 순찰 대상 고르기) → 둥근 고정 눈금
     ELDERLY_LIVING_ALONE: [500, 1000, 1500, 2000] };
   // living/index.json의 group은 키(life) 또는 이름(생활 인프라)이다. '교통'은 대표 결정대로 생활 인프라에 둔다
-  const GROUP_ALIAS = { '쇠퇴·노후': 'aging', 노후: 'aging', '부동산 거래': 'estate', 부동산: 'estate', 정비: 'aging', '노후·정비': 'aging', '정비 신호': 'aging', 경제: 'aging', 인구: 'pop', '인구 변화': 'pop', '생활 인프라': 'life', '생활 여건': 'life', 생활: 'life', 교통: 'life', '안전 인프라': 'safe', 안전: 'safe', '건축·정비': 'aging', 복지: 'pop', 전망: 'fore', '추세 전망': 'fore', 종합: 'sum' };
+  const GROUP_ALIAS = { '쇠퇴·노후': 'aging', 노후: 'aging', '부동산 거래': 'estate', 부동산: 'estate', 정비: 'aging', '노후·정비': 'aging', '정비 신호': 'aging', 경제: 'aging', 인구: 'pop', '인구 변화': 'pop', '인구·가구': 'pop', '생활 인프라': 'life', '생활 여건': 'life', 생활: 'life', 교통: 'life', '안전 인프라': 'safe', 안전: 'safe', '건축·정비': 'aging', 복지: 'pop', 전망: 'fore', '추세 전망': 'fore', 종합: 'sum' };
   const groupKey = g => (GROUPS.some(x => x[0] === g) ? g : GROUP_ALIAS[String(g || '').trim()] || 'life');
   const r3 = x => Number(x.toPrecision(3));
   // 기준값에 고정한 구간. 양수 기준은 0.25~2배 눈금, 0 이하 기준은 기준선 한 곳에서만 나눈다

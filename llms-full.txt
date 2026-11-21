@@ -96,9 +96,12 @@
 - POP_AGED65_PCT: 65세 이상 인구 비율 (%)
 - POP_YOUTH_PCT: 청년층(20~34세) 인구 비율 (%)
 - HH_ONE_PCT: 1인 세대 비율 (%)
+- NEWLYWED_COUPLES_SGG: 신혼부부 수(시·군·구 전체) (쌍)
 - HOSP_CLINIC_COUNT: 병원·의원 수 (개)
 - HOSP_PER10K: 인구 1만 명당 병원·의원 수 (개/1만 명)
+- PEDIATRIC_SPECIALIST_COUNT: 소아청소년과 전문의가 있는 의료기관 수 (곳)
 - LIB_NEAREST_M: 가장 가까운 공공도서관 직선거리 (m)
+- CULTURE_FACILITY_COUNT: 문화시설 수(영화관·공연장·박물관·미술관) (곳)
 - PARK_AREA_PER_CAPITA: 1인당 도시공원 면적 (㎡/인)
 - PARK_COUNT: 도시공원 수 (개)
 - ER_NEAREST_M: 가장 가까운 응급의료센터 직선거리 (m)
@@ -106,10 +109,12 @@
 - PHARM_NIGHT_COUNT: 평일 21시 넘어 영업 등록 약국 수 (개)
 - SENIOR_HALL_COUNT: 경로당 수 (개)
 - ELEM_SCHOOL_NEAREST_M: 가장 가까운 초등학교 직선거리 (m)
+- ELEM_SCHOOL_ZONE_COUNT: 동과 겹치는 초등학교 통학구역 수 (곳)
 - SUBWAY_NEAREST_M: 가장 가까운 도시철도역 직선거리 (m)
 - STORE_COUNT: 상가 업소 수 (개)
 - STORE_RETAIL_COUNT: 소매 업소 수 (개)
 - STORE_FOOD_COUNT: 음식 업소 수 (개)
+- ENT_BAR_COUNT: 유흥·단란주점 영업소 수 (곳)
 - HEALTH_CENTER_NEAREST_M: 가장 가까운 보건소(지소·진료소 포함) 직선거리 (m)
 - CHILDCARE_NEAREST_M: 가장 가까운 어린이집 직선거리 (m)
 - SPORTS_CENTER_NEAREST_M: 가장 가까운 실내 생활체육시설 직선거리 (m)
@@ -128,6 +133,11 @@
 - STD_SHORTFALL_COUNT: 공식 기준 해당 항목 수(하한) (개)
 - RENT_COUNT_3M: 전월세 계약 건수(최근 3개월) (건)
 - RENT_SH_COUNT_3M: 단독·다가구 전월세 계약 건수(최근 3개월) (건)
+- TRADE_APT_COUNT_3M: 아파트 매매 거래 건수(최근 3개월) (건)
+- TRADE_APT_M2_MED_3M: 아파트 매매 ㎡당 거래금액 중위값(최근 3개월) (만원/㎡)
+- TRADE_OFFI_COUNT_3M: 오피스텔 매매 거래 건수(최근 3개월) (건)
+- TRADE_OFFI_M2_MED_3M: 오피스텔 매매 ㎡당 거래금액 중위값(최근 3개월) (만원/㎡)
+- TRADE_SH_COUNT_3M: 단독다가구 매매 거래 건수(최근 3개월) (건)
 - JEONSE_M2_MED: 전세 보증금 ㎡당 중위값(최근 3개월) (만원/㎡)
 - WOLSE_MED: 월세 중위값(최근 3개월) (만원)
 
@@ -193,7 +203,7 @@
 
 대상 동의 쇠퇴 3요건 값과 생활 지표를 출처가 붙은 문서로 받아 기초조사 초안에 씁니다. 2027년 도시재생 신규사업 신청서 제출 기한은 2026년 12월 28~30일입니다(국토교통부 「2027년 도시재생 신규사업 평가 가이드라인」 22쪽). 신청 전에 그해 공고문 원문을 확인하세요.
 
-## 데이터 출처 (41종, 자세히는 https://twozero3213-beep.github.io/renewmap-site/data.html)
+## 데이터 출처 (50종, 자세히는 https://twozero3213-beep.github.io/renewmap-site/data.html)
 
 - 국토교통부 도시재생종합정보체계 쇠퇴진단지표(읍면동) — 국토교통부, 기준 2025, 이용조건 이용허락범위 제한 없음: https://www.city.go.kr/portal/notice/opensys/contents02/link.do
 - 행정안전부 주민등록인구통계(KOSIS 공유서비스 행정구역(읍면동)별 주민등록인구) — 행정안전부, 기준 1993~2025, 이용조건 공공누리 1유형: https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B04005N
@@ -204,17 +214,22 @@
 - 부산광역시 구·군별 어린이집 현황(공공데이터포털 15147779 외 15개) — 공공데이터포털, 기준 2025-03-14, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15148277/openapi.do
 - 경상남도 거제시_어린이집현황_20260716 — 공공데이터포털, 기준 2026-07-16, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15117963/fileData.do
 - 경상남도 양산시_어린이집현황_20260220 — 공공데이터포털, 기준 2026-02-20, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/3040402/fileData.do
+- 행정안전부 지방행정 인허가 영화상영관 조회서비스(공공데이터포털 15154848) — 행정안전부, 기준 2026-11-19, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15154848/openapi.do
 - 국토교통부 건축HUB 대용량 제공 — 폐쇄말소대장 표제부 — 국토교통부, 기준 2026-09-30, 이용조건 미표시: https://www.hub.go.kr/portal/opn/lps/idx-lgcpt-pvsn-srvc-list.do
 - 국립중앙의료원 전국 응급의료기관 정보 조회 서비스(공공데이터포털 15000563) — 국립중앙의료원, 기준 2026-10-23, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15000563/openapi.do
 - 행정안전부 안전비상벨위치정보 조회서비스(공공데이터포털 15155046) — 행정안전부, 기준 2026-09-30, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15155046/openapi.do
+- 행정안전부 지방행정 인허가 유흥주점 조회서비스(공공데이터포털 15154890) — 행정안전부, 기준 2026-11-19, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15154890/openapi.do
+- 행정안전부 지방행정 인허가 공연장 조회서비스(공공데이터포털 15154966) — 행정안전부, 기준 2026-11-19, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15154966/openapi.do
 - 건강보험심사평가원 전국 병의원 및 약국 현황(공공데이터포털 15051059) — 건강보험심사평가원, 기준 2026-09-30, 이용조건 공공누리 1유형: https://www.data.go.kr/data/15051059/fileData.do
 - 건강보험심사평가원 병원정보서비스(공공데이터포털 15001698) — 건강보험심사평가원, 기준 2026-10-23, 이용조건 공공누리 1유형: https://www.data.go.kr/data/15001698/openapi.do
 - 행정안전부 행정동별(통반단위) 세대원수별 주민등록 세대수(공공데이터포털 15108081) — 행정안전부, 기준 2026-10-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15108081/openapi.do
 - 부산광역시교육청 유치원 명부(교육청 누리집, 공공데이터포털 15050727) — 부산광역시교육청, 기준 2026-03-17, 이용조건 이용허락범위 제한 없음: https://www.pen.go.kr/main/as/selectKinderList.do?mi=30732
 - 경상남도교육청 학교일람표(2025.4.1 조사 기준, 공공데이터포털 3036368) — 공공데이터포털, 기준 2025-04-01, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/3036368/fileData.do
 - 행정안전부 주민등록인구통계(KOSIS DT_1B04005N 행정구역(읍면동)별/5세별 주민등록인구) — 행정안전부, 기준 2025-12-31, 이용조건 공공누리 1유형: https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B04005N
+- 통계청 신혼부부통계 시군구별 신혼부부 수(KOSIS DT_1NW1037) — 통계청, 기준 2024-11-01, 이용조건 공공누리 1유형: https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1NW1037
 - 전국도서관표준데이터(공공데이터포털 15013109) — 공공데이터포털, 기준 2026-10-23, 이용조건 공공누리 1유형: https://www.data.go.kr/data/15013109/standard.do
 - 부산광역시 구군 독거노인 현황조회 서비스(공공데이터포털 15160011) — 공공데이터포털, 기준 2026-05-27, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15160011/openapi.do
+- 행정안전부 지방행정 인허가 박물관·미술관 조회서비스(공공데이터포털 15155146) — 행정안전부, 기준 2026-11-19, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15155146/openapi.do
 - 국토안전관리원 노후화된 공공시설물현황(공공데이터포털 15017291) — 공공데이터포털, 기준 2026-10-26, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15017291/openapi.do
 - 전국도시공원정보표준데이터(공공데이터포털 15012890) — 공공데이터포털, 기준 2026-10-23, 이용조건 공공누리 1유형: https://www.data.go.kr/data/15012890/standard.do
 - 한국도로교통공단 보행노인 교통사고 다발지역(공공데이터포털 15057666) — 공공데이터포털, 기준 2025-12-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15057666/openapi.do
@@ -224,15 +239,19 @@
 - 부산광역시 정비사업 정보(공공데이터포털 3069406) — 공공데이터포털, 기준 2026-10-26, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/3069406/openapi.do
 - 국토교통부 아파트·연립다세대·오피스텔 전월세 실거래가 자료(공공데이터포털 15126474·15126473·15126475) — 국토교통부, 기준 2026-10-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15126474/openapi.do
 - 한국지방교육행정연구재단 초중등학교위치(공공데이터포털 15099519) — 공공데이터포털, 기준 2025-09-22, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15099519/fileData.do
+- 한국지방교육행정연구재단 초등학교통학구역(공공데이터포털 15099520) — 공공데이터포털, 기준 2025-09-22, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15099520/fileData.do
 - 전국마을회관및경로당표준데이터(공공데이터포털 15114136) — 공공데이터포털, 기준 2026-10-29, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15114136/standard.do
 - 경상남도 양산시_경로당 현황(공공데이터포털 15045251) — 공공데이터포털, 기준 2026-02-20, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15045251/fileData.do
 - 국토교통부 단독/다가구 전월세 실거래가 자료(공공데이터포털 15126472) — 국토교통부, 기준 2026-10-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15126472/openapi.do
+- 행정안전부 지방행정 인허가 단란주점 조회서비스(공공데이터포털 15154883) — 행정안전부, 기준 2026-11-19, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15154883/openapi.do
 - 국민체육진흥공단 공공체육시설 상세 정보(공공데이터포털 15107764) — 공공데이터포털, 기준 2026-11-13, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15107764/openapi.do
 - 소상공인시장진흥공단 상가(상권)정보(공공데이터포털 15083033) — 공공데이터포털, 기준 2026-09-30, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15083033/fileData.do
 - 전국보안등정보표준데이터(공공데이터포털 15017320) — 공공데이터포털, 기준 2026-09-15, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15017320/standard.do
 - 국가철도공단 도시광역철도 역사정보(공공데이터포털 15013205, 레일포털) — 국가철도공단, 기준 2026-06-25, 이용조건 이용허락범위 제한 없음: https://data.kric.go.kr/rips/M_01_01/detail.do?id=32
+- 국토교통부 아파트 매매 실거래가 자료(공공데이터포털 15126469) — 국토교통부, 기준 2026-10-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15126469/openapi.do
+- 국토교통부 오피스텔 매매 실거래가 자료(공공데이터포털 15126464) — 국토교통부, 기준 2026-10-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15126464/openapi.do
+- 국토교통부 단독다가구 매매 실거래가 자료(공공데이터포털 15126465) — 국토교통부, 기준 2026-10-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15126465/openapi.do
 - 국가데이터처(옛 통계청) 국내인구이동통계(KOSIS 시군구/성/연령(5세)별 순이동자수) — 국가데이터처, 기준 2019~2025, 이용조건 공공누리 1유형: https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1B26002
-- 국토교통부 아파트 매매 실거래가 자료(공공데이터포털 15126469) — 국토교통부, 기준 202401~202610, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15126469/openapi.do
 - 행정안전부 인구감소지역 및 인구감소관심지역 지정 고시(제2026-61호) — 행정안전부, 기준 2026-10-20, 이용조건 이용허락범위 제한 없음: https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000016&nttId=130293
 - 국토교통부 전국 도시정비사업 통합 데이터(공공데이터포털 15160169) — 국토교통부, 기준 2026-05-18, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/15160169/fileData.do
 - 경찰청_범죄 발생 지역별 통계(2025, 공공데이터포털 3074462) — 경찰청, 기준 2025-12-31, 이용조건 이용허락범위 제한 없음: https://www.data.go.kr/data/3074462/fileData.do
@@ -247,10 +266,10 @@
 - dong_extra.json (555바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
 - dong_index.json (225,320바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
 - dong_successors.json (2,821바이트): 최상위 note, dongs; generated_at 없음; snapshot_hash 없음
-- index.json (1,757,008바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
-- index_core.json (1,161,762바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
+- index.json (1,976,507바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
+- index_core.json (1,381,261바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
 - index_map.json (400,829바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
-- index_series.json (1,358,999바이트): 최상위 snapshot_hash, generated_at, sigungu, summary, unmatched; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
+- index_series.json (1,578,498바이트): 최상위 snapshot_hash, generated_at, sigungu, summary, unmatched; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
 - migration.json (717,178바이트): 최상위 generated_at, snapshot_hash, source, sigungu, unmatched; generated_at 2026-11-07T12:06:41+09:00; snapshot_hash ec91c53f996aba9898815bec8fb3c23908f49285e9af2c0fc27f06685e58b8d6
 - pop_name_joined.json (35,143바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
 - pop_unmatched.json (904,800바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
