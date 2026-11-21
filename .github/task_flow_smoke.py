@@ -278,6 +278,9 @@ def main():
             assert q.evaluate('async(id)=>(await TaskStore.history(id)).at(-1).hash', task_id) == actual
             result['checks'].append('direct_delivery_opens_handover_for_selected_task')
             map_context=browser.new_context(accept_downloads=True,service_workers='block')
+            if not args.base:
+                # 검사 주소는 네이버 지도 키의 허용 도메인이 아니다. 인증에 실패한 SDK가 던지는 내부 오류를 화면 오류로 세지 않게 ui_smoke처럼 요청을 막고 대체 지도로 본다
+                map_context.route('https://oapi.map.naver.com/openapi/v3/maps.js**', lambda route: route.abort())
             m=map_context.new_page()
             m.on('pageerror',lambda e:result['errors'].append(str(e)))
             m.goto(base+'explore.html?report=brief&panel=evidence#map/21/21090/21090700',wait_until='load')
