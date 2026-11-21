@@ -9,7 +9,7 @@
   const labels = {
     planned: "검토용 초안",
     invalid: "C 입력 다시 확인",
-    hold: "B 근거 부족·판단 보류",
+    hold: "B 근거 부족 보류", // OD1(r16 2차): '판단 보류'는 요건 상태 낱말과 섞여 tasks-files.js 상태 이름과 같게
     ready: "A 대조 완료·담당자 검토 대기",
     approved: "최종 승인 기록됨(사용자 기록)",
     rejected: "최종 반려 기록됨(사용자 기록)",
@@ -56,11 +56,16 @@
     commit: commitWork, notify: say,
   });
   const isReport = file => window.RenewSurveyChangeUI.isSurvey(file) || window.RenewRevisitUI.isRevisit(file);
+  let at = 0;   // 지금 단계. 과업을 고르거나 비우면 같은 단계를 다시 그린다(계획 유무에 따라 빈 안내가 바뀐다)
   function step(n) {
+    at = n;
+    // 계획을 저장하기 전에는 2~4단계 빈 폼 대신 안내 하나(r16: 다 쓰고 나서야 '계획을 먼저 저장'을 만났다)
+    const none = n > 0 && !current;
+    $("taskNoPlan").hidden = !none;
     document.querySelectorAll("[data-panel]").forEach((e) => {
-      e.hidden = e.dataset.panel !== String(n);
+      e.hidden = none || e.dataset.panel !== String(n);
     });
-    document.querySelectorAll("[data-step]").forEach((e) => {
+    document.querySelectorAll(".task-steps [data-step]").forEach((e) => {
       if (e.dataset.step === String(n)) e.setAttribute("aria-current", "step");
       else e.removeAttribute("aria-current");
     });
@@ -139,10 +144,11 @@
     if (!lines.length || lines.length > 50)
       throw new Error("요구 항목은 1~50개로 적어 주세요.");
     const requirements = lines.map((line, i) => {
-      const parts = line.split("|").map((x) => x.trim());
+      // 휴대폰 한글 자판은 세로줄(|)이 둘째 기호 화면에 있다 → 쉼표·탭도 받는다. 세로줄이 있으면 세로줄만, 없으면 탭, 그다음 쉼표로 나눈다(출처 이름 안 쉼표를 지킨다)
+      const parts = line.split(line.includes("|") ? "|" : line.includes("\t") ? "\t" : ",").map((x) => x.trim());
       if (parts.length !== 3 || parts.some((x) => !x))
         throw new Error(
-          `${i + 1}번째 항목을 항목명 | 지정 출처 | 공간 단위 순서로 적어 주세요.`,
+          `${i + 1}번째 항목을 항목명 | 지정 출처 | 공간 단위 순서로 적어 주세요. 쉼표나 탭으로 나눠도 됩니다.`,
         );
       const hit = unused.findIndex((r) => r.title === parts[0]);
       return {
@@ -188,10 +194,14 @@
     $("checkUnit").value = row?.unit || "";
     $("checkNote").value = row?.note || "";
     $("checkHash").dataset.hash = row?.evidence_sha256 || "";
-    $("checkHash").textContent = row?.evidence_sha256
-      ? `근거 파일 SHA-256: ${row.evidence_sha256}`
-      : "근거 파일을 선택하면 지문이 기록됩니다.";
+    showHash(row?.evidence_sha256);
     $("checkFile").value = "";
+  }
+  // 파일 확인값: 안내 글은 본문 글꼴, 해시 값만 고정폭(r16: 한글까지 고정폭이라 자간이 벌어졌고 '지문'은 생체 지문으로 읽혔다)
+  function showHash(sha) {
+    const code = document.createElement("code");
+    code.textContent = sha || "";
+    $("checkHash").replaceChildren(...(sha ? ["근거 파일 확인값(SHA-256): ", code] : ["근거 파일을 고르면 파일 확인값(SHA-256)을 남깁니다."]));
   }
   function render() {
     $("handoverStatus").textContent = current
@@ -201,7 +211,7 @@
     $("handoverPreview").hidden = true;
     $("downloadHandover").hidden = true;
     $("taskState").textContent = current
-      ? `${current.spec.title} · v${current.revision} · ${labels[current.state]} · 검증 ${current.attempts}/3회`
+      ? `${current.spec.title} · v${current.revision} · ${labels[current.state]} · 대조 ${current.attempts}/3회`
       : "새 과업을 설정하세요.";
     const pick = $("checkPick");
     pick.textContent = "";
@@ -260,6 +270,7 @@
     historyPages.reset();
     showSpec();
     render();
+    step(at);
     await refreshList();
     await survey.refresh();
     await revisit.refresh();
@@ -308,7 +319,7 @@
     if (file) {
       const stored = await storeFile(file, base.id);
       if (stored.sha256 !== evidence.sha256 || stored.size !== evidence.size)
-        throw new Error("저장할 증빙의 파일 지문·크기가 다릅니다.");
+        throw new Error("저장할 증빙의 파일 확인값·크기가 다릅니다.");
     }
     await S.fastForward([...prefix,...added]);
     await select(base.id);
@@ -342,7 +353,7 @@
         throw new Error("과업의 전체 보관 파일은 500개·20MB 이하여야 합니다.");
     }
     if (old && (await T.hash(await old.blob.arrayBuffer())) !== sha256)
-      throw new Error("기존 보관 파일의 지문이 다릅니다.");
+      throw new Error("기존 보관 파일의 확인값이 다릅니다.");
     if (!old) await F.addDoc(entry);
     return entry;
   }
@@ -382,7 +393,7 @@
     await commit("attach", {artifacts:next}, base, async () => {
       for (const f of files) {
         const entry = await storeFile(new File([f.blob],f.name,{type:f.blob.type}),base.id);
-        if (entry.sha256 !== f.sha256) throw new Error("저장할 조사 파일의 지문이 다릅니다.");
+        if (entry.sha256 !== f.sha256) throw new Error("저장할 조사 파일의 확인값이 다릅니다.");
       }
     });
   }
@@ -491,9 +502,9 @@
           "파일 준비 중 과업이나 항목이 바뀌었습니다. 다시 선택해 주세요.",
         );
       $("checkHash").dataset.hash = entry.sha256;
-      $("checkHash").textContent = `근거 파일 SHA-256: ${entry.sha256}`;
+      showHash(entry.sha256);
       keepCheck();
-      say("근거 파일을 이 기기에 보관했습니다.");
+      say("근거 파일을 이 기기에 보관하고 파일 확인값을 남겼습니다.");
     }),
   );
   $("checkForm").addEventListener("submit", (e) => {
@@ -537,7 +548,7 @@
         { artifacts: mergeArtifacts(base.artifacts, added) },
         base,
       );
-      say("납품 파일의 정확한 지문을 새 버전에 연결했습니다.");
+      say("납품 파일과 그 파일 확인값을 새 버전에 연결했습니다.");
       $("deliveryFiles").value = "";
     });
   });
@@ -604,6 +615,7 @@
       );
     }),
   );
+  $("noticeBackup").addEventListener("click", () => $("backupTask").click());   // 첫 줄 안내의 '백업 받기'는 3단계 단추와 같은 일
   $("handoverTask").addEventListener("click", () =>
     action(async () => {
       await handover();
@@ -658,7 +670,7 @@
     else await S.restore(incoming);
     await select(b.manifest.id);
     say(
-      "이력·파일 지문 검사를 통과한 기록을 보관했습니다. 작성자 신원·기관 승인 진위는 별도 확인 대상입니다.",
+      "이력·파일 확인값 검사를 통과한 기록을 보관했습니다. 작성자 신원·기관 승인 진위는 별도 확인 대상입니다.",
     );
   }
   action(async () => {
@@ -670,12 +682,10 @@
       step(panels[entry]);
       if (entry === "survey") $("surveyChanges").open = true;
       if (entry === "revisit") $("revisitReport").open = true;
-      if (entry === "delivery" && location.hash === "#handoverSummary") {
+      if (entry === "delivery" && location.hash === "#handoverSummary" && current) {
         $("handoverHeading").focus({ preventScroll: true });
         $("handoverSummary").scrollIntoView({ block: "start" });
       }
-      if (!current)
-        say("저장한 과업을 선택하거나, 1 과업 설정에서 새 과업을 저장한 뒤 이어서 기록하세요.");
     }
     if (window.RenewTaskCloudUI)
       cloud = window.RenewTaskCloudUI.mount({

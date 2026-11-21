@@ -5,6 +5,8 @@
 
 /* ── 1. 토큰 ── */
 :root {
+  /* r16 M34: 밝은 화면 한 벌만 있다. 브라우저 자동 어둡게(Chrome 강제 다크·삼성 인터넷)가 범례 견본만 뒤집어 '30% 미만'이 가장 진한 색으로 읽혔다 */
+  color-scheme: only light;
   /* v7: 바탕은 무채, 강조는 짙은 청록 한 색, 색은 지도 자료에만(경쟁 서비스 분해: Felt·Giraffe·PLATEAU VIEW) */
   --bg: #f6f5f2;            /* 종이색 바탕(무채) */
   --card: #ffffff;
@@ -39,7 +41,7 @@
   --bar-empty: #d6d4ce;
   --shade-06: rgba(23, 25, 28, .06); --shade-16: rgba(23, 25, 28, .16); --shade-18: rgba(23, 25, 28, .18);
   --shade-22: rgba(23, 25, 28, .22); --shade-25: rgba(23, 25, 28, .25); --shade-30: rgba(23, 25, 28, .3); --shade-35: rgba(23, 25, 28, .35);
-  --amber: #8a4b00;         /* 확인 필요 글자. #fff4dc 위 6.2:1 */
+  --amber: #8a4b00;         /* 추가확인 글자. #fff4dc 위 6.2:1 */
   --amber-bg: #fff4dc;
   --rm-max: 1200px;
   /* R1: 제목 크기가 화면마다 여섯 가지라 같은 사이트로 안 읽혔다 → 단계 하나 */
@@ -124,6 +126,8 @@ header.top .logo span { color: var(--green); }
 /* 2026-11-19: '시범 상담'은 선 단추(흰 바탕·청록 글). 채운 단추는 화면 본문의 주 행동 하나에만 쓴다 */
 .rm-nav .rm-cta { min-height: 44px; background: var(--card); color: var(--green); border: 1px solid var(--line-strong); margin-left: 8px; border-radius: 8px; box-shadow: none; font-size: var(--t-nav); font-weight: 700; }
 .rm-nav .rm-cta:hover { background: var(--hover-tint); }
+/* 메뉴 시트의 '서비스 소개 · 비용과 범위' 글 링크 한 줄(site.js, r16). 넓은 화면 머리 줄에는 두지 않는다(주 메뉴 목록은 그대로) */
+.rm-nav .rm-nav-more { display: none; }
 /* '메뉴' 단추: (0,2,1)이라 현장 화면의 녹색 전체 폭 단추 규칙(.field button, 0,1,1)을 이긴다 */
 header.top .rm-menu-btn { display: none; flex: none; width: auto; margin: 0 0 0 auto; min-height: 44px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-size: 16px; font-weight: 700; box-shadow: none; }
 header.top a:focus-visible, header.top button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 2px var(--card); }
@@ -146,11 +150,14 @@ header.top .site-nav a[href$="about.html#contact"] { background: var(--card); co
   body:has(.tabbar) { padding-bottom: calc(65px + env(safe-area-inset-bottom)); }
   header.top > .wrap:first-child { position: relative; }
   header.top .rm-menu-btn { display: inline-flex; align-items: center; }
-  .rm-nav { display: none; position: absolute; left: 0; right: 0; top: 100%; flex-direction: column; align-items: stretch; background: #fff; border-bottom: 1px solid var(--line); padding: 8px 16px 16px; box-shadow: 0 12px 24px var(--shade-16); }
+  /* r16 M11: 200% 확대(640×360)·가로 휴대폰에서 시트가 화면보다 길어 '시범 과업 상담'이 잘렸다 → 시트 안에서 스크롤. 초점이 시트를 벗어나면 site.js가 닫는다 */
+  .rm-nav { display: none; position: absolute; left: 0; right: 0; top: 100%; flex-direction: column; align-items: stretch; max-height: calc(100dvh - var(--site-header-h, 64px)); overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; background: #fff; border-bottom: 1px solid var(--line); padding: 8px 16px 16px; box-shadow: 0 12px 24px var(--shade-16); }
   .rm-nav.is-open { display: flex; }
-  .rm-nav a { font-size: 18px; min-height: 52px; border-bottom: 1px solid var(--mute-bg); border-radius: 0; }
+  .rm-nav a { flex: none; font-size: 18px; min-height: 52px; border-bottom: 1px solid var(--mute-bg); border-radius: 0; }
   .rm-nav a[aria-current="page"] { box-shadow: inset 4px 0 0 var(--green); padding-left: 16px; }
-  .rm-nav .rm-cta { margin: 12px 0 0; justify-content: center; border-radius: 8px; }
+  .rm-nav .rm-nav-more { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; margin: 8px 0 0; color: var(--dim); font-size: var(--t-sub); }
+  .rm-nav .rm-nav-more a { min-height: 44px; padding: 0 4px; border: 0; font-size: var(--t-sub); font-weight: 600; color: var(--green); text-decoration: underline; text-underline-offset: 4px; }
+  .rm-nav .rm-cta { flex: none; margin: 4px 0 0; justify-content: center; border-radius: 8px; }
   /* 메뉴 시트 뒤를 가린다(R1 4). 가림을 누르면 site.js가 닫는다 */
   body:has(.rm-nav.is-open)::after { content: ""; position: fixed; inset: 0; z-index: 35; background: rgba(23, 25, 28, .32); }
   /* 스크립트 없는 화면의 옛 메뉴: 두 줄로 펼쳐져 옆으로 밀리던 것(11-13 4차) → 한 줄, 메뉴 줄만 옆으로 */
@@ -204,9 +211,23 @@ input[type="file"]::file-selector-button { min-height: 40px; margin-right: 10px;
 .rm-chip, .h6-chip, .dash-chip, .map-inds .dash-chip, .dash-dongs .dash-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--card); color: var(--ink); font: inherit; font-size: var(--t-sub); font-weight: 600; white-space: nowrap; cursor: pointer; box-shadow: none; }
 :is(.rm-chip, .h6-chip, .dash-chip):hover { border-color: var(--green); }
 :is(.rm-chip, .h6-chip, .dash-chip)[aria-pressed="true"], .explore-page #mapApp .map-inds .dash-chip[aria-pressed="true"], .dash-dongs .dash-chip[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: #fff; box-shadow: none; }
-/* 상태 태그 하나(DESIGN.md 4.4): 높이 22, --t-cap/700. 추가확인만 호박색 */
-.tag { display: inline-flex; align-items: center; min-height: 22px; padding: 0 10px; border-radius: 999px; font-size: var(--t-cap); font-weight: 700; line-height: 1; background: var(--off-bg); color: var(--neutral-ink); }
-.tag.check { background: var(--amber-bg); color: var(--amber); }
+/* 상태 태그 하나(DESIGN.md 1.2·4.4): 높이 22, --t-cap/700. 같은 상태는 홈 카드·고른 동 카드·현황 보고서 카드·동 페이지에서 같은 모양(r16: 보고서는 주황, 동 페이지는 회색이었다).
+   자리마다 class가 달라 여기 한 곳에서 묶는다: 동 페이지·소개 .tag, 홈 카드 .h6-live-rows i, 3요건 .sr-req-rows em, 지표 줄·보고서 카드 .sr-st(map.js ROW_CLASS),
+   확인할 항목 .gp-s, 지표 묶음 머리의 상태별 개수 .sr-gsum(map.js DONUT r·g·b·w).
+   기준 해당 = 먹색 채움·흰 글자, 해당 안 함 = 회색, 추가확인 = 호박(이것만), 기준선 없음 = 흰 바탕·회색 선. 종이에서도 채움이 남게(흰 글자가 사라지지 않게) print-color-adjust */
+.tag, .sr-st, .gp-s, .sr-req-rows li em, .h6-live-rows li i, .sr-gsum span { display: inline-flex; align-items: center; min-height: 22px; padding: 0 10px; border: 0; border-radius: 999px; font-size: var(--t-cap); font-style: normal; font-weight: 700; line-height: 1; white-space: nowrap; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.tag, :is(.sr-st.st-in, .sr-req-rows li.is-in em, .h6-live-rows li.is-under i, .sr-gsum .gs-g) { background: var(--off-bg); color: var(--neutral-ink); }
+:is(.tag.over, .sr-st.st-over, .gp.is-over .gp-s, .sr-req-rows li.is-over em, .h6-live-rows li.is-over i, .sr-gsum .gs-r) { background: var(--ink); color: #fff; }
+:is(.tag.check, .sr-st.st-none, .gp.is-none .gp-s, .sr-req-rows li.is-none em, .h6-live-rows li.is-none i, .sr-gsum .gs-w) { background: var(--amber-bg); color: var(--amber); }
+:is(.tag.nostd, .sr-st.st-nostd, .sr-gsum .gs-b) { background: var(--card); color: var(--neutral-ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+/* r16: 추가확인 값은 지우지 않고 흐린 글자로(셈에는 넣지 않는다). 흐려도 4.5:1 이상: --dim은 흰 위 6.8:1, 종이색 위 6.3:1, 호박 바탕 위 6.4:1.
+   상태는 옆 '추가확인' 글자가 전하고 색만으로 알리지 않는다. 동네 진단·홈 카드 공통(home6.css보다 뒤에 온다) */
+.is-unsettled, .is-unsettled :is(b, strong) { color: var(--dim); }
+:is(b, strong).is-unsettled, .is-unsettled :is(b, strong) { font-weight: 600; }
+/* r16 M13: 새 창으로 여는 링크 끝에 ↗, 낭독기에는 '(새 창)'(KWCAG 사용자 요구에 따른 실행). 이름에 이미 '새 창'이 있는 링크와 네이버 법적 고지(글자에 '(새 창)', map.js)는 뺀다.
+   inline-block이라 밑줄이 화살표까지 이어지지 않는다. 대체 글자를 모르는 옛 브라우저는 선언째 버려 아무것도 붙지 않는다.
+   화면에만: 인쇄에서는 map.css·6절의 '링크 뒤 주소' 규칙이 그대로 쓰인다 */
+@media screen { a[target="_blank"]:not([aria-label*="새 창"]):not([href*="pstatic.net/static/maps/mantle/notice/legal"])::after { content: "↗" / "(새 창)"; display: inline-block; margin-left: 2px; text-decoration: none; } }
 /* '판정 아님' 꼬리표도 회색 태그(호박색은 '추가확인'에만, R1 2) */
 .label-scenario, .pg-band .label-scenario { background: var(--off-bg); color: var(--neutral-ink); border-color: transparent; border-radius: 999px; font-size: 15px; }   /* 면책 꼬리표는 15px(2026-11-19) */
 /* 강조 상자 둘(R2 6): .rm-note(흰 바탕·1px 선) + .rm-note.check(호박, 확인이 더 필요한 안내). 옅은 청록·회색·흰 상자 넷을 바꿨다 */
@@ -241,7 +262,7 @@ main select { appearance: none; padding-right: 36px; background-image: url("data
   :is(.page, .dg-frag) table.rm-stack tr { padding: 12px 0; border-bottom: 1px solid var(--line); }
   :is(.page, .dg-frag) table.rm-stack td { border: 0; padding: 2px 0; }
   :is(.page, .dg-frag) table.rm-stack td:first-child { font-weight: 700; }
-  :is(.page, .dg-frag) table.rm-stack td[data-label]::before { content: attr(data-label); margin-right: 8px; font-size: var(--t-cap); font-weight: 600; color: var(--dim); }   /* 이름을 값 앞 같은 줄에(따로 한 줄씩이면 표가 두 배로 길었다) */
+  :is(.page, .dg-frag) table.rm-stack td[data-label]::before { content: attr(data-label) ": "; margin-right: 4px; font-size: var(--t-cap); font-weight: 600; color: var(--dim); }   /* 이름을 값 앞 같은 줄에(따로 한 줄씩이면 표가 두 배로 길었다). ': '가 없으면 낭독기가 '값34.81%'처럼 붙여 읽었다(r16) */
   :is(main.page, .dg-tbl) .table-wrap { mask-image: linear-gradient(to left, transparent, #000 var(--rm-fade)); animation: rm-fade-out linear both; animation-timeline: scroll(self inline); }   /* .dg-tbl: 동네 진단 근거서 표는 main.page 밖이라 흐림이 없었다 */
   :is(main.page, .dg-tbl) .table-wrap:focus-visible { mask-image: none; }   /* 가림이 P09 초점 고리까지 자르지 않게 */
 }
@@ -313,9 +334,6 @@ main table td a, main table th a { display: inline-block; padding: 12px 0; margi
 .sr-req-rows { list-style: none; margin: 10px 0 12px; padding: 0; border-top: 1px solid var(--line); }
 .sr-req-rows li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
 .sr-req-rows b { font-variant-numeric: tabular-nums; font-size: 17px; }
-.sr-req-rows em { font-style: normal; font-size: var(--t-cap); font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--off-bg); color: var(--neutral-ink); white-space: nowrap; }
-.sr-req-rows li.is-over em { background: var(--ink); color: #fff; }
-.sr-req-rows li.is-none em { background: var(--amber-bg); color: var(--amber); }
 .sr-req-rows li .sr-sub { grid-column: 1 / -1; font-size: var(--t-cap); color: var(--dim); font-weight: 400; line-height: 1.5; }
 /* 지도 카드 묶음 머리: 이름은 한 줄, 칩은 다음 줄로 */
 .sr-group summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
@@ -376,9 +394,9 @@ html.js .explore-page .evidence-workspace:not([data-workspace-ready]) .workspace
   body.mx-on .mx-map .map-stage { display: block; height: 100%; }
   body.mx-on .mx-map .map-canvas { height: 100%; min-height: 0; border: 0; border-radius: 0; }
   body.mx-on .mx-side .map-legend { margin: 0; }   /* 범례는 지도 밖, 왼쪽 패널 '지표' 줄 바로 아래(R1 7) */
-  /* 주제 넷은 2×2 칸 단추(한 덩어리), 지표 칩 앞 장식 그림은 뺀다(v7.3) */
-  body.mx-on .mx-side .map-bundles { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
-  body.mx-on .mx-side .map-bundles button { min-height: 44px; margin: 0; padding: 6px 8px; border: 0; border-radius: 0; background: var(--card); color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; box-shadow: inset -1px -1px 0 var(--line); }
+  /* 주제 넷은 한 줄 네 칸 단추(한 덩어리). r16 M6: 2×2가 목록 자리를 46px 더 썼다. 긴 이름은 낱말 단위로 두 줄. 지표 칩 앞 장식 그림은 뺀다(v7.3) */
+  body.mx-on .mx-side .map-bundles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+  body.mx-on .mx-side .map-bundles button { min-height: 44px; margin: 0; padding: 4px; border: 0; border-radius: 0; background: var(--card); color: var(--ink); font: inherit; font-size: var(--t-cap); font-weight: 600; line-height: 1.25; word-break: keep-all; white-space: normal; box-shadow: inset -1px 0 0 var(--line); }
   body.mx-on .mx-side .map-bundles button[aria-pressed="true"] { background: var(--green); color: #fff; }
   body.mx-on .mx-side .map-bundles button:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
   body.mx-on .mx-side .map-inds .dash-chip .map-ico { display: none; }
@@ -390,7 +408,7 @@ html.js .explore-page .evidence-workspace:not([data-workspace-ready]) .workspace
   /* 동 결과 시트는 감싸는 패널의 transform 때문에 패널 맨 아래에 붙었다 → 지도 아래에 펼친다 */
   .explore-page .workspace-panel .map-panel, .explore-page .workspace-panel .map-panel.is-sheet { position: static; max-height: none; margin: 12px 0 0; border-radius: 12px; box-shadow: none; }
   .explore-page .workspace-panel .map-panel.is-sheet::before { display: none; }
-  body.sheet-open { overflow: auto; }
+  body.sheet-open { overflow: visible; }   /* r16: auto면 body가 스크롤 상자가 되어(html이 overflow-x: clip) 카드 꼬리(map.css .mp-foot)가 아래 탭 위에 붙지 않았다 */
   .explore-page #mapApp { display: flex; flex-direction: column; min-height: 800px; }   /* R3 1: 지도를 그리기 전에도 꼬리글이 첫 화면 밖에 머문다(그린 뒤 실측 1,130~1,180px) */
   .explore-page #map .workspace-panel-inner { display: flex; flex-direction: column; }
   .explore-page .workspace-panel .map-canvas { height: clamp(260px, 42dvh, 480px); }   /* 고른 동 결과가 첫 화면에 걸치게(9회차) */
@@ -426,7 +444,7 @@ html.js .explore-page .evidence-workspace:not([data-workspace-ready]) .workspace
   /* 동 결과 시트는 감싸는 패널의 transform 때문에 패널 맨 아래에 붙었다 → 지도 아래에 펼친다 */
   .explore-page .workspace-panel .map-panel, .explore-page .workspace-panel .map-panel.is-sheet { position: static; order: 2; max-height: none; margin: 12px 0 0; border-radius: 12px; box-shadow: none; }
   .explore-page .workspace-panel .map-panel.is-sheet::before { display: none; }
-  body.sheet-open { overflow: auto; }
+  body.sheet-open { overflow: visible; }
   .explore-page #mapApp { display: flex; flex-direction: column; }
   .explore-page .workspace-panel .map-canvas { height: clamp(260px, 42dvh, 480px); }   /* 고른 동 결과가 첫 화면에 걸치게(9회차) */
   .explore-page #mapApp > .map-stage, .explore-page #mapApp > .map-bottom { display: contents; }
@@ -577,6 +595,12 @@ tr[data-cell]:target > th { box-shadow: inset 4px 0 0 var(--green); }
 @media (min-width: 1024px) { .explore-page #reportApp { min-height: calc(100vh - 200px); } }
 /* R6: 표 칸 안 보조 글은 캡션 크기 하나(.85em이 17px 칸에서 14.45px가 됐다) */
 main.page td small, main.page th small { font-size: var(--t-cap); }
+/* r16 M12 고대비(Windows forced-colors): 배경색·그림자로만 보이던 고른 상태(묶음·지표 칩·시점·화면 탭·지금 쪽)가 모두 같아 보였다 → 시스템 강조색 테두리.
+   범례·목록 색 견본은 색이 곧 뜻이라 시스템 색으로 바꾸지 않는다 */
+@media (forced-colors: active) {
+  [aria-pressed="true"], [aria-selected="true"], [aria-current="page"] { outline: 3px solid Highlight; outline-offset: -3px; }
+  .map-legend i, .map-legend-line i, #mapApp .ma-sw, .dash-legend i { forced-color-adjust: none; }
+}
 
 @media print {
   header.top, #fieldUpdate, .tabbar, footer, .rm-nav, .rm-menu-btn, .print-row, .skip, nav[aria-label="위치"] { display: none !important; }   /* 시트가 열린 .rm-nav.is-open·화면 CSS의 display보다 앞서야 한다 */
@@ -592,6 +616,7 @@ main.page td small, main.page th small { font-size: var(--t-cap); }
   thead { display: table-header-group; }
   details.cp-fold > summary::after { content: none; }
   @page { size: A4; margin: 26mm 14mm 14mm; }
+  @page rm-doc { margin: 12mm; }   /* 동네 진단 근거 1쪽·4-1 표만 인쇄(map.css body.print-onepage·print-frag): 쪽 머리 상자가 없어 26mm가 비었다. 위 규칙 뒤에 있어야 이긴다(실측) */
   /* 쪽 머리(동 이름·기준일)는 @page 머리 상자로 쪽마다 찍는다. 동마다 글이 달라 print-page.js가 .print-head 글로 규칙을 끼워 넣는다
      (CSP가 인라인 <style>을 막아 CSSOM으로). position: fixed는 쪽 여백으로 못 나가고, 표 머리 그룹은 쪽마다 반복되지 않았다(실측) */
   .print-only { display: block; margin: 0 0 8pt; font-size: 11pt; color: #000; overflow-wrap: anywhere; }

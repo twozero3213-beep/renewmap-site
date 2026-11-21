@@ -16,6 +16,10 @@
       if (blank(x[k])) return { error: `${label} 값을 입력해 주세요.` };
       if (!Number.isFinite(n(k)) || n(k) < 0) return { error: `${label} 값은 0 이상의 숫자여야 합니다.` };
     }
+    // 비율 칸은 0~100%(r16: 말이 안 되는 값을 넣어도 그대로 계산해 큰 비례율을 보였다)
+    for (const [k, label] of [['netRatio', '전용률'], ['underRatio', '지하 연면적 비율'], ['otherRatio', '기타 사업비 비율']]) {
+      if (n(k) > 100) return { error: `${label}은 0~100 사이로 넣어 주세요.` };
+    }
     const beforeValue = blank(x.before) ? null : Number(x.before);
     if (beforeValue !== null && (!Number.isFinite(beforeValue) || beforeValue < 0)) return { error: '종전자산 총액은 0 이상의 숫자여야 합니다.' };
     const above = n('area') * n('far') / 100;                     // 지상 연면적
@@ -38,25 +42,28 @@
     return { above, total, net, after, build, other, cost, profit, before, ratio, sens };
   }
 
-  const won = v => (v === null ? '입력 없음' : `${(v / 10000).toLocaleString('ko-KR', { maximumFractionDigits: 1 })}억원`);
-  const pct = v => (v === null ? '종전자산을 넣으면 계산' : `${v.toFixed(1)}%`);
-  const m2 = v => `${Math.round(v).toLocaleString('ko-KR')}㎡`;
+  // 반올림해 0이 되는 음수는 0으로 쓴다(-0·-0.0이 보였다). `|| 0`이 -0을 0으로 바꾼다
+  const won = v => (v === null ? '입력 없음' : `${((Math.round(v / 1000) / 10) || 0).toLocaleString('ko-KR', { maximumFractionDigits: 1 })}억원`);
+  const pct = v => (v === null ? '종전자산을 넣으면 계산' : `${((Math.round(v * 10) / 10) || 0).toFixed(1)}%`);
+  const m2 = v => `${(Math.round(v) || 0).toLocaleString('ko-KR')}㎡`;
 
   const dl = (rows, cls) => `<dl class="${cls}">${rows.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('')}</dl>`;
   // 2026-11-19 결과 카드: 큰 비례율 하나 → 핵심 세 줄 → 분양가 ±10% 세 칸 → 열 줄 계산 내역은 접이 안(표 대신 줄 목록이라 휴대폰에서 옆으로 넘치지 않는다).
   // open: 다시 그릴 때 사용자가 펼쳐 둔 계산 내역을 닫지 않는다
   function resultHTML(r, open) {
     if (r.error) return `<p class="warn">${r.error}</p>`;
-    const head = r.ratio === null
-      ? '<p class="bz-wait">종전자산을 넣으면 계산됩니다.</p><button type="button" class="btn ghost bz-go" data-biz-focus>종전자산 넣기</button>'
-      : `<p class="bz-big">${pct(r.ratio)}</p>`;
+    // 면적·용적률이 0이면 모든 값이 0이라 비례율 0%가 답처럼 보였다(r16) → 계산할 수 없음
+    if (!(r.above > 0)) return '<p class="warn"><b>계산할 수 없음</b><br>구역 면적과 계획 용적률을 0보다 크게 넣어 주세요.</p>';
     const rows = [['지상 연면적', m2(r.above)], ['공사 연면적(지하 포함)', m2(r.total)], ['분양 전용면적 합', m2(r.net)],
-      ['종후자산(분양 총액)', won(r.after)], ['공사비', won(r.build)], ['기타 사업비', won(r.other)], ['총사업비', won(r.cost)],
-      ['종전자산에 돌아갈 몫(종후 − 사업비)', won(r.profit)], ['종전자산 총액', won(r.before)], ['추정 비례율', pct(r.ratio)]];
+      ['종후자산(분양 총액)', won(r.after)], ['공사비', won(r.build)], ['기타 사업비', won(r.other)], ['총사업비', won(r.cost)]];
+    const detail = more => `<details class="rm-disclosure bz-detail"${open ? ' open' : ''}><summary>계산 내역 보기</summary>${dl([...rows, ...more], 'bz-rows')}</details>`;
+    // 종전자산을 넣기 전에는 몫·분양가 민감도를 숨긴다(r16: 예시값만으로 '몫 -126억원'이 첫 화면에 떠 계산기가 고장 난 것처럼 읽혔다)
+    if (r.ratio === null) return '<p class="bz-wait">종전자산을 넣으면 계산됩니다.</p><button type="button" class="btn ghost bz-go" data-biz-focus>종전자산 넣기</button>'
+      + dl([['종후자산(분양 총액)', won(r.after)], ['총사업비', won(r.cost)]], 'bz-key') + detail([]);
     const sens = r.sens.map(s => `<li><b>분양가 ${s.pct > 0 ? '+' : s.pct < 0 ? '−' : ''}${Math.abs(s.pct)}%</b><span>몫 ${won(s.profit)}</span><span>비례율 ${s.ratio === null ? '–' : pct(s.ratio)}</span></li>`).join('');
-    return head + dl([['종후자산(분양 총액)', won(r.after)], ['총사업비', won(r.cost)], ['종전자산에 돌아갈 몫', won(r.profit)]], 'bz-key')
+    return `<p class="bz-big">${pct(r.ratio)}</p>` + dl([['종후자산(분양 총액)', won(r.after)], ['총사업비', won(r.cost)], ['종전자산에 돌아갈 몫', won(r.profit)]], 'bz-key')
       + `<h3 class="bz-h">분양가가 달라지면</h3><ul class="bz-sens">${sens}</ul>`
-      + `<details class="rm-disclosure bz-detail"${open ? ' open' : ''}><summary>계산 내역 보기</summary>${dl(rows, 'bz-rows')}</details>`;
+      + detail([['종전자산에 돌아갈 몫(종후 − 사업비)', won(r.profit)], ['종전자산 총액', won(r.before)], ['추정 비례율', pct(r.ratio)]]);
   }
 
   function init() {

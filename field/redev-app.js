@@ -36,6 +36,9 @@
     showDongs(from ? from.code : "26350", from ? want : $("dong").value);
     $("gu").addEventListener("change", () => { showDongs($("gu").value); centreDraw(); });
     restoreDraft(gus, showDongs);
+    let back = null;
+    try { back = JSON.parse(sessionStorage.getItem(LAST_KEY) || "null"); } catch (err) { back = null; }
+    if (back && back.list && back.list === $("list").value && back.dong === $("dong").value) $("f").requestSubmit();
     const n = gus.reduce((s, g) => s + g.dongs.length, 0);
     $("coverage").textContent = `공개판의 건물 단위 계산은 부산 ${gus.length}개 구·군 ${n}개 법정동에서만 됩니다. 다른 시·도는 건물 자료 공개 조건을 확인하기 전이라 열지 않았습니다.`;
   }).catch(() => {});
@@ -93,6 +96,9 @@
 
   // 입력 자동 저장: 지번 목록·구역 면적·고른 동을 이 기기에만 남겨, 브라우저를 닫거나 계산이 끊긴 뒤 다시 열면 이어서 계산한다
   const DRAFT_KEY = "renewmap-redev-draft";
+  // TODO_KEY: '확인할 건물' 목록을 현장 기록(app.js checkBanner)에 넘긴다 · LAST_KEY: 이 탭의 마지막 계산 입력(뒤로 오면 다시 센다)
+  const TODO_KEY = "renewmap-redev-todo", LAST_KEY = "renewmap-redev-last";
+  const WIDE = () => !!(window.matchMedia && matchMedia("(min-width: 1024px)").matches);
   // area.dataset.src = "drawn": 면적 칸을 그린 구역에서 채웠다(사람이 고치면 지운다). 결과에 '입력값'이 아니라 '그린 구역에서 계산'으로 적는다
   const saveDraft = () => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ gu: $("gu").value, dong: $("dong").value, list: $("list").value, area: $("area").value, areaSrc: $("area").dataset.src || "" })); } catch (e) { /* 저장을 막은 브라우저는 이어 쓰기만 안 된다 */ } };
   function restoreDraft(gus, showDongs) {
@@ -184,21 +190,23 @@
   // 2026-11-13 우지예: 처음 쓰면 그리기가 어렵다(선만 보여 어디까지가 영역인지, 몇 번째 점인지, 선이 꼬였는지 모름).
   //     → 3점부터 영역을 옅게 칠하고, 꼭짓점에 번호를 달아 끌어서 고칠 수 있게 하고, 지금 할 일·꼬임 경고를 한 줄로 보인다.
   //     값 계산(필지·면적·SHP)은 그대로 drawPts를 쓴다
-  let drawFill = null, drawMarks = [];
+  let drawFill = null, drawMarks = [], kbdNote = false;
   const drawSay = () => {
     const n = drawPts.length, bad = n > 3 && R.ringCrosses(drawPts), el = $("drawStep");
-    el.textContent = n === 0 ? "① 지도를 확대해 구역을 찾은 뒤, 구역 가장자리 한 곳을 누르세요."
-      : n < 3 ? `② 가장자리를 따라 한 방향으로 계속 누르세요. 지금 꼭짓점 ${n}개(3개부터 영역이 됩니다).`
-      : bad ? `선이 서로 겹칩니다. 번호 점을 끌어 옮기거나 '마지막 점 지우기'를 누르세요. (꼭짓점 ${n}개)`
-      : `③ 꼭짓점 ${n}개. 마지막 점과 1번 점은 자동으로 이어집니다. 다 그렸으면 '영역 안 필지 넣기'를 누르세요.`;
+    el.textContent = (kbdNote ? `${n}번 꼭짓점을 찍었습니다. ` : "") + (n === 0 ? "① '현재 위치로'를 누르거나 지도를 확대해 구역을 찾습니다. ② 구역 가장자리를 차례로 누릅니다."
+      : n < 3 ? `② 가장자리를 따라 한 방향으로 계속 누릅니다. 지금 꼭짓점 ${n}개입니다(3개부터 영역이 됩니다).`
+      : bad ? `선이 서로 겹칩니다. 번호 점을 끌어 옮기거나 '마지막 점 지우기'를 눌러 주세요. 지금 꼭짓점 ${n}개입니다.`
+      : `③ 꼭짓점 ${n}개입니다. 마지막 점과 1번 점은 자동으로 이어집니다. 다 그렸으면 '영역 안 필지 넣기'를 누릅니다.`);
+    kbdNote = false;
     el.classList.toggle("is-warn", !!bad);
     $("drawDone").disabled = n < 3 || bad;
+    $("drawCalc").hidden = true;   // 꼭짓점이 바뀌면 넣은 필지와 영역이 어긋난다. 다시 넣은 뒤에만 계산 단추를 보인다
   };
   const redraw = () => {
     drawLine.setLatLngs(drawPts.length > 2 ? [...drawPts, drawPts[0]] : drawPts);
     drawFill.setLatLngs(drawPts.length > 2 ? drawPts : []);
     drawMarks.forEach((m) => m.remove());
-    drawMarks = drawPts.map((p, i) => window.L.marker(p, { draggable: true, keyboard: false, title: `${i + 1}번 꼭짓점(끌어서 옮기기)`,
+    drawMarks = drawPts.map((p, i) => window.L.marker(p, { draggable: true, keyboard: true, title: `${i + 1}번 꼭짓점(끌어서 옮기기)`,
       icon: window.L.divIcon({ className: "draw-pt" + (i === 0 ? " is-first" : ""), html: `<span>${i + 1}</span>`, iconSize: [44, 44] }) })   // 보이는 원은 26px, 누르는 칸은 44px(#89 검토)
       .on("drag", (e) => { const ll = e.target.getLatLng(); drawPts[i] = [ll.lat, ll.lng]; drawLine.setLatLngs(drawPts.length > 2 ? [...drawPts, drawPts[0]] : drawPts); drawFill.setLatLngs(drawPts.length > 2 ? drawPts : []); })
       .on("dragend", () => redraw())
@@ -231,8 +239,24 @@
     drawFill = L.polygon([], { stroke: false, fillColor: "#0b6b75", fillOpacity: 0.15, interactive: false }).addTo(drawMap);   // 영역 옅게(redraw 주석)
     drawLine = L.polyline([], { color: "#0b6b75", weight: 3, interactive: false }).addTo(drawMap);
     drawSay();
-    drawMap.on("click", (e) => { if (drawPts.length < 100) { drawPts.push([e.latlng.lat, e.latlng.lng]); redraw(); } });
+    drawMap.on("click", (e) => addPt(e.latlng));
+    // 키보드 그리기(KWCAG 5.3.1): 방향키·+/-는 Leaflet 기본 이동·확대, Enter·Space는 지도 가운데(십자 표시)에 꼭짓점을 찍는다
+    $("drawMap").addEventListener("keydown", (e) => {
+      if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
+      e.preventDefault(); kbdNote = true; addPt(drawMap.getCenter());
+    });
   });
+  const addPt = (ll) => { if (drawPts.length < 100) { drawPts.push([ll.lat, ll.lng]); redraw(); } };
+  // 현재 위치로(M25): 기기 위치로 지도만 옮긴다(17 확대). 위치는 이 화면에서만 쓰고, 옮긴 자리의 지도 조각을 받을 때 그 범위가 지도 회사로 간다
+  $("drawHere").addEventListener("click", () => {
+    if (!drawMap) return;
+    if (!navigator.geolocation) return say("이 브라우저는 위치를 받을 수 없습니다.\n지도를 확대해 구역을 찾아 주세요.", true);
+    $("drawHere").disabled = true;
+    navigator.geolocation.getCurrentPosition((p) => { $("drawHere").disabled = false; drawMap.setView([p.coords.latitude, p.coords.longitude], 17); },
+      (err) => { $("drawHere").disabled = false; say(err && err.code === 1 ? "위치 권한이 꺼져 있습니다. 주소창 왼쪽 자물쇠 → 위치 → 허용으로 켜거나, 지도를 확대해 주세요." : "위치를 받지 못했습니다.\n지도를 확대해 구역을 찾아 주세요.", true); },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+  });
+  $("drawCalc").addEventListener("click", () => $("f").requestSubmit());
   $("drawUndo").addEventListener("click", () => { if (drawLine) { drawPts.pop(); redraw(); } });
   $("drawClear").addEventListener("click", () => { if (drawLine) { drawPts = []; redraw(); } });
   $("drawDone").addEventListener("click", async () => {
@@ -246,12 +270,17 @@
     drawSay();   // 조회 중에 점을 끌어 선이 꼬였을 수 있어 단추 상태를 다시 맞춘다(#89 검토)
     if (r.error) return say(`필지를 찾지 못했습니다(${r.error}).\n브이월드 조회가 몰리면 잠시 거절됩니다. 1분쯤 뒤에 다시 눌러 주세요.`, true);
     if (!r.pnus.length) return say("영역 안에서 필지를 찾지 못했습니다.", true);
+    // 1,000필지에서 잘린 목록을 넣으면 구역 일부만 계산된다(M25) → 넣지 않고 더 좁게 그리게 한다
+    if (r.total > r.pnus.length) return say(`영역이 너무 넓습니다(${n0(r.total)}필지). 더 확대해 그려 주세요.`, true);
     $("list").value = r.pnus.join("\n");
     $("area").value = Math.round(R.polygonAreaM2(drawPts));   // 그린 선 기준 면적. 고시 면적이 있으면 사람이 고친다
     $("area").dataset.src = "drawn";
     $("optIn").open = true;   // 그린 면적을 사람이 확인·고치게 접힌 선택 입력을 연다
     saveDraft();
-    say(`영역 안 ${n0(r.pnus.length)}필지를 넣었습니다.${r.total > r.pnus.length ? `\n전체 ${n0(r.total)}필지 중 1,000필지까지만 넣었습니다. 영역을 나눠 주세요.` : ""}\n경계에 걸친 필지도 들어가니 목록을 확인해 주세요.`);
+    // 넣은 결과는 지도 바로 위 단계 줄(#drawStep, 읽기 영역)에 두고 그 자리에서 계산한다(넣어도 지도 근처에 아무 변화가 없었다)
+    $("drawStep").textContent = `④ ${n0(r.pnus.length)}필지를 넣었습니다 · 면적 ${n0(Number($("area").value))}㎡`;
+    $("drawCalc").hidden = false;
+    say("경계에 걸친 필지도 들어가니 목록을 확인해 주세요.");
   });
 
   $("shpSave").addEventListener("click", () => {
@@ -320,7 +349,18 @@
     const skipped = [...(p.bad.length ? [`지번으로 읽지 못한 칸 ${n0(p.bad.length)}개`] : []), ...(m.missing.length ? [`대장에 없는 지번 ${n0(m.missing.length)}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})`] : []),
       ...(m.otherDong.length ? [`계산에 넣지 못한 다른 동 지번 ${n0(m.otherDong.length)}개(같은 구·군 법정동 이름이 아니거나 ${R.MERGE_MAX}개 동을 넘음: ${m.otherDong.slice(0, 3).join(", ")}${m.otherDong.length > 3 ? " 등" : ""})`] : [])];
     say(skipped.length ? `제외: ${skipped.join(" · ")}` : "");
-    $("outAnswer").textContent = R.answerText(res);
+    // 요건 한 줄에 이름·값·상태 칩(rm6.css .sr-req-rows: 홈·지도 카드와 같은 모양). 상태는 칩 글자가 전하고 색은 보조다
+    $("outAnswer").replaceChildren(...R.answerRows(res).map((r) => {
+      const li = document.createElement("li"), k = document.createElement("span"), v = document.createElement("b"), t = document.createElement("em");
+      li.className = r.status === R.MET ? "is-over" : r.status === R.CHECK ? "is-none" : "is-in";
+      k.textContent = r.label; v.textContent = r.value; t.textContent = r.chip;
+      li.append(k, v, t);
+      if (r.note) { const s = document.createElement("small"); s.className = "sr-sub"; s.textContent = r.note; li.append(s); }
+      return li;
+    }));
+    const brief = R.settleBrief(res);
+    $("outSettle").textContent = brief; $("outSettle").hidden = !brief;
+    for (const id of ["basisBox", "vizBox"]) $(id).open = WIDE();
     $("outBase").textContent = `${file.name} 건물 ${n0(res.n)}동 · 기준 ${res.thr}% · 경과 기준일 ${D.govDate(res.ref)} · 건축물대장 기준일 ${D.govDate(file.hub_reference_date)}`;
     $("basis").innerHTML = R.basisHTML(res, file);   // 분모·기준시점·현장 확인 비율(행정동을 고르면 쇠퇴지표 기준연도까지)
     $("viz").innerHTML = R.summaryHTML(res);   // 그림 요약(종합 판정 아님)
@@ -345,6 +385,8 @@
     renderTodo(res);
     showDongDecline(file);
     $("out").hidden = false;
+    // 현장 기록에 다녀와 뒤로 오면 결과가 닫혀 3,500줄을 다시 넣어야 했다(M24) → 이 탭 안에서만 마지막 계산 입력을 기억해 다시 센다
+    try { sessionStorage.setItem(LAST_KEY, JSON.stringify({ dong: $("dong").value, list: $("list").value })); } catch (err) { /* 막힌 브라우저는 다시 계산하면 된다 */ }
     // 실제 결과가 생기면 견본 그림은 뺀다(휴대폰에서 결과 위를 가림). 제목으로 초점·스크롤을 옮겨 위 두 줄 답부터 읽게 한다
     document.querySelector(".redev-sample").hidden = true;
     $("outTitle").focus({ preventScroll: true });
@@ -352,10 +394,11 @@
   });
 
   // 확인할 건물 → 현장 기록(같은 앱). 링크에 PNU·지번을 실어 보내고, 돌아오면 이 기기의 현장 기록을 PNU로 붙여 보여 준다
-  const TODO_SHOW = 30;
+  const TODO_SHOW = 30, TODO_FIRST = 5;
   async function renderTodo(res) {
     const recs = window.FieldStore ? await window.FieldStore.records().catch(() => []) : [];
     const t = R.todoList(res, recs), box = $("todo");
+    try { localStorage.setItem(TODO_KEY, JSON.stringify(t.items.filter((it) => it.b.pnu).slice(0, 1000).map((it) => ({ pnu: it.b.pnu, jibun: it.b.jibun || "", structure: it.b.structure || "", main_use: it.b.main_use || "" })))); } catch (err) { /* 현장 기록은 받은 지번만 보인다 */ }
     if (!t.items.length) { box.replaceChildren(); return; }
     const h = document.createElement("h3"), p = document.createElement("p"), ul = document.createElement("ul");
     h.textContent = `확인할 건물 ${n0(t.items.length)}동 · 현장 기록이 붙은 건물 ${n0(t.withRecord)}동`;
@@ -363,8 +406,9 @@
     const old = res.lines.find((l) => l.settle), stop = document.createElement("p");   // 정해지는 지점을 알면 목록을 다 돌기 전에 확인을 멈출 수 있다
     stop.className = "hint rv-settle"; stop.textContent = old ? `${old.label}: ${R.settleText(old.settle, ...R.SETTLE_OLD)}` : "";
     ul.className = "todo-list";
-    for (const it of t.items.slice(0, TODO_SHOW)) {
+    for (const [i, it] of t.items.slice(0, TODO_SHOW).entries()) {
       const li = document.createElement("li"), s = document.createElement("span");
+      li.hidden = i >= TODO_FIRST;
       s.textContent = `${it.b.jibun || "지번 없음"} · ${it.b.structure || "구조 없음"} · ${it.b.main_use || "용도 없음"}`;
       li.append(s);
       if (it.records.length) {
@@ -379,6 +423,13 @@
       ul.append(li);
     }
     box.replaceChildren(h, p, ...(old ? [stop] : []), ul);
+    const shown = Math.min(t.items.length, TODO_SHOW);
+    if (shown > TODO_FIRST) {
+      const all = document.createElement("button");
+      all.type = "button"; all.className = "ghost"; all.textContent = shown === t.items.length ? `${n0(shown)}동 모두 보기` : `${n0(shown)}동까지 보기`;
+      all.addEventListener("click", () => { for (const li of ul.children) li.hidden = false; all.remove(); const a = ul.children[TODO_FIRST].querySelector("a"); if (a) a.focus(); });
+      box.append(all);
+    }
     if (t.items.length > TODO_SHOW) { const more = document.createElement("p"); more.className = "hint"; more.textContent = `나머지 ${(t.items.length - TODO_SHOW).toLocaleString("ko-KR")}동은 건물별 근거 CSV에 있습니다.`; box.append(more); }
   }
 
@@ -480,7 +531,7 @@
   if (zoom && typeof zoom.showModal === "function" && zoomLink) {
     let opener = null;
     const openZoom = (e) => { e.preventDefault(); opener = e.currentTarget; zoom.showModal(); };
-    zoomLink.addEventListener("click", openZoom);
+    zoomLink.addEventListener("click", openZoom); zoomLink.removeAttribute("target");
     $("sampleZoom").addEventListener("click", openZoom);
     $("sampleZoom").hidden = false;
     $("sampleClose").addEventListener("click", () => zoom.close());

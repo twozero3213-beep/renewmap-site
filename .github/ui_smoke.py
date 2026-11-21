@@ -227,13 +227,20 @@ def verify_field_basis(page, output, width):
 
 
 def verify_field_save_errors(page, width):
-    # 위치 없이 저장하면 오류 문구와 지번 칸이 함께 보이고 칸이 열려 초점을 받는다
+    # r16(M20): 아무것도 넣지 않은 기록은 저장하지 않고 무엇을 넣을지 알린다
+    count=page.evaluate('async () => (await FieldStore.records()).length')
     page.locator('#f button.save').click()
-    page.wait_for_function('() => document.querySelector("#msg").textContent.trim()!==""')
+    page.wait_for_function('() => document.querySelector("#msg").textContent.includes("무엇을 봤나요")')
+    assert page.evaluate('async () => (await FieldStore.records()).length')==count,'빈 기록이 저장됐습니다.'
+    # 대상을 고르고 위치 없이 저장하면 오류 문구와 지번 칸이 함께 보이고 칸이 열려 초점을 받는다
+    page.locator('#targets label').first.click()
+    page.locator('#f button.save').click()
+    page.wait_for_function('() => document.activeElement.id==="jibun"')
     box=page.locator('#msg').bounding_box();vh=page.viewport_size['height']
     assert box and box['y']>=0 and box['y']+box['height']<=vh,(box,vh)
-    assert page.evaluate('() => document.activeElement.id')=='jibun'
-    assert page.locator('#jibunBox').evaluate('el=>el.open')
+    assert page.locator('#msg').inner_text().strip(),'위치 없는 저장의 오류 문구가 비었습니다.'
+    assert page.locator('#jibunBox').evaluate('el=>el.open'),'지번 칸이 열리지 않았습니다.'
+    assert page.evaluate('async () => (await FieldStore.records()).length')==count,'위치 없는 기록이 저장됐습니다.'
     # 재방문을 누르면 날짜·시작이 기기 시계로 채워지고 구간·방식은 비어 있다
     rid='synthetic-visit-default'
     original=page.evaluate('async () => JSON.stringify(await FieldStore.records())')
@@ -241,8 +248,8 @@ def verify_field_save_errors(page, width):
         page.evaluate("""async id => { const r=FieldRecord.makeRecord({lat:35.2,lng:129.1,target:'보도'},new Date('2026-11-17T00:00:00Z'),id); await FieldStore.tx(['records'],'readwrite',s=>{s.put(r)}); }""",rid)
         page.reload(wait_until='networkidle')
         page.get_by_role('button',name='이 지점 재방문').first.click()
-        assert page.locator('#visit-date').input_value()!='' and page.locator('#visit-start').input_value()!=''
-        assert page.locator('#visit-area').input_value()=='' and page.locator('#visit-method').input_value()==''
+        assert page.locator('#visit-date').input_value()!='' and page.locator('#visit-start').input_value()!='','재방문 날짜·시작이 비었습니다.'
+        assert page.locator('#visit-area').input_value()=='' and page.locator('#visit-method').input_value()=='','재방문 구간·방식이 이전 기록에서 채워졌습니다.'
     finally:
         page.evaluate("""async id => { for(const r of await FieldStore.records())if(r.id===id)await FieldStore.deleteRecord(r); }""",rid)
     assert page.evaluate('async () => JSON.stringify(await FieldStore.records())')==original
@@ -350,13 +357,15 @@ def main():
                         if route == 'field/city3d.html':
                             # 외부 SDK가 문서 파싱을 멈춰도 준비 또는 명시적 실패로 끝나야 한다.
                             page.wait_for_function("() => window.City3dLoad && ['ready','failed'].includes(window.City3dLoad.state)")
-                            assert page.locator('#city3dRetry').is_visible()
                             recovery = page.locator('#city3dRecovery a[href="../explore.html"]')
-                            assert recovery.is_visible(), '3D 실패 시 2D 지도 복귀 링크가 없습니다.'
                             if page.evaluate('() => window.City3dLoad.state') == 'ready':
+                                # r16(M30): 다시 시도·2D 지도는 실패했을 때만 보인다(정상으로 열려도 늘 보이던 것을 숨김)
+                                assert page.locator('#city3dRecovery').is_hidden(), '3D가 정상으로 열렸는데 실패 안내 단추가 보입니다.'
                                 assert page.locator('#vmap canvas').count() > 0, '준비 상태인데 지도 캔버스가 없습니다.'
                                 assert page.locator('#views').is_visible()
                             else:
+                                assert page.locator('#city3dRetry').is_visible(), '3D 실패 시 다시 시도 단추가 없습니다.'
+                                assert recovery.is_visible(), '3D 실패 시 2D 지도 복귀 링크가 없습니다.'
                                 assert '3D 지도 응답을 받지 못했습니다' in page.locator('#message').inner_text()
                                 assert page.locator('#vmap').is_hidden()
                                 assert page.locator('#views').is_hidden()
@@ -409,7 +418,8 @@ def main():
                                 page.goto(base+'explore.html?report=onepage#map/21/21090/21090700',wait_until='networkidle')
                                 page.locator('[data-workspace-tab="evidence"]').click()
                                 expect_doc = page.locator('#reportApp')
-                                expect_doc.get_by_role('heading',name='반여1동 근거 1쪽',exact=True).wait_for(state='visible')
+                                # r16 4차 P1: 문서 제목도 화면과 같은 '반여1동 근거 1쪽'이라 제목이 둘(화면 머리 .rp-title · 문서 미리보기 .dg-title)이다. 화면 머리를 본다
+                                expect_doc.locator('h3.rp-title', has_text='반여1동 근거 1쪽').wait_for(state='visible')
                                 assert expect_doc.get_by_role('button',name='한글로 받기',exact=True).is_visible()
                                 expect_doc.locator('.rp-more-files > summary').click()
                                 for label in ('PDF로 저장','엑셀로 받기','워드로 받기','파워포인트로 받기'):
@@ -470,12 +480,15 @@ def main():
                                 page.wait_for_selector('#newTask')
                                 page.evaluate('() => document.fonts.ready')
                                 page.wait_for_function('() => !document.querySelector("#newTask").disabled')
-                                assert page.locator('[data-panel="'+panel+'"]').is_visible()
-                                if detail:
-                                    assert page.locator('#'+detail).is_visible()
-                                    if entry in ('survey', 'revisit'):
-                                        assert page.locator('#'+detail).evaluate('(el) => el.open')
-                                assert page.evaluate('async()=> (await TaskStore.list()).length') == 0
+                                # r16: 저장한 과업이 없으면 2~4단계는 빈 폼 대신 안내 하나를 보인다. 들어온 단계는 그대로 표시하고,
+                                # 과업을 고른 뒤 그 칸이 열리는 것은 task_flow_smoke(direct_revisit_preserves_selected_task_and_history)가 본다
+                                assert page.locator('.task-steps [data-step="'+panel+'"]').get_attribute('aria-current') == 'step', f'{entry}: 들어온 단계가 표시되지 않았습니다.'
+                                assert page.locator('#taskNoPlan').is_visible(), f'{entry}: 과업을 먼저 저장하라는 안내가 없습니다.'
+                                assert page.locator('#taskNoPlan button[data-step="0"]').is_visible(), f'{entry}: 1단계로 가는 단추가 없습니다.'
+                                assert page.locator('[data-panel="'+panel+'"]').is_hidden(), f'{entry}: 과업 없이 빈 폼이 열렸습니다.'
+                                if entry in ('survey', 'revisit'):
+                                    assert page.locator('#'+detail).evaluate('(el) => el.open'), f'{entry}: #{detail}가 펼쳐져 있지 않습니다.'
+                                assert page.evaluate('async()=> (await TaskStore.list()).length') == 0, f'{entry}: 들어오기만 했는데 과업이 생겼습니다.'
                                 check(route, width, 'role_'+entry)
                                 page.goto(base+route, wait_until='networkidle')
                         if route == 'field/oa.html':

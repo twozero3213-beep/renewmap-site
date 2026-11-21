@@ -9,6 +9,7 @@
   let pos = null;             // 지금 쓰는 위치 {lat,lng,accuracy}
   let gps = null;             // 기기가 처음 준 위치(보정 전)
   let corrected = false;
+  let fixAt = 0;              // 지금 위치(GPS)를 받은 때(ms). 첫 기록의 위치가 다음 기록에 말없이 쓰이지 않게 화면에 보이고 저장 때 따진다(B11)
   let place = null;           // E.makeLocator().locate 결과 + 공식 현황
   let pending = [];           // 이번 기록에 붙일 사진 [{id, blob, url}]
   let edit = null;            // 편집 중 사진 {canvas(원본), boxes:[], drag, start}
@@ -55,6 +56,16 @@
     t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 4000);
   }
   const badge = () => { $("recBadge").hidden = !(edit || pending.length); };
+  // 한 번 묻기(붙이지 않은 사진·묵은 위치·저장하지 않은 사진). 두 단추 중 하나를 누르면 닫는다. at: 이 칸 앞에 띄운다(기본은 저장 단추 앞)
+  function ask(text, [yes, onYes], [no, onNo], at) {
+    const box = $("ask");
+    (at || document.querySelector("button.save")).before(box);
+    $("askText").textContent = text; $("askYes").textContent = yes; $("askNo").textContent = no;
+    $("askYes").onclick = () => { box.hidden = true; onYes(); };
+    $("askNo").onclick = () => { box.hidden = true; onNo(); };
+    box.hidden = false; $("toast").hidden = true;
+    box.scrollIntoView({ block: "nearest" }); $("askYes").focus();
+  }
 
   // ── 자료(오프라인 경계·현황). 서비스 워커가 처음 받은 파일을 저장해 둔다
   const getJson = (p) => fetch(DATA + p).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); });
@@ -62,20 +73,48 @@
   const L = E.makeLocator((p) => getJson("national/" + p).then((j) => window.RenewCellPack.unpack(j)));
   const templates = getJson("report_templates.json").then((t) => D.setTemplates(t)).catch(() => null);
 
-  function locLine() {
+  // 위치 줄(B11): '14:02에 받은 위치(3분 전) · 오차 18m'. 5분이 넘으면 경고 색과 '지금 위치 다시 받기' 채운 단추, 저장 때 10분이 넘으면 한 번 묻는다.
+  // 지난 시간은 화면 낭독기가 1분마다 읽지 않게 aria-hidden 칸에만 고쳐 쓰고(tickAge), 5분을 넘은 뒤(경고 상태)에만 줄 전체를 다시 써서 알린다
+  const STALE_MS = 5 * 60000, ASK_MS = 10 * 60000;
+  const ageMin = () => Math.floor((Date.now() - fixAt) / 60000);
+  const agoText = () => (ageMin() < 1 ? "(방금)" : `(${ageMin()}분 전)`);
+  const isStale = () => !!pos && Date.now() - fixAt > STALE_MS;   // 손으로 고친 위치도 정한 때(fixAt)부터 센다
+  let locNote = "", staleShown = false, staleMin = -1;
+  function locLine(note = "") {
+    locNote = note;
     if (!pos) return;
-    const fix = corrected ? " · 보정됨" : "";
-    const m = Math.round(pos.accuracy || 0), chip = $("accChip");
-    $("locLine").textContent = `현재 위치로 기록합니다${fix}`;
-    // 오차 칩: 20m 이하·50m 이하·그보다 넓음. 색은 보조이고 숫자가 본 정보다
-    chip.textContent = `오차 약 ${m}m`; chip.dataset.q = m <= 20 ? "good" : m <= 50 ? "ok" : "wide"; chip.hidden = false;
+    const m = Math.round(pos.accuracy || 0), stale = isStale(), line = $("locLine"), ago = document.createElement("span");
+    staleShown = stale; staleMin = stale ? ageMin() : -1;
+    ago.className = "loc-ago"; ago.setAttribute("aria-hidden", "true"); ago.textContent = stale ? "" : agoText();   // 묵었으면 아래 경고 줄이 지난 시간을 말한다
+    line.textContent = `${D.localDate(fixAt, true).split(" ")[1]}에 받은 위치`;
+    line.append(ago, ` · 오차 ${m}m${corrected ? " · 보정됨" : ""}${stale ? `\n${ageMin()}분 전에 받은 위치입니다.` : ""}${note ? `\n${note}` : ""}`);
+    // 색은 보조이고 글이 본 정보다: 묵은 위치·넓은 오차(50m 초과)는 경고 색
+    line.dataset.q = stale ? "stale" : m <= 20 ? "good" : m <= 50 ? "ok" : "wide";
+    $("gps").textContent = "지금 위치 다시 받기"; $("gps").classList.toggle("ghost", !stale);
     $("fix").disabled = false;
+    locSum();
+  }
+  function tickAge() {
+    if (!pos) return;
+    // 묵은 상태로 바뀌는 순간과 묵은 동안 분이 바뀔 때만 줄 전체를 다시 써서 읽게 한다(경고 줄의 'n분 전'이 맞도록)
+    if (isStale() !== staleShown || (staleShown && ageMin() !== staleMin)) return locLine(locNote);
+    if (staleShown) return;
+    const ago = $("locLine").querySelector(".loc-ago");
+    if (ago) ago.textContent = agoText();
+  }
+  setInterval(tickAge, 30000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) tickAge(); });
+  // 접힌 위치·통계 한 줄(M22): '{구} {동} · 오차 {m}m · 이 동 통계 {n}개(출처·기준일 표시)가 기록에 함께 붙습니다'
+  function locSum() {
+    const n = place && place.rows ? place.rows.length : 0;
+    $("locSum").textContent = [place && place.code ? `${place.sgName} ${place.name}` : "", pos ? `오차 ${Math.round(pos.accuracy || 0)}m` : "",
+      n ? `이 동 통계 ${n}개(출처·기준일 표시)가 기록에 함께 붙습니다` : ""].filter(Boolean).join(" · ") || "위치와 이 동 통계";
   }
   async function lookup() {
     const filled = chosen || parcel;
     if (filled) for (const id of ["jibun", "pnu"]) if ($(id).value === (filled[id] || "")) $(id).value = "";
     clearParcel();
-    place = null; drawBld(null); $("facts").hidden = true;
+    place = null; drawBld(null); $("facts").hidden = true; locSum();
     const at = pos;
     $("dongLine").textContent = "행정동을 찾는 중입니다.";
     try {
@@ -104,6 +143,7 @@
     const old = E.oldestDate(place.rows), snap = place.snapshot;
     $("factsBase").textContent = [old ? `가장 오래된 자료 기준일 ${D.govDate(old)}` : "", snap && snap.generated_at ? `받은 자료 묶음 ${D.govDate(snap.generated_at.slice(0, 10))}` : ""].filter(Boolean).join("\n");
     $("facts").hidden = !place.rows.length;
+    locSum();
   }
 
   // ── 가까운 건물(N1): 행정동에서 근사한 법정동의 건물 자료(buildings/{법정동}.json)를 지번으로 찾는다. 사람이 고르기 전에는 채우지 않는다.
@@ -250,6 +290,9 @@
     $("siteLine").hidden = !site;
     $("unlinkVisit").hidden = !site;
     $("visitPrevious").textContent = E.revisitText(site && site.from);
+    // 재방문 띠(M23): 사진 단추 바로 위에 어느 기록과 같은 지점인지. 재방문으로 들어온 동안은 '이 지점 재방문을 누르세요' 안내를 숨긴다
+    $("visitBanner").hidden = !site; $("visitHow").hidden = !!site;
+    if (site) $("visitBanner").textContent = `재방문 · ${D.localDate(site.from.recorded_at)} ${site.from.target || "기록"} 기록과 같은 지점`;
     if (site) $("siteLine").textContent = `같은 지점으로 묶었습니다.\n이전 기록 ${E.localTime(site.from.recorded_at)}${site.photos.size ? ` · 이전 사진 ${site.photos.size}장을 1쪽에 넣습니다` : ""}`;
   }
   // 반경 바꾸기·묶기·저장이 겹치면 앞선 호출이 await 뒤에 같은 목록에 이어 붙인다. 마지막 호출만 그린다
@@ -295,13 +338,16 @@
   // 최대 GPS_WAIT 동안 더 들으며 오차가 가장 작은 값만 쓴다. GPS_GOOD 이하가 오면 바로 멈춘다. 캐시 값은 받지 않는다(maximumAge 0)
   const GPS_GOOD = 15, GPS_WAIT = 15000, GPS_WIDE = 50;
   let gpsStop = null;                                               // 앞선 요청 끄기(다시 누르면 옛 요청의 타이머가 새 요청을 끊지 않게 요청마다 따로 쥔다)
+  const NO_FIX = "위치를 받지 못했습니다.\n아래 '위치를 못 받으면 지번으로 적기'에 지번을 적어 주세요.";
+  const DENIED = "위치 권한이 꺼져 있습니다. 주소창 왼쪽 자물쇠 → 위치 → 허용으로 켜거나, 지번으로 적어 주세요.";
   function locate() {
-    if (!navigator.geolocation) { $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '위치를 못 받으면 지번으로 적기'에 지번을 적어 주세요."; return; }
+    if (!navigator.geolocation) { $("locLine").textContent = NO_FIX; return; }
     if (gpsStop) gpsStop();
-    $("locLine").textContent = "위치를 받는 중입니다.";
+    // 이전 위치가 있으면 지우지 않고 '받는 중'을 덧붙인다(받는 사이에 저장하면 어느 위치로 저장되는지 보이게)
+    if (pos) locLine("새 위치를 받는 중입니다."); else $("locLine").textContent = "위치를 받는 중입니다.";
     const wait = (on) => { document.body.classList.toggle("gps-wait", on); $("gps").setAttribute("aria-busy", String(on)); };
     wait(true);
-    let best = null, looked = null, timer = null, done = false, id = null;
+    let best = null, looked = null, timer = null, done = false, id = null, denied = false;
     const stop = () => {
       if (done) return false;
       done = true; clearTimeout(timer);
@@ -314,14 +360,13 @@
     const finish = () => {
       if (!stop()) return;
       if (!best) {
-        if (!pos) { $("locLine").textContent = "위치를 받지 못했습니다.\n아래 '위치를 못 받으면 지번으로 적기'에 지번을 적어 주세요."; return; }
-        locLine(); $("locLine").textContent += "\n새 위치를 받지 못해 이전 위치를 그대로 씁니다.";   // '받는 중' 문구가 남지 않게
+        if (!pos) { $("locLine").textContent = denied ? DENIED : NO_FIX; return; }
+        locLine(denied ? DENIED : "새 위치를 받지 못해 이전 위치를 그대로 씁니다.");   // '받는 중' 문구가 남지 않게
         return;
       }
-      locLine();
-      if (corrected) return;                                        // 사람이 고친 위치는 그대로 둔다
+      if (corrected) return locLine();                              // 사람이 고친 위치는 그대로 둔다
+      locLine(best.accuracy > GPS_WIDE ? "오차가 넓습니다. 실외에서 휴대폰 위치(GPS)를 켜고 다시 받거나 '위치 고치기'로 맞춰 주세요." : "");
       if (looked !== best) { lookup(); drawNear(); }               // 처음 찾은 값보다 좁은 값으로 바뀌었으면 행정동을 다시 찾는다
-      if (best.accuracy > GPS_WIDE) $("locLine").textContent += "\n오차가 넓습니다. 실외에서 휴대폰 위치(GPS)를 켜고 다시 받거나 '위치 고치기'로 맞춰 주세요.";
     };
     id = navigator.geolocation.watchPosition((p) => {
       if (done) return;
@@ -329,11 +374,11 @@
       const c = p.coords;
       if (best && c.accuracy >= best.accuracy) return;
       best = { lat: c.latitude, lng: c.longitude, accuracy: c.accuracy };
-      gps = best; pos = { ...gps }; corrected = false; locLine();
+      gps = best; pos = { ...gps }; corrected = false; fixAt = Date.now();
+      locLine(c.accuracy <= GPS_GOOD ? "" : "더 정확한 위치를 기다리는 중입니다.");
       if (!looked) { looked = best; lookup(); drawNear(); }      // 첫 값으로 바로 행정동을 찾아 기다리지 않게 한다
       if (c.accuracy <= GPS_GOOD) finish();
-      else $("locLine").textContent += "\n더 정확한 위치를 기다리는 중입니다.";
-    }, () => { if (!best) finish(); }, { enableHighAccuracy: true, timeout: GPS_WAIT, maximumAge: 0 });
+    }, (err) => { if (!best) { denied = !!err && err.code === 1; finish(); } }, { enableHighAccuracy: true, timeout: GPS_WAIT, maximumAge: 0 });
     timer = setTimeout(finish, GPS_WAIT);
   }
   $("gps").addEventListener("click", locate);
@@ -392,7 +437,7 @@
     draft = { lat, lng }; drawPin();
   }));
   $("pinOk").addEventListener("click", () => {
-    pos = { lat: draft.lat, lng: draft.lng, accuracy: gps.accuracy }; corrected = true;
+    pos = { lat: draft.lat, lng: draft.lng, accuracy: gps.accuracy }; corrected = true; fixAt = Date.now();
     $("pinBox").hidden = true; locLine(); lookup(); drawNear();
   });
   $("pinCancel").addEventListener("click", () => { $("pinBox").hidden = true; });
@@ -401,7 +446,8 @@
   const NOTICE_KEY = "renewmap-field-notice-v1";
   function beforeShot(e) {
     if (e.target !== e.currentTarget) return;                  // 라벨 안 입력칸으로 다시 들어온 클릭
-    if (!pos) locate();
+    // 1분 넘은 위치는 찍을 때 새로 받는다(다른 건물로 걸어가 찍어도 첫 기록의 좌표가 남던 출시 차단 B11). 사람이 고친 위치는 그대로 둔다
+    if (!corrected && (!pos || Date.now() - fixAt > 60000)) locate();
     if (store(NOTICE_KEY)) { badgeOn(); return; }
     e.preventDefault();
     const dlg = $("notice"), target = e.currentTarget.htmlFor;
@@ -449,10 +495,11 @@
       edit = { canvas, boxes: [], drag: null, start: null, revision: 0, attaching: false };
       const cv = $("cv"); cv.width = canvas.width; cv.height = canvas.height;
       $("safe").checked = false; $("attach").disabled = true; $("editor").hidden = false;
-      paint(false); say(""); badge();
+      paint(false); say(""); badge(); syncSave();
+      $("editor").scrollIntoView?.({ block: "start" });   // 사진·확인 칸·붙이기가 한 화면에 들어오게(M29)
     } catch (e) { if (epoch === photoLoadEpoch) say("사진을 읽지 못했습니다.\n다른 사진으로 다시 해 보세요.", true); }
   }
-  function closeEdit() { photoLoadEpoch++; edit = null; $("editor").hidden = true; $("shot").value = ""; $("album").value = ""; badge(); }
+  function closeEdit() { photoLoadEpoch++; edit = null; $("editor").hidden = true; $("shot").value = ""; $("album").value = ""; badge(); syncSave(); }
   function invalidatePhotoCheck() {
     if (edit) edit.revision++;
     $("safe").checked = false; $("attach").disabled = true;
@@ -479,7 +526,7 @@
       invalidatePhotoCheck();
       cur.boxes.push(...r.faces, ...r.plates); paint(false);
       const none = !r.faces.length && !r.plates.length;
-      say(`얼굴·번호판으로 보이는 곳 ${r.faces.length + r.plates.length}곳을 가렸습니다.\n놓친 곳은 손가락으로 문질러 가리세요.${r.errors.length ? "\n(" + r.errors.join(" / ") + ")" : ""}`, none && r.errors.length > 0);
+      say(`얼굴·번호판으로 보이는 곳 ${r.faces.length + r.plates.length}곳을 가렸습니다.\n놓친 곳은 끌어서(휴대폰은 손가락으로) 문질러 가리세요.${r.errors.length ? "\n(" + r.errors.join(" / ") + ")" : ""}`, none && r.errors.length > 0);
     } catch (e) { if (edit === cur) say("자동 찾기를 쓰지 못했습니다.\n직접 가려 주세요.", true); }
     finally { $("auto").disabled = false; }
   });
@@ -490,7 +537,7 @@
   $("album").addEventListener("change", (e) => startEdit(e.target.files[0]));
   $("attach").addEventListener("click", async () => {
     if (!edit || edit.attaching) return;
-    if (!$("safe").checked) { say("사진을 붙이기 전에 '가릴 곳을 모두 확인했습니다'를 눌러 주세요.", true); return; }
+    if (!$("safe").checked) { say("사진을 붙이기 전에 '얼굴·번호판을 가린 곳을 모두 확인했습니다'를 눌러 주세요.", true); return; }
     if (pending.length + (site ? site.photos.size : 0) >= R.MAX_PHOTOS) { say(`사진은 한 기록에 ${R.MAX_PHOTOS}장까지 붙일 수 있습니다.`, true); return; }
     const cur = edit, revision = cur.revision, link = linkNext;
     cur.attaching = true; $("attach").disabled = true;
@@ -505,8 +552,11 @@
         const sha256 = R.sha256Hex(new Uint8Array(await blob.arrayBuffer()));
         if (edit !== cur || cur.revision !== revision || !$("safe").checked) return;
         pending.push({ id, blob, url: URL.createObjectURL(blob), sha256 });
+        // 붙인 사진은 저장 전까지 이 기기 임시 칸에도 둔다(탭이 닫히거나 카메라 앱에서 돌아오며 다시 열려도 잃지 않게, M21)
+        S.putDraft({ id, blob, sha256, created_at: new Date().toISOString() }).catch(() => {});
         linkNext = null;
         closeEdit(); drawThumbs(); say("");
+        $("thumbs").scrollIntoView?.({ block: "center" });   // 방금 붙인 사진이 화면 위로 사라졌다(M22)
         if (link) { $(`ck-${link}`).checked = true; $(`ck-${link}`).dispatchEvent(new Event("change")); $(`ckp-${link}`).value = id; }
     } catch (e) { if (edit === cur) say("사진을 붙이지 못했습니다.\n다시 눌러 보세요.", true); }
     finally { cur.attaching = false; if (edit === cur) $("attach").disabled = !$("safe").checked; }
@@ -517,11 +567,23 @@
       const f = document.createElement("figure"), img = document.createElement("img"), x = document.createElement("button");
       img.src = p.url; img.alt = `붙인 사진 ${i + 1}`; img.width = 88; img.height = 88;
       x.type = "button"; x.textContent = "✕"; x.setAttribute("aria-label", `사진 ${i + 1} 빼기`);
-      x.addEventListener("click", () => { URL.revokeObjectURL(p.url); pending.splice(i, 1); drawThumbs(); });
+      x.addEventListener("click", () => { URL.revokeObjectURL(p.url); pending.splice(i, 1); S.deleteDraft(p.id).catch(() => {}); drawThumbs(); });
       f.append(img, x); box.append(f);
     });
-    drawCheckPhotos(); badge();
+    drawCheckPhotos(); badge(); syncSave();
   }
+  // 크게 보기(M29): 가린 지금 상태 그대로 큰 그림으로 연다. 확대는 브라우저 손가락 확대를 쓴다
+  let bigUrl = "";
+  $("bigOpen").addEventListener("click", () => {
+    if (!edit) return;
+    paint(false);
+    $("cv").toBlob((b) => {
+      if (!b) return say("사진을 크게 열지 못했습니다.\n다시 눌러 보세요.", true);
+      URL.revokeObjectURL(bigUrl); bigUrl = URL.createObjectURL(b); $("bigImg").src = bigUrl; $("bigDlg").showModal();
+    }, "image/jpeg", 0.82);
+  });
+  $("bigClose").addEventListener("click", () => $("bigDlg").close());
+  $("bigDlg").addEventListener("close", () => { $("bigImg").removeAttribute("src"); URL.revokeObjectURL(bigUrl); bigUrl = ""; $("bigOpen").focus(); });
 
   // ── 고르기(칩): 대상 유형·자료와 비교. 저장값은 원장 상태 그대로, 화면은 쉬운 말
   function chips(box, name, values, labels, checked) {
@@ -534,6 +596,7 @@
   const picked = (name) => (document.querySelector(`input[name="${name}"]:checked`) || {}).value || "";
   // 대상 유형은 마지막에 고른 값을 미리 고른다. 상태는 미리 고르지 않는다(늘 '모름'에서 시작. 앞 기록의 '같음'이 따라붙지 않게)
   const TARGET_KEY = "renewmap-field-last-target", PHRASE_KEY = "renewmap-field-phrases-v1", CHECKER_KEY = "renewmap-field-checker";
+  const TODO_KEY = "renewmap-redev-todo";   // 구역 계산의 '확인할 건물' 목록 [{pnu, jibun, structure, main_use}](redev-app.js가 쓴다)
   $("checker").value = store(CHECKER_KEY) || "";   // 같은 담당자가 계속 쓰므로 지난 값을 채워 둔다
   chips($("targets"), "target", R.TARGETS, null, R.TARGETS.includes(store(TARGET_KEY)) ? store(TARGET_KEY) : undefined);
   chips($("statuses"), "status", ["추가확인", "확인", "충돌"], R.STATUS_LABEL, "추가확인");
@@ -568,19 +631,33 @@
   }
   // 입안요건 사전검토(redev.html)의 '현장 확인' 줄에서 왔으면(?check=road) 그 항목을 미리 고른다. 대상 유형은 그 항목이 보이는 '주거지 골목'
   const fromCheck = R.CHECKS.find((c) => c.id === new URLSearchParams(location.search).get("check"));
+  const fromPnu = /^\d{19}$/.test(new URLSearchParams(location.search).get("pnu") || "");
   if (fromCheck) {
     const t = document.querySelector('input[name="target"][value="주거지 골목"]');
     t.checked = true; checkTarget(); $("checkBox").open = true;
     $(`ck-${fromCheck.id}`).checked = true; $(`ck-${fromCheck.id}`).closest("li").querySelector(".ck-more").hidden = false;
     // 위쪽 안내가 다 그려진 뒤에 내려야 자리가 맞는다. html의 smooth 스크롤은 숨은 탭에서 멈추므로(2026-10-30 확인) 바로 옮긴다
+    // 건물 하나를 확인하러 왔으면(?pnu=) 맨 위 '확인할 건물' 띠와 사진 단추가 먼저 보여야 해서 항목으로 내리지 않는다(M24)
     const show = () => $(`ck-${fromCheck.id}`).closest("li").scrollIntoView({ block: "center", behavior: "instant" });
-    if (document.readyState === "complete") show(); else window.addEventListener("load", show, { once: true });
+    if (!fromPnu) { if (document.readyState === "complete") show(); else window.addEventListener("load", show, { once: true }); }
   }
   $("item").append(new Option("고르지 않음", ""));
   for (const v of R.ITEMS) $("item").append(new Option(v, v));
   // 입안요건의 '확인할 건물'에서 왔으면(?pnu=&jibun=) 그 건물을 채우고 항목을 사용승인일로 둔다. 기록의 pnu로 계산표에 다시 붙는다
   const fromBld = new URLSearchParams(location.search);
-  if (/^\d{19}$/.test(fromBld.get("pnu") || "")) { $("pnu").value = fromBld.get("pnu"); $("jibun").value = fromBld.get("jibun") || ""; $("item").value = "사용승인일"; }
+  if (fromPnu) { $("pnu").value = fromBld.get("pnu"); $("jibun").value = fromBld.get("jibun") || ""; $("item").value = "사용승인일"; checkBanner(fromBld.get("pnu"), fromBld.get("jibun") || ""); }
+  // 구역 계산이 남긴 '확인할 건물' 목록(redev-app.js TODO_KEY)에서 이 건물의 구조·용도와 다음 건물을 찾는다. 목록이 없으면 받은 지번만 보인다
+  function checkBanner(pnu, jibun) {
+    const list = Array.isArray(storeJson(TODO_KEY)) ? storeJson(TODO_KEY) : [], i = list.findIndex((x) => x && x.pnu === pnu), cur = list[i] || { jibun };
+    $("checkText").textContent = `확인할 건물: ${[cur.jibun || "지번 없음", cur.structure, cur.main_use].filter(Boolean).join(" · ")}${i >= 0 ? ` (${list.length.toLocaleString("ko-KR")}동 중 ${i + 1}번째)` : ""}`;
+    const next = list[i + 1];
+    if (i >= 0 && next && /^\d{19}$/.test(next.pnu || "")) {
+      $("checkNext").href = `./?check=unregistered&pnu=${next.pnu}&jibun=${encodeURIComponent(next.jibun || "")}`;
+      $("checkNext").setAttribute("aria-label", ["다음 건물", next.jibun, "열기"].filter(Boolean).join(" "));
+      $("checkNext").hidden = false;
+    }
+    $("checkBanner").hidden = false;
+  }
 
   // ── 자주 쓰는 한 줄(A2): 대상 유형별로 이 기기(localStorage)에만 둔다. ZIP 내보내기에 넣지 않는다(개인 습관 정보)
   const phrases = () => storeJson(PHRASE_KEY) || {};
@@ -621,7 +698,7 @@
     }
   }
   for (const [id, options] of [["fac-observed_state", R.FACILITY_STATES], ["visit-weather", R.WEATHER]]) {
-    $(id).append(new Option("미확인", ""));
+    $(id).append(new Option("고르지 않음", ""));   // r16 OD1: '미확인'은 상태어로 쓰지 않는다(빈 값 그대로)
     options.forEach((v) => $(id).append(new Option(v, v)));
   }
   for (const name of ["facility", "visit"]) $(name + "On").addEventListener("change", () => {
@@ -647,8 +724,24 @@
   }
 
   // ── 저장
+  // 저장 단추는 넣은 것이 있을 때만 채운 단추로 보인다. 빈 기록(사진·대상·메모·항목·관찰이 모두 없음)은 저장하지 않는다(M20: 빈 '기타' 기록이 쌓였다)
+  const hasContent = () => !!(pending.length || edit || picked("target") || $("memo").value.trim() || readChecks().length || (site && site.photos.size)
+    || $("visitOn").checked || $("facilityOn").checked || $("observed").value.trim());
+  function syncSave() { const b = document.querySelector("button.save"); if (b) b.classList.toggle("ghost", !hasContent()); }
+  $("f").addEventListener("input", syncSave); $("f").addEventListener("change", syncSave); syncSave();
+  let saving = false, staleOk = false;
   $("f").addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (saving) return;   // 두 번 누르기·장갑 연속 터치로 기록이 둘 생겼다(M20)
+    // 고르고 붙이지 않은 사진이 저장에서 말없이 빠졌다(B12) → 붙이거나 빼고 저장하게 한 번 묻는다. 가림 확인 칸은 그대로 거친다
+    if (edit) return ask("사진을 아직 붙이지 않았습니다.", ["가림 확인하고 붙이기", () => { $("editor").scrollIntoView({ block: "start" }); $("safe").focus(); }],
+      ["사진 빼고 저장", () => { linkNext = null; closeEdit(); $("f").requestSubmit(); }]);
+    if (!hasContent()) return say("사진을 찍거나 '무엇을 봤나요'를 하나 골라 주세요.", true);
+    if (pos && !staleOk && Date.now() - fixAt > ASK_MS) return ask(`${ageMin()}분 전에 받은 위치로 저장할까요?`, ["지금 위치 다시 받기", locate],
+      ["이 위치로 저장", () => { staleOk = true; $("f").requestSubmit(); }]);
+    saving = true;
+    const btn = document.querySelector("button.save");
+    btn.disabled = true; btn.textContent = "저장하는 중입니다";
     // 지난 칸 오류를 지운다. 입력 없이 고쳐진 칸(자동으로 채운 종료 시각 등)이 사라진 문장을 가리키며 오류로 남지 않게 표시도 함께 뗀다
     document.querySelectorAll(".field-err").forEach((p) => p.remove());
     document.querySelectorAll('[aria-describedby^="err-"]').forEach((t) => { t.removeAttribute("aria-invalid"); t.removeAttribute("aria-describedby"); });
@@ -671,7 +764,8 @@
           site_prev: (await S.records()).filter((r) => E.siteOf(r) === site.id).map((r) => r.recorded_at) } : {}) }, new Date());
       // 자주 쓰는 한 줄 저장은 기록 저장보다 먼저 검사한다(개인정보 꼴이면 둘 다 저장하지 않는다)
       const keep = canStore && $("keepPhrase").checked && rec.memo ? R.rememberPhrase(phrases()[rec.target], rec.memo) : null;
-      await S.tx(["records", "photos"], "readwrite", (rs, ps) => { for (const p of pending) ps.add({ id: p.id, blob: p.blob }); return rs.add(rec); });
+      await S.tx(["records", "photos", "drafts"], "readwrite", (rs, ps, ds) => { for (const p of pending) { ps.add({ id: p.id, blob: p.blob }); ds.delete(p.id); } return rs.add(rec); });
+      const shots = pending.length, where = dong ? `${dong.sgName} ${dong.name}` : rec.jibun || "";
       for (const p of pending) URL.revokeObjectURL(p.url);
       pending = []; drawThumbs();
       for (const id of ["observed", "memo"]) $(id).value = "";
@@ -681,12 +775,17 @@
       // 다음 기록은 '모름'에서 시작한다
       document.querySelector('input[name="status"][value="추가확인"]').checked = true; $("item").value = ""; $("keepPhrase").checked = false; clearChecks(); clearSurvey();
       site = null; siteText(); drawNear();
-      say("");
-      toast("저장했습니다." + endNote, "되돌리기", async () => {
+      say(""); staleOk = false;
+      // 다음 기록은 새 위치로 시작한다(B11). 새 GPS 값이 오면 손으로 고친 위치도 바뀐다(locate 첫 값). 못 받으면 고친 위치와 '보정됨'을 함께 두어
+      // 기록의 좌표와 보정 표시가 어긋나지 않게 한다. GPS를 한 번도 못 받았으면 권한을 다시 묻지 않는다
+      if (gps) locate();
+      scrollTo(0, 0);   // 다음 '사진 찍기'가 바로 보이게(M22: 저장 뒤 2,400px 아래에 남았다)
+      toast(["저장했습니다.", [shots ? `사진 ${shots}장` : "", where].filter(Boolean).join(" · ")].filter(Boolean).join(" ") + endNote, "되돌리기", async () => {
         try { await S.deleteRecord(rec); toast("저장을 되돌렸습니다."); await render(); } catch (e) { toast("저장을 되돌리지 못했습니다.\n목록에서 확인해 주세요."); }
       }, true);
       recordPages.reset(); await render();
     } catch (err) { say(errText(err), true); focusFields(err.fields); }
+    finally { saving = false; btn.disabled = false; btn.textContent = "저장"; syncSave(); }
   });
 
   // ── 1쪽 문서: 한글(HWPX)은 바로 받고 보관함에도 남긴다. PDF는 인쇄 창에서 'PDF로 저장'
@@ -829,12 +928,13 @@
         const target = [...$("targets").querySelectorAll("input")].find((el) => el.value === r.target);
         if (target) { target.checked = true; $("targets").dispatchEvent(new Event("change")); }
         if (!pos) { $("jibun").value = r.jibun || ""; $("pnu").value = r.pnu || ""; }
-        $("moreBox").open = true; $("visitOn").checked = true; $("visitOn").dispatchEvent(new Event("change"));   // 관찰 조건 칸은 접힌 '더 남기기' 안에 있다(index.html moreBox)
-        const [today, hm] = D.localDate(new Date(), true).split(" ");   // 기기 시계로 날짜·시작만 채운다. 구간·방식·날씨는 이전 기록에서 채우지 않는다
+        // M23: 관찰 조건은 켜지 않는다(사진만 다시 찍는 재방문이 빈 관찰 칸 두 개로 저장에 실패했다). 켜면 쓰도록 날짜·시작만 기기 시계로 채워 둔다
+        const [today, hm] = D.localDate(new Date(), true).split(" ");
         if (!$("visit-date").value) $("visit-date").value = today;
         if (!$("visit-start").value) $("visit-start").value = hm;
-        $("visitBox").scrollIntoView({ block: "start", behavior: "instant" });
-        if (!pos && !r.jibun && !r.pnu) say("현재 위치를 받은 뒤 관찰 조건을 적어 주세요.");
+        scrollTo(0, 0);   // 사진 단추와 그 위 재방문 띠가 보이게(관찰 칸으로 2,700px 내려가던 것)
+        $("shot").focus({ preventScroll: true });   // 키보드 초점도 사진 찍기로(목록 아래에 남지 않게)
+        if (!pos && !r.jibun && !r.pnu) toast("현재 위치를 받은 뒤 사진을 찍어 주세요.");
       });
       li.append(b, m);
       if (r.facility || r.visit) li.append(surveyDetail(r, prev));
@@ -1011,4 +1111,26 @@
   }
   checkData();
   window.addEventListener("online", checkData);
+
+  // ── 저장하지 않은 사진 지키기(M21). 붙인 사진·편집 중 사진이 있으면 떠나기 전에 브라우저가 묻는다(아래 탭·뒤로 가기에서 경고 없이 사라졌다)
+  window.addEventListener("beforeunload", (e) => { if (pending.length || edit) { e.preventDefault(); e.returnValue = ""; } });
+  // 탭이 닫혔다가 다시 열려도 붙인 사진은 임시 칸에 있다. 이어 쓸지 버릴지 한 번 묻는다
+  S.drafts().then((ds) => {
+    if (!ds.length || pending.length) return;
+    ds.sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+    ask(`저장하지 않은 사진 ${ds.length}장이 있습니다.`, ["이어 쓰기", () => {
+      pending.push(...ds.slice(0, R.MAX_PHOTOS).map((d) => ({ id: d.id, blob: d.blob, url: URL.createObjectURL(d.blob), sha256: d.sha256 })));
+      drawThumbs();
+    }], ["버리기", () => { S.clearDrafts().catch(() => {}); }], document.querySelector(".pick"));
+  }).catch(() => {});
+  // 넓은 화면은 위치·통계 칸을 펼쳐 둔다(예전 세 칸 배치 그대로). 휴대폰은 접힌 한 줄(M22)
+  if (window.matchMedia && matchMedia("(min-width: 1024px)").matches) $("locBox").open = true;
+  // 오프라인에서 현장 기록 밖으로 가면 브라우저 오류 화면이 떴다(manifest scope는 field/). 그 링크만 막고 알린다
+  document.addEventListener("click", (e) => {
+    const a = !navigator.onLine && e.target.closest && e.target.closest("a[href]");
+    if (!a) return;
+    const u = new URL(a.href, location.href);
+    if (u.protocol !== location.protocol || (u.origin === location.origin && u.pathname.startsWith(location.pathname.replace(/[^/]*$/, "")))) return;
+    e.preventDefault(); toast("인터넷이 연결되면 열립니다. 현장 기록은 계속 쓸 수 있습니다.");
+  }, true);
 })();

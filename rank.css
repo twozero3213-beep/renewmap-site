@@ -21,6 +21,9 @@
 .rank-page #rankSens:empty { display: none; }
 .rank-page .rank-table-help { margin: 8px 0; color: var(--dim); font-size: 15px; line-height: 1.6; }
 .rank-page .rank-table-note { margin: 0 0 8px; color: var(--dim); font-size: 15px; line-height: 1.6; }
+.rank-page .rank-unit { margin: 0 0 8px; font-size: 15px; line-height: 1.6; }
+.rank-page .rank-unit[hidden] { display: none; }
+.rank-page table.rank-table th .rank-tip { display: inline-flex; align-items: center; min-width: 24px; min-height: 24px; justify-content: center; text-decoration: none; }
 .rank-page #rankOut { min-width: 0; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
 .rank-page table.rank-table { min-width: 63rem; table-layout: fixed; font-size: 15px; }
 /* 캡션은 표 아래 한 줄(제목·범위 뜻·단위) + '읽는 법'. 첫 줄이 위로 올라온다 */
@@ -77,6 +80,7 @@
 @media (max-width: 720px) {
   .rank-page table.rank-table { min-width: 0; width: 100%; font-size: 15px; }
   .rank-page table.rank-table th:nth-child(n+5), .rank-page table.rank-table td:nth-child(n+5) { display: none; }
+  .rank-page .rank-unit { display: none; }   /* 세부 열을 숨기므로 그 단위 안내도 숨긴다 */
   .rank-page table.rank-table th:nth-child(1) { width: 3rem; }
   .rank-page table.rank-table th:nth-child(2) { width: auto; }
   .rank-page table.rank-table th:nth-child(3) { width: 5rem; }

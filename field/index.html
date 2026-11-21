@@ -7,14 +7,14 @@
 <script src="../frame-guard.js"></script>
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>현장 기록 | 리뉴맵</title>
-<meta name="description" content="현장 사진에 위치·오차와 그 행정동의 공식 통계(출처·기준일)를 붙여 사진대지(한글)·CSV·GeoJSON으로 받습니다. 기록과 사진은 이 기기에 저장됩니다. 로그인·설치 없이 씁니다.">
+<meta name="description" content="현장 사진에 위치·오차와 그 행정동의 공공 통계·리뉴맵 계산값(출처·기준일)을 붙여 사진대지(한글)·CSV·GeoJSON으로 받습니다. 기록과 사진은 이 기기에 저장됩니다. 로그인·설치 없이 씁니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/field/">
 <meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/field/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="리뉴맵 RENEWMAP">
 <meta property="og:title" content="현장 기록 | 리뉴맵">
-<meta property="og:description" content="현장 사진에 위치·오차와 그 행정동의 공식 통계(출처·기준일)를 붙여 사진대지(한글)·CSV·GeoJSON으로 받습니다. 기록과 사진은 이 기기에 저장됩니다. 로그인·설치 없이 씁니다.">
+<meta property="og:description" content="현장 사진에 위치·오차와 그 행정동의 공공 통계·리뉴맵 계산값(출처·기준일)을 붙여 사진대지(한글)·CSV·GeoJSON으로 받습니다. 기록과 사진은 이 기기에 저장됩니다. 로그인·설치 없이 씁니다.">
 <meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#ffffff">
@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="../styles.css">
 <link rel="stylesheet" href="../site-v4.css">
 <link rel="stylesheet" href="../v4.css">
-<link rel="stylesheet" href="field.css?v=20261120-r11">
+<link rel="stylesheet" href="field.css?v=20261121-r16">
 <link rel="stylesheet" href="../list-pages.css">
 <link rel="stylesheet" href="../rm6.css">
 </head>
@@ -43,43 +43,43 @@
   <!-- 2026-11-19 현장 기록 넓은 화면: 한 칸(560px)에 모두 쌓여 오른쪽이 비고 세로가 2,256px였다 → 1280px 이상은 사진·위치 | 기록 | 저장된 기록 세 칸, 1024px 이상은 두 칸(field.css .fr-grid). 휴대폰은 순서 그대로 한 칸 -->
   <div class="fr-grid">
   <div class="fr-col fr-shoot">
+  <!-- 2026-11-21 r16: 재방문·구역 계산 '확인할 건물'로 왔으면 무엇을 찍으러 왔는지 사진 단추 바로 위에 한 줄(app.js siteText·checkBanner) -->
+  <p id="visitBanner" class="fr-banner" role="status" hidden></p>
+  <div id="checkBanner" class="fr-banner" hidden><p id="checkText"></p><a id="checkNext" class="btn ghost" hidden>다음 건물 ›</a></div>
   <!-- 2026-11-18 현장 조사자 검토: 한 손으로 쓰는데 안내 두 단락이 사진 찍기를 화면 중간 아래로 밀었다 → 찍기 단추를 제목 바로 아래로 -->
   <div class="pick">
     <label class="big" for="shot">사진 찍기<input id="shot" type="file" accept="image/*" capture="environment"></label>
     <label class="ghost" for="album">앨범에서 고르기<input id="album" type="file" accept="image/*"></label>
   </div>
   <!-- 2026-11-19: 찍기 아래 안내 세 덩어리(8줄)를 한 줄 + 'ⓘ 자세히'로. 문장은 빼지 않고 접은 칸으로 옮겼다 -->
-  <p class="hint fr-lead">사람이 찍히지 않게 건물·시설 위주로 찍어 주세요.</p>
+  <p class="hint fr-lead">찍고 저장하면 위치·오차와 그 동의 공공 통계·리뉴맵 계산값이 출처·기준일과 함께 기록에 붙습니다. 기록은 이 기기에 남습니다.</p>
   <details class="fr-info" id="aboutBox">
-    <summary>ⓘ 자세히: 저장·전송·오프라인</summary>
+    <summary>ⓘ 자세히: 촬영·저장·전송·오프라인</summary>
+    <p class="hint">사람이 찍히지 않게 건물·시설 위주로 찍어 주세요.</p>
     <p class="hint">'사진 찍기'로 찍은 사진은 보통 사진첩에 따로 저장되지 않지만, 기종에 따라 남을 수 있으니 확인해 주세요.</p>
     <!-- 2026-11-17 우지예(지원센터 담당자 인터뷰): 현장에서는 휴대폰으로 사진을 찍고 메모한 뒤 사무실에 돌아와 다시 입력한다고 했다.
          이 화면이 그 다시 입력을 줄여 준다는 점을 알린다. 내보내기 형식은 아래 단추(사진대지·CSV)에 실제로 있는 것만 적는다 -->
-    <p id="intro" class="hint">사진을 찍고 위치를 받으면 그 동의 공식 통계를 붙일 수 있습니다. 현장에서 남긴 기록이 사진대지(한글)·CSV로 바로 나옵니다.<br>기록과 사진은 이 기기에 저장됩니다. 배경지도와 필지 찾기를 켤 때만 위치 좌표가 브이월드로 갑니다.<br>기기를 잃거나 브라우저 자료를 지우면 기록이 사라질 수 있습니다. ZIP으로 백업해 따로 보관하세요.</p>
+    <p id="intro" class="hint">사진을 찍고 위치를 받으면 그 동의 통계(출처·기준일)를 붙일 수 있습니다. 현장에서 남긴 기록이 사진대지(한글)·CSV로 바로 나옵니다.<br>기록과 사진은 이 기기에 저장됩니다. 배경지도와 필지 찾기를 켤 때만 위치 좌표가 브이월드로 갑니다.<br>기기를 잃거나 브라우저 자료를 지우면 기록이 사라질 수 있습니다. ZIP으로 백업해 따로 보관하세요.</p>
     <p id="ready" class="hint" role="status">한 번 열어 두면 인터넷이 끊겨도 이 화면이 열립니다.</p>
   </details>
 
   <div id="editor" class="card" hidden>
     <canvas id="cv" aria-label="사진 편집: 끌어서 가릴 곳을 지정"></canvas>
-    <button type="button" id="auto" class="ghost">얼굴·번호판 자동 가리기</button>
-    <p class="hint">처음 한 번 약 20MB를 받습니다.<br>Wi-Fi에서 받기를 권합니다.</p>
-    <p class="hint">놓친 곳은 손가락으로 문질러 가리세요.</p>
-    <div class="row"><button type="button" class="ghost" id="undo">되돌리기</button><button type="button" class="ghost" id="cancel">취소</button></div>
-    <label class="check" for="safe"><input id="safe" type="checkbox"><span>가릴 곳을 모두 확인했습니다</span></label>
+    <!-- 2026-11-21 r16: 확인 칸과 붙이기가 첫 화면 밖이었다 → 사진 바로 아래. 확인 칸은 법적 확인이라 그대로 둔다(field.css 체크 줄 주석) -->
+    <button type="button" class="ghost fr-inline" id="bigOpen">크게 보기</button>
+    <label class="check" for="safe"><input id="safe" type="checkbox"><span>얼굴·번호판을 가린 곳을 모두 확인했습니다</span></label>
     <button type="button" id="attach" disabled>이 사진 붙이기</button>
+    <button type="button" id="auto" class="ghost">얼굴·번호판 자동 가리기</button>
+    <p class="hint">얼굴·번호판 자동 가리기는 보조 수단입니다. 붙이기 전에 직접 확인해 주세요.<br>처음 한 번 약 20MB를 받습니다. Wi-Fi에서 받기를 권합니다.</p>
+    <p class="hint">놓친 곳은 끌어서(휴대폰은 손가락으로) 문질러 가리세요.</p>
+    <div class="row"><button type="button" class="ghost" id="undo">되돌리기</button><button type="button" class="ghost" id="cancel">취소</button></div>
   </div>
   <div id="thumbs" class="thumbs" aria-live="polite"></div>
 
   <section class="card" aria-labelledby="locTitle">
     <h2 id="locTitle">위치</h2>
-    <p class="loc"><span id="locLine" aria-live="polite">위치를 아직 받지 않았습니다.</span> <span id="accChip" class="acc-chip" hidden></span></p>
-    <p id="dongLine" class="dong" aria-live="polite"></p>
-    <details id="near" class="near" hidden>
-      <summary id="nearSum"></summary>
-      <p class="hint">거리가 가까운 순서입니다.<br>같은 자리면 '같은 지점으로 묶기'를 누르세요.</p>
-      <ul id="nearList" class="near-list"></ul>
-    </details>
-    <p id="siteLine" class="site-line" hidden></p>
+    <!-- 2026-11-21 r16(B11): 첫 기록의 위치가 다음 기록에도 말없이 쓰였다 → 받은 시각·지난 시간·오차를 한 줄에. 5분이 넘으면 경고 색과 '지금 위치 다시 받기' 채운 단추(app.js locLine) -->
+    <p class="loc"><span id="locLine" aria-live="polite">위치를 아직 받지 않았습니다.</span></p>
     <div class="row">
       <button type="button" class="ghost" id="gps">현재 위치 받기</button>
       <button type="button" class="ghost" id="fix" disabled>위치 고치기</button>
@@ -102,33 +102,6 @@
       </div>
       <div class="row"><button type="button" id="pinOk">이 위치로 정하기</button><button type="button" class="ghost" id="pinCancel">취소</button></div>
     </div>
-    <div id="facts" class="facts" hidden>
-      <h3>이 동의 공식 통계</h3>
-      <p id="factsBase" class="hint"></p>
-      <ul id="factList"></ul>
-      <p class="hint">판정 아님 · 참고 계산<br>공공데이터 값과 출처를 그대로 옮겼습니다.</p>
-    </div>
-    <div id="bld" class="facts" hidden>
-      <h3>가까운 건물 · 건물 자료는 부산 254개 법정동</h3>
-      <div id="parcelBox" hidden>
-        <button type="button" class="ghost" id="parcelFind">이 위치의 필지 찾기(브이월드)</button>
-        <p class="hint">누르면 지금 위치 좌표 1개가 브이월드로 갑니다.<br>기록과 사진은 보내지 않습니다.</p>
-        <p id="parcelLine" class="site-line" aria-live="polite" hidden></p>
-      </div>
-      <p id="bldNote" class="hint"></p>
-      <div id="bldFind">
-        <label for="bldQ">지번으로 찾기</label>
-        <input id="bldQ" autocomplete="off" placeholder="예: 113-2, 산113-2" aria-describedby="bldHelp">
-        <p id="bldHelp" class="hint">다른 지역에서는 건물 후보가 나오지 않습니다. 지번을 직접 적어 주세요.<br>같은 지번의 건물은 용도·구조·층수·사용승인일을 대조해 고르세요.</p>
-        <ul id="bldList" class="bld-list" aria-live="polite"></ul>
-        <p id="bldRange" class="hint" role="status"></p>
-        <div id="bldPages" class="row" hidden>
-          <button id="bldPrev" type="button" class="ghost">이전 후보</button>
-          <button id="bldNext" type="button" class="ghost">다음 후보</button>
-        </div>
-      </div>
-      <p id="bldPicked" class="site-line" hidden></p>
-    </div>
   </section>
   </div>
 
@@ -149,14 +122,17 @@
     </div>
     <textarea id="memo" rows="2" maxlength="500" placeholder="이름·전화번호는 적지 마세요" aria-describedby="memoWarn"></textarea>
     <p id="memoWarn" class="warn fr-warn">이름·전화번호·주소 같은 개인정보는 적지 마세요.<br>보안시설은 찍거나 적지 마세요.</p>
-    <label for="checker">확인자 (소속·직위, 선택)</label>
-    <input id="checker" maxlength="40" autocomplete="organization-title" placeholder="예: ○○구 도시재생과 주무관">
-    <p class="hint">1쪽 문서의 '확인자' 칸에 들어갑니다.<br>이름과 서명은 결재 문서에서 하세요.</p>
     <label id="keepBox" class="check" for="keepPhrase"><input id="keepPhrase" type="checkbox"><span>이 메모를 자주 쓰는 한 줄로 저장</span></label>
-    <!-- 2026-11-19: 접힌 줄 셋(시설 이용 조건·날씨와 시간·공공자료 대조)이 연달아 있어 폼이 길고 어수선했다 → 메모·확인자 뒤 '더 남기기' 하나로.
-         묶음마다 켜기 체크가 입력 칸을 연다. 재방문·검증 오류는 app.js가 이 접이를 연다 -->
+    <!-- 2026-11-19: 접힌 줄 셋(시설 이용 조건·날씨와 시간·공공자료 대조)이 연달아 있어 폼이 길고 어수선했다 → 메모 뒤 '더 남기기' 하나로.
+         묶음마다 켜기 체크가 입력 칸을 연다. 재방문·검증 오류는 app.js가 이 접이를 연다.
+         2026-11-21 r16(M22): 확인자는 지난 값이 미리 채워지는 칸이라 '더 남기기' 안 첫 칸으로(휴대폰 사진→저장 거리 1,000px 안) -->
     <details id="moreBox" class="rm-disclosure">
-      <summary>더 남기기: 시설·날씨·자료 대조</summary>
+      <summary>더 남기기: 확인자·시설·날씨·자료 대조</summary>
+    <div class="fr-sub">
+      <label for="checker">확인자 (소속·직위, 선택)</label>
+      <input id="checker" maxlength="40" autocomplete="organization-title" placeholder="예: ○○구 도시재생과 주무관">
+      <p class="hint">1쪽 문서의 '확인자' 칸에 들어갑니다.<br>이름과 서명은 결재 문서에서 하세요.</p>
+    </div>
     <div id="facilityBox" class="fr-sub">
       <h3>시설을 누가 언제 쓸 수 있나 (운영 시간·이용 대상)</h3>
       <label class="check" for="facilityOn"><input id="facilityOn" type="checkbox"><span>이번 기록에 시설 이용 조건을 남깁니다</span></label>
@@ -173,10 +149,10 @@
       <h3>날씨·시간 남기기와 이전 기록 비교</h3>
       <p id="visitPrevious" class="hint" aria-live="polite">연결한 이전 기록 없음</p>
       <button id="unlinkVisit" type="button" class="ghost" hidden>재방문 연결 풀기</button>
-      <label class="check" for="visitOn"><input id="visitOn" type="checkbox"><span>이번 기록에 관찰 조건을 남깁니다</span></label>
+      <label class="check" for="visitOn"><input id="visitOn" type="checkbox"><span>관찰 조건도 남기기(선택)</span></label>
       <fieldset id="visitFields" hidden disabled>
         <legend>이번 관찰 (한국시간)</legend>
-        <p class="hint">재방문이면 저장된 기록의 '이 지점 재방문' 또는 위치의 '같은 지점으로 묶기'를 누르세요.<br>조건은 이전 기록에서 자동으로 채우지 않습니다.</p>
+        <p id="visitHow" class="hint">재방문이면 저장된 기록의 '이 지점 재방문' 또는 위치의 '같은 지점으로 묶기'를 누르세요.<br>조건은 이전 기록에서 자동으로 채우지 않습니다.</p>
         <label for="visit-date">관찰 날짜</label><input id="visit-date" type="date">
         <div class="row">
           <div><label for="visit-start">시작 시각</label><input id="visit-start" type="time"></div>
@@ -205,9 +181,51 @@
     </details>
     <div class="save-bar">
       <p id="msg" class="msg" role="status"></p>
+      <!-- 2026-11-21 r16: 저장 전에 한 번 묻는 곳(붙이지 않은 사진 B12 · 10분 넘은 위치 B11 · 저장하지 않은 사진 M21). app.js ask -->
+      <div id="ask" class="fr-ask" role="group" aria-labelledby="askText" hidden><p id="askText"></p><div class="row"><button type="button" id="askYes"></button><button type="button" class="ghost" id="askNo"></button></div></div>
       <button type="submit" class="save ghost">저장</button>
     </div>
   </form>
+
+  <!-- 2026-11-21 r16(M22): 휴대폰에서 저장 단추가 공식 통계 7줄·가까운 건물 아래 2,400px에 있었다 → 행정동·통계·건물 후보는 저장 뒤 접힌 한 줄로.
+       넓은 화면은 field.css가 사진 칸 아래에 두고 app.js가 펼친다 -->
+  <details id="locBox" class="card fr-col fr-loc">
+    <summary id="locSum">위치와 이 동 통계</summary>
+    <p id="dongLine" class="dong" aria-live="polite"></p>
+    <details id="near" class="near" hidden>
+      <summary id="nearSum"></summary>
+      <p class="hint">거리가 가까운 순서입니다.<br>같은 자리면 '같은 지점으로 묶기'를 누르세요.</p>
+      <ul id="nearList" class="near-list"></ul>
+    </details>
+    <p id="siteLine" class="site-line" hidden></p>
+    <div id="facts" class="facts" hidden>
+      <h3>이 동의 통계</h3>
+      <p id="factsBase" class="hint"></p>
+      <ul id="factList"></ul>
+      <p class="hint">판정 아님 · 참고 계산<br>공공데이터 값과 출처를 그대로 옮겼습니다.</p>
+    </div>
+    <div id="bld" class="facts" hidden>
+      <h3>가까운 건물 · 건물 자료는 부산 254개 법정동</h3>
+      <div id="parcelBox" hidden>
+        <button type="button" class="ghost" id="parcelFind">이 위치의 필지 찾기(브이월드)</button>
+        <p class="hint">누르면 지금 위치 좌표 1개가 브이월드로 갑니다.<br>기록과 사진은 보내지 않습니다.</p>
+        <p id="parcelLine" class="site-line" aria-live="polite" hidden></p>
+      </div>
+      <p id="bldNote" class="hint"></p>
+      <div id="bldFind">
+        <label for="bldQ">지번으로 찾기</label>
+        <input id="bldQ" autocomplete="off" placeholder="예: 113-2, 산113-2" aria-describedby="bldHelp">
+        <p id="bldHelp" class="hint">다른 지역에서는 건물 후보가 나오지 않습니다. 지번을 직접 적어 주세요.<br>같은 지번의 건물은 용도·구조·층수·사용승인일을 대조해 고르세요.</p>
+        <ul id="bldList" class="bld-list" aria-live="polite"></ul>
+        <p id="bldRange" class="hint" role="status"></p>
+        <div id="bldPages" class="row" hidden>
+          <button id="bldPrev" type="button" class="ghost">이전 후보</button>
+          <button id="bldNext" type="button" class="ghost">다음 후보</button>
+        </div>
+      </div>
+      <p id="bldPicked" class="site-line" hidden></p>
+    </div>
+  </details>
 
   <section aria-labelledby="listTitle" class="fr-col fr-saved">
     <h2 id="listTitle">저장된 기록</h2>
@@ -221,7 +239,7 @@
     <button id="sheet" type="button">사진대지 받기(한글)</button>
     <div class="fr-acts">
       <button class="ghost" id="exp" type="button">모두 내보내기(ZIP)</button>
-      <button class="ghost" id="geojson" type="button">GeoJSON 받기</button>
+      <button class="ghost" id="geojson" type="button">위치 파일 받기(GeoJSON)</button>
       <button class="ghost" id="csv" type="button">CSV 받기</button>
       <button class="ghost" id="share" type="button" hidden>공유하기</button>
     </div>
@@ -270,19 +288,24 @@
   <p>얼굴·번호판 자동 가리기는 보완 수단입니다.<br>촬영 사실 표시를 대신하지 않습니다.</p>
   <button type="button" id="noticeOk">확인했습니다</button>
 </dialog>
+<dialog id="bigDlg" class="fr-dlg" aria-labelledby="bigDlgTitle">
+  <h2 id="bigDlgTitle">가린 사진 크게 보기</h2>
+  <img id="bigImg" alt="지금 가린 상태의 사진">
+  <button type="button" class="ghost" id="bigClose">닫기</button>
+</dialog>
 <section id="printDoc" class="print-doc" aria-hidden="true"></section>
-<script src="../site.js?v=20261120-r11"></script>
+<script src="../site.js?v=20261121-r16"></script>
 <script src="../site-motion.js" defer></script>
-<script src="../docgen.js?v=20261121-r14"></script>
+<script src="../docgen.js?v=20261121-r16"></script>
 <script src="upload-config.js"></script>
 <script src="upload.js"></script>
-<script src="record.js?v=20261120-w3"></script>
+<script src="record.js?v=20261121-r16"></script>
 <script src="store.js"></script>
 <script src="../list-pages.js"></script>
 <script src="../cellpack.js"></script><!-- 2026-11-08: 줄여 저장한 원장 셀(emd·living)을 app.js getJson이 되돌릴 때 쓴다 -->
 <script src="evidence.js?v=20261120-r13"></script>
 <script src="detect.js"></script>
 <script src="vworld-key.js"></script>
-<script src="app.js?v=20261121-r15"></script>
+<script src="app.js?v=20261121-r16"></script>
 </body>
 </html>

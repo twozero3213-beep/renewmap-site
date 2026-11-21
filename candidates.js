@@ -5,8 +5,11 @@
   if (root && root.document) { root.RenewCandidates = api; api.init(root); }
 })(typeof window !== 'undefined' ? window : null, function (U) {
   'use strict';
-  const KEY = 'renewmap.candidates.v1', STAGES = [['review', '검토 중'], ['field', '현장 확인 필요'], ['proposal', '제안 준비'], ['hold', '보류']];
+  const KEY = 'renewmap.candidates.v1', STAGES = [['review', '검토 중'], ['field', '현장 확인 예정'], ['proposal', '제안 준비'], ['hold', '보류']];
   const text = x => typeof x === 'string' && x.length <= 4000;
+  // 저장 시각(UTC ISO)을 한국 날짜로: UTC 표기는 업무 화면에서 낯설고, 한국 0~9시에 저장하면 전날로 보였다(r16)
+  const KST_DAY = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric' });
+  const kstDay = iso => { const p = Object.fromEntries(KST_DAY.formatToParts(new Date(iso)).map(x => [x.type, x.value])); return `${p.month}월 ${p.day}일`; };
   function validate(row) {
     if (!row || !/^\d{8}$/.test(row.code) || !text(row.name) || !/^#map\/\d{2}\/\d{5}(?:\/\d{5})?\/\d{8}$/.test(row.route) || row.route.split('/').pop() !== row.code
       || !STAGES.some(([key]) => key === row.stage) || !text(row.note) || row.note.length > 1000
@@ -60,7 +63,8 @@
       });
       const different = new Set(values.filter(v => v !== null)).size > 1;
       const unknown = rows.length < 2 || values.some(v => v === null);
-      return [label, different ? (unknown ? '차이 · 미확인 포함' : '차이') : unknown ? '미확인' : '같음'];
+      // OD1(r16 2차): 정하지 못한 비교 조건도 공통 사전의 '추가확인'(옛 '미확인')
+      return [label, different ? (unknown ? '차이 · 추가확인 포함' : '차이') : unknown ? '추가확인' : '같음'];
     });
   }
   function csv(rows) {
@@ -76,10 +80,10 @@
   function comparisonHTML(rows, indicators = [...new Map(rows.flatMap(r => r.items.map(x => [x.c, x.l]))).entries()]) {
     if (rows.length < 2) return '<p>후보 2~3곳을 골라 같은 항목을 나란히 확인하세요.</p>';
     return '<p>저장 당시 값을 보여 줍니다.<br>기준일·산식·공간 단위가 다를 수 있어 차이·순위는 계산하지 않습니다.<br>조건 메타의 같음은 정확도·승인을 보장하지 않습니다.</p><div class="table-wrap" tabindex="0" role="region" aria-label="후보별 근거 비교"><table class="rp-tbl"><thead><tr><th scope="col">항목</th>'
-      + rows.map(r => `<th scope="col">${U.esc(r.name)}<br><small>${U.esc(r.saved_at.slice(0, 10))} 저장</small></th>`).join('') + '<th scope="col">비교 조건</th></tr></thead><tbody>'
+      + rows.map(r => `<th scope="col">${U.esc(r.name)}<br><small>${U.esc(kstDay(r.saved_at))} 저장</small></th>`).join('') + '<th scope="col">비교 조건</th></tr></thead><tbody>'
       + indicators.map(([code, label]) => '<tr><th scope="row">' + U.esc(label) + '</th>' + rows.map(r => {
         const x = r.items.find(i => i.c === code);
-        return `<td>${U.esc(valueText(x))}<br><small>${U.esc(x?.d || '기준일 추가확인')}<br>${U.esc(x?.s || '미확인')}<br>${U.esc(x?.basis?.spatial_unit || '공간 단위 추가확인')}<br>${U.esc(x?.evidence?.source_name || '출처 추가확인')}</small></td>`;
+        return `<td>${U.esc(valueText(x))}<br><small>${U.esc(x?.d || '기준일 추가확인')}<br>${U.esc(x?.s || '상태 추가확인')}<br>${U.esc(x?.basis?.spatial_unit || '공간 단위 추가확인')}<br>${U.esc(x?.evidence?.source_name || '출처 추가확인')}</small></td>`;
       }).join('') + '<td><small>' + comparisonConditions(rows, code).map(([name, status]) => U.esc(`${name}: ${status}`)).join('<br>') + '</small></td></tr>').join('') + '</tbody></table></div>';
   }
   // 동 비교 XLSX(11-14 페르소나: '동 비교 화면이 없다' → 보관함 비교 표를 표 파일로). 비교 표와 같은 저장 당시 값만 옮기고
@@ -122,10 +126,10 @@
       try {
         const rows = load(root.localStorage);
         list.innerHTML = pager.slice(rows).map(r => `<li><label><input type="checkbox" data-candidate-select="${r.code}"${selected.has(r.code) ? ' checked' : ''}> ${U.esc(r.name)} 비교 선택</label>`
-          + `<p class="meta">${U.esc(r.saved_at.slice(0, 10))} UTC 고정 · ${r.items.length}개 항목 · ${STAGES.find(([k]) => k === r.stage)[1]}</p><a href="explore.html${r.route}">지도에서 다시 보기</a>`
+          + `<p class="meta">${U.esc(kstDay(r.saved_at))} 저장 · ${r.items.length}개 항목 · ${STAGES.find(([k]) => k === r.stage)[1]}</p><a href="explore.html${r.route}">지도에서 다시 보기</a>`
           + `<details><summary>단계·메모 편집</summary><form data-candidate-edit="${r.code}"><label>검토 단계<select name="stage">${STAGES.map(([k, v]) => `<option value="${k}"${r.stage === k ? ' selected' : ''}>${v}</option>`).join('')}</select></label>`
           + `<label>검토 메모<textarea name="note" maxlength="1000" rows="2">${U.esc(r.note)}</textarea></label><button type="submit">단계·메모 저장</button></form></details></li>`).join('')
-          || '<li class="box-empty-card"><p><b>아직 담은 후보가 없습니다.</b><br>동네 진단에서 동을 고른 뒤 ‘보관함에 후보로 담기’를 누르세요.</p><a class="btn" href="explore.html#map">동네 진단에서 후보 고르기</a></li>';
+          || '<li class="box-empty-card"><p><b>아직 담은 후보가 없습니다.</b><br>동네 진단에서 동을 골라 ‘보관함에 담기’를 누르세요.</p><a class="btn" href="explore.html#map">동네 진단 열기</a></li>';
         renderComparison(rows);
         host.querySelector('[data-candidate-csv]').disabled = !rows.length;
         // 2026-11-19: 받을 것이 없으면 내보내기·비교 칸을 숨긴다(빈 보관함에 쓸 수 없는 단추 둘과 접힌 칸이 먼저 보였다)

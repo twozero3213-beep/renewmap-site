@@ -159,6 +159,7 @@
 .about-get { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; }
 #intro .about-get { grid-column: auto; align-self: start; }
 #intro .about-def { margin: 0 0 12px; font-size: 17px; line-height: 1.6; color: var(--ink); }
+#intro .about-for { margin: 0 0 12px; font-size: var(--t-sub); line-height: 1.6; color: var(--ink); max-width: 46em; }
 .about-get-list { margin: 0; padding: 0 0 0 1.1em; font-size: 15px; line-height: 1.6; }
 .about-get-list li + li { margin-top: 6px; }
 #main.about-page > section > .wrap > h2 { margin-top: 32px; margin-bottom: 14px; }
@@ -184,9 +185,12 @@
 #main .about-doc { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px 32px; align-items: center; }
 #main .about-doc p { margin: 0 0 8px; max-width: none; }
 #main .about-doc .about-cta { margin: 0; }
-#main .faq-all { margin-top: 16px; }
-#main .faq-all[open] { padding-bottom: 0; }
-#main .faq-all > summary h3 { margin: 0; font-size: var(--t-h3); }
+/* 받는 문서: 이름 | 설명 한 줄씩 */
+#main .about-docs { margin: 0 0 8px; }
+#main .about-docs > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px 24px; padding: 10px 0; border-top: 1px solid var(--line); }
+#main .about-docs dt { font-weight: 700; }
+#main .about-docs dd { margin: 0; max-width: none; }
+#main .about-docs + .about-count { margin: 4px 0 12px; }
 #main .faq-grid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 32px; align-items: start; }
 #main .faq-grid > details { grid-column: auto; }
 #main .faq-grid > details > summary { min-height: 44px; padding: 6px 0; }
@@ -199,7 +203,12 @@
 #main .about-scope li { max-width: none; }
 #main .about-opt-go a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; }
 /* 시범 상담: 양식 | 요약(넓은 화면에서 따라 내려오는 360px). 요약은 비용과 범위·양식 안내를 모은 것이라 좁은 화면에서는 겹치지 않게 뺀다 */
-#main .about-contact-lead { margin: 0 0 16px; max-width: none; }
+#main .about-contact-lead { margin: 0 0 8px; max-width: none; }
+#main .contact-mail { display: flex; flex-wrap: wrap; align-items: center; gap: 0 12px; margin: 0 0 4px; font-size: 18px; font-weight: 700; }
+#main .contact-mail + .form-note { margin: 0 0 16px; max-width: none; font-size: var(--t-sub); color: var(--dim); }
+#main form.contact .form-req { display: inline; font-size: 14px; font-weight: 400; color: var(--dim); }
+#main form.contact > [type="submit"] { justify-self: start; }   /* 접수 서버가 없을 때는 보조 단추(주 단추는 문의 내용 복사) */
+#main form.contact [aria-invalid="true"] { border-color: var(--error); border-width: 2px; }
 #main form.contact .agree input { min-height: 0; width: 20px; height: 20px; margin: 4px 0 0; flex: none; }   /* 공통 입력 높이 48px이 확인란에도 걸려 글 아래로 내려가 보였다 */
 #main .about-contact { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
 #main form.contact { max-width: none; gap: 10px; }
@@ -225,6 +234,7 @@
   #main .about-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
   #main .about-uses { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
   #main .about-doc { grid-template-columns: minmax(0, 1fr) auto; }
+  #main .about-docs > div { grid-template-columns: 9em minmax(0, 1fr); }
   #main .faq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #main .about-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
   #main .about-contact { grid-template-columns: minmax(0, 1fr) 360px; gap: 40px; }
@@ -239,7 +249,6 @@
   .about-page #intro .about-get > summary[hidden] { display: none; }   /* rm6.css의 summary display:flex가 hidden을 이긴다 */
   .about-page #intro .about-get > .about-get-title { margin: 0 0 8px; font-size: 16px; line-height: 1.5; color: var(--ink); }
   .about-page #intro .about-get > p { margin: 0 0 12px; }
-  .about-page #intro .about-get :is(.about-def, .about-get-list > li:first-child) { display: none; }
   .about-page #intro .about-get-list { padding: 0; list-style: none; }
   .about-page #intro .about-get :is(p, li) { font-size: 15px; line-height: 1.55; }
 }
@@ -255,13 +264,13 @@
   #main .about-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
   #main .about-steps li, #main .about-options > div { padding: 12px 14px; }
   .about-get { padding: 14px 16px; }
-  #intro .about-def { font-size: 15px; }
+  #intro .about-def { font-size: 16px; }
+  #intro .sub { font-size: var(--t-sub); }   /* 휴대폰: 정의 문장이 리드보다 작아 보였다 */
   #intro .about-stage { font-size: 14px; padding: 10px 14px; }
   .about-get { padding: 16px; }
   #main.about-page > section > .wrap > h2 { margin-top: 28px; }
   #main .about-count { font-size: 14px; }
   #intro .about-cta { margin-bottom: 12px; }
-  #main .faq-all { margin-top: 8px; }
 }
 /* 용도별 설명은 한 칸에 모아 시작 링크를 먼저 고르게 한다. */
 #main .about-use-descriptions { margin: 12px 0; }

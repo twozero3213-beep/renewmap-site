@@ -33,6 +33,22 @@
   }
   // 'over'인데 정해지지 않은 요건이 남았거나 셀이 미확정이면 화면에 '기준 해당(하한)'(docgen OVER_FLOOR와 같은 때)
   const metFloor = (c) => metStatus(c) === 'over' && ((num(c.sample_n) ?? 0) < 3 || UNSETTLED.includes(c.status));
-  const api = { REQS, evaluate, cellValue, metStatus, metFloor };
+  // r16 공통 사전: 결론 머리 한 벌(홈 카드·지도 카드·동 쪽이 같은 글). n = 확정된 기준 해당 요건 수(하한), m = 추가확인 요건 수.
+  // state를 주면 그 판단(지도의 지난 해·check_years 규칙)을 따르고, 없으면 metStatus와 같은 규칙으로 정한다.
+  // 왜: '1개 해당'이 탈락으로 읽혔다 → 추가확인이 남으면 언제나 '최소 n개 해당 · 추가확인 m개'
+  const MIN_MET = 2;
+  const MET_CHIP = { over: '기준 해당', floor: '기준 해당(하한)', in: '해당 안 함', none: '추가확인' };
+  const MET_LAW = `도시재생활성화지역 지정 요건은 3요건 중 ${MIN_MET}개 이상입니다(「도시재생 활성화 및 지원에 관한 특별법」 제13조·같은 법 시행령 제17조).`;
+  function metHead(n, m, state) {
+    if (num(n) === null) return { state: 'none', chip: MET_CHIP.none, head: '쇠퇴 3요건 · 추가확인', sub: '자료가 모자라 아직 셀 수 없습니다.', least: false };
+    const k = num(m) !== null && m > 0 ? m : 0;
+    const st = state || (n >= MIN_MET ? (k ? 'floor' : 'over') : n + k < MIN_MET ? 'in' : 'none');
+    const tail = st === 'none' ? (k ? `추가확인 ${k}개` : MET_CHIP.none) : st === 'in' && k ? `추가확인 ${k}개 · ${MET_CHIP.in}` : MET_CHIP[st];
+    const least = !!k && st !== 'in';
+    const sub = { over: `3요건 중 ${MIN_MET}개 이상입니다.`, floor: `확정된 요건만 세어도 ${MIN_MET}개 이상입니다.`,
+      in: k ? `추가확인 ${k}개가 모두 해당해도 ${MIN_MET}개에 못 미칩니다.` : '', none: k ? `추가확인 ${k}개는 아직 정하지 못해 세지 않았습니다. 정해지면 더 늘 수 있습니다.` : '자료가 모자라 아직 정하지 못했습니다.' }[st];
+    return { state: st, chip: MET_CHIP[st], head: `쇠퇴 3요건 중 ${least ? '최소 ' : ''}${n}개 해당 · ${tail}`, sub, least };
+  }
+  const api = { REQS, evaluate, cellValue, metStatus, metFloor, MIN_MET, MET_CHIP, MET_LAW, metHead };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.DeclineReq = api;
 })(typeof self !== 'undefined' ? self : this);

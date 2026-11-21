@@ -41,12 +41,21 @@
   const flat = s => String(s || '').replace(/[\s·]+/g, '').toLowerCase();
   const dongStem = name => String(name || '').replace(/제?\d+(?:\.\d+)?동$/, '동');
   const shortName = s => String(s || '').replace(/(특별자치시|특별자치도|특별시|광역시|도|시|군|구)$/, '');
+  // r16: 묶은 행정동 이름의 각 이름. '용담·명암·산성동' → 용담동·명암동·산성동, '종로1·2·3·4가동' → 종로1가동…종로4가동(전에는 '명암동'으로 못 찾았다)
+  function members(name) {
+    const s = String(name || ''); if (!s.includes('·')) return [];
+    const n = /^(.+?)(\d+)((?:·\d+)+)(가동|동|읍|면)$/.exec(s);
+    if (n) return [n[2], ...n[3].split('·').filter(Boolean)].map(d => n[1] + d + n[4]);
+    const parts = s.split('·').filter(Boolean), kind = (/(동|읍|면)$/.exec(parts[parts.length - 1]) || [])[1];
+    return kind ? parts.map(p => (p.endsWith(kind) ? p : p + kind)) : [];
+  }
   // q가 이 동을 가리키나. region: 그 동의 시·도, 시·군·구 이름들(앞에 붙여 적은 지역 이름을 걸러 낸다)
   function dongHit(q, name, region = []) {
-    const f = flat(q), keys = [flat(name), flat(dongStem(name))];
+    const f = flat(q), keys = [name, dongStem(name), ...members(name).flatMap(x => [x, dongStem(x)])].map(flat);
     if (!f) return false;
     if (keys.includes(f)) return true;
-    const toks = region.flatMap(x => [flat(x), flat(shortName(x))]).filter(t => t.length > 1).sort((a, b) => b.length - a.length);
+    // 일반구 시는 시·군·구 이름이 '창원시 성산구' 한 칸이라 낱말로도 쪼갠다('창원 중앙동'·'성산구 중앙동', r16 회귀 검토)
+    const toks = region.flatMap(x => [x, ...String(x || '').split(/\s+/)]).flatMap(x => [flat(x), flat(shortName(x))]).filter(t => t.length > 1).sort((a, b) => b.length - a.length);
     return keys.some(k => f.length > k.length && f.endsWith(k) && !toks.reduce((p, t) => p.split(t).join(''), f.slice(0, -k.length)));
   }
   // 시·도 짧은 이름(전국 목록에 붙인다. v9: '동구 송림2동'(인천)이 부산 '동구 초량6동' 옆에 시·도 없이 섞였다)
@@ -70,7 +79,34 @@
     return `${last[0]}년 사업체 수(${last[1].toLocaleString('ko-KR')}개)가 최근 10년 중 가장 많아 감소율이 0%입니다.`;
   };
   const BIZ_BOUNDARY = '사업체 출처 경계: 2019년까지는 쇠퇴진단지표(전국사업체조사 조사 기반), 2020년부터는 SGIS 전국사업체조사(등록 기반)라 이어서 비교할 때는 주의가 필요합니다.';
-  const api = { esc, isNum, roundD, fmt2, plainSource, fetchJson, fetchFailed, csvCell, unpackCells, flat, dongStem, dongHit, sidoShort, josa, bizZeroNote, BIZ_BOUNDARY };
+  // r16 공통 사전: 추가확인 셀의 까닭 한 줄. 원장 note의 '추가확인:' 뒤 글을 화면 문장으로 옮긴다(새 숫자는 note에 있는 것만).
+  // tag: '전국 공통'(모든 동이 같은 규칙 문제, 사람이 풀 수 없음) | '이 동 자료'(이 동의 출처 자료 문제). 화면은 '(tag) text'로 쓴다
+  const BIZ_WHY = '2020년에 사업체 통계 방식이 바뀌어 10년 비교가 끊깁니다. 규칙 승인 전까지 추가확인으로 둡니다.';
+  const WHY = [
+    [/사업체 출처 경계/, () => ['전국 공통', BIZ_WHY]],
+    [/행정동 경계 변경 추정\(([^)]*)\)/, m => {
+      const hits = [...m[1].matchAll(/(\d{4})년 같은 시·군·구 코드 변동, 그 해 인구 ([−+-]?[\d.]+%)/g)];
+      return ['이 동 자료', `${hits.map(h => h[1]).join('·')}년 무렵 동 경계가 바뀐 것으로 보입니다(그해 인구 ${hits.map(h => h[2]).join('·')}). 경계 전후를 이어 비교하지 않습니다.`];
+    }],
+    [/(\d+)년 창 중 (\d{4})년부터 자료[^—]*— 하한 ([−-]?[\d.]+%)/, m => ['이 동 자료', `${m[2]}년부터만 자료가 있어 ${m[1]}년 비교를 다 하지 못합니다. 있는 기간만 센 감소율은 ${m[3]}입니다.`]],
+    [/(\d+)년 창 중 빈 해 있음 — 하한 ([−-]?[\d.]+%)/, m => ['이 동 자료', `${m[1]}년 비교 기간에 빈 해가 있습니다. 있는 해만 센 감소율은 ${m[2]}입니다.`]],
+    // '10년 사업체 시계열 결측'은 10년 비교 기간, '2015년 …'은 그 해
+    [/(\d+)년 (사업체|인구) 시계열 결측/, m => ['이 동 자료', m[1].length === 4 ? `${m[1]}년 ${m[2]} 수가 출처에 없습니다.` : `${m[1]}년 비교에 필요한 ${m[2]} 수가 출처에 빠져 있습니다.`]],
+    [/최근 (\d+)개년 (사업체|인구) 결측/, m => ['이 동 자료', `최근 ${m[1]}년 중 ${m[2]} 수가 빠진 해가 있습니다.`]],
+    [/(\d{4})년 SGIS 경계에 없는 코드/, m => ['이 동 자료', `${m[1]}년 행정동 경계에 없는 동 코드입니다.`]],
+    [/정비사업 이주·철거/, () => ['이 동 자료', '정비사업 이주·철거로 인구가 줄었을 수 있습니다.']],
+    [/원천 값 없음/, () => ['이 동 자료', '출처에 이 해 값이 없습니다.']],
+    [/미확정 요건 (\d+)개(\([^)]*\))?는 세지 않음/, m => ['이 동 자료', `정하지 못한 요건 ${m[1]}개${m[2] || ''}는 세지 않았습니다.`]],
+  ];
+  function checkWhy(cell) {
+    if (!cell || cell.status !== '추가확인' || cell.value_hidden_reason) return null;
+    const note = String(cell.note || ''), i = note.lastIndexOf('추가확인:');
+    const raw = i < 0 ? '' : note.slice(i + 5).trim();
+    if (!raw) return null;
+    for (const [re, to] of WHY) { const m = re.exec(raw); if (m) { const [tag, text] = to(m); return { tag, text }; } }
+    return { tag: '이 동 자료', text: raw };
+  }
+  const api = { esc, isNum, roundD, fmt2, plainSource, fetchJson, fetchFailed, csvCell, unpackCells, flat, dongStem, members, dongHit, sidoShort, josa, bizZeroNote, BIZ_BOUNDARY, BIZ_WHY, checkWhy };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root && root.document) { root.RenewUtil = api; root.renewFetch = fetchJson; }
 })(typeof window !== 'undefined' ? window : globalThis);

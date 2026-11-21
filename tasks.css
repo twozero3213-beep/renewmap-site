@@ -113,8 +113,10 @@
 }
 .task-hash {
   overflow-wrap: anywhere;
-  font: 0.85rem/1.7 monospace;
+  font-size: 0.85rem;
+  line-height: 1.7;
 }
+.task-hash code { font-family: ui-monospace, monospace; }   /* 고정폭은 해시 값에만(한글 안내까지 고정폭이면 자간이 벌어졌다) */
 .task-page details {
   border-top: 1px solid var(--line);
   margin: 20px 0;
@@ -271,11 +273,17 @@
 #main.task-page .task-notice details.task-more > summary { min-height: 44px; color: var(--green); }
 #main.task-page .task-notice details.task-more[open] { padding: 0 0 4px; }
 #main.task-page .task-notice details.task-more[open] > summary { margin: 0; padding: 0; }
+#main.task-page .task-notice details.task-more[open] p + p { margin-top: 8px; }
+/* 첫 줄 안 '백업 받기': 글자 단추(채운 단추는 '계획 저장' 하나) */
+#main.task-page .task-notice .task-link { min-height: 24px; padding: 0; border: 0; background: none; color: var(--green); font-weight: 700; text-decoration: underline; }
+#main.task-page .task-noplan { padding: 16px; border: 1px solid var(--line); border-radius: 12px; }
+#main.task-page .task-noplan h2 { margin: 0 0 4px; }
+#main.task-page .task-restore { margin: 4px 0 0; }
 /* 단계: 44px 나눔 단추(지금 단계만 채움) + 그 안의 상태 한 줄 */
 .task-stepper { margin: 0 0 8px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
 .task-stepper .task-steps { padding: 0; gap: 4px; background: none; }
 .task-stepper .task-steps button { min-height: 44px; padding: 6px 8px; border: 0; border-radius: 8px; background: none; color: var(--ink); font-weight: 600; }
-.task-stepper .task-steps button:hover { background: var(--soft); }
+.task-stepper .task-steps button:hover:not([aria-current]) { background: var(--soft); }   /* 지금 단계 위에 마우스를 두면 흰 글자가 옅은 바탕에 묻혔다 */
 .task-stepper .task-steps [aria-current] { background: var(--green); color: #fff; font-weight: 700; }
 .task-stepper .task-state { margin: 4px 8px 4px; font-size: 15px; line-height: 1.5; }
 #taskMsg:empty { display: none; }

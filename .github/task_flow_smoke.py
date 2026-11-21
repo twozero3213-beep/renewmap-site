@@ -42,20 +42,27 @@ def main():
                                          ('delivery', '2', None), ('review', '3', None)]:
                 page.goto(base + 'tasks.html?step=' + entry, wait_until='networkidle')
                 expect(page.locator('#newTask')).to_be_enabled()
-                expect(page.locator('[data-panel="' + panel + '"]')).to_be_visible()
-                expect(page.locator('[data-step="' + panel + '"]')).to_have_attribute('aria-current', 'step')
+                # r16: 저장한 과업이 없으면 2~4단계는 빈 폼 대신 안내 하나(과업을 고르거나 저장하는 길)를 보인다.
+                # 들어온 단계는 그대로 표시한다. 과업이 있을 때 그 칸이 열리는 것은 아래 direct_revisit·direct_delivery가 본다
+                expect(page.locator('.task-steps [data-step="' + panel + '"]')).to_have_attribute('aria-current', 'step')
+                expect(page.locator('[data-panel="' + panel + '"]')).to_be_hidden()
+                expect(page.locator('#taskNoPlan')).to_be_visible()
+                expect(page.locator('#taskNoPlan')).to_contain_text(re.compile(r'과업.*저장'))
+                expect(page.locator('#taskNoPlan')).to_contain_text('저장한 과업')
                 if detail:
                     expect(page.locator('#' + detail)).to_have_attribute('open', '')
-                expect(page.locator('#taskMsg')).to_contain_text(re.compile(r'과업.*저장'))
                 assert page.evaluate('async()=> (await TaskStore.list()).length') == 0
+            page.locator('#taskNoPlan button[data-step="0"]').click()
+            expect(page.locator('[data-panel="0"]')).to_be_visible()
+            expect(page.locator('#taskNoPlan')).to_be_hidden()
             result['checks'].append('direct_workflow_links_open_without_creating_records')
             page.goto(base + 'tasks.html?step=delivery#handoverSummary', wait_until='networkidle')
             expect(page.locator('#newTask')).to_be_enabled()
-            expect(page.locator('#handoverSummary')).to_be_visible()
-            assert page.evaluate('async()=> (await TaskStore.list()).length') == 0
-            page.locator('#handoverTask').click()
-            expect(page.locator('#handoverStatus')).to_contain_text('요약을 만들지 못했습니다')
+            # 과업 없이는 인수인계 요약 단추에 닿지 않는다(예전에는 눌러서 '요약을 만들지 못했습니다'를 봤다)
+            expect(page.locator('#taskNoPlan')).to_be_visible()
+            expect(page.locator('#handoverTask')).to_be_hidden()
             expect(page.locator('#handoverPreview')).to_be_hidden()
+            assert page.evaluate('async()=> (await TaskStore.list()).length') == 0
             result['checks'].append('handover_entry_does_not_create_or_approve_task')
             page.goto(base + 'tasks.html?step=__proto__', wait_until='networkidle')
             expect(page.locator('[data-panel="0"]')).to_be_visible()
@@ -215,7 +222,7 @@ def main():
                 page.set_viewport_size({'width': width, 'height': 900})
                 page.evaluate('(z) => document.documentElement.style.zoom=String(z)', zoom)
                 for step in range(3):
-                    page.locator(f'[data-step="{step}"]').click()
+                    page.locator(f'.task-steps [data-step="{step}"]').click()   # r16: 안내 칸(#taskNoPlan)에도 data-step="0" 단추가 있다
                     assert page.evaluate('() => document.documentElement.scrollWidth<=innerWidth+1')
                 if width in (390, 1440):
                     page.locator('#handoverSummary').screenshot(path=str(args.output / f'handover-{width}.png'))
@@ -258,9 +265,18 @@ def main():
             q.goto(base + 'tasks.html?id=' + task_id + '&step=revisit', wait_until='networkidle')
             expect(q.locator('#newTask')).to_be_enabled()
             expect(q.locator('#taskPick')).to_have_value(task_id)
+            expect(q.locator('#taskNoPlan')).to_be_hidden()
+            expect(q.locator('[data-panel="1"]')).to_be_visible()
             expect(q.locator('#revisitReport')).to_have_attribute('open', '')
+            expect(q.locator('#revisitReport > summary')).to_be_visible()
             assert q.evaluate('async(id)=>(await TaskStore.history(id)).at(-1).hash', task_id) == actual
             result['checks'].append('direct_revisit_preserves_selected_task_and_history')
+            q.goto(base + 'tasks.html?id=' + task_id + '&step=delivery#handoverSummary', wait_until='networkidle')
+            expect(q.locator('#newTask')).to_be_enabled()
+            expect(q.locator('#handoverSummary')).to_be_visible()
+            expect(q.locator('#handoverTask')).to_be_visible()
+            assert q.evaluate('async(id)=>(await TaskStore.history(id)).at(-1).hash', task_id) == actual
+            result['checks'].append('direct_delivery_opens_handover_for_selected_task')
             map_context=browser.new_context(accept_downloads=True,service_workers='block')
             m=map_context.new_page()
             m.on('pageerror',lambda e:result['errors'].append(str(e)))

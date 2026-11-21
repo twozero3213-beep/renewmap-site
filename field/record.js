@@ -187,7 +187,7 @@
     const prevPhotos = site && Array.isArray(input.prev_photos) ? input.prev_photos.map(clean).filter((x) => ID_RE.test(x)) : [];
     const photoSha = Object.fromEntries([...new Set([...photos, ...prevPhotos])].filter((p) => SHA_RE.test(clean(shaIn[p]))).map((p) => [p, clean(shaIn[p])]));
     if (photos.length + prevPhotos.length > MAX_PHOTOS) throw new Error(`사진은 한 기록에 ${MAX_PHOTOS}장까지 붙일 수 있습니다.`);
-    if (photos.length && input.photoSafe !== true) throw new Error("사진을 붙이기 전에 '가릴 곳을 모두 확인했습니다'를 눌러 주세요.");
+    if (photos.length && input.photoSafe !== true) throw new Error("사진을 붙이기 전에 '얼굴·번호판을 가린 곳을 모두 확인했습니다'를 눌러 주세요.");
     // 현장 확인 항목: 대상 유형이 맞을 때 본 항목만 목록 순서로 남긴다. 사진은 이 기록에 붙인 사진만 가리킨다
     const checks = !CHECK_TARGETS.includes(target) || !Array.isArray(input.checks) ? [] : CHECKS.map((c) => (input.checks || []).find((x) => x && clean(x.id) === c.id)).filter(Boolean).map((x) => {
       const m = clean(x.memo);

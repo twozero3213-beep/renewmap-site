@@ -13,6 +13,8 @@
     const message = document.getElementById("message");
     message.textContent = "브이월드 3D 지도 응답을 받지 못했습니다.\n다시 시도하거나 2D 지도에서 확인해 주세요.";
     message.className = "msg err";
+    const back = document.getElementById("city3dRecovery");   // 다시 시도·2D 지도는 실패했을 때만 보인다(정상으로 열려도 늘 보였다)
+    if (back) back.hidden = false;
   };
   const sdkError = (event) => {
     const script = event.target;

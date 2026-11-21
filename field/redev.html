@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="../styles.css">
 <link rel="stylesheet" href="../site-v4.css">
 <link rel="stylesheet" href="../v4.css">
-<link rel="stylesheet" href="field.css?v=20261120-r11">
+<link rel="stylesheet" href="field.css?v=20261121-r16">
 <link rel="stylesheet" href="../rm6.css">
 </head>
 <body class="field redev-v4 fr-redev">
@@ -33,12 +33,12 @@
 <header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 RENEWMAP 홈" href="../index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html">동네 진단</a><a href="../rank.html">동네 비교 점수</a><a href="../programs.html">재생 사업</a><a href="redev.html">구역 계산</a><a href="./">현장 기록</a><a href="../about.html#contact">시범 과업 상담</a></nav></div></header>
 <main id="main">
   <nav class="breadcrumb" aria-label="지금 보는 곳"><ol><li><a href="../index.html">홈</a></li><li aria-current="page">구역 계산</li></ol></nav>
-  <h1>구역 계산</h1><p class="sub">노후주거지정비 신청요건 · 재개발 입안요건</p>
+  <h1>구역 계산</h1><p class="sub">노후주거지정비 신청요건 · 재개발 입안요건 · 부산 254개 법정동</p>
   <!-- 2026-11-19: 넓은 화면은 입력(.fr-main) | 견본·결과(.fr-side) 두 칸(field.css). 결과가 나오면 입력 칸이 화면에 붙어 다시 고쳐 셀 수 있다 -->
   <div class="fr-main">
   <!-- 2026-11-19: 첫 안내 상자(휴대폰 178px)를 한 줄 + 'ⓘ 자세히'로. 원문은 접은 칸에 그대로 -->
   <div class="fr-intro">
-    <p class="hint fr-lead">지번을 넣거나 지도에 구역을 그리면 저층 주거 3분의 2와 20년 경과 건축물 비율(노후주거지정비 공모 가이드라인), 재개발 노후·불량 비율(부산 정비조례)을 기준 원문과 함께 계산합니다.</p>
+    <p class="hint fr-lead">지번을 넣거나 지도에 구역을 그리면 저층 주거 3분의 2와 20년 이상 건축물 비율(노후주거지정비 공모 가이드라인), 재개발 노후·불량 비율(부산 정비조례)을 기준 원문과 함께 계산합니다.</p>
     <details class="fr-info">
       <summary>ⓘ 자세히: 계산 범위·받는 파일</summary>
       <p class="hint">건물 자료 · 부산 254개 법정동<br>결과는 한글 1쪽, CSV, 구역 경계(SHP)로 받습니다. 지번과 구역은 이 기기 안에서 계산합니다.</p>
@@ -60,15 +60,20 @@
       <button type="button" class="ghost" id="demo">고른 동 전체로 계산해 보기</button>
     </div>
     <div id="drawBox" hidden>
+      <!-- 2026-11-21 r16(M25): 현장에서는 동 전체(줌 13)에서 시작해 2,401필지가 잡혔다 → '현재 위치로'. 키보드로도 꼭짓점을 찍는다(KWCAG 5.3.1, redev-app.js) -->
+      <button type="button" class="ghost fr-inline" id="drawHere">현재 위치로</button>
+      <p class="hint">지도는 보는 범위와 접속 IP를 지도 회사(브이월드·OpenStreetMap)로 보내 지도 조각을 받습니다. 기기 위치는 이 화면에서 지도를 옮기는 데만 씁니다.</p>
       <p class="hint">구역 가장자리를 따라 지도를 차례로 누르면 영역이 칠해집니다. 번호 점은 끌어서 옮길 수 있습니다. 그린 영역 안의 필지 번호(PNU)만 브이월드 연속지적도에서 받아 목록에 넣습니다. 이때 영역 좌표가 브이월드로 갑니다. 지번 목록과 계산 결과는 보내지 않습니다. 그린 도형은 이 기기에도 저장되지 않으니 필요하면 구역 경계(SHP)로 받아 두세요. 구역안에는 지번 목록만 저장됩니다.</p>
       <!-- 2026-11-13 우지예: 처음 쓰는 사람이 지금 무엇을 해야 하는지 지도 바로 위에 한 줄(redev-app.js drawSay) -->
+      <p class="hint" id="drawKeys">키보드: 방향키로 옮기고 Enter로 꼭짓점을 찍습니다.</p>
       <p class="draw-step" id="drawStep" role="status" aria-live="polite"></p>
-      <div id="drawMap" class="draw-map" role="region" aria-label="영역 그리기 지도"></div>
+      <button type="button" id="drawCalc" hidden>이 영역 계산하기</button>
+      <div id="drawMap" class="draw-map" role="region" aria-label="영역 그리기 지도" aria-describedby="drawKeys"></div>
       <button type="button" id="drawDone">영역 안 필지 넣기</button>
       <button type="button" class="ghost" id="drawUndo">마지막 점 지우기</button>
       <button type="button" class="ghost" id="drawClear">다시 그리기</button>
       <button type="button" class="ghost" id="socRun">영역 안 생활시설 세기</button>
-      <button type="button" class="ghost" id="shpSave">구역 경계 받기(SHP)</button>
+      <button type="button" class="ghost" id="shpSave">구역 경계 초안 받기(SHP)</button>
       <p class="hint">경계 SHP는 그린 선을 EPSG:5174(shp·shx·dbf·prj)로 바꾼 초안입니다.<br>제출 전에 GIS에서 연속지적도와 겹쳐 맞춰 주세요.</p>
       <div id="socOut" hidden>
         <table class="plan-cmp"><caption>영역 안 생활 SOC 현황(부산)</caption>
@@ -80,7 +85,7 @@
       </div>
     </div>
     <label for="list">지번 목록 <small>(한 줄에 하나, 필지 고유번호 19자리도 됩니다)</small></label>
-    <textarea id="list" rows="5" placeholder="1291-5&#10;산 12-3&#10;재송동 45(다른 동이면 동 이름을 앞에)&#10;엑셀에서 '지번' 열을 머리와 함께 복사해도 됩니다"></textarea>
+    <textarea id="list" rows="5" placeholder="113-1&#10;119-2&#10;재송동 45(다른 동이면 동 이름을 앞에)&#10;엑셀에서 '지번' 열을 머리와 함께 복사해도 됩니다"></textarea>
     <label for="listFile">또는 GIS·엑셀에서 내보낸 파일 열기(CSV·GeoJSON, PNU나 지번 열)</label>
     <span class="file-pick"><input id="listFile" type="file" accept=".csv,.txt,.geojson,.json"><span class="btn ghost" aria-hidden="true">파일 고르기</span><span id="listFileName" class="hint">고른 파일 없음</span></span>
     <!-- 2026-11-18 첫 방문 검토: 아는 경우만 넣는 칸 셋이 필수처럼 보였다 → 접는다. 지도에서 구역을 그리면 면적이 채워지므로 redev-app.js가 펼친다 -->
@@ -102,16 +107,25 @@
   <!-- 견본은 입력 뒤(휴대폰에서 읽을 수 없는 그림이 첫 화면을 차지하던 것, v7 6회차). 넓은 화면은 field.css가 오른쪽 칸(.fr-side)에 둔다.
        2026-11-19: 옛 견본(redev-sample.jpg)은 아래 표 머리가 반쯤 걸려 잘린 그림으로 보였다 → 한 덩어리가 끝나는 곳에서 자른 redev-result.jpg. 결과가 나오면 같은 칸에 결과가 선다 -->
   <div class="fr-side">
-  <figure class="redev-sample"><a href="../img/v6/redev-result.jpg" target="_blank" rel="noopener"><img src="../img/v6/redev-result.jpg" width="640" height="841" alt="반여동 지번 60개로 실제 계산한 결과 화면 견본. 요건별 두 줄 답, 참고 계산 안내, 분모, 기준시점, 현장 확인할 건물이 차례로 나온다." loading="lazy"></a><figcaption>계산하면 이렇게 나옵니다.<br>반여동 지번 60개로 실제 계산한 견본입니다. 그림을 누르면 크게 봅니다.</figcaption><button type="button" class="ghost fr-zoom" id="sampleZoom" hidden>견본 크게 보기</button></figure>
+  <!-- 2026-11-21 r16(M27): 견본 그림이 고른 동(반여동)의 내 결과처럼 읽혔다 → 빈 상태 한 줄, 그림 위 설명, 그림 왼쪽 위 '견본' 배지 -->
+  <figure class="redev-sample"><p class="fr-empty">아직 계산하지 않았습니다. 구역을 그리거나 지번 목록을 넣으면 여기에 결과가 나옵니다.</p><figcaption>견본: 반여동 지번 60개로 실제 계산한 결과 화면입니다. 내 구역의 결과가 아닙니다.</figcaption><a class="sample-pic" href="../img/v6/redev-result.jpg" target="_blank" rel="noopener"><span class="sample-badge" aria-hidden="true">견본 · 반여동 지번 60개</span><img src="../img/v6/redev-result.jpg" width="640" height="1081" alt="견본: 반여동 지번 60개로 실제 계산한 결과 화면. 요건별 상태 목록, 두 1쪽 받기 단추, 참고 계산 안내, 분모, 기준시점, 추가확인 건물 수가 차례로 나온다. (새 창)" loading="lazy"></a><button type="button" class="ghost fr-zoom" id="sampleZoom" hidden>견본 보기</button></figure>
 
   <section id="out" class="card" aria-labelledby="outTitle" hidden>
     <h2 id="outTitle" tabindex="-1">요건별 결과</h2>
-    <p id="outAnswer" class="out-answer"></p>
+    <ul id="outAnswer" class="sr-req-rows out-answer"></ul>
+    <!-- 2026-11-21 r16(M26): 신청서에 붙일 1쪽이 결과 제목에서 5,700px 아래에 있었다 → 답 바로 아래 주 단추와 '몇 동 더 확인하면 정해지나' 한 줄.
+         2차(리뷰 0.11): 재개발 입안요건 1쪽도 약 3,500px 아래였다 → 두 1쪽 받기를 나란히 -->
+    <div class="row">
+      <button type="button" id="applicationHwpx">신청요건 1쪽 받기(한글)</button>
+      <button type="button" class="ghost" id="hwpx">입안요건 1쪽 받기(한글)</button>
+    </div>
+    <p class="hint">신청요건 1쪽은 현황조사 항목별 확인한 내용과 추가확인 항목, 이 기기의 현장 기록을 함께 담습니다.</p>
+    <p id="outSettle" class="hint rv-settle" hidden></p>
     <!-- v7(2026-11-13): 승인 전 경고는 첫 화면이 아니라 결과 바로 위에 둔다(평가: 입력란보다 노란 상자가 먼저 나와 쓰기 전에 겁을 줬다) -->
-    <p class="warn rm-status">판정 아님 · 참고 계산 · 규칙 승인 대기<br>노후주거지정비 신청요건과 부산 정비조례 계산 규칙은 모두 승인 대기 중입니다. 사업계획서나 조합 자료에는 '참고 계산'으로 적고, 제출 전에 담당 기관이 원문과 대조하도록 알려 주세요. <a href="../rules.html">기준 원문과 판본 보기</a></p>
+    <p class="warn rm-status">판정 아님 · 참고 계산 · 규칙 승인 대기<br>판정은 담당 기관이 합니다. 노후주거지정비 신청요건과 부산 정비조례 계산 규칙은 모두 승인 대기 중입니다. 사업계획서나 조합 자료에는 '참고 계산'으로 적고, 제출 전에 담당 기관이 원문과 대조하도록 알려 주세요. <a href="../rules.html">기준 원문과 판본 보기</a></p>
     <p id="outBase" class="hint"></p>
-    <div id="basis" class="facts"></div>
-    <div id="viz" class="v4-stats" aria-live="polite"></div>
+    <details class="rm-disclosure fr-fold" id="basisBox"><summary>계산 근거 보기</summary><div id="basis" class="facts"></div></details>
+    <details class="rm-disclosure fr-fold" id="vizBox"><summary>그래프 보기</summary><div id="viz" class="v4-stats" aria-live="polite"></div></details>
     <div id="dongDecline" hidden>
       <h3 class="nv-h">행정동 쇠퇴 3요건 값</h3>
       <p class="hint">①·②는 지번 목록으로 구하지 못하는 행정동 값입니다.<br>신청 구역이 속한 행정동을 고르면 값·출처·기준일을 보여 줍니다.</p>
@@ -126,12 +140,7 @@
     <p class="hint">종합 판정이 아닙니다.<br>‘추가확인’은 현재 자료로 해당 여부를 정할 수 없는 요건입니다. 줄마다 면적 입력, 지적도, 현장·도면 확인이나 행정 판단 등 필요한 내용을 표시합니다.<br>주민 동의와 재건축진단은 다루지 않습니다.<br>건축물대장에 없는 무허가 건축물은 세지 않습니다(조례상 노후·불량에 포함). <a href="./?check=unregistered">현장 기록으로 확인하기</a></p>
     <!-- 2026-11-18 첫 방문 검토: 받기 단추 여덟 개가 같은 무게로 늘어서 신청서에 붙일 1쪽을 찾기 어려웠다 → 주 단추 하나, 자주 쓰지 않는 형식은 접는다 -->
     <h3 class="nv-h">근거 문서 받기</h3>
-    <div class="row">
-      <button type="button" id="applicationHwpx">신청요건 1쪽 받기(한글)</button>
-      <button type="button" class="ghost" id="hwpx">입안요건 1쪽 받기(한글)</button>
-      <button type="button" class="ghost" id="pdf">PDF로 저장</button>
-    </div>
-    <p class="hint">신청요건 1쪽은 현황조사 항목별 확인한 내용과 미확인 항목, 이 기기의 현장 기록을 함께 담습니다.</p>
+    <button type="button" class="ghost" id="pdf">입안요건 1쪽 PDF로 저장</button>
     <details class="rm-disclosure">
       <summary>다른 형식과 부록 받기(CSV·사전컨설팅 부록·수기 대조 표본)</summary>
       <div class="row">
@@ -146,7 +155,7 @@
     </details>
     <button type="button" class="ghost" id="savePlan">이 목록을 경계안으로 저장</button>
     <p class="hint"><a href="idle.html">오래된 창고·공장</a>도 같은 건물 자료로 볼 수 있습니다.</p>
-    <p class="hint">행정동 값으로 쇠퇴 요건이 안 맞으면 <a href="oa.html">집계구(통계청 최소 통계 구역) 단위 쇠퇴 요건</a>으로 따로 볼 수 있습니다.</p>
+    <p class="hint">행정동 값으로 쇠퇴 요건이 안 맞으면 <a href="oa.html">집계구(국가데이터처가 동보다 잘게 나눈 통계 구역) 단위 쇠퇴 요건</a>으로 따로 볼 수 있습니다.</p>
   </section>
 
   <section id="plans" class="card" aria-labelledby="plansTitle" hidden>
@@ -160,14 +169,14 @@
 </main>
 <dialog id="sampleDlg" class="fr-dlg" aria-labelledby="sampleDlgTitle">
   <h2 id="sampleDlgTitle">계산 결과 견본(반여동 지번 60개)</h2>
-  <img src="../img/v6/redev-result.jpg" width="640" height="841" alt="반여동 지번 60개로 실제 계산한 결과 화면 견본. 요건별 두 줄 답, 참고 계산 안내, 분모, 기준시점, 현장 확인할 건물이 차례로 나온다." loading="lazy">
+  <img src="../img/v6/redev-result.jpg" width="640" height="1081" alt="반여동 지번 60개로 실제 계산한 결과 화면 견본. 요건별 상태 목록, 두 1쪽 받기 단추, 참고 계산 안내, 분모, 기준시점, 추가확인 건물 수가 차례로 나온다." loading="lazy">
   <button type="button" class="ghost" id="sampleClose">닫기</button>
 </dialog>
 <footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="../explore.html">동네 진단</a><a href="../programs.html">재생 사업</a><a href="../field/redev.html">구역 계산</a><a href="../field/">현장 기록</a><a href="../tasks.html">과업·납품</a><a href="../rank.html">동네 비교 점수</a><a href="../relocate.html">부산 이전 직원 동네 비교</a><a href="../time4d.html">건물 나이 4D</a><a href="../box.html">보관함</a><a href="../docs.html">문서 열기</a></p><p><b>근거</b><a href="../data.html">데이터 출처</a><a href="../rules.html">기준 원문 대조</a><a href="../evidence.html">근거 읽는 법</a><a href="../dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="../about.html">서비스 소개</a><a href="../about.html#contact">시범 과업 상담</a><a href="../ethics.html">AI·데이터 원칙</a><a href="../privacy.html">개인정보 처리방침</a><a href="../privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 <section id="printDoc" class="print-doc" aria-hidden="true"></section>
-<script src="../site.js?v=20261120-r11"></script>
+<script src="../site.js?v=20261121-r16"></script>
 <script src="../site-motion.js" defer></script>
-<script src="../docgen.js?v=20261121-r14"></script>
+<script src="../docgen.js?v=20261121-r16"></script>
 <script src="../cellpack.js"></script>
 <script src="store.js"></script>
 <script src="parcel-ref.js"></script>

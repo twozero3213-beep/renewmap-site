@@ -25,10 +25,10 @@
 <link rel="stylesheet" href="site-v4.css?v=20261120-r11">
 <link rel="stylesheet" href="content-pages.css?v=20261119-r8">
 <script src="frame-guard.js"></script>
-<script src="site.js?v=20261120-r11" defer></script>
+<script src="site.js?v=20261121-r16" defer></script>
 <script src="site-motion.js" defer></script>
 <script src="content-pages.js?v=20261120-r10" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261121-r14">
+<link rel="stylesheet" href="rm6.css?v=20261121-r16">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -66,10 +66,10 @@
       <article><h3>공식 자료</h3><p>제공 기관의 원자료입니다. 기관명·자료명·기준일·원문 주소를 적습니다.<br>제출 서류의 출처는 이 기관으로 적습니다.</p></article>
       <article><h3>리뉴맵 참고 계산</h3><p>공식 자료로 낸 계산·비교입니다. 계산식·규칙 버전·승인 상태를 함께 적습니다.<br>규칙 승인은 리뉴맵 내부 검토이며 기관 판단이 아닙니다.</p><a href="rules.html">기준 원문과 승인 상태</a></article>
       <article><h3>현장 확인 기록</h3><p>조사자가 남긴 사진·메모와 확인일입니다.<br>사실 확인과 가림 확인은 조사자가 합니다.</p></article>
-      <article><h3>어디서 찾나요</h3><ol class="method-checks"><li>동 페이지 '인용 한 줄': 출처·기준일·이용허락범위</li><li>근거서 엑셀 '출처' 시트: 기준일·조회일·이용조건·계산식·규칙 버전·셀 ID, 끝부분의 '원천 색인 지문'(snapshot_hash)과 입력묶음 SHA-256</li><li>화면의 '내려받기 전 자료 점검'과 근거서 엑셀 '자료 점검' 시트: '문서 입력묶음 지문'</li><li>근거서 HWPX·DOCX 본문 끝: '입력 확인값(SHA-256)'</li></ol></article>
+      <article><h3>어디서 찾나요</h3><ol class="method-checks"><li>동 페이지 '인용 한 줄': 출처·기준일·이용허락범위</li><li>근거서 엑셀 '출처' 시트: 기준일·조회일·이용조건·계산식·규칙 버전·셀 ID, 끝부분의 '출처 색인 지문'(snapshot_hash)과 '문서 확인값(SHA-256)'</li><li>화면의 '내려받기 전 자료 점검'과 근거서 엑셀 '자료 점검' 시트: '문서 확인값(SHA-256)'</li><li>근거서 HWPX·DOCX 본문 끝: '문서 확인값(SHA-256)'</li></ol></article>
     </div>
-    <p class="method-note rm-note">인용 예시: [행정동] [지표 이름] [값](기준일 [YYYY-MM-DD], 출처: [제공 기관] [자료명], 이용허락범위 [이용허락범위]). 리뉴맵 참고 계산 · 규칙 버전 [규칙 버전] · 셀 ID [셀 ID] · 원천 색인 지문 [snapshot_hash]. 판정이 아니며 최종 확인은 담당 기관이 합니다.<br>출처·기준일 부분의 실제 예시는 <a href="dong/21090700.html#cite">동 페이지의 인용 한 줄</a>에서 볼 수 있습니다.</p>
-    <p class="method-note rm-note">입력 확인값은 같은 입력으로 만든 문서인지 대조할 뿐, 내용이 사실인지는 증명하지 않습니다.<br>리뉴맵은 판정·인증 도구가 아니라 근거를 정리하는 도구입니다.<br>숫자의 출처 기관으로 리뉴맵을 적지 말고 원자료 기관을 출처로, 리뉴맵은 정리·계산 도구로 적어 주세요.<br>공식 승인·법적 효력·공모 선정을 보장하지 않습니다.</p>
+    <p class="method-note rm-note">인용 예시: [행정동] [지표 이름] [값](기준일 [YYYY-MM-DD], 출처: [제공 기관] [자료명], 이용허락범위 [이용허락범위]). 리뉴맵 참고 계산 · 규칙 버전 [규칙 버전] · 셀 ID [셀 ID] · 출처 색인 지문 [snapshot_hash]. 판정이 아니며 최종 확인은 담당 기관이 합니다.<br>출처·기준일 부분의 실제 예시는 <a href="dong/21090700.html#cite">동 페이지의 인용 한 줄</a>에서 볼 수 있습니다.</p>
+    <p class="method-note rm-note">문서 확인값은 같은 입력으로 만든 문서인지 대조할 뿐, 내용이 사실인지는 증명하지 않습니다.<br>리뉴맵은 판정·인증 도구가 아니라 근거를 정리하는 도구입니다.<br>숫자의 출처 기관으로 리뉴맵을 적지 말고 원자료 기관을 출처로, 리뉴맵은 정리·계산 도구로 적어 주세요.<br>공식 승인·법적 효력·공모 선정을 보장하지 않습니다.</p>
     <div class="method-actions"><a class="btn" href="rules.html">규칙별 원문·승인 상태</a><a class="btn ghost" href="data.html">데이터 출처</a></div>
   </section>
   <section id="field" data-page-label="현장 확인과 오차">

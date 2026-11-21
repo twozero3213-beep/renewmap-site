@@ -5,6 +5,8 @@
   const BASES = [['COUNT', '동수'], ['AREA', '연면적'], ['HH', '세대']];
   const YEARS = [20, 30];
   const STATUS_CLASS = { '확인': 'ok', '충돌': 'conflict', '추가확인': 'check' };
+  // 원장 대조 상태(D3) → 화면 낱말. docgen.js·programs.js의 LEDGER_WORD, export_dong_pages.STATUS_WORD와 같은 표
+  const LEDGER_WORD = { 미확인: '사람 대조 전', 확인중: '사람 대조 중', 확인: '사람 대조 완료', 폐기: '쓰지 않음' };
   const NOTE = '건축물대장 기준 노후 건축물 비율이며, 판정 결과가 아닙니다.';
   const NF = new Map(), nf = d => NF.get(d) || NF.set(d, new Intl.NumberFormat('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d })).get(d); // 자릿수마다 한 번만 만든다
   const { esc, isNum } = typeof module !== 'undefined' && module.exports ? require('./util.js') : window.RenewUtil;
@@ -25,7 +27,8 @@
       value: text ? cell.value : null,
       text: text || (cell.value_hidden_reason ? '비공개' : '결측'),
       note: text ? '' : (cell.value_hidden_reason || '원천 자료에 값이 없습니다.'),
-      status: cell.status || '미확인',
+      // r16 OD1(3차): 원장 대조 상태는 요건 낱말(기준 해당 · 해당 안 함 · 추가확인)과 다른 축이라 '사람 대조 …'로 적는다(상태 없음 = 대조 전). 원장 '추가확인'·'충돌'은 그대로
+      status: LEDGER_WORD[cell.status || '미확인'] || cell.status,
       cls: STATUS_CLASS[cell.status] || 'none',
     };
   }
@@ -72,7 +75,7 @@
       ['공간 단위', cell.spatial_unit],
       ['기준연도', cell.base_year],
       ['이용조건', cell.license_type || '공공누리 유형 미표시'],
-      ['상태', v.status],
+      ['대조 상태', v.status],
       ['비고', cell.note],
     ];
     return rows.filter(r => r[1] !== null && r[1] !== undefined && r[1] !== '');
@@ -293,7 +296,7 @@
   function countUp(el) {
     const target = +el.dataset.count, d = digitsOf(target), f = nf(d), t0 = performance.now(), dur = 900;
     const tick = t => {
-      const p = Math.min(1, (t - t0) / dur), e = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
+      const p = Math.max(0, Math.min(1, (t - t0) / dur)), e = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);   // r16 M10: 첫 프레임 t < t0이면 음수가 보였다
       el.textContent = f.format(target * e);
       if (p < 1) requestAnimationFrame(tick);
     };

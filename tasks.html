@@ -12,20 +12,30 @@
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta name="description" content="도시재생 과업의 지침과 요구 항목을 정하고, 근거 대조·조사 변경·보완 근거표·재방문 실적보고서·검토 의견·납품 묶음까지 한 기록으로 남깁니다. 다음 담당자에게는 인수인계 요약으로 넘깁니다. 기본 저장 위치는 이 기기입니다.">
     <title>과업·납품 | 리뉴맵</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:site_name" content="리뉴맵 RENEWMAP" />
+    <meta property="og:title" content="과업·납품 | 리뉴맵" />
+    <meta property="og:description" content="도시재생 과업의 지침과 요구 항목을 정하고, 근거 대조부터 납품 파일·검토 이력까지 한 기록으로 남깁니다. 다음 담당자에게는 인수인계 요약으로 넘깁니다." />
+    <meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="근거가 남는 도시재생 · 리뉴맵" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="pretendard.css" />
     <link rel="stylesheet" href="styles.css?v=20261120-w3" />
-    <link rel="stylesheet" href="tasks.css?v=20261119-r3" />
+    <link rel="stylesheet" href="tasks.css?v=20261121-r16" />
     <script src="frame-guard.js"></script>
     <script src="task-cloud-callback.js?v=20261119-r3"></script>
     <!-- R1(2026-11-13): 다른 화면과 같은 머리 메뉴·아래 탭(site.js). 인증·검토 화면에서는 외부 방문 분석을 실행하지 않는다 -->
-    <script src="site.js?v=20261120-r11" defer></script>
+    <script src="site.js?v=20261121-r16" defer></script>
     <link rel="stylesheet" href="list-pages.css?v=20261119-r3" />
     <script src="list-pages.js?v=20261119-r3" defer></script>
     <script src="tasks.js?v=20261120-r12" defer></script>
     <script src="task-store.js?v=20261120-r11" defer></script>
     <script src="field/store.js" defer></script>
-    <script src="docgen.js?v=20261121-r14" defer></script>
+    <script src="docgen.js?v=20261121-r16" defer></script>
     <script src="tasks-files.js?v=20261120-r12" defer></script>
     <script src="task-cloud-config.js?v=20261119-r3" defer></script>
     <script src="task-cloud.js?v=20261120-r11" defer></script>
@@ -33,14 +43,14 @@
     <script src="survey-change.js?v=20261120-r12" defer></script>
     <script src="survey-template.js?v=20261119-r3" defer></script>
     <script src="survey-change-ui.js?v=20261119-r3" defer></script>
-    <script src="field/record.js?v=20261120-w3" defer></script>
+    <script src="field/record.js?v=20261121-r16" defer></script>
     <script src="field/evidence.js?v=20261120-r13" defer></script>
     <script src="revisit-report.js?v=20261120-r12" defer></script>
     <script src="revisit-photos.js?v=20261119-r3" defer></script>
     <script src="revisit-report-ui.js?v=20261119-r3" defer></script>
     <script src="task-followup-ui.js?v=20261119-w2" defer></script>
-    <script src="tasks-app.js?v=20261120-r12" defer></script>
-  <link rel="stylesheet" href="rm6.css?v=20261121-r14">
+    <script src="tasks-app.js?v=20261121-r16" defer></script>
+  <link rel="stylesheet" href="rm6.css?v=20261121-r16">
 </head>
   <body>
     <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -59,10 +69,13 @@
       <!-- 2026-11-19: 넓은 화면은 왼쪽(단계·본문) 7 : 오른쪽(안내·과업 고르기·작성자·계획 저장) 5. 오른쪽은 따라 내려온다 -->
       <div class="task-layout">
       <aside class="task-aside" aria-label="과업 고르기와 작성자">
+      <!-- r16: 첫 화면 안내는 한 줄. 저장 위치·서버·인증 한계는 모두 '자세히' 안에 그대로 둔다(휴대폰 첫 화면을 안내문이 다 차지했다) -->
       <div class="task-notice">
-        <p>이 기기에 저장하는 검토 기록입니다. 소유자·거주자 정보는 입력하지 마세요.<br />백업(JSON)을 받아 별도로 보관해 주세요.</p>
-        <details class="task-more"><summary>자세히</summary><p>담당자의 신원·전자서명·기관의 공식 승인을 인증하지 않습니다.</p></details>
-        <p class="task-help">고른 과업만 Supabase(미국 회사)가 운영하는 서울 리전 서버에 함께 둡니다. 고르지 않은 과업은 이 기기에만 있습니다. 지금은 운영팀과 시험 연결 중이라 일반 가입을 받지 않습니다. 소유자가 계정 ID로 등록한 팀원은 로그인해 '선택 과업을 기기에 복원'으로 받아 봅니다. 동시 편집은 하지 않습니다.</p>
+        <p>기본은 이 기기에만 저장됩니다 · 소유자·거주자 정보는 넣지 마세요 · <button type="button" id="noticeBackup" class="task-link">백업 받기</button></p>
+        <details class="task-more"><summary>자세히</summary>
+          <p>백업(JSON)을 받아 따로 보관해 주세요. 담당자의 신원·전자서명·기관의 공식 승인을 인증하지 않습니다.</p>
+          <p class="task-help">고른 과업만 Supabase(미국 회사)가 운영하는 서울 리전 서버에 함께 둡니다. 고르지 않은 과업은 이 기기에만 있습니다. 지금은 운영팀과 시험 연결 중이라 일반 가입을 받지 않습니다. 소유자가 계정 ID로 등록한 팀원은 로그인해 '선택 과업을 기기에 복원'으로 받아 봅니다. 동시 편집은 하지 않습니다.</p>
+        </details>
       </div>
       <div class="task-toolbar">
         <label for="taskPick"
@@ -78,6 +91,20 @@
             placeholder="성명 또는 팀 내부 식별자"
         /></label>
       </div>
+      <!-- r16: 백업 복원은 과업을 불러오는 일이라 과업 고르기 옆에 둔다(계획이 없으면 2~4단계를 빈 안내로 바꾸므로, 새 기기에서도 닿게) -->
+      <details class="task-restore">
+        <summary>백업 복원</summary>
+        <p>
+          이 서비스에서 받은 JSON 백업의 이력·파일 확인값(SHA-256)을 검사한 뒤
+          복원합니다.<br />같은 과업의 다른 이력을 덮어쓰지 않습니다.
+        </p>
+        <label
+          >백업 파일<input
+            id="restoreFile"
+            type="file"
+            accept=".json,application/json" /></label
+        ><button type="button" id="restoreTask">확인 후 복원</button>
+      </details>
       <!-- 넓은 화면 전용 저장 단추(form 속성으로 계획 칸을 보낸다). 휴대폰은 계획 칸 아래 단추를 쓴다 -->
       <button type="submit" form="planForm" id="planSave" class="task-save">계획 저장</button>
       </aside>
@@ -95,6 +122,12 @@
       </p>
       </div>
       <p id="taskMsg" role="status" aria-live="polite"></p>
+      <!-- r16: 계획을 저장하기 전에는 2~4단계 빈 폼 대신 이 안내 하나(다 쓰고 나서야 '계획을 먼저 저장'을 만났다) -->
+      <section id="taskNoPlan" class="task-noplan" hidden aria-labelledby="taskNoPlanTitle">
+        <h2 id="taskNoPlanTitle">1단계에서 과업을 먼저 저장하세요</h2>
+        <p class="task-help">근거 대조·납품·검토 기록은 저장한 과업 계획에 이어 남습니다. 이미 저장한 과업은 '저장한 과업'에서 고르고, 백업이 있으면 그 아래 '백업 복원'으로 불러옵니다.</p>
+        <button type="button" data-step="0">1단계로</button>
+      </section>
       <section data-panel="0" aria-labelledby="planTitle">
         <h2 id="planTitle">과업과 대조 계획</h2>
         <form id="planForm">
@@ -132,9 +165,9 @@
             ></textarea>
           </label>
           <p class="task-help">
-            각 줄을 <b>항목명 | 지정 출처 | 공간 단위</b> 순서로 구분해
-            주세요.<br />계획을 실제로 바꾸면 새 검증 회차가 시작되고, 이전
-            검증·납품·결정은 과거 버전에 남습니다.
+            각 줄을 <b>항목명 | 지정 출처 | 공간 단위</b> 순서로 적어 주세요.
+            세로줄 대신 쉼표나 탭으로 나눠도 됩니다.<br />계획을 실제로 바꾸면 새 대조 회차가 시작되고, 이전
+            대조·납품·결정은 과거 버전에 남습니다.
           </p>
           <details>
             <summary>서로 다른 지역·시점의 자료를 함께 쓸 때</summary>
@@ -275,7 +308,7 @@
         </details>
         <p>
           공식 원문의 쪽·조문과 실제 자료를 확인해 기록합니다.<br />‘대조
-          일치’는 사용자가 기록한 결과이며 자동 법정 판정이 아닙니다.
+          일치’는 사용자가 기록한 결과이며 법정 판정을 대신하지 않습니다.
         </p>
         <form id="checkForm">
           <label>요구 항목<select id="checkPick"></select></label>
@@ -285,7 +318,7 @@
               >대조 결과<select id="checkResult">
                 <option value="pending">추가확인</option>
                 <option value="match">대조 일치</option>
-                <option value="conflict">근거 충돌</option>
+                <option value="conflict">충돌</option>
                 <option value="invalid">입력 다시 확인</option>
               </select></label
             ><label
@@ -306,10 +339,10 @@
           </label>
           <p class="task-help">
             항목을 바꾸면 입력한 대조 내용은 화면에 유지됩니다.<br />아래 단추는
-            모든 요구 항목을 함께 검증합니다. 한 회차는 최대 3번 검증하며 같은
+            모든 요구 항목을 함께 대조합니다. 한 회차는 최대 3번 대조하며 같은
             계획을 다시 저장해 횟수를 초기화할 수 없습니다.
           </p>
-          <button type="submit">전체 항목 검증·기록</button>
+          <button type="submit">전체 항목 대조·기록</button>
         </form>
         <p id="checkSummary"></p>
       </section>
@@ -410,20 +443,7 @@
           ><button type="button" id="zipTask">납품 묶음 받기(ZIP)</button>
         </div>
         <details>
-          <summary>백업 복원</summary>
-          <p>
-            이 서비스에서 받은 JSON 백업의 이력·파일 해시를 검사한 뒤
-            복원합니다.<br />같은 과업의 다른 이력을 덮어쓰지 않습니다.
-          </p>
-          <label
-            >백업 파일<input
-              id="restoreFile"
-              type="file"
-              accept=".json,application/json" /></label
-          ><button type="button" id="restoreTask">확인 후 복원</button>
-        </details>
-        <details>
-          <summary>버전·검증·납품·결정 이력</summary>
+          <summary>버전·대조·납품·결정 이력</summary>
           <ol id="taskHistory"></ol>
         </details>
       </section>

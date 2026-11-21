@@ -2,12 +2,26 @@
 .pg-sched { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin: 24px 0 40px; padding: 20px 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line); }
 .pg-sched dt { font-size: 15px; color: var(--dim); }
 .pg-sched dd { margin: 4px 0 0; font-weight: 700; }
+.pg-sched .is-past dd { font-weight: 400; color: var(--dim); }   /* 끝난 단계는 글자 '지남'과 함께 흐리게 */
+.pg-41 { margin: 0 0 8px; font-size: 15px; font-weight: 600; line-height: 1.5; }
+.pg-41 a { display: inline-block; min-height: 24px; font-weight: 700; }
 .pg-meta { margin: 4px 0 16px; color: var(--green); font-weight: 700; }
 .pg-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 8px; }
 .pg-src { margin: 0; font-size: 15px; color: var(--dim); }
-.pg-dong { margin: 24px 0; }
+.pg-dong { margin: 24px 0; padding: 0; }   /* styles.css 'section { padding: 56px 0 }'이 붙어 휴대폰에서 첫 카드(4-1 줄)가 아래 탭 뒤로 밀렸다(r16) */
 .pg-dong h3 { margin: 0 0 8px; }
 .pg-warn { margin: 0 0 16px; font-size: 15px; color: var(--dim); }
+/* r16 3차: 동별 대조표(programs.js districtHTML의 .pg-district, 10칸). 칸 안에서 줄을 바꾸지 않고 표 상자 안에서 옆으로 민다
+   (880px 칸에서 머리 4줄·값 2줄, 휴대폰은 머리 233px·값 4줄이었다). 동 이름 칸은 밀어도 왼쪽에 남고, 바탕을 채워 뒤 글자가 비치지 않는다. 문서 칸 폭은 workspace.css */
+.pg-district table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--t-sub); font-variant-numeric: tabular-nums; }
+.pg-district :is(th, td) { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: bottom; white-space: nowrap; }
+.pg-district thead th { line-height: 1.4; }
+.pg-district thead small { display: block; font-size: var(--t-cap); font-weight: 400; color: var(--dim); }
+.pg-district tr > th:first-child { position: sticky; left: 0; z-index: 1; border-right: 1px solid var(--line); background: var(--card); }
+.pg-district thead th:first-child { z-index: 2; }
+.pg-district tbody tr:hover > th { background: var(--hover-tint); }
+.pg-key, .pg-foot { margin: 8px 0 0; font-size: var(--t-sub); line-height: 1.6; color: var(--dim); }
+@media print { .pg-district :is(th, td) { padding: 3px 4px; white-space: normal; } }   /* 종이에서는 옆으로 밀 수 없다: 줄을 바꾸고 여백을 좁혀 A4 폭에 맞춘다(글자는 rm6.css 인쇄 표 14pt 그대로) */
 .pg-card { padding: 16px 0; border-top: 1px solid var(--line); }
 .pg-card h4 { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin: 0 0 8px; font-size: 17px; }
 .pg-card h4 small { font-size: 15px; font-weight: 400; color: var(--dim); }

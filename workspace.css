@@ -104,8 +104,6 @@
 #find .ws-mini.is-idle .fd-legend { display: none; }
 #findApp [data-fd-out]:focus:not(:focus-visible) { outline: none; }
 .ws-bar[hidden] { display: none; }
-/* 동을 고른 휴대폰에서 rm6.css의 body.sheet-open { overflow: auto }가 body를 스크롤 상자로 만들어(html이 overflow-x: clip) 아래 막대가 붙지 않았다 → 지도 탭 말고 다른 탭에서는 풀어 둔다 */
-body.explore-page.sheet-open:has(.evidence-workspace:not([data-active-panel="map"])) { overflow: visible; }
 .ws-bar-btn b { font-variant-numeric: tabular-nums; }
 
 /* ── 문서 탭(#report): 넓은 화면은 주제 목차 | 본문(880px). 받기 줄은 채운 단추 하나 + '다른 형식' 접이 ── */
@@ -178,6 +176,9 @@ body.explore-page.sheet-open:has(.evidence-workspace:not([data-active-panel="map
   /* 문서: 목차가 있으면 목차 | 본문, 이전/다음 줄은 숨긴다 */
   .explore-page #report .ws-doc { display: grid; grid-template-columns: minmax(0, 880px); justify-content: center; align-items: start; column-gap: 40px; padding: 20px; }
   .explore-page #report .ws-doc:has(> .ws-toc:not([hidden])) { grid-template-columns: 232px minmax(0, 880px); grid-template-rows: auto auto 1fr auto; }
+  /* r16 3차: 동별 사업 요건 대조표(programs.js .pg-district, 10칸)는 880px에 넣으면 머리 4줄·값 2줄이라 문서 칸을 다 쓴다 */
+  .explore-page #report .ws-doc:has(.pg-district) { grid-template-columns: minmax(0, 1fr); }
+  .explore-page #report .ws-doc:has(.pg-district):has(> .ws-toc:not([hidden])) { grid-template-columns: 232px minmax(0, 1fr); }
   #report .ws-doc:has(> .ws-toc:not([hidden])) > :not(.ws-toc) { grid-column: 2; }
   #report .ws-doc > .ws-toc { grid-column: 1; grid-row: 1 / -1; align-self: start; position: sticky; top: 88px; max-height: calc(100dvh - 104px); overflow-y: auto; }
   #report .ws-doc > .section-head { grid-row: 1; }
@@ -208,7 +209,7 @@ body.explore-page.sheet-open:has(.evidence-workspace:not([data-active-panel="map
   #find .ws-bar { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 5; margin: 20px 0 0; }
   #find .ws-bar-btn { width: 100%; min-height: 52px; box-shadow: 0 6px 18px var(--shade-18); }
   /* 입력칸을 고르는 동안은 막대를 숨기고(가상 키보드 위에 뜨지 않게), 초점 칸이 막대·아래 탭 뒤로 숨지 않게 여백을 둔다 */
-  #find .ws-find-side:has(input:focus, select:focus) ~ .ws-bar { visibility: hidden; }
+  #find .ws-find-side:has(input:focus) ~ .ws-bar { visibility: hidden; }   /* r16 M8: 고르기 칸(select)은 화면 키보드를 띄우지 않는다. select까지 숨기면 범위를 고른 뒤 결과 막대가 보이지 않았다 */
   #find .ws-find-side :is(input, select, button, summary) { scroll-margin-bottom: 150px; }
   .explore-page #find:not([data-results-open]) #findApp { display: none; }
   #find .ws-find-main { margin-top: 24px; }

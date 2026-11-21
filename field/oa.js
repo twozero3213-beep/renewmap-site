@@ -2,18 +2,22 @@
 // 판정은 백엔드(rules/decline.py, 승인 전)가 낸 값을 그대로 쓰고 여기서 다시 판정하지 않는다. 노후건축물은 집계구로 계산하지 않는다.
 (function (root) {
   "use strict";
-  const MET = "충족", NOT_MET = "미충족", CHECK = "추가확인";
-  // 지도 색(D22: 기준을 넘은 쪽 주황→갈색, 못 정함 회색). 점수가 아니라 '두 요건 중 몇 개 충족'의 구분이다
+  // 상태어는 화면과 받는 파일이 같은 한 벌이다(OD1): 기준 해당 / 해당 안 함 / 추가확인(사유)
+  const MET = "기준 해당", NOT_MET = "해당 안 함", CHECK = "추가확인", GAP = `${CHECK}(값 빠짐)`;
+  // 자료 파일의 판정 값(충족·미충족)을 옮겨 적는다. 추가확인의 사유는 백엔드가 적은 근거(basis)에서 알아볼 때만 붙이고 지어내지 않는다
+  const FROM_DATA = { 충족: MET, 미충족: NOT_MET };
+  const verdict = (r) => FROM_DATA[r.verdict] || (r.verdict !== CHECK ? r.verdict : /결측/.test(r.basis) ? GAP : CHECK);
+  // 지도 색(D22: 기준을 넘은 쪽 주황→갈색, 추가확인 회색). 점수가 아니라 '두 요건 중 몇 개가 기준 해당'인지의 구분이다
   const FILL = { 2: "#9c4a1a", 1: "#e8a33d", 0: "#e7ecea", check: "#cdd7d3" };
-  const LABEL = { 2: "인구·사업체 모두 충족", 1: "하나만 충족", 0: "둘 다 미충족", check: "못 정함(값 빠짐)" };
+  const LABEL = { 2: `인구·사업체 모두 ${MET}`, 1: `하나만 ${MET}`, 0: `둘 다 ${NOT_MET}`, check: GAP };
   const groupOf = (o) => (o.met === 2 ? 2 : o.met === 1 ? 1 : o.pop_req.verdict === CHECK || o.biz_req.verdict === CHECK ? "check" : 0);
   function summary(dong) {
     const n = { 2: 0, 1: 0, 0: 0, check: 0 };
     for (const o of dong.oas) n[groupOf(o)]++;
     return n;
   }
-  const pct = (v) => (v === null || v === undefined ? "못 정함" : `${(Math.round(v * 10) / 10).toFixed(1)}%`);
-  const yn = (v) => (v === true ? "있음" : v === false ? "없음" : "못 정함");
+  const pct = (v) => (v === null || v === undefined ? GAP : `${(Math.round(v * 10) / 10).toFixed(1)}%`);
+  const yn = (v) => (v === true ? "있음" : v === false ? "없음" : GAP);
   // 위경도 → SVG 좌표(작은 구역이라 위도에 따른 가로 줄임만 맞춘다)
   function projector(shapes, width = 640) {
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
@@ -25,10 +29,10 @@
   function toCSV(data, dong) {
     const y = data.years;
     const note = [`${dong.sigungu} ${dong.name} 집계구 ${dong.oas.length}개 · ${data.source} · ${data.license_type} · 판정 규칙 ${data.rule}(승인 전) · ${data.note}`];
-    const head = ["집계구", ...y.map((v) => `인구 ${v}`), ...y.map((v) => `사업체 ${v}`), "인구 5년 중 3년 연속 감소", "인구 요건", "사업체 10년 최대 대비 감소율(%)", "사업체 5년 중 3년 연속 감소", "사업체 요건", "충족 수(인구·사업체 2개 중)"];
-    const body = dong.oas.map((o) => [o.oa, ...o.pop, ...o.biz, yn(o.pop_req.consecutive_3y_in_5y), o.pop_req.verdict, o.biz_req.peak_drop_pct_10y ?? "", yn(o.biz_req.consecutive_3y_in_5y), o.biz_req.verdict, o.met]);
+    const head = ["집계구", ...y.map((v) => `인구 ${v}`), ...y.map((v) => `사업체 ${v}`), "인구 5년 중 3년 연속 감소", "인구 요건", "사업체 10년 최대 대비 감소율(%)", "사업체 5년 중 3년 연속 감소", "사업체 요건", "기준 해당 수(인구·사업체 2개 중)"];
+    const body = dong.oas.map((o) => [o.oa, ...o.pop, ...o.biz, yn(o.pop_req.consecutive_3y_in_5y), verdict(o.pop_req), o.biz_req.peak_drop_pct_10y ?? "", yn(o.biz_req.consecutive_3y_in_5y), verdict(o.biz_req), o.met]);
     return "﻿" + [note, head, ...body].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
   }
-  const api = { MET, NOT_MET, CHECK, FILL, LABEL, groupOf, summary, pct, yn, projector, toCSV, csvCell: cell };
+  const api = { MET, NOT_MET, CHECK, FILL, LABEL, groupOf, summary, verdict, pct, yn, projector, toCSV, csvCell: cell };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.RenewOA = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

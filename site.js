@@ -60,7 +60,11 @@
     nav.className = 'rm-nav'; nav.id = 'rm-nav'; nav.setAttribute('aria-label', '주요 메뉴');
     const link = (href, text, on, cls) => { const a = document.createElement('a'); a.href = base + href; a.textContent = text; if (on) a.setAttribute('aria-current', 'page'); if (cls) a.className = cls; return a; };
     for (const [href, text, re] of items) nav.append(link(href, text, re.test(path)));
-    nav.append(link('about.html#contact', '시범 과업 상담', false, 'rm-cta'));
+    // r16: 휴대폰 메뉴 시트에서도 '무엇이고 얼마인지'를 찾게 상담 단추 위에 글 링크 한 줄(넓은 화면 머리 줄에서는 rm6.css가 숨긴다). 주 메뉴 목록·순서는 그대로
+    const more = document.createElement('p');
+    more.className = 'rm-nav-more';
+    more.append(link('about.html', '서비스 소개'), ' · ', link('about.html#scope', '비용과 범위'));
+    nav.append(more, link('about.html#contact', '시범 과업 상담', false, 'rm-cta'));
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'rm-menu-btn'; btn.textContent = '메뉴';
     btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', 'rm-nav');
@@ -68,6 +72,8 @@
     document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && nav.classList.contains('is-open')) { btn.click(); btn.focus(); } });
     // 시트 뒤 가림(rm6.css body::after)이나 본문을 누르면 닫는다
     document.addEventListener('click', (ev) => { if (nav.classList.contains('is-open') && !ev.target.closest('header.top')) btn.click(); });
+    // r16 M11: Tab으로 시트 끝을 넘어가면 초점이 가림 뒤 본문으로 가 보이지 않았다(WCAG 2.4.11) → 초점이 머리 밖으로 나가면 닫는다. 창 전환(relatedTarget 없음)으로는 닫지 않는다
+    header.addEventListener('focusout', (ev) => { if (nav.classList.contains('is-open') && ev.relatedTarget && !header.contains(ev.relatedTarget)) btn.click(); });
     header.append(btn, nav);
   }
   if (header && typeof ResizeObserver === 'function') {
@@ -198,6 +204,13 @@
       event.preventDefault(); event.stopImmediatePropagation();
     }
   }, true);
+  const blockedNote = () => {
+    const settings = document.querySelector('details.settings');
+    if (!settings || document.getElementById('fieldOfflineOff')) return;
+    const p = document.createElement('p'); p.id = 'fieldOfflineOff'; p.className = 'hint';
+    p.textContent = '오프라인 저장을 막은 브라우저입니다. 인터넷이 없을 때는 이 화면을 새로 고치지 말고 그대로 쓰세요.';
+    settings.append(p);
+  };
   async function check() {
     if (busy || !navigator.onLine) return;
     busy = true;
@@ -207,8 +220,10 @@
       const registration = await sw.register(new URL('sw.js', scope).href, { scope: scope.href, updateViaCache: 'none' });
       await registration.update();
       if (!changed) document.getElementById('fieldUpdate')?.remove();
-    } catch (_) {
-      if (!changed) notice('새 버전 확인을 마치지 못했습니다. 지금 버전으로 계속 쓸 수 있고, 연결이 돌아오거나 이 화면으로 다시 돌아오면 다시 확인합니다.', false);
+    } catch (err) {
+      // r16: 기관 정책·사생활 보호 모드가 등록 자체를 막으면(SecurityError) 매번 뜨는 경고는 고장처럼 보였다 → 현장 기록 '설정' 안에 한 번만 조용히 적는다. 연결 실패는 지금 안내 그대로
+      if (err && err.name === 'SecurityError') blockedNote();
+      else if (!changed) notice('새 버전 확인을 마치지 못했습니다. 지금 버전으로 계속 쓸 수 있고, 연결이 돌아오거나 이 화면으로 다시 돌아오면 다시 확인합니다.', false);
     } finally { busy = false; }
   }
   window.addEventListener('online', check);

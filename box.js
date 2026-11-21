@@ -95,7 +95,8 @@
     $("boxStats").innerHTML = R.statsHTML(R.stats(recs, new Date()), [["받은 문서", docs.length]]);   // 개수 요약(순위 아님)
     $("boxStats").hidden = !recs.length && !docs.length;   // v7: 다 0일 때 0·0·0·0 상자를 숨긴다(평가: 내용 없는 큰 칸)
     du.textContent = ""; ru.textContent = "";
-    if (!docs.length) empty(du, "아직 받은 문서가 없습니다.", "field/", "현장 기록하기");
+    // 문서는 동네 진단에서 받는다(r16: '현장 기록하기'로 엉뚱하게 보냈고, 같은 쪽에 그 링크가 두 번 나왔다)
+    if (!docs.length) empty(du, "아직 받은 문서가 없습니다. 동네 진단에서 동을 고르고 문서를 받으면 여기에 남습니다.", "explore.html", "동네 진단에서 문서 받기");
     for (const d of docPages.slice(docs)) du.append(withOutcome(d, row(d.name, `${day(d.created_at)} 받음`, [
       ["다시 받기", () => D.saveBytes(d.name, d.blob, MIME[d.kind] || "application/octet-stream"), "", `${d.name} 다시 받기`],
       ["지우기", async () => { if (!confirm(`${d.name} 문서를 지울까요?\n지운 문서는 되살릴 수 없습니다.`)) return; await S.deleteDoc(d.id); say("문서를 지웠습니다."); refresh(); }, "del", `${d.name} 지우기`],

@@ -8,6 +8,7 @@
   const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };
   const n = (x) => (x === null || x === undefined ? "–" : Number(x).toLocaleString("ko-KR"));
   let data = null, dong = null;
+  const LABEL = O.LABEL;   // 상태어는 oa.js 한 곳에서 정해 화면과 받는 CSV가 같다
   const requested = new URLSearchParams(location.search).get("dong");
   const originCode = /^\d{7,10}$/.test(requested || "") ? requested : null;
   if (requested !== null) {
@@ -36,7 +37,7 @@
       if (!polys) continue;
       const p = svg("path", { d: P.path(polys), fill: O.FILL[O.groupOf(o)], stroke: "#14302c", "stroke-width": "0.8", "fill-rule": "evenodd", tabindex: "0" });
       p.dataset.oa = o.oa;
-      p.append(svg("title", {})); p.lastChild.textContent = `${o.oa} · ${O.LABEL[O.groupOf(o)]}`;
+      p.append(svg("title", {})); p.lastChild.textContent = `${o.oa} · ${LABEL[O.groupOf(o)]}`;
       p.addEventListener("click", () => select(o.oa));
       p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(o.oa); } });
       box.append(p);
@@ -48,17 +49,17 @@
     const s = O.summary(dong), y = data.years, i19 = y.indexOf(2019);
     $("outTitle").textContent = `${dong.sigungu_name} ${dong.name} 집계구 ${dong.oas.length}개`;
     $("outBase").textContent = `이 자료에 기록된 행정동 요건 수 ${dong.met_count ?? "값 없음"} / 3 · 기준일 ${dong.met_ref || "–"} · 집계구 값 ${y[0]}~${y[y.length - 1]}년 · 원래 지도의 최신 결과와 기준일을 비교하세요.`;
-    $("outCount").replaceChildren(...[2, 1, 0, "check"].map((g) => { const li = document.createElement("li"); li.append(swatch(g), ` ${O.LABEL[g]} ${s[g]}개`); return li; }));
+    $("outCount").replaceChildren(...[2, 1, 0, "check"].map((g) => { const li = document.createElement("li"); li.append(swatch(g), ` ${LABEL[g]} ${s[g]}개`); return li; }));
     $("rows").replaceChildren(...dong.oas.map((o) => {
       const tr = document.createElement("tr"); tr.dataset.oa = o.oa;
       const td = (t) => { const c = document.createElement("td"); c.textContent = t; return c; };
       const first = td(""); first.title = o.oa; first.append(swatch(O.groupOf(o)), ` …${o.oa.slice(-6)}`);   // 앞 8자리는 행정동이라 같다. 전체 코드는 CSV·title에
-      tr.append(first, td(`${n(o.pop[i19])} → ${n(o.pop[o.pop.length - 1])}`), td(O.yn(o.pop_req.consecutive_3y_in_5y)), td(o.pop_req.verdict),
-        td(O.pct(o.biz_req.peak_drop_pct_10y)), td(O.yn(o.biz_req.consecutive_3y_in_5y)), td(o.biz_req.verdict), td(`${o.met}개`));
+      tr.append(first, td(`${n(o.pop[i19])} → ${n(o.pop[o.pop.length - 1])}`), td(O.yn(o.pop_req.consecutive_3y_in_5y)), td(O.verdict(o.pop_req)),
+        td(O.pct(o.biz_req.peak_drop_pct_10y)), td(O.yn(o.biz_req.consecutive_3y_in_5y)), td(O.verdict(o.biz_req)), td(`${o.met}개`));
       tr.addEventListener("click", () => select(o.oa));
       return tr;
     }));
-    $("src").textContent = `출처: ${data.source} · ${data.license_type} · 판정 규칙 ${data.rule}(승인 전). ${data.note}`;
+    $("src").textContent = `출처: ${data.source} · ${data.license_type} · 계산 규칙 ${data.rule}(승인 대기). ${data.note}`;
     $("out").hidden = false;
   }
 
@@ -91,7 +92,7 @@
     data = { ...d, dongs: sets.flatMap(([, ds]) => ds) };
     const incomplete = rest.some((x) => !x || x.rule !== d.rule || x.years.join() !== d.years.join());
     $("coverage").textContent = `불러온 목록: ${sets.filter(([, ds]) => ds.length).map(([label, ds]) => `${label} ${ds.length}개 동`).join(" · ") || "없음"}. 목록에 있는 동의 자료만 확인할 수 있습니다.${incomplete ? " 일부 지역 자료를 확인할 수 없어 이 목록에 포함하지 않았습니다." : ""}`;
-    const opt = (x) => new Option(`${x.sigungu_name} ${x.name} (충족 ${x.met_count ?? "값 없음"}개)`.trim(), x.code);
+    const opt = (x) => new Option(`${x.sigungu_name} ${x.name} (기준 해당 ${x.met_count ?? "값 없음"}개)`.trim(), x.code);
     $("dong").replaceChildren(new Option("행정동을 고르세요", ""), ...sets.map(([label, ds]) => { const g = document.createElement("optgroup"); g.label = label; g.append(...ds.map(opt)); return g; }));
     $("dong").disabled = false;
     $("dong").addEventListener("change", () => show($("dong").value));

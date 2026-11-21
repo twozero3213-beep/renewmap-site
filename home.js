@@ -8,10 +8,10 @@
   'use strict';
   const MAX = 8;
   const norm = s => String(s || '').replace(/\s+/g, '').toLowerCase();
-  // 홈에서 들어오면 기본 보고서는 '1쪽 요약'(?report=onepage, find.js entryReportMode). 동까지 정해지면 탐색이 문서 패널을 바로 연다(심사 06: 동 이름 → 1쪽 한글 3번 안에)
-  // report: 열 문서 종류. 재생 사업 화면의 같은 찾기 칸은 'programs'(그 동에 맞는 사업 표)로 보낸다(form data-report)
+  // 기본 보고서는 '1쪽 요약'(?report=onepage, find.js entryReportMode). 동까지 정해지면 탐색이 문서 패널을 바로 연다(심사 06: 동 이름 → 1쪽 한글 3번 안에)
+  // report: 열 문서 종류(form data-report). 홈은 'brief'(r16 OD5: 칩·주 단추와 같은 4-1 표, frag로 4-1 절을 바로), 재생 사업 화면은 'programs'(그 동에 맞는 사업 표)
   // page: 2025 경계가 없어 지도에 못 올리는 동(dong_extra.json). 지도 대신 그 동 쪽으로 보낸다
-  const route = (r, report = 'onepage') => r.page ? `dong/${r.dong}.html` : `explore.html?report=${report}#map/${r.sido}/${r.sgg}${r.dong ? '/' + r.dong : ''}`;
+  const route = (r, report = 'onepage') => r.page ? `dong/${r.dong}.html` : `explore.html?report=${report}${report === 'brief' ? '&frag=MLIT-DECLINE' : ''}#map/${r.sido}/${r.sgg}${r.dong ? '/' + r.dong : ''}`;
 
   // 동 판별은 util.js dongHit(법정동 이름 '우동'·'해운대 우동'도). 화면에서는 util.js가 이 파일 뒤에 실려 부를 때 꺼낸다
   const U = () => (typeof window !== 'undefined' && window.RenewUtil) || require('./util.js');
@@ -31,10 +31,11 @@
   }
 
   // 문구: docs/design/redesign_2026-10-27.md 5.1. 한 문장씩 줄을 바꾼다(.home-msg white-space: pre-line)
+  // r16: n은 자르기 전 전체 수(전에는 31곳인 '중앙동'을 8곳이라고 했다). 보인 것보다 많으면 시·군·구를 함께 적게 한다
   const MSG = {
     empty: '동 이름이나 구 이름을 적어 주세요.',
     none: '찾지 못했습니다.\n동 이름이나 구 이름으로 다시 찾아 보세요.',
-    many: (n, same) => `${same ? '같은 이름이' : '맞는 곳이'} ${n}곳 있습니다.\n하나를 고르세요.`,   // v9: 우동→국우동·사우동처럼 다른 이름에도 '같은 이름'이라 했다
+    many: (n, same, cut, kind = '동이') => `${same ? `같은 이름의 ${kind}` : '맞는 곳이'} ${n}곳 있습니다.\n${cut ? '시·군·구 이름을 같이 적어 주세요(예: 창원 중앙동).' : same ? '시·군·구를 골라 주세요.' : '하나를 고르세요.'}`,   // v9: 우동→국우동·사우동처럼 다른 이름에도 '같은 이름'이라 했다
     fail: '동네 목록을 불러오지 못했습니다.\n인터넷 연결을 확인하고 다시 시도해 주세요.',
   };
 
@@ -54,9 +55,6 @@
       const close = demo.querySelector('[data-h6-close]');
       if (close) close.addEventListener('click', () => demo.close());
     }
-    // 휴대폰에서는 '다른 조사 도구' 링크 열한 개를 접어 둔다(넓은 화면은 펼친 한 줄, 스크립트가 없으면 펼친 채)
-    const more = doc.querySelector('details.h6-more');
-    if (more && win.matchMedia && win.matchMedia('(max-width: 720px)').matches) more.open = false;
     const form = doc.getElementById('homeSearch');
     if (!form) return;
     const input = doc.getElementById('homeQ'), hits = doc.getElementById('homeHits'), msg = doc.getElementById('homeMsg'), report = form.dataset.report || 'onepage';
@@ -78,6 +76,7 @@
       for (const r of rows) {
         const li = doc.createElement('li'), a = doc.createElement('a'), s = doc.createElement('small');
         a.href = route(r, report); a.textContent = r.label; s.textContent = r.sub; a.append(s); li.append(a); hits.append(li);
+        a.setAttribute('aria-label', `${r.label}, ${r.sub}`);   // 이름과 지역이 붙어 '반여1동부산광역시…'로 읽혔다
       }
     };
     input.addEventListener('input', async () => {
@@ -104,12 +103,15 @@
       ev.preventDefault();
       if (!input.value.trim()) { msg.textContent = MSG.empty; input.focus(); return; }
       if (!(await load())) { msg.textContent = MSG.fail; return; }
-      const rows = find(index, input.value);
+      const all = find(index, input.value, Infinity), rows = all.slice(0, MAX);
       if (!rows.length) { show([]); msg.textContent = MSG.none; return; }
-      if (rows.length === 1) { win.location.href = route(rows[0], report); return; }
-      show(rows); msg.textContent = MSG.many(rows.length, rows.every(r => r.label === rows[0].label));
+      if (all.length === 1) { win.location.href = route(rows[0], report); return; }
+      show(rows); msg.textContent = MSG.many(all.length, all.every(r => r.label === rows[0].label), all.length > rows.length, rows[0].dong ? '동이' : '시·군·구가');
     });
     if (form.dataset.pick) initPick(win, form, load, report);
+    // 느린 망에서 스크립트보다 먼저 Enter를 누르면 기본 전송으로 ?q=가 붙어 다시 열린다. 그 검색을 이어 간다(r16 hunter-flows)
+    const q0 = new URLSearchParams(win.location.search || '').get('q');
+    if (q0) { input.value = q0; form.requestSubmit(); }
   }
   // 2026-11-13 우지예: 재생 사업 화면에서 이름을 몰라도 고를 수 있게 '시·도 → 구·군 → 동' 고르기(form data-pick). 시범 지역 부산을 먼저 고른 채로 연다.
   // 목록은 같은 dong_index.json에서 만들고, 구·군·동은 가나다순(반여1·2·3동처럼 숫자는 숫자 순). 동을 고르면 찾기와 같은 곳(route)으로 간다

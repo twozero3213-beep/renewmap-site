@@ -23,6 +23,10 @@
 /* 2026-11-12: 현재 건물 3D 보기 — 보기 단추 줄·불러오는 중 표시·지도 높이(회의 "조감도 잘 보이게")
    지도 높이를 화면 높이에 맞춰 키운다(480px 고정 → 화면의 70%, 480~760px). 조감도는 가로세로가 넉넉해야 동네가 한눈에 들어온다 */
 .city3d-map { height: clamp(480px, 70vh, 760px); }
+/* 2026-11-21 r16: 휴대폰은 지도가 화면 70%라 쓸어도 쪽이 내려가지 않았다 → 55%로 줄여 위아래로 넘길 자리를 남긴다 */
+@media (max-width: 800px) { .city3d-map { height: 55vh; height: 55svh; } }
+/* 브이월드 기본 도구막대(onclick, CSP에 막힘)는 만들지 않는다(city3d.js). SDK가 바뀌어 다시 생겨도 죽은 단추가 보이지 않게 가린다 */
+.city3d-map #naviTopPannel3d, .city3d-map #naviBottomPannel3d, .city3d-map #measureEndBtn3d { display: none !important; }
 .city3d-views { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; }
 .city3d-views[hidden] { display: none; }
 .city3d-views button { width: auto; min-height: 44px; margin: 0; padding: 0 16px; border-radius: 999px; }

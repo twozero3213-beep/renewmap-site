@@ -57,9 +57,11 @@
 .map-dong-label { width: max-content !important; height: auto !important; transform-origin: center; margin: 0 !important; translate: -50% -50%; white-space: nowrap; font-size: var(--t-cap); font-weight: 700; line-height: 1.2; color: #12302d;
   text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff, 0 0 1px #fff; pointer-events: none; }
 .map-dong-label.is-sel { font-size: 15px; color: #0b1f1d; }
-#map .leaflet-tooltip { font-size: 15px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
+/* 말풍선은 260px에서 줄을 바꾼다: 한 줄로 늘어나 오른쪽 동 카드 밑으로 76px 들어가 잘렸다(r16 a11y) */
+#map .leaflet-tooltip { max-width: 260px; white-space: normal; font-size: 15px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
 #map .leaflet-tooltip small { color: var(--dim); }
 #map .leaflet-control-attribution { font-size: var(--t-cap); }
+#map .leaflet-bottom .leaflet-control-attribution { margin-bottom: 4px; }   /* 같은 모서리의 축척 막대와 1px 겹쳤다 */
 /* 3D 건물 버튼: 확대·축소 아래, 글자 버튼(Leaflet 기본 30px 정사각형보다 넓게, 누르기 영역 44px) */
 #map a.map-3d { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; background: var(--card, #fff); color: var(--ink); font-size: 15px; font-weight: 700; text-decoration: none; }
 #map a.map-3d:hover, #map a.map-3d:focus-visible { background: var(--ink); color: #fff; }
@@ -86,7 +88,7 @@
 /* 키보드 대체 목록 */
 .map-selects { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0 0 10px; }
 .map-select { display: grid; gap: 4px; font-size: 15px; font-weight: 700; min-width: 150px; flex: 1; }
-.map-select select { font: inherit; font-size: 15px; font-weight: 400; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--ink); }
+.map-select select { width: 100%; max-width: 100%; min-width: 0; font: inherit; font-size: 15px; font-weight: 400; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--card); color: var(--ink); }   /* 폭 고정: 긴 선택지 글자 폭(310px)으로 320px 화면 밖까지 늘었다(1.4.10) */
 .map-list { flex-wrap: wrap; overflow: visible; }
 .map-live { font-size: 15px; color: var(--dim); margin: 4px 0 0; }
 #map button:focus-visible, #map select:focus-visible, #map input:focus-visible, #map summary:focus-visible, #map a:focus-visible { outline: 3px solid var(--focus-ink); outline-offset: 2px; box-shadow: 0 0 0 5px var(--card); }
@@ -132,9 +134,9 @@
 .sr-h .map-ico { color: var(--dim); }
 .sr-l { font-size: 15px; font-weight: 600; flex: 1; min-width: 7em; }
 .sr-v { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.sr-st { font-size: var(--t-cap); font-weight: 700; border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
-.st-over { color: var(--worse); background: var(--worse-bg); } .st-in { color: var(--neutral-ink); background: var(--in-bg); } .st-wait { color: var(--wait-ink); background: var(--wait-bg); }
-.st-nostd { color: var(--info); background: var(--info-bg); } .st-none, .st-soon { color: var(--neutral-ink); background: var(--mute-bg); border: 1px dashed var(--na); }
+/* 상태 칩 모양과 기준 해당·해당 안 함·추가확인·기준선 없음 색은 rm6.css '상태 태그 하나' 한 곳(r16). 여기에는 그 넷 밖의 상태만 */
+.st-wait { color: var(--wait-ink); background: var(--wait-bg); }
+.st-soon { color: var(--neutral-ink); background: var(--mute-bg); box-shadow: inset 0 0 0 1px var(--na); }
 .sr-m { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .sr-bar { flex: 1; min-width: 0; height: 18px; display: block; }
 .sr-track { fill: var(--mute-bg); } .sr-bar.is-empty .sr-track { fill: none; stroke: var(--na); stroke-dasharray: 3 3; }
@@ -385,8 +387,6 @@
 .gp { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 15px; border-top: 1px solid var(--line); padding-top: 6px; }
 .gp b { font-weight: 700; } .gp-v { font-weight: 700; font-variant-numeric: tabular-nums; }
 .gp-sg { font-size: var(--t-cap); font-weight: 700; color: var(--dim); background: var(--mute-bg); border-radius: 999px; padding: 1px 7px; }
-.gp-s { font-size: var(--t-cap); font-weight: 700; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
-.gp.is-over .gp-s { color: var(--worse); background: var(--worse-bg); } .gp.is-none .gp-s { color: var(--neutral-ink); background: var(--mute-bg); border: 1px dashed var(--na); }
 .gp-std { flex-basis: 100%; font-size: var(--t-cap); color: var(--dim); }
 .gp-empty, .gp-note { margin: 6px 0 0; font-size: var(--t-cap); color: var(--dim); }
 /* 사업 근거서 */
@@ -459,6 +459,31 @@
   .dg-onepage .dg-box th, .dg-onepage .dg-box td, .dg-onepage .dg-table th, .dg-onepage .dg-table td { border: 0.5pt solid var(--print-ink); padding: 1.5pt 4pt; }
   .dg-onepage .dg-box th, .dg-onepage .dg-table th { background: var(--print-th); }
   .dg-onepage .dg-tbl { margin: 0 0 4pt; break-inside: avoid; } .dg-onepage .dg-tbl-h b { font-size: 9pt; }
+  /* r16 M33: 근거 1쪽이 반여1동에서 2쪽이었다(둘째 쪽에 각주 [5]와 확인값 줄만). 이름 붙인 쪽(rm-doc, 여백 12mm)으로 동 페이지 여백(26mm)을 쓰지 않는다.
+     각주는 두 단, 확인값 줄은 작게. 표 글자는 rm6.css 인쇄 표 14pt(동 페이지 회의용)보다 앞서야 한다 */
+  body:is(.print-onepage, .print-frag) { page: rm-doc; }   /* 쪽 여백 12mm(@page rm-doc는 rm6.css 인쇄 블록: 같은 무게면 뒤가 이겨 동 페이지 26mm 규칙 뒤에 둔다) */
+  body.print-onepage .dg-onepage :is(table, table *) { font-size: 9pt !important; }
+  body.print-onepage .dg-onepage { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 6mm; }
+  body.print-onepage .dg-onepage > * { grid-column: 1 / -1; min-width: 0; }
+  body.print-onepage .dg-onepage > .dg-small:not([data-input-hash]) { grid-column: auto; font-size: 7pt; line-height: 1.35; }
+  body.print-onepage .dg-onepage .dg-p { line-height: 1.4; }
+  body.print-onepage .dg-onepage .dg-title { font-size: 14pt; margin: 0 0 4pt; }
+  body.print-onepage .dg-onepage .dg-h1 { margin: 5pt 0 2pt; }
+  body.print-onepage .rp-head .rp-title { font-size: 13pt; margin: 0 0 4pt; }
+  body.print-onepage .rp-head .rp-lead { display: none; }   /* 화면 머리 한 줄은 문서 '1. 요약' 첫 문장과 같다(종이에는 한 번) */
+  body.print-onepage .dg-onepage > [data-input-hash] { margin-top: 2pt; font-size: 6.5pt; line-height: 1.3; overflow-wrap: anywhere; }
+  /* r16 M33: '4-1 표만 인쇄'(body.print-frag — 인쇄 앞뒤로 붙였다 떼는 쪽은 map.js printFrag)는 4-1 표 초안만(근거서 전체 23쪽이 나왔다).
+     map.js가 조각을 .dg-doc 틀에 옮겨 담아 인쇄해도, 옮기지 않아도 같은 결과: 문서 머리·조각·고지 줄(.rp-foot)만 남긴다 */
+  body.print-frag .rp-frag { display: block !important; break-inside: auto; border: 0; padding: 0; }   /* .rp-g의 쪼개지 않기 때문에 첫 쪽에 머리만 남고 표가 다음 쪽으로 밀렸다 */
+  body.print-frag #reportApp > :not(.rp-head, .rp-frag, .rp-foot, .dg-doc), body.print-frag .workspace-panel .section-head, body.print-frag .rp-frag .rp-frag-ctl, body:is(.print-onepage, .print-frag) #reportApp :is(button, .btn) { display: none !important; }
+  body.print-frag .dg-frag :is(table, table *) { font-size: 9.5pt !important; }
+  /* 종이 폭(A4 약 700px)이 휴대폰 폭 규칙(≤720px, rm6.css 카드형 표)에 걸려 표가 카드로 쌓였다 → 인쇄에서는 표 그대로 */
+  body:is(.print-onepage, .print-frag) :is(.dg-onepage, .dg-frag) table.rm-stack { display: table; width: 100%; }
+  body:is(.print-onepage, .print-frag) :is(.dg-onepage, .dg-frag) table.rm-stack thead { display: table-header-group; }
+  body:is(.print-onepage, .print-frag) :is(.dg-onepage, .dg-frag) table.rm-stack tbody { display: table-row-group; }
+  body:is(.print-onepage, .print-frag) :is(.dg-onepage, .dg-frag) table.rm-stack tr { display: table-row; padding: 0; }
+  body:is(.print-onepage, .print-frag) :is(.dg-onepage, .dg-frag) table.rm-stack td { display: table-cell; padding: 1.5pt 4pt; border: 0.5pt solid var(--print-ink); }
+  body:is(.print-onepage, .print-frag) :is(.dg-onepage, .dg-frag) table.rm-stack td::before { content: none; }
 }
 /* 2026-11-12: 지도 아래 자료 기준 한 줄(explore.html [data-basis]). 비어 있으면 자리도 차지하지 않게 숨긴다 */
 .hero-basis { margin: 6px 0 0; font-size: var(--t-cap); color: var(--dim); }
@@ -602,6 +627,8 @@ body.explore-page #heroSearch .hero-search-note, body.explore-page #heroSearch .
 #mapApp .mp-info > summary small { font-weight: 400; color: var(--dim); }
 #mapApp .mp-foot { margin-top: 12px; }
 #mapApp .mp-go { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; box-sizing: border-box; min-height: 48px; }
+#mapApp .mp-foot-more { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0 6px; margin: 4px 0 0; font-size: var(--t-sub); color: var(--dim); }   /* 주 단추 아래 글 링크 한 줄(map.js). p 기본 여백 17px이 꼬리를 키웠다 */
+#mapApp .mp-foot-more a { display: inline-flex; align-items: center; min-height: 44px; }
 #mapApp .map-intro > summary { font-size: 15px; }
 
 @media (min-width: 1024px) {
@@ -610,17 +637,27 @@ body.explore-page #heroSearch .hero-search-note, body.explore-page #heroSearch .
   body.mx-on #mapApp .mx { grid-template-columns: 360px minmax(0, 1fr); }
   /* position: relative — 화면 낭독기용으로 숨긴 글(position: absolute)이 스크롤 칸 밖 문서 높이를 늘리지 않게 칸 안에 가둔다 */
   body.mx-on #mapApp .mx-side, body.mx-on #mapApp .mx-scroll, body.mx-on #mapApp .mx-foot { position: relative; }
-  body.mx-on #mapApp .mx-side { overflow: hidden; gap: 0; padding: 0; }
-  body.mx-on #mapApp .mx-head { flex: none; display: flex; flex-direction: column; gap: 2px; padding: 12px 16px 2px; }
-  body.mx-on #mapApp .mx-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
-  body.mx-on #mapApp .mx-foot { flex: none; max-height: 55%; overflow-y: auto; overscroll-behavior: contain; padding: 0 16px 6px; }
+  /* r16 M6: 패널 전체가 한 스크롤. 위(검색·위치 줄)는 붙어 있고, 출처·도구·링크 줄은 목록 끝에 이어진다.
+     고정 꼬리(약 150px)와 두 줄 칩·세 줄 요약이 목록을 첫 화면 밖으로 밀어 1440×900에서 목록이 0~1.5줄만 보였다 */
+  body.mx-on #mapApp .mx-side { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; gap: 0; padding: 0; }
+  body.mx-on #mapApp .mx-head { position: sticky; top: 0; z-index: 3; flex: none; display: flex; flex-direction: column; gap: 2px; padding: 12px 16px 2px; background: var(--card); border-bottom: 1px solid var(--line); }
+  body.mx-on #mapApp .mx-scroll { flex: none; display: flex; flex-direction: column; gap: 10px; padding: 10px 16px 12px; }
+  body.mx-on #mapApp .mx-foot { flex: none; margin-top: auto; padding: 0 16px 6px; }   /* 목록이 짧으면 패널 바닥에, 길면 목록 뒤에 */
   body.mx-on #mapApp .mx-head > *, body.mx-on #mapApp .mx-scroll > *, body.mx-on #mapApp .mx-foot > * { flex: none; margin: 0; }   /* 넘칠 때 줄어들어 겹치지 않게(스크롤로 넘긴다) */
   body.mx-on #mapApp .mx-head .hero-head { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   body.mx-on #mapApp .mx-head .hero-search-note { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* 입력 칸 설명(aria-describedby)은 낭독기에 남긴다 */
   body.mx-on #mapApp .mx-head .hero-regions { margin: 2px 0 0; }
   body.mx-on #mapApp .mx-head .map-crumbs { margin: 0; justify-content: flex-start; gap: 4px 10px; }
-  body.mx-on #mapApp .map-top { display: flex; flex-direction: column; gap: 10px; padding: 0; border: 0; }
+  body.mx-on #mapApp .map-top { display: flex; flex-direction: column; gap: 8px; padding: 0; border: 0; }
+  /* 지표 칩은 휴대폰과 같이 줄바꿈(r16): 한 줄 가로 스크롤은 367px 칸에 599px을 담아 칩 이름이 잘리고 넷 중 둘이 스크롤 뒤에 숨었다. 칩 하나는 한 줄 */
   body.mx-on #mapApp .map-top .map-inds { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; overflow: visible; }
+  body.mx-on #mapApp .map-top .map-inds .dash-chip { flex: none; white-space: nowrap; }
+  /* 현황 한 줄: 큰 숫자 22px·세 줄이던 상자를 14px 두 줄로 */
+  body.mx-on #mapApp #heroLive { padding: 6px 10px; font-size: var(--t-cap); line-height: 1.45; }
+  body.mx-on #mapApp #heroLive .hl-n b { font-size: 17px; }
+  body.mx-on #mapApp #heroLive .hl-n b.hl-y, body.mx-on #mapApp #heroLive small { font-size: var(--t-cap); }
+  body.mx-on #mapApp .map-dongs .ma-h { margin: 0; font-size: 16px; }
+  body.mx-on #mapApp .map-dongs > .map-guide { margin: 0; font-size: var(--t-cap); line-height: 1.45; }
   body.mx-on #mapApp .map-bottom { display: block; margin: 0; padding: 0; border: 0; }
   body.mx-on #mapApp .mx-links { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; margin: 0; padding: 2px 0 0; font-size: var(--t-cap); color: var(--dim); border-top: 1px solid var(--line); }
   body.mx-on #mapApp .mx-links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--dim); }
@@ -683,4 +720,11 @@ body.explore-page #heroSearch .hero-search-note, body.explore-page #heroSearch .
   body.explore-page #mapApp > #heroLive .hl-n b.hl-y { font-size: 15px; }
   .explore-page #mapApp .map-prov { margin-top: 12px; }
   .explore-page #mapApp .mp-foot { padding-top: 12px; border-top: 1px solid var(--line); }
+}
+/* r16 M9: 휴대폰에서 동을 고르면 주 단추가 두 화면 아래(390×844에서 y=1014)에 있었다 → 카드 꼬리만 아래 탭 바로 위에 붙인다.
+   카드 안에서만 붙고 카드가 화면을 벗어나면 함께 올라간다(새 화면 막대가 아니다). 카드가 스크롤 칸이면 붙지 않아 overflow를 푼다 */
+@media (max-width: 959px) {
+  .explore-page .workspace-panel #mapApp .map-panel, .explore-page .workspace-panel #mapApp .map-panel.is-sheet { overflow: visible; }
+  html:has(body.explore-page.sheet-open) { scroll-padding-bottom: calc(190px + env(safe-area-inset-bottom)); }   /* 카드 안 초점이 붙은 꼬리(약 105px)·아래 탭 뒤로 숨지 않게(WCAG 2.4.11) */
+  .explore-page #mapApp .mp-foot { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 4; margin: 12px -18px -20px; padding: 8px 18px 4px; background: var(--card); border-radius: 0 0 12px 12px; box-shadow: 0 -6px 16px var(--shade-16); }
 }

@@ -15,6 +15,11 @@
     for (const id of ["views", "loading"]) { const el = $(id); if (el) el.hidden = true; }
     return say("브이월드 3D 지도를 불러오지 못했습니다.\n이 주소에서는 쓸 수 없거나 인터넷 연결이 끊겼습니다.\n공개 사이트에서 다시 열어 주세요.", true);
   }
+  // 브이월드 기본 도구막대는 onclick 속성 15개라 이 화면 CSP에 막혀 눌러도 동작하지 않고 콘솔 오류를 냈다(감사 hunter-content).
+  // CSP를 풀지 않고 막대를 만들지 않는다. 확대·축소는 위 단추(city3d-controls.js), 나머지는 마우스·손가락으로 한다. SDK가 바뀌어 이 자리가 없으면 twin.css가 막대를 가린다
+  if (vw.NavigationZoom && vw.NavigationZoom.prototype && typeof vw.NavigationZoom.prototype.init === "function") {
+    vw.NavigationZoom.prototype.init = function () { this.naviTopPannel = document.createElement("div"); this.naviBottomPannel = document.createElement("div"); };
+  }
   const map = new vw.Map();
   map.setOption({
     mapId: "vmap",
@@ -48,7 +53,8 @@
       setTimeout(() => off && off(), 8000);
       window.City3dControls.attach(v, C, at, document);
       if (load) load.ready();
-      say("국토교통부 브이월드 3D 건물입니다.\n마우스로 끌어 옮기고 휠로 확대·축소합니다. 위 단추로 조감도·위에서·가까이·한 바퀴 돌기를 고를 수 있습니다.");
+      const touch = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+      say(`국토교통부 브이월드 3D 건물입니다.\n${touch ? "한 손가락으로 옮기고 두 손가락으로 확대·회전합니다." : "마우스로 끌어 옮기고 휠로 확대·축소합니다."} 위 단추로 조감도·위에서·가까이·한 바퀴 돌기·확대·축소를 고를 수 있습니다.`);
     }, 0);
   };
   map.start();

@@ -64,6 +64,14 @@
       }));
     }
     if (orbitBtn) orbitBtn.addEventListener("click", () => (orbit ? stopOrbit() : startOrbit()));
+    // 확대·축소(브이월드 기본 막대 대신, city3d.js 주석). 지금 높이의 40%씩 보는 방향으로 움직인다(높은 곳에서는 크게, 가까이서는 작게)
+    const zoom = (dir) => {
+      stopOrbit();
+      const h = (v.camera.positionCartographic && v.camera.positionCartographic.height) || 500, step = Math.max(20, h * 0.4);
+      if (dir > 0) v.camera.zoomIn(step); else v.camera.zoomOut(step);
+      v.scene.requestRender();
+    };
+    [["zoomIn", 1], ["zoomOut", -1]].forEach(([id, dir]) => { const b = $(id); if (b) b.addEventListener("click", () => zoom(dir)); });
     // 사용자가 지도를 직접 움직이면 돌기를 멈춘다(돌기와 마우스 조작이 서로 카메라를 빼앗지 않게)
     ["pointerdown", "wheel", "touchstart"].forEach((ev) => v.scene.canvas.addEventListener(ev, stopOrbit, { passive: true }));
 

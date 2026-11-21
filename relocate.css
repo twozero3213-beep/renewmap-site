@@ -51,6 +51,9 @@
 .relocate-score span { font-size: 15px; margin-left: 4px; }
 .relocate-distance { margin: 6px 0 0; font-size: 15px; line-height: 1.45; }
 .relocate-distance b { white-space: nowrap; }
+/* 2026-11-21 출퇴근 대략 시간(참고, 점수 미반영) — 직선거리 줄 바로 아래 같은 크기 */
+.relocate-transit { margin: 2px 0 0; font-size: 15px; line-height: 1.45; }
+.relocate-transit b { white-space: nowrap; }
 .relocate-flag { margin: 6px 0 0; font-size: 13px; font-weight: 600; color: var(--ink); }
 #resultShares:empty { display: none; }
 /* 이름표 열을 따로 두어 줄이 넘어가도 항목 글자가 이름표 아래로 파고들지 않게 한다. */
@@ -75,6 +78,13 @@
 .relocate-evidence dt span, .relocate-evidence dd > small { display: block; font-size: 13px; color: var(--dim); font-weight: 400; }
 .relocate-evidence dd { margin: 8px 0 0; font-size: 15px; }
 .relocate-evidence dd p { margin: 8px 0; font-size: 13px; color: var(--dim); }
+/* 2026-11-21 주거 지원 제도 표 — 좁은 화면에서는 표만 가로로 넘긴다(페이지 가로 넘침 없음) */
+.relocate-support { border-top: 1px solid var(--line); margin-top: 48px; padding: 28px 0 0; }
+.relocate-support-scroll { overflow-x: auto; }
+.relocate-support-table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+.relocate-support-table th, .relocate-support-table td { text-align: left; vertical-align: top; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+.relocate-support-table thead th { font-size: 13px; color: var(--muted, inherit); }
+.relocate-support-table small { display: block; margin-top: 4px; }
 .relocate-method { border-top: 1px solid var(--line); margin-top: 56px; padding: 32px 0 8px; }
 .relocate-method p, .relocate-method-key { max-width: 880px; font-size: 15px; }
 .relocate-method-key { margin: 0; padding-left: 20px; }
@@ -115,6 +125,8 @@
   body.relocate-page > :not(.relocate-print) { display: none !important; }
   body.relocate-page::before, body.relocate-page::after { display: none !important; }
   body.relocate-page .relocate-print { display: block !important; page: relocateSummary; padding: 0; margin: 0; color: #17191c; word-break: keep-all; overflow-wrap: anywhere; }
+  /* 비교 전에 Ctrl+P·공유→인쇄를 하면 빈 A4 한 장이 나왔다(r16) */
+  body.relocate-page .relocate-print:empty::before { content: '먼저 동네 비교를 실행해 주세요.'; font-size: 12pt; }
   body.relocate-page .relocate-print h1 { font-size: 16pt !important; margin: 0 0 3mm !important; }
   body.relocate-page .relocate-print h2 { font-size: 10pt !important; margin: 0 0 2mm !important; }
   .relocate-print p { margin: 2mm 0; font-size: 7.5pt; }

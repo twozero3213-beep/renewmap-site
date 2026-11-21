@@ -21,6 +21,8 @@
     const legacy = panelFromHash(hash), params = new URLSearchParams(search || '');
     if (legacy !== 'map') return legacy;
     if (!params.has('panel') && reportKeys().includes(params.get('report')) && /^#map\/\d{2}\/\d{5}(?:\/\d{5})?\/\d{8}$/.test(hash || '')) return 'evidence';
+    // r16 M17: 재생 사업 화면의 구 단위 찾기(?report=programs#map/시도/시군구)는 그 구의 동별 사업 요건 대조표를 연다(전에는 지도에 머물렀다)
+    if (!params.has('panel') && params.get('report') === 'programs' && /^#map\/\d{2}\/\d{5}(?:\/\d{5})?$/.test(hash || '')) return 'evidence';
     return normalizePanel(params.get('panel'));
   }
   function panelURL(href, panel, mapHash, reportMode) {
@@ -43,17 +45,17 @@
     toc.className = 'ws-toc'; toc.setAttribute('aria-label', '문서 주제 목차'); toc.hidden = true;
     tocTitle.className = 'ws-toc-title'; tocTitle.textContent = '문서 주제';
     toc.append(tocTitle, tocList); pager.before(toc);   // 읽는 순서: 제목 → 목차 → 본문(넓은 화면 자리는 CSS 격자가 정한다)
-    let parts = [], page = 0, fragWanted = new URLSearchParams(location.search).get('frag');
+    let parts = [], page = 0, fragWanted = new URLSearchParams(location.search).get('frag'), picked = false;   // picked: 사람이 주제를 고른 적이 있다
     const seen = new Set();
     function show(index, focus) {
-      if (focus) fragWanted = null;   // 사람이 주제를 고르면 주소의 조각으로 다시 끌고 가지 않는다
+      if (focus) { fragWanted = null; picked = true; }   // 사람이 주제를 고르면 주소의 조각으로 다시 끌고 가지 않는다
       page = Math.max(0, Math.min(index, parts.length - 1));
       seen.add(page);
       parts.forEach((part, i) => part.classList.toggle('workspace-report-hidden', parts.length > 1 && i !== page));
       select.value = String(page);
       previous.disabled = page === 0;
       next.disabled = page >= parts.length - 1;
-      position.textContent = parts.length ? `${page + 1} / ${parts.length}` : '';
+      position.textContent = parts.length ? `주제 ${page + 1}/${parts.length}` : '';
       [...tocList.children].forEach((item, i) => {
         const button = item.firstElementChild;
         if (i === page) button.setAttribute('aria-current', 'true'); else button.removeAttribute('aria-current');
@@ -90,9 +92,13 @@
       toc.hidden = parts.length < 2;
       const remembered = [...select.options].findIndex(option => option.textContent === label);
       const firstFacts = parts.findIndex(part => !part.matches('.rp-snap, .rp-frag, .rp-src, .rp-ai'));
-      const fragAt = fragTopicIndex(parts, fragWanted);
-      if (fragAt >= 0) fragWanted = null;
-      show(fragAt >= 0 ? fragAt : remembered >= 0 ? remembered : Math.max(0, firstFacts), false);
+      // r16: 지도 서랍의 '4-1 표 초안 보기'는 주소를 바꾸지 않고 map.js가 report.dataset.fragWant에 적는다(주소의 ?frag=와 같은 일)
+      const fragAt = fragTopicIndex(parts, fragWanted || report.dataset.fragWant || null);
+      if (fragAt >= 0) { fragWanted = null; delete report.dataset.fragWant; }
+      // r16: 4-1 표·근거서를 열면 처음 주제는 4-1 표 초안(근거서 첫 장 '1. 현황'이 먼저 보여 표를 찾아 넘겨야 했다)
+      const first41 = fragTopicIndex(parts, 'MLIT-DECLINE');
+      // (4-1 표 칸은 문서 도구가 온 뒤에 생겨, 그 전에 연 첫 주제를 기억으로 붙잡지 않게 사람이 고르기 전까지는 4-1 표가 먼저)
+      show(fragAt >= 0 ? fragAt : !picked && first41 >= 0 ? first41 : remembered >= 0 ? remembered : Math.max(0, firstFacts), false);
     }
     previous.addEventListener('click', () => show(page - 1, true));
     next.addEventListener('click', () => show(page + 1, true));
@@ -153,7 +159,7 @@
     syncStates();
     function show(name, focusTab) {
       active = normalizePanel(name);
-      if (active === 'filters' && !window.RenewFind) import('./find.js?v=20261119-r3').catch(() => {
+      if (active === 'filters' && !window.RenewFind) import('./find.js?v=20261121-r16').catch(() => {
         const slot = document.getElementById('findApp'); slot.setAttribute('role', 'alert');
         slot.textContent = '조건 도구를 불러오지 못했습니다. 새로고침한 뒤 다시 열어 주세요.';
       });

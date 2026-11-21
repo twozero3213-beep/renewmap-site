@@ -40,7 +40,9 @@
 
   // 재생 필요 점수의 재료(scores.json renewal_parts, 지표별 백분위). 재생 순위에서는 이 넷을 세부 열로 보인다(v9: 1위인 이유가 표에 없었다)
   // 2026-11-19: 머리는 두 줄 이하(머리 114px였다). 인구 변화율 설명은 열 이름 대신 표 아래 ※ 한 줄로
-  const RENEWAL_COLS = [['DECLINE_AGING_20Y_PCT', '20년 넘은 건물'], ['DECLINE_POP_CHANGE_PCT', '인구 변화율※'], ['DECLINE_BIZ_DROP10Y_PCT', '사업체 감소'], ['POP_AGED65_PCT', '고령 인구']];
+  // r16: 세부 열 값은 % 값이 아니라 전국 백분위다. 머리에 적지 않아 '98.5'를 98.5%로 읽었다(동 쪽 실제 비율과 모순처럼 보임) → 열 이름에 단위
+  const RENEWAL_COLS = [['DECLINE_AGING_20Y_PCT', '20년 이상 건축물(전국 백분위)'], ['DECLINE_POP_CHANGE_PCT', '인구 변화율※(전국 백분위)'], ['DECLINE_BIZ_DROP10Y_PCT', '사업체 감소(전국 백분위)'], ['POP_AGED65_PCT', '고령 인구(전국 백분위)']];
+  const RANGE_TIP = '지표 무게만 바꿔 다시 센 범위입니다. 다른 불확실성까지 넣으면 더 넓을 수 있습니다.';
   // C12(2026-11-20): 인구 변화율(전년 대비 1년 값)이 들어가는 점수. 재생 필요 표에만 있던 ※ 주의를 동네 종합·인구 활력 표에도 보인다
   const POP_KINDS = ['total', 'vitality', 'renewal'];
   const POP_NOTE = '※ 인구 변화율은 전년 대비(1년) 값이라 재건축 이주·입주 해에 크게 흔들립니다.';
@@ -55,11 +57,13 @@
     const SUB = [['living', '생활 편의'], ['vitality', '인구 활력'], ['housing', '주거 노후도'], ['safety', '치안']].filter(([k]) => k !== kind);
     const cols = renew ? RENEWAL_COLS.map(([, l]) => `<th scope="col">${esc(l)}</th>`).join('')
       : SUB.map(([, l]) => `<th scope="col">${l}</th>`).join('') + '<th scope="col">범죄 발생률</th>';
-    const unit = (renew ? '세부 열은 전국 백분위이고 클수록 쇠퇴 신호가 강합니다.' : '주거 노후도는 점수가 낮을수록 낡았고, 범죄 발생률은 시·군·구 값(주민 1,000명당)입니다.')
+    // 세부 열 단위·방향은 표 위 한 줄(#rankUnit, rank.html)에 두고 캡션에는 되풀이하지 않는다
+    const unit = (renew ? '' : '주거 노후도는 점수가 낮을수록 낡았고, 범죄 발생률은 시·군·구 값(주민 1,000명당)입니다.')
       + (POP_KINDS.includes(kind) ? ` ${POP_NOTE}` : '');
     // '낮은 점수부터 보기'는 점수 열 머리의 정렬 단추(rank.js init이 #rankAsc와 같이 바꾼다). rankAt이 있으면 낮은 점수부터 그린 표다
     const sort = kind === 'safety' ? '<th scope="col" class="rank-score" aria-sort="descending">범죄 통계·안전시설 점수</th>' : `<th scope="col" class="rank-score" aria-sort="${rankAt ? 'ascending' : 'descending'}"><button type="button" class="rank-sort" data-rank-sort>${esc(KINDS[kind].label.replace(/\(.*\)$/, ''))}<span aria-hidden="true"> ${rankAt ? '↑' : '↓'}</span><span class="sr-only">, ${rankAt ? '낮은' : '높은'} 점수부터. 눌러서 순서 바꾸기</span></button></th>`;
-    const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th>${sort}<th scope="col">순위 범위</th>${cols}</tr></thead>`;
+    // 순위 범위 ⓘ: 마우스 없이도 누르면 접힌 '읽는 법'(#rankMethods)이 열린다(init의 클릭 처리)
+    const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th>${sort}<th scope="col">순위 범위<a class="rank-tip" href="#rankMethods" title="${RANGE_TIP}"><span aria-hidden="true"> ⓘ</span><span class="sr-only">순위 범위 읽는 법: ${RANGE_TIP}</span></a></th>${cols}</tr></thead>`;
     const body = list.slice(0, limit).map((r, i) => {
       const s = r.d.sub, sp = r.d.safety_parts || {}, rp = r.d.renewal_parts || {};
       return `<tr${r.code7 === found ? ' class="is-found" id="rankFoundRow"' : ''}><td class="num">${rankAt ? rankAt(offset + i) : offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a>${popMark(r, kind)}</td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
@@ -108,8 +112,9 @@
         ascBox.disabled = safety;
         if (safety) ascBox.checked = false;
       }
-      const safetyNote = $('rankSafetyNote');
+      const safetyNote = $('rankSafetyNote'), unitNote = $('rankUnit');
       if (safetyNote) safetyNote.hidden = !safety;
+      if (unitNote) unitNote.hidden = kindSel.value !== 'renewal';   // 세부 열이 백분위인 표는 재생 필요 점수뿐
       const scope = sgSel.value || sidoSel.value || 'all';
       const { list, rankAt } = ordered(rows(scores, kindSel.value, scope));
       const page = pager.slice(list), offset = page.length ? list.indexOf(page[0]) : 0, rk = j => (rankAt ? rankAt(j) : j + 1).toLocaleString('ko-KR');
@@ -169,24 +174,28 @@
         const findForm = $('rankFind'), foundMsg = $('rankFound');   // 찾기 칸이 없는 화면(시험용 가짜 화면 포함)에서도 표는 그린다
         const reset = () => { pager.reset(); found = null; if (foundMsg) foundMsg.textContent = ''; draw(); };
         if (findForm) $('rankNames').innerHTML = Object.values(s.dongs).map(d => `<option value="${esc(d.name)}">`).filter((v, n, a) => a.indexOf(v) === n).join('');
-        if (findForm) findForm.addEventListener('submit', e => {
-          e.preventDefault();
+        const find = e => {
+          if (e) e.preventDefault();
           const { list, rankAt } = ordered(rows(scores, kindSel.value, sgSel.value || sidoSel.value || 'all')), q = $('rankQ').value, at = findRank(list, names, q, r => [sgName(r.d.code5), (idx.sido.find(x => x.code2 === String(r.code7).slice(0, 2)) || {}).name]);   // '부산 우동'처럼 시·도를 붙여 적어도(교차 검토)
-          if (at < 0) { found = null; foundMsg.textContent = `찾지 못했습니다. 동 이름이나 구 이름으로 다시 찾아 보세요. 시·도를 '전국'으로 바꾸면 전국에서 찾습니다.`; draw(); return; }
+          // DESIGN.md 4.7 결과 없음 + rank 예외 한 문장(이미 전국이면 붙이지 않는다)
+          if (at < 0) { found = null; foundMsg.textContent = `찾지 못했습니다. 동 이름이나 구 이름으로 다시 찾아 보세요.${sidoSel.value ? ' 전국으로 바꾸면 더 찾을 수 있습니다.' : ''}`; draw(); return; }
           found = list[at].code7; pager.goTo(Math.floor(at / 20) + 1); draw();
           // 순위(여러 지표를 합친 점수)와 쇠퇴 3요건 해당 수는 다른 잣대다. 둘이 엇갈려 보여도 모순이 아니라고 같은 자리에서 밝힌다(v9: 홈 '2개 해당'과 '178위'가 모순으로 읽혔다)
           // 2026-11-13 우지예: '점수는 여러 지표를 합친 비교값이라…' 문장이 무슨 뜻인지 어렵다는 지적 → 순위 한 문장, 왜 신청요건과 다른지 한 문장, 어디서 보는지 한 문장으로 풀어 씀
           // 첫 문장만 굵게: CSS ::first-line은 화면의 첫 줄에만 걸려 휴대폰에서 문장 중간에 끊겼다(#87 검토) → <b>와 글 마디로 나눈다
           const nm = names(list[at]), b = document.createElement('b');
           b.textContent = `${nm}${josa(nm)} ${list.length.toLocaleString('ko-KR')}개 동 중 ${(rankAt ? rankAt(at) : at + 1).toLocaleString('ko-KR')}위입니다(${KINDS[kindSel.value].label} ${fmt(list[at].score)}점).`;
-          foundMsg.replaceChildren(b, document.createElement('br'), '이 순위는 여러 지표를 합친 점수로 줄 세운 것이라, 공모 신청요건(쇠퇴 3요건)을 몇 개 채우는지와는 다른 기준입니다. 신청요건은 표에서 동 이름을 눌러 확인하세요.');
+          foundMsg.replaceChildren(b, document.createElement('br'), '이 순위는 여러 지표를 합친 점수로 줄 세운 것이라, 공모 신청요건(쇠퇴 3요건) 중 기준 해당 요건 수와는 다른 기준입니다. 신청요건은 표에서 동 이름을 눌러 확인하세요.');
           const tr = document.getElementById('rankFoundRow'); if (tr) tr.scrollIntoView({ block: 'center' });
-        });
+        };
+        if (findForm) findForm.addEventListener('submit', find);
         kindSel.onchange = () => { if (ascBox) ascBox.checked = kindSel.value === 'housing'; reset(); };
         sgSel.onchange = reset;
         if (ascBox) ascBox.onchange = reset;
         sidoSel.onchange = () => { fillSg(); reset(); };
-        draw();
+        // M18: 스크립트가 늦게 실려 찾기 칸이 기본 폼 전송(?q=)으로 다시 열렸으면 그 검색을 이어 간다(입력이 비고 결과도 없었다)
+        const q0 = findForm && q.get('q');
+        if (q0) { $('rankQ').value = q0; find(); } else draw();
         loadRange().then(g => { range = g; draw(); });
       })
       .catch(() => { msg.textContent = '점수 자료를 불러오지 못했습니다. 새로고침해 주세요.'; });
