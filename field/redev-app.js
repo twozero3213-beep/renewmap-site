@@ -394,7 +394,7 @@
     const parcel = await parcelText(p.items, m.buildings, areaM2);
     if (request !== calculation) return;
     const res = R.review(m.buildings, { ref: refIn || file.age_reference_date, district: $("district").checked, areaM2, areaDrawn: $("area").dataset.src === "drawn", parcel });
-    last = { res, m, file };
+    last = { res, m, file, bad: p.bad, unresolved: [] };
     const skipped = [...(p.bad.length ? [`주소로 읽지 못한 칸 ${n0(p.bad.length)}개`] : []), ...(m.missing.length ? [`대장에 없는 주소 ${n0(m.missing.length)}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})`] : []),
       ...(m.otherDong.length ? [`계산에 넣지 못한 다른 동 주소 ${n0(m.otherDong.length)}개(같은 구·군 법정동 이름이 아니거나 ${R.MERGE_MAX}개 동을 넘음: ${m.otherDong.slice(0, 3).join(", ")}${m.otherDong.length > 3 ? " 등" : ""})`] : [])];
     say(skipped.length ? `제외: ${skipped.join(" · ")}` : "");
@@ -584,7 +584,10 @@
     window.addEventListener("afterprint", () => { document.body.classList.remove("printing"); box.textContent = ""; }, { once: true });
     window.print();
   });
-  $("csv").addEventListener("click", () => D.saveBytes(fileName("csv"), R.toCSV(last.res, last.file, opt()), "text/csv;charset=utf-8"));
+  // 채운 단추는 화면 건물별 표와 같은 칸(btableCSV). 재개발 노후·불량 판단 CSV는 '그 밖의 파일 받기' 안
+  $("csv").addEventListener("click", () => D.saveBytes(`${opt().secret ? "대외비_" : ""}${last.file.name}_건물별표_${today()}.csv`,
+    R.btableCSV(last.res, last.file, last.m, { bad: last.bad, unresolved: last.unresolved, ...opt() }), "text/csv;charset=utf-8"));
+  $("redevCsv").addEventListener("click", () => D.saveBytes(fileName("csv"), R.toCSV(last.res, last.file, opt()), "text/csv;charset=utf-8"));
   $("sample").addEventListener("click", () => D.saveBytes(fileName("csv").replace("_사전검토_", "_수기대조표본_"), R.sampleCSV(last.res, last.file, opt()), "text/csv;charset=utf-8"));
   // 현장 앱(sw.js)이 이 쪽도 맡는다. 새 판이 자리를 잡으면 옛 계산 파일로 문서를 받지 않게 새로고침을 알린다
   document.addEventListener('renewmap-field-updated', () => {

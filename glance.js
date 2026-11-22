@@ -9,6 +9,7 @@
   const LAYOUT = [['23', '11', '31', '32'], ['34', '29', '33', '37'], ['35', '25', '22', '26'], ['24', '36', '38', '21'], ['39']];
   const TITLE = '전국 동네 3곳 중 2곳은 인구가 줄고, 건물 절반이 20년을 넘었습니다';
   const MET_IND = 'DECLINE_MET_COUNT';   // map.js INDICATORS의 '기준을 넘은 수(확실한 것만)'
+  const AGING_IND = 'DECLINE_AGING_20Y_PCT';   // map.js INDICATORS의 '20년 이상 건축물 비율'(기준선 50%)
   const n = v => v.toLocaleString('ko-KR');
   const pct = (a, b) => Math.round(a / b * 1000) / 10;
   const bar = (w, note) => `<span class="rm-glance-bar${note ? ' is-note' : ''}" aria-hidden="true"><i data-w="${w}"></i></span>`;
@@ -29,13 +30,19 @@
         + `<span>${n(s.met2)}/${n(s.dongs)}</span>${bar(pct(s.met2, s.dongs))}</li>`).join('');
     const gap = d.dongs - d.pickable;
     const src = (d.sources || []).map(s => `<li>${esc(s.name)} · ${esc(s.base_year)}년 자료 · ${s.retrieved_at ? '조회 ' + esc(s.retrieved_at) : '조회일 기록 없음'}</li>`).join('');
+    // r24(14 토스증권 REA): 지수 카드처럼 '이름 · 큰 숫자 · 분모 · 막대 · 왜?' 한 덩어리를 카드 셋으로. 카드 하나 = 링크 하나.
+    // 주의 숫자(인구 30년 비교 끊김·사업체 추가확인)는 아래 '이 숫자는 어디서 왔나요?'에 그대로 둔다
+    const card = (href, k, big, of, w, why) => `<li><a class="rm-kpi" href="${href}"><span class="rm-kpi-k">${k}</span>`
+      + `<span class="rm-kpi-n"><b>${big}</b> / ${of}</span>${bar(w)}${why ? `<span class="rm-kpi-why"><b>왜 2가지?</b> ${why}</span>` : ''}</a></li>`;
     return `<h2>${TITLE}</h2>`
-      + `<p class="rm-glance-num"><b>${n(d.met2)}곳</b> / ${n(d.dongs)}곳</p>${bar(pct(d.met2, d.dongs))}`
+      + '<ul class="rm-kpis" tabindex="0" aria-label="전국 동네 숫자 카드">'
+      + card(`explore.html?ind=${MET_IND}#map`, '쇠퇴 세 기준 중 2가지 이상 넘은 동', `${n(d.met2)}곳`, `${n(d.dongs)}곳`, pct(d.met2, d.dongs),
+        '도시재생 지역 지정 조건이 세 기준 중 2가지 이상이라 그 수를 셉니다.')
+      + card(`explore.html?ind=${AGING_IND}#map`, '20년 넘은 건물이 절반 이상인 동', `${n(d.aging50)}곳`, `${n(d.dongs)}곳`, pct(d.aging50, d.dongs), '')
+      // r24b: 이 카드는 첫 카드(대상지 근거표)와 같은 곳이라 링크를 달지 않는다(09 8절 첫 화면 조작 요소 12개)
+      + '<li><div class="rm-kpi is-cover"><span class="rm-kpi-k">건물별 계산이 되는 곳 · 부산</span><span class="rm-kpi-n"><b>254개 법정동</b></span>'
+      + '<img src="img/v8/home-coverage.svg" width="300" height="318" alt="대한민국 시·도 지도에서 부산광역시만 색칠한 그림" loading="lazy"></div></li></ul>'
       + `<p class="rm-glance-tail">참고용 계산 · 확실한 것만 센 수(${bizAll ? '사업체 기준은' : '추가확인인 기준은'} 세지 않음) · 도시재생 지역 지정 판단이 아닙니다 · ${d.base_year}년 자료</p>`
-      + '<ul class="rm-glance-bars">'
-      + `<li><span>20년 넘은 건물이 절반 이상 <b>${n(d.aging50)}곳</b></span>${bar(pct(d.aging50, d.dongs))}</li>`
-      + `<li><span>인구 30년 비교가 끊겨 5년 기준으로만 센 곳 <b>${n(d.pop30_check)}곳</b></span>${bar(pct(d.pop30_check, d.dongs), true)}</li>`
-      + `<li><span>사업체 기준 추가확인 <b>${n(d.biz_check)}곳</b>${bizAll ? '(전국 공통)' : ''}</span>${bar(pct(d.biz_check, d.dongs), true)}</li></ul>`
       + '<details class="rm-glance-sido"><summary>시·도별로 보기</summary>'
       // 13 H2: 넘은 곳은 지도와 같다. 전체는 값 없는 셀(경계 시점 차이)도 세어(export_glance.py) 지도 '값 있는 동'보다 많은 시·도가 있다(2025년 서울·인천·경기·전북 1~4곳)
       + '<p class="rm-glance-legend">막대 길이는 기준을 함께 넘은 읍·면·동의 비율입니다. 시·도의 동은 아래 \'시·도별 동 보기\'에서 같은 셈(기준을 넘은 수)으로 봅니다. '
@@ -63,9 +70,5 @@
     // CSP style-src 'self'라 style 속성 대신 CSSOM으로 넣는다
     el.querySelectorAll('[data-w]').forEach(i => { i.style.width = i.dataset.w + '%'; });
     el.querySelectorAll('[data-r]').forEach(li => { li.style.gridRow = li.dataset.r; li.style.gridColumn = li.dataset.c; });
-    const sido = el.querySelector('.rm-glance-sido'), wide = root.matchMedia('(min-width: 721px)');
-    const sync = () => { sido.open = wide.matches; };
-    sync();
-    if (wide.addEventListener) wide.addEventListener('change', sync); else wide.addListener(sync);   // site.js와 같은 옛 Safari 처리
   });
 })(typeof window !== 'undefined' ? window : globalThis);

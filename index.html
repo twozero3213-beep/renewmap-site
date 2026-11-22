@@ -44,94 +44,100 @@ document.documentElement.classList.add('js');
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="site.webmanifest">
 <link rel="preload" as="fetch" href="data/national/dong_index.json" crossorigin="anonymous" fetchpriority="low">
-<link rel="preload" as="fetch" href="data/proof_sample.json" crossorigin="anonymous">
+<link rel="preload" as="fetch" href="data/national/glance.json" crossorigin="anonymous">
 <link rel="preload" as="font" href="fonts/pretendard-home.woff2" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="pretendard-home.css?v=20261122-r23">
+<link rel="stylesheet" href="pretendard-home.css?v=20261122-r24">
 <link rel="stylesheet" href="styles.css?v=20261122-r19">
 <link rel="stylesheet" href="site-v4.css?v=20261120-r11">
-<link rel="stylesheet" href="home6.css?v=20261122-r23">
+<link rel="stylesheet" href="home6.css?v=20261122-r24">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"WebApplication","@id":"https://twozero3213-beep.github.io/renewmap-site/#app","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","inLanguage":"ko","applicationCategory":"BusinessApplication","operatingSystem":"웹 브라우저","isAccessibleForFree":true,"description":"리뉴맵은 도시재생 근거 기록 서비스입니다. 동네 현황 조사부터 준공 뒤 재방문까지, 도시재생에 쓰는 숫자마다 출처와 기준일을 붙여 다음 담당자에게 넘깁니다.","offers":{"@type":"Offer","name":"공개 도구와 자동 문서(무료)","price":"0","priceCurrency":"KRW"},"publisher":{"@id":"https://twozero3213-beep.github.io/renewmap-site/#org"}},
 {"@type":"Organization","@id":"https://twozero3213-beep.github.io/renewmap-site/#org","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","logo":"https://twozero3213-beep.github.io/renewmap-site/icon-512.png","email":"renewmapteam@gmail.com","areaServed":"KR"}]}
 </script>
-<script src="site.js?v=20261122-r23" defer></script>
+<script src="site.js?v=20261122-r24" defer></script>
 <script src="home.js?v=20261122-r19" defer></script>
 <script src="util.js?v=20261122-r19" defer></script>
 <script src="home-proof.js?v=20261122-r23" defer></script>
-<script src="glance.js?v=20261122-r23" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261122-r23">
+<script src="glance.js?v=20261122-r24" defer></script>
+<link rel="stylesheet" href="rm6.css?v=20261122-r24">
 </head>
 <body class="app-home">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 RENEWMAP 홈" href="index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="field/redev.html">대상지 계산</a><a href="explore.html">동네 현황</a><a href="field/">현장 사진 기록</a><a href="about.html#contact">상담하기</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 RENEWMAP 홈" href="index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html#map">우리 동네</a><a href="explore.html?panel=filters">동네 골라보기</a><a href="field/redev.html">대상지 계산</a><a href="about.html#contact">상담하기</a></nav></div></header>
 
-<main id="main" class="h6">
-  <!-- r19 홈(09_총괄_설계.md 2절). 한 고객(도시재생 용역사)·한 상품(대상지 주소 목록 → 건물마다 건축물대장과 맞춘 표).
-       낱말은 3절 표, 글자·강조는 5절(전역 CSS의 .rm-mark·.tag·--t-*). 오른쪽 근거표 조각의 숫자는 home-proof.js가 data/proof_sample.json에서 읽는다 -->
-  <section class="h6-hero wrap" aria-labelledby="heroTitle">
-    <div class="h6-copy">
-      <p class="h6-kicker">도시재생 용역사 · 사업 대상지 기초조사</p>
+<main id="main" class="h6 h8">
+  <!-- r24(14_토스증권_REA_홈_대시보드_토론.md): 첫 화면은 한눈 대시보드. 동 검색 → 해 드리는 일 카드 셋(실제 화면 그림) → 전국 숫자 카드(glance.js).
+       카드 하나 = 링크 하나. 그림은 저장소의 실제 화면을 찍은 것(img/v8)이고 일러스트는 쓰지 않는다(09 5절) -->
+  <section class="h8-top wrap" aria-labelledby="heroTitle">
+    <div class="h8-head">
       <!-- 제목은 대표가 세 안 중에서 고른다(09 9절 1, 지금 ①). 바꾸라고 하면 아래 h1 한 줄만 바꾼다
            ② 통계는 동 단위, 사업은 주소 단위.   ③ 대상지 건물과 건축물대장, 손으로 맞추지 마세요 -->
       <h1 id="heroTitle">대상지 건물 <span class="rm-mark">한 채씩</span>, 건축물대장과 맞춰 드립니다</h1>
-      <p class="h6-lead">주소 목록을 붙여 넣으면 건물마다 대장을 찾아, 20년 넘은 건물 비율과 근거 표를 만듭니다. 못 찾은 주소는 까닭과 함께 따로 적습니다.</p>
-      <p class="h6-cta"><a class="btn h6-cta-main" href="field/redev.html">주소 넣고 계산해 보기</a><a class="btn ghost" href="field/redev.html?example=1" rel="nofollow">반여동 예시 결과 보기</a></p>
-      <ul class="h7-trust"><li>지금은 부산 254개 동</li><li>로그인·설치 없이 무료</li><li>건물 이름은 싣지 않습니다</li></ul>
-      <p class="h7-wide">같은 근거를 돌봄·안전시설·예산 업무에도 씁니다. <a href="#tasks">맡은 일로 찾기 →</a></p>
+      <ul class="h7-trust"><li>지금은 부산 254개 법정동</li><li>로그인·설치 없이 무료</li><li>건물 이름은 싣지 않습니다</li></ul>
     </div>
-    <figure class="h7-proof" id="proof" aria-labelledby="proofTitle" aria-busy="true"><p class="h7-proof-load" id="proofTitle">반여동 예시 결과를 불러오는 중입니다.</p></figure>
+    <!-- 동 검색은 그 동의 신청서용 동네 현황표로 간다(home.js, data-report="brief") -->
+    <form id="homeSearch" class="home-search h6-search h8-search" role="search" autocomplete="off" aria-labelledby="homeSearchK" data-report="brief">
+      <label id="homeSearchK" for="homeQ" class="h8-search-k">우리 동네 숫자 보기</label>
+      <div class="home-search-row">
+        <input id="homeQ" name="q" type="search" placeholder="동 이름 · 예: 반여1동, 홍성읍" enterkeyhint="search" aria-describedby="homeMsg">
+        <button class="btn" type="submit">찾기</button>
+      </div>
+      <ul id="homeHits" class="home-hits" aria-label="동네 검색 결과"></ul>
+      <p id="homeMsg" class="home-msg" aria-live="polite"></p>
+      <noscript><p>검색은 자바스크립트를 켜야 보입니다.<br><a href="dong/index.html">행정동 목록에서 동을 찾아 주세요.</a></p></noscript>
+    </form>
   </section>
 
-  <!-- 한눈 띠: 부품(glance.js · data/national/glance.json · rm6.css .rm-glance*)은 사이트 세션이 만든다(09 4절). 홈은 자리와 스크립트가 없을 때의 문장만 둔다 -->
+  <section class="h8-do wrap" aria-labelledby="doTitle">
+    <h2 id="doTitle">리뉴맵이 해 드리는 일</h2>
+    <ul class="h8-cards">
+      <li><a class="h8-card is-main" href="field/redev.html" aria-labelledby="doAN doAG">
+        <span class="h8-pic"><img src="img/v8/home-redev.webp" width="720" height="446" alt="반여동 주소로 실제 계산한 건물별 표. 주소, 완공된 날, 20년 넘음, 까닭 칸이 있다" fetchpriority="high"></span>
+        <span class="h8-tag">지금 됨 · 부산 254개 법정동</span>
+        <b class="h8-name" id="doAN">대상지 근거표</b>
+        <span class="h8-line" id="homeLead">주소 목록을 붙여 넣으면 건물마다 대장을 찾아, 20년 넘은 건물 비율과 근거 표를 만듭니다. 못 찾은 주소는 까닭과 함께 따로 적습니다.</span>
+        <span class="h8-go" id="doAG">주소 넣고 계산해 보기</span></a></li>
+      <li><a class="h8-card" href="explore.html?report=brief&amp;frag=MLIT-DECLINE#map/21/21090/21090700" aria-labelledby="doBN doBG">
+        <span class="h8-pic"><img src="img/v8/home-brief.webp" width="720" height="400" alt="반여1동 신청서용 동네 현황표. 양식 항목마다 값, 출처, 해당 여부 칸이 있다" loading="lazy"></span>
+        <span class="h8-tag">무료 · 전국 읍·면·동</span>
+        <b class="h8-name" id="doBN">신청서용 동네 현황표</b>
+        <span class="h8-line">동 이름을 넣으면 인구·사업체·오래된 건물 숫자마다 출처와 기준일을 붙여 줍니다. <small>공모 신청서 4-1 도시쇠퇴현황 검토 표</small></span>
+        <span class="h8-go" id="doBG">반여1동 현황표 보기</span></a></li>
+      <li><a class="h8-card" href="field/" aria-labelledby="doCN doCG">
+        <span class="h8-pic"><img src="img/v8/home-field.webp" width="720" height="462" alt="현장 사진 기록 첫 화면. 사진 찍기와 앨범에서 고르기 단추가 있다" loading="lazy"></span>
+        <span class="h8-tag">무료 · 휴대폰</span>
+        <b class="h8-name" id="doCN">현장 사진 기록</b>
+        <span class="h8-line">사진을 찍으면 위치·날짜와 그 동의 공공 통계가 함께 남고, 사진대지 한글 파일로 받습니다.</span>
+        <span class="h8-go" id="doCG">사진 찍으러 가기</span></a></li>
+    </ul>
+  </section>
+
+  <!-- 전국 숫자 카드: 부품(glance.js · data/national/glance.json · rm6.css .rm-glance·.rm-kpi*). 홈은 자리와 스크립트가 없을 때의 문장만 둔다 -->
   <div class="wrap">
   <section class="rm-glance" data-glance="national" aria-label="전국 동네 숫자">
-    <p>전국 읍·면·동의 인구와 오래된 건물 현황은 <a href="explore.html">동네 현황</a>에서 출처와 함께 봅니다.</p>
+    <p>전국 읍·면·동의 인구와 오래된 건물 현황은 <a href="explore.html">우리 동네</a>에서 출처와 함께 봅니다.</p>
   </section>
   </div>
 
-  <!-- 맡은 일로 찾기(08b 표 그대로, 이름만 쉬운 말). '지금 됨'·'준비 중'은 같은 회색 꼬리표, 차이는 낱말로만 -->
+  <!-- 맡은 일로 찾기(08b 표 그대로, 이름만 쉬운 말): 토스증권 '골라보기'처럼 그림 + 바라는 일 이름. '지금 됨'·'준비 중'은 같은 회색 꼬리표 -->
   <section id="tasks" class="h7-band wrap" aria-labelledby="tasksTitle">
     <h2 id="tasksTitle">맡은 일로 찾기</h2>
     <ul class="h7-tasks">
-      <li><a href="field/redev.html"><b>공모 대상지 기초조사</b><span class="h7-tasks-tag">지금 됨 · 부산 254개 동</span></a></li>
-      <li><a href="explore.html?report=brief"><b>결재·의회·감사에 붙일 근거</b><span class="h7-tasks-tag">지금 됨 · 참고용 계산</span></a></li>
-      <li><a href="explore.html?panel=filters&amp;preset=care"><b>돌봄·의료 대상지 고르기</b><span class="h7-tasks-tag">지금 됨 · 법정 기준 아님</span></a></li>
-      <li><a href="explore.html?panel=filters&amp;preset=cctv"><b>CCTV·보안등 설치 검토</b><span class="h7-tasks-tag">지금 됨 · 안전 수준을 뜻하지 않음</span></a></li>
-      <li class="is-wait"><div><b>폭염·한파 시설, 급경사지·산불</b><span class="h7-tasks-tag">준비 중 · 2026년 11월 22일 확인</span></div></li>
+      <li><a href="field/redev.html"><svg class="h8-ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V6l8-3 8 3v15M9 21v-4h6v4M8 9h1M12 9h1M16 9h1M8 13h1M12 13h1M16 13h1"/></svg><b>공모 대상지 기초조사</b><span class="h7-tasks-tag">지금 됨 · 부산 254개 법정동</span></a></li>
+      <li><a href="explore.html?report=brief"><svg class="h8-ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6zM14 2v6h6M9 13h7M9 17h7"/></svg><b>결재·의회·감사에 붙일 근거</b><span class="h7-tasks-tag">지금 됨 · 참고용 계산</span></a></li>
+      <li><a href="explore.html?panel=filters&amp;preset=care"><svg class="h8-ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.6A4 4 0 0 1 12 8a4 4 0 0 1 7 2.4C19 15.6 12 20 12 20z"/></svg><b>돌봄·의료 대상지 고르기</b><span class="h7-tasks-tag">지금 됨 · 법정 기준 아님</span></a></li>
+      <li><a href="explore.html?panel=filters&amp;preset=cctv"><svg class="h8-ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h12l3 3v3H6L3 10zM9 13v4H5M18 10l3-1v5l-3-1"/></svg><b>CCTV·보안등 설치 검토</b><span class="h7-tasks-tag">지금 됨 · 안전 수준을 뜻하지 않음</span></a></li>
+      <li class="is-wait"><div><svg class="h8-ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7L18.4 5.6M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg><b>폭염·한파 시설, 급경사지·산불</b><span class="h7-tasks-tag">준비 중 · 2026년 11월 22일 확인</span></div></li>
     </ul>
     <p class="h7-band-note">지금은 노후 건축물·고령 비율로만 추릴 수 있습니다. 기후 자료는 아직 없습니다.</p>
   </section>
-  <!-- 넓은 화면에서는 세 걸음과 무료 동 현황표를 나란히 둔다(데스크톱 3.1화면 → 줄임, 09 8절) -->
-  <div class="h7-pair wrap">
 
-    <!-- 세 걸음: 걸음마다 제목 한 줄과 작은 선 그림(Lucide, ISC: clipboard · search · file-down) -->
-    <section id="how" class="h7-band" aria-labelledby="howTitle">
-      <h2 id="howTitle">세 걸음이면 됩니다</h2>
-      <ol class="h7-steps">
-        <li><svg class="h7-ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg><h3>주소 붙여 넣기</h3><p>대상지 주소(번지) 목록을 붙여 넣거나 지도에 구역을 그립니다. 예: 반여동 1291</p></li>
-        <li><svg class="h7-ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><h3>건물마다 대장 찾기</h3><p>건축물대장에서 건물마다 완공된 날(사용승인일)을 찾고, 못 찾은 주소는 따로 적습니다.</p></li>
-        <li><svg class="h7-ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg><h3>표와 파일 받기</h3><p>20년 넘은 건물 비율과 근거 표를 한글 파일과 CSV로 받습니다.</p></li>
-      </ol>
-    </section>
-
-    <!-- 무료: 내 동 현황표. 검색은 그 동의 현황표로 간다(home.js, data-report="brief") -->
-    <section id="find" class="h7-band" aria-labelledby="findTitle">
-      <h2 id="findTitle">무료로 보는 우리 동 현황표</h2>
-      <p class="h7-band-lead">동 이름을 넣으면 신청서용 동네 현황표를 출처와 함께 보여 드립니다. <small>공모 신청서 4-1 도시쇠퇴현황 검토 표</small></p>
-      <form id="homeSearch" class="home-search h6-search" role="search" autocomplete="off" aria-labelledby="findTitle" data-report="brief">
-        <label for="homeQ" class="sr-only">동 이름</label>
-        <div class="home-search-row">
-          <input id="homeQ" name="q" type="search" placeholder="예: 반여1동, 홍성읍" enterkeyhint="search" aria-describedby="homeMsg">
-          <button class="btn ghost" type="submit">찾기</button>
-        </div>
-        <ul id="homeHits" class="home-hits" aria-label="동네 검색 결과"></ul>
-        <p id="homeMsg" class="home-msg" aria-live="polite"></p>
-      </form>
-      <p class="h6-try"><span class="h6-try-k">예시</span><a class="rm-chip" href="explore.html?report=brief&amp;frag=MLIT-DECLINE#map/21/21090/21090700">반여1동</a><a class="rm-chip" href="explore.html?report=brief&amp;frag=MLIT-DECLINE#map/21/21030/21030510">초량1동</a><a class="rm-chip" href="explore.html?report=brief&amp;frag=MLIT-DECLINE#map/38/38090/38090580">거제 고현동</a></p>
-      <noscript><p>검색은 자바스크립트를 켜야 보입니다.<br><a href="dong/index.html">행정동 목록에서 동을 찾아 주세요.</a></p></noscript>
-    </section>
-  </div>
+  <!-- 실제로 계산한 예시: 근거표 한 조각(home-proof.js가 data/proof_sample.json에서 읽는다) -->
+  <section class="h7-band wrap h8-proof" aria-label="실제로 계산한 예시">
+    <figure class="h7-proof" id="proof" aria-labelledby="proofTitle" aria-busy="true"><p class="h7-proof-load" id="proofTitle">반여동 예시 결과를 불러오는 중입니다.</p></figure>
+    <p class="h8-proof-go"><a href="field/redev.html?example=1" rel="nofollow">반여동 주소 60개로 직접 계산해 보기</a></p>
+  </section>
 
   <!-- 숫자를 다루는 원칙 4줄(09 0절)과 맡기기 안내 한 줄 -->
   <section id="rules" class="h7-band wrap" aria-labelledby="rulesTitle">
@@ -150,6 +156,6 @@ document.documentElement.classList.add('js');
   </section>
 </main>
 
-<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="explore.html">동네 현황</a><a href="programs.html">재생 사업</a><a href="field/redev.html">대상지 계산</a><a href="field/">현장 사진 기록</a><a href="tasks.html">과업·납품</a><a href="rank.html">동네 비교 점수</a><a href="relocate.html">부산 이전 직원 동네 비교</a><a href="time4d.html">연도별 건물 나이</a><a href="box.html">보관함</a><a href="docs.html">문서 열기</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">상담하기</a><a href="ethics.html">AI·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
+<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="explore.html">우리 동네</a><a href="programs.html">재생 사업</a><a href="field/redev.html">대상지 계산</a><a href="field/">현장 사진 기록</a><a href="tasks.html">과업·납품</a><a href="rank.html">동네 비교 점수</a><a href="relocate.html">부산 이전 직원 동네 비교</a><a href="time4d.html">연도별 건물 나이</a><a href="box.html">보관함</a><a href="docs.html">문서 열기</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">상담하기</a><a href="ethics.html">AI·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 </body>
 </html>

@@ -1,28 +1,48 @@
 /* 홈(2026-11-13 v6 → 2026-11-22 r19, 09_총괄_설계.md 2·5절). 한 고객·한 상품: 왼쪽 7 제목·설명·단추, 오른쪽 5 근거표 한 조각.
    글자 단계는 여섯(제목 48/28 · 둘째 제목 24/20 · 셋째 제목 18 · 본문 17 · 보조 15 · 꼬리표 14, home.test가 고정). 뜻이 있는 글은 15px 아래로 내리지 않는다.
    색·형광펜·상태 꼬리표는 전역 CSS(rm6.css .rm-mark·.tag)를 쓴다. 넓은 화면 기준 1024px, 모든 구획은 .wrap 안쪽 */
-.h6 h2 { margin: 0 0 8px; font-size: var(--t-h2); letter-spacing: -0.02em; }
+.h6 h2 { margin: 0 0 12px; font-size: var(--t-h2); letter-spacing: -0.02em; }
 
-/* 첫 화면 */
-.h6-hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; padding-top: 24px; padding-bottom: 32px; }
-/* r23(13 M5): 한눈 띠 큰 숫자가 데스크톱 첫 화면(900px) 아래 1,129px였다 → 근거표 칸을 넓혀(5:7 → 1:1) 줄 높이를 줄이고, 표 아래 펼침·띠 사이 간격을 좁힌다 */
-@media (min-width: 1024px) { .h6-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: start; padding-top: 32px; padding-bottom: 16px; }
-  main .h6-hero + section.rm-glance { margin-top: 16px; padding-top: 16px; }
-  .h7-proof-src { padding-top: 0; padding-bottom: 0; margin-bottom: 0; } }
-.h6-kicker { margin: 0 0 12px; font-size: var(--t-sub); font-weight: 700; color: var(--dim); line-height: 1.5; }
-.h6-hero h1 { margin: 0 0 16px; font-size: var(--t-h1-hero); line-height: 1.25; letter-spacing: -0.02em; }
-.h6-lead { margin: 0 0 24px; font-size: 20px; line-height: 1.7; color: var(--ink); max-width: 34em; }
-.h6-cta { display: flex; flex-wrap: wrap; gap: 8px 12px; margin: 0; }
-.h6-cta .btn { min-height: 48px; padding: 0 22px; }
-.h7-trust { display: flex; flex-wrap: wrap; gap: 4px 16px; list-style: none; margin: 20px 0 0; padding: 0; font-size: var(--t-sub); color: var(--dim); }
-@media (min-width: 721px) { .h7-trust li + li::before { content: "·"; margin-right: 16px; } }
-@media (max-width: 720px) { .h7-trust { flex-direction: column; } }
-.h7-wide { margin: 16px 0 0; font-size: var(--t-body); line-height: 1.7; }
-.h7-wide a { font-weight: 700; white-space: nowrap; }
+/* 첫 화면(r24, 14_토스증권_REA_홈_대시보드_토론.md): 제목 한 줄 + 동 검색 → 해 드리는 일 카드 셋 → 숫자 카드(rm6.css .rm-kpi). 카드 하나 = 링크 하나 */
+.h8-top { display: grid; gap: 16px; padding-top: 28px; padding-bottom: 8px; }
+@media (min-width: 1024px) { .h8-top { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px; align-items: center; } }
+.h7-trust { display: flex; flex-wrap: wrap; gap: 4px 16px; list-style: none; margin: 0; padding: 0; font-size: var(--t-sub); color: var(--dim); }
+.h7-trust li + li::before { content: "·"; margin-right: 16px; }
+.h8-search-k { display: block; margin: 0 0 8px; font-size: var(--t-h3); font-weight: 700; }
+.h8-do { padding-top: 28px; }
+.h8-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.h8-card { display: flex; flex-direction: column; gap: 6px; height: 100%; box-sizing: border-box; padding: 0 0 16px; border: 1px solid var(--line); border-radius: 16px; background: #fff; color: var(--ink); text-decoration: none; overflow: hidden; }
+.h8-card:hover { border-color: var(--green); }
+.h8-card:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+.h8-card.is-main { border: 2px solid var(--green); }
+.h8-pic { display: block; aspect-ratio: 9 / 4; overflow: hidden; background: var(--bg); border-bottom: 1px solid var(--line); }
+.h8-pic img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: left top; }
+.h8-tag, .h8-name, .h8-line, .h8-go { margin: 0 16px; }
+.h8-tag { align-self: flex-start; margin-top: 12px; padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: var(--t-cap); font-weight: 600; color: var(--dim); }
+.h8-name { font-size: 20px; line-height: 1.4; }
+.h8-line { font-size: var(--t-sub); line-height: 1.6; color: var(--dim); }
+.h8-line small { display: block; font-size: var(--t-sub); }   /* 뜻이 있는 글은 15px(09 5절, r24 재점검 L5) */
+.h8-go { margin-top: auto; padding-top: 8px; font-size: var(--t-sub); font-weight: 700; color: var(--green); }
+.h8-go::after { content: " →"; }
+.h8-ico { width: 28px; height: 28px; color: var(--green); }
+/* 홈은 숫자 카드를 첫 화면 안에 두려고 카드 줄과 숫자 띠 사이를 좁힌다(전역 띠 간격은 --sec) */
+main.h8 section.rm-glance { margin-top: 24px; }
+/* 휴대폰·좁은 화면: 카드는 그림 왼쪽·글 오른쪽 한 줄씩(쪽 길이를 줄인다) */
+@media (max-width: 900px) {
+  .h8-cards { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .h8-card { display: grid; grid-template-columns: 36% minmax(0, 1fr); align-content: start; gap: 4px 12px; padding: 12px; }
+  .h8-pic { grid-row: 1 / span 4; aspect-ratio: auto; height: 100%; min-height: 120px; border: 1px solid var(--line); border-radius: 10px; }
+  .h8-tag, .h8-name, .h8-line, .h8-go { grid-column: 2; margin: 0; }
+  .h8-line small { display: none; }
+}
 @media (max-width: 720px) {
-  .h6-hero h1 { font-size: 28px; }
-  .h6-lead { font-size: var(--t-body); margin-bottom: 20px; }
-  .h6-cta { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .h7-trust { gap: 2px 14px; } .h7-trust li + li::before { content: none; }   /* 줄이 꺾이면 줄 머리에 점이 남아 점 대신 간격으로 */
+  .h8-name { font-size: var(--t-h3); } .h8-top { padding-top: 20px; } .h8-do { padding-top: 20px; }
+  /* 맡은 일: 휴대폰은 한 줄 목록(그림 · 이름 · 꼬리표), 쪽 길이를 줄인다 */
+  .h8 .h7-tasks { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .h8 .h7-tasks a, .h8 .h7-tasks li > div { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 2px 12px; min-height: 0; padding: 12px; }
+  .h8 .h7-tasks .h8-ico { grid-row: 1 / span 2; }
+  .h8 .h7-tasks-tag { padding: 0; border: 0; }
 }
 
 /* 근거표 한 조각(home-proof.js). 자료가 오기 전에는 자리를 잡아 아래가 밀리지 않게(화면 밀림 0.1 이하, 09 8절) */
@@ -37,6 +57,8 @@
 .h6 .h7-proof-head h2 { margin: 0 0 4px; font-size: var(--t-h3); }
 .h7-proof-check { margin: 0; font-size: var(--t-body); font-weight: 700; font-variant-numeric: tabular-nums; }
 /* 표는 전역 .rm-btable(rm6.css): 일곱 칸을 네 칸으로 모아 오른쪽 5칸 폭 안에 다 보인다(옆으로 밀던 표가 '20년 넘음·까닭'을 잘랐다, 13 H1) */
+.h8-proof-go { margin: 12px 0 0; font-size: var(--t-body); font-weight: 700; }
+.h8-proof-go a { display: inline-flex; align-items: center; min-height: 44px; }
 .h7-proof-sum { margin: 8px 0 0; font-size: var(--t-sub); line-height: 1.6; }
 .h7-proof-src { margin-top: 8px; }
 .h7-proof-src > summary, .h7-more > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: var(--t-sub); font-weight: 700; color: var(--green); }
@@ -47,8 +69,6 @@
 
 /* 둘째 화면부터: 절 간격 하나(--sec) */
 .h7-band { padding-top: var(--sec); }
-.h7-band-lead { margin: 0 0 16px; max-width: 46em; color: var(--dim); font-size: var(--t-sub); line-height: 1.6; }
-.h7-band-lead small { display: block; font-size: var(--t-sub); }
 .h7-band-note { margin: 12px 0 0; font-size: var(--t-sub); color: var(--dim); }
 
 /* 맡은 일로 찾기: 같은 카드 모양, 꼬리표는 같은 회색(차이는 낱말로만) */
@@ -57,22 +77,15 @@
 .h7-tasks .is-wait { grid-column: 1 / -1; }
 @media (min-width: 1024px) { .h7-tasks { grid-template-columns: repeat(5, minmax(0, 1fr)); } .h7-tasks .is-wait { grid-column: auto; } }
 @media (max-width: 720px) { .h7-tasks a, .h7-tasks li > div { min-height: 0; padding: 12px; } }
-.h7-tasks a, .h7-tasks li > div { display: flex; flex-direction: column; gap: 8px; height: 100%; min-height: 96px; box-sizing: border-box; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); text-decoration: none; }
+.h7-tasks a, .h7-tasks li > div { display: flex; flex-direction: column; gap: 8px; height: 100%; min-height: 128px; box-sizing: border-box; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); text-decoration: none; }
 .h7-tasks a:hover { border-color: var(--green); }
 .h7-tasks b { font-size: var(--t-body); line-height: 1.5; }
 .h7-tasks-tag { align-self: flex-start; padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: var(--t-cap); font-weight: 600; color: var(--dim); }
 .h7-tasks .is-wait > div { background: transparent; border-style: dashed; }
 
-/* 세 걸음: 걸음마다 작은 선 그림 + 제목 한 줄 + 한 문장 */
-.h7-steps { list-style: none; display: grid; gap: 16px; margin: 0; padding: 0; }
-.h7-steps li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 0 12px; }
-.h7-steps li > :not(svg) { grid-column: 2; }
-.h7-ico { width: 28px; height: 28px; color: var(--green); }
-.h6 .h7-steps h3 { margin: 2px 0 4px; font-size: var(--t-h3); }
-@media (min-width: 1024px) { .h7-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; } .h7-rules { columns: 2; column-gap: 48px; } }
-.h7-steps p { margin: 0; color: var(--dim); font-size: var(--t-sub); line-height: 1.6; }
+@media (min-width: 1024px) { .h7-rules { columns: 2; column-gap: 48px; } }
 
-/* 무료 동 현황표: 검색 한 칸 + 예시 동 셋(칩 모양은 rm6.css .rm-chip) */
+/* 동 검색 한 칸(첫 화면, home.js) */
 .h6-search { max-width: 640px; }
 .h6-search .home-search-row { display: flex; gap: 8px; }
 .h6-search input { flex: 1; min-width: 0; min-height: 48px; font: inherit; font-size: var(--t-body); padding: 0 16px; border: 2px solid var(--ink); border-radius: 8px; background: #fff; }
@@ -84,10 +97,6 @@
 .h6-search .home-hits a:hover { background: #f1f5f2; }
 .h6-search .home-hits small { color: var(--dim); }
 .h6-search .home-msg { margin: 0; }
-.h6-try { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 16px 0 0; }
-.h6-try-k { font-weight: 700; color: var(--dim); font-size: var(--t-sub); margin-right: 4px; }
-#main .h6-try .rm-chip { padding: 0 12px; }
-
 /* 숫자를 다루는 원칙 4줄 + 맡기기 안내 한 줄 */
 .h7-rules { margin: 0; padding-left: 20px; font-size: var(--t-body); line-height: 1.7; }
 .h7-ask { margin: 16px 0 0; font-size: var(--t-body); line-height: 1.7; }

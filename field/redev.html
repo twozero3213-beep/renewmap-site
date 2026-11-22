@@ -30,7 +30,7 @@
 </head>
 <body class="field redev-v4 fr-redev">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 RENEWMAP 홈" href="../index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="redev.html">대상지 계산</a><a href="../explore.html">동네 현황</a><a href="./">현장 사진 기록</a><a href="../about.html#contact">상담하기</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 RENEWMAP 홈" href="../index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="../explore.html#map">우리 동네</a><a href="../explore.html?panel=filters">동네 골라보기</a><a href="redev.html">대상지 계산</a><a href="../about.html#contact">상담하기</a></nav></div></header>
 <main id="main">
   <nav class="breadcrumb" aria-label="지금 보는 곳"><ol><li><a href="../index.html">홈</a></li><li aria-current="page">대상지 계산</li></ol></nav>
   <h1>대상지 계산</h1><p class="sub">주소 목록을 붙여 넣으면 건물마다 건축물대장과 맞춘 표가 나옵니다 · 부산 254개 동</p>
@@ -161,6 +161,7 @@
       <summary>그 밖의 파일 받기(CSV·사전컨설팅 부록·대장과 맞춰 볼 건물 목록)</summary>
       <div class="row">
         <button type="button" class="ghost" id="applicationCsv">신청요건 받기(CSV)</button>
+        <button type="button" class="ghost" id="redevCsv">재개발 노후·불량 건물별 판단 받기(CSV)</button>
         <button type="button" class="ghost" id="consultHwpx">사전컨설팅 부록 받기(한글)</button>
       </div>
       <p class="hint">한글 파일이 열리지 않으면 같은 내용을 CSV로 받으세요.</p>
@@ -185,12 +186,13 @@
 </main>
 <dialog id="sampleDlg" class="fr-dlg" aria-labelledby="sampleDlgTitle">
   <h2 id="sampleDlgTitle">계산 결과 견본(반여동 주소 60개)</h2>
-  <img src="../img/v6/redev-result.jpg" width="640" height="931" alt="반여동 주소 60개로 실제 계산한 결과 화면 견본. 대장에서 찾은 건물 46동 · 못 찾은 주소 22개, 20년 넘은 건물 비율(20년 이상 76.1~80.4%, 기준 해당), 구청이 확인할 칸 4칸 / 전체 184칸, 못 찾은 주소 22개, 건물별 표 받기(CSV) 단추가 차례로 나온다." loading="lazy">
+  <!-- 견본 그림이 길어져(건물별 표 3줄까지) 닫기를 그림 위로 올렸다. Esc로도 닫힌다 -->
   <button type="button" class="ghost" id="sampleClose">닫기</button>
+  <img src="../img/v6/redev-result.jpg" width="640" height="1764" alt="반여동 주소 60개로 실제 계산한 결과 화면 견본. 대장에서 찾은 건물 46동 · 못 찾은 주소 22개, 20년 넘은 건물 비율(완공된 날을 정하지 못한 건물 2동을 20년 미만으로 치면 76.1%, 20년 이상으로 치면 80.4%, 빼고 세면 79.5%, 기준 해당), 구청이 확인할 칸 4칸 / 전체 184칸, 못 찾은 주소 22개와 다음에 볼 자료, 건물별 표 처음 3줄(주소·완공된 날·20년 넘음·까닭), 건물별 표 받기(CSV) 단추가 차례로 나온다." loading="lazy">
 </dialog>
-<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="../explore.html">동네 현황</a><a href="../programs.html">재생 사업</a><a href="../field/redev.html">대상지 계산</a><a href="../field/">현장 사진 기록</a><a href="../tasks.html">과업·납품</a><a href="../rank.html">동네 비교 점수</a><a href="../relocate.html">부산 이전 직원 동네 비교</a><a href="../time4d.html">연도별 건물 나이</a><a href="../box.html">보관함</a><a href="../docs.html">문서 열기</a></p><p><b>근거</b><a href="../data.html">데이터 출처</a><a href="../rules.html">기준 원문 대조</a><a href="../evidence.html">근거 읽는 법</a><a href="../dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="../about.html">서비스 소개</a><a href="../about.html#contact">상담하기</a><a href="../ethics.html">AI·데이터 원칙</a><a href="../privacy.html">개인정보 처리방침</a><a href="../privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
+<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="../explore.html">우리 동네</a><a href="../programs.html">재생 사업</a><a href="../field/redev.html">대상지 계산</a><a href="../field/">현장 사진 기록</a><a href="../tasks.html">과업·납품</a><a href="../rank.html">동네 비교 점수</a><a href="../relocate.html">부산 이전 직원 동네 비교</a><a href="../time4d.html">연도별 건물 나이</a><a href="../box.html">보관함</a><a href="../docs.html">문서 열기</a></p><p><b>근거</b><a href="../data.html">데이터 출처</a><a href="../rules.html">기준 원문 대조</a><a href="../evidence.html">근거 읽는 법</a><a href="../dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="../about.html">서비스 소개</a><a href="../about.html#contact">상담하기</a><a href="../ethics.html">AI·데이터 원칙</a><a href="../privacy.html">개인정보 처리방침</a><a href="../privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 <section id="printDoc" class="print-doc" aria-hidden="true"></section>
-<script src="../site.js?v=20261122-r23"></script>
+<script src="../site.js?v=20261122-r24"></script>
 <script src="../site-motion.js" defer></script>
 <script src="../docgen.js?v=20261122-r23"></script>
 <script src="../cellpack.js"></script>

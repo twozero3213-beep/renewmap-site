@@ -19,6 +19,7 @@
   --soft: #e5f1f2;          /* 고른 칩 바탕. 강조 글 5.4:1 */
   --soft2: #eef5f6;
   --soft-press: #d3e8ea;
+  --mark: #a8d5d9;   /* r25(13 L2): 형광펜 띠. 대표 선택 A(2026-11-22) — 홈 바탕 대비 1.17→1.46:1, 띠 위 글자 대비 10.8:1. 단추 누름(--soft-press)과 나눴다 */
   --soft-ink: #085760;
   --hover-tint: #f3f8f8;
   --crew-bg: #eef5f6;
@@ -70,7 +71,7 @@ small, .sub, .note, .hint { color: var(--dim); }
 :is(main, .rm-t) h2 { font-size: var(--t-h2); line-height: 1.3; font-weight: 700; }
 :is(main, .rm-t) h3 { font-size: var(--t-h3); line-height: 1.4; font-weight: 700; }
 :is(main, .rm-t) h1 + .sub { font-size: var(--t-sub); margin: 0 0 16px; }
-main .h6-hero h1 { font-size: var(--t-h1-hero); margin: 0 0 12px; }
+main .h8-top h1 { font-size: 28px; line-height: 1.35; margin: 0 0 12px; }   /* r24(14번 토론): 홈 첫 화면은 대시보드라 제목은 한 줄 크기(09 5절 단계 28) */
 main .t4-side h1 { font-size: var(--t-h1-map); margin: 0 0 4px; }
 main .t4-side h2 { font-size: var(--t-h3); }
 main .t4-side h3 { font-size: var(--t-sub); }
@@ -129,6 +130,10 @@ header.top .logo span { color: var(--green); }
 .rm-nav .rm-cta:hover { background: var(--hover-tint); }
 /* 메뉴 시트의 '서비스 소개 · 비용과 범위' 글 링크 한 줄(site.js, r16). 넓은 화면 머리 줄에는 두지 않는다(주 메뉴 목록은 그대로) */
 .rm-nav .rm-nav-more { display: none; }
+/* r24 머리 동 이름 검색칸: 넓은 화면만, 홈은 본문 첫 칸에 같은 검색이 있어 숨긴다 */
+.rm-nav-find { display: none; margin-left: 8px; }
+.rm-nav-find input { width: 180px; min-height: 40px; padding: 0 12px; font: inherit; font-size: var(--t-sub); border: 1px solid var(--line-strong); border-radius: 999px; background: var(--bg); }
+@media (min-width: 1200px) { .rm-nav-find { display: block; } body.app-home .rm-nav-find { display: none; } }
 /* '메뉴' 단추: (0,2,1)이라 현장 화면의 녹색 전체 폭 단추 규칙(.field button, 0,1,1)을 이긴다 */
 header.top .rm-menu-btn { display: none; flex: none; width: auto; margin: 0 0 0 auto; min-height: 44px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-size: 16px; font-weight: 700; box-shadow: none; }
 header.top a:focus-visible, header.top button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 2px var(--card); }
@@ -262,43 +267,44 @@ input[type="file"]::file-selector-button { min-height: 40px; margin-right: 10px;
 .rm-status b, .rm-note b { color: inherit; }
 /* 형광펜 하나(r19, 09 5절): 청록 옅은 띠가 글자 아래 45%. 쓰는 곳은 셋(홈 제목 낱말 하나·'구청이 확인할 칸 n칸'·받는 파일 첫 장의 같은 숫자)뿐.
    동·시·도 이름, 비율, 상태 꼬리표, 추가확인 값, 법 조문, 가격에는 쓰지 않는다. 노랑은 추가확인의 호박색과 섞여 보여 쓰지 않는다 */
-.rm-mark { background: linear-gradient(transparent 55%, var(--soft-press) 55%); color: inherit; -webkit-box-decoration-break: clone; box-decoration-break: clone; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-/* 한눈 띠(r19, glance.js · 09 4절). 막대는 CSS만, 값에 따라 칸을 칠하지 않는다. 스크립트가 그릴 자리 높이를 미리 잡아 화면이 밀리지 않게 한다(못 그리면 .rm-glance-off) */
+.rm-mark { background: linear-gradient(transparent 55%, var(--mark) 55%); color: inherit; -webkit-box-decoration-break: clone; box-decoration-break: clone; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+/* 한눈 띠(r19 → r24 숫자 카드, glance.js · 14번 토론). 막대는 CSS만, 값에 따라 칸·지도를 칠하지 않는다. 스크립트가 그릴 자리 높이를 미리 잡아 화면이 밀리지 않게 한다(못 그리면 .rm-glance-off) */
 main section.rm-glance { margin: var(--sec) 0 0; padding: 24px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
-html.js .rm-glance:not(.rm-glance-off) { min-height: 730px; }
-.rm-glance h2 { margin: 0 0 12px; font-size: var(--t-h2); line-height: 1.3; }
-.rm-glance-num { margin: 0; font-size: var(--t-num); font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; color: var(--dim); font-variant-numeric: tabular-nums; }
-.rm-glance-num b { color: var(--ink); }
+html.js .rm-glance:not(.rm-glance-off) { min-height: 470px; }
+.rm-glance h2 { margin: 0 0 16px; font-size: var(--t-h2); line-height: 1.3; }
 .rm-glance-bar { display: block; height: 8px; border-radius: 4px; background: var(--bar-empty); overflow: hidden; }
 .rm-glance-bar i { display: block; width: 0; height: 100%; background: var(--green); }
-.rm-glance-bar.is-note i { background: var(--line-strong); }
-.rm-glance > .rm-glance-bar { max-width: 760px; height: 12px; margin-top: 8px; }
+.rm-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.rm-kpi { display: flex; flex-direction: column; gap: 8px; height: 100%; box-sizing: border-box; padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink); text-decoration: none; }
+.rm-kpi:hover { border-color: var(--green); }
+.rm-kpi:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+.rm-kpi-k { font-size: var(--t-sub); font-weight: 600; color: var(--dim); line-height: 1.4; }
+.rm-kpi-n { font-size: 20px; font-weight: 700; color: var(--dim); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.rm-kpi-n b { font-size: var(--t-num); color: var(--ink); letter-spacing: -0.02em; }
+.rm-kpi-why { margin-top: auto; font-size: var(--t-sub); line-height: 1.5; color: var(--ink); }
+.rm-kpi-why b { color: var(--green); }
+.rm-kpi.is-cover { display: grid; grid-template-columns: minmax(0, 1fr) 34%; align-content: start; gap: 8px 12px; }
+.rm-kpi.is-cover .rm-kpi-k, .rm-kpi.is-cover .rm-kpi-n { grid-column: 1; }
+.rm-kpi.is-cover img { grid-column: 2; grid-row: 1 / span 3; width: 100%; height: auto; }
 .rm-glance-tail, .rm-glance-legend, .rm-glance-src :is(p, li) { margin: 8px 0 0; font-size: var(--t-sub); line-height: 1.6; color: var(--dim); }
-.rm-glance-bars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 20px 0 12px; padding: 0; list-style: none; font-size: var(--t-sub); }
-.rm-glance-bars .rm-glance-bar { margin-top: 6px; }
-.rm-glance details { margin: 0; padding: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; }
+.rm-glance-tail { margin-top: 12px; }
+.rm-glance details { margin: 8px 0 0; padding: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; }
 .rm-glance :is(.rm-glance-sido, .rm-glance-src) > summary { display: flex; align-items: center; min-height: 44px; color: var(--green); font-size: var(--t-sub); font-weight: 600; cursor: pointer; }
 .rm-glance-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; max-width: 760px; margin: 12px 0 8px; padding: 0; list-style: none; }
 .rm-glance-grid li { display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: var(--t-sub); line-height: 1.3; text-decoration: none; }
 .rm-glance-more { margin: 4px 0 0; }
 .rm-glance-more a { display: inline-flex; align-items: center; min-height: 44px; color: var(--green); font-weight: 600; }
 .rm-glance-grid span { color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
-@media (min-width: 721px) { .rm-glance .rm-glance-sido > summary { display: none; } }
-@media (min-width: 1024px) {
-  main section.rm-glance { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: 32px; align-content: start; }
-  .rm-glance > :not(.rm-glance-sido, .rm-glance-src) { grid-column: 1; }
-  .rm-glance > .rm-glance-sido { grid-column: 2; grid-row: 2 / span 5; border-top: 0; }
-  .rm-glance > h2:not(.rm-glance-sido) { grid-column: 1 / -1; }   /* r23(13 M5): 제목이 왼쪽 칸에서 두 줄(79px)로 꺾여 큰 숫자가 첫 화면 밖이었다 → 두 칸을 걸쳐 한 줄 */
-  .rm-glance > .rm-glance-src { grid-column: 1 / -1; }
-  .rm-glance .rm-glance-bars { grid-template-columns: 1fr; gap: 12px; }
-  .rm-glance .rm-glance-grid { margin-top: 0; }
-  html.js .rm-glance:not(.rm-glance-off) { min-height: 470px; }
-}
+@media (max-width: 900px) { .rm-kpis { grid-template-columns: minmax(0, 1fr); } html.js .rm-glance:not(.rm-glance-off) { min-height: 560px; } }
 @media (max-width: 720px) {
   main section.rm-glance { padding: 16px; }
-  html.js .rm-glance:not(.rm-glance-off) { min-height: 500px; }
-  .rm-glance-bars { grid-template-columns: 1fr; gap: 12px; }
+  /* r24: 휴대폰은 숫자 카드를 옆으로 밀어 본다(토스증권 지수 카드처럼). 카드 폭 82%로 다음 카드가 보이게 */
+  .rm-kpis { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 82%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; }
+  .rm-kpis > li { scroll-snap-align: start; }
+  html.js .rm-glance:not(.rm-glance-off) { min-height: 380px; }
+  .rm-glance h2 { font-size: 20px; }
   .rm-glance-grid li { padding: 6px; }
+  .rm-kpi.is-cover { grid-template-columns: minmax(0, 1fr) 28%; }
 }
 /* 입력·고르기 칸 하나(R2 5): 17px·48px·반경 8. 소개 문의 양식의 브라우저 기본 select도 같은 모양 */
 main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea) { box-sizing: border-box; min-height: 48px; font-family: inherit; font-size: 17px; border: 1px solid var(--line-strong); border-radius: 8px; background-color: var(--card); color: var(--ink); }

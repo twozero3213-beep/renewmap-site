@@ -32,8 +32,8 @@
     // r23(13 M8): 휴대폰에는 머리 '상담하기'가 메뉴 시트 안에만 있어 아래 탭의 보관함 자리에 상담하기를 둔다. 보관함은 꼬리글·지도 '보관함에 담기'로 연다
     const tabs = [['index.html', '홈', 'M3 11l9-8 9 8M5 9.5V20h14V9.5', /^(?!.*\/(?:field|dong)\/)[^#]*\/(?:index\.html)?(?:#.*)?$/],
       ['field/redev.html', '대상지 계산', 'M5 3h14v18H5zM8 7h8M8 11h2M14 11h2M8 15h2M14 15h2', /\/field\/redev\.html$/],
-      ['explore.html#map', '동네 현황', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html|\/dong\//],
-      ['field/', '현장 사진 기록', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],
+      ['explore.html#map', '우리 동네', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html|\/dong\//],
+      ['field/', '현장 사진', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],
       ['about.html#contact', '상담하기', 'M4 5h16v11H10l-6 4zM8 9h8M8 12h5', /about\.html#contact$/],
     ];
     const current = fixedBase ? -1 : tabs.findIndex(t => t[3].test(here));
@@ -57,12 +57,22 @@
     const path = fixedBase ? '' : location.pathname;
     // R11(C18·D30 B): 부산 이전 직원 비교는 주 메뉴에서 뺐다. 홈 '다른 도구 더 보기'와 꼬리글 도구 줄에서 연다
     // r19(09 6절 1): 셋과 상담 하나. 동네 비교 점수·재생 사업은 꼬리글 도구 줄과 동네 현황 안에서 연다
-    const items = [['field/redev.html', '대상지 계산', /\/field\/redev\.html$/], ['explore.html', '동네 현황', /explore\.html$|\/dong\//],
-      ['field/', '현장 사진 기록', /\/field\/(?:index\.html)?$/]];
+    // r24(14 토스증권 REA 쟁점 3): 토스증권 '홈 · 피드 · 주식 골라보기 · 내 계좌'처럼 할 일 이름. 동네 골라보기 = 우리 동네의 조건 칸(?panel=filters)
+    // r24b(09 8절 조작 요소 12개): 홈은 로고가, 현장 사진은 휴대폰 아래 탭·홈 카드·꼬리글이 맡아 넓은 화면 머리에서는 뺀다
+    const filters = /[?&]panel=filters/.test(fixedBase ? '' : location.search);
+    const items = [['explore.html#map', '우리 동네', filters ? /^$/ : /explore\.html$|\/dong\//],
+      ['explore.html?panel=filters', '동네 골라보기', filters ? /explore\.html$/ : /^$/], ['field/redev.html', '대상지 계산', /\/field\/redev\.html$/]];
     const nav = document.createElement('nav');
     nav.className = 'rm-nav'; nav.id = 'rm-nav'; nav.setAttribute('aria-label', '주요 메뉴');
     const link = (href, text, on, cls) => { const a = document.createElement('a'); a.href = base + href; a.textContent = text; if (on) a.setAttribute('aria-current', 'page'); if (cls) a.className = cls; return a; };
     for (const [href, text, re] of items) nav.append(link(href, text, re.test(path)));
+    // 동 이름 검색칸(넓은 화면, 홈에서는 본문 첫 칸과 겹쳐 숨긴다). 스크립트가 늦어도 동네 현황이 ?q=로 찾는다(map.js)
+    const find = document.createElement('form');
+    find.className = 'rm-nav-find'; find.action = base + 'explore.html'; find.setAttribute('role', 'search');
+    find.innerHTML = '<label class="sr-only" for="rmNavQ">동 이름 검색</label><input id="rmNavQ" name="q" type="search" placeholder="동 이름 검색" enterkeyhint="search" autocomplete="off">';
+    // 대상지 계산·현장·문서 쪽은 CSP가 form-action 'none'이라 폼 전송이 막힌다(r24 재점검 H1) → 주소 이동으로 연다. 빈 칸이면 동네 현황만
+    find.addEventListener('submit', (ev) => { ev.preventDefault(); const q = find.querySelector('input').value.trim(); location.assign(find.action + (q ? '?q=' + encodeURIComponent(q) : '')); });
+    nav.append(find);
     // r16: 휴대폰 메뉴 시트에서도 '무엇이고 얼마인지'를 찾게 상담 단추 위에 글 링크 한 줄(넓은 화면 머리 줄에서는 rm6.css가 숨긴다). 주 메뉴 목록·순서는 그대로
     const more = document.createElement('p');
     more.className = 'rm-nav-more';

@@ -613,8 +613,9 @@
   const MISS_WHY = { missing: "건축물대장에 이 번지의 건물이 없음", otherDong: `고른 구·군의 법정동 이름이 아니거나 ${MERGE_MAX}개 동을 넘음`, road: "도로명 주소를 번지로 바꾸지 못함", bad: "주소(번지)로 읽지 못함" };
   // r23(13 L1): 건물 파일에는 토지(필지) 목록이 없어 빈 땅·도로 번지와 잘못 적은 번지를 가를 수 없다 → 까닭은 하나로 두고 다음에 볼 자료를 붙인다
   const MISS_NEXT = "토지대장의 지목(빈 땅·도로인지, 번지가 맞는지)";
+  const missGroups = (m, bad, unresolved) => [[m.missing, MISS_WHY.missing], [m.otherDong, MISS_WHY.otherDong], [unresolved, MISS_WHY.road], [bad, MISS_WHY.bad]].filter(([l]) => l.length);
   function leadHTML(res, m, file, { bad = [], unresolved = [] } = {}) {
-    const miss = [[m.missing, MISS_WHY.missing], [m.otherDong, MISS_WHY.otherDong], [unresolved, MISS_WHY.road], [bad, MISS_WHY.bad]].filter(([l]) => l.length);
+    const miss = missGroups(m, bad, unresolved);
     const k = miss.reduce((s, [l]) => s + l.length, 0), u = res.urban, c = checkCells(res.perBuilding.map((r) => r.b), res.ref);
     const tag = u.status === MET ? "tag over" : u.status === CHECK ? "tag check" : "tag";
     const list = (l) => l.slice(0, MISS_SHOW).map(escH).join(", ") + (l.length > MISS_SHOW ? ` 외 ${n0(l.length - MISS_SHOW)}개` : "");
@@ -641,6 +642,14 @@
   }
   // 여러 동을 이은 파일(mergeFiles)은 PNU 앞 10자리로 그 건물의 동 이름을 고른다
   const buildingRows = (res, file) => res.perBuilding.map((r) => buildingRow(r.b, res.ref, ((file.dongs || []).find((d) => r.b.pnu && r.b.pnu.startsWith(d.code)) || file).name));
+  // 건물별 표 CSV(r23 뒤): 화면 표와 같은 칸·같은 글에 PNU(지도 파일과 잇는 열쇠)를 더하고, 못 찾은 주소도 까닭과 함께 같은 표 아래에 싣는다.
+  // 13 재점검: 채운 단추 '건물별 표 받기(CSV)'가 재개발 노후·불량 판단 CSV(toCSV)를 내려 화면의 '20년 넘음'과 칸·기준이 달랐다
+  function btableCSV(res, file, m, { bad = [], unresolved = [], secret = false } = {}) {
+    const note = [mark(secret, `건물별 표 · 20년 넘음은 완공된 날(사용승인일)부터 ${res.ref}까지로 셈 · 건축물대장 기준일 ${file.hub_reference_date} · 참고용 계산입니다. 판단은 구청·담당 기관이 합니다`)];
+    const found = buildingRows(res, file).map((r, i) => [...r, res.perBuilding[i].b.pnu || ""]);
+    const missed = missGroups(m, bad, unresolved).flatMap(([l, why]) => l.map((a) => [a, "못 찾음", "", "", "", "", why === MISS_WHY.missing ? `${why} → 다음에 볼 자료: ${MISS_NEXT}` : why, ""]));
+    return "\ufeff" + [note, [...BTABLE_COLS, "PNU"], ...found, ...missed].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  }
   // 홈 근거표 조각(home-proof.js)과 같은 모양(rm6.css .rm-btable): 찾음·주용도·구조는 주소 아래 작은 줄이라 넓은 화면은 네 칸, 휴대폰은 줄마다 카드.
   // show 뒤의 줄은 hidden으로 그려 두고 화면이 펼친다
   function btableHTML(rows, show = rows.length) {
@@ -808,5 +817,5 @@
   }
 
   // 2026-11-13: ringCrosses를 화면(redev-app.js)에서도 써서, 그리는 도중에 선이 겹치면 바로 알린다
-  return { MISS_WHY, urbanOf, checkCells, CELL_COLS, agingLines, agingNote, leadHTML, BTABLE_COLS, buildingRow, buildingRows, btableHTML, DECLINE_STAMP, csvCell, settle, settleText, reviewStatusText, SETTLE_OLD, assertBusan, REGION_ERROR, ringCrosses, dongBounds, oneRange, answerRows, settleBrief, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socMerge, socReceived, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { MISS_WHY, urbanOf, checkCells, CELL_COLS, agingLines, agingNote, leadHTML, BTABLE_COLS, buildingRow, buildingRows, btableHTML, btableCSV, DECLINE_STAMP, csvCell, settle, settleText, reviewStatusText, SETTLE_OLD, assertBusan, REGION_ERROR, ringCrosses, dongBounds, oneRange, answerRows, settleBrief, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socMerge, socReceived, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });
