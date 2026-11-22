@@ -24,9 +24,9 @@
     const bizAll = d.biz_check === d.dongs;
     const cells = d.sido.map(s => ({ s, at: place(String(s.code2)) }))
       .sort((a, b) => (a.at ? a.at[0] * 10 + a.at[1] : 99) - (b.at ? b.at[0] * 10 + b.at[1] : 99))   // 격자 순서(읽는 순서 = 보이는 순서)
-      // 13 H2: 칸 숫자와 같은 셈(세 기준 중 넘은 수, 확실한 것만)을 고른 지도로 연다. 첫 지표(20년 이상 건축물)로 열면 다른 숫자가 나왔다
-      .map(({ s, at }) => `<li${at ? ` data-r="${at[0]}" data-c="${at[1]}"` : ''}><a href="explore.html?ind=${MET_IND}#map/${esc(s.code2)}"><b>${esc(sidoShort(s.name))}</b>`
-        + `<span>${n(s.met2)}/${n(s.dongs)}</span>${bar(pct(s.met2, s.dongs))}</a></li>`).join('');
+      // r23(13 M5·3절 결론): 홈 첫 화면 조작 요소 17개 중 8개가 이 칸이었다 → 칸은 막대만, 지도는 띠 아래 링크 하나('시·도별 동 보기')로 연다
+      .map(({ s, at }) => `<li${at ? ` data-r="${at[0]}" data-c="${at[1]}"` : ''} data-sido="${esc(s.code2)}"><b>${esc(sidoShort(s.name))}</b>`
+        + `<span>${n(s.met2)}/${n(s.dongs)}</span>${bar(pct(s.met2, s.dongs))}</li>`).join('');
     const gap = d.dongs - d.pickable;
     const src = (d.sources || []).map(s => `<li>${esc(s.name)} · ${esc(s.base_year)}년 자료 · ${s.retrieved_at ? '조회 ' + esc(s.retrieved_at) : '조회일 기록 없음'}</li>`).join('');
     return `<h2>${TITLE}</h2>`
@@ -38,9 +38,11 @@
       + `<li><span>사업체 기준 추가확인 <b>${n(d.biz_check)}곳</b>${bizAll ? '(전국 공통)' : ''}</span>${bar(pct(d.biz_check, d.dongs), true)}</li></ul>`
       + '<details class="rm-glance-sido"><summary>시·도별로 보기</summary>'
       // 13 H2: 넘은 곳은 지도와 같다. 전체는 값 없는 셀(경계 시점 차이)도 세어(export_glance.py) 지도 '값 있는 동'보다 많은 시·도가 있다(2025년 서울·인천·경기·전북 1~4곳)
-      + '<p class="rm-glance-legend">막대 길이는 기준을 함께 넘은 읍·면·동의 비율입니다. 칸을 누르면 같은 셈(기준을 넘은 수)으로 그 시·도의 동을 봅니다. '
+      + '<p class="rm-glance-legend">막대 길이는 기준을 함께 넘은 읍·면·동의 비율입니다. 시·도의 동은 아래 \'시·도별 동 보기\'에서 같은 셈(기준을 넘은 수)으로 봅니다. '
       + '칸의 전체에는 경계 시점 차이로 값을 못 낸 동도 들어 있어, 지도의 \'값 있는 동\'보다 몇 곳 많을 수 있습니다.</p>'
       + `<ol class="rm-glance-grid">${cells}</ol></details>`
+      // 13 H2: 칸 숫자와 같은 셈(세 기준 중 넘은 수, 확실한 것만)을 고른 지도로 연다. 첫 지표(20년 이상 건축물)로 열면 다른 숫자가 나왔다
+      + `<p class="rm-glance-more"><a href="explore.html?ind=${MET_IND}#map">시·도별 동 보기</a></p>`
       + '<details class="rm-glance-src"><summary>이 숫자는 어디서 왔나요?</summary>'
       + '<p>법 제13조제4항은 도시재생활성화지역을 지정할 때 세 가지 기준(인구·사업체·오래된 건물) 가운데 2개 이상을 갖추라고 정합니다. '
       + '리뉴맵은 읍·면·동마다 그 기준값을 셌을 뿐 지정 여부를 판단하지 않습니다. '

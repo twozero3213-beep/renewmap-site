@@ -6,8 +6,9 @@
   else root.Redev = factory(root.RenewDocgen);
 })(this, function (D) {
   "use strict";
-  const ORD_URL = "https://www.law.go.kr/LSW/ordinInfoP.do?ordinSeq=2079585";
-  const ORD = "부산광역시 도시 및 주거환경정비 조례(조례 제7751호, 2025. 10. 1. 시행)";
+  // 조례 이름·공포 번호·시행일·원문 주소·조회일은 data/law_sources.json과 같아야 한다(redev.test.cjs가 대조). 주소는 그 판에 고정한 한글주소
+  const ORD_URL = "https://www.law.go.kr/자치법규/부산광역시도시및주거환경정비조례/(7751,20251001)";
+  const ORD = "부산광역시 도시 및 주거환경정비 조례(부산광역시조례 제7751호, 2025. 10. 1. 시행)";
   const RULES = [{ id: "BSN-AGE-2025.10", article: "제3조제2항", approved: false }, { id: "BSN-ORD-2025.10", article: "제5조제2항제2호", approved: false }];
   const NOT_APPROVED = "승인 전 참고 · 납품용 아님";
   const REGION_ERROR = "공개 건물 자료는 부산 254개 법정동 범위입니다. 다른 지역 PNU가 섞이면 전체 계산을 멈춥니다. 목록과 선택한 동을 확인해 주세요.";
@@ -535,7 +536,7 @@
     const arcs = [MET, NOT_MET, CHECK].filter((k) => cnt[k]).map((k) => { const len = (cnt[k] / tot) * C, s = `<circle class="dn-${ST_CLS[k]}" r="42" cx="60" cy="60" stroke-dasharray="${Math.max(0, len - 1.5).toFixed(2)} ${(C - len + 1.5).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}"/>`; off += len; return s; }).join("");
     const tiles = [["건물", `${n0(res.n)}동`], ["노후·불량", `${n0(res.nOld)}동`], ["추가확인", `${n0(res.nUnk)}동`], ["기준", `${res.thr}%`]];
     return `<ul class="v4-tiles">${tiles.map(([k, v]) => `<li><span>${k}</span><b>${v}</b></li>`).join("")}</ul>` +
-      `<div class="v4-charts"><div class="v4-donut"><svg class="dn" viewBox="0 0 120 120" aria-hidden="true"><g transform="rotate(-90 60 60)">${arcs}</g><text x="60" y="62" class="dn-n">${tot}</text><text x="60" y="80" class="dn-k">요건 줄</text></svg>` +
+      `<div class="v4-charts"><div class="v4-donut"><svg class="dn" viewBox="0 0 120 120" aria-hidden="true"><g transform="rotate(-90 60 60)">${arcs}</g><text x="60" y="62" class="dn-n">${tot}</text><text x="60" y="80" class="dn-k">기준 개수</text></svg>` +
       `<ul class="gl-n">${[MET, NOT_MET, CHECK].map((k) => `<li><b class="gl-sw sw-${ST_CLS[k]}" aria-hidden="true"></b>${k} <b>${cnt[k]}</b></li>`).join("")}</ul></div>` +
       `<div class="rv-stacks">${stackHTML("건물 수", res.nOld, res.nUnk, res.n, res.thr)}${stackHTML("연면적", res.aOld, res.aUnk, res.area, res.thr)}` +
       `<p class="rv-key"><i class="rv-old"></i>노후·불량 <i class="rv-unk"></i>추가확인 <i class="rv-no"></i>노후·불량 아님 <i class="rv-thr"></i>기준선</p></div></div>` +
@@ -590,6 +591,15 @@
       `전체 ${n0(res.n)}동 · 20년 이상 ${n0(u.old)}동 · 20년 미만 ${n0(young)}동 · 완공된 날 없음 ${n0(u.noDate)}동(${pct(u.noDate, res.n)}%)${straddle ? ` · 연·월만 있어 정하지 못함 ${n0(straddle)}동` : ""}`,
       `분모: 건축물대장 표제부 주건축물(부속 제외) · ${file.hub_reference_date} 기준${res.ref === file.hub_reference_date ? "" : ` · 20년은 ${res.ref}에 지났는지로 셈`}`];
   }
+  // r23(13 M3·3절 결론): 범위 '76.1~80.4% (…79.5%)' 대신 이름 붙인 선택지 세 줄을 같은 크기로(00b 결정 1: 산정 기준별 값을 주고 용역사가 고른다).
+  // 정하지 못한 건물이 없으면 세 값이 같아 한 줄. 홈 근거표 조각은 agingLines 첫 줄을 그대로 쓴다
+  function agingOptsHTML(u) {
+    if (!u.unk) return `<p class="rd-opt1">20년 이상 <b>${fmt(u.lo)}%</b></p>`;
+    const opts = [["20년 미만으로 치면", u.lo], ["20년 이상으로 치면", u.hi], ["빼고 세면", u.known]];
+    return `<p>완공된 날을 정하지 못한 건물 ${n0(u.unk)}동을</p><ul class="rd-opts">` +
+      opts.map(([k, v]) => `<li><span>${k}</span> <b>${v === null ? "값 없음(완공된 날이 있는 건물 없음)" : `${fmt(v)}%`}</b></li>`).join("") +
+      `</ul><p class="hint">셋 중 어느 값을 쓸지는 용역사가 고릅니다.</p>`;
+  }
   // 꼬리표 옆 쉬운 문장(09 1절: 꼬리표만 두지 않는다). 추가확인은 몇 동 더 확인하면 갈리는지(settleText) 그대로
   function agingNote(u) {
     if (u.status === MET) return `완공된 날이 없는 건물을 모두 20년 미만으로 쳐도 기준 ${URBAN.thr}%를 넘었습니다.`;
@@ -601,19 +611,21 @@
   const MISS_SHOW = 10;
   // 못 찾은 주소의 까닭(화면·홈 근거표 조각 proof_sample.json이 같은 글을 쓴다)
   const MISS_WHY = { missing: "건축물대장에 이 번지의 건물이 없음", otherDong: `고른 구·군의 법정동 이름이 아니거나 ${MERGE_MAX}개 동을 넘음`, road: "도로명 주소를 번지로 바꾸지 못함", bad: "주소(번지)로 읽지 못함" };
+  // r23(13 L1): 건물 파일에는 토지(필지) 목록이 없어 빈 땅·도로 번지와 잘못 적은 번지를 가를 수 없다 → 까닭은 하나로 두고 다음에 볼 자료를 붙인다
+  const MISS_NEXT = "토지대장의 지목(빈 땅·도로인지, 번지가 맞는지)";
   function leadHTML(res, m, file, { bad = [], unresolved = [] } = {}) {
     const miss = [[m.missing, MISS_WHY.missing], [m.otherDong, MISS_WHY.otherDong], [unresolved, MISS_WHY.road], [bad, MISS_WHY.bad]].filter(([l]) => l.length);
     const k = miss.reduce((s, [l]) => s + l.length, 0), u = res.urban, c = checkCells(res.perBuilding.map((r) => r.b), res.ref);
     const tag = u.status === MET ? "tag over" : u.status === CHECK ? "tag check" : "tag";
     const list = (l) => l.slice(0, MISS_SHOW).map(escH).join(", ") + (l.length > MISS_SHOW ? ` 외 ${n0(l.length - MISS_SHOW)}개` : "");
     return `<p class="rd-found"><b>대장에서 찾은 건물 ${n0(res.n)}동</b> · 못 찾은 주소 ${n0(k)}개</p>` +
-      `<div class="rd-aging"><h3>20년 넘은 건물 비율</h3>${agingLines(res, file).map((t) => `<p>${escH(t)}</p>`).join("")}` +
+      `<div class="rd-aging"><h3>20년 넘은 건물 비율</h3>${agingOptsHTML(u)}${agingLines(res, file).slice(1).map((t) => `<p class="hint">${escH(t)}</p>`).join("")}` +
       `<p class="rd-status"><span class="${tag}">${escH(u.status)}</span> ${escH(agingNote(u))}</p>` +
-      `<p class="hint">기준: ${escH(u.rule)}(${escH(u.basis)}). 앞의 두 값은 완공된 날이 없는 건물을 20년 미만으로 친 값과 20년 이상으로 친 값입니다.</p></div>` +
+      `<p class="hint">기준: ${escH(u.rule)}(${escH(u.basis)}).</p></div>` +
       `<div class="rd-cells"><h3>구청이 확인할 칸 <mark class="rm-mark">${n0(c.n)}칸</mark> / 전체 ${n0(c.m)}칸</h3>` +
       (c.kinds.length ? `<ul>${c.kinds.map((x) => `<li>${escH(x.label)} ${n0(x.n)}칸 → 다음에 볼 자료: ${escH(x.next)}</li>`).join("")}</ul>` : "") +
       `<p class="hint">${escH(c.rule)}</p></div>` +
-      `<div class="rd-miss"><h3>못 찾은 주소 ${n0(k)}개</h3>${miss.length ? `<ul>${miss.map(([l, why]) => `<li>${escH(why)} ${n0(l.length)}개: ${list(l)}</li>`).join("")}</ul>` : "<p>없음</p>"}` +
+      `<div class="rd-miss"><h3>못 찾은 주소 ${n0(k)}개</h3>${miss.length ? `<ul>${miss.map(([l, why]) => `<li>${escH(why)} ${n0(l.length)}개: ${list(l)}${why === MISS_WHY.missing ? `<br><span class="hint">다음에 볼 자료: ${MISS_NEXT}</span>` : ""}</li>`).join("")}</ul>` : "<p>없음</p>"}` +
       `<p>중복 목록(한 번지 여러 동·겹친 입력): 준비 중</p></div>`;
   }
 
@@ -670,7 +682,7 @@
       tr("20년 이상 건축물(2분의 1)", (r) => cell(r.urban.value, r.urban.status)) +
       tr("쇠퇴요건 2개 이상", (r) => cell(r.decline.status === NOT_MET ? "③ 해당 안 함" : "①·② 확인", r.decline.shown || r.decline.status)) +
       tr("노후·불량 건축물 수(주택정비형 재개발)", (r) => cell(r.old.value.split(" (")[0], r.old.status)) +
-      tr("첫 경계안과 다른 건물", (r, i) => cell(i ? `더함 ${r.added.toLocaleString("ko-KR")}동 · 빠짐 ${r.removed.toLocaleString("ko-KR")}동` : "기준")) +
+      tr("첫 구역과 다른 건물", (r, i) => cell(i ? `더함 ${r.added.toLocaleString("ko-KR")}동 · 빠짐 ${r.removed.toLocaleString("ko-KR")}동` : "기준")) +
       `</tbody></table>`;
   }
 
@@ -709,7 +721,7 @@
     // 조례 제5조②2는 주택정비형 재개발사업구역에만 쓴다(도시정비형은 대상 아님). 제목과 기준 줄에 밝힌다(규칙 대조 분류표 6)
     const src = new D.Sources(), title = `${file.name} 주택정비형 재개발 입안요건 사전검토`;
     const bld = src.ref({ source_name: file.source, source_url: file.source_url, reference_date: file.hub_reference_date, retrieved_at: file.retrieved_at, license_type: file.license });
-    const law = src.ref({ source_name: ORD, source_url: ORD_URL, reference_date: "2025-10-01", retrieved_at: "2026-10-23", license_type: "저작권 보호 대상 아님(저작권법 제7조)" });
+    const law = src.ref({ source_name: ORD, source_url: ORD_URL, reference_date: "2025-10-01", retrieved_at: "2026-11-22", license_type: "저작권 보호 대상 아님(저작권법 제7조)" });
     const box = [
       ["대상", `붙여 넣은 목록에서 건물 ${n0(res.n)}동을 찾음 · 대장 기준일 ${file.hub_reference_date}${m.missing.length ? ` · 못 찾은 지번 ${n0(m.missing.length)}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})` : ""}${m.otherDong.length ? ` · 다른 법정동 ${n0(m.otherDong.length)}개 제외` : ""}${bld}`],
       ["기준", `주택정비형 재개발(도시정비형은 대상 아님, 조례 제5조②2) · ${res.district ? "재정비촉진지구(50%)" : "일반(60%)"} · 연한은 조례 제3조②${law} · 경과 기준일 ${res.ref}(${res.ref === file.age_reference_date ? "자료 기준일" : "입력값"})`],
@@ -769,7 +781,7 @@
       ["20년 이상 건축물 비율은 어떤 기준일·분모로 셌나", `도시재생법 시행령 제17조 · 건축물대장 기준일 ${D.govDate(file.hub_reference_date)} · 분모 ${n0(res.n)}동(주건축물)`, `사용승인일 없는 ${n0(res.urban.unk)}동은 범위로 둠. 대장에 없는 무허가 건축물 미포함`],
       ["저층 주거 3분의 2는 어떻게 셌나", "2027 평가 가이드라인 p.36 · 주용도·층수·기타용도(주택 유형)", `${nv.lowrise.value.split(" (")[0]}. 주택 겸용·층수 해석은 추가확인`],
       ["인구·사업체 요건은 어디 값인가", "쇠퇴진단지표(행정동, 2025) · 30년·5년 두 길", "행정동 값이며 구역 값이 아님. 행정동에서 안 맞으면 집계구 등으로 따로 제시"],
-      ["경계를 바꾸면 결과가 어떻게 달라지나", "같은 건물 파일로 경계안 최대 3개 비교", `경계 도형은 없고 지번 목록 기준. 계산 제외 지번 ${n0(out)}개`],
+      ["경계를 바꾸면 결과가 어떻게 달라지나", "같은 건물 파일로 저장한 구역 최대 3개 비교", `경계 도형은 없고 지번 목록 기준. 계산 제외 지번 ${n0(out)}개`],
       ["현장 확인은 했나", "현장 기록(사진·위치 오차·확인자)을 PNU로 연결", "실태조사를 대신하지 않음. 기록은 대장 값을 바꾸지 않음"],
     ];
   }

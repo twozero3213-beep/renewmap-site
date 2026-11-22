@@ -29,11 +29,12 @@
     // v7(2026-11-13): 머리 메뉴와 같은 이름·순서(평가: 위는 '동네 진단·현장 기록', 아래는 '지도·현장'이라 다른 곳인 줄 알았다). 홈은 로고로 간다
     // R1(2026-11-13): 아래 탭은 넷(홈·동네 진단·현장 기록·보관함, DESIGN.md). 다섯 칸이 머리 '메뉴' 시트와 같은 목록이라 두 벌로 보였다.
     // r19(09 6절 1): 머리 메뉴 셋(대상지 계산·동네 현황·현장 사진 기록)에 홈·보관함을 더한 다섯. 순위·재생 사업은 꼬리글 도구 줄에서 연다
+    // r23(13 M8): 휴대폰에는 머리 '상담하기'가 메뉴 시트 안에만 있어 아래 탭의 보관함 자리에 상담하기를 둔다. 보관함은 꼬리글·지도 '보관함에 담기'로 연다
     const tabs = [['index.html', '홈', 'M3 11l9-8 9 8M5 9.5V20h14V9.5', /^(?!.*\/(?:field|dong)\/)[^#]*\/(?:index\.html)?(?:#.*)?$/],
       ['field/redev.html', '대상지 계산', 'M5 3h14v18H5zM8 7h8M8 11h2M14 11h2M8 15h2M14 15h2', /\/field\/redev\.html$/],
       ['explore.html#map', '동네 현황', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15', /explore\.html|\/dong\//],
       ['field/', '현장 사진 기록', 'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6', /\/field\/(?:index\.html)?$/],
-      ['box.html', '보관함', 'M3 8h18v12H3zM3 8l2-4h14l2 4M9 13h6', /box\.html$/],
+      ['about.html#contact', '상담하기', 'M4 5h16v11H10l-6 4zM8 9h8M8 12h5', /about\.html#contact$/],
     ];
     const current = fixedBase ? -1 : tabs.findIndex(t => t[3].test(here));
     const nav = document.createElement('nav');
@@ -48,7 +49,7 @@
     });
   }
   // 머리 메뉴(2026-11-13 v6→v7): 하는 일 순서의 한 벌. v7에서 넷과 상담 하나로 줄였다(정돈된 경쟁 서비스는 3~5개).
-  // 건물 나이 4D·보관함·데이터 출처는 꼬리글(모든 화면)·지도 단추·아래 탭바로 들어간다.
+  // 연도별 건물 나이·보관함·데이터 출처는 꼬리글(모든 화면)·지도 단추·아래 탭바로 들어간다.
   // HTML에 적힌 옛 메뉴는 자바스크립트가 없을 때를 위해 남기고 rm6.css가 숨긴다
   const header = document.querySelector('header.top .wrap');
   if (header && !header.querySelector('.rm-nav')) {

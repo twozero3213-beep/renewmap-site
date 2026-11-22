@@ -315,4 +315,9 @@ body.field details.fr-fold > summary { min-height: 44px; }
 .field #outLead ul { margin: 0 0 8px; padding-left: 1.2em; }
 .field #outLead .rd-found { font-size: 18px; }
 .field #outLead .rd-status { margin-top: 8px; }
+/* r23(13 M3): 20년 넘은 비율 선택지 세 줄은 같은 크기·같은 굵기(값만 굵게, 어느 하나를 앞세우지 않는다) */
+.field #outLead .rd-opts { list-style: none; padding: 0; margin: 4px 0 4px; }
+.field #outLead .rd-opts li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.field #outLead .rd-opts b, .field #outLead .rd-opt1 b { font-size: 20px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.field #reqBox { margin: 16px 0; }
 .field #out > #csv { margin: 0 0 12px; }

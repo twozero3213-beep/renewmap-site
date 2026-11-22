@@ -160,6 +160,7 @@
 #intro .about-get { grid-column: auto; align-self: start; }
 #intro .about-def { margin: 0 0 12px; font-size: 17px; line-height: 1.6; color: var(--ink); }
 #intro .about-for { margin: 0 0 12px; font-size: var(--t-sub); line-height: 1.6; color: var(--ink); max-width: 46em; }
+#intro .about-lead { margin: 12px 0 8px; font-size: 17px; font-weight: 600; line-height: 1.6; color: var(--ink); max-width: 46em; }   /* r23(13 M6): 단추 바로 위 첫 상품 한 줄(홈 .h6-lead와 같은 글) */
 .about-get-list { margin: 0; padding: 0 0 0 1.1em; font-size: 15px; line-height: 1.6; }
 .about-get-list li + li { margin-top: 6px; }
 #main.about-page > section > .wrap > h2 { margin-top: 32px; margin-bottom: 14px; }

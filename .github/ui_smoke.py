@@ -373,7 +373,7 @@ def main():
                         else:
                             page.evaluate('() => document.fonts.ready')
                             page.wait_for_load_state('networkidle', timeout=15000)
-                        if route=='about.html':   # 2026-11-14 디자인 2차: 소개의 구 칩 대시보드를 한 문단 + '건물 나이 4D로 보기' 단추로 바꿨다
+                        if route=='about.html':   # 2026-11-14 디자인 2차: 소개의 구 칩 대시보드를 한 문단 + '연도별 건물 나이로 보기' 단추로 바꿨다
                             page.wait_for_selector('main h1')
                         if route=='privacy.html':
                             page.wait_for_timeout(1800)
@@ -425,7 +425,7 @@ def main():
                                 for label in ('PDF로 저장','엑셀로 받기','워드로 받기','파워포인트로 받기'):
                                     assert expect_doc.get_by_role('button',name=label,exact=True).is_visible()
                                 expect_doc.get_by_role('button',name='이 동에 맞는 재생 사업',exact=True).click()
-                                expect_doc.get_by_role('heading',name='반여1동 사업 요건 대조',exact=True).wait_for(state='visible')
+                                expect_doc.get_by_role('heading',name='반여1동에 맞는 재생 사업',exact=True).wait_for(state='visible')
                                 check(route,width,'document_mode_copy')
                             page.goto(base+route,wait_until='networkidle')
                         if route=='explore.html' and not args.base:

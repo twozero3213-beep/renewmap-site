@@ -30,7 +30,7 @@
 <link rel="stylesheet" href="pretendard.css">
 <link rel="stylesheet" href="styles.css?v=20261122-r19">
 <link rel="stylesheet" href="site-v4.css?v=20261120-r11">
-<link rel="stylesheet" href="hero.css?v=20261121-r16">
+<link rel="stylesheet" href="hero.css?v=20261122-r23">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
  {"@type":"Organization","@id":"https://twozero3213-beep.github.io/renewmap-site/#org","name":"리뉴맵","alternateName":"RENEWMAP","url":"https://twozero3213-beep.github.io/renewmap-site/","logo":"https://twozero3213-beep.github.io/renewmap-site/icon-512.png","email":"renewmapteam@gmail.com","areaServed":"KR","description":"리뉴맵은 도시재생 근거 기록 서비스입니다. 동네 현황 조사부터 준공 뒤 재방문까지, 도시재생에 쓰는 숫자마다 출처와 기준일을 붙여 다음 담당자에게 넘깁니다."},
@@ -53,11 +53,11 @@
 ]}
 </script>
 <script src="app.js" defer></script>
-<script src="site.js?v=20261122-r19" defer></script>
+<script src="site.js?v=20261122-r23" defer></script>
 <script src="site-motion.js" defer></script>
-<link rel="stylesheet" href="content-pages.css?v=20261119-r8">
+<link rel="stylesheet" href="content-pages.css?v=20261122-r23">
 <script src="content-pages.js?v=20261120-r10" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261122-r22">
+<link rel="stylesheet" href="rm6.css?v=20261122-r23">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -75,7 +75,9 @@
       <p class="about-def">리뉴맵은 도시재생 근거 기록 서비스입니다. 동네 현황 조사부터 준공 뒤 재방문까지, 도시재생에 쓰는 숫자마다 출처와 기준일을 붙여 다음 담당자에게 넘깁니다.</p>
       <p class="about-for">시·군·구 도시재생 담당자, 도시재생지원센터, 도시계획·도시재생 용역사를 위해 만들었습니다. 공공기관·연구원, 정비업체, 주민협의체도 같은 근거를 볼 수 있습니다.</p>
       <p class="sub">도시재생은 계획부터 준공 뒤 관리까지 몇 해가 걸립니다. 그사이 담당자와 용역사가 바뀌고, 같은 숫자를 의회·감사·보완 요청에서 다시 묻습니다. 리뉴맵은 그 숫자의 출처와 기준일, 현장에서 고친 까닭까지 남깁니다.</p>
-      <div class="about-cta"><a class="btn" href="explore.html?report=brief&amp;frag=MLIT-DECLINE#map/21/21090/21090700" data-track="cta_hero">반여1동 동네 현황표 보기</a><a class="btn ghost" href="explore.html?report=onepage#map/21/21090/21090700">한 장 요약 예시 보기</a><a class="btn ghost" href="pilot-scope.html">맡기면 받는 것 보기</a></div>
+      <!-- r23(13 M6): 첫 화면이 다른 상품(동네 현황표)을 앞세웠다 → 홈과 같은 첫 상품 문장·채운 단추, 동네 현황표는 둘째 단추. 정의 문장(D29)은 그대로 -->
+      <p class="about-lead">주소 목록을 붙여 넣으면 건물마다 대장을 찾아, 20년 넘은 건물 비율과 근거 표를 만듭니다. 못 찾은 주소는 까닭과 함께 따로 적습니다.</p>
+      <div class="about-cta"><a class="btn" href="field/redev.html" data-track="cta_hero">주소 넣고 계산해 보기</a><a class="btn ghost" href="explore.html?report=brief&amp;frag=MLIT-DECLINE#map/21/21090/21090700">반여1동 동네 현황표 보기</a><a class="btn ghost" href="pilot-scope.html">맡기면 받는 것 보기</a></div>
       <details class="about-stage rm-disclosure"><summary>참고용 계산입니다. 판단은 구청·담당 기관이 합니다</summary><p>계산 규칙마다 근거 조문과 지금 상태를 공개합니다. 쇠퇴를 보는 세 가지 기준의 계산 규칙은 지금 '조문 숫자 대조 전 · 계산 방법과 해석은 정하지 못함 · 참고용 계산'입니다. 규칙 상태와 관계없이 결과는 참고용 계산입니다. 판단은 구청·담당 기관이 합니다.</p></details>
       </div>
       <details class="about-get rm-disclosure">
@@ -118,7 +120,7 @@
         <div><dt>담당자나 용역사가 바뀔 때</dt><dd>남은 검토·후속 점검과 연결 파일을 인수인계 요약과 납품 묶음(ZIP)으로 넘깁니다.<br>이어서 고치려면 백업(JSON)도 함께 넘기세요.</dd></div>
       </dl>
       <div class="about-uses">
-      <p class="about-use"><a href="explore.html?ind=ELDERLY_LIVING_ALONE#map/21">한파 돌봄 순찰 대상 고르기</a><span>부산에서 구·군을 고르면 동별 독거노인 수가 지도에 칠해집니다. 순찰 대상을 고를 때 참고하세요.</span></p>
+      <p class="about-use"><a href="explore.html?ind=ELDERLY_LIVING_ALONE#map/21">한파 돌봄 순찰 대상 고르기</a><span>부산 구·군을 고르면 동마다 독거노인 수를 볼 수 있습니다.</span></p>
       <p class="about-use"><a href="explore.html?ind=HOSP_CLINIC_COUNT#map/21">복지 제안서 근거표</a><span>병원·의원·경로당 같은 생활 시설 수를 동별로 보고, 출처·기준일이 붙은 근거 표를 엑셀(XLSX)로 받습니다.</span></p>
       <p class="about-use"><a href="time4d.html">화재·안전 점검 건물 고르기</a><span>법정동 건물을 완공된 해별로 보고 점검할 건물을 고를 때 참고하세요.</span></p>
       <p class="about-use"><a href="dong/21090700.html#cite">기사·의회 자료에 숫자 옮기기</a><span>동 페이지마다 인용 한 줄이 있습니다. 출처·기준일·이용조건이 붙은 한 줄을 복사해서 붙여 넣으세요.</span></p>
@@ -145,7 +147,7 @@
         <div><dt>출처 모음(근거서)</dt><dd>모든 지표와 출처·계산식을 담은 긴 판입니다.</dd></div>
       </dl>
       <p class="about-count">무료이고 로그인이 없습니다. 부산은 건축물대장을 동마다 모아 20년 이상 건축물 비율을 동수·연면적·세대 세 기준으로 따로 셉니다.</p>
-      <p class="about-cta"><a class="btn ghost" href="explore.html?report=brief&amp;frag=MLIT-DECLINE#map/21/21090/21090700">반여1동 동네 현황표 보기</a><a class="btn ghost" href="explore.html?report=onepage#map/21/21090/21090700">한 장 요약 예시 보기</a><a class="btn ghost" href="time4d.html">건물 나이 4D 보기</a></p>
+      <p class="about-cta"><a class="btn ghost" href="explore.html?report=brief&amp;frag=MLIT-DECLINE#map/21/21090/21090700">반여1동 동네 현황표 보기</a><a class="btn ghost" href="explore.html?report=onepage#map/21/21090/21090700">한 장 요약 예시 보기</a><a class="btn ghost" href="time4d.html">연도별 건물 나이 보기</a></p>
     </div>
   </section>
 
@@ -283,6 +285,6 @@
 </main>
 
 
-<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="explore.html">동네 현황</a><a href="programs.html">재생 사업</a><a href="field/redev.html">대상지 계산</a><a href="field/">현장 사진 기록</a><a href="tasks.html">과업·납품</a><a href="rank.html">동네 비교 점수</a><a href="relocate.html">부산 이전 직원 동네 비교</a><a href="time4d.html">건물 나이 4D</a><a href="box.html">보관함</a><a href="docs.html">문서 열기</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">상담하기</a><a href="ethics.html">AI·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
+<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="explore.html">동네 현황</a><a href="programs.html">재생 사업</a><a href="field/redev.html">대상지 계산</a><a href="field/">현장 사진 기록</a><a href="tasks.html">과업·납품</a><a href="rank.html">동네 비교 점수</a><a href="relocate.html">부산 이전 직원 동네 비교</a><a href="time4d.html">연도별 건물 나이</a><a href="box.html">보관함</a><a href="docs.html">문서 열기</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">상담하기</a><a href="ethics.html">AI·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 </body>
 </html>

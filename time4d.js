@@ -1,4 +1,4 @@
-/* 건물 나이 4D 보기(2026-11-13): 부산 법정동 건물을 입체로 세우고, 연도를 움직이면 사용승인일 기준으로 지어지고 낡아 가는 모습을 보여 준다.
+/* 연도별 건물 나이 보기(2026-11-13): 부산 법정동 건물을 입체로 세우고, 연도를 움직이면 사용승인일 기준으로 지어지고 낡아 가는 모습을 보여 준다.
    외곽선·높이는 GIS건물통합정보(data/bldg_outline), 사용승인일·용도는 건축물대장 표제부(data/buildings). 둘은 관리 건축물대장 PK(mgm_bld_pk)로 잇는다.
    연수는 '지금 있는 건물이 그대로 있다'고 보고 사용승인 연도를 빼는 달력 계산이다. 철거·신축 예측이 아니다(redev.js 도달 날짜와 같은 원칙). */
 (function (root) {
@@ -339,7 +339,7 @@
       const shown = $('t4Dong').selectedOptions[0]?.textContent || '첫 동';
       // 불러온 뒤에 쓴다(전에는 '불러오는 중' 안내에 덮여, 대구에서 4D를 열면 말없이 부산이 나왔다)
       if (outside) $('t4Status').textContent = `지도에서 보던 자리는 4D 자료가 없습니다(부산만 있습니다). 대신 ${shown}을 보여 줍니다.`;
-      else if (missing) $('t4Status').textContent = `주소의 법정동 코드(${asked || '빈 값'})를 부산 자료에서 찾지 못해 ${shown}을 보여 줍니다. 건물 나이 4D는 부산만 있습니다.`;
+      else if (missing) $('t4Status').textContent = `주소의 법정동 코드(${asked || '빈 값'})를 부산 자료에서 찾지 못해 ${shown}을 보여 줍니다. 연도별 건물 나이는 부산만 있습니다.`;
     });
   }).catch(() => { $('t4Status').textContent = '동 목록을 불러오지 못했습니다.'; });
 })(typeof self !== 'undefined' ? self : this);

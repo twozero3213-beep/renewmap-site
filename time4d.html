@@ -6,14 +6,14 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://tiles.openfreemap.org https://tiles.mapterhorn.com; worker-src 'self' blob:; child-src 'self' blob:; form-action 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; manifest-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script src="frame-guard.js"></script>
-<title>건물 나이 4D | 리뉴맵</title>
+<title>연도별 건물 나이 | 리뉴맵</title>
 <meta name="description" content="부산 법정동 건물을 입체로 세우고 연도를 움직여, 20년 넘은 건물이 절반·3분의 2를 넘는 해를 건축물대장 사용승인일로 계산해 보여 줍니다.">
 <link rel="canonical" href="https://twozero3213-beep.github.io/renewmap-site/time4d.html">
 <meta property="og:url" content="https://twozero3213-beep.github.io/renewmap-site/time4d.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="리뉴맵 RENEWMAP">
-<meta property="og:title" content="건물 나이 4D | 리뉴맵">
+<meta property="og:title" content="연도별 건물 나이 | 리뉴맵">
 <meta property="og:description" content="부산·경상도 법정동 건물을 입체로 세우고 연도를 움직여, 20년 넘은 건물이 절반·3분의 2를 넘는 해를 건축물대장 사용승인일로 계산해 보여 줍니다.">
 <meta property="og:image" content="https://twozero3213-beep.github.io/renewmap-site/og.png">
 <meta property="og:image:width" content="1200">
@@ -26,13 +26,13 @@
 <link rel="stylesheet" href="styles.css?v=20261122-r19">
 <link rel="stylesheet" href="site-v4.css?v=20261120-r11">
 <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
-<link rel="stylesheet" href="time4d.css?v=20261119-r3">
-<script src="site.js?v=20261122-r19" defer></script>
+<link rel="stylesheet" href="time4d.css?v=20261122-r23">
+<script src="site.js?v=20261122-r23" defer></script>
 <script src="vendor/maplibre/maplibre-gl-csp.js" defer></script>
 <script src="util.js?v=20261122-r19" defer></script>
 <script src="save-file.js?v=20261119-w2" defer></script>
-<script src="time4d.js?v=20261122-r19" defer></script>
-<link rel="stylesheet" href="rm6.css?v=20261122-r22">
+<script src="time4d.js?v=20261122-r23" defer></script>
+<link rel="stylesheet" href="rm6.css?v=20261122-r23">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -43,7 +43,7 @@
       <!-- 2026-11-19: 패널 몸통만 굴리고 '구역 요건 계산'·CSV는 아래 고정 줄에(1440×900에서 단추가 패널 1201px 아래에 잘렸다) -->
       <div class="t4-side-body">
       <div class="t4-side-top">
-      <h1 id="t4Title">건물 나이 4D</h1>
+      <h1 id="t4Title">연도별 건물 나이</h1>
       <p class="sub">건축물대장에 적힌 완공된 날(사용승인일)로 해마다 20년 이상 건축물 비율이 어떻게 바뀌는지 봅니다. 그 비율이 절반과 3분의 2를 넘는 해를 계산합니다. 건물 자료 · 부산 법정동</p>
       <!-- R2 15: 제목 → 구·군·법정동 → 범례(한 줄) → 숫자 → 설명 순서. 1440×900에서 범례가 813px 아래로 밀려 잘렸다 -->
       <div class="t4-pick">
@@ -105,6 +105,6 @@
     <div class="t4-how-foot"><p class="t4-src" id="t4Src"></p><a class="btn ghost" href="field/city3d.html">브이월드 3D 지도로 지금 건물 보기</a></div>
   </section>
 </main>
-<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="explore.html">동네 현황</a><a href="programs.html">재생 사업</a><a href="field/redev.html">대상지 계산</a><a href="field/">현장 사진 기록</a><a href="tasks.html">과업·납품</a><a href="rank.html">동네 비교 점수</a><a href="relocate.html">부산 이전 직원 동네 비교</a><a href="time4d.html">건물 나이 4D</a><a href="box.html">보관함</a><a href="docs.html">문서 열기</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">상담하기</a><a href="ethics.html">AI·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
+<footer><div class="wrap"><p><b>근거가 남는 도시재생</b><br>리뉴맵의 계산은 공공데이터로 낸 참고 계산입니다. 판정은 담당 기관이 합니다.</p><div class="links"><p><b>도구</b><a href="explore.html">동네 현황</a><a href="programs.html">재생 사업</a><a href="field/redev.html">대상지 계산</a><a href="field/">현장 사진 기록</a><a href="tasks.html">과업·납품</a><a href="rank.html">동네 비교 점수</a><a href="relocate.html">부산 이전 직원 동네 비교</a><a href="time4d.html">연도별 건물 나이</a><a href="box.html">보관함</a><a href="docs.html">문서 열기</a></p><p><b>근거</b><a href="data.html">데이터 출처</a><a href="rules.html">기준 원문 대조</a><a href="evidence.html">근거 읽는 법</a><a href="dong/index.html">행정동 목록</a><a href="mailto:renewmapteam@gmail.com?subject=%5B%EB%A6%AC%EB%89%B4%EB%A7%B5%5D%20%ED%8B%80%EB%A6%B0%20%EC%88%AB%EC%9E%90%20%EC%95%8C%EB%A6%BC&amp;body=%EC%96%B4%EB%8A%90%20%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98%20%EC%96%B4%EB%96%A4%20%EC%88%AB%EC%9E%90%EA%B0%80%20%EC%99%9C%20%EC%9D%B4%EC%83%81%ED%95%9C%EC%A7%80%20%EC%A0%81%EC%96%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94.%20%EC%B6%9C%EC%B2%98%20%EC%A3%BC%EC%86%8C%EA%B0%80%20%EC%9E%88%EC%9C%BC%EB%A9%B4%20%ED%95%A8%EA%BB%98%20%EB%B6%99%EC%97%AC%20%EC%A3%BC%EC%84%B8%EC%9A%94.">틀린 숫자 알리기</a></p><p><b>리뉴맵</b><a href="about.html">서비스 소개</a><a href="about.html#contact">상담하기</a><a href="ethics.html">AI·데이터 원칙</a><a href="privacy.html">개인정보 처리방침</a><a href="privacy.html#analytics">방문 분석 안내</a><a href="mailto:renewmapteam@gmail.com">renewmapteam@gmail.com</a></p></div><p>리뉴맵 RENEWMAP, 부산</p></div></footer>
 </body>
 </html>

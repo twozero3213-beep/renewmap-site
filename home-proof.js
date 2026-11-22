@@ -22,7 +22,7 @@
     const by = new Map();
     for (const it of m.items || []) by.set(it.reason, (by.get(it.reason) || 0) + 1);
     const why = by.size === 1 ? [...by.keys()][0] : [...by].map(([r, n]) => `${r} ${n}개`).join(', ');
-    return `<p class="h7-proof-miss"><b>못 찾은 주소 ${m.count}개</b>는 계산에서 뺐습니다.${why ? ` 까닭: ${esc(why)}.` : ''}</p>`;
+    return `<b>못 찾은 주소 ${m.count}개</b>는 계산에서 뺐습니다.${why ? ` 까닭: ${esc(why)}.` : ''}`;
   }
   function html(d) {
     if (!ok(d)) return '';
@@ -32,10 +32,10 @@
     return `<header class="h7-proof-head"><p class="h7-proof-badge">${esc(d.badge)}</p><h2 id="proofTitle">${where}</h2>`
       + `<p class="h7-proof-check">구청이 확인할 칸 <span class="rm-mark">${esc(c.n)}칸</span> / 전체 ${esc(c.m)}칸</p></header>`
       + table(d.columns, d.rows)
-      + missLine(d.missing)
-      + (Array.isArray(sum.aging_lines) && sum.aging_lines[0] ? `<p class="h7-proof-sum">주소 ${esc((d.input || []).length || '')}개 전체 결과: ${esc(sum.aging_lines[0])}</p>` : '')
-      + `<p class="h7-proof-cap">${esc(d.caption)} ${esc(d.duplicates || '')}</p>`
+      // r23(13 M5): 표 아래 세 문단(못 찾은 주소·전체 결과·표 설명)을 한 문단으로 줄여 한눈 띠를 데스크톱 첫 화면 안으로 올린다. 표 설명은 펼침 안 '표'
+      + `<p class="h7-proof-sum">${[Array.isArray(sum.aging_lines) && sum.aging_lines[0] ? `주소 ${esc((d.input || []).length || '')}개 전체 결과: ${esc(sum.aging_lines[0])}.` : '', missLine(d.missing)].filter(Boolean).join(' ')}</p>`
       + `<details class="h7-proof-src"><summary>이 숫자는 어디서 왔나요?</summary><dl>`
+      + `<dt>표</dt><dd>${esc(d.caption)} ${esc(d.duplicates || '')}</dd>`
       + `<dt>자료</dt><dd>${esc(s.name)}</dd><dt>이용 조건</dt><dd>${esc(s.license)}</dd>`
       + `<dt>자료 기준</dt><dd>${esc(day(s.reference_date))} 기준</dd>${s.retrieved_at ? `<dt>조회한 날</dt><dd>${esc(day(s.retrieved_at))}</dd>` : ''}`
       + `<dt>세는 기준</dt><dd>${esc(c.rule || '')}${kinds ? `<ul>${kinds}</ul>` : ''}</dd></dl></details>`;

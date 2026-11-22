@@ -429,10 +429,10 @@
 .dg-key { font-size: 17px; font-weight: 700; }
 .dg-p b { font-weight: 700; }
 .dg-ref { font-size: 65%; line-height: 0; color: var(--dim); }
-.dg-small { margin: 0 0 4px; font-size: var(--t-cap); color: var(--dim); overflow-wrap: anywhere; }
-.dg-fi { display: block; font-size: var(--t-cap); color: var(--dim); }
+.dg-small { margin: 0 0 4px; font-size: var(--t-sub); color: var(--dim); overflow-wrap: anywhere; }
+.dg-fi { display: block; font-size: var(--t-sub); color: var(--dim); }
 .dg-lead { margin: 0 0 4px; font-size: 15px; font-weight: 700; }
-.dg-table { width: 100%; border-collapse: collapse; font-size: var(--t-cap); }
+.dg-table { width: 100%; border-collapse: collapse; font-size: var(--t-sub); }   /* r23(13 L3): 뜻이 있는 글(양식 항목·표 머리·출처 칸)은 15px 아래로 내리지 않는다(09 5절). 인쇄 크기는 아래 pt 규칙 */
 .dg-table th, .dg-table td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
 .dg-table th { background: var(--mute-bg); }
 .dg-table td:nth-child(2) { font-variant-numeric: tabular-nums; }
@@ -736,3 +736,4 @@ body.explore-page #heroSearch .hero-search-note, body.explore-page #heroSearch .
 .sr-req-rows li .sr-calc, .sr-req-rows li .sr-src { font-size: 15px; color: var(--dim); }
 /* r19(사이트 현황 조사): 390px에서 양식 고르기 칸 글자가 칸 밖으로 잘렸다 → 한 줄을 다 쓰고, 고르는 이름은 양식 이름 앞부분만(map.js fragPanelHTML) */
 .rp-frag-ctl .map-select { min-width: 0; flex: 1 1 260px; }
+.rp-intro .rp-code { font-size: var(--t-cap); }   /* r23(13 L5): 행정동 코드는 이름 뒤 작은 글(14px 아래로 내리지 않는다) */

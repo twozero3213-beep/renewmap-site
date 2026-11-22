@@ -44,3 +44,12 @@
   main.page[data-section-toc] { display: block; }
   .cp-side-toc { display: none !important; }
 }
+/* r23(13 M7): 맡기면 받는 것 — 받는 것·첫 장·검수 기준 세 칸을 목록 위에 크기·굵기로 가른다. 계약·정산·웹 도구는 접고 인쇄에는 펼친다(print-page.js) */
+.ps-top { display: grid; gap: 12px; margin: 16px 0 20px; }
+.ps-key { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.ps-key h2 { margin: 0 0 8px; font-size: 20px; line-height: 1.4; }
+.ps-key p { margin: 0; font-size: 17px; line-height: 1.6; }
+.ps-key .ps-file { margin-top: 8px; font-size: 15px; color: var(--dim); }
+.ps-more { margin: 12px 0 16px; }
+@media (min-width: 900px) { .ps-top { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media print { .ps-top { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6pt; } .ps-key { padding: 6pt; } .ps-key h2 { font-size: 13pt; } .ps-key p { font-size: 10pt; } }

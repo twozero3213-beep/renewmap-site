@@ -12,6 +12,9 @@
   const q = s => '"' + s.replace(/[\\"\n]/g, ' ') + '"';
   const name = head.querySelector('b'), when = head.querySelector('span');
   let done = false;
+  // r23(13 M7): 화면에서 접은 칸(맡기면 받는 것의 '계약·정산·웹 도구')도 결재 첨부(인쇄)에는 펼쳐 싣는다
+  window.addEventListener('beforeprint', () => { for (const d of document.querySelectorAll('details[data-print-open]:not([open])')) { d.open = true; d.dataset.printShut = ''; } });
+  window.addEventListener('afterprint', () => { for (const d of document.querySelectorAll('details[data-print-shut]')) { d.open = false; delete d.dataset.printShut; } });
   window.addEventListener('beforeprint', () => {
     if (done || !name) return;
     const sheet = [...document.styleSheets].find(s => /rm6\.css/.test(s.href || ''));

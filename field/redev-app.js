@@ -30,7 +30,7 @@
     if (!gus.length) return;
     const fill = (sel, items, pick) => sel.replaceChildren(...items.map(([v, t]) => { const o = new Option(t, v); o.selected = v === pick; return o; }));
     const showDongs = (gu, pick) => { fill($("dong"), gus.find((s) => s.code === gu).dongs.map((d) => [d.code, `${d.name} (건물 ${d.count.toLocaleString("ko-KR")}동)`]), pick); syncWhere(); };
-    // 2026-11-13: 건물 나이 4D·동 페이지에서 ?bjd=법정동코드로 오면 그 구·동을 고른 채 연다(11-13 3차: 어디서 와도 동이 이어지지 않음)
+    // 2026-11-13: 연도별 건물 나이·동 페이지에서 ?bjd=법정동코드로 오면 그 구·동을 고른 채 연다(11-13 3차: 어디서 와도 동이 이어지지 않음)
     const want = new URLSearchParams(location.search).get("bjd");
     const from = want && gus.find((s) => s.dongs.some((d) => d.code === want));
     fill($("gu"), gus.map((s) => [s.code, s.name]), from ? from.code : "26350");
@@ -42,7 +42,7 @@
     try { back = JSON.parse(sessionStorage.getItem(LAST_KEY) || "null"); } catch (err) { back = null; }
     if (back && back.list && back.list === $("list").value && back.dong === $("dong").value) $("f").requestSubmit();
     const n = gus.reduce((s, g) => s + g.dongs.length, 0);
-    $("coverage").textContent = `공개판의 건물 단위 계산은 부산 ${gus.length}개 구·군 ${n}개 법정동에서만 됩니다. 다른 시·도는 건물 자료 공개 조건을 확인하기 전이라 열지 않았습니다.`;
+    $("coverage").textContent = `건물별 계산은 지금 부산 ${gus.length}개 구·군 ${n}개 법정동에서만 됩니다. 다른 시·도는 건물 자료 공개 조건을 확인한 뒤 엽니다.`;
   }).catch(() => {});
 
   // 행정동 쇠퇴 값은 전국 지도 자료(national/emd)에 있다. 건축물대장과 시군구 코드 체계가 달라 구·군 이름으로 잇는다
@@ -428,7 +428,7 @@
       }
       if (l.field && l.status === R.CHECK) {   // 현장에서 볼 수 있는 줄은 현장 기록으로 바로 넘긴다(같은 앱, 항목이 미리 골라진다)
         const a = document.createElement("a");
-        a.href = `./?check=${l.field}`; a.textContent = "현장 기록으로 확인하기";
+        a.href = `./?check=${l.field}`; a.textContent = "현장 사진 기록으로 확인하기";
         li.append(a);
       }
       return li;
@@ -483,7 +483,7 @@
         li.append(r);
       } else if (it.b.pnu) {
         const a = document.createElement("a");
-        a.href = `./?check=unregistered&pnu=${it.b.pnu}&jibun=${encodeURIComponent(it.b.jibun || "")}`; a.textContent = "현장 기록으로 보내기";
+        a.href = `./?check=unregistered&pnu=${it.b.pnu}&jibun=${encodeURIComponent(it.b.jibun || "")}`; a.textContent = "현장 사진 기록으로 보내기";
         li.append(a);
       }
       ul.append(li);
@@ -529,13 +529,13 @@
       plans.forEach((p, i) => { $("planList").children[i].firstChild.textContent = `${p.name} · ${p.dongName} ${p.res.n.toLocaleString("ko-KR")}동 `; });
     } catch (err) {
       if (request !== plansRevision) return;
-      planSay(err.message === R.REGION_ERROR ? R.REGION_ERROR : "경계안을 다시 세지 못했습니다.\n인터넷 연결을 확인해 주세요.", true);
+      planSay(err.message === R.REGION_ERROR ? R.REGION_ERROR : "저장한 구역을 다시 세지 못했습니다.\n인터넷 연결을 확인해 주세요.", true);
     }
   }
   $("savePlan").addEventListener("click", () => {
     const ps = loadPlans();
-    if (ps.length >= R.PLAN_MAX) return planSay(`경계안은 ${R.PLAN_MAX}개까지 비교해요. 하나를 지우고 넣어 주세요.`, true);
-    const name = `경계안 ${["A", "B", "C"].find((x) => !ps.some((p) => p.name === `경계안 ${x}`))}`;
+    if (ps.length >= R.PLAN_MAX) return planSay(`구역은 ${R.PLAN_MAX}개까지 비교해요. 하나를 지우고 넣어 주세요.`, true);
+    const name = `구역 ${["A", "B", "C"].find((x) => !ps.some((p) => p.name === `구역 ${x}`))}`;
     if (!savePlans([...ps, { name, dong: last.file.bjd10, list: $("list").value, district: $("district").checked, ref: last.res.ref }])) return planSay("이 브라우저는 저장을 막아 두었습니다.", true);
     planSay(`${name}으로 저장했어요.`);
     renderPlans().then(() => $("plans").scrollIntoView({ block: "start" }));

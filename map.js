@@ -15,6 +15,9 @@
   // 쇠퇴 3요건 비율은 홈 카드·동 페이지·문서와 같게 소수 둘째 자리까지(2026-11-14 v9, 같은 동이 34.81%인데 표에서 34.8%로 보였다). 다른 지표는 그대로
   const REQ2 = new Set(['DECLINE_POP_DROP30Y_PCT', 'DECLINE_BIZ_DROP10Y_PCT', 'DECLINE_AGING_20Y_PCT']);
   const fmtI = (v, ind, mode, unit) => (isNum(v) && ind && mode !== 'trend' && REQ2.has(ind.code) ? fmt2(v) + (unit || '') : fmt(v, unit));
+  // r23(13 L4): 왼쪽 목록에서 '83.4%'와 '85.64%'가 섞였다(끝 0을 지움) → 목록 값만 소수 둘째 자리로 맞춘다(반올림은 fmt2와 같다, 문서·패널 글은 그대로)
+  const fmtL = (v, ind, mode, unit) => (isNum(v) && ind && mode !== 'trend' && REQ2.has(ind.code) && !Number.isInteger(v)
+    ? roundD(v, 2).toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (unit || '') : fmtI(v, ind, mode, unit));
   const SOURCE_DEFAULT = '도시재생종합정보체계 쇠퇴진단지표';
   const SERIES_NO_CELL = '해당 연도 출처 기록 없음 · 근거 상세 추가확인';
 
@@ -574,7 +577,7 @@
         const parts = lawInds(inds).map(i => ({ i, s: summaryOf(sg, i.code) })), ys = parts.map(p => p.s.year).filter(isNum);
         s = { value: sumValue(parts.map(p => rowOf(p.i, p.s.value))), year: ys.length ? Math.max(...ys) : null, status: null };
       }
-      return { code: String(sg.code5), name: sg.name, kind: sg.kind || null, value: s.value, year: s.year, status: s.status, text: s.dongMedian && isNum(s.value) ? `${fmtI(s.value, ind, mode, scale.unit)} · 동 중앙값` : fmtI(s.value, ind, mode, scale.unit) || '자료 없음', color: colorOf(s.value, scale), bbox: sg.bbox || null,
+      return { code: String(sg.code5), name: sg.name, kind: sg.kind || null, value: s.value, year: s.year, status: s.status, text: s.dongMedian && isNum(s.value) ? `${fmtL(s.value, ind, mode, scale.unit)} · 동 중앙값` : fmtL(s.value, ind, mode, scale.unit) || '자료 없음', color: colorOf(s.value, scale), bbox: sg.bbox || null,
         over: r ? r.over : null, n: r ? r.n : null, unsure: r ? r.unsure : null, check: s.status === '추가확인' || torn };   // check: 지도는 결측과 같은 빗금
     });
   }
@@ -641,7 +644,7 @@
       else if (ind.src === 'forecast') { const f = ind.pending || ind.level === 'sg' ? null : fcOf(ext, code, ind.fc); if (f && !f.held) { v = f.point; lo = f.lo; hi = f.hi; y = ext.horizon; } }
       else if (ind.level === 'sg') { v = null; } // 시군구 단위 자료는 읍·면·동 지도에 칠하지 않는다
       else if (!ind.pending) { const c = livingCell(lm.get(code), key); v = c && isNum(c.value) ? c.value : null; y = c ? c.base_year ?? null : null; }
-      return { code, name: d.name, kind: d.kind || null, value: v, year: y, text: fmtI(v, ind, mode, scale.unit) || '자료 없음', color: colorOf(v, scale), unmatched: unmatched.has(code), lo, hi };
+      return { code, name: d.name, kind: d.kind || null, value: v, year: y, text: fmtL(v, ind, mode, scale.unit) || '자료 없음', color: colorOf(v, scale), unmatched: unmatched.has(code), lo, hi };
     });
   }
   // 같은 범위에서 기준선을 넘은 곳의 개수(순위 아님). 종합은 1개 이상인 곳
@@ -1196,7 +1199,7 @@
       return `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name)}</td><td>${esc(s.ref || (r.year ? `${r.year}년` : '출처 기록 없음'))}${ageSmall(s.ref)}</td><td>${esc(s.formula ? (DG && DG.readerText ? DG.readerText(s.formula) : s.formula) : '출처 기록 없음')}</td><td>${esc(s.rule || '출처 기록 없음')}</td></tr>`; }).join('')}</tbody></table></div></div></section>`;
     const frag = fragPanelHTML(sel || '');
     return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 현황표·출처 모음</h3><div class="rp-tools">${fileTools(it, dy, '4-1 표·근거서', !frag.includes('data-frag-hwpx'))}</div></div>` +
-      `${deliveryReviewHTML(brief)}<p class="rp-intro rp-src-line">${esc(srcHead('4. 출처·계산식'))}</p><p class="rp-intro rp-brief-head">${esc(BRIEF_HEAD)}</p><p class="rp-intro">${esc(here)} · 행정동 ${esc(it.code)} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'} · 생활 지표는 항목별 기준연도</p>${frag}${sec1}${sec2}${sec3}${sec4}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
+      `${deliveryReviewHTML(brief)}<p class="rp-intro rp-src-line">${esc(srcHead('4. 출처·계산식'))}</p><p class="rp-intro rp-brief-head">${esc(BRIEF_HEAD)}</p><p class="rp-intro">${esc(here)} <small class="rp-code">(행정동 코드 ${esc(it.code)})</small> · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'} · 생활 지표는 항목별 기준연도</p>${frag}${sec1}${sec2}${sec3}${sec4}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
   // 1쪽 요약: 제목·개요 4줄·요약 문장 5개·기준 대비 표(8행 이하)·출처 번호·끝. one = DG.buildOnepage(...) 결과. 인쇄하면 A4 한 쪽
   function onepageHTML(v, it, one) {
@@ -1537,7 +1540,7 @@
   // 왜: 도구 안의 GIS 겹치기(#overlayApp)는 overlay.js가 상태를 들고 있어 render마다 다시 만들면 입력이 사라진다 → 도구 틀은 한 번만 만들고 안쪽만 바꾼다
   app.innerHTML = `<div class="map-where" data-where></div><div class="map-top" data-top></div><div class="map-stage" data-stage><div class="map-canvas is-wait" data-map-slot>전국 자료를 불러오는 중입니다.</div>` +
     `<section class="map-panel" data-panel id="dongCard" hidden aria-label="고른 동 카드"></section></div><div class="map-legend-line-box" data-legend-line></div><div class="map-ctlbox" data-ctl></div><div class="map-dongs" data-dongs></div><div class="map-pick" data-pick></div>` +
-    `<div class="map-bottom" data-bottom><div class="map-prov" data-prov></div><details class="map-tools rm-disclosure" data-fold="tools"><summary>도구 <small>지도 저장·수질·GIS 파일 겹치기·두 자료 키 대조·쓰는 법</small></summary><div data-tools></div><div class="map-tools-gis" data-gis></div></details><p class="map-live" aria-live="polite" data-live></p></div>`;
+    `<div class="map-bottom" data-bottom><div class="map-prov" data-prov></div><details class="map-tools rm-disclosure" data-fold="tools"><summary>지도 도구 더 보기 <small>지도 그림 저장·수질·내 지도 파일 겹치기·두 파일을 같은 코드로 잇기·쓰는 법</small></summary><div data-tools></div><div class="map-tools-gis" data-gis></div></details><p class="map-live" aria-live="polite" data-live></p></div>`;
   const $ = s => app.querySelector(s), top = $('[data-top]'), stage = $('[data-stage]'), panel = $('[data-panel]'), pick = $('[data-pick]'), bottom = $('[data-bottom]'), dongBox = $('[data-dongs]'), legendLine = $('[data-legend-line]');
   const where = $('[data-where]'), ctlBox = $('[data-ctl]'), provBox = $('[data-prov]'), toolsBox = $('[data-tools]'), liveEl = $('[data-live]');
   const heroLive = document.getElementById('heroLive');
@@ -1702,12 +1705,13 @@
       '<div class="mp-body">' +
       pane('sum', req + '<p class="map-copy"><button type="button" class="btn ghost" data-copy-map>이 지도 링크 복사</button><button type="button" class="btn ghost" data-candidate-save>보관함에 담기</button></p><p class="map-copy-msg" role="status" aria-live="polite" data-copy-map-msg></p><p data-candidate-status role="status"></p>' + info) +
       pane('all', forecastChart(ind, m.ext, v.gu || v.sigungu, dong) + scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist) +
-      pane('biz', `<p class="map-guide">이 동의 값에 맞춘 재생 사업 요건은 문서 탭에서 봅니다.</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}사업 요건 대조 보기</a></p>` + hubHTML(v)) +
-      '</div>' +
-      // r16: 꼬리 주 단추는 4-1 표 초안(홈 첫 단추와 같은 곳). 근거 1쪽·사업 요건 대조는 글자 링크로(동 이름 → 근거 1쪽 → 한글 3번 안)
-      `<div class="mp-foot">${goFrag('mp-go')}<p class="mp-foot-more"><a href="#report" data-set-mode="onepage">한 장 요약</a> · <a href="#report" data-set-mode="programs">이 동에 맞는 재생 사업 보기</a></p></div>`;
+      pane('biz', `<p class="map-guide">이 동의 값에 맞춘 재생 사업 요건은 문서 탭에서 봅니다.</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}이 동에 맞는 재생 사업 보기</a></p>` + hubHTML(v)) +
+      // r23(13 M8): 글 링크 줄은 카드 몸 끝으로 옮겼다. 휴대폰에서 붙는 꼬리가 단추+링크 약 110px라 아래 탭(65px)과 함께 출처 줄을 가렸다
+      '<p class="mp-foot-more"><a href="#report" data-set-mode="onepage">한 장 요약</a> · <a href="#report" data-set-mode="programs">이 동에 맞는 재생 사업 보기</a></p></div>' +
+      // r16: 꼬리 주 단추는 4-1 표 초안(홈 첫 단추와 같은 곳)
+      `<div class="mp-foot">${goFrag('mp-go')}</div>`;
   }
-  const MP_TABS = [['sum', '요약'], ['all', '지표 전체'], ['biz', '사업 요건 대조']];
+  const MP_TABS = [['sum', '요약'], ['all', '지표 전체'], ['biz', '재생 사업']];   // r23(13 M1): 09 3절 '사업 요건 대조' 대신
   const rowsFor = (v, m, it) => dongRows(inds(), m.json.dongs.find(d => codeOf(d) === it.code), livingMap(m.living).get(it.code), m.selYear, m.ext);
   // 2026-11-19: 넓은 화면 왼쪽 패널의 주 목록 = 지금 단계의 아래 지역(전국 → 시·도, 시·도·시 → 시·군·구·일반구, 시·군·구 → 읍·면·동).
   // 시·도·시·군·구 고르기 칸(select)과 접힌 '읍·면·동 목록'을 대신한다. 줄마다 지도와 같은 색 견본·값(출처 값 그대로). 순서는 자료 순서(값 순 아님, D13)
@@ -1842,7 +1846,7 @@
   // 문서 생성기(docgen.js 114KB)는 첫 지도가 뜬 뒤에 받는다. 시작할 때 읽으면 휴대폰 첫 화면이 그만큼 늦었다(라이트하우스 '안 쓰는 JS' 1위)
   let dgWait = null;
   const loadDocgen = () => dgWait || (dgWait = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'docgen.js?v=20261122-r21'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'docgen.js?v=20261122-r23'; s.onload = () => res(window.RenewDocgen || null); s.onerror = () => res(null); document.head.appendChild(s);
   }).then(d => {
     DG = d; docMemo = { key: '', val: null };
     if (DG && state.templates) DG.setTemplates(state.templates);
@@ -2362,7 +2366,7 @@
       (c.skipNote ? `<small>${esc(c.skipNote)}</small>` : '') + (ind.noPlay ? '<small>최신 연도만 보여 줍니다</small>' : '');
   }
   // Leaflet 지도는 한 번 만들어 무대(stage)에 두고, render()는 색·선택만 바꾼다
-  let M = null, to3dEl = null;   // to3dEl: '건물 나이 4D(부산)' 단추(지도를 만들 때 한 번)
+  let M = null, to3dEl = null;   // to3dEl: '연도별 건물 나이(부산)' 단추(지도를 만들 때 한 번)
   api.getMap = () => M && M.map;
   // 네이버 지도(배경만). 키(field/naver-map-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작. 실패·5초 초과면 브이월드로
   // SDK가 NAVER 로고 img에 style 속성을 넣는다. explore.html CSP style-src에 그 문자열 해시만 허용했다('unsafe-hashes', 2026-11-07). SDK가 문구를 바꾸면 콘솔 오류로 다시 드러난다
@@ -2451,13 +2455,13 @@
     M = { el, map, hatch, sgRenderer: typeof hatch === 'string' ? null : L.canvas({ pane: 'sg' }), sg: null, sido: null, emd: null, emdCode: null, outlines: new Map(), water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
     setTimeout(startAuto, 1500);
   }
-  // 지금 보는 곳의 건물을 건물 나이 4D(time4d.html, 연도별 입체)로 연다. 주소에는 지도 중심 좌표만 싣고, 4D 화면이 그 자리의 법정동을 고른다.
+  // 지금 보는 곳의 건물을 연도별 건물 나이(time4d.html, 연도별 입체)로 연다. 주소에는 지도 중심 좌표만 싣고, 4D 화면이 그 자리의 법정동을 고른다.
   // v7(2026-11-13): 예전에는 브이월드 3D(새 창)였는데, 우리 자료(사용승인일·높이)로 세운 4D가 근거 문서와 같은 숫자를 보여 준다. 브이월드는 4D 화면에서 잇는다
   function add3dControl(map) {
     const to3d = window.L.control({ position: 'topleft' });
     to3d.onAdd = () => {
       const a = window.L.DomUtil.create('a', 'leaflet-bar map-3d');
-      a.textContent = '건물 나이 4D(부산)';   // v9: 대구에서 눌러도 부산이 열려 '부산만'을 단추에 밝힌다
+      a.textContent = '연도별 건물 나이(부산)';   // v9: 대구에서 눌러도 부산이 열려 '부산만'을 단추에 밝힌다
       a.title = '지금 보는 곳의 건물을 연도별 입체로 봅니다(부산)';
       // 컨트롤을 붙일 때는 아직 지도 시점이 없어 getCenter가 오류를 낸다. 첫 맞춤(fitBounds) 뒤 moveend부터 좌표를 싣는다
       a.href = 'time4d.html';

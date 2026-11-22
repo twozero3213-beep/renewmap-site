@@ -46,7 +46,7 @@
   --rm-max: 1200px;
   /* R1: 제목 크기가 화면마다 여섯 가지라 같은 사이트로 안 읽혔다 → 단계 하나 */
   --t-h1: 40px; --t-h1-hero: 48px; --t-h1-map: 24px; --t-h2: 24px; --t-h3: 18px;
-  --t-body: 17px; --t-sub: 15px; --t-cap: 14px; --h1-top: 40px; --t-nav: 16px;   /* 2026-11-19: 보이는 글자는 14px 아래로 내리지 않는다(--t-cap 13→14) */
+  --t-body: 17px; --t-sub: 15px; --t-cap: 14px; --h1-top: 40px; --t-nav: 17px;   /* 2026-11-19: 보이는 글자는 14px 아래로 내리지 않는다(--t-cap 13→14). r23(13 L3): 메뉴 16px은 09 5절 단계에 없어 본문 17px */
   --t-num: 40px;   /* r19 큰 숫자(한눈 띠). 상태 꼬리표(--t-cap 14px)만 15px 아래, 뜻이 있는 글은 --t-sub 이상(09 5절) */
   --sec: 56px;   /* R2 4: 본문 안 절 간격 하나(rules·evidence 133~183px, 동 페이지 28~62px로 제각각이었다) */
   /* 옛 녹색(확인 칩·소개 막대)이 청록 한 색 사이에서 튀었다(R1 12). 확인 = 청록 옅은 채움, 막대 = 먹·청록·회색 */
@@ -230,6 +230,7 @@ input[type="file"]::file-selector-button { min-height: 40px; margin-right: 10px;
 /* 13 H3: 동 쪽 세 기준 표의 추가확인 값 칸 = 지도 패널(map.css .sr-why-b·.sr-calc)과 같은 꼴. 값 자리에는 까닭, 계산값은 그 아래 15px 회색 괄호 */
 .dong-req .dong-why { font-weight: 600; color: var(--ink); }
 .dong-req .dong-calc { display: block; font-size: var(--t-sub); font-weight: 400; color: var(--dim); }
+.dong-req .dong-src { display: block; margin-top: 2px; font-size: var(--t-sub); font-weight: 400; color: var(--dim); text-align: right; }   /* r23(13 M4): 값 바로 아래 출처 줄(지도 패널 .sr-src와 같은 뜻) */
 /* 건물별 표(13 H1·H6): 홈 근거표 조각(home-proof.js)과 대상지 계산 결과(redev.js btableHTML)가 같은 모양.
    일곱 칸 가운데 대장에서 찾음·주용도·구조는 주소 아래 작은 줄로 모아 넓은 화면은 네 칸(옆으로 밀지 않는다), 720px 아래는 줄마다 카드 */
 .rm-btable { width: 100%; border-collapse: collapse; font-size: var(--t-sub); line-height: 1.5; }
@@ -278,14 +279,16 @@ html.js .rm-glance:not(.rm-glance-off) { min-height: 730px; }
 .rm-glance details { margin: 0; padding: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; }
 .rm-glance :is(.rm-glance-sido, .rm-glance-src) > summary { display: flex; align-items: center; min-height: 44px; color: var(--green); font-size: var(--t-sub); font-weight: 600; cursor: pointer; }
 .rm-glance-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; max-width: 760px; margin: 12px 0 8px; padding: 0; list-style: none; }
-.rm-glance-grid a { display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: var(--t-sub); line-height: 1.3; text-decoration: none; }
-.rm-glance-grid a:hover { border-color: var(--green); }
+.rm-glance-grid li { display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: var(--t-sub); line-height: 1.3; text-decoration: none; }
+.rm-glance-more { margin: 4px 0 0; }
+.rm-glance-more a { display: inline-flex; align-items: center; min-height: 44px; color: var(--green); font-weight: 600; }
 .rm-glance-grid span { color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (min-width: 721px) { .rm-glance .rm-glance-sido > summary { display: none; } }
 @media (min-width: 1024px) {
   main section.rm-glance { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: 32px; align-content: start; }
   .rm-glance > :not(.rm-glance-sido, .rm-glance-src) { grid-column: 1; }
-  .rm-glance > .rm-glance-sido { grid-column: 2; grid-row: 1 / span 5; border-top: 0; }
+  .rm-glance > .rm-glance-sido { grid-column: 2; grid-row: 2 / span 5; border-top: 0; }
+  .rm-glance > h2:not(.rm-glance-sido) { grid-column: 1 / -1; }   /* r23(13 M5): 제목이 왼쪽 칸에서 두 줄(79px)로 꺾여 큰 숫자가 첫 화면 밖이었다 → 두 칸을 걸쳐 한 줄 */
   .rm-glance > .rm-glance-src { grid-column: 1 / -1; }
   .rm-glance .rm-glance-bars { grid-template-columns: 1fr; gap: 12px; }
   .rm-glance .rm-glance-grid { margin-top: 0; }
@@ -295,7 +298,7 @@ html.js .rm-glance:not(.rm-glance-off) { min-height: 730px; }
   main section.rm-glance { padding: 16px; }
   html.js .rm-glance:not(.rm-glance-off) { min-height: 500px; }
   .rm-glance-bars { grid-template-columns: 1fr; gap: 12px; }
-  .rm-glance-grid a { padding: 6px; }
+  .rm-glance-grid li { padding: 6px; }
 }
 /* 입력·고르기 칸 하나(R2 5): 17px·48px·반경 8. 소개 문의 양식의 브라우저 기본 select도 같은 모양 */
 main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea) { box-sizing: border-box; min-height: 48px; font-family: inherit; font-size: 17px; border: 1px solid var(--line-strong); border-radius: 8px; background-color: var(--card); color: var(--ink); }
