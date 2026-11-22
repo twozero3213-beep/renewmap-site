@@ -264,10 +264,10 @@
 - biz_unmatched.json (576바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
 - budget.json (346,817바이트): 최상위 title, note, signals, sources, sido, sgg, fields, dongs; generated_at 없음; snapshot_hash 없음
 - crossing_soon.json (3,903바이트): 최상위 basis, threshold, base_year, rows; generated_at 없음; snapshot_hash 없음
-- designations.json (206,136바이트): 최상위 generated_at, snapshot_hash, source, counts, note, items; generated_at 2026-11-13T17:44:06+09:00; snapshot_hash 43ddb0b165c5984cc52f29bee6c6177de09c7a611088bc6726748872ee7bdc92
+- designations.json (200,720바이트): 최상위 generated_at, snapshot_hash, source, counts, note, items; generated_at 2026-11-13T17:44:06+09:00; snapshot_hash 43ddb0b165c5984cc52f29bee6c6177de09c7a611088bc6726748872ee7bdc92
 - dong_extra.json (555바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
 - dong_index.json (225,320바이트): 최상위 array; generated_at 없음; snapshot_hash 없음
-- dong_successors.json (2,821바이트): 최상위 note, dongs; generated_at 없음; snapshot_hash 없음
+- dong_successors.json (2,730바이트): 최상위 note, dongs; generated_at 없음; snapshot_hash 없음
 - glance.json (1,901바이트): 최상위 kind, base_year, dongs, met2, aging50, pop30_check, biz_check, pickable …; generated_at 없음; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
 - index.json (1,976,507바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01
 - index_core.json (1,381,261바이트): 최상위 generated_at, snapshot_hash, source, boundary_source, pop_source, biz_source, emd_count, national_series …; generated_at 2026-11-20T23:24:31+09:00; snapshot_hash 4624f2ac4361e40535af1e259169c63f880c723f3391e8e81cd9f74fb7217a01

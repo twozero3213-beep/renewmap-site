@@ -46,7 +46,7 @@
   {
    "name": "designations.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/designations.json",
-   "bytes": 206136,
+   "bytes": 200720,
    "type": "object",
    "top_level_keys": [
     "generated_at",
@@ -80,7 +80,7 @@
   {
    "name": "dong_successors.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/dong_successors.json",
-   "bytes": 2821,
+   "bytes": 2730,
    "type": "object",
    "top_level_keys": [
     "note",

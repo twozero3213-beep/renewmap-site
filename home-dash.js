@@ -113,11 +113,19 @@
     const fail = () => { body.innerHTML = '<p class="hd-wait">대시보드 자료를 불러오지 못했습니다. 같은 자료는 아래 안전·재난 지도와 데이터 출처 화면에서 봅니다.</p>'; };
     root.RenewUtil.fetchJson('data/home_dashboard.json').then(d => {
       if (!valid(d)) return fail();
+      // 시·도별 묶음: 거제·양산이 '부산 전체' 아래 부산 구·군처럼 보이지 않게(대표 지적 2026-11-22 밤)
       pick.textContent = '';
+      const groups = new Map();
       for (const a of d.areas) {
+        const key = a.sido || '';
+        if (!groups.has(key)) {
+          const g = key ? doc.createElement('optgroup') : pick;
+          if (key) { g.label = key; pick.appendChild(g); }
+          groups.set(key, g);
+        }
         const o = doc.createElement('option');
         o.value = a.code; o.textContent = a.name;
-        pick.appendChild(o);
+        groups.get(key).appendChild(o);
       }
       const draw = (announce) => {
         const h = render(d, pick.value);
