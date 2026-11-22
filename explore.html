@@ -93,7 +93,7 @@ document.documentElement.classList.add('js');
 <link rel="stylesheet" href="programs.css?v=20261121-r16">
 <link rel="stylesheet" href="overlay.css?v=20261119-r3">
 <link rel="stylesheet" href="v4.css?v=20261120-r11"><!-- 2026-11-12: 768~1099px 지도 정리 규칙을 더해 캐시 버전을 붙임 -->
-<link rel="stylesheet" href="workspace.css?v=20261122-r29">
+<link rel="stylesheet" href="workspace.css?v=20261122-r32">
 <link rel="stylesheet" href="safety-layer.css?v=20261122-r25">
 <script src="site.js?v=20261122-r24" defer></script>
 <script src="site-motion.js" defer></script>
@@ -110,13 +110,15 @@ document.documentElement.classList.add('js');
 <!-- 2026-11-13: 신청요건 한 줄(reqLineHTML)·도넛 접기·시작 묶음(BUNDLES)으로 버전을 올림 -->
 <!-- 2026-11-13: 최저기준 묶음에 보건소·어린이집 거리 칩을 더해 버전을 올림 -->
 <script src="decline-req.js?v=20261122-r21" defer></script>
-<script src="map.js?v=20261122-r25" defer></script>
+<script src="map.js?v=20261122-r32" defer></script>
 <!-- 2026-11-22: 안전·재난·기후 층(?layer=safety). map.js가 지도를 만들면 층 단추를, 동 카드를 그리면 동 묶음을 붙인다 -->
 <script src="safety-layer.js?v=20261122-r27" defer></script>
 <script src="explore-layout.js?v=20261119-r3" defer></script>
-<script src="workspace.js?v=20261122-r25" defer></script>
+<script src="workspace.js?v=20261122-r32" defer></script>
 <script src="report.js?v=20261121-r16" defer></script>
 <link rel="stylesheet" href="rm6.css?v=20261122-r24">
+<link rel="stylesheet" href="map-visual.css?v=20261122-r32">
+<link rel="stylesheet" href="report-visual.css?v=20261122-r32">
 </head>
 <body class="explore-page">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -136,16 +138,17 @@ document.documentElement.classList.add('js');
           <button type="button" class="btn ghost ws-close" data-filters-close aria-label="조건을 닫고 지도 보기">지도 보기</button>
           <!-- 2026-11-19: 넓은 화면은 왼쪽(범위·업무·조건) | 오른쪽(결과·작은 지도) 두 칸. 조건은 접지 않고 묶음마다 4줄 + 더 보기(find.js가 채운다) -->
           <div class="ws-find-side">
-            <!-- r29(2026-11-22 밤, 대표 지시): 예산을 어디부터 쓸지는 '예산 우선 검토' 그림 한 장으로. 업무 단추 열 개는 접는다 -->
-            <a class="ws-budget" href="budget.html"><svg class="ws-budget-ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M4 20V4M8 16a1.5 1.5 0 1 0 0 .01M13 11a2.5 2.5 0 1 0 0 .01M18 7a2 2 0 1 0 0 .01"/></svg><b>예산 우선 검토</b><span>시·군·구를 고르면 읍·면·동을 시급 신호와 주민 수로 한 그림에 놓습니다</span></a>
+            <!-- r29(2026-11-22 밤, 대표 지시): 예산을 어디부터 쓸지는 '예산 우선 검토' 그림 한 장으로. 업무 단추 열 개는 접는다(r32: 아이콘 칸이 첫 화면 그림이라 기본으로 펼친다) -->
+            <!-- r30(2026-11-22): 글 대신 그림. 예산 카드는 작은 산점도 그림 + 짧은 두 줄 -->
+            <a class="ws-budget" href="budget.html"><svg class="ws-budget-ico" aria-hidden="true" viewBox="0 0 64 48"><path class="ws-bg-axis" d="M6 42h54M6 42V4"/><circle cx="16" cy="34" r="3"/><circle cx="24" cy="28" r="4"/><circle cx="32" cy="32" r="3"/><circle cx="38" cy="20" r="5"/><circle cx="46" cy="26" r="3"/><circle class="ws-bg-hot" cx="52" cy="12" r="6"/></svg><b>예산 우선 검토</b><span>읍·면·동을 한 그림에</span><i class="ws-budget-go" aria-hidden="true">→</i></a>
             <div class="fd-scope" data-fd-scope></div>
-            <details id="gov" class="ws-gov" aria-labelledby="govTitle">
+            <details id="gov" class="ws-gov" aria-labelledby="govTitle" open>
               <summary><h2 id="govTitle" class="ws-h">업무로 고르기 · 10가지</h2></summary>
               <div data-gov><p class="fd-wait">자료를 불러오는 중입니다.</p></div>
             </details>
             <div class="ws-conds">
               <h2 id="findTitle" class="ws-h">조건으로 고르기</h2>
-              <p class="ws-intro">고른 조건을 모두 갖춘 동만 남습니다. 목록은 행정동 코드 순서이며 순위가 아닙니다. 점수는 <a href="rank.html">동네 비교 점수</a>에서 봅니다.</p>
+              <details class="ws-info"><summary>ⓘ 고르는 법</summary><p class="fd-gnote">켠 조건을 모두 갖춘 동만 남아요. 목록은 행정동 코드 순서이며 순위가 아닙니다. 점수는 <a href="rank.html">동네 비교 점수</a>에서 봅니다.</p></details>
               <div data-fd-chips><p class="fd-wait">자료를 불러오는 중입니다.</p></div>
             </div>
           </div>
@@ -177,7 +180,8 @@ document.documentElement.classList.add('js');
       <section id="report" class="workspace-panel" data-workspace-panel="evidence" aria-labelledby="reportTitle">
         <div class="workspace-panel-inner ws-doc">
           <!-- 2026-11-19: 넓은 화면은 왼쪽 주제 목차(workspace.js가 만든다) | 오른쪽 본문. '사용하기 전에 확인할 것'은 본문 끝 한 줄 접이로 옮겼다 -->
-          <div class="section-head"><div><h2 id="reportTitle">받을 문서</h2></div><p>고른 동의 숫자와 출처를 문서로 받습니다. 문서는 이 기기에서 만들고 서버로 보내지 않습니다.</p></div>
+          <!-- 2026-11-22: 문서 종류를 글 대신 그림 카드로(종이 모양 썸네일·형식 표시). 누르면 아래 문서가 그 종류로 바뀐다(map.js data-set-mode) -->
+          <div class="section-head"><div><h2 id="reportTitle">받을 문서</h2></div><p class="dc-safe">이 기기에서 만들고 서버로 보내지 않습니다.</p><div class="dc-gallery" role="group" aria-label="받을 문서 종류"><div class="dc-group"><h3 class="dc-gh">신청·근거</h3><ul class="dc-list"><li><a class="dc-card" href="#report" data-set-mode="brief" title="신청서에 붙일 표·출처"><svg class="dc-thumb" viewBox="0 0 64 80" width="48" height="60" fill="none" stroke="currentColor" aria-hidden="true" focusable="false"><path class="dc-pg" d="M6 4h40l12 12v60H6z"/><path class="dc-fold" d="M46 4v12h12"/><rect class="dc-ac" x="12" y="14" width="26" height="5" rx="1"/><rect class="dc-cell dc-ac2" x="12" y="26" width="12" height="7"/><rect class="dc-cell dc-ac2" x="26" y="26" width="12" height="7"/><rect class="dc-cell dc-ac2" x="40" y="26" width="12" height="7"/><rect class="dc-cell" x="12" y="35" width="12" height="7"/><rect class="dc-cell" x="26" y="35" width="12" height="7"/><rect class="dc-cell" x="40" y="35" width="12" height="7"/><rect class="dc-cell" x="12" y="44" width="12" height="7"/><rect class="dc-cell" x="26" y="44" width="12" height="7"/><rect class="dc-cell" x="40" y="44" width="12" height="7"/><rect class="dc-cell" x="12" y="53" width="12" height="7"/><rect class="dc-cell" x="26" y="53" width="12" height="7"/><rect class="dc-cell" x="40" y="53" width="12" height="7"/><rect class="dc-cell" x="12" y="62" width="12" height="7"/><rect class="dc-cell" x="26" y="62" width="12" height="7"/><rect class="dc-cell" x="40" y="62" width="12" height="7"/></svg><span class="dc-txt"><span class="dc-t">동네 현황표</span><span class="dc-fmts"><span class="dc-fmt is-hwp">한글</span><span class="dc-fmt is-xls">엑셀</span><span class="dc-fmt is-pdf">PDF</span></span></span></a></li><li><a class="dc-card" href="#report" data-set-mode="programs" title="사업 요건과 이 동 값"><svg class="dc-thumb" viewBox="0 0 64 80" width="48" height="60" fill="none" stroke="currentColor" aria-hidden="true" focusable="false"><path class="dc-pg" d="M6 4h40l12 12v60H6z"/><path class="dc-fold" d="M46 4v12h12"/><rect class="dc-ln" x="12" y="14" width="30" height="4" rx="1"/><circle class="dc-ac2" cx="16" cy="28" r="4"/><path class="dc-tick" d="M14 28l1.6 1.8 3-3.6"/><rect class="dc-ln" x="23" y="26.5" width="28" height="3" rx="1"/><circle class="dc-ac2" cx="16" cy="39" r="4"/><path class="dc-tick" d="M14 39l1.6 1.8 3-3.6"/><rect class="dc-ln" x="23" y="37.5" width="22" height="3" rx="1"/><circle class="dc-ac2" cx="16" cy="50" r="4"/><path class="dc-tick" d="M14 50l1.6 1.8 3-3.6"/><rect class="dc-ln" x="23" y="48.5" width="26" height="3" rx="1"/><circle class="dc-ac2" cx="16" cy="61" r="4"/><path class="dc-tick" d="M14 61l1.6 1.8 3-3.6"/><rect class="dc-ln" x="23" y="59.5" width="18" height="3" rx="1"/></svg><span class="dc-txt"><span class="dc-t">재생 사업 맞춤표</span><span class="dc-fmts"><span class="dc-fmt is-web">화면</span></span></span></a></li></ul></div><div class="dc-group"><h3 class="dc-gh">보고·결재</h3><ul class="dc-list"><li><a class="dc-card" href="#report" data-set-mode="onepage" title="결재에 붙이는 1쪽"><svg class="dc-thumb" viewBox="0 0 64 80" width="48" height="60" fill="none" stroke="currentColor" aria-hidden="true" focusable="false"><path class="dc-pg" d="M6 4h40l12 12v60H6z"/><path class="dc-fold" d="M46 4v12h12"/><rect class="dc-ln" x="12" y="14" width="30" height="4" rx="1"/><rect class="dc-ac2" x="12" y="23" width="40" height="16" rx="2"/><rect class="dc-ac" x="16" y="27" width="16" height="8" rx="1"/><rect class="dc-ac" x="14" y="60" width="7" height="10"/><rect class="dc-ac" x="24" y="52" width="7" height="18"/><rect class="dc-ac" x="34" y="56" width="7" height="14"/><rect class="dc-ac" x="44" y="46" width="7" height="24"/><path class="dc-base" d="M12 70.5h40"/></svg><span class="dc-txt"><span class="dc-t">한 장 요약</span><span class="dc-fmts"><span class="dc-fmt is-hwp">한글</span><span class="dc-fmt is-xls">엑셀</span><span class="dc-fmt is-pdf">PDF</span></span></span></a></li><li><a class="dc-card" href="#report" data-set-mode="report" title="주제별로 넘겨 보기"><svg class="dc-thumb" viewBox="0 0 64 80" width="48" height="60" fill="none" stroke="currentColor" aria-hidden="true" focusable="false"><path class="dc-pg dc-back" d="M14 2h40l6 6v62H14z"/><path class="dc-pg dc-back" d="M10 6h40l8 8v62H10z"/><path class="dc-pg" d="M6 4h40l12 12v60H6z"/><path class="dc-fold" d="M46 4v12h12"/><rect class="dc-ln" x="12" y="14" width="30" height="4" rx="1"/><rect class="dc-ln" x="12" y="22" width="40" height="3" rx="1"/><rect class="dc-ln" x="12" y="28" width="34" height="3" rx="1"/><path class="dc-base" d="M12 66.5h40"/><polyline class="dc-line" points="13,62 22,54 31,58 40,46 51,40"/></svg><span class="dc-txt"><span class="dc-t">현황 보고서</span><span class="dc-fmts"><span class="dc-fmt is-hwp">한글</span><span class="dc-fmt is-xls">엑셀</span><span class="dc-fmt is-pdf">PDF</span></span></span></a></li></ul></div></div></div>
           <div class="export-tools" data-export-tools role="group" aria-label="보고서 납품 형식">
             <div class="export-buttons">
               <button type="button" class="btn" data-export-format="hwpx" disabled>한글 파일로 받기</button>

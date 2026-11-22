@@ -1,0 +1,23 @@
+/* 캐릭터 한 장 보기. 예산 화면(budget.css)과 같은 카드·둥근 모서리·색 */
+:root { --bg: #f6f5f2; --card: #fff; --ink: #17191c; --dim: #565b62; --green: #0b6b75; --line: #e2e0da; --soft: #e5f1f2; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: Pretendard, system-ui, sans-serif; word-break: keep-all; }
+.mp { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+.mp h1 { margin: 0 0 4px; font-size: 28px; }
+.mp-lead { margin: 0 0 16px; color: var(--dim); font-size: 15px; }
+.mp-who { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 20px; padding: 0; list-style: none; }
+.mp-who li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); font-size: 14px; line-height: 1.5; }
+.mp-who img { flex: none; }
+.mp-who b { display: block; font-size: 18px; color: var(--green); }
+.mp-row { margin: 0 0 16px; padding: 12px 16px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.mp-row h2 { margin: 0 0 8px; font-size: 18px; }
+.mp-cards { display: flex; flex-wrap: wrap; gap: 12px; }
+.mp-cards figure { display: grid; justify-items: center; align-content: end; gap: 4px; margin: 0; padding: 8px 12px; border-radius: 12px; background: var(--soft); min-width: 150px; }
+.mp-cards img { max-width: 100%; height: auto; }
+.mp-cards figcaption { font-size: 14px; font-weight: 700; }
+.mp-sizes { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; }
+.mp-src { margin: 8px 0 0; font-size: 12px; color: var(--dim); }
+@media (max-width: 720px) {
+  .mp-who { grid-template-columns: 1fr; }
+  .mp-cards figure { min-width: 0; flex: 1 1 140px; max-width: calc(50% - 6px); }
+}

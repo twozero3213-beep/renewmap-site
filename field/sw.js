@@ -9,7 +9,7 @@
 // 2026-11-17: #152(경상 구역 계산)와 main(초기 지도·현장 자동 로딩 개선 90186f154)을 합친 뒤 테스트가 알려 준 지문으로 맞춘다
 // 2026-11-18: 신청요건 현장 확인 줄에 '몇 동 더 확인하면 정해지나'(redev.js·redev-app.js)를 더해 테스트가 알려 준 지문으로 맞춘다
 // 2026-11-18: 사용자 편의 검토(현장 기록 찍기 단추 위로·저장 단추 고정·구역 계산 선택 입력 접기 등)를 반영해 테스트가 알려 준 지문으로 맞춘다
-const CACHE = "renewmap-field-97281bb972";   // 2026-11-22 밤 r29 대상지 계산 도식·다른 방법 접기, 예산 우선 검토 글자로 다시 만든 글꼴 부분집합 뒤 시험이 알려 준 지문
+const CACHE = "renewmap-field-993efe2b27";   // 2026-11-22 밤 r29 대상지 계산 도식·다른 방법 접기, 예산 우선 검토 글자로 다시 만든 글꼴 부분집합 뒤 시험이 알려 준 지문
 const SHELL = ["./", "index.html", "field.css?v=20261122-r23", "record.js?v=20261121-r16", "store.js", "evidence.js?v=20261122-r21", "app.js?v=20261122-r25", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js?v=20261122-r24", "../site-motion.js", "../frame-guard.js", "../docgen.js?v=20261122-r23", "../cellpack.js", "../list-pages.js", "../list-pages.css", "../rm6.css",
   "../data/report_templates.json", "upload.js", "upload-config.js", "detect.js", "redev.html", "redev.js", "redev-app.js", "parcel-ref.js", "twin.html", "twin.css", "twin.js", "twin-app.js", "../favicon.svg", "../icon-192.png"];
 // 설치 때는 브라우저 HTTP 캐시(Pages max-age=600)를 건너뛴다. 안 그러면 갱신 직전에 열어 둔 옛 파일이 새 캐시에 들어간다

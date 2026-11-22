@@ -2,7 +2,7 @@
    data/national/budget.json(scripts/export_budget.py)을 받아, 고른 시·군·구의 읍·면·동을 '켜진 시급 신호 수 × 주민 수'로 그린다.
    - 순서: 켜진 신호 수가 많은 곳 → 같으면 주민이 많은 곳. 신호가 하나도 없는 곳은 주민이 많아도 뒤로 간다.
    - 주민 수는 예산이 닿는 사람 수(주민등록 인구)로만 쓴다. 선거·정당 자료는 쓰지 않는다.
-   - 신호는 켜짐(●)·꺼짐(○)·자료 없음(◌) 세 가지. 색으로 동네를 칠하지 않고 신호 모양으로만 보인다.
+   - 신호는 켜짐(채운 칸)·꺼짐(빈 고리)·자료 없음(점선 칸) 세 가지. 색으로 동네를 칠하지 않고 신호 모양으로만 보인다.
    util.js 다음에 싣는다. 외부 요청 없음. 막대·점 위치는 SVG 속성(CSP: 인라인 style 금지). */
 (function (root) {
   'use strict';
@@ -84,9 +84,43 @@
       + dots + top + '</svg>';
   }
 
-  const mark = v => (v === 1 ? '<b class="bd-on" aria-label="해당">●</b>' : v === 0 ? '<span class="bd-off" aria-label="해당 없음">○</span>' : '<span class="bd-na" aria-label="자료 없음">◌</span>');
+  // 신호 칸: 켜짐 = 채운 칸 안 그림, 꺼짐 = 작은 빈 고리, 자료 없음 = 점선 칸. 색이 아니라 모양으로 갈린다
+  const chip = (v, s, named) => {
+    const pre = named ? `${esc(s.label)} ` : '';
+    return v === 1 ? `<span class="bd-c is-on" role="img" aria-label="${pre}해당">${svg(ICON[s.id], 'bd-c-i')}</span>`
+      : v === 0 ? `<span class="bd-c is-off" role="img" aria-label="${pre}해당 없음"></span>`
+      : `<span class="bd-c is-na" role="img" aria-label="${pre}자료 없음"></span>`;
+  };
+  // 가로 막대(SVG 속성으로 길이: CSP 인라인 style 금지)
+  const meter = (v, max) => `<svg class="bd-m" aria-hidden="true" viewBox="0 0 100 8" preserveAspectRatio="none"><rect class="bd-m-bg" width="100" height="8"/><rect class="bd-m-v" width="${max > 0 && v > 0 ? Math.max(3, Math.round(v / max * 100)) : 0}" height="8"/></svg>`;
 
-  // 신호 표: 동 × 신호(●○◌) + 주민 수 막대 + 그 동 지도 링크
+  // 신호 띠: 신호마다 이 시·군·구 읍·면·동 가운데 켜진 곳 수. 동네를 줄 세우지 않고 신호별로 세기만 한다
+  function strip(d, list, theme) {
+    const at = picks(d, theme);
+    return `<ul class="bd-strip" aria-label="신호별로 켜진 읍·면·동 수(전체 ${list.length}곳)">` + at.map((i, k) => {
+      const s = d.signals[i], on = list.filter(r => r.on[k] === 1).length;
+      return `<li>${svg(ICON[s.id], 'bd-ico')}<span class="bd-st-l">${esc(s.label)}</span><b class="bd-st-n">${on}<small>/${list.length}곳</small></b>${meter(on, list.length)}</li>`;
+    }).join('') + '</ul>';
+  }
+
+  // 먼저 볼 곳: 신호가 켜진 곳 앞 셋을 카드로(이름·켜진 수·신호 일곱 칸·주민 막대)
+  function firsts(d, list, code5, theme) {
+    const at = picks(d, theme), top = list.filter(r => r.count > 0).slice(0, 3);
+    if (!top.length) return '';
+    const maxPop = Math.max(1, ...list.map(r => r.pop).filter(isNum));
+    return '<ol class="bd-first" aria-label="먼저 볼 곳">' + top.map(r => `<li><a class="bd-f-a" href="explore.html#map/${esc(code5.slice(0, 2))}/${esc(code5)}/${esc(r.code7)}">${esc(r.name)}</a>`
+      + `<b class="bd-f-c" role="img" aria-label="신호 ${at.length}개 중 ${r.count}개">${r.count}<small>/${at.length}</small></b>`
+      + `<span class="bd-f-s">${r.on.map((v, k) => chip(v, d.signals[at[k]], true)).join('')}</span>`
+      + `<span class="bd-f-p">${meter(r.pop, maxPop)}<span>주민 ${isNum(r.pop) ? `${n(r.pop)}명` : '자료 없음'}</span></span></li>`).join('') + '</ol>';
+  }
+
+  // 출처·기준일 한 줄(숫자 곁에 늘 둔다)
+  function srcLine(d) {
+    const b = (d.sources || []).map(s => String(s.base)).sort();
+    return `<p class="bd-src-l">공공데이터 ${b.length}종 · 기준 ${esc(b[0] || '')}${b.length > 1 ? `~${esc(b[b.length - 1])}` : ''} </p>`;
+  }
+
+  // 신호 표: 동 × 신호 칸(그림·빈 고리·점선) + 주민 수 막대 + 그 동 지도 링크
   // narrow: 휴대폰 너비면 주민 수를 만 단위로 줄여 신호 열이 한 화면에 들게
   function table(d, list, code5, theme, from, to, narrow) {
     const people = p => (narrow && p >= 10000 ? `${(Math.round(p / 1000) / 10).toLocaleString('ko-KR')}만` : n(p));
@@ -99,7 +133,7 @@
       const pop = isNum(r.pop) ? `${people(r.pop)}명` : '자료 없음';
       return `<tr><th scope="row"><span class="bd-no">${from + k + 1}</span><a href="explore.html#map/${esc(code5.slice(0, 2))}/${esc(code5)}/${esc(r.code7)}">${esc(r.name)}</a>${narrow ? `<small class="bd-pop-s">${pop}</small>` : ''}</th>`
         + (narrow ? '' : `<td class="bd-pop"><span class="bd-bar" aria-hidden="true"><i data-w="${w}"></i></span>${pop}</td>`)
-        + `<td class="bd-cnt">${r.count}</td>${r.on.map(mark).map(m => `<td>${m}</td>`).join('')}</tr>`;
+        + `<td class="bd-cnt">${r.count}</td>${r.on.map((v, j) => `<td>${chip(v, d.signals[at[j]])}</td>`).join('')}</tr>`;
     }).join('');
     return `<table class="bd-table" aria-label="읍·면·동별 켜진 신호와 주민 수"><thead><tr><th scope="col">${narrow ? '읍·면·동 · 주민' : '읍·면·동'}</th>${headPop}<th scope="col">${narrow ? '신호' : '신호 수'}</th>${head}</tr></thead><tbody>${body}</tbody></table>`;
   }
@@ -116,7 +150,7 @@
     return '<ul class="bd-ctx">'
       + card('주민 수', `${n(pop)}명`, `읍·면·동 ${list.length}곳`)
       + card('생활 범죄', isNum(g.crime_per_1k) ? `천 명당 ${g.crime_per_1k}건` : '자료 없음', isNum(med) ? `전국 시·군·구 가운데값 ${med}건` : '')
-      + card('정비사업 구역', isNum(g.redev_zones) ? `${n(g.redev_zones)}곳` : '자료 없음', '재개발·재건축 등')
+      + card('정비사업 구역', isNum(g.redev_zones) ? `${n(g.redev_zones)}곳` : '자료 없음', '')
       + card('인구감소지역', g.depop ? esc(g.depop) : '지정 없음', '행정안전부 고시')
       + '</ul>';
   }
@@ -134,16 +168,19 @@
     if (!g) return '';
     const list = rows(d, code5, theme), maxSig = picks(d, theme).length;
     const sido = (d.sido.find(s => s.code2 === g.sido) || {}).name || '';
-    const first = list.filter(r => r.count > 0).slice(0, 3).map(r => esc(r.name)).join(' · ');
-    return `<h2 class="bd-h">${esc(sido)} ${esc(g.name)}${first ? ` · 먼저 볼 곳 ${first}` : ''}</h2>`
+    const first = firsts(d, list, code5, theme);
+    // 먼저 볼 곳 이름은 제목 대신 카드로 보인다(글 줄이기)
+    return `<h2 class="bd-h">${esc(sido)} ${esc(g.name)}</h2>`
       + context(d, code5)
-      + `<figure class="bd-fig">${scatter(list, maxSig, w)}<figcaption>점 하나가 읍·면·동 하나입니다. 색칠한 칸은 주민이 이 시·군·구에서 가장 많은 동의 절반 이상이고, 신호가 ${maxSig}개 중 절반 넘게 켜진 곳입니다. 이름표는 아래 표의 앞 세 곳까지 붙이고, 겹치면 뺍니다.</figcaption></figure>`
+      + strip(d, list, theme) + srcLine(d)
+      + (first ? `<h3 class="bd-sub">먼저 볼 곳</h3>${first}` : '')
+      + `<figure class="bd-fig">${scatter(list, maxSig, w)}<figcaption>점 하나 = 읍·면·동 · 빈 점 = 신호 없음</figcaption></figure>`
       + `<div class="bd-wrap">${table(d, list, code5, theme, 0, 10, w < 480)}</div>`
       + (list.length > 10 ? `<details class="bd-more"><summary>나머지 ${list.length - 10}곳 보기</summary><div class="bd-wrap">${table(d, list, code5, theme, 10, list.length, w < 480)}</div></details>` : '')
       + `<details class="bd-rules"><summary>신호 기준과 출처</summary>${legend(d, theme)}<ul class="bd-src">${(d.sources || []).map(s => `<li>${esc(s.for)}: ${esc(s.name)} · ${esc(s.base)}</li>`).join('')}</ul></details>`;
   }
 
-  const api = { THEMES, valid, picks, rows, scatter, table, context, render };
+  const api = { THEMES, valid, picks, rows, scatter, table, context, strip, firsts, render };
   if (typeof module === 'object' && module.exports) module.exports = api;
 
   // 브라우저 연결부

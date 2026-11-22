@@ -1,4 +1,4 @@
-/* 예산 우선 검토(budget.html, r29). 그림 먼저: 산점도(주민 수 × 신호 수) → 신호 표(●○◌) → 기준·출처는 접어 둔다.
+/* 예산 우선 검토(budget.html, r29). 그림 먼저: 산점도(주민 수 × 신호 수) → 신호 표(그림 칸) → 기준·출처는 접어 둔다.
    값으로 동네를 색칠하지 않는다. 점은 한 가지 색, 신호가 없는 동만 빈 점 */
 .bd { padding-top: 16px; padding-bottom: 48px; }
 .bd h1 { margin: 8px 0 4px; font-size: var(--t-h1); }
@@ -41,9 +41,37 @@ html.js .bd:not(.is-ready) .bd-body { min-height: 900px; }
 .bd-bar i { display: block; width: 0; height: 100%; background: var(--dim); }
 .bd-cnt { font-weight: 700; font-variant-numeric: tabular-nums; }
 .bd-pop-s { display: block; margin-left: 1.4em; font-size: var(--t-cap); font-weight: 400; color: var(--dim); }
-.bd-on { color: var(--green); font-size: var(--t-body); }
-.bd-off { color: var(--dim); }
-.bd-na { color: var(--line); }
+/* 신호 칸: 켜짐 = 채운 칸 + 흰 그림, 꺼짐 = 작은 빈 고리, 자료 없음 = 점선 칸(모양으로 갈림) */
+.bd-c { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; vertical-align: middle; }
+.bd-c.is-on { background: var(--green); color: #fff; }
+.bd-c-i { width: 16px; height: 16px; }
+.bd-c.is-off::before { content: ""; width: 8px; height: 8px; border: 2px solid var(--line-strong, #7a9089); border-radius: 50%; }
+.bd-c.is-na { border: 2px dashed var(--line-strong, #7a9089); width: 20px; height: 20px; }
+/* SVG 막대 */
+.bd-m { display: block; width: 100%; height: 8px; border-radius: 4px; overflow: hidden; }
+.bd-m-bg { fill: var(--bg); }
+.bd-m-v { fill: var(--green); }
+/* 신호 띠: 신호별로 켜진 읍·면·동 수 */
+.bd-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 0 0 4px; padding: 0; list-style: none; }
+.bd-strip li { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 6px 8px; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.bd-strip .bd-ico { width: 24px; height: 24px; }
+.bd-st-l { font-size: var(--t-cap); font-weight: 700; line-height: 1.3; }
+.bd-st-n { grid-column: 1 / -1; font-size: 22px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.bd-st-n small, .bd-f-c small { font-size: var(--t-cap); font-weight: 600; color: var(--dim); }
+.bd-strip .bd-m { grid-column: 1 / -1; }
+.bd-src-l { margin: 0 0 16px; font-size: var(--t-cap); color: var(--dim); }
+/* 먼저 볼 곳 카드 */
+.bd-sub { margin: 0 0 8px; font-size: var(--t-body); }
+.bd-first { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; padding: 0; list-style: none; counter-reset: bdf; }
+.bd-first li { counter-increment: bdf; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 8px; padding: 14px 16px; border: 2px solid var(--green); border-radius: 14px; background: #fff; }
+.bd-f-a { font-size: 18px; font-weight: 700; color: var(--ink); text-decoration: none; }
+.bd-f-a::before { content: counter(bdf); display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 8px; border-radius: 50%; background: var(--green); color: #fff; font-size: 13px; vertical-align: 2px; }
+.bd-f-a:hover, .bd-f-a:focus-visible { text-decoration: underline; }
+.bd-f-a:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; border-radius: 4px; }
+.bd-f-c { font-size: 26px; line-height: 1; color: var(--green); font-variant-numeric: tabular-nums; }
+.bd-f-s { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
+.bd-f-p { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: var(--t-cap); color: var(--dim); font-variant-numeric: tabular-nums; }
+.bd-f-p .bd-m-v { fill: var(--dim); }
 .bd-more, .bd-rules { margin-top: 12px; }
 .bd-more summary, .bd-rules summary { min-height: 44px; display: flex; align-items: center; font-size: var(--t-sub); font-weight: 700; cursor: pointer; }
 .bd-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin: 8px 0; padding: 0; list-style: none; }
@@ -54,6 +82,7 @@ html.js .bd:not(.is-ready) .bd-body { min-height: 900px; }
 .bd-ethic { margin: 20px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--bg); font-size: var(--t-sub); line-height: 1.6; color: var(--dim); }
 @media (max-width: 900px) {
   .bd-ctx { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bd-first { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bd-legend { grid-template-columns: minmax(0, 1fr); }
   html.js .bd:not(.is-ready) .bd-body { min-height: 1100px; }
 }
@@ -67,11 +96,21 @@ html.js .bd:not(.is-ready) .bd-body { min-height: 900px; }
   .bd-bar { display: none; }
   .bd-table td.bd-pop { min-width: 0; }
   .bd-no { min-width: 1.2em; margin-right: 2px; }
+  /* 휴대폰: 신호 띠는 한 카드 안의 가로 막대 일곱 줄 */
+  .bd-strip { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 4px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+  .bd-strip li { grid-template-columns: 24px 6.6em minmax(0, 1fr) auto; padding: 8px 0; border: 0; border-radius: 0; }
+  .bd-strip li + li { border-top: 1px solid var(--line); }
+  .bd-strip .bd-m { grid-column: 3; grid-row: 1; }
+  .bd-st-n { grid-column: 4; grid-row: 1; font-size: var(--t-body); }
+  .bd-first { grid-template-columns: minmax(0, 1fr); }
+  .bd-c { width: 22px; height: 22px; }
+  .bd-c.is-na { width: 18px; height: 18px; }
 }
 @media print {
   .bd-do, .bd-ethic ~ *, header.top, footer, .crumb, .skip { display: none; }
   .bd[data-print]::before { content: attr(data-print); display: block; margin-bottom: 8px; font-size: var(--t-sub); font-weight: 700; }
   .bd-more, .bd-rules { display: block; }
-  .bd-dot, .bd-bar i, .bd-hot { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bd-dot, .bd-bar i, .bd-hot, .bd-c, .bd-m, .bd-f-a::before { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bd-first li, .bd-strip { break-inside: avoid; }
   .bd-fig, .bd-table tr { break-inside: avoid; }
 }

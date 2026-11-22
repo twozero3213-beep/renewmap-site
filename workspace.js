@@ -160,7 +160,7 @@
     syncStates();
     function show(name, focusTab) {
       active = normalizePanel(name);
-      if (active === 'filters' && !window.RenewFind) import('./find.js?v=20261122-r19').catch(() => {
+      if (active === 'filters' && !window.RenewFind) import('./find.js?v=20261122-r31').catch(() => {
         const slot = document.getElementById('findApp'); slot.setAttribute('role', 'alert');
         slot.textContent = '조건 도구를 불러오지 못했습니다. 새로고침한 뒤 다시 열어 주세요.';
       });
@@ -199,7 +199,7 @@
     document.addEventListener('click', event => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const mode = event.target.closest('[data-rp-mode]');
-      if (mode) { navigate('evidence', false, undefined, mode.dataset.rpMode); return; }
+      if (mode) { navigate('evidence', false, undefined, mode.dataset.rpMode); markDocCards(); return; }
       const link = event.target.closest('a[href^="#"]');
       if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
       const hash = link.getAttribute('href');
@@ -207,11 +207,19 @@
       event.preventDefault();
       navigate(panelFromHash(hash), false, hash, link.dataset.setMode);
       // R4 1: '1쪽 근거 문서 보기' 같은 링크를 누르면 눌렀던 단추가 숨은 패널에 있어 초점이 BODY로 돌아갔다 → 문서 패널 제목으로 옮긴다(화면도 그리로 간다)
+      if (link.classList.contains('dc-card')) { markDocCards(); return; } // 문서 카드는 같은 패널 안이라 초점을 카드에 둔다
       if (hash === '#report') { const heading = document.getElementById('reportTitle'); if (heading) { heading.tabIndex = -1; heading.focus(); } }
     });
+    function markDocCards() {
+      const mode = new URLSearchParams(location.search).get('report') || 'report';
+      workspace.querySelectorAll('.dc-card[data-set-mode]').forEach(card => {
+        if (card.dataset.setMode === mode) card.setAttribute('aria-current', 'true'); else card.removeAttribute('aria-current');
+      });
+    }
     const restore = () => {
       if (/^#map(?:\/\d+)*$/.test(location.hash)) mapHash = location.hash;
       window.RenewMap?.setReportMode(new URLSearchParams(location.search).get('report') || 'report');
+      markDocCards();
       show(panelFromLocation(location.hash, location.search));
       if (location.hash === '#overlay') {
         overlayJump = true;

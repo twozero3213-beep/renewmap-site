@@ -268,9 +268,10 @@
     const unit = scopeName ? 'emd' : 'sg', lbl = id => { const c = condOf(id); return ctx && ctx.index ? chipLabel(c, ctx, condState(c, ctx, unit)) : c.n; };
     const condText = p => p.note || presetConds(p, unit).map(g => (Array.isArray(g) ? g.map(lbl).join(' 또는 ') : lbl(g))).join(' + ') + (unit !== 'emd' && p.condsEmd ? ` (+ 읍·면·동 범위에서 ${p.condsEmd.map(lbl).join(', ')})` : '');
     // 업무는 아이콘+이름 한 줄 단추. 업무의 불편(ask) → 주는 것(give)·조건·근거 법령은 접이 하나에 모은다(카드마다 접이 10개였다). '결정은 담당자가' 고지는 한 번
-    return `<p class="ws-intro">${esc(GOV_NOTE)} ${esc(DECIDE)}.<br>범위: ${scopeName ? `<b>${esc(scopeName)}</b> 안 읍·면·동` : '<b>시·도와 시·군·구를 먼저 고르세요</b>'}</p>` +
+    // r30: 안내 문장은 접이 안으로, 겉에는 범위 알약 하나 + 아이콘 칸 10개
+    return `<p class="ws-intro ws-scope">범위 ${scopeName ? `<b>${esc(scopeName)}</b> 안 읍·면·동` : '<b>시·도와 시·군·구를 먼저 고르세요</b>'}</p>` +
       `<ul class="ws-presets">${PRESETS.map(p => `<li><button type="button" class="ws-preset" data-gov-preset="${esc(p.id)}"><span class="ws-ico" aria-hidden="true">${ico(p.e)}</span>${esc(p.n)}</button></li>`).join('')}</ul>` +
-      `<details class="ws-info" data-k="gov-info"><summary>ⓘ 업무별 조건·근거 법령</summary><dl class="ws-gov-list">${PRESETS.map(p => `<div><dt>${esc(p.n)}</dt><dd><b>${esc(p.ask)}</b><span class="gov-why">→ ${esc(p.give)}</span></dd><dd class="gov-c">${esc(condText(p))}</dd><dd class="gov-law">${esc(p.law)}</dd></div>`).join('')}</dl></details>`;
+      `<details class="ws-info" data-k="gov-info"><summary>ⓘ 업무별 조건·근거 법령</summary><p class="fd-gnote">${esc(GOV_NOTE)} ${esc(DECIDE)}.</p><dl class="ws-gov-list">${PRESETS.map(p => `<div><dt>${esc(p.n)}</dt><dd><b>${esc(p.ask)}</b><span class="gov-why">→ ${esc(p.give)}</span></dd><dd class="gov-c">${esc(condText(p))}</dd><dd class="gov-law">${esc(p.law)}</dd></div>`).join('')}</dl></details>`;
   }
   // 홈에서 넘어온 기본 보고서(?report=onepage 등). 모르는 값은 무시한다(심사 06, 2026-11-08)
   const entryReportMode = search => { const m = new URLSearchParams(search || '').get('report'); return M.REPORT_MODES.some(x => x[0] === m) ? m : null; };   // 보고서 종류 목록은 map.js 하나(v9: 네 곳에 따로 적혀 있었다)
