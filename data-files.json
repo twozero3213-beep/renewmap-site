@@ -230,7 +230,7 @@
   {
    "name": "rank_top.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/rank_top.json",
-   "bytes": 3941,
+   "bytes": 3944,
    "type": "object",
    "top_level_keys": [
     "generated_from",
@@ -290,7 +290,7 @@
   {
    "name": "scores.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/scores.json",
-   "bytes": 2516929,
+   "bytes": 2516413,
    "type": "object",
    "top_level_keys": [
     "generated_at",
@@ -301,13 +301,13 @@
     "crime_unmatched",
     "dongs"
    ],
-   "generated_at": "2026-11-14T16:36:39+09:00",
+   "generated_at": "2026-11-23T03:13:59+09:00",
    "snapshot_hash": null
   },
   {
    "name": "scores_range.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/scores_range.json",
-   "bytes": 1052674,
+   "bytes": 1051212,
    "type": "object",
    "top_level_keys": [
     "generated_at",
@@ -315,7 +315,7 @@
     "sensitivity",
     "dongs"
    ],
-   "generated_at": "2026-11-14T16:36:39+09:00",
+   "generated_at": "2026-11-23T03:13:59+09:00",
    "snapshot_hash": null
   },
   {

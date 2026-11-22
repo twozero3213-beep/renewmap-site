@@ -40,8 +40,9 @@
 
   // 재생 필요 점수의 재료(scores.json renewal_parts, 지표별 백분위). 재생 순위에서는 이 넷을 세부 열로 보인다(v9: 1위인 이유가 표에 없었다)
   // 2026-11-19: 머리는 두 줄 이하(머리 114px였다). 인구 변화율 설명은 열 이름 대신 표 아래 ※ 한 줄로
+  // 2026-11-20: 사업체 감소(DECLINE_BIZ_DROP10Y_PCT)는 2020 통계 단절로 모든 동이 추가확인이라 점수에서 빠졌다(export_scores). 열이 '없음'만 보여 감소 없음으로 읽혀 뺀다. 승인 뒤 되돌린다
   // r16: 세부 열 값은 % 값이 아니라 전국 백분위다. 머리에 적지 않아 '98.5'를 98.5%로 읽었다(동 쪽 실제 비율과 모순처럼 보임) → 열 이름에 단위
-  const RENEWAL_COLS = [['DECLINE_AGING_20Y_PCT', '20년 이상 건축물(전국 백분위)'], ['DECLINE_POP_CHANGE_PCT', '인구 변화율※(전국 백분위)'], ['DECLINE_BIZ_DROP10Y_PCT', '사업체 감소(전국 백분위)'], ['POP_AGED65_PCT', '고령 인구(전국 백분위)']];
+  const RENEWAL_COLS = [['DECLINE_AGING_20Y_PCT', '20년 이상 건축물(전국 백분위)'], ['DECLINE_POP_CHANGE_PCT', '인구 변화율※(전국 백분위)'], ['POP_AGED65_PCT', '고령 인구(전국 백분위)']];
   const RANGE_TIP = '지표 무게만 바꿔 다시 센 범위입니다. 다른 불확실성까지 넣으면 더 넓을 수 있습니다.';
   // C12(2026-11-20): 인구 변화율(전년 대비 1년 값)이 들어가는 점수. 재생 필요 표에만 있던 ※ 주의를 동네 종합·인구 활력 표에도 보인다
   const POP_KINDS = ['total', 'vitality', 'renewal'];
@@ -58,7 +59,7 @@
     const cols = renew ? RENEWAL_COLS.map(([, l]) => `<th scope="col">${esc(l)}</th>`).join('')
       : SUB.map(([, l]) => `<th scope="col">${l}</th>`).join('') + '<th scope="col">범죄 발생률</th>';
     // 세부 열 단위·방향은 표 위 한 줄(#rankUnit, rank.html)에 두고 캡션에는 되풀이하지 않는다
-    const unit = (renew ? '' : '주거 노후도는 점수가 낮을수록 낡았고, 범죄 발생률은 시·군·구 값(주민 1,000명당)입니다.')
+    const unit = (renew ? '사업체 감소는 2020년 통계 단절로 계산 방법을 정하기 전까지 점수와 세부 열에서 뺐습니다.' : '주거 노후도는 점수가 낮을수록 낡았고, 범죄 발생률은 시·군·구 값(주민 1,000명당)입니다.')
       + (POP_KINDS.includes(kind) ? ` ${POP_NOTE}` : '');
     // '낮은 점수부터 보기'는 점수 열 머리의 정렬 단추(rank.js init이 #rankAsc와 같이 바꾼다). rankAt이 있으면 낮은 점수부터 그린 표다
     const sort = kind === 'safety' ? '<th scope="col" class="rank-score" aria-sort="descending">범죄 통계·안전시설 점수</th>' : `<th scope="col" class="rank-score" aria-sort="${rankAt ? 'ascending' : 'descending'}"><button type="button" class="rank-sort" data-rank-sort>${esc(KINDS[kind].label.replace(/\(.*\)$/, ''))}<span aria-hidden="true"> ${rankAt ? '↑' : '↓'}</span><span class="sr-only">, ${rankAt ? '낮은' : '높은'} 점수부터. 눌러서 순서 바꾸기</span></button></th>`;

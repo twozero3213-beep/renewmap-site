@@ -6,10 +6,10 @@
   const MET = "기준 해당", NOT_MET = "해당 안 함", CHECK = "추가확인", GAP = `${CHECK}(값 빠짐)`;
   // 자료 파일의 판정 값(충족·미충족)을 옮겨 적는다. 추가확인의 사유는 백엔드가 적은 근거(basis)에서 알아볼 때만 붙이고 지어내지 않는다
   const FROM_DATA = { 충족: MET, 미충족: NOT_MET };
-  const verdict = (r) => FROM_DATA[r.verdict] || (r.verdict !== CHECK ? r.verdict : /결측/.test(r.basis) ? GAP : CHECK);
+  const verdict = (r) => FROM_DATA[r.verdict] || (r.verdict !== CHECK ? r.verdict : /단절/.test(r.basis) ? `${CHECK}(통계 단절)` : /결측/.test(r.basis) ? GAP : CHECK);
   // 지도 색(D22: 기준을 넘은 쪽 주황→갈색, 추가확인 회색). 점수가 아니라 '두 요건 중 몇 개가 기준 해당'인지의 구분이다
   const FILL = { 2: "#9c4a1a", 1: "#e8a33d", 0: "#e7ecea", check: "#cdd7d3" };
-  const LABEL = { 2: `인구·사업체 모두 ${MET}`, 1: `하나만 ${MET}`, 0: `둘 다 ${NOT_MET}`, check: GAP };
+  const LABEL = { 2: `인구·사업체 모두 ${MET}`, 1: `하나만 ${MET}`, 0: `둘 다 ${NOT_MET}`, check: `${CHECK}(값 빠짐·통계 단절)` };   // 2026-11-20: 사업체는 2020년 등록기반 전환을 가로지르면 추가확인이라 '값 빠짐'만이 사유가 아니다
   const groupOf = (o) => (o.met === 2 ? 2 : o.met === 1 ? 1 : o.pop_req.verdict === CHECK || o.biz_req.verdict === CHECK ? "check" : 0);
   function summary(dong) {
     const n = { 2: 0, 1: 0, 0: 0, check: 0 };
