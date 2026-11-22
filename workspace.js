@@ -23,6 +23,7 @@
     if (!params.has('panel') && reportKeys().includes(params.get('report')) && /^#map\/\d{2}\/\d{5}(?:\/\d{5})?\/\d{8}$/.test(hash || '')) return 'evidence';
     // r16 M17: 재생 사업 화면의 구 단위 찾기(?report=programs#map/시도/시군구)는 그 구의 동별 사업 요건 대조표를 연다(전에는 지도에 머물렀다)
     if (!params.has('panel') && params.get('report') === 'programs' && /^#map\/\d{2}\/\d{5}(?:\/\d{5})?$/.test(hash || '')) return 'evidence';
+    if (params.get('preset') === 'safety') return 'map';   // 안전·재난·기후 층은 조건 찾기가 아니라 지도 층이다(safety-layer.js가 켠다)
     return normalizePanel(params.get('panel'));
   }
   function panelURL(href, panel, mapHash, reportMode) {

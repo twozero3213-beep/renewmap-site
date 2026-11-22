@@ -1,0 +1,25 @@
+/* 안전·재난·기후 층(safety-layer.js): 지도 왼쪽 위 접는 단추와 고른 동 카드 끝 묶음 */
+#map .sl-ctl { background: var(--card, #fff); max-width: min(320px, calc(100vw - 80px)); font-size: 15px; line-height: 1.5; color: var(--ink); }
+#map .sl-ctl > summary { display: flex; align-items: center; min-height: 44px; padding: 0 12px; font-weight: 700; cursor: pointer; }
+#map .sl-ctl .sl-in { overflow: auto; padding: 0 12px 12px; }   /* 높이는 펼칠 때 safety-layer.js가 지도 높이에 맞춘다 */
+/* 펼친 동안은 왼쪽 아래 범례 카드보다 위에 둔다(Leaflet은 아래 모서리를 나중에 그려 위 모서리를 덮는다). 접으면 범례가 다시 위 */
+#map .leaflet-top.leaflet-left:has(> .sl-ctl[open]) { z-index: 1001; }
+#map .leaflet-tooltip.sl-tip { width: max-content; }   /* 지도 오른쪽 가까이에서 말풍선이 한 낱말 폭으로 좁아졌다 */
+.sl-note { margin: 4px 0 8px; font-size: 14px; line-height: 1.5; color: var(--dim); }
+.sl-none { margin: 6px 0; font-size: 14px; line-height: 1.5; color: var(--dim); }
+.sl-topic { margin: 0; padding: 0; border: 0; }
+.sl-topic legend { padding: 0; margin: 4px 0; font-weight: 700; }
+.sl-opt { display: flex; align-items: flex-start; gap: 8px; min-height: 44px; padding: 4px 0; cursor: pointer; }
+.sl-opt input { margin-top: 4px; }
+.sl-opt small, .sl-card small, .sl-src { color: var(--dim); }
+.sl-sw { flex: none; width: 12px; height: 12px; margin-top: 6px; border: 1px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px var(--line, #c9cfcc); }
+.sl-pend { margin-top: 8px; font-size: 14px; }
+.sl-pend > summary, .sl-list summary { cursor: pointer; }
+.sl-pend li { margin: 4px 0; }
+.sl-card { margin: 16px 0 0; padding-top: 8px; border-top: 1px solid var(--line, #dde2df); }
+.sl-card > summary { display: flex; align-items: center; gap: 6px; min-height: 44px; font-weight: 700; cursor: pointer; }
+.sl-h { margin: 12px 0 4px; font-size: 15px; }
+.sl-list { margin: 0; padding: 0; list-style: none; }
+.sl-list > li { padding: 6px 0; border-bottom: 1px solid var(--line, #dde2df); word-break: keep-all; }
+.sl-src { display: block; font-size: 13px; line-height: 1.5; }
+.sl-rows { max-height: 240px; overflow: auto; margin: 4px 0; padding-left: 18px; font-size: 14px; line-height: 1.5; }

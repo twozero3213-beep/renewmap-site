@@ -2310,6 +2310,7 @@
       const oldInfo = it && it.code === lastDong ? panel.querySelector('.mp-info') : null;
       const keepInfoFocus = !!oldInfo && a === oldInfo.querySelector('summary');
       panel.innerHTML = panelHTML(v, m);
+      if (it && window.RenewSafety) window.RenewSafety.card(panel, it.code, it.name);   // 안전·재난·기후 묶음(safety-layer.js)은 카드 몸 끝에 붙는다
       const info = oldInfo ? panel.querySelector('.mp-info') : null;
       if (info) info.open = oldInfo.open;
       if (keepCard || (wantCard && it && it.code === wantCard)) { panel.querySelector('.map-h3')?.focus({ preventScroll: true }); wantCard = null; }
@@ -2453,6 +2454,7 @@
     map.on('zoomend moveend', () => { if (!labelFrame) labelFrame = requestAnimationFrame(() => { labelFrame = 0; cullSg(); syncEmdOutlines(); placeDongLabels(); }); });
     // 상위 동·수질 pane은 SVG를 유지한다. 별도 Canvas가 빈 영역의 아래 경계 클릭까지 가로막지 않게 한다.
     M = { el, map, hatch, sgRenderer: typeof hatch === 'string' ? null : L.canvas({ pane: 'sg' }), sg: null, sido: null, emd: null, emdCode: null, outlines: new Map(), water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
+    document.dispatchEvent(new Event('renew-map'));   // safety-layer.js가 이 지도에 안전·재난·기후 층 단추를 붙인다
     setTimeout(startAuto, 1500);
   }
   // 지금 보는 곳의 건물을 연도별 건물 나이(time4d.html, 연도별 입체)로 연다. 주소에는 지도 중심 좌표만 싣고, 4D 화면이 그 자리의 법정동을 고른다.
