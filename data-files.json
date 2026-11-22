@@ -12,6 +12,24 @@
    "snapshot_hash": null
   },
   {
+   "name": "budget.json",
+   "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/budget.json",
+   "bytes": 346817,
+   "type": "object",
+   "top_level_keys": [
+    "title",
+    "note",
+    "signals",
+    "sources",
+    "sido",
+    "sgg",
+    "fields",
+    "dongs"
+   ],
+   "generated_at": null,
+   "snapshot_hash": null
+  },
+  {
    "name": "crossing_soon.json",
    "url": "https://twozero3213-beep.github.io/renewmap-site/data/national/crossing_soon.json",
    "bytes": 3903,

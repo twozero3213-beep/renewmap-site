@@ -263,7 +263,6 @@ body.field .card > details.rm-disclosure:last-child[open] { padding-bottom: 0; }
 /* 13 H6: 결과의 건물별 표(rm6.css .rm-btable) 아래 '전체 n동 보기'와 채운 '건물별 표 받기'가 붙었다 → 띄운다 */
 .field #tableAll { margin: 8px 0; }
 @media (max-width: 720px) { .field .fr-alt { grid-template-columns: 1fr; } }   /* 휴대폰은 두 단추를 위아래로(글이 두 줄로 꺾이지 않게) */
-.field .redev-sample .fr-zoom { width: auto; min-height: 44px; margin-top: 8px; padding: 0 16px; }
 /* 견본 크게 보기: 원래 크기(640px), 화면이 좁으면 화면 폭 - 32px */
 .field dialog.fr-dlg { max-width: calc(100vw - 32px); width: fit-content; padding: 16px; }
 .field dialog.fr-dlg h2 { font-size: 18px; line-height: 26px; margin: 0 0 12px; }
@@ -294,9 +293,18 @@ body.field details.fr-loc > summary { min-height: 48px; color: var(--ink); line-
 /* 구역 계산(redev.html): 견본 빈 상태·배지(M27), 접은 그래프·근거(M26), 확인할 건물 펼치기, 키보드 그리기 십자(M25) */
 .field .redev-sample .fr-empty { margin: 0 0 12px; padding: 12px 14px; border: 1px dashed var(--line-strong); border-radius: var(--radius-btn); color: var(--ink); font-weight: 600; }
 .field .redev-sample figcaption { margin: 0 0 8px; font-size: 15px; color: var(--dim); }
-.field .redev-sample .sample-pic { position: relative; display: block; }
-.field .redev-sample .sample-pic img { opacity: .72; }
-.field .sample-badge { display: inline-block; margin: 0 0 8px; padding: 4px 10px; border-radius: 999px; background: var(--ink); color: var(--bg); font-size: 15px; font-weight: 700; line-height: 22px; }   /* 그림 위가 아니라 그림 바로 위 줄(r16 2차: 그림 속 제목을 덮었다) */
+/* r29(대표 '글보다 그림'): 큰 견본 그림 대신 세 단계 도식 + 견본 비율 막대 하나. 그림은 링크로만 연다 */
+.field .redev-sample .sample-pic { display: inline-flex; align-items: center; min-height: 44px; font-size: 15px; }
+.field .fr-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 16px; padding: 0; list-style: none; }
+.field .fr-steps li { display: grid; justify-items: center; gap: 4px; padding: 12px 8px; border-radius: 12px; background: var(--bg); text-align: center; font-size: 15px; line-height: 1.4; }
+.field .fr-steps li span { font-size: 13px; color: var(--dim); }
+.field .fr-step-ico { width: 28px; height: 28px; color: var(--green); }
+.field .fr-gauge { display: block; width: 100%; max-width: 420px; height: auto; margin: 4px 0; }
+.field .fr-g-bg { fill: var(--line); }
+.field .fr-g-v { fill: var(--green); }
+.field .fr-g-r { fill: var(--green); fill-opacity: .45; }
+.field .fr-g-std { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 3 3; }
+.field .fr-g-t, .field .fr-g-n { fill: var(--ink); font-size: 12px; font-weight: 700; }
 #outSettle { margin: 4px 0 8px; font-weight: 600; color: var(--ink); }
 .field #out > #applicationHwpx { margin-top: 4px; }
 body.field details.fr-fold > summary { min-height: 44px; }

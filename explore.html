@@ -93,7 +93,7 @@ document.documentElement.classList.add('js');
 <link rel="stylesheet" href="programs.css?v=20261121-r16">
 <link rel="stylesheet" href="overlay.css?v=20261119-r3">
 <link rel="stylesheet" href="v4.css?v=20261120-r11"><!-- 2026-11-12: 768~1099px 지도 정리 규칙을 더해 캐시 버전을 붙임 -->
-<link rel="stylesheet" href="workspace.css?v=20261121-r16">
+<link rel="stylesheet" href="workspace.css?v=20261122-r29">
 <link rel="stylesheet" href="safety-layer.css?v=20261122-r25">
 <script src="site.js?v=20261122-r24" defer></script>
 <script src="site-motion.js" defer></script>
@@ -136,11 +136,13 @@ document.documentElement.classList.add('js');
           <button type="button" class="btn ghost ws-close" data-filters-close aria-label="조건을 닫고 지도 보기">지도 보기</button>
           <!-- 2026-11-19: 넓은 화면은 왼쪽(범위·업무·조건) | 오른쪽(결과·작은 지도) 두 칸. 조건은 접지 않고 묶음마다 4줄 + 더 보기(find.js가 채운다) -->
           <div class="ws-find-side">
+            <!-- r29(2026-11-22 밤, 대표 지시): 예산을 어디부터 쓸지는 '예산 우선 검토' 그림 한 장으로. 업무 단추 열 개는 접는다 -->
+            <a class="ws-budget" href="budget.html"><svg class="ws-budget-ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M4 20V4M8 16a1.5 1.5 0 1 0 0 .01M13 11a2.5 2.5 0 1 0 0 .01M18 7a2 2 0 1 0 0 .01"/></svg><b>예산 우선 검토</b><span>시·군·구를 고르면 읍·면·동을 시급 신호와 주민 수로 한 그림에 놓습니다</span></a>
             <div class="fd-scope" data-fd-scope></div>
-            <div id="gov" class="ws-gov" aria-labelledby="govTitle">
-              <h2 id="govTitle" class="ws-h">어떤 업무로 오셨나요?</h2>
+            <details id="gov" class="ws-gov" aria-labelledby="govTitle">
+              <summary><h2 id="govTitle" class="ws-h">업무로 고르기 · 10가지</h2></summary>
               <div data-gov><p class="fd-wait">자료를 불러오는 중입니다.</p></div>
-            </div>
+            </details>
             <div class="ws-conds">
               <h2 id="findTitle" class="ws-h">조건으로 고르기</h2>
               <p class="ws-intro">고른 조건을 모두 갖춘 동만 남습니다. 목록은 행정동 코드 순서이며 순위가 아닙니다. 점수는 <a href="rank.html">동네 비교 점수</a>에서 봅니다.</p>

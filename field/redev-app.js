@@ -600,9 +600,7 @@
   if (zoom && typeof zoom.showModal === "function" && zoomLink) {
     let opener = null;
     const openZoom = (e) => { e.preventDefault(); opener = e.currentTarget; zoom.showModal(); };
-    zoomLink.addEventListener("click", openZoom); zoomLink.removeAttribute("target");
-    $("sampleZoom").addEventListener("click", openZoom);
-    $("sampleZoom").hidden = false;
+    zoomLink.addEventListener("click", openZoom); zoomLink.removeAttribute("target");   // r29: 큰 견본 그림 대신 도식 + 이 링크 하나(따로 있던 '견본 보기' 단추는 뺐다)
     $("sampleClose").addEventListener("click", () => zoom.close());
     zoom.addEventListener("close", () => { if (opener) opener.focus(); });
   }
