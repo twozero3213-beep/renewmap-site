@@ -1,6 +1,6 @@
 {
   "source": "twozero3213-beep/renewmap",
-  "source_commit": "d9a1b4130d24bfcfba59e4ce8dbfccb387528d53",
+  "source_commit": "6dff21c875673fecd8b7ff97cabaef98affd1691",
   "ref": "main",
   "synced_at": "2026-11-22T15:44:19.540933+00:00",
   "source_snapshot_complete": false,
@@ -200,7 +200,8 @@
     "8c692d585af415f11ff5704c723a6f8035c0a0f2",
     "8843fd616275a782889a9b1252d4ba357d4d2a48",
     "4c7065a8eaba875e63ca9e2148315aa2b330bbbc",
-    "3a426301374c91f61973788b4e3e148a7a813cff"
+    "3a426301374c91f61973788b4e3e148a7a813cff",
+    "17606c1861f5dead68a3e3e48093964d5e5a978f"
   ],
   "deferred_source_commits": [
     "522aaf785",
