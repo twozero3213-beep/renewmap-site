@@ -139,7 +139,7 @@
     try {
       const list = await idx();
       const hit = list.find((x) => x[0] === code8);
-      if (!hit) { $('h6Met').textContent = ''; $('h6Sub').textContent = '이 지역의 쇠퇴 3요건 자료가 아직 없습니다.'; return; }
+      if (!hit) { $('h6Met').textContent = ''; $('h6Sub').textContent = '이 지역의 쇠퇴 세 기준 자료가 아직 없습니다.'; return; }
       const [code, name, sgg, sggName, sido] = hit;
       const un = await sgFile(sgg);
       const dong = (un.dongs || []).find((d) => d.code7 === code);

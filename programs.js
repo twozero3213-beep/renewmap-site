@@ -21,7 +21,7 @@
   const CORE = ['special', 'oldres', 'vacant', 'recognize'];   // 국토부 2027 도시재생 신규 공모 유형(compareHTML 주석)
   const PROGRAMS = [
     { id: 'special', name: '지역특화재생', owner: '국토교통부', aim: '역사·문화·산업 같은 지역 고유자산으로 도시 브랜드, 상권, 창업을 키웁니다.', money: '4년, 국비 최대 150억원', src: 'g2027', page: 27, needs: [ZONE], tool: [`${BRIEF41}#map/21/21090/21090700`, '반여1동 동네 현황표 보기'], use: '신청서 4-1 도시쇠퇴현황 검토 표 초안을 동별로 만들고, 표의 값마다 출처·기준일을 붙입니다.' },
-    { id: 'recognize', name: '도시재생 인정사업', owner: '국토교통부', aim: '기반시설 설치·정비, 건축물 리모델링 같은 점 단위 소규모 사업을 빠르게 추진합니다.', money: '3년, 국비 최대 50억원', src: 'g2027', page: 44, needs: [{ kind: 'human', t: '전략계획 수립 지역이면서 활성화계획 미수립 지역', how: '전략계획 고시에서 확인' }, { kind: 'infraOrDecline', t: '기초생활인프라 국가적 최저기준 미달, 또는 쇠퇴요건 2개 이상' }, { kind: 'human', t: '사업 면적 10만㎡ 미만', how: '사업 구역으로 계산' }], use: '쇠퇴 3요건 값과 생활시설 현황을 근거서로 묶습니다.' },
+    { id: 'recognize', name: '도시재생 인정사업', owner: '국토교통부', aim: '기반시설 설치·정비, 건축물 리모델링 같은 점 단위 소규모 사업을 빠르게 추진합니다.', money: '3년, 국비 최대 50억원', src: 'g2027', page: 44, needs: [{ kind: 'human', t: '전략계획 수립 지역이면서 활성화계획 미수립 지역', how: '전략계획 고시에서 확인' }, { kind: 'infraOrDecline', t: '기초생활인프라 국가적 최저기준 미달, 또는 쇠퇴요건 2개 이상' }, { kind: 'human', t: '사업 면적 10만㎡ 미만', how: '사업 구역으로 계산' }], use: '쇠퇴 세 기준 값과 생활시설 현황을 근거서로 묶습니다.' },
     { id: 'oldres', name: '노후주거지정비 일반정비형', owner: '국토교통부', aim: '노후 저층 주거지에 기반·편의시설을 공급하고 민간 주택정비를 지원합니다.', money: '5년, 국비 최대 150억원', src: 'g2027', page: 36, needs: [ZONE, LOWRISE, OLD2, { kind: 'human', t: '5만~10만㎡(권장)', how: '사업 구역으로 계산' }], tool: REDEV, use: '구역 건축물로 저층 주거·노후 요건을 계산합니다.' },
     { id: 'vacant', name: '노후주거지정비 빈집정비형', owner: '국토교통부', aim: '빈집이 밀집한 노후 저층 주거지의 정주환경을 개선합니다.', money: '4년, 국비 최대 50억원', src: 'g2027', page: 36, needs: [ZONE, LOWRISE, OLD2, { kind: 'human', t: '1만㎡ 미만 구역에 빈집 10호 이상 또는 빈집 면적 20% 이상, 다른 법령의 정비사업 없음', how: '빈집 실태조사로 확인' }, { kind: 'human', t: '5만㎡ 내외(권장)', how: '사업 구역으로 계산' }], tool: REDEV, use: '구역 건축물을 계산하고 현장 기록으로 빈집을 남깁니다.' },
     { id: 'innovation', name: '도시재생 혁신지구', owner: '국토교통부', aim: '쇠퇴지역에 주거·상업·복지·행정 기능을 모으고 산업과 기업을 유치합니다.', money: '5년, 국비 최대 250억원(2026 공고)', src: 'n2026', needs: [{ kind: 'human', t: '2027 신규사업 가이드라인 대상 3종에는 없음. 공고문의 요건 확인', how: '해당 연도 공고문으로 확인' }], use: '후보 지역의 쇠퇴·인구·상권 현황을 근거로 냅니다.' },
@@ -79,7 +79,7 @@
     if (n.kind === 'infraOrDecline') {
       if (num(f.met) && f.met >= 2) return { state: 'ok', note: declineHead(f) };
       // STD_SHORTFALL_COUNT는 최저기준에 못 미친 시설 수다. '기준 해당'으로 쓰면 갖춘 것으로 거꾸로 읽혔다(r16 문안 교정)
-      return { state: 'check', note: `${declineHead(f)}${num(f.shortfall) ? ` · 생활시설 최저기준 미달 ${f.shortfall}개(비교 규칙 승인 대기 · 최저기준 시설 중 자료가 있는 것만)` : ''}` };
+      return { state: 'check', note: `${declineHead(f)}${num(f.shortfall) ? ` · 생활시설 최저기준 미달 ${f.shortfall}개(비교 규칙 원문 대조 전 · 최저기준 시설 중 자료가 있는 것만)` : ''}` };
     }
     if (n.kind === 'oldDecline') {
       // 추가확인에는 까닭 한 줄(util.checkWhy, 지도 줄과 같은 '(꼬리표) 글')
@@ -229,7 +229,7 @@
   const districtHead = (list, unit, biz) => {
     const [a, b, p] = colYears(list, biz).map(y => (y ? `(${y})` : ''));
     return ['읍·면·동', '기준 해당 요건 수(최소)', `20년 이상 건축물 비율${a}${unit}`, `10년 최대 대비 사업체 감소율${b}${unit}`, '최근 5년 중 3년 연속 사업체 감소', `30년 최대 대비 인구 감소율${p}${unit}`, '최근 5년 중 3년 연속 인구 감소',
-      '생활시설 최저기준 미달(비교 규칙 승인 대기)', '인정사업 쇠퇴·기반 요건', '노후주거지 쇠퇴 요건'];
+      '생활시설 최저기준 미달(비교 규칙 원문 대조 전)', '인정사업 쇠퇴·기반 요건', '노후주거지 쇠퇴 요건'];
   };
   // 화면 표 머리: 두 줄 이내의 짧은 이름('|'에서 줄을 바꾼다). 해는 작은 둘째 줄, 기준 범위·괄호 글·출처 번호는 표 아래 '열 이름' 줄로 옮긴다
   // (r16 3차: 풀어 쓴 이름 그대로는 1440px에서 머리 4줄·118px, 390px에서 233px였다)
@@ -245,7 +245,7 @@
   };
   // 충족 수 칸이 추가확인이면 r16 공통 결론 머리 꼴('최소 n개 해당 · 추가확인 m개', decline-req metHead)로 적는다(r16 4차 P9: '1개 · 추가확인'은 몇 개가 남았는지 몰랐다).
   // 정하지 못한 요건 수(3 − sample_n)는 그 해 셀에만 있다. 셀이 없는 지난 해는 빈 글을 돌려주고 칸은 옛 꼴 그대로 둔다
-  const metLeast = r => { const c = r.cells[0]; return r.metHeld && c && num(r.met) && num(c.sample_n) ? DR().metHead(r.met, 3 - c.sample_n, 'none').head.replace(/^쇠퇴 3요건 중 /, '') : ''; };
+  const metLeast = r => { const c = r.cells[0]; return r.metHeld && c && num(r.met) && num(c.sample_n) ? DR().metHead(r.met, 3 - c.sample_n, 'none').head.replace(/^쇠퇴 세 기준 중 /, '') : ''; };
   // 표 머리의 해(첫 셀의 해, 셀이 없으면 표의 해). 행의 해가 다르면(폐지·개편 동: 시계열이 2022~2024에 끝남) 동 이름에 그 해를 붙인다(3차 검증)
   const headYear = list => { const c = list.map(r => r.cells.find(Boolean)).find(Boolean); return c ? c.base_year : list.map(r => r.year).find(num); };
   const nameOf = (r, hy) => (num(r.year) && num(hy) && r.year !== hy ? `${r.name}(${r.year}년)` : r.name);
@@ -283,7 +283,7 @@
   function districtCSV(items) {
     const q = csvCell, list = districtRows(items), uniq = a => [...new Set(a.filter(Boolean))].join('; ');
     const num2 = v => (num(v) ? fmt2(v) : '');
-    const h = districtHead(list, '(%)', bizYears(items)), NAMES = ['쇠퇴 3요건', '20년 이상 건축물', '사업체 감소율', '사업체 3년 연속 감소', '인구 감소율', '인구 3년 연속 감소'];
+    const h = districtHead(list, '(%)', bizYears(items)), NAMES = ['쇠퇴 세 기준', '20년 이상 건축물', '사업체 감소율', '사업체 3년 연속 감소', '인구 감소율', '인구 3년 연속 감소'];
     const head = [h[0], ...NAMES.flatMap((n, i) => [h[i + 1], `${n} 기준 판단`, `${n} 사람 대조`]), ...h.slice(7), '기준일', '출처', '셀 번호'];
     const stat = (r, i) => { const s = r.cells[i] && r.cells[i].status; return s ? LEDGER_WORD[s] || s : r.held && r.held[i] ? '추가확인' : ''; };
     // 지표 기준 판단: 기준값은 decline-req 규칙 자료(REQS)에서. 정하지 못한 셀은 값이 있어도 추가확인

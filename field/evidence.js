@@ -339,7 +339,7 @@
 
   // ── 해명서 부록(외부 제안 #5, D19): "이 숫자 어디서 왔나, 기준을 바꾸면 결과가 바뀌나"에 답하는 부록. 순위·점수·추천·지정 판단 없음
   // 법정·공식 기준선. backend/renewmap/rules/decline.py·living_std.py의 RULE_VERSION·STANDARDS와 같게 둔다(approved_by가 채워지면
-  // backend/tests/test_explainer_rules.py가 실패해 여기 '승인 대기'를 고치게 한다)
+  // backend/tests/test_explainer_rules.py가 실패해 여기 '원문 대조 전'을 고치게 한다)
   const LEGAL = {
     DECLINE_POP_DROP30Y_PCT: { line: 20, above: true, text: "최근 30년 최대 대비 20% 이상 감소(또는 5년 중 3년 연속 감소)", law: "도시재생 활성화 및 지원에 관한 특별법 시행령 제17조", rule: "decline-3req-v0.2" },
     DECLINE_AGING_20Y_PCT: { line: 50, above: true, text: "준공 20년 이상 건축물 비율 50% 이상", law: "도시재생 활성화 및 지원에 관한 특별법 시행령 제17조", rule: "decline-3req-v0.2" },
@@ -356,7 +356,7 @@
   // refs: ref_lines.json(없으면 null). code: 행정동 8자리(앞 2자리 시도, 앞 5자리 시군구)
   function basisText(r, refs, code) {
     const L = LEGAL[r.code], F = REF_FIXED[r.code], v = r.num;
-    if (L) return `법정: ${L.text} · ${L.law} · 판본 ${L.rule}(승인 대기 초안)${Number.isFinite(v) ? ` · 이 값은 ${side(v, L.line)}` : ""}`;
+    if (L) return `법정: ${L.text} · ${L.law} · 판본 ${L.rule}(원문 대조 전 초안)${Number.isFinite(v) ? ` · 이 값은 ${side(v, L.line)}` : ""}`;
     if (F && Number.isFinite(v)) return `참고선(법정 기준 아님): ${F.lines.map((x) => `${x}% ${above(v, x)}`).join(" · ")} · ${F.note}`;
     if (REF_SAME_DATA.includes(r.code) && Number.isFinite(v)) {
       const R = refs && refs.indicators && refs.indicators[r.code], c = String(code || "");

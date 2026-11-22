@@ -11,7 +11,7 @@
 
   // 초안 규칙 decline-3req-v0.2(backend/renewmap/rules/decline.py)의 기준값을 '설명'에만 쓴다.
   // 판정은 사람이 승인한 백엔드 규칙이 한다. 여기서는 셀 값과 기준값을 나란히 보여 줄 뿐이다.
-  const RULE = { id: 'decline-3req-v0.2', law: '도시재생 활성화 및 지원에 관한 특별법 시행령 제17조', state: '초안 · 승인 대기' };
+  const RULE = { id: 'decline-3req-v0.2', law: '도시재생 활성화 및 지원에 관한 특별법 시행령 제17조', state: '초안 · 원문 대조 전' };
   const REQS = [
     { name: '인구', text: '30년 최대 대비 20% 이상 감소 또는 5년 중 3년 연속 감소', ind: 'DECLINE_POP_DROP30Y_PCT', min: 20, src: '주민등록 인구' },
     { name: '사업체', text: '10년 최대 대비 5% 이상 감소 또는 5년 중 3년 연속 감소', ind: 'DECLINE_BIZ_DROP10Y_PCT', min: 5, src: '사업체 조사' },

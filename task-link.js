@@ -7,7 +7,7 @@
   'use strict';
   const MAX_BYTES = 20 * 1024 * 1024;
   const MIME = {hwpx:'application/hwp+zip',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',json:'application/json'};
-  const BLOCKING = ['자료 없음','출처·계산 충돌','쓰지 않는 셀','공개 파일에 없는 원장 기록','규칙·산식 승인 대기'];   // docgen.js deliveryReview의 줄 제목과 같은 글
+  const BLOCKING = ['자료 없음','출처·계산 충돌','쓰지 않는 셀','공개 파일에 없는 원장 기록','규칙·산식 원문 대조 전'];   // docgen.js deliveryReview의 줄 제목과 같은 글
   const enc = new TextEncoder();
   function text(value, label, max) {
     if (typeof value !== 'string' || !value.trim() || value.length > max) throw new Error(`${label}을 확인해 주세요.`);

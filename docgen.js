@@ -528,7 +528,7 @@
     rows.push(['공간 단위 구성', `${grains.length}개`, `${grains.length ? grains.join(', ') : '공간 단위 기록 없음'} · 해당 지침이 정한 통계단위·통합분석 범위·사업구역 경계는 추가확인이다. 구·동 통계의 이름만 바꾸어 사업구역·개별 건물·필지 자체의 값으로 쓰지 않는다. 현장 기록도 별도로 대조한다.`]);
     const pending = brief.crit.rows.slice(1).filter(r => pendingStatus(r[4])).map(r => r[0]);
     if (forecast && items.some(i => i.group === '전망' && i.cell) && !(brief.fidx || {}).approved) pending.push('추세 전망 산식');
-    rows.push(['규칙·산식 승인 대기', `${pending.length}건`, pending.length ? pending.join(', ') : '표시된 승인 대기 항목 없음 · 법정 적합 판정 아님']);
+    rows.push(['규칙·산식 원문 대조 전', `${pending.length}건`, pending.length ? pending.join(', ') : '표시된 원문 대조 전 항목 없음 · 법정 적합 판정 아님']);
     rows.push(['문서 확인값(SHA-256)', brief.inputHash ? '기록 있음' : '미기록', brief.inputHash ? `${brief.inputHash} · ${HASH_MEANS}` : '이전 문서는 출처 색인 지문만 있을 수 있음']);
     return { rows, note: '건수는 중복될 수 있다. 이 표는 자료 점검 목록이며 정확성·현장 확인·담당자 승인을 보증하지 않는다.' };
   }
