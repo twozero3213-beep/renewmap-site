@@ -84,7 +84,9 @@
       return `<li>${svg(ICON[k.id] || ICON.weak)}<span class="hd-k">${esc(k.label)}</span><b class="hd-n">${n(v)}<small>${esc(k.unit)}</small></b>`
         + `<span class="hd-s">${who}${k.base_date ? ` · <span class="hd-d">${esc(k.base_date)}</span>` : ' · 기준일 준비 중'}</span></li>`;
     }).join('');
-    return items ? `<ul class="hd-kpis">${items}</ul>` : '';
+    // 부산 전체: 주소로 구·군을 정하지 못한 시설도 부산 안이라 더한다(구·군 합보다 조금 클 수 있다)
+    const why = code === '26' ? '<p class="hd-src">부산 전체에는 구·군을 정하지 못한 주소의 시설도 들어 있어 구·군 합보다 조금 클 수 있습니다.</p>' : '';
+    return items ? `<ul class="hd-kpis">${items}</ul>${why}` : '';
   }
 
   function render(d, code) {
@@ -95,7 +97,18 @@
     return `<h3 class="hd-area">${esc(area.name)} · 지금 있는 시설</h3>${kpiList(d, code)}<div class="hd-charts">${charts}${heldList(d)}</div>`;
   }
 
-  const api = { valid, heights, chart, kpiList, heldList, render };
+  // 지역 고르기 묶음: [[시·도 이름, [지역…]]…], 자료 순서 그대로(거제·양산이 부산 전체 아래에 섞이지 않게)
+  function groups(areas) {
+    const out = [];
+    for (const a of areas || []) {
+      const key = a.sido || '';
+      const g = out.find(x => x[0] === key);
+      if (g) g[1].push(a); else out.push([key, [a]]);
+    }
+    return out;
+  }
+
+  const api = { valid, heights, chart, kpiList, heldList, render, groups };
   if (typeof module === 'object' && module.exports) module.exports = api;
 
   // 브라우저 연결부: 자리([data-dash])가 있고 util.js가 있을 때만
@@ -115,17 +128,14 @@
       if (!valid(d)) return fail();
       // 시·도별 묶음: 거제·양산이 '부산 전체' 아래 부산 구·군처럼 보이지 않게(대표 지적 2026-11-22 밤)
       pick.textContent = '';
-      const groups = new Map();
-      for (const a of d.areas) {
-        const key = a.sido || '';
-        if (!groups.has(key)) {
-          const g = key ? doc.createElement('optgroup') : pick;
-          if (key) { g.label = key; pick.appendChild(g); }
-          groups.set(key, g);
+      for (const [key, list] of groups(d.areas)) {
+        const g = key ? doc.createElement('optgroup') : pick;
+        if (key) { g.label = key; pick.appendChild(g); }
+        for (const a of list) {
+          const o = doc.createElement('option');
+          o.value = a.code; o.textContent = a.name;
+          g.appendChild(o);
         }
-        const o = doc.createElement('option');
-        o.value = a.code; o.textContent = a.name;
-        groups.get(key).appendChild(o);
       }
       const draw = (announce) => {
         const h = render(d, pick.value);
