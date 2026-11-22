@@ -365,7 +365,7 @@
   function officeOptions() {
     const previous = $('officeDong').value, q = $('officeQuery').value.replace(/\s/g, '');
     const filtered = dongs.filter(d => `${d.district}${d.name}`.includes(q));
-    $('officeDong').innerHTML = `<option value="">${filtered.length ? '행정동을 선택해 주세요' : '검색 결과가 없습니다'}</option>` + filtered.map(d => `<option value="${d.code}">${esc(d.district)} ${esc(d.name)}</option>`).join('');
+    $('officeDong').innerHTML = `<option value="">${filtered.length ? '행정동을 선택해 주세요' : '검색 결과가 없습니다'}</option>` + filtered.map(d => `<option value="${esc(d.code)}">${esc(d.district)} ${esc(d.name)}</option>`).join('');
     if (filtered.some(d => d.code === previous)) $('officeDong').value = previous;
     // 검색 결과가 한 곳이면 그 동을 바로 고른다(목록에서 다시 골라야 비교 단추가 켜졌다, r16)
     else if (filtered.length === 1) { $('officeDong').value = filtered[0].code; loadOfficeDistances(); }

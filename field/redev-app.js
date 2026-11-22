@@ -467,7 +467,7 @@
     try { localStorage.setItem(TODO_KEY, JSON.stringify(t.items.filter((it) => it.b.pnu).slice(0, 1000).map((it) => ({ pnu: it.b.pnu, jibun: it.b.jibun || "", structure: it.b.structure || "", main_use: it.b.main_use || "" })))); } catch (err) { /* 현장 기록은 받은 지번만 보인다 */ }
     if (!t.items.length) { box.replaceChildren(); return; }
     const h = document.createElement("h3"), p = document.createElement("p"), ul = document.createElement("ul");
-    h.textContent = `확인할 건물 ${n0(t.items.length)}동 · 현장 기록이 붙은 건물 ${n0(t.withRecord)}동`;
+    h.textContent = `확인할 건물 ${n0(t.items.length)}동 · 현장 사진 기록이 붙은 건물 ${n0(t.withRecord)}동`;
     p.className = "hint"; p.textContent = "완공된 날(사용승인일)이 없는 건물입니다. 목조·블록·벽돌·조적부터 보입니다. 판정에는 쓰지 않고 확인 순서만 정합니다.";
     const old = res.lines.find((l) => l.settle), stop = document.createElement("p");   // 정해지는 지점을 알면 목록을 다 돌기 전에 확인을 멈출 수 있다
     stop.className = "hint rv-settle"; stop.textContent = old ? `${old.label}: ${R.settleText(old.settle, ...R.SETTLE_OLD)}` : "";

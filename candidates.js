@@ -45,9 +45,8 @@
     storage.setItem(KEY, JSON.stringify(list));
   }
   const valueText = item => !item || item.v === null ? '자료 없음' : item.t;
-  // 엑셀은 =+-@·탭·CR로 시작하는 칸을 식으로 읽어 막되, '-2.81' 같은 순수 숫자는 그대로 둔다(작은따옴표가 붙으면 숫자가 글자가 된다). '-1+2'는 식이라 막는다
-  const NUM = /^-?\d+(?:\.\d+)?$/;
-  const cell = value => { const t = String(value ?? ''); return '"' + (NUM.test(t.trim()) ? t : t.replace(/^[\s\uFEFF]*[=+@\t\r-]/, "'$&")).replace(/"/g, '""') + '"'; };
+  // CSV 칸 규칙(엑셀이 식으로 읽을 칸 막기)은 util.js csvCell 한 곳에 둔다
+  const cell = U.csvCell;
   const COMPARISON_FIELDS = [
     ['출처', x => [x.evidence?.source_name, x.basis.source_url]],
     ['기준일', x => [x.d]], ['단위', x => [x.u]],

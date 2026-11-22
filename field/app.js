@@ -913,7 +913,7 @@
       m.textContent = `${E.localTime(r.recorded_at)}${r.accuracy_m !== null && r.accuracy_m !== undefined ? ` · ±${Math.round(r.accuracy_m)}m` : ""}${r.corrected ? " · 보정됨" : ""}${r.parcel ? ` · ${r.parcel}` : ""}${r.photos && r.photos.length ? ` · 사진 ${r.photos.length}장` : ""}${group.get(E.siteOf(r)).length > 1 ? ` · 같은 지점 ${group.get(E.siteOf(r)).length}건` : ""}${r.imported ? " · 가져옴" : ""}`;
       acts.className = "row";
       const prev = E.prevAtSite(rows, r);
-      for (const [label, fn] of [[prev ? "한글 기록·비교 받기" : r.facility || r.visit ? "한글 기록 받기" : "한글 1쪽 받기", hwpx], ["PDF로 저장", pdf], ["해명서 부록 받기", explainer]]) {
+      for (const [label, fn] of [[prev ? "한글 기록·비교 받기" : r.facility || r.visit ? "한글 기록 받기" : "한글 한 장 받기", hwpx], ["PDF로 저장", pdf], ["해명서 부록 받기", explainer]]) {
         const btn = document.createElement("button"); btn.type = "button"; btn.className = "ghost"; btn.textContent = label;
         btn.addEventListener("click", () => fn(r)); acts.append(btn);
       }

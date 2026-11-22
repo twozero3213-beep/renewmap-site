@@ -50,8 +50,17 @@
     sensor: '센서', items: '관측 항목', first: '처음', last: '마지막', rows: '관측 기록 수' };
   // 같은 칸 이름이 자료마다 뜻이 다를 때만 자료 번호로 덮는다(국가안전대진단의 target은 대상 시설 종류다)
   const LABEL_OF = { '15133362.done': '정비 완료', '15133362.target': '정비 대상', '15045361.patients': '이송 인원', '15013202.grade': '등급' };
-  const rowText = (fields, row, id) => fields.map((f, i) => [f, row[i]]).filter(([f, v]) => !SKIP.has(f) && v != null && v !== '')
-    .map(([f, v]) => { const l = LABEL_OF[`${id}.${f}`] || LABEL[f], t = typeof v === 'number' ? num(v) : String(v); return l ? `${l} ${t}` : t; }).join(' · ');
+  // 원자료가 '해당'·'해당없음'으로 적은 서비스 칸(노인돌봄 수행기관)은 '해당'인 것만 쉬운 이름으로 모아 첫 서비스 칸 자리에 한 칸으로 적는다
+  const FLAG = { special: '특화', emergency: '응급안전', visit_care: '방문', home_care: '재가' };
+  function rowText(fields, row, id) {
+    const flag0 = fields.find(f => FLAG[f]), svc = fields.filter((f, i) => FLAG[f] && row[i] === '해당').map(f => FLAG[f]);
+    return fields.map((f, i) => [f, row[i]]).filter(([f, v]) => !SKIP.has(f) && v != null && v !== '' && (!FLAG[f] || f === flag0))
+      .map(([f, v]) => {
+        if (FLAG[f]) return `서비스 ${svc.join('·') || '표시 없음'}`;
+        const l = LABEL_OF[`${id}.${f}`] || LABEL[f], t = typeof v === 'number' ? num(v) : String(v);
+        return l ? `${l} ${t}` : t;
+      }).join(' · ');
+  }
   const rowsHTML = (s, rows) => `<ul class="sl-rows">${rows.map(r => `<li>${esc(rowText(s.fields, r, s.src.id))}</li>`).join('')}</ul>`;
   // 법령 근거: law_sources.json에서 이 자료 번호를 datasets에 적은 조문만. 없으면 아무것도 적지 않는다
   function lawHTML(laws, id) {

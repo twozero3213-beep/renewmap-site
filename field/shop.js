@@ -3,7 +3,6 @@
 (function (root) {
   "use strict";
   const KINDS = ["general", "rest"];
-  const MEANING = { 다이나믹: "운영·폐업 업소 모두 영업기간이 부산 평균보다 짧음", 상권확장: "운영 업소는 짧고 폐업 업소는 김", 상권축소: "운영 업소는 길고 폐업 업소는 짧음", 정체: "운영·폐업 업소 모두 김" };
   const typeText = (r, minN) => r.type || `유형 없음(운영·폐업 각 ${minN}곳 미만)`;
   // 고른 구·군의 동 목록: 두 업종을 동 이름으로 합친다
   function rowsFor(doc, gu) {
@@ -38,7 +37,7 @@
     const avg = KINDS.map((k) => `${doc.kinds[k].name} ${avgName(doc, gu)}: 운영 ${avgOf(doc, k, gu).open_avg_m}개월, 폐업 ${avgOf(doc, k, gu).closed_avg_m}개월`);
     return "﻿" + [note, head, ...body, [avg.join(" / ")]].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
   }
-  const api = { KINDS, MEANING, typeText, rowsFor, gus, toCSV, avgOf, avgName, dongText, csvCell: cell };
+  const api = { KINDS, typeText, rowsFor, gus, toCSV, avgOf, avgName, dongText, csvCell: cell };
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.RenewShop = api;
 })(this);

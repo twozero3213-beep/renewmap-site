@@ -102,7 +102,7 @@
       ["지우기", async () => { if (!confirm(`${d.name} 문서를 지울까요?\n지운 문서는 되살릴 수 없습니다.`)) return; await S.deleteDoc(d.id); say("문서를 지웠습니다."); refresh(); }, "del", `${d.name} 지우기`],
     ])));
     tally();
-    if (!recs.length) empty(ru, "아직 저장한 현장 기록이 없습니다. 현장 기록에서 사진을 찍어 저장하세요.", "field/", "현장 기록하기");
+    if (!recs.length) empty(ru, "아직 저장한 현장 기록이 없습니다. 현장 기록에서 사진을 찍어 저장하세요.", "field/", "현장 사진 기록하기");
     for (const r of recPages.slice(recs)) {
       const where = r.dong ? `${r.dong.sgName} ${r.dong.name}` : r.jibun || r.pnu || R.NO_PARCEL;
       ru.append(row(`${where} · ${r.target || r.item || "기록"}`, `${day(r.recorded_at)}${r.photos && r.photos.length ? ` · 사진 ${r.photos.length}장` : ""}${r.corrected ? " · 위치 보정됨" : ""}`, [
