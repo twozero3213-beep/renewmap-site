@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="../styles.css">
 <link rel="stylesheet" href="../site-v4.css">
 <link rel="stylesheet" href="../v4.css">
-<link rel="stylesheet" href="field.css?v=20261122-r19">
+<link rel="stylesheet" href="field.css?v=20261122-r22">
 <link rel="stylesheet" href="../rm6.css">
 </head>
 <body class="field redev-v4 fr-redev">
@@ -37,11 +37,11 @@
   <!-- 2026-11-19: 넓은 화면은 입력(.fr-main) | 견본·결과(.fr-side) 두 칸(field.css). 결과가 나오면 입력 칸이 화면에 붙어 다시 고쳐 셀 수 있다 -->
   <div class="fr-main">
   <!-- 2026-11-19: 첫 안내 상자(휴대폰 178px)를 한 줄 + 'ⓘ 자세히'로. 원문은 접은 칸에 그대로 -->
+  <!-- 13 H5: 제목 아래 설명과 같은 뜻의 한 줄이 또 있어 '계산하기'가 첫 화면 밖으로 밀렸다 → 그 줄은 접은 칸 첫머리로 -->
   <div class="fr-intro">
-    <p class="hint fr-lead">건물마다 대장에서 완공된 날(사용승인일)을 찾아 20년 넘은 건물 비율과 근거 표를 만듭니다. 못 찾은 주소는 까닭과 함께 따로 적습니다.</p>
     <details class="fr-info">
       <summary>ⓘ 자세히: 계산 범위·받는 파일</summary>
-      <p class="hint">건물 자료 · 부산 254개 동<br>저층 주거 3분의 2(노후주거지정비 공모 가이드라인)와 재개발 노후·불량 비율(부산 정비조례)도 기준 원문과 함께 셉니다.<br>결과는 건물별 표(CSV), 한글 1쪽, 구역 경계(SHP)로 받습니다. 주소와 구역은 이 기기 안에서 계산합니다.</p>
+      <p class="hint">건물마다 대장에서 완공된 날(사용승인일)을 찾아 20년 넘은 건물 비율과 근거 표를 만듭니다. 못 찾은 주소는 까닭과 함께 따로 적습니다.<br>건물 자료 · 부산 254개 동<br>저층 주거 3분의 2(노후주거지정비 공모 가이드라인)와 재개발 노후·불량 비율(부산 정비조례)도 기준 원문과 함께 셉니다.<br>결과는 건물별 표(CSV), 한글 1쪽, 구역 경계(SHP)로 받습니다. 주소와 구역은 이 기기 안에서 계산합니다.</p>
     </details>
   </div>
 
@@ -50,14 +50,18 @@
     <label for="list">주소 목록(번지) <small>(한 줄에 하나. 예: 반여동 1291 · 필지 고유번호 19자리도 됩니다)</small></label>
     <textarea id="list" rows="5" placeholder="반여동 1291&#10;반여동 1292-3&#10;동 이름을 앞에 적으면 구·동을 자동으로 고릅니다&#10;엑셀에서 번지 열을 머리와 함께 복사해도 됩니다"></textarea>
     <button type="button" class="ghost fr-example" id="example">예시 주소 넣기(반여동 60개)</button>
-    <label for="gu">구·군(부산)</label>
-    <select id="gu"><option value="26350" selected>해운대구</option></select>
-    <label for="dong">동</label>
-    <select id="dong">
-      <option value="2635010100">반송동</option><option value="2635010200">석대동</option><option value="2635010300" selected>반여동</option><option value="2635010400">재송동</option>
-      <option value="2635010500">우동</option><option value="2635010600">중동</option><option value="2635010700">좌동</option><option value="2635010800">송정동</option>
-    </select>
-    <p class="hint" id="coverage">건물 단위 계산은 지금 부산 254개 동에서만 됩니다. 다른 시·도는 건물 자료 공개 조건을 확인하기 전이라 열지 않았습니다.</p>
+    <!-- 13 H5: 동 이름을 앞에 적으면 구·동을 자동으로 고르므로(redev-app.js pickDong) 두 칸은 접고, 머리에 지금 고른 곳을 보인다(syncWhere) -->
+    <details class="rm-disclosure fr-where" id="where">
+      <summary>구·군과 동: <span id="whereNow">해운대구 반여동</span></summary>
+      <label for="gu">구·군(부산)</label>
+      <select id="gu"><option value="26350" selected>해운대구</option></select>
+      <label for="dong">동</label>
+      <select id="dong">
+        <option value="2635010100">반송동</option><option value="2635010200">석대동</option><option value="2635010300" selected>반여동</option><option value="2635010400">재송동</option>
+        <option value="2635010500">우동</option><option value="2635010600">중동</option><option value="2635010700">좌동</option><option value="2635010800">송정동</option>
+      </select>
+      <p class="hint" id="coverage">건물 단위 계산은 지금 부산 254개 동에서만 됩니다. 다른 시·도는 건물 자료 공개 조건을 확인하기 전이라 열지 않았습니다.</p>
+    </details>
     <button type="submit" class="save">계산하기</button>
     <p id="msg" class="msg" role="status" aria-live="polite"></p>
     <!-- 2026-11-19: 목록을 직접 적지 않는 두 길(지도에 그리기 · 고른 동 전체)을 한 줄에. 채운 단추는 '계산하기' 하나 -->
@@ -116,14 +120,19 @@
     <h2 id="outTitle" tabindex="-1">계산 결과</h2>
     <!-- 2026-11-22 r19: 첫 상품('대상지 근거표')의 답을 맨 위 한 덩어리로(redev.js leadHTML): 찾은 건물·20년 넘은 비율 두 값·구청이 확인할 칸·못 찾은 주소 -->
     <div id="outLead" class="rd-lead"></div>
-    <button type="button" class="ghost" id="csv">건물별 표 받기(CSV)</button>
+    <!-- 13 H6: 홈이 보여 준 근거표와 같은 칸의 건물별 표(redev.js btableHTML). 10줄 넘으면 처음 10줄과 '전체 n동 보기'. 채운 단추는 이 표 받기 -->
+    <h3 class="nv-h">건물별 표</h3>
+    <div id="outTable" class="rd-table"></div>
+    <button type="button" class="ghost" id="tableAll" aria-expanded="false" hidden></button>
+    <p id="tableRest" class="hint" hidden></p>
+    <button type="button" id="csv">건물별 표 받기(CSV)</button>
     <p class="warn rm-status">참고용 계산입니다. 판단은 구청·담당 기관이 합니다.<br>노후주거지정비 신청요건과 부산 정비조례 계산 규칙은 담당자가 원문과 맞춰 보기 전인 초안입니다. 사업계획서나 조합 자료에는 '참고 계산'으로 적고, 제출 전에 담당 기관이 원문과 대조하도록 알려 주세요. <a href="../rules.html">기준 원문과 판본 보기</a></p>
     <h3 class="nv-h">요건별 결과</h3>
     <ul id="outAnswer" class="sr-req-rows out-answer"></ul>
     <!-- 2026-11-21 r16(M26): 신청서에 붙일 1쪽이 결과 제목에서 5,700px 아래에 있었다 → 답 바로 아래 주 단추와 '몇 동 더 확인하면 정해지나' 한 줄.
          2차(리뷰 0.11): 재개발 입안요건 1쪽도 약 3,500px 아래였다 → 두 1쪽 받기를 나란히 -->
     <div class="row">
-      <button type="button" id="applicationHwpx">신청요건 1쪽 받기(한글)</button>
+      <button type="button" class="ghost" id="applicationHwpx">신청요건 1쪽 받기(한글)</button>
       <button type="button" class="ghost" id="hwpx">입안요건 1쪽 받기(한글)</button>
     </div>
     <p class="hint">신청요건 1쪽은 현황조사 항목별 확인한 내용과 추가확인 항목, 이 기기의 현장 기록을 함께 담습니다.</p>

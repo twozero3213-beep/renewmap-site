@@ -8,6 +8,7 @@
   // 시·도 칸 배치: 북→남(줄), 서→동(칸)을 어림한 4칸 격자. 값으로 줄 세우지 않는다(08a)
   const LAYOUT = [['23', '11', '31', '32'], ['34', '29', '33', '37'], ['35', '25', '22', '26'], ['24', '36', '38', '21'], ['39']];
   const TITLE = '전국 동네 3곳 중 2곳은 인구가 줄고, 건물 절반이 20년을 넘었습니다';
+  const MET_IND = 'DECLINE_MET_COUNT';   // map.js INDICATORS의 '기준을 넘은 수(확실한 것만)'
   const n = v => v.toLocaleString('ko-KR');
   const pct = (a, b) => Math.round(a / b * 1000) / 10;
   const bar = (w, note) => `<span class="rm-glance-bar${note ? ' is-note' : ''}" aria-hidden="true"><i data-w="${w}"></i></span>`;
@@ -23,7 +24,8 @@
     const bizAll = d.biz_check === d.dongs;
     const cells = d.sido.map(s => ({ s, at: place(String(s.code2)) }))
       .sort((a, b) => (a.at ? a.at[0] * 10 + a.at[1] : 99) - (b.at ? b.at[0] * 10 + b.at[1] : 99))   // 격자 순서(읽는 순서 = 보이는 순서)
-      .map(({ s, at }) => `<li${at ? ` data-r="${at[0]}" data-c="${at[1]}"` : ''}><a href="explore.html#map/${esc(s.code2)}"><b>${esc(sidoShort(s.name))}</b>`
+      // 13 H2: 칸 숫자와 같은 셈(세 기준 중 넘은 수, 확실한 것만)을 고른 지도로 연다. 첫 지표(20년 이상 건축물)로 열면 다른 숫자가 나왔다
+      .map(({ s, at }) => `<li${at ? ` data-r="${at[0]}" data-c="${at[1]}"` : ''}><a href="explore.html?ind=${MET_IND}#map/${esc(s.code2)}"><b>${esc(sidoShort(s.name))}</b>`
         + `<span>${n(s.met2)}/${n(s.dongs)}</span>${bar(pct(s.met2, s.dongs))}</a></li>`).join('');
     const gap = d.dongs - d.pickable;
     const src = (d.sources || []).map(s => `<li>${esc(s.name)} · ${esc(s.base_year)}년 자료 · ${s.retrieved_at ? '조회 ' + esc(s.retrieved_at) : '조회일 기록 없음'}</li>`).join('');
@@ -35,7 +37,9 @@
       + `<li><span>인구 30년 비교가 끊겨 5년 기준으로만 센 곳 <b>${n(d.pop30_check)}곳</b></span>${bar(pct(d.pop30_check, d.dongs), true)}</li>`
       + `<li><span>사업체 기준 추가확인 <b>${n(d.biz_check)}곳</b>${bizAll ? '(전국 공통)' : ''}</span>${bar(pct(d.biz_check, d.dongs), true)}</li></ul>`
       + '<details class="rm-glance-sido"><summary>시·도별로 보기</summary>'
-      + '<p class="rm-glance-legend">막대 길이는 기준을 함께 넘은 읍·면·동의 비율입니다. 칸을 누르면 그 시·도의 동을 봅니다.</p>'
+      // 13 H2: 넘은 곳은 지도와 같다. 전체는 값 없는 셀(경계 시점 차이)도 세어(export_glance.py) 지도 '값 있는 동'보다 많은 시·도가 있다(2025년 서울·인천·경기·전북 1~4곳)
+      + '<p class="rm-glance-legend">막대 길이는 기준을 함께 넘은 읍·면·동의 비율입니다. 칸을 누르면 같은 셈(기준을 넘은 수)으로 그 시·도의 동을 봅니다. '
+      + '칸의 전체에는 경계 시점 차이로 값을 못 낸 동도 들어 있어, 지도의 \'값 있는 동\'보다 몇 곳 많을 수 있습니다.</p>'
       + `<ol class="rm-glance-grid">${cells}</ol></details>`
       + '<details class="rm-glance-src"><summary>이 숫자는 어디서 왔나요?</summary>'
       + '<p>법 제13조제4항은 도시재생활성화지역을 지정할 때 세 가지 기준(인구·사업체·오래된 건물) 가운데 2개 이상을 갖추라고 정합니다. '

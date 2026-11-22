@@ -33,13 +33,7 @@
 .h7-proof-badge { display: inline-block; margin: 0; padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: var(--t-cap); font-weight: 600; color: var(--dim); }
 .h6 .h7-proof-head h2 { margin: 0 0 4px; font-size: var(--t-h3); }
 .h7-proof-check { margin: 0; font-size: var(--t-body); font-weight: 700; font-variant-numeric: tabular-nums; }
-.h7-proof-scroll { overflow-x: auto; }
-.h7-proof-scroll:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
-/* 일곱 칸은 오른쪽 5칸 폭(약 470px)에 다 들어가지 않는다. 칸을 접어 행이 길어지는 대신 한 줄로 두고 옆으로 민다. 주소 칸은 붙여 둔다 */
-.h7-proof-table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--t-sub); line-height: 1.5; }
-.h7-proof-table th, .h7-proof-table td { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
-.h7-proof-table thead th { color: var(--dim); font-weight: 600; }
-.h7-proof-table tbody th { position: sticky; left: 0; background: #fff; font-weight: 600; }
+/* 표는 전역 .rm-btable(rm6.css): 일곱 칸을 네 칸으로 모아 오른쪽 5칸 폭 안에 다 보인다(옆으로 밀던 표가 '20년 넘음·까닭'을 잘랐다, 13 H1) */
 .h7-proof-miss, .h7-proof-sum, .h7-proof-cap { margin: 8px 0 0; font-size: var(--t-sub); line-height: 1.6; }
 .h7-proof-cap { color: var(--dim); }
 .h7-proof-src { margin-top: 8px; }

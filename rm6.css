@@ -227,6 +227,27 @@ input[type="file"]::file-selector-button { min-height: 40px; margin-right: 10px;
    상태는 옆 '추가확인' 글자가 전하고 색만으로 알리지 않는다. 동네 진단·홈 카드 공통(home6.css보다 뒤에 온다) */
 .is-unsettled, .is-unsettled :is(b, strong) { color: var(--dim); }
 :is(b, strong).is-unsettled, .is-unsettled :is(b, strong) { font-weight: 600; }
+/* 13 H3: 동 쪽 세 기준 표의 추가확인 값 칸 = 지도 패널(map.css .sr-why-b·.sr-calc)과 같은 꼴. 값 자리에는 까닭, 계산값은 그 아래 15px 회색 괄호 */
+.dong-req .dong-why { font-weight: 600; color: var(--ink); }
+.dong-req .dong-calc { display: block; font-size: var(--t-sub); font-weight: 400; color: var(--dim); }
+/* 건물별 표(13 H1·H6): 홈 근거표 조각(home-proof.js)과 대상지 계산 결과(redev.js btableHTML)가 같은 모양.
+   일곱 칸 가운데 대장에서 찾음·주용도·구조는 주소 아래 작은 줄로 모아 넓은 화면은 네 칸(옆으로 밀지 않는다), 720px 아래는 줄마다 카드 */
+.rm-btable { width: 100%; border-collapse: collapse; font-size: var(--t-sub); line-height: 1.5; }
+.rm-btable :is(th, td) { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; overflow-wrap: break-word; }
+.rm-btable :is(th, td):last-child { padding-right: 0; }
+.rm-btable thead th { color: var(--dim); font-weight: 600; }
+.rm-btable tbody th { font-weight: 700; }
+.rm-btable small { display: block; font-size: var(--t-sub); font-weight: 400; color: var(--dim); }
+.rm-btable tr[hidden] { display: none; }
+@media (max-width: 720px) {
+  .rm-btable, .rm-btable :is(thead, tbody, tr, th, td) { display: block; }
+  .rm-btable thead th:not(:first-child) { display: none; }   /* 첫 머리(주소 아래 '대장에서 찾음 · 주용도 · 구조')만 둘째 줄 이름표로 남긴다 */
+  .rm-btable tr { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .rm-btable :is(th, td) { padding: 0; border: 0; }
+  .rm-btable td { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; margin-top: 4px; }
+  .rm-btable td::before { content: attr(data-k); color: var(--dim); word-break: keep-all; }
+  .rm-btable td > * { justify-self: start; }   /* 추가확인 꼬리표가 칸 폭만큼 늘어나지 않게 */
+}
 /* r16 M13: 새 창으로 여는 링크 끝에 ↗, 낭독기에는 '(새 창)'(KWCAG 사용자 요구에 따른 실행). 이름에 이미 '새 창'이 있는 링크와 네이버 법적 고지(글자에 '(새 창)', map.js)는 뺀다.
    inline-block이라 밑줄이 화살표까지 이어지지 않는다. 대체 글자를 모르는 옛 브라우저는 선언째 버려 아무것도 붙지 않는다.
    화면에만: 인쇄에서는 map.css·6절의 '링크 뒤 주소' 규칙이 그대로 쓰인다 */

@@ -29,7 +29,7 @@
     const gus = idx.sigungu.filter((s) => s.code.startsWith(BUSAN) && s.dongs.length);
     if (!gus.length) return;
     const fill = (sel, items, pick) => sel.replaceChildren(...items.map(([v, t]) => { const o = new Option(t, v); o.selected = v === pick; return o; }));
-    const showDongs = (gu, pick) => fill($("dong"), gus.find((s) => s.code === gu).dongs.map((d) => [d.code, `${d.name} (건물 ${d.count.toLocaleString("ko-KR")}동)`]), pick);
+    const showDongs = (gu, pick) => { fill($("dong"), gus.find((s) => s.code === gu).dongs.map((d) => [d.code, `${d.name} (건물 ${d.count.toLocaleString("ko-KR")}동)`]), pick); syncWhere(); };
     // 2026-11-13: 건물 나이 4D·동 페이지에서 ?bjd=법정동코드로 오면 그 구·동을 고른 채 연다(11-13 3차: 어디서 와도 동이 이어지지 않음)
     const want = new URLSearchParams(location.search).get("bjd");
     const from = want && gus.find((s) => s.dongs.some((d) => d.code === want));
@@ -117,6 +117,9 @@
   $("area").addEventListener("input", () => { delete $("area").dataset.src; });   // saveDraft보다 먼저
   ["list", "area", "dong"].forEach((id) => $(id).addEventListener("input", saveDraft));
   $("dong").addEventListener("change", saveDraft);
+  // 접힌 '구·군과 동'(13 H5) 머리에 지금 고른 곳. 동 칸 글의 '(건물 n동)'은 뺀다
+  const syncWhere = () => { const t = (id) => (($(id).selectedOptions || [])[0] || {}).textContent || ""; $("whereNow").textContent = `${t("gu")} ${t("dong").replace(/\s*\(건물 [\d,]+동\)$/, "")}`.trim(); };
+  $("dong").addEventListener("change", syncWhere);
 
   const n0 = (x) => x.toLocaleString("ko-KR");   // 개수는 늘 천 단위 쉼표
   const say = (text, err) => { $("msg").setAttribute("role", err ? "alert" : "status"); $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };   // 오류는 바로 읽힌다(field/app.js say와 같음)
@@ -149,6 +152,7 @@
     const hits = gus.filter((s) => s.dongs.some((d) => d.name === names[0]));
     if (hits.length > 1) {
       say(`${names[0]}은(는) ${hits.map((s) => s.name).join(", ")}에 있습니다.\n구·군을 골라 주세요.`, true);
+      $("where").open = true;   // 접힌 칸 안의 칸에는 초점이 가지 않는다
       $("gu").focus();
       return false;
     }
@@ -160,7 +164,7 @@
     return true;
   }
   let pickWait = 0;
-  $("list").addEventListener("input", () => { clearTimeout(pickWait); pickWait = setTimeout(() => pickDong(), 400); });
+  $("list").addEventListener("input", () => { clearTimeout(pickWait); pickWait = setTimeout(() => pickDong().then(syncWhere), 400); });
 
   // 예시 주소 넣기: 홈 근거표 조각과 같은 반여동 주소 60개(data/proof_sample.json의 input, backend/scripts/export_proof_sample.py)로 바로 계산한다
   $("example").addEventListener("click", async () => {
@@ -370,6 +374,7 @@
         if (p.items.some((it) => it.dong)) {   // 동 이름을 앞에 적었으면 구·동부터 맞춘다. 여러 구에 같은 이름이 있으면 묻고 멈춘다
           if (!(await pickDong(p.items))) return;
           if (request !== calculation) return;
+          syncWhere();
         }
     const areaRaw = $("area").value.trim(), areaM2 = areaRaw === "" ? null : Number(areaRaw);
     if (areaM2 !== null && !(areaM2 >= 0)) return say("구역 면적은 숫자로 넣어 주세요.", true);
@@ -394,6 +399,7 @@
       ...(m.otherDong.length ? [`계산에 넣지 못한 다른 동 주소 ${n0(m.otherDong.length)}개(같은 구·군 법정동 이름이 아니거나 ${R.MERGE_MAX}개 동을 넘음: ${m.otherDong.slice(0, 3).join(", ")}${m.otherDong.length > 3 ? " 등" : ""})`] : [])];
     say(skipped.length ? `제외: ${skipped.join(" · ")}` : "");
     $("outLead").innerHTML = R.leadHTML(res, m, file, { bad: p.bad });   // 값은 모두 이스케이프한 글(redev.js escH)
+    renderTable(R.buildingRows(res, file));
     // 요건 한 줄에 이름·값·상태 칩(rm6.css .sr-req-rows: 홈·지도 카드와 같은 모양). 상태는 칩 글자가 전하고 색은 보조다
     $("outAnswer").replaceChildren(...R.answerRows(res).map((r) => {
       const li = document.createElement("li"), k = document.createElement("span"), v = document.createElement("b"), t = document.createElement("em");
@@ -436,6 +442,21 @@
     document.querySelector(".redev-sample").hidden = true;
     $("outTitle").focus({ preventScroll: true });
     $("out").scrollIntoView({ block: "start" });
+  });
+
+  // 건물별 표(13 H6): 처음 10줄, 넘으면 '전체 n동 보기'로 펼친다. 화면에 그리는 줄은 TABLE_MAX까지(나머지는 건물별 표 CSV에 있다)
+  const TABLE_FIRST = 10, TABLE_MAX = 1000;
+  function renderTable(rows) {
+    const all = $("tableAll"), rest = $("tableRest");
+    $("outTable").innerHTML = R.btableHTML(rows.slice(0, TABLE_MAX), TABLE_FIRST);   // 값은 모두 이스케이프한 글(redev.js escH)
+    all.dataset.label = rows.length > TABLE_MAX ? `${n0(TABLE_MAX)}동까지 보기` : `전체 ${n0(rows.length)}동 보기`;
+    all.textContent = all.dataset.label; all.setAttribute("aria-expanded", "false"); all.hidden = rows.length <= TABLE_FIRST;
+    rest.textContent = `나머지 ${n0(rows.length - TABLE_MAX)}동은 건물별 표(CSV)에 있습니다.`; rest.hidden = rows.length <= TABLE_MAX;
+  }
+  $("tableAll").addEventListener("click", () => {
+    const b = $("tableAll"), open = b.getAttribute("aria-expanded") !== "true";
+    $("outTable").querySelectorAll("tbody tr").forEach((tr, i) => { tr.hidden = !open && i >= TABLE_FIRST; });
+    b.setAttribute("aria-expanded", String(open)); b.textContent = open ? `처음 ${TABLE_FIRST}동만 보기` : b.dataset.label;
   });
 
   // 확인할 건물 → 현장 기록(같은 앱). 링크에 PNU·지번을 실어 보내고, 돌아오면 이 기기의 현장 기록을 PNU로 붙여 보여 준다
@@ -582,4 +603,6 @@
     $("sampleClose").addEventListener("click", () => zoom.close());
     zoom.addEventListener("close", () => { if (opener) opener.focus(); });
   }
+  // 13 H4: 홈 '반여동 예시 결과 보기'(index.html → redev.html?example=1)는 예시 주소 넣기를 눌러 계산한 결과까지 연다. 홈 링크는 nofollow(검색 로봇이 계산을 돌리지 않게)
+  if (new URLSearchParams(location.search).get("example") === "1") $("example").click();
 })();

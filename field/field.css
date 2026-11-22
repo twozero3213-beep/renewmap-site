@@ -260,6 +260,8 @@ body.field .card > details.rm-disclosure:last-child[open] { padding-bottom: 0; }
   body.field.fr-redev .fr-side > .redev-sample { position: sticky; top: 88px; margin: 0; max-width: none; }
 }
 .field .fr-intro { margin-bottom: 4px; }
+/* 13 H6: 결과의 건물별 표(rm6.css .rm-btable) 아래 '전체 n동 보기'와 채운 '건물별 표 받기'가 붙었다 → 띄운다 */
+.field #tableAll { margin: 8px 0; }
 @media (max-width: 720px) { .field .fr-alt { grid-template-columns: 1fr; } }   /* 휴대폰은 두 단추를 위아래로(글이 두 줄로 꺾이지 않게) */
 .field .redev-sample .fr-zoom { width: auto; min-height: 44px; margin-top: 8px; padding: 0 16px; }
 /* 견본 크게 보기: 원래 크기(640px), 화면이 좁으면 화면 폭 - 32px */

@@ -10,6 +10,12 @@
     && d.missing && Number.isFinite(d.missing.count) && d.source);
   // '20년 넘음' 칸의 추가확인은 상태 꼬리표 모양으로(5절: 기존 .tag.check가 새 모양이 된다). 까닭은 마지막 칸 글로
   const cell = (v, i) => (i === 5 && v === '추가확인' ? '<span class="tag check">추가확인</span>' : esc(v));
+  // 건물별 표 모양(rm6.css .rm-btable, 대상지 계산 결과 redev.js btableHTML과 같은 글자). 찾음·주용도·구조는 주소 아래 작은 줄로 모아
+  // 오른쪽 5칸 폭에서도 네 칸이 다 들어가고(가로로 밀지 않는다, 13 H1), 휴대폰은 줄마다 카드
+  const sub = (a) => a.slice(1, 4).map(esc).join(' · ');
+  const table = (cols, rows) => `<table class="rm-btable"><thead><tr><th scope="col">${esc(cols[0])}<small>${sub(cols)}</small></th>${cols.slice(4).map((h) => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>`
+    + rows.map((r) => `<tr><th scope="row">${esc(r[0])}<small>${sub(r)}</small></th>${r.slice(4).map((v, i) => `<td data-k="${esc(cols[i + 4])}">${cell(v, i + 4)}</td>`).join('')}</tr>`).join('')
+    + '</tbody></table>';
   // 못 찾은 주소는 칸에 넣지 않고 한 줄로(까닭별 개수). 08c: '대장에 없는 주소 n개(계산 제외)'
   function missLine(m) {
     if (!m.count) return '';
@@ -25,9 +31,7 @@
     const where = d.dong && d.dong.name ? `${esc(d.dong.name)} 예시 결과` : '예시 결과';
     return `<header class="h7-proof-head"><p class="h7-proof-badge">${esc(d.badge)}</p><h2 id="proofTitle">${where}</h2>`
       + `<p class="h7-proof-check">구청이 확인할 칸 <span class="rm-mark">${esc(c.n)}칸</span> / 전체 ${esc(c.m)}칸</p></header>`
-      + `<div class="h7-proof-scroll" role="region" aria-labelledby="proofTitle" tabindex="0"><table class="h7-proof-table">`
-      + `<thead><tr>${d.columns.map((h) => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead>`
-      + `<tbody>${d.rows.map((r) => `<tr>${r.map((v, i) => (i === 0 ? `<th scope="row">${esc(v)}</th>` : `<td>${cell(v, i)}</td>`)).join('')}</tr>`).join('')}</tbody></table></div>`
+      + table(d.columns, d.rows)
       + missLine(d.missing)
       + (Array.isArray(sum.aging_lines) && sum.aging_lines[0] ? `<p class="h7-proof-sum">주소 ${esc((d.input || []).length || '')}개 전체 결과: ${esc(sum.aging_lines[0])}</p>` : '')
       + `<p class="h7-proof-cap">${esc(d.caption)} ${esc(d.duplicates || '')}</p>`

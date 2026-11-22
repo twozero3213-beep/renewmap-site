@@ -617,6 +617,28 @@
       `<p>중복 목록(한 번지 여러 동·겹친 입력): 준비 중</p></div>`;
   }
 
+  // 건물별 표(13 H1·H6): 홈 근거표 조각(data/proof_sample.json, export_proof_sample.py가 buildingRow로 만든다)과 같은 칸·같은 글.
+  // 연·월만 있는 건물은 그 기간을 적고, 기간 어느 날로도 갈리지 않으면 그 쪽으로 센다(urbanOf 그대로)
+  const BTABLE_COLS = ["주소(번지)", "대장에서 찾음", "주용도", "구조", "완공된 날(사용승인일)", "20년 넘음", "까닭"];
+  function buildingRow(b, ref, name) {
+    const s = aprSpan(b), u = urbanOf(b, ref), age = b.use_apr_day ? ageYears(b.use_apr_day, ref) : null;
+    const why = age !== null ? `완공된 날부터 만 ${age}년(20년 ${age >= 20 ? "이상" : "미만"})` : !s ? "완공된 날 빈칸 → 추가확인(구청 건축물대장 원본)"
+      : u === null ? "완공된 날이 연·월까지만 있어 20년 경계에 걸림 → 추가확인(구청 건축물대장 원본)" : `완공된 날이 연·월까지만 있음(어느 날이어도 20년 ${u ? "이상" : "미만"})`;
+    return [[name, b.jibun].filter(Boolean).join(" "), "찾음", b.main_use || "빈칸", b.structure || "빈칸", b.use_apr_day || (s ? s.join("~") : "빈칸"),
+      u === true ? "예" : u === false ? "아니오" : CHECK, why];
+  }
+  // 여러 동을 이은 파일(mergeFiles)은 PNU 앞 10자리로 그 건물의 동 이름을 고른다
+  const buildingRows = (res, file) => res.perBuilding.map((r) => buildingRow(r.b, res.ref, ((file.dongs || []).find((d) => r.b.pnu && r.b.pnu.startsWith(d.code)) || file).name));
+  // 홈 근거표 조각(home-proof.js)과 같은 모양(rm6.css .rm-btable): 찾음·주용도·구조는 주소 아래 작은 줄이라 넓은 화면은 네 칸, 휴대폰은 줄마다 카드.
+  // show 뒤의 줄은 hidden으로 그려 두고 화면이 펼친다
+  function btableHTML(rows, show = rows.length) {
+    const sub = (a) => a.slice(1, 4).map(escH).join(" · ");
+    const cell = (v, i) => (i === 5 && v === CHECK ? `<span class="tag check">${CHECK}</span>` : escH(v));
+    return `<table class="rm-btable"><thead><tr><th scope="col">${escH(BTABLE_COLS[0])}<small>${sub(BTABLE_COLS)}</small></th>${BTABLE_COLS.slice(4).map((c) => `<th scope="col">${escH(c)}</th>`).join("")}</tr></thead><tbody>` +
+      rows.map((r, j) => `<tr${j >= show ? " hidden" : ""}><th scope="row">${escH(r[0])}<small>${sub(r)}</small></th>${r.slice(4).map((v, i) => `<td data-k="${escH(BTABLE_COLS[i + 4])}">${cell(v, i + 4)}</td>`).join("")}</tr>`).join("") +
+      "</tbody></table>";
+  }
+
   // 확인할 건물: 사용승인일 없는 건물. 목조·블록·벽돌·조적 먼저(같은 구조의 날짜 있는 건물 98.4%가 20년 이상, 판정에는 안 씀).
   // 현장 기록(같은 기기 FieldStore)은 PNU로만 붙인다. 지번만으로는 법정동이 갈려 다른 건물에 붙을 수 있다
   function todoList(res, records = []) {
@@ -774,5 +796,5 @@
   }
 
   // 2026-11-13: ringCrosses를 화면(redev-app.js)에서도 써서, 그리는 도중에 선이 겹치면 바로 알린다
-  return { MISS_WHY, urbanOf, checkCells, CELL_COLS, agingLines, agingNote, leadHTML, DECLINE_STAMP, csvCell, settle, settleText, reviewStatusText, SETTLE_OLD, assertBusan, REGION_ERROR, ringCrosses, dongBounds, oneRange, answerRows, settleBrief, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socMerge, socReceived, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
+  return { MISS_WHY, urbanOf, checkCells, CELL_COLS, agingLines, agingNote, leadHTML, BTABLE_COLS, buildingRow, buildingRows, btableHTML, DECLINE_STAMP, csvCell, settle, settleText, reviewStatusText, SETTLE_OLD, assertBusan, REGION_ERROR, ringCrosses, dongBounds, oneRange, answerRows, settleBrief, to5174, boundaryShpZip, polygonWKT, inPolygon, nearPolygon, polygonAreaM2, socCount, socMerge, socReceived, socTypes, socDates, socCSV, listFromFile, buildApplicationDoc, buildConsultDoc, consultRows, applicationCSV, dongDecline, dongDeclineHTML, dongCandidates, basisRows, basisHTML, DENOM, DENOM_SHORT, THR, RULES, NOT_APPROVED, SECRET, UNREG, YEARS, RC_STEEL, OTHER, structClass, useClass, yearsRange, ageYears, addYears, oldState, parseList, match, MERGE_MAX, mergeFiles, review, newVillage, todoList, PLAN_MAX, planKeys, comparePlans, compareHTML, reachText, summaryHTML, toCSV, sample, sampleCSV, buildDoc, MET, NOT_MET, CHECK };
 });
