@@ -1030,6 +1030,24 @@
       : `<span>${esc(cols[0].label)} ${cols.map(sw).join('')} ${esc(cols[cols.length - 1].label)}</span>`;
     return `<p class="map-legend-line"><b>색 · ${esc(countNote(ind, ind.label))}</b>${span}<span>${sw(nul)}${esc(nulText)}</span>${chk ? `<span>${sw(chk)}${esc(chk.label)}</span>` : ''}</p>`;
   }
+  // 2026-11-23 대표 지적(한눈에 안 들어온다): 범례 색마다 지금 지도에 그 색인 칸이 몇 곳인지 한 막대로(칸 폭 = 곳 수).
+  //   기준값이 구간 경계이면 눈금을 세우고 아래에 '기준선 아래 n곳 · 기준선 위 n곳'. 빗금(자료 없음·추가확인)은 막대에서 빼고 끝에 수만 적는다
+  function distHTML(ind, mode, items, unit) {
+    const s = scaleFor(ind, mode);
+    if (ind.categorical || ind.pending || s.colors.length < 2) return '';
+    const n = s.colors.map(() => 0); let none = 0;
+    items.forEach(x => { const b = x.check ? -1 : binIndex(x.value, s.edges); if (b < 0 || b >= n.length) none++; else n[b]++; });
+    const total = n.reduce((a, b) => a + b, 0);
+    if (!total) return '';
+    const n0 = x => nf(0).format(x), pct = k => Math.round(k / total * 1000) / 10;
+    const at = mode === 'now' && validStd(ind.standard) ? s.edges.indexOf(ind.standard.value) : -1;   // 이 경계 왼쪽(0..at)이 기준값보다 작은 구간
+    const lo = at < 0 ? 0 : n.slice(0, at + 1).reduce((a, b) => a + b, 0);
+    const segs = n.map((k, i) => (k ? `<i data-bg="${esc(s.colors[i])}" data-w="${pct(k)}" title="${esc(`${s.labels[i]} ${n0(k)}곳`)}"></i>` : '')).join('');
+    const aria = `지도 색 구간별 ${unit} 수: ${n.map((k, i) => `${s.labels[i]} ${n0(k)}곳`).join(', ')}${none ? `, 빗금 ${n0(none)}곳` : ''}`;
+    const foot = at < 0 ? `<span>색별 ${unit} 수 · 모두 ${n0(total)}곳</span>` : `<span>기준선 아래 ${unit} <b>${n0(lo)}</b>곳</span><span>기준선 위 <b>${n0(total - lo)}</b>곳</span>`;
+    return `<div class="mv-dist"><div class="mv-dist-bar" role="img" aria-label="${esc(aria)}">${segs}${at < 0 ? '' : `<span class="mv-dist-tick" data-w="${pct(lo)}" aria-hidden="true"></span>`}</div>` +
+      `<p class="mv-dist-foot">${foot}${none ? `<span class="is-none">빗금 ${n0(none)}곳</span>` : ''}</p></div>`;
+  }
   function legendHTML(ind, mode, source, year, avail, check) {
     const s = scaleFor(ind, mode), off = avail === false || ind.pending, stdLine = stdLineOf(ind, off);
     return `<div class="map-legend"><p class="map-legend-title">${esc(countNote(ind, off ? ind.label : s.title))}</p><ul aria-label="지도 색 구간">${legendItems(ind, off ? 'now' : mode, check && !off).filter(l => !off || l.hatch).map((l, i) =>
@@ -1480,7 +1498,7 @@
   // 2026-11-20 GIS2-02·FE-R2-03: 시·도로 열어도 개요부터 그려 느린 망에서 각진 경계가 잠깐 보였고, 곧 버릴 개요까지 받았다
   const firstGeoKind = route => (route && route.sido ? 'detail' : 'overview');
   const api = { makeFirstMapGate, makeSgDetailLoader, firstGeoKind,indexSummaryPending, mergeIndexSeries, rentSub, geojsonOf, labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
-    ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, legendLineHTML, itemText, CHECK_NOTE, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
+    ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, legendLineHTML, distHTML, itemText, CHECK_NOTE, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     seriesJump, livingIndicators, allIndicators, wantedInd, isAvailable, provenanceHTML, parseHash, toHash, routeHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, searchPick, candMsg, candHTML, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, sidoShare, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
     reportSentences, verifyPolished, stdTextOf, olsFit, trendSVG, donutSVG, coverLabel, presentDeviceAI, detectDeviceAI, runDeviceAI, aiDevHTML, AI_APIS, AI_DEV_BTN, AI_LABEL, AI_UNSUPPORTED,
@@ -1514,6 +1532,9 @@
   const inds = () => allIndicators(state.living, { migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate, failed: state.failed });
   const curInd = () => indOf(state.ind, inds());
   let wantInd = new URLSearchParams(location.search).get('ind');   // 한 번만 쓴다: 그 뒤 사용자가 고른 칩을 덮지 않는다
+  // AX(2026-11-23): 연도(?y=)·5년 변화(?mode=trend)도 주소로 돌아온다('이 지도 링크 복사'가 보던 해를 그대로 보낸다). 지표가 정해진 뒤 한 번만 쓴다
+  let wantYear = (/^\d{4}$/.exec(new URLSearchParams(location.search).get('y') || '') || [null])[0];
+  if (new URLSearchParams(location.search).get('mode') === 'trend') state.mode = 'trend';
   const effMode = ind => (hasTrend(ind) ? state.mode : 'now');
   const horizons = () => (state.forecastIdx && Array.isArray(state.forecastIdx.horizons) ? state.forecastIdx.horizons.filter(isNum) : []);
   // 처음 보이는 전망 연도는 가장 먼 해다. 첫 해(1년 뒤)는 거의 모든 시·군·구가 0~10% 감소 한 칸에 들어가 색이 안 바뀌어 보였다(2026-11-07 대표 지적)
@@ -1544,7 +1565,7 @@
     forecast: v && v.level === 'emd' ? forecastOf(v.emdCode) || null : null, sg: v ? (v.gu || v.sigungu || null) : null });
   const extraAsked = new Set();
   let timer = null, autoT = null, lastLegend = '', lastLive = '', lastDong = null, wantCard = null;
-  const fold = { tools: false, listUser: null, intro: false, legend: false };   // 지도 아래 접힌 칸(받기·목록)의 펼침 상태. 다시 그려도 지킨다
+  const fold = { tools: false, listUser: null, intro: false, legend: false, pick: false };   // 지도 아래 접힌 칸(받기·목록)의 펼침 상태. 다시 그려도 지킨다
   const miFold = {};   // '모든 지표' 묶음별 펼침: 사용자가 제목 줄을 누른 것만 기억한다(없으면 지금 지표의 묶음만 펼침)
 
   // 2026-11-19 화면 정리: 위치 줄(where)·연도 막대(ctl)를 따로 두고, 아래 칸(bottom)은 출처 한 줄·도구 접기·안내 문구를 고정 자리로 둔다.
@@ -1640,6 +1661,11 @@
       + `<dt>공간 단위</dt><dd>${esc(unit)}</dd><dt>출처·방법</dt><dd>${esc(sources.join(' · '))}</dd><dt>기준일</dt><dd>${esc(dateText)}</dd><dt>현재 범위</dt><dd>${esc(status)}</dd></dl>`
       + `<p>${district && m && m.kind === 'emd' ? '같은 시·군·구 값을 여러 동 경계에 표시하며, 한 곳으로 셉니다.' : '현재 지도 범위의 지역 수입니다.'}<br>법정동·개별 건물 자료와 구분해서 봅니다.${ind.src === 'forecast' ? '<br>추세 전망은 관측값이 아닙니다.' : ''}</p><a href="data.html">전체 데이터 출처·확인 방법</a></details>`;
   }
+  // 2026-11-13 우지예: '모든 지표' 칩이 '가장 가까운 ○○ 직선거리'처럼 길어 한 줄에 하나씩 쌓여 읽기 어려웠다 →
+  //     칩에는 '○○ 직선거리'로 줄여 쓴다('직선'을 빼면 걸어서 가는 거리로 읽혀 남긴다, #86 검토). 범례·출처·문서는 원래 이름 그대로
+  const chipName = i => i.chip || String(i.label).replace(/^가장 가까운 (.+?) 직선거리$/, '$1 직선거리');
+  // 2026-11-23 대표 지적(버튼이 너무 많다): 묶음 4개·칩(또는 모든 지표 목록)을 '지표' 한 칸에 접어 둔다. 닫힌 줄에 지금 지표 이름, 칩을 고르면 닫힌다
+  const pickHTML = (ind, inner) => `<details class="mv-pick" data-fold="pick"${fold.pick ? ' open' : ''}><summary><span class="mv-pick-k">지표</span><b>${esc(chipName(ind))}</b></summary><div class="mv-pick-in">${inner}</div></details>`;
   function indCtlHTML(ind, m, source, mode) {
     const v = state.index && resolve(state.index, state.route), list = inds().filter(i => chipShown(i, ind.code, v)), g = ind.group;
     // 2026-11-13: 시작 묶음(BUNDLES). 지금 고른 지표가 묶음 안에 없으면(주소·검색으로 다른 지표에 왔을 때) '모든 지표'로 보여 고른 칩이 사라지지 않게 한다
@@ -1647,9 +1673,6 @@
     // 2026-11-22 대표 지적(글이 많다): 묶음 단추를 그림 타일로(그림 + 짧은 이름). 그림은 꾸밈이라 aria-hidden, 이름은 그대로 읽힌다
     const BUNDLE_ICON = { req: 'bldg', soc: 'tree', shop: 'shop', [BUNDLE_ALL]: 'sum' };
     const bundles = `<div class="map-bundles mv-tiles" role="group" aria-label="무엇을 볼지 고르기">${[...BUNDLES.map(b => [b.key, b.label]), [BUNDLE_ALL, '모든 지표']].map(([k, l]) => `<button type="button" data-bundle="${k}" aria-pressed="${k === bkey}">${icon(BUNDLE_ICON[k])}<span>${esc(l)}</span></button>`).join('')}</div>`;
-    // 2026-11-13 우지예: '모든 지표' 칩이 '가장 가까운 ○○ 직선거리'처럼 길어 한 줄에 하나씩 쌓여 읽기 어려웠다 →
-    //     칩에는 '○○ 직선거리'로 줄여 쓴다('직선'을 빼면 걸어서 가는 거리로 읽혀 남긴다, #86 검토). 범례·출처·문서는 원래 이름 그대로
-    const chipName = i => i.chip || String(i.label).replace(/^가장 가까운 (.+?) 직선거리$/, '$1 직선거리');
     const tag = (i, ok) => (ok ? (cover(i) ? `<small class="is-part">${esc(cover(i))}</small>` : '') : `<small>${i.held ? '보류' : i.failed ? '불러오지 못함 · 다시 시도' : '수집 중'}</small>`);   // avail은 수집 중(pending)을 이미 뺀다
     const chipOf = i => { const ok = avail(i);
       return `<button type="button" class="dash-chip${ok ? '' : ' is-planned'}" data-ind="${esc(i.code)}" title="${esc(i.label)}" aria-pressed="${i.code === ind.code}"${ok || i.failed ? '' : ' aria-disabled="true"'}>${icon(i.icon)}${esc(chipName(i))}${tag(i, ok)}</button>`; };
@@ -1736,7 +1759,7 @@
     const by = new Map(list.map(s => [String(s.code2), []]));
     m.items.forEach(x => { const k = sidoOf.get(x.code); if (by.has(k)) by.get(k).push(x); });
     const rows = new Map();
-    if (m.items.some(x => isNum(x.over) && isNum(x.n))) return { cap: '기준선 넘은 동 비율', rows: sidoShare(by) };
+    if (m.items.some(x => isNum(x.over) && isNum(x.n))) return { cap: '기준선 넘은 동 비율', rows: sidoShare(by), over: true };   // over: 막대 색 = 지도의 기준선 위 단계색(map-visual.css)
     if (ind.categorical) return none;
     const unit = scaleFor(ind, mode).unit, med = xs => { const a = xs.map(x => x.value).filter(isNum).sort((p, q) => p - q), h = a.length >> 1; return a.length ? (a.length % 2 ? a[h] : (a[h - 1] + a[h]) / 2) : null; };
     const meds = new Map([...by].map(([k, xs]) => [k, med(xs)]).filter(([, x]) => isNum(x)));
@@ -1749,14 +1772,16 @@
     const here = v.crumbs[v.crumbs.length - 1].label;
     const fill = x => (isNum(x.value) || typeof x.value === 'string') && !x.check;   // check(추가확인)는 지도처럼 빗금
     const sw = x => `<i class="ma-sw${fill(x) ? '' : ' is-hatch'}"${fill(x) ? ` data-bg="${esc(x.color)}"` : ''} aria-hidden="true"></i>`;
-    const cells = x => `${sw(x)}<span class="ma-name">${esc(x.name)}</span><span class="ma-val">${m.summaryWaiting ? '' : esc(itemText(x) || '')}</span>`;   // 기다리는 중 문구는 범례 줄에 한 번만
+    // AX(2026-11-23): 동 단계 목록은 기준 해당을 색 견본만이 아니라 글로도(값을 머릿속으로 기준과 비교하지 않게). 추가확인은 itemText가 이미 적는다
+    const ind = curInd(), hit = x => m.kind === 'emd' && ind.level !== 'sg' && effMode(ind) === 'now' && !x.check && crossed(x.value, ind.standard) === true;
+    const cells = x => `${sw(x)}<span class="ma-name">${esc(x.name)}</span><span class="ma-val">${m.summaryWaiting ? '' : esc(itemText(x) || '')}${hit(x) ? `<small class="ma-st">${HIT}</small>` : ''}</span>`;   // 기다리는 중 문구는 범례 줄에 한 번만
     const head = (n, unit) => `<h3 class="map-h3 ma-h" tabindex="-1">${esc(here)} <small>${n}개 ${unit}</small></h3>`;
     if (v.level === 'nation') {
-      const list = state.index.sido || [], { cap, rows } = sidoBars(list, m);
+      const list = state.index.sido || [], { cap, rows, over } = sidoBars(list, m);
       // 2026-11-22: 목록 자체를 막대 그래프로. 순서는 행정구역 순서 그대로(값 순 아님), 막대 뜻은 목록 위 한 줄에
       const bar = s => { const b = rows.get(String(s.code2)); return !b ? '' : b.w === null ? `<span class="mv-sbar is-none" aria-hidden="true"></span><span class="ma-val">${esc(b.text)}<span class="sr-only">${esc(b.aria)}</span></span>` : `<span class="mv-sbar" role="img" aria-label="${esc(`${s.name} ${b.aria}`)}"><i data-w="${b.w}"></i></span><span class="ma-val">${esc(b.text)}</span>`; };
-      return head(list.length, '시·도') + (rows.size ? `<p class="mv-key"><i aria-hidden="true"></i>${esc(cap)}</p>` : '') +
-        `<ul class="ma-list mv-sidos" aria-label="시·도 · 행정구역 순서(순위 아님)">${list.map(s => `<li><a class="ma-row" href="${esc(toHash({ sido: s.code2 }))}"><span class="ma-name">${esc(s.name)}</span>${bar(s)}</a></li>`).join('')}</ul>`;
+      return head(list.length, '시·도') + (rows.size ? `<p class="mv-key${over ? ' is-over' : ''}"><i aria-hidden="true"></i>${esc(cap)}</p>` : '') +
+        `<ul class="ma-list mv-sidos${over ? ' is-over' : ''}" aria-label="시·도 · 행정구역 순서(순위 아님)">${list.map(s => `<li><a class="ma-row" href="${esc(toHash({ sido: s.code2 }))}"><span class="ma-name">${esc(s.name)}</span>${bar(s)}</a></li>`).join('')}</ul>`;
     }
     if (m.kind === 'sg') return head(m.items.length, '시·군·구') + `<ul class="ma-list">${m.items.map(x => { const r = leafRoute(state.index, x.code); return r ? `<li><a class="ma-row" href="${esc(toHash(r))}">${cells(x)}</a></li>` : ''; }).join('')}</ul>`;
     if (m.kind !== 'emd' || m.nodata) return panelHTML(v, m, true);   // 불러오는 중·자료 준비 중·받지 못함 안내
@@ -2205,6 +2230,24 @@
     if (!parts.length) { el.textContent = ''; return; }
     el.innerHTML = `자료 기준: ${esc(parts.join(' · '))}${made ? ` · 만든 날 ${esc(made)}` : ''} <a href="data.html">출처 보기</a>`;
   }
+  // AX(2026-11-23): 지금 지도를 한 문장으로(지역·지표·연도·기준 해당 수). 보이는 글이라 낭독기·AI 도구가 그대로 읽는다(aria-live·움직이는 숫자 없음).
+  //   상태 낱말은 HIT('기준 해당') 하나로 쓴다(전에는 기준선·기준 해당·기준을 넘은이 섞였다)
+  function summaryLine(v, m, ind) {
+    if ((m.kind !== 'emd' && m.kind !== 'sg') || m.summaryWaiting || !avail(ind)) return '';
+    const scope = v.level === 'nation' ? '전국' : v.crumbs[v.crumbs.length - 1].label, n0 = x => nf(0).format(x), mode = effMode(ind);
+    const unit = m.kind === 'emd' && ind.level !== 'sg' ? '읍·면·동' : '시·군·구';
+    const tail = `지도 색은 ${unit}별 ${ind.label}${mode === 'trend' ? ' 5년 변화' : ''}이며 판정이 아닙니다.`;
+    if (m.kind === 'sg' && mode === 'now' && ind.standard && hasYears(state.index, ind)) {
+      const c = overCaption(state.index, ind, m.year, m.sgs);
+      if (c.n && isNum(c.over)) return `${scope}의 값 있는 읍·면·동 ${n0(c.n)}곳 중 ${HIT}(${ind.standard.text})인 곳은 ${n0(c.over)}곳(${Math.round(c.over / c.n * 100)}%)입니다. ${c.year}년 자료 · ${tail}`;
+      if (c.n) return `${scope}의 값 있는 읍·면·동 ${n0(c.n)}곳 중 ${HIT}인 곳의 수는 아직 셀 수 없습니다. ${c.year}년 자료 · ${tail}`;   // 숫자판의 '—곳'과 같은 경우(0곳으로 단정하지 않는다)
+      return state.index.seriesPending || !isNum(c.year) ? '' : `${scope}의 ${c.year}년은 ${ind.label} 자료가 없는 해입니다.`;   // 받는 중이면 쓰지 않는다(숫자판과 같은 규칙)
+    }
+    const has = m.items.filter(i => i.value !== null).length, yr = m.year ? `${m.year}년 자료 · ` : '';
+    if (!has) return m.kind === 'sg' ? `${scope}에서는 ${ind.label}${mode === 'trend' ? ' 5년 변화' : ''} 값이 읍·면·동 단위로만 있어 시·군·구 색이 없습니다. 시·군·구를 고르면 색이 보입니다.` : `${scope}에는 ${ind.label} 값이 있는 읍·면·동이 없습니다.`;
+    if (mode === 'now' && (ind.standard || ind.composite)) return `${scope}의 값 있는 ${unit} ${n0(has)}곳 중 ${ind.standard ? `${HIT}(${ind.standard.text})인 곳` : `${HIT}인 항목이 하나라도 있는 곳`}은 ${n0(crossedCount(m.items, ind))}곳입니다. ${yr}${tail}`;
+    return `${scope}의 ${unit} ${n0(m.items.length)}곳 중 값 있는 곳은 ${n0(has)}곳입니다. ${yr}${tail}`;
+  }
   function heroLiveHTML(v, m, ind) {
     if (!heroLive) return;
     const scope = v.level === 'nation' ? '전국' : v.crumbs[v.crumbs.length - 1].label, unitWord = m.kind === 'emd' ? '읍·면·동' : '시·군·구';
@@ -2222,17 +2265,18 @@
       const c = overCaption(state.index, ind, m.year, m.sgs), k = `${ind.code}-${scope}`;
       // 2026-11-22: 큰 숫자 아래 비율 막대 하나(값 있는 동 중 기준선 넘은 동). 숫자는 위 글에 그대로 있다
       const pct = c.n && isNum(c.over) ? Math.round(c.over / c.n * 100) : null;   // 넘은 동 수를 모르면 0%가 아니라 '—'·막대 없음
-      body = `<span class="hl-t">${esc(scope)} · ${esc(ind.standard ? ind.standard.text : ind.label)}</span>` +
+      body = `<span class="hl-t">${esc(ind.standard ? ind.standard.text : ind.label)}</span>` +
         `<span class="hl-n" title="${esc(c.text)}">${c.n ? `기준선 넘은 동 ${isNum(c.over) ? `<b data-ck="hl-o-${esc(k)}" data-count="${c.over}">0</b>` : '<b>—</b>'}곳 <small>/ 값 있는 동 <span data-ck="hl-n-${esc(k)}" data-count="${c.n}">0</span>곳</small> · <b class="hl-y">${esc(c.year)}년</b>` : state.index.seriesPending ? '<small>연도 자료를 불러오는 중입니다</small>' : `<b class="hl-y">${esc(c.year ?? '')}년</b> <small>자료 없는 해</small>`}</span>` +   // 받기 전 0곳을 '자료 없는 해'로 단정하지 않는다(GIS2-09)
         (pct === null ? '' : `<span class="mv-bar" role="img" aria-label="값 있는 동 ${nf(0).format(c.n)}곳 중 기준선 넘은 동 ${nf(0).format(c.over)}곳, ${pct}%"><span class="mv-track"><i data-w="${pct}"></i></span></span>`) +
         c.notes.map(n => `<span class="hl-note">${esc(n)}</span>`).join('');
     }
     else body = `<span class="hl-n"><b data-ck="hl-${esc(ind.code)}-${esc(scope)}" data-count="${crossedCount(m.items, ind)}">0</b>곳 <small>/ ${esc(scope)} ${nf(0).format(total)}개 ${unitWord}</small></span>` +
       `<span class="hl-t">${!ind.standard ? '기준 해당인 항목이 하나라도 있는 곳' : `${esc(belowLead(ind) + ind.standard.text)} — 기준 해당인 곳`}${m.year ? ` · ${esc(m.year)}년` : ''}${isPending(ind.standard) ? ` · 기준 ${esc(ind.standard.status)}` : ''}</span>`;
-    heroLive.setAttribute('aria-live', autoT ? 'off' : 'polite'); // 자동 재생 중에는 해마다 읽지 않는다
     const hk = ind.code + scope; heroLive.classList.toggle('is-new', hk !== lastLive); lastLive = hk;
     // r16: 같은 내용이면 다시 쓰지 않는다(aria-live라 render마다 같은 글을 다시 읽었다)
-    const html = `<span class="hl-k">${icon(ind.icon)}${esc(ind.label)}</span>${body}${autoT ? '<span class="hl-auto">연도·지표가 자동으로 바뀝니다 · 지도를 만지면 멈춥니다</span>' : ''}`;
+    // 2026-11-23: 제목 줄(지역 · 지표)을 화면에 보인다(전에는 낭독기에만 있어 지금 무엇을 보는지 칩에서 찾아야 했다). 끝에 요약 한 문장(#mapSummary, 지도 칸의 설명)
+    const sum = summaryLine(v, m, ind);
+    const html = `<span class="hl-k">${icon(ind.icon)}${esc(scope)} · ${esc(ind.chip || ind.label)}</span>${body}${sum ? `<span class="hl-sum" id="mapSummary">${esc(sum)}</span>` : ''}${autoT ? '<span class="hl-auto">연도·지표가 자동으로 바뀝니다 · 지도를 만지면 멈춥니다</span>' : ''}`;
     if (heroLive._html === html) return;
     heroLive.innerHTML = heroLive._html = html;
     styleData(heroLive);
@@ -2244,8 +2288,9 @@
     const n = narrow.matches;
     if (arranged === n || top.parentNode !== app) return;
     arranged = n;
-    // 2026-11-19: 휴대폰은 위치 줄 → 지도 → 범례 한 줄 → 고른 동 카드(지도 바로 아래) → 동 목록 → 지표 단추 → 현황 한 줄 → 연도 → 출처·도구
-    if (n) app.append(where, stage, legendLine, panel, dongBox, pick, ...(heroLive ? [heroLive] : []), ctlBox, top, bottom);
+    // 휴대폰: 위치 줄 → 지도 → 범례 한 줄 → 현황 숫자판 → 연도 → 고른 동 카드 → 동 목록 → 지표 칸 → 출처·도구
+    // 2026-11-23: 숫자판(현황 한 줄·요약 문장)과 연도 막대를 범례 바로 아래로(전에는 동 목록·지표 단추 뒤라 한참 내려야 보였다)
+    if (n) app.append(where, stage, legendLine, ...(heroLive ? [heroLive] : []), ctlBox, panel, dongBox, pick, top, bottom);
     else { stage.append(panel); app.append(where, top, stage, legendLine, ctlBox, dongBox, pick, bottom); }
   }
   // R5 3: 칩으로 지표를 바꾸면 주소(?ind=)도 따라간다 → 지금 지도를 메신저·서류에 그대로 건다. 기본 지표면 지우고, report·panel 같은 다른 값과 #경로는 그대로 둔다
@@ -2253,6 +2298,9 @@
     try {
       const u = new URL(location.href);
       if (state.ind === INDICATORS[0].code) u.searchParams.delete('ind'); else u.searchParams.set('ind', state.ind);
+      if (state.mode === 'trend') u.searchParams.set('mode', 'trend'); else u.searchParams.delete('mode');
+      // 재생·자동 넘김 중의 연도는 남기지 않는다(멈춘 뒤 고른 해만)
+      if (isNum(state.year) && !state.playing && !state.yearByAuto) u.searchParams.set('y', state.year); else u.searchParams.delete('y');
       if (u.search !== location.search) history.replaceState(null, '', u.pathname + u.search + u.hash);
     } catch (e) { /* 주소를 못 바꿔도 지도는 그대로 쓴다 */ }
   }
@@ -2274,6 +2322,7 @@
   function render() {
     if (state.index === undefined) return;
     if (wantInd) { const code = wantedInd(wantInd, inds()); if (code) { state.ind = code; state.year = null; wantInd = null; } else if (state.living !== undefined) wantInd = null; }   // 생활 지표 도착 전에는 기다리고, 도착했는데 없으면 버린다
+    if (!wantInd && wantYear) { state.year = +wantYear; wantYear = null; }
     if (!wantInd) syncIndUrl();
     const v = resolve(state.index, state.route);
     // 도구 틀(GIS 겹치기 포함)은 고정 자리라 비우지 않는다. 그 밖의 칸만 비운다
@@ -2290,7 +2339,7 @@
     if (it) wantExtra('migration', 'realestate');   // 동 카드의 세부 지표 표와 문서가 쓴다
     // 탭 제목에 지금 보는 곳을(v9 접근성: 동을 열어도 '동네 진단·지도 | 리뉴맵' 그대로라 화면 읽기·탭 목록에서 어느 동인지 몰랐다)
     const here = it ? it.name : v.crumbs.length > 1 ? v.crumbs[v.crumbs.length - 1].label : '';
-    document.title = here ? `${here} · ${BASE_TITLE}` : BASE_TITLE;
+    document.title = `${here ? `${here} · ` : ''}${chipName(ind)} · ${BASE_TITLE}`;   // AX(2026-11-23): 지표도(전국이면 지표만)
     const crumbs = `<nav class="map-crumbs" aria-label="지금 보는 곳"><ol>${v.crumbs.map((c, i) => i === v.crumbs.length - 1 && !it ? `<li aria-current="page">${esc(c.label)}</li>` : `<li><a href="${esc(c.hash)}">${esc(c.label)}</a></li>`).join('')}${it ? `<li aria-current="page">${esc(it.name)}</li>` : ''}</ol><span class="map-step">${esc(STEP_BADGE[v.level] || '')}</span></nav>`;
     const py = m.kind === 'sg' && mode === 'now' && hasYears(state.index, ind) && !ind.noPlay ? playYears(state.index, ind.code) : null, sgOn = v.level === 'nation' && !reduced ? !!autoT : state.playing;
     const yearCtl = py && py.years.length ? yearHTML(sgOn, py.years[0], py.years[py.years.length - 1], m.year)
@@ -2311,7 +2360,7 @@
       prov(!!provBox.querySelector('.map-provenance[open]'));
     }
     else {
-      const ctl = `<div class="map-ctl">${hasTrend(ind) ? seg('mode', MODES, state.mode, '현재 또는 5년 변화') : ''}${hzCtl}${yearCtl}</div>`, inds = indCtlHTML(ind, m, src, mode);
+      const ctl = `<div class="map-ctl">${hasTrend(ind) ? seg('mode', MODES, state.mode, '현재 또는 5년 변화') : ''}${hzCtl}${yearCtl}</div>`, inds = pickHTML(ind, indCtlHTML(ind, m, src, mode));
       // R3 2: 휴대폰·태블릿(≤1023px)은 DOM 순서 그대로 그린다(CSS order·display:contents 없이). 키보드·화면 낭독기 순서가 보이는 순서와 같다.
       // 넓은 화면은 왼쪽 패널 틀(explore-layout.js)이 .map-top(지표)·.map-bottom(출처·도구)을, 지도 위로 범례·연도 막대를 옮긴다
       setHTML(where, crumbs);
@@ -2333,9 +2382,11 @@
     // 넓은 화면: 시·도·시·군·구 고르기 칸 대신 지금 단계의 아래 지역 목록이 왼쪽 패널의 주 목록이다(areaListHTML)
     setHTML(dongBox, desk ? areaListHTML(v, m, it) : (m.kind === 'emd' ? dongList : m.kind === 'wait' ? '<div class="map-dongs-wait" aria-hidden="true"></div>' : ''));
     setHTML(toolsBox, toolsHTML(median));
-    liveEl.textContent = liveText(v, it, ind, mode);
+    // AX(2026-11-23): 알리는 칸은 이것 하나(숫자판 #heroLive는 aria-live 없음). 자동·연도 재생 중에는 해마다 읽지 않고 멈춘 뒤 한 번
+    const say = liveText(v, it, ind, mode); if (!autoT && !state.playing && liveEl.textContent !== say) liveEl.textContent = say;
     // R5 10: 범례 한 줄(색 이름 · 구간 견본 · 자료 없음) + 구간·기준 문장은 그 아래 접힌 칸 하나에만(2026-11-19: 전체 범례가 두 번 그려졌다)
-    legendLine.innerHTML = summaryNotice ? `<span role="status">${esc(summaryNotice)}</span>` : legendLineHTML(ind, mode, ok, chk) +
+    const distUnit = m.kind === 'emd' ? (ind.level === 'sg' ? null : '읍·면·동') : '시·군·구';   // 동 단계의 시·군·구 지표는 같은 값을 여러 동에 칠해 세지 않는다
+    legendLine.innerHTML = summaryNotice ? `<span role="status">${esc(summaryNotice)}</span>` : legendLineHTML(ind, mode, ok, chk) + (ok && distUnit && m.items ? distHTML(ind, mode, m.items, distUnit) : '') +
       `<details class="map-legend-more" data-fold="legend"${fold.legend ? ' open' : ''}><summary>구간·기준 보기</summary>${legend}</details>`;
     styleData(dongBox); styleData(legendLine);
     const inEmd = v.level === 'emd';
@@ -2432,14 +2483,15 @@
     const tile = document.createElement('canvas'); tile.width = tile.height = 6;
     const ctx = tile.getContext('2d');
     if (!ctx) return 'url(#rmHatch)';
-    ctx.fillStyle = '#d4dbd8'; ctx.fillRect(0, 0, 6, 6);
-    ctx.strokeStyle = '#6b7a75'; ctx.lineWidth = 2; ctx.beginPath();
+    // 2026-11-23: 빗금이 가장 진한 단계만큼 눈에 띄었다 → 옅은 바탕·가는 줄(map-visual.css의 #mapApp --hatch-* 견본과 같은 색)
+    ctx.fillStyle = '#eceeec'; ctx.fillRect(0, 0, 6, 6);
+    ctx.strokeStyle = '#a9b3af'; ctx.lineWidth = 1.5; ctx.beginPath();
     ctx.moveTo(0, 6); ctx.lineTo(6, 0); ctx.moveTo(-3, 3); ctx.lineTo(3, -3); ctx.moveTo(3, 9); ctx.lineTo(9, 3); ctx.stroke();
     return ctx.createPattern(tile, 'repeat') || 'url(#rmHatch)';
   }
   function createMap(slot) {
     const L = window.L, el = document.createElement('div'); el.className = 'map-canvas'; el.setAttribute('role', 'region');
-    el.insertAdjacentHTML('beforeend', '<svg class="map-defs" width="0" height="0" aria-hidden="true"><defs><pattern id="rmHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" fill="#d4dbd8"/><line x1="0" y1="0" x2="0" y2="6" stroke="#6b7a75" stroke-width="2"/></pattern></defs></svg>');
+    el.insertAdjacentHTML('beforeend', '<svg class="map-defs" width="0" height="0" aria-hidden="true"><defs><pattern id="rmHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" fill="#eceeec"/><line x1="0" y1="0" x2="0" y2="6" stroke="#a9b3af" stroke-width="1.5"/></pattern></defs></svg>');
     slot.replaceWith(el);
     ybar = document.createElement('div'); ybar.className = 'map-yearbar'; ybar.hidden = true; ybar.setAttribute('aria-hidden', 'true'); el.appendChild(ybar);
     // 네이버 배경: Leaflet(경계·누르기·확대) 아래에 움직이지 않는 네이버 지도를 깔고 같은 중심·확대로 맞춘다. 네이버는 정수 확대라 Leaflet도 정수로
@@ -2468,14 +2520,8 @@
     //   대가로 키보드 사용자는 같은 링크를 두 번 만난다
     if (nv) attr.addAttribution('<a href="https://ssl.pstatic.net/static/maps/mantle/notice/legal.html" target="_blank" rel="noopener">NAVER 지도 법적 고지(새 창)</a>');
     add3dControl(map);
-    // 2026-11-19: 넓은 화면은 범례 한 줄(구간·기준 접기 포함)과 연도 막대를 카드 하나로 묶어 지도 왼쪽 아래 조작 칸(축척·저작권 위)에 얹는다.
-    // 따로 띄우면 서랍을 연 좁은 지도에서 둘이 겹쳤다. 휴대폰은 지도 아래 그대로
-    if (legendLine.closest('.mx-map')) {
-      const key = document.createElement('div'), lg = L.control({ position: 'bottomleft' });
-      key.className = 'map-key'; key.append(legendLine, ctlBox);
-      lg.onAdd = () => { L.DomEvent.disableClickPropagation(key); L.DomEvent.disableScrollPropagation(key); return key; };
-      lg.addTo(map);
-    }
+    // 2026-11-23: 범례·연도 막대는 지도 위 카드가 아니라 왼쪽 숫자판(explore-layout.js .mv-dash)·휴대폰 지도 아래에 있다. 지도 칸 설명 = 그 요약 문장
+    el.setAttribute('aria-describedby', 'mapSummary');
     if (nv) followWithNaver(map, el, nv, tileNotice(map));
     // 칸 크기가 바뀌면(업무 패널 열기·휴대폰 순서) 경계층도 다시 재야 바탕과 어긋나지 않는다. 네이버 동기화는 resize 이벤트로 따라간다
     // r16: 숨었다(문서·조건 탭, 0×0) 다시 보일 때는 가운데를 지킨다(pan). 왼쪽 위를 지키면 4-1 표를 보고 돌아왔을 때 고른 동이 화면 밖이었다
@@ -2647,7 +2693,7 @@
       layer.on('click', pick); keyable(layer, f.properties.name, pick);
     } }).addTo(M.map);
     // 2026-11-13: 시도 경계선을 한 덩어리 대신 선 조각마다 따로 둔다 — 화면 밖 조각을 빼고 그릴 수 있게(cullSg 주석)
-    M.sido = L.featureGroup(lineLatLngs(outerLines(state.sgGeo.features, f => String(f.properties.code).slice(0, 2))).map(ll => L.polyline(ll, { pane: 'sg', renderer: M.sgRenderer, interactive: false, color: '#153c39', weight: 1.5, smoothFactor: 0 }))).addTo(M.map); // 묶음이라야 첫 시점이 잡히기 전 bringToFront가 오류 없이 지나간다
+    M.sido = L.featureGroup(lineLatLngs(outerLines(state.sgGeo.features, f => String(f.properties.code).slice(0, 2))).map(ll => L.polyline(ll, { pane: 'sg', renderer: M.sgRenderer, interactive: false, color: '#14302c', weight: 1.2, opacity: 0.75, smoothFactor: 0 }))).addTo(M.map); // 묶음이라야 첫 시점이 잡히기 전 bringToFront가 오류 없이 지나간다
     M.cull = null;   // 다음 확대·이동 때 cullSg가 새 조각으로 다시 모은다
     M.sgGeo = state.sgGeo; M.order = null;
   }
@@ -2662,13 +2708,16 @@
       el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } });
     });
   }
+  // 2026-11-23 대표 지적(시각화가 별로다): 칠 40%는 크림 두 단계가 회색 바탕과 거의 같았다 → 75%. 경계는 검은 그물 대신 흰 가는 선(시·도만 먹색).
+  //   범례 견본·분포 막대도 같은 값을 쓴다(map-visual.css --fill-o)
+  const FILL_O = 0.75;
   function paintSg(v, m) {
     M.sgItems = new Map((m.kind === 'sg' ? m.items : []).map(it => [it.code, it]));
     const active = new Set(M.sgItems.keys()), inEmd = v.level === 'emd';
     // 앞으로 올리기(bringToFront)는 DOM에서 path를 다시 붙인다. 누르는 도중에 하면 click이 사라지므로 칸 구성이 바뀔 때만 한다
     const order = [...active].join() + '|' + v.emdCode + '|' + v.dong, reorder = M.order !== order; M.order = order;
     if (M.sg) M.sg.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.sgItems.get(code), on = active.has(code);
-      l.setStyle(on ? { fillColor: it.value === null || it.check ? M.hatch : it.color, fillOpacity: 0.4, color: '#4a5854', weight: 0.8, dashArray: it.value === null || it.check ? '4 3' : null }
+      l.setStyle(on ? { fillColor: it.value === null || it.check ? M.hatch : it.color, fillOpacity: FILL_O, color: '#fff', weight: 0.6, opacity: 0.9, dashArray: null }
         : { fillColor: '#c9d3cf', fillOpacity: inEmd ? 0.08 : 0.15, color: '#fff', weight: 0.5, dashArray: null });
       if (on && reorder) l.bringToFront(); });
     if (M.sido) { M.sido.setStyle({ opacity: inEmd ? 0 : 1 }); if (reorder) M.sido.bringToFront(); } // 동 단계에서는 고른 구의 굵은 테두리가 대신한다
@@ -2712,14 +2761,14 @@
         } }).addTo(M.map);
         M.emdCode = v.emdCode;
         if (M.emdLine) M.emdLine.remove();
-        // r16 M7: 구 바깥선은 회색 2px 점선(고른 동의 청록 4px와 역할을 나눈다. 전에는 둘 다 검정 3px라 어느 동인지 몰랐다)
-        M.emdLine = window.L.featureGroup([window.L.polyline(lineLatLngs(outerLines(m.geo.features)), { interactive: false, color: '#5f6b66', weight: 2, dashArray: '6 4', smoothFactor: 0 })]).addTo(M.map);
+        // r16 M7: 구 바깥선은 고른 동 테두리와 역할을 나눈다(전에는 둘 다 검정 3px라 어느 동인지 몰랐다). 2026-11-23: 점선 대신 옅은 먹색 실선(고른 동은 먹색 3px + 흰 바탕선)
+        M.emdLine = window.L.featureGroup([window.L.polyline(lineLatLngs(outerLines(m.geo.features)), { interactive: false, color: '#14302c', weight: 1.5, opacity: 0.6, smoothFactor: 0 })]).addTo(M.map);
         makeDongLabels(m.geo);
       }
       M.emdItems = new Map(m.items.map(it => [it.code, it]));
       M.emd.eachLayer(l => { const code = String((l.feature.properties || {}).code), it = M.emdItems.get(code), sel = code === v.dong;
-        // 고른 동: 강조색(--green #0b6b75) 4px·진한 칠, 나머지는 고른 동이 있을 때 옅게
-        l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: sel ? 0.75 : v.dong ? 0.25 : 0.4, color: sel ? '#0b6b75' : '#4a5854', weight: sel ? 4 : 1, smoothFactor: 0, dashArray: !it || it.value === null ? '4 3' : null });
+        // 고른 동: 먹색 3px(DESIGN 4.9)·진한 칠, 나머지는 고른 동이 있을 때 옅게. 동 사이 경계는 흰 선
+        l.setStyle({ fillColor: !it || it.value === null ? 'url(#rmHatch)' : it.color, fillOpacity: sel ? 0.9 : v.dong ? 0.45 : FILL_O, color: sel ? '#14302c' : '#fff', weight: sel ? 3 : 1.2, opacity: 1, smoothFactor: 0, dashArray: null });
         // R4 1: 낭독기가 동 모양을 지나며 지금 지표의 값을 듣게 한다(값은 마우스를 올려야 뜨는 말풍선에만 있었다). 값이 없으면 '자료 없음'
         const el = it && l.getElement && l.getElement(); if (el) el.setAttribute('aria-label', dongAria(it, curInd(), effMode(curInd())));
         if (sel && reorder) l.bringToFront(); });
@@ -2769,23 +2818,8 @@
     else if (!M.sg) { const bx = (m.kind === 'sg' ? m.items : []).map(it => it.bbox).filter(x => Array.isArray(x) && x.length === 4); b = bx.length ? L.latLngBounds(bx.flatMap(x => [[x[1], x[0]], [x[3], x[2]]])) : null; } // 경계 전: 목록의 bbox로 같은 범위를 먼저 잡는다
     else { const fg = L.featureGroup(); M.sg.eachLayer(l => { if (active.has(String((l.feature.properties || {}).code))) fg.addLayer(l); }); b = fg.getLayers().length ? fg.getBounds() : M.sg.getBounds(); }
     const right = inEmd && wide.matches && !panel.hidden && getComputedStyle(panel).position !== 'static' ? panel.offsetWidth + 28 : 12; // 지도 위에 겹친 패널일 때만 비운다
-    let opt = { paddingTopLeft: [12, 12], paddingBottomRight: [right, 12], maxZoom: 14 };
-    // 넓은 화면은 범례·연도 카드(.map-key)가 지도 왼쪽 아래에 떠 있다. 기본으로 맞춘 경계 상자가 카드에 걸릴 때만 카드 위쪽 끝까지 아래를 비우거나 카드 오른쪽 끝까지 왼쪽을 비워, 더 크게 보이는 쪽으로 맞춘다(같으면 아래)
-    // 2026-11-20 UX2-01·FE-R2-02: 카드를 몰라 부산 첫 화면의 가덕도·다대포·사하 해안, #map/21/21030의 초량2동이 카드에 가렸다
-    // 검수: 카드는 저작권·축척 줄 위에 얹혀 있어 카드 높이가 아니라 지도 칸 끝에서 잰다. 걸리지 않을 때도 비우면 반포본동이 왼쪽 위 단추 밑으로 올라갔다
-    const card = M.el && document.body.classList.contains('mx-on') ? M.el.querySelector('.map-key') : null, kr = card && card.getBoundingClientRect();
-    if (kr && kr.height > 0 && b && b.isValid()) {
-      const mr = M.el.getBoundingClientRect(), size = M.map.getSize();
-      // 서랍과 카드를 함께 비우면 칸이 모자라기도 한다. Leaflet은 남는 칸이 음수면 최대 줌을 내므로(1024 반포본동이 줌 14) 그 후보는 버린다
-      const zoomOf = o => { const p = L.point(o.paddingTopLeft).add(o.paddingBottomRight); return p.x < size.x && p.y < size.y ? Math.min(o.maxZoom, M.map.getBoundsZoom(b, false, p)) : -Infinity; };
-      const z = zoomOf(opt), sw = M.map.project(b.getSouthWest(), z), ne = M.map.project(b.getNorthEast(), z);
-      const cx = (opt.paddingTopLeft[0] + size.x - opt.paddingBottomRight[0]) / 2, cy = (opt.paddingTopLeft[1] + size.y - opt.paddingBottomRight[1]) / 2;
-      if (z > -Infinity && mr.left + cx - (ne.x - sw.x) / 2 < kr.right && mr.top + cy + (sw.y - ne.y) / 2 > kr.top) {
-        const below = { ...opt, paddingBottomRight: [right, Math.round(mr.bottom - kr.top) + 12] }, beside = { ...opt, paddingTopLeft: [Math.round(kr.right - mr.left) + 12, 12] };
-        const zb = zoomOf(below), zs = zoomOf(beside);
-        if (zs > zb) opt = beside; else if (zb > -Infinity) opt = below;
-      }
-    }
+    // 2026-11-23: 지도 위 범례 카드(.map-key)를 왼쪽 숫자판으로 옮겨 카드 피하기 맞춤이 없어졌다(카드 때문에 전국 첫 화면이 줌 6으로 떨어졌다)
+    const opt = { paddingTopLeft: [12, 12], paddingBottomRight: [right, 12], maxZoom: 14 };
     if (b && b.isValid()) {
       // R4 9: 이 맞춤이 만든 줌은 사용자 확대가 아니다(첫 zoomend에서 상세 경계를 받지 않는다). 움직임 없는 맞춤은 moveend가 없어 시간으로도 푼다
       M.fitting = true; M.map.once('moveend', () => { M.fitting = false; }); setTimeout(() => { if (M) M.fitting = false; }, 1500);
@@ -2867,7 +2901,7 @@
     if (user) state.touched = true;
     if (!autoT) return;
     clearTimeout(autoT); autoT = null; if (ybar) ybar.hidden = true;
-    if (heroLive) { heroLive.querySelector('.hl-auto')?.remove(); heroLive.setAttribute('aria-live', 'polite'); }
+    if (heroLive) heroLive.querySelector('.hl-auto')?.remove();
     const b = app.querySelector('[data-play]'); if (b) { b.innerHTML = icon('play'); b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', '재생'); }
   }
   const touch = e => { if (e && e.target && e.target.closest && e.target.closest('[data-play]')) return; if (!state.touched) stopAuto(true); };
@@ -2919,7 +2953,11 @@
     }
     if (b.dataset.mpTab) mpTab(b.dataset.mpTab, false);
     else if (b.hasAttribute('data-chips-more')) { state.chipsMore = true; const n = app.querySelectorAll('.map-inds [data-ind]').length; render(); app.querySelectorAll('.map-inds [data-ind]')[n]?.focus({ preventScroll: true }); }
-    else if (b.dataset.ind) { state.ind = b.dataset.ind; state.year = null; render(); app.querySelector(`[data-ind="${CSS.escape(b.dataset.ind)}"]`)?.focus({ preventScroll: true }); }
+    else if (b.dataset.ind) {   // '지표' 칸 안에서 고르면 칸을 닫고 초점은 그 칸 제목 줄로(고른 칩은 닫힌 칸 안에 숨는다)
+      const inPick = !!b.closest('.mv-pick'); if (inPick) fold.pick = false;
+      state.ind = b.dataset.ind; state.year = null; render();
+      (inPick ? app.querySelector('.mv-pick > summary') : app.querySelector(`[data-ind="${CSS.escape(b.dataset.ind)}"]`))?.focus({ preventScroll: true });
+    }
     else if (b.dataset.mode) { state.mode = b.dataset.mode; state.year = null; render(); app.querySelector(`[data-mode="${b.dataset.mode}"]`)?.focus({ preventScroll: true }); }
     else if (b.dataset.horizon) { state.horizon = +b.dataset.horizon; render(); app.querySelector(`[data-horizon="${b.dataset.horizon}"]`)?.focus({ preventScroll: true }); }
     else if (b.dataset.dong) go({ ...state.route, dong: b.dataset.dong }, `[data-dong="${b.dataset.dong}"]`);

@@ -663,26 +663,8 @@ body.explore-page #heroSearch .hero-search-note, body.explore-page #heroSearch .
   body.mx-on #mapApp .map-bottom { display: block; margin: 0; padding: 0; border: 0; }
   body.mx-on #mapApp .mx-links { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; margin: 0; padding: 2px 0 0; font-size: var(--t-cap); color: var(--dim); border-top: 1px solid var(--line); }
   body.mx-on #mapApp .mx-links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--dim); }
-  /* 범례 + 연도 막대 = 지도 왼쪽 아래 카드 하나(Leaflet 조작 칸, map.js .map-key). 서랍이 열리면 보이는 지도 폭 안으로 줄인다(100cqw = 지도 폭) */
+  /* 지도 칸 폭(100cqw)을 서랍 폭 계산에 쓴다. 범례·연도 카드는 2026-11-23부터 왼쪽 숫자판(map-visual.css .mv-dash) */
   body.mx-on #mapApp .mx-map { --mp-w: 400px; container-type: inline-size; }
-  body.mx-on #mapApp .mx-map .map-key { box-sizing: border-box; width: max-content; max-width: min(360px, calc(100cqw - 24px)); padding: 8px 12px 6px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 4px 16px var(--shade-16); }
-  body.mx-on #mapApp .mx-map:has(.map-panel:not([hidden])) .map-key { max-width: min(360px, calc(100cqw - var(--mp-w) - 24px)); }
-  body.mx-on #mapApp .mx-map .map-key .map-legend-line { font-size: var(--t-cap); }
-  body.mx-on #mapApp .mx-map .map-key .map-legend-more[open] .map-legend { max-height: 40vh; }
-  body.mx-on #mapApp .mx-map .map-key .map-ctlbox { margin: 2px 0 0; padding: 8px 0 2px; border-top: 1px solid var(--line); }
-  body.mx-on #mapApp .mx-map .map-key .map-ctl { margin: 0; flex-wrap: wrap; gap: 6px 10px; }
-  body.mx-on #mapApp .mx-map .map-key .map-year { flex: 1 1 200px; min-width: 0; }
-  body.mx-on #mapApp .mx-map .map-key .map-year label { min-width: 0; }
-  body.mx-on #mapApp .mx-map .map-key .map-year input[type="range"] { min-width: 80px; }
-  body.mx-on #mapApp .mx-map .map-legend-line-box:empty { display: none; }
-  /* 서랍을 연 좁은 지도(보이는 폭 500px 아래)에서는 카드가 고른 동을 덮지 않게 범례 한 줄만 남긴다(연도는 서랍을 닫으면 다시 보인다) */
-  @container (max-width: 900px) {
-    body.mx-on #mapApp .mx-map:has(.map-panel:not([hidden])) .map-key :is(.map-ctlbox, .map-legend-more) { display: none; }
-  }
-  /* 지도를 못 그렸을 때(조작 칸이 없을 때)는 같은 자리에 겹쳐 둔다 */
-  body.mx-on #mapApp .mx-map > :is(.map-legend-line-box, .map-ctlbox) { position: absolute; z-index: 3; left: 12px; max-width: 340px; padding: 6px 12px; background: var(--card); border-radius: 12px; }
-  body.mx-on #mapApp .mx-map > .map-ctlbox { bottom: 12px; }
-  body.mx-on #mapApp .mx-map > .map-legend-line-box { bottom: 84px; }
   /* 고른 동: 지도 오른쪽 전체 높이 서랍. 머리·탭·꼬리는 고정, 본문만 스크롤 */
   body.mx-on #mapApp .mx-map .map-panel, body.mx-on #mapApp .mx-map .map-panel.is-sheet { position: absolute; top: 0; right: 0; bottom: 0; left: auto; z-index: 2; display: flex; flex-direction: column; width: var(--mp-w); height: auto; max-height: none; margin: 0; padding: 0; overflow: hidden; border: 0; border-left: 1px solid var(--line); border-radius: 0; box-shadow: -8px 0 24px var(--shade-16); }
   body.mx-on #mapApp .mx-map .map-panel[hidden] { display: none; }

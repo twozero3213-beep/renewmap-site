@@ -218,7 +218,9 @@
   function attach(m) {
     if (!m || map) return;
     map = m;
-    const L = window.L, c = L.control({ position: 'topleft' });
+    // 2026-11-23: 좁은 화면은 오른쪽 위(왼쪽 위에서 확대 단추 아래 지도 한가운데를 덮었다). 넓은 화면 오른쪽은 고른 동 서랍 자리라 왼쪽 그대로
+    const narrow = window.matchMedia('(max-width: 1023px)'), L = window.L, c = L.control({ position: narrow.matches ? 'topright' : 'topleft' });
+    if (narrow.addEventListener) narrow.addEventListener('change', e => c.setPosition(e.matches ? 'topright' : 'topleft'));   // 창 폭을 1024px 넘게 바꿔도 따라간다
     map.createPane('safety').style.zIndex = 455;   // 수질 점(450) 위, 동 이름(460) 아래. 동 층을 다시 그려도 덮이지 않는다
     c.onAdd = () => {
       box = L.DomUtil.create('details', 'sl-ctl leaflet-bar');

@@ -256,18 +256,24 @@ def verify_field_save_errors(page, width):
 
 
 def verify_map_key(page, base):
-    """넓은 화면 범례·연도 카드가 지도 칸 안에 있고 고른 구의 동을 덮지 않는지, 시·도로 열면 상세 경계 하나만 받는지.
+    """넓은 화면 범례·연도가 왼쪽 숫자판(.mv-dash)에 있고 지도 위에는 카드가 없는지, 전국 첫 화면이 줌 7 이상인지,
+    시·도로 열면 상세 경계 하나만 받는지, 고른 구의 동 이름 자리가 지도 칸 안인지.
 
-    2026-11-20 UX2-01·GIS2-02: 네이버 바탕에서 카드가 지도 위쪽 밖(top −187)으로 밀렸고, 맞춤이 카드를 몰라 초량2동이 가렸다.
-    로컬은 OSM 바탕이라 네이버 경로는 배포 뒤 --base로 같은 검사를 돌린다."""
+    2026-11-20 UX2-01·GIS2-02: 지도 위 카드가 위쪽 밖으로 밀리고 초량2동을 가렸다. 2026-11-23: 카드를 왼쪽 숫자판으로 옮겼다(DESIGN 4.9,
+    카드를 피하느라 전국 첫 화면이 줌 6이었다). 로컬은 OSM 바탕이라 네이버 경로는 배포 뒤 --base로 같은 검사를 돌린다."""
     rect = "s => { const b = document.querySelector(s).getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }"
     for width, height in [(1280, 800), (1024, 768)]:
         page.set_viewport_size({'width': width, 'height': height})
         page.goto('about:blank')
+        page.goto(base+'explore.html#map', wait_until='networkidle')
+        page.wait_for_selector('#mapApp .mx-side .mv-dash .map-legend-line', state='visible')
+        assert page.locator('#mapApp .mx-map .map-key').count() == 0, ('지도 위 범례 카드가 남음', width)
+        page.wait_for_function("() => window.RenewMap && window.RenewMap.getMap() && window.RenewMap.getMap().getZoom() > 0")
+        zoom = page.evaluate("() => window.RenewMap.getMap().getZoom()")
+        assert width < 1280 or zoom >= 7, ('전국 첫 화면이 줌 7 아래', width, zoom)
+        page.goto('about:blank')
         page.goto(base+'explore.html#map/21', wait_until='networkidle')
-        page.wait_for_selector('#mapApp .mx-map .map-key', state='visible')
-        key, box = page.evaluate(rect, '#mapApp .map-key'), page.evaluate(rect, '#mapApp .mx-map')
-        assert box[0] <= key[0] and box[1] <= key[1] and key[2] <= box[2]+1 and key[3] <= box[3]+1, ('범례 카드가 지도 칸 밖', width, key, box)
+        page.wait_for_selector('#mapApp .mx-side .mv-dash .map-legend-line', state='visible')
         files = page.evaluate("() => performance.getEntriesByType('resource').map(e => e.name.split('?')[0].split('/').pop()).filter(n => n.endsWith('.geojson'))")
         assert 'sigungu.geojson' in files and 'sigungu-overview.geojson' not in files, ('시·도 첫 화면 경계 파일', width, files)
         page.goto(base+'explore.html#map/21/21030', wait_until='networkidle')
@@ -278,8 +284,8 @@ def verify_map_key(page, base):
           const el = [...pane.querySelectorAll('.map-dong-label')].find(e => e.textContent === '초량2동'), pd = pane.style.display, ed = el.style.display;
           pane.style.display = 'block'; el.style.display = ''; const b = el.getBoundingClientRect(); pane.style.display = pd; el.style.display = ed;
           return [(b.left+b.right)/2, (b.top+b.bottom)/2]; }""")
-        key = page.evaluate(rect, '#mapApp .map-key')
-        assert not (key[0] <= center[0] <= key[2] and key[1] <= center[1] <= key[3]), ('초량2동이 범례 카드에 가림', width, center, key)
+        box = page.evaluate(rect, '#mapApp .mx-map')
+        assert box[0] <= center[0] <= box[2] and box[1] <= center[1] <= box[3], ('초량2동이 지도 칸 밖', width, center, box)
     page.set_viewport_size({'width': 1280, 'height': 900})
 
 

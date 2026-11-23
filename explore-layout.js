@@ -4,7 +4,7 @@
    map.js가 만든 요소를 다시 만들지 않고 자리만 옮긴다(참조는 그대로 살아 있다). 1024px 미만은 원래 순서 그대로 둔다.
    2026-11-19(대표 지적: 왼쪽 패널이 1,498px로 길어 한참 내려야 했다): 왼쪽 패널을 세 칸으로 나눈다.
    위 = 검색·위치 줄(고정), 가운데 = 지표 고르기·현황 한 줄·지역 목록(이 칸만 스크롤), 아래 = 출처 한 줄·도구·바닥글 링크 한 줄(고정).
-   범례 한 줄과 연도 막대는 지도 위(왼쪽 아래·가운데 아래)로, 고른 동의 세부(.map-panel)는 지도 오른쪽 서랍으로 둔다. */
+   고른 동의 세부(.map-panel)는 지도 오른쪽 서랍으로 둔다. 범례 한 줄과 연도 막대는 2026-11-23부터 왼쪽 숫자판(.mv-dash) 안이다. */
 (function () {
   'use strict';
   const wide = window.matchMedia('(min-width: 1024px)');
@@ -35,12 +35,17 @@
     app.append(shell);
     const head = box('div', 'mx-head'), body = box('div', 'mx-scroll'), foot = box('div', 'mx-foot');
     head.append(...take(['#map .hero-head', '#heroSearch', '#mapApp > .map-where']));
-    body.append(...take(['#mapApp > .map-top', '#heroLive', '#mapApp > .map-dongs']));
+    // 2026-11-23 대표 지적(한눈에 안 들어온다): 범례 한 줄·연도 막대를 지도 위 카드에서 빼 현황 숫자와 한 카드(숫자판)로 묶는다(DESIGN 4.9 '범례는 지도 밖').
+    //   지도 위 카드를 피하느라 첫 화면이 줌 6으로 떨어져 한국이 화면 높이의 40%였다
+    const dash = box('section', 'mv-dash');
+    dash.setAttribute('aria-label', '지금 지도 요약');
+    dash.append(...take(['#heroLive', '#mapApp > .map-legend-line-box', '#mapApp > .map-ctlbox']));
+    body.append(...take(['#mapApp > .map-top']), dash, ...take(['#mapApp > .map-dongs']));
     foot.append(...take(['#mapApp > .map-bottom']));
     const links = footLinks(); if (links) foot.append(links);
     side.append(head, body, foot);
     const map = box('div', 'mx-map');
-    map.append(stage, ...take(['#mapApp > .map-legend-line-box', '#mapApp > .map-ctlbox']));
+    map.append(stage);
     shell.append(side, map);
     document.body.classList.add('mx-on');
     fit();
