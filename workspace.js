@@ -132,7 +132,7 @@
       overlayButton.disabled = true;
       overlayButton.textContent = '파일 도구를 불러오는 중입니다.';
       try {
-        await import('./overlay.js?v=20261126-aggregation');
+        await import('./overlay.js?v=20261127-gis-input');
         const overlay = document.getElementById('overlay'); openOverlay(overlay);
         overlay.querySelector('summary').focus({ preventScroll: true });
       } catch (error) {

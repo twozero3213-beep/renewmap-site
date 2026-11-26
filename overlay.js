@@ -22,19 +22,36 @@
     catch (e) { return { text: new TextDecoder('euc-kr').decode(u), encoding: 'CP949' }; }
   }
   function parseCSV(text) {
-    const s = String(text).replace(/^﻿/, '');
-    const head = s.slice(0, (s.search(/[\r\n]/) + 1 || s.length + 1) - 1).replace(/"[^"]*"/g, '');
-    const count = ch => head.split(ch).length - 1;
-    const d = [',', '\t', ';'].reduce((best, ch) => (count(ch) > count(best) ? ch : best), ',');
-    const rows = []; let row = [], cur = '', q = false;
+    const s = String(text).replace(/^﻿/, '').replace(/^(?:[ \t]*(?:\r\n|[\r\n]))+/, '');
+    const delimiters = [',', '\t', ';'], counts = new Map(delimiters.map(c => [c, 0]));
+    let quoted = false, fieldStart = true;
     for (let i = 0; i < s.length; i++) {
       const c = s[i];
-      if (q) { if (c === '"') { if (s[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
-      else if (c === '"' && cur === '') q = true;
-      else if (c === d) { row.push(cur); cur = ''; }
-      else if (c === '\n' || c === '\r') { if (c === '\r' && s[i + 1] === '\n') i++; row.push(cur); cur = ''; rows.push(row); row = []; }
+      if (quoted) { if (c === '"') { if (s[i + 1] === '"') i++; else quoted = false; } continue; }
+      if (c === '\r' || c === '\n') break;
+      if (c === '"' && fieldStart) quoted = true;
+      fieldStart = counts.has(c);
+      if (fieldStart) counts.set(c, counts.get(c) + 1);
+    }
+    const d = delimiters.reduce((best, ch) => counts.get(ch) > counts.get(best) ? ch : best, ',');
+    const rows = []; let row = [], cur = '', q = false, closed = false;
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      if (q) {
+        if (c === '"') {
+          if (s[i + 1] === '"') { cur += '"'; i++; }
+          else { q = false; closed = true; }
+        } else cur += c;
+      } else if (c === d) { row.push(cur); cur = ''; closed = false; }
+      else if (c === '\n' || c === '\r') {
+        if (c === '\r' && s[i + 1] === '\n') i++;
+        row.push(cur); rows.push(row); row = []; cur = ''; closed = false;
+      } else if (closed) {
+        if (c !== ' ' && c !== '\t') throw new Error('CSV에서 닫는 따옴표 뒤에 구분자가 필요합니다. 파일을 확인해 다시 올려 주세요.');
+      } else if (c === '"' && cur === '') q = true;
       else cur += c;
     }
+    if (q) throw new Error('CSV에 닫히지 않은 따옴표가 있습니다. 파일을 확인해 다시 올려 주세요.');
     if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
     return rows.filter(r => r.some(v => String(v).trim() !== ''));
   }
@@ -343,9 +360,17 @@
   }
   const csvCell = v => { const s = String(v == null ? '' : v); const t = typeof v === 'number' || /^-?\d+(\.\d+)?$/.test(s.trim()) ? s : s.replace(/^[\s\uFEFF]*[=+@\t\r-]/, "'$&"); return /[",\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   const validSum = g => g.valued > 0 && Number.isFinite(g.sum);
-  function toCsv(rows, valueLabel) {
-    const head = ['코드', '이름', '점 개수'].concat(valueLabel ? [`${valueLabel} 합계`, '합계에 포함한 행'] : []);
-    return [head].concat(rows.map(g => [g.code, g.name, g.count].concat(valueLabel ? [validSum(g) ? g.sum : '', g.valued] : []))).map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+  function toCsv(rows, valueLabel, withheld) {
+    const head = ['코드', '이름', '점 개수'];
+    if (valueLabel) head.push(`${valueLabel} 합계`, '합계에 포함한 행');
+    if (withheld !== undefined) head.push('전체 파일의 코드 대응 보류 행');
+    const data = rows.map(g => {
+      const row = [g.code, g.name, g.count];
+      if (valueLabel) row.push(validSum(g) ? g.sum : '', g.valued);
+      if (withheld !== undefined) row.push(withheld);
+      return row;
+    });
+    return [head, ...data].map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
 
@@ -431,7 +456,7 @@ ${radio('xy', 'X·Y 좌표(미터)', '내부 도면: 중부원점·구 중부원
 <p class="ov-hint">5186과 5174는 값 범위가 비슷해 자동으로 가릴 수 없습니다.<br>도면의 좌표계를 확인해 고르세요. 변환 결과가 한국 범위 밖이면 알려 드립니다.</p></div>
 ${radio('adm8', '행정동 코드(8자리)', '동별로 모아 동 중심에 표시')}
 <div class="ov-sel" data-ov-m="adm8"><label>행정동 코드 열<select name="ovAdm">${opts(d.adm)}</select></label></div>
-${radio('bjd10', '법정동 코드(10자리)', '행정동 경계와 일대일이 아니라 앞 5자리(시군구)까지만 모읍니다')}
+${radio('bjd10', '법정동 코드(10자리)', '앞 5자리와 공개 지역 색인을 대조해 대응 시군구에만 집계합니다')}
 <div class="ov-sel" data-ov-m="bjd10"><label>법정동 코드 열<select name="ovBjd">${opts(d.bjd)}</select></label></div>
 ${radio('addr', '지번 주소', '좌표가 없는 파일')}
 <div class="ov-sel" data-ov-m="addr"><p class="ov-hint"><strong>좌표 없음: 지오코딩은 외부 전송이라 하지 않음.</strong><br>주소를 좌표로 바꾸려면 파일 내용을 외부 서버로 보내야 하므로 이 기능에서는 하지 않습니다.<br>위도·경도나 X·Y 좌표 열, 또는 행정동 코드 열을 함께 담아 올려 주세요.</p></div>`;
@@ -449,11 +474,20 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
   // 양식 값(글자) → 모양. 숫자·라벨 열은 고르지 않으면 -1
   const pickStyle = (color, size, num, label) => ({ color: COLORS[color] || '#1f4e9c', base: SIZES[size] || 6, num: +num, label: +label });
   const cellNum = (rows, i, c) => (c >= 0 ? toNum(rows[i][c]) : NaN);
-  // 코드 열 → [{ code, v }]. 자릿수가 맞는 코드만, 법정동 코드는 앞 5자리(시군구)로 모은다
-  // 값은 읽지 않고 행 번호만 둔다: 얹은 뒤 숫자 열을 바꿔도 그때 열로 다시 읽는다
-  function readCodes(rows, c, method) {
+  // 한 행정표준 코드가 여러 SGIS 경계에 대응하면 위치 근거 없이 한 경계에 배정하지 않는다.
+  function districtCodeIndex(regions) {
+    const index = new Map();
+    for (const { mois_code5, code5, boundary } of regions) {
+      if (!/^\d{5}$/.test(mois_code5) || !/^\d{5}$/.test(code5)) continue;
+      const previous = index.get(mois_code5);
+      index.set(mois_code5, boundary === false || (previous !== undefined && previous !== code5) ? null : code5);
+    }
+    return index;
+  }
+  function readCodes(rows, c, method, districts) {
     const re = method === 'adm8' ? ADM8 : BJD10;
-    return rows.map((r, i) => ({ code: String(r[c]).trim(), i })).filter(x => re.test(x.code)).map(x => ({ ...x, code: method === 'bjd10' ? x.code.slice(0, 5) : x.code }));
+    return rows.map((r, i) => ({ code: String(r[c]).trim(), i })).filter(x => re.test(x.code))
+      .map(x => ({ ...x, code: method === 'bjd10' ? districts?.get(x.code.slice(0, 5)) ?? null : x.code }));
   }
   // 그릴 점: 좌표 방식은 행마다 하나, 코드 방식은 지금 보이는 경계(feats) 중심에 코드별로 하나
   function toDots(s, st, feats) {
@@ -472,6 +506,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
     return { dots, over, max, scaled };
   }
   const tipText = (d, valueLabel) => [d.text, Number.isFinite(d.v) && !d.bubble ? `${valueLabel || '값'} ${d.v.toLocaleString('ko-KR')}` : '', d.i != null ? `${d.i + 2}행` : ''].filter(Boolean).join(' · ');
+  const withheldCodes = codes => codes.filter(c => c.code === null).length;
   // 결과 안내 줄(<li>): 읽은 행·뺀 행·좌표계 경고·그리기 제한
   function noteLines(loc, codes, drawn, valueLabel) {
     const lines = [];
@@ -480,7 +515,11 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       if (loc.empty) lines.push(`<li>좌표가 비어 있거나 숫자가 아닌 행 ${loc.empty.toLocaleString('ko-KR')}건은 뺐습니다.</li>`);
       if (loc.outside) lines.push(`<li class="is-warn">변환한 위치가 한국 범위 밖인 행 ${loc.outside.toLocaleString('ko-KR')}건은 뺐습니다. 좌표계를 확인하세요.</li>`);
       if (loc.swapHint) lines.push('<li class="is-warn">X와 Y를 바꾸면 더 많은 행이 한국 범위에 들어옵니다. ‘X와 Y 열 바꿔 읽기’를 확인하세요.</li>');
-    } else if (codes) lines.push(`<li>코드가 있는 행 ${codes.length.toLocaleString('ko-KR')}건을 읽었습니다.</li>`);
+    } else if (codes) {
+      lines.push(`<li>코드 형식이 맞는 행 ${codes.length.toLocaleString('ko-KR')}건을 읽었습니다.</li>`);
+      const unmapped = withheldCodes(codes);
+      if (unmapped) lines.push(`<li class="is-warn">SGIS 시군구 경계와 일대일 대응을 확인하지 못한 행 ${unmapped.toLocaleString('ko-KR')}건은 집계를 보류했습니다.</li>`);
+    }
     if (drawn) {
       if (drawn.over) lines.push(`<li class="is-warn">점이 많아 처음 ${MAX_DRAW.toLocaleString('ko-KR')}개만 그렸습니다. 아래 집계는 전체 행 기준입니다.</li>`);
       if (drawn.labelsCut) lines.push(`<li>라벨은 처음 ${MAX_LABELS}개만 항상 보입니다. 나머지는 점에 올리면 보입니다.</li>`);
@@ -491,7 +530,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
   // 집계에 넣을 항목: 좌표 방식은 점이 든 경계의 코드, 코드 방식은 읽은 코드 그대로
   const aggItems = (s, feats, numCol) => (isCoord(s.method) ? (s.pts || []).map(p => { const { feature, ambiguous } = classifyPoint(feats, p.lat, p.lon);
       return { code: feature?.code ?? null, v: cellNum(s.table.rows, p.i, numCol), ...(ambiguous ? { ambiguous } : {}) }; })
-    : (s.codes || []).map(c => ({ code: c.code, v: cellNum(s.table.rows, c.i, numCol) })));
+    : (s.codes || []).filter(c => c.code !== null).map(c => ({ code: c.code, v: cellNum(s.table.rows, c.i, numCol) })));
   function aggTableHtml(a, len, valueLabel, showSum) {
     const sumF = n => n.toLocaleString('ko-KR', { maximumFractionDigits: 3 });
     return `<h3 class="ov-h">${len === 8 ? '동별' : '시군구별'} 집계</h3><div class="ov-scroll" tabindex="0" role="region" aria-label="집계 표"><table class="ov-table"><caption>코드 순 · 순위 아님</caption><thead><tr><th scope="col">코드</th><th scope="col">이름</th><th scope="col" class="num">점 개수</th>${showSum ? `<th scope="col" class="num">${esc(valueLabel)} 합계</th><th scope="col" class="num">합계에 포함한 행</th>` : ''}</tr></thead><tbody>${a.rows.map(g => `<tr><td>${esc(g.code)}</td><td>${esc(g.name)}</td><td class="num">${g.count.toLocaleString('ko-KR')}</td>${showSum ? `<td class="num">${validSum(g) ? sumF(g.sum) : g.valued ? '계산 불가' : '값 없음'}</td><td class="num">${g.valued.toLocaleString('ko-KR')}</td>` : ''}</tr>`).join('')}</tbody></table></div>`
@@ -503,7 +542,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
   const NO_DONG_HTML = `<p class="ov-hint"><strong>동별 집계를 하려면 시군구를 먼저 고르세요.</strong><br>지도에서 시군구를 누르면 그 지역의 읍·면·동 경계가 나타나고, 표가 만들어집니다.</p>`;
 
   const api = { CRS, MAX_DRAW, MAX_LABELS, decodeText, parseCSV, toTable, parseXlsx, readFileBytes, toNum, findPII, excludeColumns, detectColumns, tmInverse, toWgs84, inKorea, locate, compileFeatures, classifyPoint, aggregate, toCsv, reconcileKeys, reconcileCsv,
-    optionsHtml, fileInfo, piiHtml, locFormHtml, styleFormHtml, previewHtml, pickStyle, readCodes, toDots, planDots, tipText, noteLines, aggItems, aggTableHtml, csvCell };
+    optionsHtml, fileInfo, piiHtml, locFormHtml, styleFormHtml, previewHtml, pickStyle, districtCodeIndex, readCodes, toDots, planDots, tipText, noteLines, aggItems, aggTableHtml, csvCell };
   if (typeof document === 'undefined') return api;
 
   // ── 8. 브라우저 ──
@@ -641,7 +680,8 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       let table;
       S.agg = null;
       if (!liveMap()) table = NO_MAP_HTML;
-      else if (!feats.length) table = NO_DONG_HTML;
+      else if (S.codes?.length && S.codes.every(c => c.code === null)) table = '';
+      else if (!feats.length) table = len === 8 ? NO_DONG_HTML : '<p class="ov-hint">지도에 시군구 경계를 열면 집계표를 볼 수 있습니다.</p>';
       else { S.agg = aggregate(feats, aggItems(S, feats, st.num)); table = aggTableHtml(S.agg, len, S.valueLabel, st.num >= 0); }
       $('[data-ov-result]').innerHTML = (lines.length ? `<ul class="ov-notes">${lines.join('')}</ul>` : '') + table;
     }
@@ -661,8 +701,11 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       } else {
         const c = +val(S.method === 'adm8' ? 'ovAdm' : 'ovBjd');
         if (!(c >= 0)) { status('코드 열을 골라 주세요.', true); return; }
-        S.codes = readCodes(T.rows, c, S.method);
+        const regions = S.method === 'bjd10' ? window.RenewMap?.getDistrictIndex?.() : null;
+        if (S.method === 'bjd10' && !regions?.length) { status('시군구 코드 색인을 아직 불러오지 못했습니다. 지도가 나타난 뒤 다시 눌러 주세요.', true); return; }
+        S.codes = readCodes(T.rows, c, S.method, regions ? districtCodeIndex(regions) : null);
         if (!S.codes.length) { status('올바른 코드가 없습니다. 자릿수와 열을 확인하세요.', true); return; }
+        if (S.codes.every(x => x.code === null)) { status('집계할 수 있는 시군구를 찾지 못했습니다.', true); result(); return; }
       }
       status(liveMap() ? '지도에 얹었습니다.' : '지도가 아직 준비되지 않았습니다. 잠시 뒤 다시 눌러 주세요.', !liveMap());
       S.valueLabel = labelOf(st);
@@ -689,7 +732,10 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       const b = ev.target.closest('button'); if (!b) return;
       if (b.hasAttribute('data-ov-place')) place();
       else if (b.hasAttribute('data-ov-clear')) { reset(); $('#ovFile').value = ''; status('지웠습니다. 메모리에 남은 파일이 없습니다.'); }
-      else if (b.hasAttribute('data-ov-csv') && S.agg) saveCsv(toCsv(S.agg.rows, S.valueLabel), '우리파일_동별집계.csv');
+      else if (b.hasAttribute('data-ov-csv') && S.agg) {
+        const district = S.method === 'bjd10';
+        saveCsv(toCsv(S.agg.rows, S.valueLabel, district ? withheldCodes(S.codes) : undefined), district ? '우리파일_시군구별집계.csv' : '우리파일_동별집계.csv');
+      }
       else if (b.hasAttribute('data-ov-keys')) compareKeys();
       else if (b.hasAttribute('data-ov-keys-csv') && keyResult) saveCsv(reconcileCsv(keyResult, { aFile: S.fileName, aHash: S.fileHash, aSheet: S.sheetName, aKey: S.table.headers[+val('ovKeyA')], bFile: S.ref.name, bHash: S.ref.hash, bSheet: S.ref.sheet, bKey: S.ref.table.headers[+val('ovKeyB')] }), '공통키_대조목록.csv');
     });

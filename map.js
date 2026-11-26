@@ -2497,6 +2497,7 @@
   // Leaflet 지도는 한 번 만들어 무대(stage)에 두고, render()는 색·선택만 바꾼다
   let M = null, to3dEl = null;   // to3dEl: '연도별 건물 나이(부산)' 단추(지도를 만들 때 한 번)
   api.getMap = () => M && M.map;
+  api.getDistrictIndex = () => state.index?.sigungu || [];
   function loadNaver() {
     if (window.renewNaverAuthFailed) return Promise.resolve(false);
     return window.renewLoadNaver?.() || Promise.resolve(false);
