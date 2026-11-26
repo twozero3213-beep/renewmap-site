@@ -1315,11 +1315,11 @@
   const SNAP_BASIS = [['unit', '단위'], ['rule_version', '규칙 버전'], ['formula_id', '산식 ID'], ['formula_text', '산식'],
     ['spatial_unit', '공간단위'], ['area_code', '지역 코드'], ['data_source_system', '출처 시스템'], ['source_url', '출처 URL']];
   function snapshotOf(it, rows, now) {
-    return { v: 2, code: it.code, name: it.name, saved_at: now.toISOString(),
+    return { v: 3, code: it.code, name: it.name, saved_at: now.toISOString(),
       items: rows.filter(r => r.ind.group !== 'fore' && !r.ind.pending).map(r => {
         const c = r.cell, matched = c && c.value === r.value && (!r.ind.series || c.base_year === r.year);
         // 과거 시계열 값에 최신 셀의 산식·출처를 붙여 비교 가능하다고 만들지 않는다.
-        return { c: r.ind.code, l: r.ind.label, u: r.ind.unit || '', v: r.value ?? null, t: rowText(r), s: stLabel(r.status), d: refOf(r),
+        return { c: r.ind.code, l: r.ind.label, u: r.ind.unit || '', v: r.value ?? null, t: rowText(r), s: rowState(r).label, d: refOf(r),
           basis: matched ? Object.fromEntries(SNAP_BASIS.map(([k]) => [k, c[k] ?? null])) : null };
       }) };
   }
@@ -1335,16 +1335,21 @@
     }
     return reasons.join(' · ');
   }
-  // 반환 { rows: [{ kind: 'new'|'changed'|'gone', flip, prev, cur }], same }. flip = 판정(기준 해당·기준 안 등)이 바뀜
+  const thresholdStatus = s => s === HIT || s === statusLabels['기준 안'];
   function diffSnap(prev, cur) {
     // 2026-11-12: 예전 저장분의 옛 낱말('기준 미달')을 새 낱말로 맞춘 뒤 비교한다(normLabel). 저장된 원본(localStorage)은 고치지 않는다
     const before = new Map((prev.items || []).map(x => [x.c, { ...x, s: normLabel(x.s) }])), now = new Set(cur.items.map(x => x.c)), out = [];
+    // 예전 기록에는 당시 화면의 추가확인·하한이 빠질 수 있다.
+    const hasDisplayStates = prev.v === 3 && cur.v === 3;
     let same = 0;
     for (const x of cur.items) {
-      const p = before.get(x.c), flip = !!p && p.s !== x.s;
+      const p = before.get(x.c);
       if (!p) out.push({ kind: 'new', flip: false, prev: null, cur: x });
-      else if (p.v !== x.v || p.d !== x.d || p.u !== x.u || flip || SNAP_BASIS.some(([k]) => p.basis?.[k] !== x.basis?.[k])) {
-        out.push({ kind: 'changed', flip, prev: p, cur: x, reason: snapComparisonReason(p, x) });
+      else if (p.v !== x.v || p.d !== x.d || p.u !== x.u || p.s !== x.s || SNAP_BASIS.some(([k]) => p.basis?.[k] !== x.basis?.[k])) {
+        const reason = snapComparisonReason(p, x);
+        const flip = !reason && hasDisplayStates && isNum(p.v) && isNum(x.v)
+          && p.s !== x.s && thresholdStatus(p.s) && thresholdStatus(x.s);
+        out.push({ kind: 'changed', flip, prev: p, cur: x, reason });
       }
       else same++;
     }
@@ -1354,15 +1359,19 @@
   const deltaText = d => (d.prev && d.cur && isNum(d.prev.v) && isNum(d.cur.v)
     ? d.reason ? `수치 비교 보류: ${d.reason}` : `${d.cur.v - d.prev.v >= 0 ? '+' : ''}${fmt(Math.round((d.cur.v - d.prev.v) * 100) / 100, d.cur.u === '%' ? '%p' : d.cur.u)}`
     : d.kind === 'new' ? '새 항목' : d.kind === 'gone' ? '빠짐' : '자료 없음');
+  const hasStatusDifference = d => !!(d.prev && d.cur && d.prev.s !== d.cur.s);
+  const countStatusChecks = rows => rows.filter(d => !d.flip && hasStatusDifference(d)).length;
+  const snapStatusText = d => hasStatusDifference(d)
+    ? `저장 때 ${d.prev.s || '상태 기록 없음'} · 지금 ${d.cur.s || '상태 기록 없음'}` : (d.cur || d.prev).s;
   function snapHTML(prev, cur) {
     const head = `<section class="rp-g rp-snap"><h3>${icon('fore')}기준일 비교</h3>`;
     if (!prev) return head + '<p class="rp-intro">지금 값을 이 기기에 저장해 두면, 사전컨설팅·보완 때 다시 열어 바뀐 항목만 표로 볼 수 있습니다.<br>서버로 보내지 않습니다.<br>같은 기기·같은 브라우저에서만 보이고, 방문 기록을 지우면 함께 지워집니다.<br>남겨 둘 값은 문서 받기로 파일에 넣어 두세요.</p><p class="rp-tools"><button type="button" class="btn ghost" data-snap-save>지금 값 저장</button></p></section>';
     const d = diffSnap(prev, cur), flips = d.rows.filter(x => x.flip).length, when = String(prev.saved_at).slice(0, 10);
     const cell = x => (x ? `${esc(x.t)}<br><small>${esc(x.d || '기준일 기록 없음')}</small>` : '–');
-    const table = d.rows.length ? `<div class="dg-tbl">${copyHead('기준일 비교')}<div class="table-wrap"><table class="rp-tbl rp-snap-tbl"><thead><tr><th>항목</th><th>저장 때(${esc(when)})</th><th>지금</th><th>변동</th><th>판정</th></tr></thead><tbody>` +
-      d.rows.map(x => `<tr class="${x.flip ? 'is-flip' : ''}"><td>${esc((x.cur || x.prev).l)}</td><td>${cell(x.prev)}</td><td>${cell(x.cur)}</td><td>${esc(deltaText(x))}</td><td>${x.flip ? `<b>${esc(x.prev.s)} → ${esc(x.cur.s)}</b>` : esc((x.cur || x.prev).s)}</td></tr>`).join('') + '</tbody></table></div></div>'
+    const table = d.rows.length ? `<div class="dg-tbl">${copyHead('기준일 비교')}<div class="table-wrap"><table class="rp-tbl rp-snap-tbl"><thead><tr><th>항목</th><th>저장 때(${esc(when)})</th><th>지금</th><th>변동</th><th>표시 상태</th></tr></thead><tbody>` +
+      d.rows.map(x => `<tr class="${x.flip ? 'is-flip' : ''}"><td>${esc((x.cur || x.prev).l)}</td><td>${cell(x.prev)}</td><td>${cell(x.cur)}</td><td>${esc(deltaText(x))}</td><td>${x.flip ? `<b>${esc(x.prev.s)} → ${esc(x.cur.s)}</b>` : esc(snapStatusText(x))}</td></tr>`).join('') + '</tbody></table></div></div>'
       : '<p>저장한 뒤 바뀐 값이 없습니다.</p>';
-    return head + `<p class="rp-snap-sum">${esc(when)} 저장분 대비 바뀐 항목 <b>${d.rows.length}</b>개 · 판정 바뀜 <b>${flips}</b>개 · 그대로 ${d.same}개</p>${table}` +
+    return head + `<p class="rp-snap-sum">${esc(when)} 저장분 대비 바뀐 항목 <b>${d.rows.length}</b>개 · 같은 근거에서 바뀐 상태 <b>${flips}</b>개 · 확인할 상태 차이 <b>${countStatusChecks(d.rows)}</b>개 · 그대로 ${d.same}개</p>${table}` +
       '<p class="rp-tools"><button type="button" class="btn ghost" data-snap-save>지금 값으로 다시 저장</button><button type="button" class="btn ghost" data-snap-clear>저장 지우기</button></p></section>';
   }
   // 납품 파일(HWPX·DOCX·PPTX·XLSX)용 표. 문서 글꼴 검사(clean)가 화살표를 지우므로 '에서 …로'로 쓴다
@@ -1370,8 +1379,8 @@
     if (!prev) return null;
     const d = diffSnap(prev, cur), when = String(prev.saved_at).slice(0, 10), flips = d.rows.filter(x => x.flip).length;
     const cell = x => (x ? `${x.t}${x.d ? ` (${x.d})` : ''}` : '-');
-    return { when, summary: d.rows.length ? `${when}에 저장한 값과 비교하면 바뀐 항목은 ${d.rows.length}개, 판정이 바뀐 항목은 ${flips}개, 그대로인 항목은 ${d.same}개다.` : `${when}에 저장한 뒤 바뀐 값이 없다(${d.same}개 항목).`,
-      rows: [['항목', '저장 때 값(기준일)', '지금 값(기준일)', '변동', '판정'], ...d.rows.map(x => [(x.cur || x.prev).l, cell(x.prev), cell(x.cur), deltaText(x), x.flip ? `${x.prev.s}에서 ${x.cur.s}로 바뀜` : (x.cur || x.prev).s])] };
+    return { when, summary: d.rows.length ? `${when}에 저장한 값과 비교하면 바뀐 항목은 ${d.rows.length}개, 같은 근거에서 바뀐 상태는 ${flips}개, 확인할 상태 차이는 ${countStatusChecks(d.rows)}개, 그대로인 항목은 ${d.same}개다.` : `${when}에 저장한 뒤 바뀐 값이 없다(${d.same}개 항목).`,
+      rows: [['항목', '저장 때 값(기준일)', '지금 값(기준일)', '변동', '표시 상태'], ...d.rows.map(x => [(x.cur || x.prev).l, cell(x.prev), cell(x.cur), deltaText(x), x.flip ? `${x.prev.s}에서 ${x.cur.s}로 바뀜` : snapStatusText(x)])] };
   }
   // 2026년 행정구역 개편: 지도 경계·이름·코드는 SGIS 2025 기준이라, 바뀐 지역을 열면 바뀐 사실과 공식 출처를 함께 적는다(2026-10-30 전수검사: 3,559동 중 468동)
   const MOIS_REORG = 'https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000052&nttId=127039';
