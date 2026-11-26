@@ -308,3 +308,15 @@
   .task-page:has(section[data-panel="0"][hidden]) .task-aside .task-save { display: none; }
   #planForm > .task-save-inline { display: none; }
 }
+#main.task-page .task-file-select {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+}
+#main.task-page .task-file-select input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  padding: 0;
+}

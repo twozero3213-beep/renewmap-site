@@ -21,6 +21,8 @@
     packets = [],
     busy = false,
     cloud = null;
+  const deliveryPicks = new Set();
+  let deliveryHead = null;
   const say = (text) => {
     $("taskMsg").textContent = text;
   };
@@ -75,7 +77,7 @@
     busy = true;
     const controls = [
       ...document.querySelectorAll(
-        "form button,form input,form select,form textarea,#planSave,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#handoverTask,#downloadHandover,#restoreTask,#restoreFile,#taskWork button,#taskWork input,#taskWork select,#taskWork textarea",
+        "form button,form input,form select,form textarea,#planSave,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#selectedDelivery,#artifactList input,#handoverTask,#downloadHandover,#restoreTask,#restoreFile,#taskWork button,#taskWork input,#taskWork select,#taskWork textarea",
       ),
     ];
     const prev = controls.map((b) => b.disabled);   // 끝나면 원래 상태로 되돌린다(처리 전부터 꺼 둔 단추를 켜지 않는다)
@@ -109,6 +111,7 @@
       controls.forEach((b, i) => {
         b.disabled = prev[i];
       });
+      syncDeliverySelection();
     }
   }
   async function refreshList() {
@@ -239,7 +242,17 @@
         `검토 결정은 v${current.revision}의 파일 세트 ${current.decision.artifact_set_hash}에 연결돼 있습니다. 신원·서명 진위는 별도 확인 대상입니다.`,
       );
   }
+  function syncDeliverySelection() {
+    const count = deliveryPicks.size;
+    $("deliverySelection").textContent = "전달할 파일 " + count + "개 선택";
+    $("selectedDelivery").disabled = busy || count === 0;
+  }
   function renderArtifacts() {
+    const head = current?.hash ?? null;
+    if (head !== deliveryHead) {
+      deliveryPicks.clear();
+      deliveryHead = head;
+    }
     $("artifactList").textContent = "";
     for (const a of filePages.slice(current?.artifacts || [])) {
       const item = document.createElement("li"),
@@ -248,10 +261,22 @@
         meta = document.createElement("small");
       summary.textContent = `${a.name} · ${a.size.toLocaleString()} bytes${a.blockers?.length ? " · 승인 보류" : ""}`;
       meta.textContent = `SHA-256 ${a.sha256}${a.blockers?.length ? " · " + a.blockers.join(", ") : ""}`;
+      const pick = document.createElement("label"), box = document.createElement("input");
+      pick.className = "task-file-select";
+      box.type = "checkbox";
+      box.checked = deliveryPicks.has(a.name);
+      box.setAttribute("aria-label", a.name + " 전달 선택");
+      box.addEventListener("change", () => {
+        if (box.checked) deliveryPicks.add(a.name);
+        else deliveryPicks.delete(a.name);
+        syncDeliverySelection();
+      });
+      pick.append(box, " 전달 선택");
       details.append(summary, meta);
-      item.append(details);
+      item.append(pick, details);
       $("artifactList").append(item);
     }
+    syncDeliverySelection();
   }
   function renderHistory() {
     $("taskHistory").textContent = "";
@@ -629,6 +654,24 @@
       say("인수인계 요약을 받았습니다. 복원용 JSON 백업도 별도로 보관해 주세요.");
     }),
   );
+  $("selectedDelivery").addEventListener("click", () =>
+    action(async () => {
+      const base = current, names = [...deliveryPicks], versions = history.slice();
+      if (!base || deliveryHead !== base.hash || !names.length)
+        throw new Error("현재 판에서 전달할 파일을 선택해 주세요.");
+      const hashes = new Set(base.artifacts.filter(file => deliveryPicks.has(file.name)).map(file => file.sha256));
+      const entries = await Promise.all([...hashes].map(sha => F.doc(`task-file:${base.id}:${sha}`)));
+      const selected = await B.selectedZip(versions, names, entries);
+      if (current?.hash !== base.hash || (await S.history(base.id)).at(-1)?.hash !== base.hash)
+        throw new Error("과업판이 바뀌었습니다. 과업을 다시 열고 전달할 파일을 선택해 주세요.");
+      D.saveBytes(
+        `renewmap-selected-v${selected.receipt.revision}.zip`,
+        D.zipStore(selected.entries, D.localDate()),
+        "application/zip",
+      );
+      say("선택한 파일 " + selected.receipt.selected_count + "개의 전달 묶음을 받았습니다.");
+    }),
+  );
   $("zipTask").addEventListener("click", () =>
     action(async () => {
       const { saved: b, guide } = await handover();
@@ -637,7 +680,7 @@
         D.zipStore(B.zipEntries(b, guide.text), D.localDate()),
         "application/zip",
       );
-      say("인수인계 요약·파일 목차·검토 이력이 담긴 납품 묶음을 받았습니다.");
+      say("과거 판과 검토 기록이 담긴 내부 보관용 전체 이력 ZIP을 받았습니다.");
     }),
   );
   $("restoreTask").addEventListener("click", () =>

@@ -25,7 +25,7 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="pretendard.css" />
     <link rel="stylesheet" href="styles.css?v=20261122-r19" />
-    <link rel="stylesheet" href="tasks.css?v=20261121-r16" />
+    <link rel="stylesheet" href="tasks.css?v=20261126-share-scope" />
     <script src="frame-guard.js"></script>
     <script src="task-cloud-callback.js?v=20261119-r3"></script>
     <!-- R1(2026-11-13): 다른 화면과 같은 머리 메뉴·아래 탭(site.js). 인증·검토 화면에서는 외부 방문 분석을 실행하지 않는다 -->
@@ -36,7 +36,7 @@
     <script src="task-store.js?v=20261120-r11" defer></script>
     <script src="field/store.js" defer></script>
     <script src="docgen.js?v=20261122-r23" defer></script>
-    <script src="tasks-files.js?v=20261120-r12" defer></script>
+    <script src="tasks-files.js?v=20261126-share-scope" defer></script>
     <script src="task-cloud-config.js?v=20261119-r3" defer></script>
     <script src="task-cloud.js?v=20261120-r11" defer></script>
     <script src="task-cloud-ui.js?v=20261119-w2" defer></script>
@@ -49,7 +49,7 @@
     <script src="revisit-photos.js?v=20261119-r3" defer></script>
     <script src="revisit-report-ui.js?v=20261119-r3" defer></script>
     <script src="task-followup-ui.js?v=20261119-w2" defer></script>
-    <script src="tasks-app.js?v=20261122-r19" defer></script>
+    <script src="tasks-app.js?v=20261126-share-scope" defer></script>
   <link rel="stylesheet" href="rm6.css?v=20261122-r24">
 </head>
   <body>
@@ -207,7 +207,7 @@
               <label>현장 결과<input id="changeAfter" maxlength="1000" required></label>
               <label>추가·제외·보류 사유<textarea id="changeReason" rows="2" maxlength="1000" required></textarea></label>
               <label>사진 추가<input id="changePhotos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
-              <p class="task-help">얼굴·차량번호를 가린 사진을 선택하세요. 선택한 파일이 납품 묶음에 포함됩니다.</p>
+              <p class="task-help">얼굴·차량번호를 가린 사진을 선택하세요. 연결한 증빙은 내부 보관용 전체 이력 ZIP에 포함됩니다.</p>
               <p id="changePhotoList" class="task-help"></p>
               <button type="button" id="changeClearPhotos">이 행의 사진 연결 해제</button>
             </fieldset>
@@ -350,7 +350,7 @@
         <h2 id="deliveryTitle">납품 파일과 최종 검토</h2>
         <section id="handoverSummary" class="task-handover" aria-labelledby="handoverHeading">
           <h3 id="handoverHeading" tabindex="-1">다음 담당자에게 넘길 요약</h3>
-          <p class="task-help">이미 기록한 근거와 검토 결과에서 남은 일을 정리합니다.<br>같은 요약과 파일 목차가 납품 묶음(ZIP)에도 들어갑니다.</p>
+          <p class="task-help">이미 기록한 근거와 검토 결과에서 남은 일을 정리합니다.<br>같은 요약과 파일 목차가 내부 보관용 전체 이력 ZIP에도 들어갑니다.</p>
           <button id="handoverTask" type="button">인수인계 요약 만들기</button>
           <p id="handoverStatus" role="status">저장한 과업을 선택하면 인수인계 요약을 확인할 수 있습니다.</p>
           <div id="handoverPreview" hidden>
@@ -394,7 +394,10 @@
           </p>
           <button type="submit">파일 연결</button>
         </form>
+        <p class="task-help">외부로 전달할 현재 파일만 선택하세요.<br>항목을 고르면 파일 이름과 내용이 그대로 들어갑니다. 공유 전에 개인정보를 확인하세요.</p>
         <ul id="artifactList" class="task-files"></ul>
+        <p id="deliverySelection" role="status">전달할 파일 0개 선택</p>
+        <button type="button" id="selectedDelivery" disabled>선택 파일 받기(ZIP)</button>
         <p id="workApproval" class="task-help"></p>
         <details id="decisionDetails">
           <summary>최종 검토 결과 기록</summary>
@@ -438,9 +441,10 @@
             ><button type="submit">결정과 파일 버전 기록</button>
           </form>
         </details>
+        <p class="task-help">과거 판의 파일과 검토·보완 기록이 들어가는 내부 보관용입니다.</p>
         <div class="task-actions">
           <button type="button" id="backupTask">백업 받기(JSON · 복원용)</button
-          ><button type="button" id="zipTask">납품 묶음 받기(ZIP)</button>
+          ><button type="button" id="zipTask">전체 이력 받기(ZIP · 내부 보관)</button>
         </div>
         <details>
           <summary>버전·대조·납품·결정 이력</summary>
@@ -449,7 +453,7 @@
       </section>
       <section id="taskWork" data-panel="3" hidden aria-labelledby="workHeading">
         <h2 id="workHeading">검토 의견과 후속 점검</h2>
-        <p class="task-help">검토 의견은 보완본과 해소 확인을 연결합니다. 후속 점검은 확인 기한과 담당자를 남깁니다. 내용과 증빙은 과업의 JSON·ZIP 이력에 함께 보관됩니다.</p>
+        <p class="task-help">검토 의견은 보완본과 해소 확인을 연결합니다. 후속 점검은 확인 기한과 담당자를 남깁니다. 내용과 증빙은 내부 보관용 JSON·전체 이력 ZIP에 함께 보관됩니다.</p>
         <p id="workScope" class="task-notice"></p>
         <div class="task-grid">
           <label>관리할 기록<select id="workKind"><option value="issue">검토 의견</option><option value="followup">후속 점검</option></select></label>

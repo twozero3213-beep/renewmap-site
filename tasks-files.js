@@ -30,17 +30,59 @@
     if(s.length/4*3-pad>MAX)throw new Error('파일 크기는 20MB 이하여야 합니다.');
     return Uint8Array.from(atob(s),c=>c.charCodeAt(0));
   }
+  async function checkedBytes(entry,sha,size) {
+    if(!entry?.blob)throw new Error('연결된 파일이 없습니다. 원본 파일을 보관함에서 확인해 주세요.');
+    if(entry.blob.size>MAX)throw new Error('파일 크기는 20MB 이하여야 합니다.');
+    const bytes=new Uint8Array(await entry.blob.arrayBuffer());
+    if((size!==undefined&&size!==bytes.length)||await T.hash(bytes)!==sha)
+      throw new Error('보관 파일의 해시 또는 크기가 기록과 다릅니다.');
+    return bytes;
+  }
   async function make(history,entries){
     const manifest=await T.manifest(history),wanted=needed(manifest.history),sizes=declaredSizes(manifest.history),files=[];let size=0;
     if(wanted.size>MAX_FILES)throw new Error('백업 파일은 500개 이하여야 합니다.');
     for(const sha of wanted){
-      const e=entries.find(x=>x.sha256===sha);if(!e||!e.blob)throw new Error('연결된 파일이 없습니다. 원본 파일을 보관함에서 확인해 주세요.');
-      const name=fileName(e.name),bytes=new Uint8Array(await e.blob.arrayBuffer());size+=bytes.length;
+      const e=entries.find(x=>x.sha256===sha), bytes=await checkedBytes(e,sha,sizes.get(sha));
+      size+=bytes.length;
       if(size>MAX)throw new Error('묶음의 파일 합계는 20MB 이하여야 합니다.');
-      if((sizes.has(sha)&&sizes.get(sha)!==bytes.length)||await T.hash(bytes)!==sha)throw new Error('보관 파일의 해시 또는 크기가 기록과 다릅니다.');
-      files.push({sha256:sha,name,base64:to64(bytes)});
+      files.push({sha256:sha,name:fileName(e.name),base64:to64(bytes)});
     }
     const backup={schema:'renewmap-task-backup-v1',manifest,files};textSize(JSON.stringify(backup));return backup;
+  }
+  async function selectedZip(history,names,entries) {
+    if(!Array.isArray(names)||!names.length||new Set(names).size!==names.length)
+      throw new Error('현재 판에서 전달할 파일을 선택해 주세요.');
+    const picks=new Set(names);
+    const manifest=await T.manifest(history);
+    const chosen=manifest.artifacts.filter(file=>picks.has(file.name));
+    if(chosen.length!==picks.size)throw new Error('현재 판에 없는 파일이 선택됐습니다. 다시 확인해 주세요.');
+    if(chosen.length>MAX_FILES)throw new Error('전달 파일은 500개 이하여야 합니다.');
+    const stored=new Map(entries.filter(Boolean).map(entry=>[entry.sha256,entry]));
+    const byHash=new Map(), contents=new Map(), files=[];
+    let total=0;
+    for(const {name,sha256,size} of chosen) {
+      let bytes=byHash.get(sha256);
+      if(!bytes) {
+        bytes=await checkedBytes(stored.get(sha256),sha256,size);
+        byHash.set(sha256,bytes);
+      }
+      if(size!==bytes.length)throw new Error('같은 파일의 크기 기록이 다릅니다.');
+      const path=T.zipPath(sha256,name);
+      if(!contents.has(path)) {
+        total+=bytes.length;
+        if(total>MAX)throw new Error('묶음의 파일 합계는 20MB 이하여야 합니다.');
+        contents.set(path,{sha256,bytes});
+      }
+      files.push({name,path,sha256,size});
+    }
+    const receipt={schema:'renewmap-selected-delivery-v1',revision:manifest.revision,head_sha256:manifest.head_hash,
+      source_state:manifest.state,selected_count:files.length,current_count:manifest.artifacts.length,files};
+    return {receipt,entries:[
+      {name:'사용범위.txt',data:'현재 과업판에서 고른 파일입니다. 원래 파일 이름은 전달_파일_목록.json에서 확인하세요.\n파일 이름과 내용의 개인정보를 전달 전에 확인하세요. 승인 증빙은 내부 이력에서 확인하세요.\n'},
+      {name:'전달_파일_목록.json',data:JSON.stringify(receipt,null,2)+'\n'},
+      {name:'SHA256SUMS.txt',data:[...contents].map(([path,f])=>f.sha256+'  '+path+'\n').join('')},
+      ...[...contents].map(([name,f])=>({name,data:f.bytes}))
+    ]};
   }
   async function read(text){
     textSize(text);const b=JSON.parse(text);
@@ -196,5 +238,5 @@
       '파일 확인값(SHA-256)은 파일이 바뀌었는지만 알려 줍니다. 작성자 신원·현장 촬영 사실·얼굴 가림·기관 승인과 내용이 사실인지는 증명하지 않습니다.');
     return {text:lines.join('\n')+'\n',summary,attention,comparison};
   }
-  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,read,from64,handover};
+  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,read,from64,handover};
 });
