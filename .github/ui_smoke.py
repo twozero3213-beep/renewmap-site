@@ -446,6 +446,9 @@ def main():
                                 check(route,width,'document_mode_copy')
                             page.goto(base+route,wait_until='networkidle')
                         if route=='explore.html' and not args.base:
+                            page.wait_for_selector('#mapApp .leaflet-container')
+                            assert not page.locator('#mapApp .leaflet-tile-pane img').count()
+                            page.get_by_role('button', name='배경지도 켜기', exact=True).click()
                             page.wait_for_selector('#mapApp .leaflet-tile-pane img[src*="tile.openstreetmap.org"]',state='attached')
                             page.wait_for_function('() => [...document.querySelectorAll("#mapApp .leaflet-tile-pane img")].some(img => img.complete && img.naturalWidth>0)')
                             assert not page.locator('#mapApp .map-naver').count()
