@@ -3098,8 +3098,8 @@
       const rows = rowsFor(c.v, c.m, c.it), snapshot = snapshotOf(c.it, rows, new Date()), route = toHash(state.route);
       b.disabled = true;
       try {
-        if (!window.RenewCandidates) await import('./candidates.js?v=20261126-export-evidence');
-        const saved = window.RenewCandidates.save(localStorage, snapshot, route, rows);
+        if (!window.RenewCandidates) await import('./candidates.js?v=20261127-r61-candidate-context');
+        const saved = window.RenewCandidates.save(localStorage, snapshot, route, rows, c.m.selYear);
         msg.textContent = saved ? '보관함에 담았습니다. 이 기기에만 저장됩니다.' : '이미 보관함에 있습니다.';
       } catch (err) { msg.textContent = '저장하지 못했습니다. ' + err.message; }
       finally { b.disabled = false; }
