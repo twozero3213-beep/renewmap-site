@@ -51,7 +51,7 @@
 <li>공개 도구는 설치와 로그인 없이 브라우저에서 씁니다.</li>
 <li>문서·CSV 만들기와 사진 가림은 이 기기 안에서 하고, 서버로 보내지 않습니다.</li>
 <li>입력한 자료가 리뉴맵 쪽 서버로 가는 것은 팀 보관을 고를 때뿐이고, 상담은 방문자의 메일 앱으로 보냅니다.</li>
-<li>지도 화면은 지도 회사에 접속 IP와 보고 있는 지도 범위가 갑니다. 필지 찾기는 그 지점의 좌표를 국토교통부 브이월드에 보냅니다. 대상지 계산은 넣은 필지 번호(본번)로 브이월드에 토지특성(도로접면·필지 면적)을 묻습니다.</li>
+<li>지도 화면은 지도 회사에 접속 IP와 보고 있는 지도 범위가 갑니다. 필지 찾기는 그 지점의 좌표를 국토교통부 브이월드에 보냅니다. 대상지 계산에서 도로·필지 참고자료 조회를 선택하고 계산하면 필지 번호의 본번으로 브이월드에 토지특성을 묻습니다.</li>
 <li>사이트를 여는 것만으로 호스팅(GitHub Pages)에 접속 IP와 요청 주소가 남습니다.</li>
 </ul>
 </section>
@@ -73,7 +73,7 @@
 <tr data-page="time4d.html"><td><a href="time4d.html">연도별 건물 나이</a></td><td data-label="주소"><code>tiles.mapterhorn.com</code></td><td data-label="사업자">Mapterhorn 지형 타일 서버</td><td data-label="목적">연도별 건물 나이 화면의 산·언덕 음영</td><td data-label="언제">열 때</td></tr>
 <tr data-page="field/index.html"><td><a href="field/">현장 사진 기록</a></td><td data-label="주소"><code>api.vworld.kr</code></td><td data-label="사업자">국토교통부 브이월드</td><td data-label="목적">현장 기록 화면의 배경지도(켤 때만)</td><td data-label="언제">켤 때만: '배경지도 보기(브이월드)'</td></tr>
 <tr data-page="field/vw-frame.html"><td>필지 조회 창(숨은 창)</td><td data-label="주소"><code>api.vworld.kr</code></td><td data-label="사업자">국토교통부 브이월드</td><td data-label="목적">필지 찾기: 그 지점의 지번과 필지 번호 조회(처리방침 6절)</td><td data-label="언제">켤 때만: 현장 기록의 '이 위치의 필지 찾기(브이월드)', 대상지 계산의 '영역 안 필지 넣기'</td></tr>
-<tr data-page="field/vw-frame.html"><td>필지 조회 창(숨은 창)</td><td data-label="주소"><code>api.vworld.kr</code></td><td data-label="사업자">국토교통부 브이월드</td><td data-label="목적">대상지 계산: 넣은 필지 번호(본번)로 토지특성(도로접면·필지 면적) 조회</td><td data-label="언제">계산할 때: 대상지 계산의 '계산'(목록에 필지 번호가 있을 때)</td></tr>
+<tr data-page="field/vw-frame.html"><td>필지 조회 창(숨은 창)</td><td data-label="주소"><code>api.vworld.kr</code></td><td data-label="사업자">국토교통부 브이월드</td><td data-label="목적">대상지 계산: 입력했거나 대장에서 찾은 필지 번호(본번)로 토지특성(도로접면·필지 면적) 조회</td><td data-label="언제">도로·필지 참고자료 조회를 선택하고 계산할 때</td></tr>
 <tr data-page="field/redev.html"><td><a href="field/redev.html">대상지 계산</a></td><td data-label="주소"><code>cdnjs.cloudflare.com</code></td><td data-label="사업자">Cloudflare cdnjs (Leaflet)</td><td data-label="목적">지도 라이브러리 전송</td><td data-label="언제">켤 때만: '지도에서 구역 그리기'</td></tr>
 <tr data-page="field/redev.html"><td><a href="field/redev.html">대상지 계산</a></td><td data-label="주소"><code>api.vworld.kr</code></td><td data-label="사업자">국토교통부 브이월드</td><td data-label="목적">지도 열람(구역 그리기 바탕지도)</td><td data-label="언제">켤 때만: '지도에서 구역 그리기'</td></tr>
 <tr data-page="field/redev.html"><td><a href="field/redev.html">대상지 계산</a></td><td data-label="주소"><code>tile.openstreetmap.org</code></td><td data-label="사업자">OpenStreetMap 타일 서버</td><td data-label="목적">지도 이미지</td><td data-label="언제">켤 때만: '지도에서 구역 그리기'(브이월드 지도를 못 쓸 때)</td></tr>

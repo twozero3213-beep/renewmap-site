@@ -369,6 +369,7 @@
     const request = ++calculation;
     last = null; $("out").hidden = true;
     const list = $("list").value;
+    const lookupParcel = $("parcelLookup")?.checked;
     saveDraft();
     const p = R.parseList(list);
         if (!p.items.length) return say("주소(번지)를 한 줄에 하나씩 넣어 주세요.", true);
@@ -393,7 +394,7 @@
     // 기준일은 자료 기준일보다 앞설 수 없다. 그 사이에 지은 건물을 대장 스냅숏으로는 가려낼 수 없어 분모가 틀어진다
     if (refIn && refIn < file.age_reference_date) return say(`경과 기준일은 자료 기준일(${D.govDate(file.age_reference_date)}) 이후로 넣어 주세요.\n그 전 날짜는 그 뒤에 지은 건물이 섞여 바르게 셀 수 없습니다.`, true);
     // 나·다·라목 참고 범위(1365 트윈의 호수밀도·접도율·과소필지 흡수). 토지특성 파일이 없거나 못 받으면 예전처럼 '현장 확인'만 쓴다
-    const parcel = await parcelText(p.items, m.buildings, areaM2);
+    const parcel = lookupParcel && $("parcelLookup")?.checked ? await parcelText(p.items, m.buildings, areaM2) : null;
     if (request !== calculation) return;
     const res = R.review(m.buildings, { ref: refIn || file.age_reference_date, district: planInput.district, areaM2, areaDrawn: $("area").dataset.src === "drawn", parcel });
     last = { res, m, file, planInput, bad: p.bad, unresolved: [] };
@@ -503,32 +504,57 @@
 
   // 경계안: 지번 목록 글과 법정동만 이 기기(localStorage)에 둔다. 볼 때마다 같은 건물 파일로 다시 센다(저장한 숫자를 믿지 않음)
   const PLAN_KEY = "renewmap-redev-plans";
-  const loadPlans = () => { try { return JSON.parse(localStorage.getItem(PLAN_KEY) || "[]"); } catch (e) { return []; } };
+  const loadPlans = () => {
+    try {
+      const plans = JSON.parse(localStorage.getItem(PLAN_KEY) ?? "[]");
+      return Array.isArray(plans) && plans.length <= R.PLAN_MAX && plans.every((p) => p &&
+        typeof p.name === "string" && typeof p.dong === "string" && /^\d{10}$/.test(p.dong) && typeof p.list === "string") ? plans : null;
+    } catch (e) { return null; }
+  };
   const savePlans = (ps) => { try { localStorage.setItem(PLAN_KEY, JSON.stringify(ps)); return true; } catch (e) { return false; } };
   const planSay = (text, err) => { $("planMsg").textContent = text; $("planMsg").className = err ? "msg err" : "msg"; };
+  const planReadError = () => {
+    $("plans").hidden = false;
+    planSay("저장한 구역을 읽을 수 없습니다. 브라우저 저장 설정과 저장 자료를 확인해 주세요.", true);
+  };
   async function renderPlans() {
     if (document.documentElement.dataset.fieldStale === 'true') return;
     const request = ++plansRevision;
     const ps = loadPlans();
-    $("planTable").replaceChildren(); planSay("");
+    $("planTable").replaceChildren(); $("planList").replaceChildren(); planSay("");
+    if (!ps) return planReadError();
     $("planList").replaceChildren(...ps.map((p, i) => {
       const li = document.createElement("li"), b = document.createElement("button");
       li.textContent = `${p.name} · 다시 계산 필요 `;
       b.type = "button"; b.className = "ghost"; b.textContent = "지우기";
-      b.addEventListener("click", () => { savePlans(loadPlans().filter((_, j) => j !== i)); renderPlans(); });
+      b.addEventListener("click", () => {
+        const current = loadPlans();
+        if (!current) return planReadError();
+        if (!savePlans(current.filter((_, j) => j !== i))) return planSay("구역을 지울 수 없습니다. 브라우저 저장 설정을 확인해 주세요.", true);
+        renderPlans();
+      });
       li.append(b);
       return li;
     }));
     $("plans").hidden = !ps.length;
     if (!ps.length) return;
     try {
-      const plans = await Promise.all(ps.map(async (p) => {
-        const items = R.parseList(p.list).items, file = await loadFor(items, p.dong), m = R.match(items, file);
-        return { name: p.name, res: R.review(m.buildings, { ref: p.ref && p.ref > file.age_reference_date ? p.ref : file.age_reference_date, district: p.district }), keys: R.planKeys(m.buildings), dongName: file.name, hubDates: file.hub_reference_dates || [file.hub_reference_date] };
+      const settled = await Promise.allSettled(ps.map(async (p) => {
+        const parsed = R.parseList(p.list), file = await loadFor(parsed.items, p.dong), m = R.match(parsed.items, file);
+        const data = { name: p.name, dongName: file.name, hubDates: file.hub_reference_dates || [file.hub_reference_date] };
+        if (!m.buildings.length) return { ...data, error: "대장에 일치하는 건물 없음" };
+        const ref = p.ref && p.ref > file.age_reference_date ? p.ref : file.age_reference_date;
+        return { ...data, res: R.review(m.buildings, { ref, district: p.district }), keys: R.planKeys(m.buildings),
+          unmatched: parsed.bad.length + m.missing.length + m.otherDong.length };
       }));
       if (request !== plansRevision) return;
+      const plans = settled.map((r, i) => r.status === "fulfilled" ? r.value : { name: ps[i].name,
+        error: r.reason?.message === R.REGION_ERROR ? R.REGION_ERROR : "자료를 불러오지 못함" });
       $("planTable").innerHTML = R.compareHTML(R.comparePlans(plans));
-      plans.forEach((p, i) => { $("planList").children[i].firstChild.textContent = `${p.name} · ${p.dongName} ${p.res.n.toLocaleString("ko-KR")}동 `; });
+      plans.forEach((p, i) => {
+        const summary = p.error ?? `${p.dongName} ${p.res.n.toLocaleString("ko-KR")}동`;
+        $("planList").children[i].firstChild.textContent = `${p.name} · ${summary} `;
+      });
     } catch (err) {
       if (request !== plansRevision) return;
       planSay(err.message === R.REGION_ERROR ? R.REGION_ERROR : "저장한 구역을 다시 세지 못했습니다.\n인터넷 연결을 확인해 주세요.", true);
@@ -543,6 +569,7 @@
       return;
     }
     const ps = loadPlans();
+    if (!ps) return planReadError();
     if (ps.length >= R.PLAN_MAX) return planSay(`구역은 ${R.PLAN_MAX}개까지 비교해요. 하나를 지우고 넣어 주세요.`, true);
     const name = `구역 ${["A", "B", "C"].find((x) => !ps.some((p) => p.name === `구역 ${x}`))}`;
     if (!savePlans([...ps, { name, dong: last.file.bjd10, list, district, ref: last.res.ref }])) return planSay("이 브라우저는 저장을 막아 두었습니다.", true);

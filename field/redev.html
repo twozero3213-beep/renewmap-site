@@ -102,7 +102,7 @@
     </div>
     <!-- 2026-11-18 첫 방문 검토: 아는 경우만 넣는 칸 셋이 필수처럼 보였다 → 접는다. 지도에서 구역을 그리면 면적이 채워지므로 redev-app.js가 펼친다 -->
     <details class="rm-disclosure" id="optIn">
-      <summary>선택 입력: 구역 면적·경과 기준일·재정비촉진지구</summary>
+      <summary>선택 입력: 구역 면적·경과 기준일·재정비촉진지구·토지특성 조회</summary>
       <label for="area">구역 면적(㎡, 아는 경우만)</label>
       <input id="area" type="number" inputmode="decimal" min="0" step="any">
       <p class="hint">비워 두면 추정하지 않고 '추가확인'으로 남깁니다.</p>
@@ -110,6 +110,8 @@
       <input id="ref" type="date">
       <p class="hint">비워 두면 자료 기준일로 셉니다.<br>노후 연한은 이 날짜에 지났는지로 셉니다.<br>건물 목록은 건축물대장 기준일 그대로입니다.</p>
       <label class="check" for="district"><input id="district" type="checkbox"><span>재정비촉진지구 안입니다(기준 50%)</span></label>
+      <label class="check" for="parcelLookup"><input id="parcelLookup" type="checkbox" autocomplete="off" aria-describedby="parcelNotice"><span>브이월드에서 도로·필지 참고자료 조회</span></label>
+      <p id="parcelNotice" class="hint">선택하고 계산하면 입력하거나 대장에서 찾은 필지 번호가 브이월드에 전송됩니다.</p>
     </details>
     <label class="check" for="secret"><input id="secret" type="checkbox" checked><span>받는 문서에 대외비로 표시(입안 전 후보지 정보)</span></label>
   </form>
@@ -204,8 +206,8 @@
 <script src="../cellpack.js"></script>
 <script src="store.js"></script>
 <script src="parcel-ref.js"></script>
-<script src="redev.js?v=20261126-compare"></script>
+<script src="redev.js?v=20261126-evidence-review"></script>
 <script src="vworld-key.js"></script>
-<script src="redev-app.js?v=20261126-plan-input"></script>
+<script src="redev-app.js?v=20261126-evidence-review"></script>
 </body>
 </html>

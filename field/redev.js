@@ -602,7 +602,9 @@
   }
   // 꼬리표 옆 쉬운 문장(09 1절: 꼬리표만 두지 않는다). 추가확인은 몇 동 더 확인하면 갈리는지(settleText) 그대로
   function agingNote(u) {
-    if (u.status === MET) return `완공된 날이 없는 건물을 모두 20년 미만으로 쳐도 기준 ${URBAN.thr}%를 넘었습니다.`;
+    if (u.status === MET) return u.unk
+      ? `완공된 날을 정하지 못한 건물을 모두 20년 미만으로 세어도 기준인 ${URBAN.thr}% 이상입니다.`
+      : `준공 20년 이상 건물 비율이 기준인 ${URBAN.thr}% 이상입니다.`;
     if (u.status === NOT_MET) return `완공된 날을 정하지 못한 건물을 모두 20년 이상으로 쳐도 기준 ${URBAN.thr}%에 못 미칩니다.`;
     return [u.known !== null && u.known >= URBAN.thr ? `완공된 날이 있는 건물만 보면 ${URBAN.thr}% 이상, 완공된 날 없는 건물 확인 필요.` : "", settleText(u.settle, ...SETTLE_URBAN)].filter(Boolean).join(" ");
   }
@@ -680,36 +682,45 @@
   }));
   const planDate = (date) => typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "";
   function comparePlans(plans) {
-    const base = plans[0].keys;
-    const rows = plans.map((p, i) => ({ name: p.name, n: p.res.n, lowrise: p.res.newVillage.lowrise, urban: p.res.urban, decline: p.res.newVillage.decline,
-      old: p.res.lines.find((l) => l.label === "노후·불량 건축물 수"),
-      hubDates: [...new Set((p.hubDates || [null]).map(planDate))].sort(), ref: planDate(p.res.ref),
-      added: i ? [...p.keys].filter((k) => !base.has(k)).length : 0, removed: i ? [...base].filter((k) => !p.keys.has(k)).length : 0 }));
+    const base = plans[0]?.keys;
+    const rows = plans.map((p, i) => {
+      const { res } = p;
+      const comparable = i > 0 && !!(base && p.keys) && !(plans[0].unmatched || p.unmatched);
+      return { name: p.name, error: p.error, unmatched: p.unmatched || 0, n: res?.n ?? null,
+        lowrise: res?.newVillage.lowrise, urban: res?.urban, decline: res?.newVillage.decline,
+        old: res?.lines.find((l) => l.label === "노후·불량 건축물 수"),
+        hubDates: [...new Set((p.hubDates || [null]).map(planDate))].sort(), ref: planDate(res?.ref),
+        added: comparable ? [...p.keys].filter((k) => !base.has(k)).length : i ? null : 0,
+        removed: comparable ? [...base].filter((k) => !p.keys.has(k)).length : i ? null : 0 };
+    });
     return rows.map((row, i) => {
-      if (!i) return { ...row, changes: "비교 기준" };
+      if (!i || row.error) return { ...row, changes: row.error || (row.unmatched ? "입력 일부 미확인" : "비교 기준") };
       const first = rows[0], changes = [];
       if (row.hubDates.includes("") || first.hubDates.includes("")) changes.push("대장 기준일 미확인");
       else if (row.hubDates.join() !== first.hubDates.join()) changes.push("대장 기준일 다름");
       if (!row.ref || !first.ref) changes.push("경과 기준일 미확인");
       else if (row.ref !== first.ref) changes.push("경과 기준일 다름");
-      if (row.added || row.removed || row.n !== first.n) changes.push("건물 목록 다름");
+      if (row.added === null) changes.push("건물 목록 미확인");
+      else if (row.added || row.removed || row.n !== first.n) changes.push("건물 목록 다름");
       return { ...row, changes: changes.join(" · ") || "기준일·건물 목록 같음" };
     });
   }
   function compareHTML(rows) {
     const cell = (v, st) => `<td><b>${escH(v)}</b>${st ? `<br><span class="nv-st">${escH(st)}</span>` : ""}</td>`;
     const tr = (k, f) => `<tr><th scope="row">${escH(k)}</th>${rows.map(f).join("")}</tr>`;
+    const calculated = (k, f) => tr(k, (r) => r.error ? cell("미산정") : f(r));
     return `<table class="plan-cmp"><thead><tr><th scope="col">비교 항목</th>${rows.map((r) => `<th scope="col">${escH(r.name)}</th>`).join("")}</tr></thead><tbody>` +
       tr("대장 기준일", (r) => cell(r.hubDates.map((d) => D.govDate(d) || "미확인").join(" · ") || "미확인")) +
       tr("경과 기준일", (r) => cell(D.govDate(r.ref) || "미확인")) +
-      tr("건물 수", (r) => cell(`${r.n.toLocaleString("ko-KR")}동`)) +
+      calculated("건물 수", (r) => cell(`${n0(r.n)}동`)) +
       tr("첫 안과 다른 조건", (r) => cell(r.changes)) +
-      tr("첫 구역과 다른 건물", (r, i) => cell(i ? `더함 ${n0(r.added)}동 · 빠짐 ${n0(r.removed)}동` : "기준")) +
+      tr("첫 구역과 다른 건물", (r, i) => cell(r.error || r.added === null || r.unmatched ? "미확인" : i ? `더함 ${n0(r.added)}동 · 빠짐 ${n0(r.removed)}동` : "기준")) +
+      (rows.some((r) => r.unmatched) ? calculated("대장에서 확인하지 못한 입력", (r) => cell(`${n0(r.unmatched)}개`)) : "") +
       tr("도시재생활성화지역 안", () => cell("고시로 확인", AREA_SHOWN)) +
-      tr("저층 주거 비율(3분의 2)", (r) => cell(r.lowrise.value.split(" (")[0], r.lowrise.status)) +
-      tr("20년 이상 건축물(2분의 1)", (r) => cell(r.urban.value, r.urban.status)) +
-      tr("쇠퇴요건 2개 이상", (r) => cell(r.decline.status === NOT_MET ? "③ 해당 안 함" : "①·② 확인", r.decline.shown || r.decline.status)) +
-      tr("노후·불량 건축물 수(주택정비형 재개발)", (r) => cell(r.old.value.split(" (")[0], r.old.status)) +
+      calculated("저층 주거 비율(3분의 2)", (r) => cell(r.lowrise.value.split(" (")[0], r.lowrise.status)) +
+      calculated("20년 이상 건축물(2분의 1)", (r) => cell(r.urban.value, r.urban.status)) +
+      calculated("쇠퇴요건 2개 이상", (r) => cell(r.decline.status === NOT_MET ? "③ 해당 안 함" : "①·② 확인", r.decline.shown || r.decline.status)) +
+      calculated("노후·불량 건축물 수(주택정비형 재개발)", (r) => cell(r.old.value.split(" (")[0], r.old.status)) +
       `</tbody></table>`;
   }
 
