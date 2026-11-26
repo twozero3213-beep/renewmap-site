@@ -1242,7 +1242,7 @@
     const sec4 = `<section class="rp-g"><h3>4. 출처·계산식</h3><div class="dg-tbl">${copyHead('출처·계산식')}<div class="table-wrap"><table class="rp-tbl"><caption class="sr-only">출처·계산식 · ${esc(it.name)}</caption><thead><tr><th>항목</th><th>값</th><th>출처</th><th>기준일</th><th>계산식</th><th>규칙 판본</th></tr></thead><tbody>${facts.map(r => { const s = srcOf(r);
       return `<tr><td>${esc(r.ind.label)}</td><td>${esc(rowText(r))}</td><td>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name)}</td><td>${esc(s.ref || (r.year ? `${r.year}년` : '출처 기록 없음'))}${ageSmall(s.ref)}</td><td>${esc(s.formula ? (DG && DG.readerText ? DG.readerText(s.formula) : s.formula) : '출처 기록 없음')}</td><td>${esc(s.rule || '출처 기록 없음')}</td></tr>`; }).join('')}</tbody></table></div></div></section>`;
     const frag = fragPanelHTML(sel || '');
-    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 현황표·출처 모음</h3><div class="rp-tools">${fileTools(it, dy, '4-1 표·근거서', !frag.includes('data-frag-hwpx'))}</div></div>` +
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 동네 현황표·출처 모음</h3><div class="rp-tools">${fileTools(it, brief?.year ?? dy, '4-1 표·근거서', !frag.includes('data-frag-hwpx'))}</div></div>` +
       `${deliveryReviewHTML(brief)}<p class="rp-intro rp-src-line">${esc(srcHead('4. 출처·계산식'))}</p><p class="rp-intro rp-brief-head">${esc(BRIEF_HEAD)}</p><p class="rp-intro">${esc(here)} <small class="rp-code">(행정동 코드 ${esc(it.code)})</small> · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'} · 생활 지표는 항목별 기준연도</p>${frag}${sec1}${sec2}${sec3}${sec4}<p class="rp-foot">${esc(BRIEF_FOOT)}</p>`;
   }
   // 1쪽 요약: 제목·개요 4줄·요약 문장 5개·기준 대비 표(8행 이하)·출처 번호·끝. one = DG.buildOnepage(...) 결과. 인쇄하면 A4 한 쪽
@@ -1864,7 +1864,7 @@
   // r16: data-frag가 있는 링크(서랍·카드의 '4-1 표 초안 보기')는 그 양식을 고르고 표까지 한 번 내린다(?frag=와 같다). 같은 문서여도 다시 그린다
   document.addEventListener('click', e => { const a = e.target.closest('[data-set-mode]'); if (!a) return; if (a.dataset.frag) { fragWanted = a.dataset.frag; reportKey = ''; } api.setReportMode(a.dataset.setMode, !!a.dataset.frag); });
   api.setReportMode = (m, force) => { const next = REPORT_MODES.some(x => x[0] === m) ? m : 'report'; if (next === reportMode && !force) return; reportMode = next; if (state.index !== undefined) render(); }; // find.js 프리셋이 쓴다
-  function reportHTML(v, it, rows) {
+  function reportHTML(v, it, rows, year) {
     const D = window.RenewDashboard, sents = reportSentences(it.name, rows), here = v.crumbs.map(c => c.label).join(' › ');
     const byG = GROUPS.filter(([g]) => sents.some(s => s.group === g)).map(([g, gl]) => `<section class="rp-g"><h3>${gIco(g)}${esc(gl)}</h3>${g === 'safe' ? `<p class="rp-fixed">${esc(SAFE_FIXED)}</p>` : g === 'fore' ? `<p class="rp-fixed">${esc(FORE_FIXED)}</p>` : ''}` +
       // 항목 카드: 이름·상태 → 큰 값 → 기준 막대·추세 → 출처 기록 문장(접힘, 인쇄 때는 펼침). 숫자가 문장 속에 묻히지 않게
@@ -1880,7 +1880,7 @@
       `<span class="rp-ai-note">선택 기능 · 기본 꺼짐 · 무료 · 로그인 없음 · 서버 전송 없음</span>` +
       `<div class="rp-ai-consent" data-ai-confirm hidden><p><b>기기 내 AI 모델 내려받기</b><br>Chrome이 AI 모델을 이 기기에 한 번 내려받습니다(Chrome 안내: 저장 공간 22GB 이상 여유 필요).<br>내려받은 뒤에도 문장은 이 기기 안에서만 처리합니다.</p><button type="button" class="btn" data-ai-go>내려받고 다듬기</button> <button type="button" class="btn ghost" data-ai-cancel>취소</button></div>` +
       `<div class="rp-ai-out" data-ai-out aria-live="polite">${pol ? `<p class="rp-ai-label">${esc(AI_LABEL)}</p><p>${esc(pol.text)}</p>` : ''}</div><p class="rp-ai-foot">${esc(AI_FOOT)}</p></div>`;
-    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 현황 보고서</h3><div class="rp-tools">${fileTools(it, rows.find(r => r.ind.series && r.year)?.year ?? null, '현황 보고서')}</div></div>` +
+    return `<div class="rp-head"><p class="rp-crumb">${esc(here)}</p><h3 class="rp-title">${esc(it.name)} 현황 보고서</h3><div class="rp-tools">${fileTools(it, year, '현황 보고서')}</div></div>` +
       `<p class="rp-intro rp-src-line">${esc(srcHead('출처표'))}</p><p class="rp-intro">카드의 숫자와 문장은 출처 기록의 값과 출처만 옮긴 것입니다.<br>평가나 판정은 하지 않습니다.</p>${typeof localStorage !== 'undefined' ? snapHTML(snapGet(it.code), snapshotOf(it, rows, new Date())) : ''}${byG}${src}${ai}<p class="rp-foot">${esc(REPORT_FOOT)}</p>`;
   }
   const socText = r => fmt(r.value, r.ind.unit);
@@ -1905,6 +1905,16 @@
       return;
     }
     if (!it) { report.innerHTML = reportModeHTML(reportMode) + `<div class="rp-empty" role="status"><img src="mascot/taggy-waiting.svg" width="120" height="148" alt="" aria-hidden="true"><h3>동을 고르면 이 자리에 ${esc(iGa(REPORT_MODES.find(x => x[0] === reportMode)[1]))} 나옵니다.</h3><p><a href="${esc(toHash({ sido: v.sido && v.sido.code2, sigungu: v.sigungu && v.sigungu.code5, gu: v.gu && v.gu.code5 }))}">동 찾기</a></p>${m.kind === 'emd' && m.items && m.items.length && window.RenewPrograms ? '<p><button type="button" class="btn" data-set-mode="programs">이 구의 동 비교표 보기</button></p>' : ''}</div>`; return; }
+    const basis = reportMode === 'programs' ? null : docBasis(m, it);
+    if (basis?.unavailable) {
+      const hash = toHash(state.route), latest = basis.years[basis.years.length - 1];
+      const params = new URLSearchParams(location.search);
+      params.set('report', reportMode);
+      params.set('panel', 'evidence');
+      if (latest) params.set('y', latest);
+      report.innerHTML = reportModeHTML(reportMode) + `<div class="rp-empty" data-doc-unavailable><div role="status"><h3>${esc(it.name)} 보고서에 쓸 출처 기록이 없습니다.</h3><p>${esc(basis.error)}</p><p>${latest ? `이 코드에서 문서를 만들 수 있는 연도는 ${basis.years.join(', ')}년입니다.` : '이 코드에서 문서를 만들 수 있는 연도가 없습니다.'}</p></div><p><a href="${esc(hash)}">같은 동 지도 보기</a>${latest ? ` · <a href="${esc('?' + params + hash)}">이 동의 ${latest}년 문서 보기</a>` : ''}</p></div>`;
+      return;
+    }
     const rows = rowsFor(v, m, it);
     // 주소의 ?frag=는 양식 정의가 온 뒤 한 번만 읽는다(workspace.js가 고른 양식을 보고 그 주제를 연다)
     // r16: 고른 양식이 없으면 4-1 양식을 먼저 고른다(근거서·근거 1쪽을 열면 4-1 표가 바로 보이게). 내려 주는 것은 바로가기로 왔을 때만(fragJump)
@@ -1922,7 +1932,13 @@
     } else if (reportMode === 'brief') {
       const built = docFor(v, m, it);
       report.innerHTML = reportModeHTML(reportMode) + briefHTML(v, it, rows, fragChoice, built.error ? null : built.brief);
-    } else report.innerHTML = reportModeHTML(reportMode) + reportHTML(v, it, rows);
+    } else report.innerHTML = reportModeHTML(reportMode) + reportHTML(v, it, rows, basis?.year);
+    if (basis && reportMode !== 'onepage') {
+      const note = document.createElement('p');
+      note.className = 'rp-intro';
+      note.textContent = `문서에 쓰는 쇠퇴 지표 기준연도 ${basis.year}년`;
+      report.querySelector('.rp-head')?.after(note);
+    }
     const files = report.querySelector('.rp-more-files');
     if (files && previousFiles) {
       files.open = previousFiles.open;
@@ -1970,6 +1986,8 @@
     // 2026-11-20 CQ-08: 받지 못한 자료를 '파일 없음'으로 적은 문서를 만들지 않는다(기본값: 부분 문서 허용 안 함, 대표 확인 대기)
     const lost = [...state.failed].filter(k => k !== 'templates');
     if (lost.length) return { error: `일부 자료(${lost.map(k => AUX[k][2]).join(', ')})를 받지 못해 문서를 만들지 않았습니다. 지도의 '모든 지표'에서 그 지표의 '다시 시도'를 누른 뒤 다시 만들어 주세요.` };
+    const basis = docBasis(m, it);
+    if (basis.unavailable) return basis;
     const writtenOn = todayISO(), key = [v.emdCode, it.code, m.selYear, writtenOn].join(':');
     const refsFor = m => [state.index, m.json, m.living, state.living, m.ext && m.ext.forecast, state.forecastIdx, state.designations, state.migration, state.realestate, m.geo, state.templates];
     const refs = refsFor(m);
@@ -1979,7 +1997,7 @@
     try {
       const geo = m.geo && Array.isArray(m.geo.features) ? m.geo.features.find(f => String((f.properties || {}).code) === it.code) || null : null;
       // 해시를 기다리는 사이 선택·파일이 바뀌어도 해시와 본문은 이 고정 입력 하나에서 만든다.
-      const fixed = JSON.stringify({ scheme: 'browser-brief-input-v1', code: it.code, year: m.selYear ?? null, writtenOn, geo, templates: state.templates,
+      const fixed = JSON.stringify({ scheme: 'browser-brief-input-v1', code: it.code, year: basis.year, writtenOn, geo, templates: state.templates,
         src: { index: state.index, emd: m.json, living: m.living, livingIdx: state.living, forecast: m.ext && m.ext.forecast, forecastIdx: state.forecastIdx,
           designations: state.designations, migration: state.migration, realestate: state.realestate } });
       const current = () => {
@@ -1990,7 +2008,7 @@
         if (!current()) return;
         const inputHash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join(''), input = JSON.parse(fixed);
         DG.setTemplates(input.templates);
-        const brief = DG.buildBrief(input.code, input.src, { year: input.year ?? undefined, writtenOn: input.writtenOn, geo: input.geo, inputHash });
+        const brief = DG.buildBrief(input.code, input.src, { year: input.year, writtenOn: input.writtenOn, geo: input.geo, inputHash });
         memo.val = { brief, doc: DG.buildDoc(brief), one: DG.buildOnepage(brief), inputJSON: fixed };
       }).catch(err => { if (current()) memo.val = { error: `문서를 만들지 못했습니다: ${err.message}` }; }).then(() => {
         if (current()) { reportKey = ''; render(); }
@@ -1999,13 +2017,21 @@
     } catch (err) { memo.val = { error: `문서를 만들지 못했습니다: ${err.message}` }; }
     return memo.val;
   }
+  function docBasis(m, it) {
+    const dong = (m.json?.dongs || []).find(d => codeOf(d) === it.code);
+    const years = [...new Set((dong?.cells || []).map(c => c.base_year).filter(Number.isInteger))].sort((a, b) => a - b);
+    const year = m.selYear ?? years[years.length - 1];
+    if (years.includes(year)) return { year, years };
+    const when = m.selYear == null ? '' : ` ${m.selYear}년`;
+    return { unavailable: true, years, error: `선택한 행정동 코드 ${it.code}의${when} 출처 기록이 없어 문서를 만들 수 없습니다.` };
+  }
   const currentDong = () => { if (!state.index) return null; const v = resolve(state.index, state.route), m = model(v), it = m.kind === 'emd' && v.dong ? m.items.find(x => x.code === v.dong) : null; return it ? { v, m, it } : null; };
   const notify = detail => document.dispatchEvent(new CustomEvent('renew-export', { detail })); // report.js가 상태 문구를 바꾼다
   async function exportInput(format) {
     const cur = currentDong(), mode = reportMode;
     if (!cur) { notify({ format, status: 'empty' }); return null; }
     let built = docFor(cur.v, cur.m, cur.it);
-    if (built.error && docMemo.ready) {
+    if (built.loading && built === docMemo.val && docMemo.ready) {
       const pending = docMemo;
       await pending.ready;
       if (docMemo !== pending || reportMode !== mode) { notify({ format, status: 'error', message: '문서 준비 중 선택이나 입력이 바뀌었습니다. 현재 문서에서 다시 눌러 주세요.' }); return null; }
