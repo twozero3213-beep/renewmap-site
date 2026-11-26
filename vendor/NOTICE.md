@@ -26,7 +26,7 @@
 |---|---|---|---|---|
 | MapLibre GL JS (`maplibre/`) | 5.24.1 | BSD-3-Clause | 건물 나이 4D 지도(`time4d.html`) | https://github.com/maplibre/maplibre-gl-js |
 | OpenMapTiles positron 스타일 (`openfreemap/positron.json`) | 2026-11-13 받음 | 코드 BSD-3-Clause, 디자인 CC-BY 4.0 | 4D 지도의 바탕 모양. **고쳐 씀**: 글자를 한국어 이름(name:ko) 먼저 보이게 하고 도로 번호 방패를 뺐다(2026-11-13) | https://github.com/openmaptiles/positron-gl-style |
-| Leaflet (CDN, cdnjs.cloudflare.com) | 1.9.4 | BSD-2-Clause | 동네 진단·구역 계산 지도 | https://github.com/Leaflet/Leaflet |
+| Leaflet (`leaflet/`, `leaflet/images/`; 진단·구역 계산은 CDN) | 1.9.4 | BSD-2-Clause | 동네 탐색·진단·구역 계산 지도 | https://github.com/Leaflet/Leaflet |
 | Cesium (CDN, cdn.jsdelivr.net) | 1.134.0 | Apache-2.0 | 3D 모델 배치 비교(`field/twin.html`) | https://github.com/CesiumGS/cesium |
 
 - MapLibre 버전은 `maplibre/maplibre-gl-csp.js` 머리말로 확인했다.
@@ -54,4 +54,5 @@
 - `vision/tesseract/core/LICENSE`: Apache License 2.0 전문(pdf.js, SheetJS, docx-preview, MediaPipe, BlazeFace 모델, Tesseract.js와 core, tessdata_fast에 적용)
 - `THIRD_PARTY_LICENSES.txt`: MIT·BSD-3-Clause 전문과 묶여 들어간 부품의 저작권 줄(JSZip, pako, buffer, regenerator-runtime, zlib.js, ieee754, positron), positron 디자인의 CC-BY 4.0 표기와 고친 내용
 - `vision/tesseract/tesseract.min.js.LICENSE.txt`, `vision/tesseract/worker.min.js.LICENSE.txt`: Tesseract.js 배포본이 가리키는 묶음 부품 표기(npm tesseract.js 7.0.0 원본 그대로)
-- Leaflet(BSD-2-Clause)과 Cesium(Apache-2.0)의 전문은 각 저장소에 있다.
+- `leaflet/LICENSE`: Leaflet의 BSD-2-Clause 전문
+- Cesium(Apache-2.0)의 전문은 원본 저장소에 있다.

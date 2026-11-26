@@ -2467,7 +2467,14 @@
     const wait = msg => { if (slot) { slot.className = 'map-canvas is-wait'; slot.textContent = msg; } };
     if (state.sgGeo === null) { if (slot) slot.outerHTML = emptyHTML('경계 자료 준비 중', ['시군구 경계가 아직 없습니다.', '아래 목록으로 숫자는 볼 수 있습니다.']); return false; }
     const D = window.RenewDashboard;
-    if (!window.L) { wait('지도를 불러오는 중입니다.'); (D ? D.loadLeaflet() : Promise.reject()).then(render, () => { state.mapErr = true; render(); }); return false; }
+    if (!D?.leafletReady) {
+      wait('지도를 불러오는 중입니다.');
+      if (!state.leafletWaiting) {
+        state.leafletWaiting = true;
+        (D ? D.loadLeaflet() : Promise.reject()).then(render, () => { state.mapErr = true; render(); });
+      }
+      return false;
+    }
     createMap(slot);
     return true;
   }

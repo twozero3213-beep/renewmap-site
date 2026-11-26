@@ -93,3 +93,6 @@ openfreemap/positron.json의 지도 모양(디자인)은 OpenMapTiles positron �
 - BlazeFace 짧은 거리 얼굴 모델 (vision/models/blaze_face_short_range.tflite)
 - Tesseract.js 7.0.0 (vision/tesseract/tesseract.min.js·worker.min.js)과 tesseract.js-core 7.0.0 (vision/tesseract/core/)
 - tessdata_fast 영어 모델 (vision/models/eng.traineddata.gz)
+
+Leaflet 1.9.4 · BSD-2-Clause · vendor/leaflet/LICENSE
+https://github.com/Leaflet/Leaflet/releases/tag/v1.9.4

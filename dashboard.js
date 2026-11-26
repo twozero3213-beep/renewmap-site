@@ -199,25 +199,37 @@
   if (typeof document === 'undefined') return;
   window.RenewDashboard = api;
 
-  // Leaflet 1.9.4(BSD-2-Clause). 지도 보기를 처음 열 때만 싣는다. 해시는 cdnjs 원본에서 계산한 SRI다
-  const LEAFLET = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/';
+  // 탐색 지도에서는 같은 출처의 Leaflet을 쓴다. 진단 대시보드의 지도 로더는 기존 주소를 쓴다.
+  const explore = !!document.getElementById('mapApp');
+  const LEAFLET = explore ? 'vendor/leaflet/' : 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/';
   let leafletP = null;
   function loadLeaflet() {
-    const css = document.querySelector(`link[rel="stylesheet"][href="${LEAFLET}leaflet.css"]`);
-    if (window.L && (!css || css.sheet)) return Promise.resolve();
     if (leafletP) return leafletP;
+    const css = document.querySelector(`link[rel="stylesheet"][href="${LEAFLET}leaflet.css"]`);
+    if (window.L && (css?.sheet || (!explore && !css))) {
+      if (css) css.media = 'all';
+      api.leafletReady = true;
+      return Promise.resolve();
+    }
     const tag = (name, attrs) => new Promise((ok, fail) => {
       const el = Object.assign(document.createElement(name), attrs, { crossOrigin: 'anonymous' });
-      el.onload = ok; el.onerror = fail; document.head.appendChild(el);
+      el.onload = () => ok(el);
+      el.onerror = e => { el.remove?.(); fail(e); };
+      const firstStyle = explore && name === 'link' && document.querySelector('link[rel="stylesheet"]');
+      if (firstStyle) firstStyle.before(el);
+      else document.head.appendChild(el);
     });
     leafletP = Promise.all([
-      tag('link', { rel: 'stylesheet', href: LEAFLET + 'leaflet.css', integrity: 'sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==' }),
+      css?.sheet ? Promise.resolve(css) : tag('link', { rel: 'stylesheet', href: LEAFLET + 'leaflet.css', integrity: 'sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==', media: explore ? 'print' : 'all' }),
       window.L ? Promise.resolve() : tag('script', { src: LEAFLET + 'leaflet.js', integrity: 'sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==' }),
-    ]).catch(e => { leafletP = null; throw e; });
+    ]).then(([style]) => {
+      style.media = 'all';
+      api.leafletReady = true;
+    }).catch(e => { leafletP = null; throw e; });
     return leafletP;
   }
   api.loadLeaflet = loadLeaflet; // 탐색 전용 페이지의 map.js도 같은 로더를 쓴다
-  if (document.getElementById('mapApp')) loadLeaflet().catch(() => {}); // 큰 map.js의 다운로드·실행을 기다리지 않고 미리 받은 라이브러리를 시작한다.
+  if (explore) loadLeaflet().catch(() => {}); // 큰 map.js의 다운로드·실행을 기다리지 않고 미리 받은 라이브러리를 시작한다.
 
   const root = document.getElementById('dashboard'), app = root && root.querySelector('#dashApp');
   if (!app) return;
