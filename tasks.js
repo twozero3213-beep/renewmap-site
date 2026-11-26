@@ -111,6 +111,15 @@
     return work(record).issues.flatMap(item=>item.status!=='resolved' ? ['검토 의견 미해소: '+item.comment] :
       record.artifacts.some(f=>f.sha256===item.reply.evidence.sha256&&f.size===item.reply.evidence.size) ? [] : ['해소 확인한 보완본이 현재 납품에 없습니다: '+item.comment]);
   }
+  function approvalReadiness(record) {
+    const state=record.decision?checkState(record.checks):record.state;
+    return {
+      needsChecks:state!=='ready',
+      missingFiles:record.artifacts.length===0,
+      blockedFiles:record.artifacts.filter(f=>f.blockers.length).length,
+      work:workBlockers(record),
+    };
+  }
   function isOverdue(item,today) { date(today); return item.status!=='verified' && item.due_on<today; }
   function workFile(value) {
     keys(value,['name','sha256','size']); const name=text(value.name,'증빙 파일명',240);
@@ -205,7 +214,10 @@
     } else if(action.type==='approve' || action.type==='reject') {
       payload=review(action.payload);
       if(!artifacts.length) fail('검토할 납품 파일이 없습니다.');
-      if(action.type==='approve' && (state!=='ready' || artifacts.some(f=>f.blockers.length) || workBlockers(c).length)) fail('근거 대조·검토 의견·파일의 미해결 사유가 없어야 승인 기록을 남길 수 있습니다.');
+      if(action.type==='approve') {
+        const readiness=approvalReadiness(c);
+        if(readiness.needsChecks || readiness.blockedFiles || readiness.work.length) fail('근거 대조·검토 의견·파일의 미해결 사유가 없어야 승인 기록을 남길 수 있습니다.');
+      }
       decision={kind:action.type,...payload,artifact_set_hash:await hash(canonical(artifacts))}; state=action.type==='approve'?'approved':'rejected';
     } else if(['issue_open','issue_reply','issue_resolve','issue_reopen','followup_open','followup_reschedule','followup_submit','followup_verify','followup_reopen'].includes(action.type)) {
       const changed=workChange(c,action.type,action.payload,actor,at); currentWork=changed.value; payload=changed.payload;
@@ -235,7 +247,7 @@
   }
   // 납품 ZIP 안 경로 files/<sha>.<확장자>. 이름의 마지막 '.' 뒤가 영문·숫자 1~8자일 때만 확장자를 붙인다(납품 문서와 ZIP이 같은 규칙)
   function zipPath(sha,name){const dot=typeof name==='string'?name.lastIndexOf('.'):-1,ext=dot>0?name.slice(dot+1).toLowerCase():'';return 'files/'+sha+(/^[a-z0-9]{1,8}$/.test(ext)?'.'+ext:'');}
-  const api={SCHEMA,MAX_ATTEMPTS,canonical,hash,create,revise,verify,manifest,work,workEvidence,workBlockers,isOverdue,zipPath};
+  const api={SCHEMA,MAX_ATTEMPTS,canonical,hash,create,revise,verify,manifest,work,workEvidence,workBlockers,approvalReadiness,isOverdue,zipPath};
   if(typeof module==='object' && module.exports) module.exports=api;
   else root.RenewTasks=api;
 })(typeof window!=='undefined'?window:globalThis);

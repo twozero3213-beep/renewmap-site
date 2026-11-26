@@ -238,10 +238,37 @@
       : "";
     renderArtifacts();
     renderHistory();
-    const blockers = current ? T.workBlockers(current) : [];
-    $("workApproval").textContent = blockers.length
-      ? `검토 의견 ${blockers.length}건의 미해결 사유가 있어 최종 승인할 수 없습니다. 4 검토·후속 점검에서 확인하세요.`
-      : "검토 의견의 승인 보류 사유가 없습니다. 후속 점검 기한은 4 검토·후속 점검에서 따로 관리합니다.";
+    const readiness = current ? T.approvalReadiness(current) : null;
+    const blockers = [];
+    let approval = "과업을 선택하면 저장된 승인 자료 조건을 확인할 수 있습니다.";
+    if (readiness) {
+      if (readiness.needsChecks) blockers.push("필수 항목의 근거 대조가 끝나지 않았습니다. 2 근거 대조에서 확인하세요.");
+      if (readiness.missingFiles) blockers.push("검토할 납품 파일이 없습니다. 이 화면에서 파일을 연결하세요.");
+      if (readiness.blockedFiles) blockers.push(`납품 파일 ${readiness.blockedFiles}개에 승인 보류 사유가 있습니다. 이 화면의 파일 목록에서 확인하세요.`);
+      blockers.push(...readiness.work);
+      const version = `열어 둔 과업 v${current.revision}`;
+      if (current.decision) {
+        const kind = current.decision.kind === "approve" ? "승인" : "반려";
+        approval = `${version}에 ${kind} 기록이 있습니다.`;
+        if (blockers.length) approval += " 저장된 승인 자료 조건에서 확인할 사유가 남아 있습니다.";
+      } else if (blockers.length) {
+        approval = `${version}의 저장된 승인 자료 조건에서 확인할 사유가 남아 있습니다.`;
+      } else {
+        approval = `${version}의 기록에 표시할 승인 보류 사유가 없습니다. 실제 검토 결정과 증빙은 아래에서 별도로 기록하세요.`;
+      }
+      if (readiness.work.length) {
+        approval += "\n의견은 4 검토·후속 점검에서 확인하세요. 해소 확인에 쓰인 보완본이 현재 납품에서 빠졌다면 이 화면에서 그 파일을 다시 연결하세요.";
+      }
+      approval += "\n후속 점검 기한은 4 검토·후속 점검에서 따로 관리합니다.";
+    }
+    $("workApproval").textContent = approval;
+    const reasons = $("workApprovalReasons");
+    reasons.replaceChildren(...blockers.map((reason) => {
+      const item = document.createElement("li");
+      item.textContent = reason;
+      return item;
+    }));
+    reasons.hidden = blockers.length === 0;
     if (current?.decision)
       say(
         `검토 결정은 v${current.revision}의 파일 세트 ${current.decision.artifact_set_hash}에 연결돼 있습니다. 신원·서명 진위는 별도 확인 대상입니다.`,
