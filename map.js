@@ -1511,7 +1511,32 @@
   }
   // 기본 부산은 정확한 부산 경계와 다른 지역 개요를 한 파일로 받는다.
   const firstGeoKind = route => route?.sido === '21' ? 'busan' : route?.sido ? 'detail' : 'overview';
-  const api = { makeFirstMapGate, makeSgDetailLoader, firstGeoKind,indexSummaryPending, mergeIndexSeries, rentSub, geojsonOf, labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
+  function boundaryCoverage(items, geo) {
+    const listing = new Set(items.map(item => item.code).filter(code => code != null).map(String));
+    if (!Array.isArray(geo?.features)) return { listCount: listing.size, boundaryCount: null, missingCodes: null };
+    const hasRing = polygon => {
+      const ring = Array.isArray(polygon) ? polygon[0] : null;
+      return Array.isArray(ring) && ring.length >= 4 && ring.every(p => Array.isArray(p) && isNum(p[0]) && isNum(p[1]));
+    };
+    const bounded = new Set();
+    for (const feature of geo.features) {
+      const code = feature?.properties?.code, geometry = feature?.geometry;
+      if (code == null || !listing.has(String(code)) || bounded.has(String(code))) continue;
+      const coordinates = geometry?.coordinates;
+      if (geometry?.type === 'Polygon' ? hasRing(coordinates) :
+          geometry?.type === 'MultiPolygon' && Array.isArray(coordinates) && coordinates.some(hasRing)) bounded.add(String(code));
+    }
+    return { listCount: listing.size, boundaryCount: bounded.size, missingCodes: [...listing].filter(code => !bounded.has(code)) };
+  }
+  function boundaryCoverageHTML(m) {
+    if (m.kind !== 'emd' || m.nodata) return '';
+    const { listCount, boundaryCount } = boundaryCoverage(m.items, m.geo);
+    const coverage = boundaryCount === null ? '지도 경계 자료를 확인하지 못했습니다.' : `지도 경계 확인 ${boundaryCount}곳`;
+    const help = boundaryCount !== null && boundaryCount < listCount
+      ? ` · 경계 없는 ${listCount - boundaryCount}곳<br>경계가 없는 동은 읍·면·동 목록에서 고를 수 있습니다.` : '';
+    return `<p class="map-guide" data-map-boundary-coverage>목록 ${listCount}곳 · ${coverage}${help}</p>`;
+  }
+  const api = { makeFirstMapGate, makeSgDetailLoader, firstGeoKind,indexSummaryPending, mergeIndexSeries, rentSub, geojsonOf, boundaryCoverage, boundaryCoverageHTML, labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, legendLineHTML, distHTML, itemText, CHECK_NOTE, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     seriesJump, livingIndicators, allIndicators, wantedInd, isAvailable, provenanceHTML, parseHash, toHash, routeHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, searchPick, candMsg, candHTML, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
     latestYear, yearsOf, dongRows, dongModel, crossedCount, playYears, sgRow, countOver, overCaption, sidoShare, hasYears, overStd, sparkline, strip, barSVG, scaleTableHTML, glanceHTML, tooltipHTML, legendHTML, liveText, fmt,
@@ -1729,23 +1754,24 @@
     if (m.kind === 'noemd' || m.nodata) return emptyHTML(`${here} · 읍·면·동 자료 준비 중`, [m.kind === 'noemd' ? '이 지역의 읍·면·동 자료가 아직 없습니다.' : '경계는 있지만 지표 시계열이 아직 없습니다.', '준비되기 전에는 숫자를 보여 드리지 않습니다.']);
     const it = m.items.find(x => x.code === v.dong), dist = ind.level === 'sg' ? `<p class="map-note">${esc(ind.label)}은(는) 시·군·구 단위 자료라 읍·면·동 분포가 없습니다.</p>`
       : `<h4 class="map-h4">${esc(here)} 읍·면·동 분포 · ${esc(ind.label)} <small>순위 아님${m.year ? ` · ${esc(m.year)}년` : ''}</small></h4>${strip(m.items, it ? it.code : null, ind, scale)}`;
-    const boundaries = new Set(((m.geo || {}).features || []).map(f => String((f.properties || {}).code)));
-    const missingBoundaries = m.items.filter(x => !boundaries.has(x.code)).length;
     // 2026-11-19: 동을 고르기 전 안내는 한 줄만 두고, 분포·사업 비교·정밀 사례는 접어 둔다(목록이 바로 아래 오게). 문구는 그대로 접힌 칸 안에
     // bare: 넓은 화면 왼쪽 목록 위에 붙일 때(목록 제목이 이름·개수를 이미 보인다)
     // r16: 옛 동 코드·없는 동 코드로 들어오면 말없이 구 목록만 보였다 → 사실과 할 일을 한 줄로
     const lost = !it && v.dong ? `<p class="map-note" role="status">이 링크의 동 코드(${esc(v.dong)})를 찾지 못해 ${esc(here)}${josaOf(here, '을', '를')} 보여 드립니다. 행정동 개편으로 바뀌었을 수 있습니다. <button type="button" class="btn ghost" data-focus-search>동 이름으로 찾기</button></p>` : '';
     if (!it) return (bare ? '' : `<h3 class="map-h3" tabindex="-1">${esc(here)} <small>${m.items.length}개 읍·면·동</small></h3>`) + lost + '<p class="map-guide">지도나 목록에서 동을 고르면 요약이 열립니다.</p>' +
       `<details class="map-intro rm-disclosure" data-fold="intro"${fold.intro ? ' open' : ''}><summary>분포·사업 요건 비교 더 보기</summary>` +
-      `<p class="map-guide">지도에서 동을 누르면 그 동의 요건·출처 카드가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.${missingBoundaries ? `<br>지도 경계가 없는 ${missingBoundaries}개 동은 ‘읍·면·동 목록’에서 이름으로 고를 수 있습니다.` : ''}</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}동별 사업 요건 비교 보기</a></p>${reorgNote(v)}${forecastChart(ind, m.ext, v.gu || v.sigungu, null)}${dist}${hubHTML(v)}</details>`;
+      `<p class="map-guide">지도에서 동을 누르면 그 동의 요건·출처 카드가 열립니다.<br>항목마다 값, 기준선, 출처가 함께 보입니다.</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}동별 사업 요건 비교 보기</a></p>${reorgNote(v)}${forecastChart(ind, m.ext, v.gu || v.sigungu, null)}${dist}${hubHTML(v)}</details>`;
     const rows = rowsFor(v, m, it), D = window.RenewDashboard, dy = rows.find(r => r.ind.series && r.year)?.year, dong = m.json.dongs.find(d => codeOf(d) === it.code) || null;
     // 2026-11-19 대표 지적('자세한 근거'가 카드 안에 접힌 칸으로 겹쳐 길었다): 오른쪽 서랍(휴대폰은 지도 아래 카드)을 머리·탭·꼬리로 나눈다.
     // 머리 = 이름·닫기, 탭 = 요약(쇠퇴 3요건 세 줄)·지표 전체(척도표)·재생 사업, 꼬리 = 주 단추 하나('근거 문서 열기' = 예전 근거 1쪽 단추).
     // 경로·연도·경계 안내 같은 보조 문구는 'ⓘ 자세히' 한 칸에 모은다(문구는 그대로)
     const req = reqLineHTML(rows, dong, { go: false }); // 2026-11-13: 동 이름 바로 아래에 신청요건(첫 약속 D23의 답을 맨 먼저)
     const tab = MP_TABS.some(t => t[0] === state.mpTab) ? state.mpTab : 'sum';
-    const info = `<details class="mp-info"><summary>ⓘ 자세히 <small>${boundaries.has(it.code) ? '경로·기준연도' : '지도 경계 없음'}</small></summary>` +
-      (boundaries.has(it.code) ? '' : '<p class="map-note" data-boundary-missing role="status">이 동의 지도 경계가 없어 위치를 표시하지 못합니다. 값은 아래에서 볼 수 있습니다.</p>') +
+    const { boundaryCount } = boundaryCoverage([it], m.geo);
+    const boundaryLabel = boundaryCount === null ? '지도 경계 확인 불가' : boundaryCount === 0 ? '지도 경계 없음' : '경로·기준연도';
+    const info = `<details class="mp-info"><summary>ⓘ 자세히 <small>${boundaryLabel}</small></summary>` +
+      (boundaryCount === null ? '<p class="map-note" role="status">이 동의 경계 자료를 확인하지 못했습니다. 값은 아래에서 볼 수 있습니다.</p>' :
+        boundaryCount === 0 ? '<p class="map-note" data-boundary-missing role="status">이 동의 지도 경계가 없어 위치를 표시하지 못합니다. 값은 아래에서 볼 수 있습니다.</p>' : '') +
       `<p class="map-note">${esc(v.crumbs.map(c => c.label).join(' › '))} · 쇠퇴 지표 ${dy ? `${esc(dy)}년` : '최신 연도'}, 생활 지표는 항목별 기준연도</p>${reorgNote(v)}` +
       (req.includes('data-biz-zero') ? `<p class="map-note">${esc(BIZ_BOUNDARY)}</p>` : '') + '</details>';
     const pane = (k, html) => `<div class="mp-pane" role="tabpanel" id="mp-pane-${k}" aria-labelledby="mp-tab-${k}" tabindex="0"${k === tab ? '' : ' hidden'}>${html}</div>`;
@@ -1800,7 +1826,7 @@
     }
     if (m.kind === 'sg') return head(m.items.length, '시·군·구') + `<ul class="ma-list">${m.items.map(x => { const r = leafRoute(state.index, x.code); return r ? `<li><a class="ma-row" href="${esc(toHash(r))}">${cells(x)}</a></li>` : ''; }).join('')}</ul>`;
     if (m.kind !== 'emd' || m.nodata) return panelHTML(v, m, true);   // 불러오는 중·자료 준비 중·받지 못함 안내
-    return head(m.items.length, '읍·면·동') + (it ? '' : panelHTML(v, m, true)) +
+    return `<h3 class="map-h3 ma-h" tabindex="-1">${esc(here)}</h3>` + boundaryCoverageHTML(m) + (it ? '' : panelHTML(v, m, true)) +
       `<ul class="ma-list" aria-label="읍·면·동">${m.items.map(x => `<li><button type="button" class="ma-row" data-dong="${esc(x.code)}" aria-pressed="${x.code === v.dong}">${cells(x)}</button></li>`).join('')}</ul>`;
   }
   // r16 M7: 고른 동을 왼쪽 패널·오른쪽 서랍에 가리지 않는 칸에 맞춘다(검색·목록으로 고르면 그 동 경계로 확대).
@@ -2051,7 +2077,13 @@
     const trend = meta.mode === 'trend' && hasTrend(ind), label = exportLabel(ind, meta.mode);
     const unit = trend && !ind.dEdges ? '%p' : ind.unit || '';
     const kind = trend ? 'change_5y' : ind.categorical ? 'designation' : ind.src === 'forecast' ? 'forecast' : 'current';
+    const listing = meta.level === 'emd' && byCode.size
+      ? new Map([...byCode].filter(([code]) => code != null).map(([code, item]) => [String(code), item?.name || null]))
+      : null;
+    const coverage = listing?.size ? boundaryCoverage([...listing.keys()].map(code => ({ code })), { features: feats }) : null;
     return { type: 'FeatureCollection', name: meta.name, note: '좌표계 WGS84(EPSG:4326) · 결측·보류는 null · 판정 아님 · 연도와 공간 단위는 각 행에',
+      ...(coverage ? { renewmap_coverage: { list_count: coverage.listCount, matched_boundary_count: coverage.boundaryCount,
+        feature_count: feats.length, areas_without_boundary: coverage.missingCodes.map(code => ({ code, name: listing.get(code) })) } } : {}),
       features: feats.map(f => {
         const props = f.properties || {}, code = String(props.code), it = byCode.get(code);
         const reg = meta.region ? meta.region(code) : {};
@@ -2112,7 +2144,9 @@
     const source = ind.source || ((ind.series || ind.computed) ? srcName(index.source) || SOURCE_DEFAULT : null);
     const fc = geojsonOf(feats, new Map(m.items.map(i => [i.code, i])), ind, { name: `${where} ${label}`,
       mode, level: m.kind, districtCode, source, region });
-    say(`${name} (${Math.round(DG.saveBytes(name, new TextEncoder().encode(JSON.stringify(fc)), 'application/geo+json') / 1024)}KB)를 내려받았습니다.`);
+    const coverage = fc.renewmap_coverage;
+    const scope = coverage ? ` 목록 ${coverage.list_count}곳 · 지도 경계 확인 ${coverage.matched_boundary_count}곳 · 경계 없는 ${coverage.areas_without_boundary.length}곳 · 파일 항목 ${coverage.feature_count}개.` : '';
+    say(`${name} (${Math.round(DG.saveBytes(name, new TextEncoder().encode(JSON.stringify(fc)), 'application/geo+json') / 1024)}KB)를 내려받았습니다.${scope}`);
   }
   // 지도 이미지(PNG): 배경 타일(CORS로 캔버스에 못 그림)을 빼고 경계·색·범례·출처·기준연도만 그린다
   async function mapPng() {
@@ -2416,7 +2450,7 @@
     // R4 2: 휴대폰·태블릿(≤1023px)은 지도 위 동 모양이 44px보다 작은 것이 많다(390px 해운대구 18동 중 10동, 좌3동 21×40). 기존 '읍·면·동 목록'(44px 단추)을
     //   지도 바로 아래로 옮겨 쓴다(새 목록을 만들지 않는다). 동을 고르기 전에는 펼쳐 두고, 고른 뒤에는 접어 카드가 지도 바로 아래에 오게 한다. 사용자가 누른 뒤에는 그 선택(fold.listUser)을 따른다
     const listOpen = fold.listUser ?? !it;
-    const dongList = `<details class="map-dong-list map-more" data-fold="list"${listOpen ? ' open' : ''}><summary>읍·면·동 목록</summary>${chips}</details>`;
+    const dongList = boundaryCoverageHTML(m) + `<details class="map-dong-list map-more" data-fold="list"${listOpen ? ' open' : ''}><summary>읍·면·동 목록</summary>${chips}</details>`;
     // R5 2: 자료가 오기 전(wait)에도 목록 자리를 비워 두지 않으면 도착 때 지도 아래 전부가 117px 밀린다(390 딥링크 CLS 0.16)
     // 넓은 화면: 시·도·시·군·구 고르기 칸 대신 지금 단계의 아래 지역 목록이 왼쪽 패널의 주 목록이다(areaListHTML)
     setHTML(dongBox, desk ? areaListHTML(v, m, it) : (m.kind === 'emd' ? dongList : m.kind === 'wait' ? '<div class="map-dongs-wait" aria-hidden="true"></div>' : ''));
