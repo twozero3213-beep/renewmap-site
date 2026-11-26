@@ -473,7 +473,9 @@
       const items = e.designations && Array.isArray(e.designations.items) ? e.designations.items : null, row = sgMatch(items, sg);
       if (!row) return items ? { value: DESIG_NONE, year: null, text: DESIG_NONE, color: BELOW[0], cell: null } : { value: null, year: null, text: '자료 없음', color: NULL_COLOR, cell: null }; // 고시에 없는 시군구 = 지정 안 됨
       const st = DESIG.find(c => c[0] === row.status);
-      return { value: st ? st[0] : DESIG_NONE, year: null, text: st ? st[0] : DESIG_NONE, color: st ? st[1] : BELOW[0], since: row.since ?? null, cell: (row.cells || []).find(c => c && typeof c.value === 'string') || null };
+      const value = st ? st[0] : row.status === DESIG_NONE || row.status === null ? DESIG_NONE : null;
+      return { value, year: null, text: value ?? '지정 구분 추가확인', color: st ? st[1] : value === null ? NULL_COLOR : BELOW[0],
+        check: value === null, since: row.since ?? null, cell: (row.cells || []).find(c => c && c.value === value) || null };
     }
     if (ind.src === 'realestate') { // 월 단위(yyyymm). 연도 칸에 넣지 않고 글자에 '2026.09'처럼 붙인다
       const row = sgMatch(e.realestate && e.realestate.sigungu, sg), raw = row && row.series && Array.isArray(row.series[ind.code]) ? row.series[ind.code] : [];
@@ -577,7 +579,7 @@
   function sigunguModel(sgs, ind, mode, inds, year, ext) {
     const scale = scaleFor(ind, mode), key = keyOf(ind, mode), byYear = !!ind.series && mode !== 'trend';
     return (sgs || []).map(sg => {
-      if (ind.level === 'sg' || (ind.src === 'forecast' && ind.sgFile)) { const x = sgExtra(ind, sg, ext); return { code: String(sg.code5), name: sg.name, kind: sg.kind || null, value: x.value, year: x.year, status: null, text: x.text, color: x.color, bbox: sg.bbox || null, over: null, n: null, abs: x.abs ?? null, since: x.since ?? null }; }
+      if (ind.level === 'sg' || (ind.src === 'forecast' && ind.sgFile)) { const x = sgExtra(ind, sg, ext); return { code: String(sg.code5), name: sg.name, kind: sg.kind || null, value: x.value, year: x.year, status: null, text: x.text, color: x.color, bbox: sg.bbox || null, over: null, n: null, abs: x.abs ?? null, since: x.since ?? null, cell: x.cell, check: !!x.check }; }
       let s = summaryOf(sg, key);
       const r = byYear ? sgRow(sg, ind.code, isNum(year) ? year : null) : null;
       // 2026-11-20 C09 D: 하한 중앙값 L이 기준선 아래인데 상한 중앙값 U가 기준선 이상이면(L < 기준 ≤ U) 시·군·구 색을 확정할 수 없다 → 추가확인(빗금)
@@ -649,13 +651,14 @@
     const unmatched = new Set(((emd && emd.unmatched) || []).map(u => String(u && typeof u === 'object' ? u.code : u)));
     return dongs.map(d => {
       const code = codeOf(d);
-      let v = null, y = null, lo = null, hi = null;
+      let v = null, y = null, lo = null, hi = null, cell = null;
       if (ind.computed) { y = year ?? latestYear(seriesOf(d, INDICATORS[0].code)); v = sumValue(dongRows(inds, d, lm.get(code), y, ext)); }
-      else if (ind.series) { const s = seriesOf(d, key); y = year ?? latestYear(s); v = y === null ? null : valueAt(s, y); }
-      else if (ind.src === 'forecast') { const f = ind.pending || ind.level === 'sg' ? null : fcOf(ext, code, ind.fc); if (f && !f.held) { v = f.point; lo = f.lo; hi = f.hi; y = ext.horizon; } }
+      else if (ind.series) { const s = seriesOf(d, key); y = year ?? latestYear(s); v = y === null ? null : valueAt(s, y);
+        cell = ((d.cells || []).find(c => c.indicator_code === key && c.base_year === y && c.value === v)) || null; }
+      else if (ind.src === 'forecast') { const f = ind.pending || ind.level === 'sg' ? null : fcOf(ext, code, ind.fc); if (f && !f.held) { v = f.point; lo = f.lo; hi = f.hi; y = ext.horizon; cell = f.cell; } }
       else if (ind.level === 'sg') { v = null; } // 시군구 단위 자료는 읍·면·동 지도에 칠하지 않는다
-      else if (!ind.pending) { const c = livingCell(lm.get(code), key); v = c && isNum(c.value) ? c.value : null; y = c ? c.base_year ?? null : null; }
-      return { code, name: d.name, kind: d.kind || null, value: v, year: y, text: fmtL(v, ind, mode, scale.unit) || '자료 없음', color: colorOf(v, scale), unmatched: unmatched.has(code), lo, hi };
+      else if (!ind.pending) { cell = livingCell(lm.get(code), key); v = cell && isNum(cell.value) ? cell.value : null; y = cell?.base_year ?? null; }
+      return { code, name: d.name, kind: d.kind || null, value: v, year: y, text: fmtL(v, ind, mode, scale.unit) || '자료 없음', color: colorOf(v, scale), unmatched: unmatched.has(code), lo, hi, cell };
     });
   }
   // 같은 범위에서 기준선을 넘은 곳의 개수(순위 아님). 종합은 1개 이상인 곳
@@ -1059,26 +1062,31 @@
   // ── 현황 보고서: 출처 기록 값으로만 만든 결정적 문장. 평가어 없음, 숫자는 셀 값 그대로 ──
   const josa = label => josaOf(label, '은', '는');
   function reportSentences(name, rows) {
-    return rows.filter(r => r.value !== null && !r.ind.composite && r.ind.group !== 'sum').map(r => {
+    return rows.filter(r => r.value != null && !r.cell?.value_hidden_reason && !r.ind.held && !r.ind.pending &&
+      !r.ind.composite && r.ind.group !== 'sum').map(r => {
       const ind = r.ind, c = r.cell || {}, v = rowText(r), y = r.year ? `${r.year}년` : null;
       const src = c.source_name || (r.evidenceMissing ? '추가확인' : ind.source || SOURCE_DEFAULT), ref = c.reference_date ? String(c.reference_date).slice(0, 10) : null;
       const where = r.sgLevel ? `이 동이 속한 시·군·구의 ${ind.label}` : `${name}의 ${ind.label}`;
+      const review = !!r.unsettled || ['추가확인', '충돌', '폐기'].includes(c.status);
       const below = validStd(ind.standard) && ind.standard.direction === 'below_bad', kind = isPending(ind.standard) ? '원문 대조 전 기준' : '기준';
       // 하한 기준(below_bad, 예: 공원 1인당 6㎡ 이상)은 '선을 넘습니다'가 '충분하다'로 읽혔다(11-14 페르소나: 0.5㎡/인) → 기준값과 높낮이로
-      const std = !validStd(ind.standard) ? null : below
+      const std = review || !validStd(ind.standard) || typeof r.crossed !== 'boolean' ? null : below
         ? `${kind}값 ${fmt(ind.standard.value, ind.unit)}${r.crossed ? '보다 낮습니다' : ' 이상입니다'}(${kind}: ${ind.standard.text})`
         : `${kind}(${ind.standard.text}) ${r.crossed ? '선을 넘습니다' : '안에 있습니다'}`;
       const fore = ind.src === 'forecast' && isNum(r.lo) && isNum(r.hi) ? `80% 구간은 ${fmt(r.lo, ind.unit)}~${fmt(r.hi, ind.unit)}이며 ${foreNote(ind)}` : null;
-      const tail = std ? `로, ${std}.` : fore ? `로 계산됩니다. ${fore}입니다.` : '입니다.';
+      const tail = review ? '이며 해석은 추가확인이 필요합니다.' : std ? `로, ${std}.` : fore ? `로 계산됩니다. ${fore}입니다.` : '입니다.';
       // crossed: 기준 문장이 있을 때만 true(넘습니다)/false(안에 있습니다), 없으면 null. AI 문장 검증이 방향을 대조할 때 쓴다(2026-11-01)
       // stdText: 기준 문구("1만 명당 10곳 미만" 등). 문구 안의 '미만'·'이상'을 방향 표현으로 오인하지 않게 검증 때 떼어 낸다
       return { code: ind.code, group: ind.group, label: ind.label, value: v, year: r.year ?? null, source: src, ref, url: safeUrl(c.source_url),
-        crossed: std ? !!r.crossed : null, below: std ? below : null, stdText: std ? ind.standard.text : null,
+        review, crossed: std ? r.crossed : null, below: std ? below : null, stdText: std ? ind.standard.text : null,
         text: `${where}${josa(ind.label)} ${v}${y ? `(${y})` : ''}${tail} 출처 ${src}${ref ? `, 기준일 ${ref}` : ''}.${r.evidenceMissing ? ` ${SERIES_NO_CELL}.` : ''}` };
     });
   }
   // AI가 다듬은 문장: 원래 문장에 없는 숫자가 하나라도 있으면 거부한다(숫자를 만들거나 반올림하지 않는다)
-  const numsIn = t => (String(t || '').match(/\d[\d,]*(?:\.\d+)?/g) || []).map(n => n.replace(/,/g, ''));
+  const minusText = t => String(t || '').replace(/[−－]/g, '-');
+  const numsIn = t => (minusText(t).match(/(?<![\d.])[+-]?\d[\d,]*(?:\.\d+)?/g) || [])
+    .map(n => n.replace(/,/g, '').replace(/^\+/, ''));
+  const factText = t => minusText(t).replace(/(?<=\d),(?=\d)/g, '').replace(/\s+/g, '');
   // ── 2026-11-01 리뷰(OWASP LLM09 허위 정보, 국정원 AI보안 A-M10 입·출력 결과 검증)로 검사를 넓혔다 ──
   // 전에는 "출력 숫자가 원문 어딘가에 있는가"만 봐서, 두 지표의 값을 맞바꾸거나("고령 30%, 청년 12%" → "고령 12%, 청년 30%")
   // 기준 방향을 뒤집어도("선을 넘습니다" → "안에 있습니다") 통과했다. 공모 서류에 그대로 쓰이면 법정 요건 판단이 틀린 근거가 된다.
@@ -1101,8 +1109,11 @@
     HIGH_RE = /(?:이상입니다|높습니다|웃돕니다|넘습니다|넘었습니다)(?![가-힣])/;
   // 지표 이름은 괄호 설명을 떼고 글자 사이 띄어쓰기를 허용해 찾는다(예: "병의원(1만 명당)" → "병 의원"도 찾음)
   const labelRe = label => {
-    const core = String(label || '').replace(/\(.*?\)/g, '').replace(/\s+/g, '');
-    return core ? new RegExp([...core].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*'), 'g') : null;
+    const parts = String(label || '').split(/(\([^()]*\))/).map(p => p.trim()).filter(Boolean);
+    return parts.length ? new RegExp(parts.map(p => {
+      const pattern = textRe(p).source;
+      return p.startsWith('(') ? `(?:${pattern})?` : pattern;
+    }).join('\\s*'), 'g') : null;
   };
   // 출력 한 문장 안에서 지표 이름 위치로 구간을 나눈다. 더 긴 이름 안에 든 짧은 이름(예: "노후건축물비율 전망" 안의 "노후건축물비율")은 버린다
   function labelSegments(sentence, sents) {
@@ -1147,8 +1158,12 @@
         }
       }
       sents.forEach((s, i) => {
-        const where = seen[i] || t;   // 지표 이름을 못 찾으면 전체 문장에서라도 값이 있는지 본다
-        if (numsIn(s.value).some(n => !numsIn(where).includes(n))) missing.push(s.label);
+        const name = labelRe(s.label);
+        const where = name ? (seen[i] || '').replace(name, '') : '';
+        const value = factText(s.value);
+        const exact = value && value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const includesValue = exact && new RegExp(`(?<![\\d.+-])${exact}(?![\\d.])`).test(factText(where));
+        if (!includesValue || (s.review && !factText(where).includes('추가확인이필요합니다'))) missing.push(s.label);
         if (s.crossed === true || s.crossed === false) {
           // 기준 문장이 있는 지표는 이름을 찾아 방향을 대조해야 한다. 이름을 못 찾으면 방향을 확인할 수 없으므로 거부한다
           // 기준 문구는 위에서 이미 뗐다. AI가 문구를 바꿔 옮긴 경우에 대비해 괄호 속 설명도 방향 판단에서 뺀다
@@ -1612,7 +1627,7 @@
       const year = state.year !== null && years && state.year >= years.min && state.year <= years.max ? state.year : null;
       let items = dongModel(json, ind, mode, year, lv, list, ext);
       const node = v.gu || v.sigungu;
-      if (ind.level === 'sg' && node) { const x = sgExtra(ind, node, ext); items = items.map(it => ({ ...it, value: x.value, year: x.year, text: `${x.text} · 시·군·구 값`, color: x.color })); }
+      if (ind.level === 'sg' && node) { const x = sgExtra(ind, node, ext); items = items.map(it => ({ ...it, value: x.value, year: x.year, text: `${x.text} · 시·군·구 값`, color: x.color, cell: x.cell, check: !!x.check })); }
       // selYear: 사용자가 고른 연도(없으면 null → 쇠퇴 지표는 동마다 최신 연도). 생활 지표의 기준연도를 쇠퇴 시계열에 쓰지 않는다
       return { kind: 'emd', items, years, selYear: year, year: year ?? (items.find(i => i.year)?.year ?? null), geo: e.geo, json, living: lv, nodata: !e.json, ext };
     }
@@ -2031,13 +2046,33 @@
   }
   // 지도 자료(GeoJSON, v7 2026-11-13): 지금 보는 경계와 지표 값을 GIS(QGIS 등)에서 바로 열게. 평가 6회차(시청 GIS 담당): 받을 수 있는 게 지도 그림뿐이었다.
   // 좌표는 경계 파일 그대로(WGS84, EPSG:4326). 값이 없으면 null(0으로 채우지 않음), 판정 아님
+  function exportLabel(ind, mode) { return mode === 'trend' && hasTrend(ind) ? `${ind.label} 5년 변화` : ind.label; }
   function geojsonOf(feats, byCode, ind, meta) {
-    return { type: 'FeatureCollection', name: meta.name, note: '좌표계 WGS84(EPSG:4326) · 값이 없으면 null · 색 구간·판정 아님 · 출처와 기준연도는 각 행에',
-      features: feats.map(f => { const code = String((f.properties || {}).code), it = byCode.get(code);
-        // 시·도·시·군·구 이름을 같이 적는다(v9 용역사: 코드만 있어 보고서 표로 옮길 때 다시 찾아야 했다)
+    const trend = meta.mode === 'trend' && hasTrend(ind), label = exportLabel(ind, meta.mode);
+    const unit = trend && !ind.dEdges ? '%p' : ind.unit || '';
+    const kind = trend ? 'change_5y' : ind.categorical ? 'designation' : ind.src === 'forecast' ? 'forecast' : 'current';
+    return { type: 'FeatureCollection', name: meta.name, note: '좌표계 WGS84(EPSG:4326) · 결측·보류는 null · 판정 아님 · 연도와 공간 단위는 각 행에',
+      features: feats.map(f => {
+        const props = f.properties || {}, code = String(props.code), it = byCode.get(code);
         const reg = meta.region ? meta.region(code) : {};
-        return { type: 'Feature', geometry: f.geometry, properties: { code, name: it ? it.name : (f.properties || {}).name || null, sido: reg.sido || null, sigungu: reg.sigungu || null, indicator: ind.code, label: ind.label,
-          value: it && isNum(it.value) ? roundD(it.value, 2) : null, unit: ind.unit || '', year: meta.year ?? null, source: meta.source } }; }) };
+        const cell = it?.cell && it.cell.value === it.value ? it.cell : null;
+        const review = !!(it?.check || ['추가확인', '충돌', '폐기'].includes(it?.status) || ['추가확인', '충돌', '폐기'].includes(cell?.status));
+        const held = !!(ind.pending || ind.held || ind.hidden_until_decision || it?.cell?.value_hidden_reason);
+        let value = null;
+        if (!held && !review) {
+          if (ind.categorical) {
+            if (it?.value === DESIG_NONE || ind.cats?.some(([key]) => key === it?.value)) value = it.value;
+          } else if (isNum(it?.value)) value = roundD(it.value, 2);
+        }
+        const year = isNum(it?.year) ? it.year : null, ref = cell?.reference_date;
+        const referenceDate = typeof ref === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(ref) &&
+          (year === null || kind === 'forecast' || Number(ref.slice(0, 4)) === year) ? ref : null;
+        return { type: 'Feature', geometry: f.geometry, properties: { code, name: it?.name || props.name || null,
+          sido: reg.sido || null, sigungu: reg.sigungu || null, indicator: ind.code, label, value, unit, year, value_kind: kind,
+          geometry_level: meta.level || null, data_level: meta.districtCode ? 'sg' : meta.level || null, data_area_code: meta.districtCode || code,
+          value_status: held ? 'withheld' : review ? 'review' : value === null ? 'missing' : 'available',
+          reference_date: value === null ? null : referenceDate, source: cell?.source_name || meta.source || null } };
+      }) };
   }
   // 지도 내보내기(GeoJSON·그림) 공통: 알림 줄, 시군구면 상세 경계 받기, 지금 보이는 경계만 고르기. 못 하면 알리고 null
   // (v9: 두 함수에 같은 코드가 한 벌씩 있었다)
@@ -2067,12 +2102,16 @@
   async function mapGeojson() {
     const say = exportSay;
     if (!DG || !state.index) return;
-    const v = resolve(state.index, state.route), m = model(v), ind = curInd();
+    const index = state.index, v = resolve(index, state.route), m = model(v), ind = curInd(), mode = effMode(ind);
     const feats = await exportFeats(m, '지도 자료'); if (!feats) return;
-    const where = v.crumbs[v.crumbs.length - 1].label, name = `지도자료_${DG.safeName(ind.label)}_${DG.safeName(where)}.geojson`;
+    const label = exportLabel(ind, mode), where = v.crumbs[v.crumbs.length - 1].label;
+    const name = `지도자료_${DG.safeName(label)}_${DG.safeName(where)}.geojson`;
     const region = code => { if (m.kind === 'emd') return { sido: v.sido && v.sido.name, sigungu: [v.sigungu && v.sigungu.name, v.gu && v.gu.name].filter(Boolean).join(' ') };
-      const sg = sgOf(state.index, code); return { sido: v.sido ? v.sido.name : (sidoOf(state.index, String(code).slice(0, 2)) || {}).name, sigungu: sg && sg.name }; };
-    const fc = geojsonOf(feats, new Map(m.items.map(i => [i.code, i])), ind, { name: `${where} ${ind.label}`, year: m.year, source: ind.source || (state.index.source && state.index.source.name) || SOURCE_DEFAULT, region });
+      const sg = sgOf(index, code); return { sido: v.sido ? v.sido.name : (sidoOf(index, String(code).slice(0, 2)) || {}).name, sigungu: sg && sg.name }; };
+    const districtCode = m.kind === 'emd' && ind.level === 'sg' ? v.emdCode : null;
+    const source = ind.source || ((ind.series || ind.computed) ? srcName(index.source) || SOURCE_DEFAULT : null);
+    const fc = geojsonOf(feats, new Map(m.items.map(i => [i.code, i])), ind, { name: `${where} ${label}`,
+      mode, level: m.kind, districtCode, source, region });
     say(`${name} (${Math.round(DG.saveBytes(name, new TextEncoder().encode(JSON.stringify(fc)), 'application/geo+json') / 1024)}KB)를 내려받았습니다.`);
   }
   // 지도 이미지(PNG): 배경 타일(CORS로 캔버스에 못 그림)을 빼고 경계·색·범례·출처·기준연도만 그린다
