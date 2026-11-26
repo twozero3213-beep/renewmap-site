@@ -66,7 +66,7 @@ def verify_reusable_evidence(page, output, width):
             review = ET.fromstring(archive.read('xl/worksheets/sheet3.xml'))
             records = [[''.join(c.itertext()) for c in row] for row in review.findall('s:sheetData/s:row',ns)]
             a = next(r for r in records if r and r[0]=='21090700')
-            assert a == ['21090700','합성 후보 A','보류','=1+2\n원천 자료 추가확인','2026-11-17T01:00:00.000Z']
+            assert a == ['21090700','합성 후보 A','보류','','2026-11-17T01:00:00.000Z']
             comparison = ET.fromstring(archive.read('xl/worksheets/sheet1.xml'))
             values = [float(v.text) for v in comparison.findall('.//s:v',ns)]
             assert 0 in values and -2.81 in values
@@ -74,6 +74,16 @@ def verify_reusable_evidence(page, output, width):
             for name in archive.namelist():
                 if re.fullmatch(r'xl/worksheets/sheet\d+\.xml',name):
                     assert not ET.fromstring(archive.read(name)).findall('.//s:f',ns), '문자열 메모가 수식으로 실행됩니다.'
+        note_option = page.locator('[data-candidate-include-notes]')
+        assert not note_option.is_checked()
+        note_option.check()
+        with page.expect_download() as requested:
+            page.locator('[data-candidate-xlsx]').click()
+        with zipfile.ZipFile(requested.value.path()) as archive:
+            sheet = ET.fromstring(archive.read('xl/worksheets/sheet3.xml'))
+            assert '=1+2\n원천 자료 추가확인' in ''.join(sheet.itertext())
+            assert not sheet.findall('.//s:f', ns)
+        note_option.uncheck()
         assert page.evaluate('() => localStorage.getItem(RenewCandidates.KEY)') == before
         page.context.grant_permissions(['clipboard-read','clipboard-write'])
         copied = page.evaluate(r"""async () => {

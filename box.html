@@ -35,7 +35,7 @@
 <script src="list-pages.js?v=20261119-r3" defer></script>
 <script src="cellpack.js" defer></script>
 <script src="util.js?v=20261122-r19" defer></script>
-<script src="candidates.js?v=20261122-r19" defer></script>
+<script src="candidates.js?v=20261126-export-evidence" defer></script>
 <script src="box.js?v=20261126-photo-refs" defer></script>
 <link rel="stylesheet" href="rm6.css?v=20261122-r24">
 </head>
@@ -60,7 +60,8 @@
     <h2 id="candidatesTitle">검토 후보</h2>
     <p class="home-note">지도에서 고른 동과 저장할 때의 근거를 모읍니다.</p>
     <ul id="candidateList" class="box-list" data-candidate-list></ul>
-    <p class="pg-acts" data-candidate-acts hidden><button type="button" class="btn ghost" data-candidate-csv disabled>후보 근거 받기(CSV)</button> <button type="button" class="btn ghost" data-candidate-xlsx disabled>고른 후보 비교 받기(XLSX)</button></p>
+    <div data-candidate-acts hidden><label><input type="checkbox" autocomplete="off" data-candidate-include-notes> 내보낼 파일에 검토 메모 포함</label>
+    <p class="pg-acts"><button type="button" class="btn ghost" data-candidate-csv disabled>후보 근거 받기(CSV)</button> <button type="button" class="btn ghost" data-candidate-xlsx disabled>고른 후보 비교 받기(XLSX)</button></p></div>
     <p data-candidate-msg role="status"></p>
     <details data-candidate-fold hidden><summary>고른 후보 나란히 보기(2~3곳)</summary><div data-candidate-compare></div></details>
     <p><a class="box-go" href="about.html#contact">상담하기</a></p>

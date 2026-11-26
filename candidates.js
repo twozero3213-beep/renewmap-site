@@ -18,6 +18,9 @@
         || (x.d !== null && !text(x.d)) || [x.basis, x.evidence].some(b => b != null && (Array.isArray(b) || typeof b !== 'object' || Object.values(b).some(v => v !== null && !text(v)))))) {
       throw new Error('후보 기록 형식을 확인하지 못했습니다. 기존 기록은 그대로 보존했습니다.');
     }
+    if (new Set(row.items.map(x => x.c)).size !== row.items.length) {
+      throw new Error('지표 코드가 중복되어 비교할 수 없습니다. 기존 기록은 그대로 보존했습니다.');
+    }
     return row;
   }
   function load(storage) {
@@ -66,11 +69,11 @@
       return [label, different ? (unknown ? '차이 · 추가확인 포함' : '차이') : unknown ? '추가확인' : '같음'];
     });
   }
-  function csv(rows) {
+  function csv(rows, { includeNotes = false } = {}) {
     const conditions = new Map(rows.flatMap(r => r.items.map(x => [x.c, null])));
     for (const code of conditions.keys()) conditions.set(code, comparisonConditions(rows, code).map(([, status]) => status));
     const out = [['지역 코드', '후보 동', '검토 단계', '메모', '저장 시각', '지도 경로', '항목', '값', '단위', '표시값', '기준일', '상태', '출처', '출처 URL', '조회시각', '산식 ID', '산식', '규칙 버전', '공간 단위', '원장 지역 코드', '이용조건', '셀 ID', 'snapshot_id', ...COMPARISON_FIELDS.map(([label]) => `비교 ${label}`)]];
-    for (const r of rows) for (const x of r.items) out.push([r.code, r.name, STAGES.find(([k]) => k === r.stage)[1], r.note, r.saved_at, r.route,
+    for (const r of rows) for (const x of r.items) out.push([r.code, r.name, STAGES.find(([k]) => k === r.stage)[1], includeNotes ? r.note : '', r.saved_at, r.route,
       x.l, x.v, x.u, valueText(x), x.d, x.s, x.evidence?.source_name, x.basis?.source_url, x.evidence?.retrieved_at, x.basis?.formula_id,
       x.basis?.formula_text, x.basis?.rule_version, x.basis?.spatial_unit, x.basis?.area_code, x.evidence?.license_type, x.evidence?.cell_id, x.evidence?.snapshot_id,
       ...conditions.get(x.c)]);
@@ -87,19 +90,23 @@
   }
   // 동 비교 XLSX(11-14 페르소나: '동 비교 화면이 없다' → 보관함 비교 표를 표 파일로). 비교 표와 같은 저장 당시 값만 옮기고
   // 차이·순위·합산은 계산하지 않는다(D13). 숫자 칸은 숫자로 둬 엑셀에서 바로 쓰게 한다. 글 칸은 inlineStr이라 식으로 실행되지 않는다
-  function compareSheets(rows) {
+  function compareSheets(rows, { includeNotes = false } = {}) {
     const indicators = [...new Map(rows.flatMap(r => r.items.map(x => [x.c, x.l]))).entries()];
     const val = x => (x && typeof x.v === 'number' && Number.isFinite(x.v) ? x.v : valueText(x));
     const cmp = [['항목', ...rows.flatMap(r => [`${r.name} 값`, `${r.name} 단위`, `${r.name} 기준일`]), '비교 조건'],
       ...indicators.map(([code, label]) => [label, ...rows.flatMap(r => { const x = r.items.find(i => i.c === code); return [val(x), x?.u || '', x?.d || '기준일 추가확인']; }),
         comparisonConditions(rows, code).map(([n, s]) => `${n}: ${s}`).join(', ')]),
       [], ['판정·순위가 아닙니다. 저장 당시 값이며 기준일·산식·공간 단위가 다를 수 있습니다.']];
-    const src = [['후보 동', '항목', '출처', '출처 URL', '기준일', '이용조건', '셀 ID'],
-      ...rows.flatMap(r => r.items.map(x => [r.name, x.l, x.evidence?.source_name || '', x.basis?.source_url || '', x.d || '', x.evidence?.license_type || '', x.evidence?.cell_id || '']))];
+    const src = [['후보 동', '항목', '출처', '출처 URL', '기준일', '이용조건', '셀 ID', '후보 지역 코드', '지표 코드', '상태',
+      '조회시각', '산식 ID', '산식', '규칙 버전', '공간 단위', '원장 지역 코드', 'snapshot_id'],
+      ...rows.flatMap(r => r.items.map(x => [r.name, x.l, x.evidence?.source_name ?? '', x.basis?.source_url ?? '', x.d ?? '',
+        x.evidence?.license_type ?? '', x.evidence?.cell_id ?? '', r.code, x.c, x.s, x.evidence?.retrieved_at ?? '',
+        x.basis?.formula_id ?? '', x.basis?.formula_text ?? '', x.basis?.rule_version ?? '', x.basis?.spatial_unit ?? '',
+        x.basis?.area_code ?? '', x.evidence?.snapshot_id ?? '']))];
     const review = [['지역 코드', '후보 동', '검토 단계', '검토 메모', '저장 시각'],
-      ...rows.map(r => [r.code, r.name, STAGES.find(([key]) => key === r.stage)[1], r.note, r.saved_at]),
-      [], ['메모는 수정할 수 있는 사용자 기록이며 기관의 선정·승인 이력이 아닙니다.']];
-    return [{ name: '비교', rows: cmp, widths: [28, ...rows.flatMap(() => [12, 8, 12]), 44] }, { name: '출처', rows: src, widths: [14, 28, 40, 50, 12, 18, 30] }, { name: '검토 기록', rows: review, widths: [16, 20, 18, 60, 28] }];
+      ...rows.map(r => [r.code, r.name, STAGES.find(([key]) => key === r.stage)[1], includeNotes ? r.note : '', r.saved_at]),
+      [], [includeNotes ? '메모는 수정할 수 있는 사용자 기록이며 기관의 선정·승인 이력이 아닙니다.' : '선택 옵션에서 검토 메모를 포함할 수 있습니다.']];
+    return [{ name: '비교', rows: cmp, widths: [28, ...rows.flatMap(() => [12, 8, 12]), 44] }, { name: '출처', rows: src, widths: [14, 28, 40, 50, 12, 18, 30, 16, 22, 16, 26, 20, 38, 19, 14, 16, 30] }, { name: '검토 기록', rows: review, widths: [16, 20, 18, 60, 28] }];
   }
   function init(root) {
     const host = root.document.querySelector('[data-candidates]');
@@ -111,6 +118,15 @@
     const comparisonPager = root.RenewListPages.create(out, '비교 지표', renderComparison);
     const xbtn = host.querySelector('[data-candidate-xlsx]'), fold = out.closest('details');
     const say = t => { msg.textContent = t; };
+    const notes = host.querySelector('[data-candidate-include-notes]');
+    if (notes) notes.checked = false;
+    const exportOptions = () => ({ includeNotes: notes?.checked === true });
+    const csvButton = host.querySelector('[data-candidate-csv]');
+    const acts = host.querySelector('[data-candidate-acts]');
+    const clearComparison = () => {
+      out.replaceChildren();
+      if (xbtn) xbtn.disabled = true;
+    };
     function renderComparison(rows) {
       try {
         const chosen = (rows || load(root.localStorage)).filter(r => selected.has(r.code));
@@ -119,7 +135,7 @@
         if (xbtn) xbtn.disabled = chosen.length < 2;
         if (fold && chosen.length >= 2) fold.open = true;   // 2곳을 고르면 접힌 비교 표를 연다(있는 줄 몰랐다)
         return true;
-      } catch (e) { say('비교를 열지 못했습니다. ' + e.message); return false; }
+      } catch (e) { clearComparison(); say('비교를 열지 못했습니다. ' + e.message); return false; }
     }
     function render() {
       try {
@@ -130,13 +146,17 @@
           + `<label>검토 메모<textarea name="note" maxlength="1000" rows="2">${U.esc(r.note)}</textarea></label><button type="submit">단계·메모 저장</button></form></details></li>`).join('')
           || '<li class="box-empty-card"><p><b>아직 담은 후보가 없습니다.</b><br>동네 현황에서 동을 골라 ‘보관함에 담기’를 누르세요.</p><a class="btn" href="explore.html#map">동네 현황 열기</a></li>';
         renderComparison(rows);
-        host.querySelector('[data-candidate-csv]').disabled = !rows.length;
+        csvButton.disabled = !rows.length;
         // 2026-11-19: 받을 것이 없으면 내보내기·비교 칸을 숨긴다(빈 보관함에 쓸 수 없는 단추 둘과 접힌 칸이 먼저 보였다)
-        const acts = host.querySelector('[data-candidate-acts]');
         if (acts) acts.hidden = !rows.length;
         if (xbtn) xbtn.hidden = rows.length < 2;
         if (fold) fold.hidden = rows.length < 2;
-      } catch (e) { say('후보를 열지 못했습니다. ' + e.message); }
+      } catch (e) {
+        list.replaceChildren(); clearComparison(); csvButton.disabled = true;
+        if (acts) acts.hidden = true;
+        if (fold) fold.hidden = true;
+        say('후보를 열지 못했습니다. ' + e.message);
+      }
     }
     list.addEventListener('change', e => {
       const code = e.target.dataset.candidateSelect;
@@ -156,10 +176,10 @@
         say('검토 단계와 메모를 저장했습니다. 저장 당시 수치는 유지됩니다.');
       } catch (err) { say('저장하지 못했습니다. ' + err.message); }
     });
-    host.querySelector('[data-candidate-csv]').addEventListener('click', () => {
+    csvButton.addEventListener('click', () => {
       try {
         const rows = load(root.localStorage).filter(r => !selected.size || selected.has(r.code));
-        root.RenewDocgen.saveBytes('리뉴맵_검토후보.csv', new TextEncoder().encode(csv(rows)), 'text/csv;charset=utf-8');
+        root.RenewDocgen.saveBytes('리뉴맵_검토후보.csv', new TextEncoder().encode(csv(rows, exportOptions())), 'text/csv;charset=utf-8');
         say(selected.size ? `선택한 ${rows.length}곳의 근거 CSV를 받았습니다.` : `후보 전체 ${rows.length}곳의 근거 CSV를 받았습니다.`);
       } catch (err) { say('내보내지 못했습니다. ' + err.message); }
     });
@@ -168,7 +188,7 @@
         const rows = load(root.localStorage).filter(r => selected.has(r.code));
         if (rows.length < 2) { say('비교할 후보를 2~3곳 고르세요.'); return; }
         const D = root.RenewDocgen;
-        D.saveBytes('리뉴맵_후보비교.xlsx', D.xlsxBytes(compareSheets(rows), new Date()), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        D.saveBytes('리뉴맵_후보비교.xlsx', D.xlsxBytes(compareSheets(rows, exportOptions()), new Date()), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         say(`고른 ${rows.length}곳의 비교 XLSX를 받았습니다.`);
       } catch (err) { say('내보내지 못했습니다. ' + err.message); }
     });
