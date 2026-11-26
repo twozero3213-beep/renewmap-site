@@ -78,7 +78,14 @@
     const receipt={schema:'renewmap-selected-delivery-v1',revision:manifest.revision,head_sha256:manifest.head_hash,
       source_state:manifest.state,selected_count:files.length,current_count:manifest.artifacts.length,files};
     return {receipt,entries:[
-      {name:'사용범위.txt',data:'현재 과업판에서 고른 파일입니다. 원래 파일 이름은 전달_파일_목록.json에서 확인하세요.\n파일 이름과 내용의 개인정보를 전달 전에 확인하세요. 승인 증빙은 내부 이력에서 확인하세요.\n'},
+      {name:'사용범위.txt',data:[
+        '선택 파일 전달 ZIP',
+        '과업 판 v'+receipt.revision+' · 선택 목록 '+files.length+'개 · files 폴더에 든 파일 '+contents.size+'개',
+        '원래 파일 이름과 ZIP 안의 경로는 전달_파일_목록.json에서 확인하세요.',
+        'SHA256SUMS.txt의 SHA-256은 압축을 푼 파일이 목록과 일치하는지 확인할 때 씁니다.',
+        '자료 출처와 내용의 사실 여부, 기관 승인은 별도 증빙으로 확인하세요.',
+        '보내기 전에 파일 이름과 내용의 개인정보를 확인하세요.',
+      ].join('\n')+'\n'},
       {name:'전달_파일_목록.json',data:JSON.stringify(receipt,null,2)+'\n'},
       {name:'SHA256SUMS.txt',data:[...contents].map(([path,f])=>f.sha256+'  '+path+'\n').join('')},
       ...[...contents].map(([name,f])=>({name,data:f.bytes}))
@@ -157,10 +164,10 @@
       }
       if(T.canonical(T.work(baseline))!==T.canonical(w))changed.push('검토 의견·후속 점검 기록 변경: 아래 상세 기록에서 담당자·기한·증빙을 확인하세요.');
     }
-    const lines=['리뉴맵 납품 인수인계','조회 기준일: '+today+' (Asia/Seoul)',summary,
+    const lines=['리뉴맵 내부 보관용 인수인계','조회 기준일: '+today+' (Asia/Seoul)',summary,
       '사용자가 기록한 업무 내용입니다. 신원·전자서명·기관 승인이나 자료의 사실성을 인증하지 않습니다.',
       '공유 전에 이름·연락처·사진 등 개인정보와 전달받을 사람을 확인하세요.',
-      '이력과 납품 목록의 일치를 검사한 요약입니다. 실제 파일의 존재·바이트는 납품 묶음 생성과 JSON 복원 검사에서 별도로 확인합니다.',
+      '이력과 납품 목록의 일치를 검사한 요약입니다. 실제 파일의 존재·바이트는 전체 이력 ZIP 생성과 백업 JSON 복원에서 별도로 확인합니다.',
       '입력값은 따옴표로 묶고 줄바꿈·제어문자를 표시합니다. 원본 기록은 바꾸지 않습니다.',
       '', '1. 과업과 현재 판', '과업 ID: '+q(c.id),'과업명: '+q(c.spec.title),'사업: '+q(c.spec.program),
       '지침·판본: '+q(c.spec.guideline),'대상 범위: '+q(c.spec.scope),'현재 판: v'+c.revision,'현재 이력 SHA-256: '+c.hash,
@@ -228,9 +235,9 @@
       for(const [name,revisions] of names)lines.push('파일명: '+q(name)+' / 사용 판: '+[...revisions].map(v=>'v'+v).join(', '));
     }
     lines.push('', '9. 읽기와 복원',
-      '이 TXT는 읽기용 요약입니다. 납품 ZIP의 manifest.json에 전체 이력이 있고, files 폴더에 연결 파일이 <SHA-256>.<원래 확장자> 이름으로 들어 있습니다.',
+      '이 TXT는 읽기용 요약입니다. ‘전체 이력 받기(ZIP · 내부 보관)’의 manifest.json에 전체 이력이 있고, files 폴더에 연결 파일이 <SHA-256>.<원래 확장자> 이름으로 들어 있습니다.',
       '원래 확장자가 영문·숫자 1~8자가 아니면 확장자를 붙이지 않습니다. ZIP 맨 위의 SHA256SUMS.txt는 sha256sum -c로 읽는 목록입니다.',
-      '작업을 복원하려면 별도로 받은 JSON 백업을 리뉴맵 과업·납품 화면의 백업 복원에서 선택하세요. 이 TXT나 납품 ZIP을 JSON 백업으로 넣지 마세요.',
+      '작업을 복원하려면 리뉴맵 과업·납품 화면에서 ‘백업 받기(JSON · 복원용)’로 받은 파일을 ‘백업 복원’에서 선택하세요.',
       'JSON 복원은 이력·파일 지문을 검사하며 같은 과업의 다른 이력을 덮어쓰지 않습니다. 기기 저장소를 지우기 전에 JSON 백업을 별도 위치에 보관하세요.',
       '파일 확인: ZIP을 푼 폴더에서 PowerShell로 아래 한 줄을 실행합니다. 아무것도 나오지 않으면 files 폴더의 파일마다 내용의 SHA-256이 파일 이름과 같습니다. 파일 수는 8절 목차와 같아야 합니다.',
       "Get-ChildItem files | % { if((Get-FileHash $_.FullName).Hash -ne $_.BaseName){'불일치 '+$_.Name} }",
