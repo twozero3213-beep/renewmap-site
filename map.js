@@ -1604,7 +1604,13 @@
   const emdOf = code5 => lazy('emd:' + code5, () => Promise.all([emdGeometry(code5), fetchJson(`data/national/emd/${code5}.json`)])
     .then(([geo, json]) => { if (!geo && json && Array.isArray(json.features)) geo = json; return { geo: geo && Array.isArray(geo.features) ? geo : null, json: json && Array.isArray(json.dongs) ? json : null, failed: fetchFailed(`data/national/emd/${code5}.json`) }; }));
   // 생활 지표 파일: living/index.json이 없으면 시군구 파일도 찾지 않는다(null = 없음)
-  const livingOf = code5 => (state.living ? lazy('living:' + code5, () => fetchJson(`data/national/living/${code5}.json`).then(j => (j && Array.isArray(j.dongs) ? j : null))) : null);
+  const livingPath = code5 => `data/national/living/${code5}.json`;
+  const invalidLiving = new Set();
+  const livingOf = code5 => (state.living ? lazy('living:' + code5, () => fetchJson(livingPath(code5)).then(j => {
+    if (j && Array.isArray(j.dongs)) return j;
+    if (j !== null) invalidLiving.add(code5);
+    return null;
+  })) : null);
   // 전망 파일: forecast/index.json이 없으면 시군구 파일도 찾지 않는다
   const forecastOf = code5 => (state.forecastIdx ? lazy('fc:' + code5, () => fetchJson(`data/national/forecast/${code5}.json`).then(j => (j && Array.isArray(j.dongs) ? j : null))) : null);
   // 시·군·구 전망 파일(약 220KB): 추세 전망 지표를 고를 때만 받는다
@@ -1774,6 +1780,9 @@
     // 2026-11-19 대표 지적('자세한 근거'가 카드 안에 접힌 칸으로 겹쳐 길었다): 오른쪽 서랍(휴대폰은 지도 아래 카드)을 머리·탭·꼬리로 나눈다.
     // 머리 = 이름·닫기, 탭 = 요약(쇠퇴 3요건 세 줄)·지표 전체(척도표)·재생 사업, 꼬리 = 주 단추 하나('근거 문서 열기' = 예전 근거 1쪽 단추).
     // 경로·연도·경계 안내 같은 보조 문구는 'ⓘ 자세히' 한 칸에 모은다(문구는 그대로)
+    const failedCandidate = candidateFailures(v.emdCode), loadingCandidate = candidateLoading(v.emdCode);
+    const candidateNote = failedCandidate.length ? `${failedCandidate.join(', ')} 자료를 받지 못했습니다. 다시 받은 뒤 보관할 수 있습니다.`
+      : loadingCandidate ? '보관할 지표를 불러오는 중입니다.' : '';
     const req = reqLineHTML(rows, dong, { go: false }); // 2026-11-13: 동 이름 바로 아래에 신청요건(첫 약속 D23의 답을 맨 먼저)
     const tab = MP_TABS.some(t => t[0] === state.mpTab) ? state.mpTab : 'sum';
     const { boundaryCount } = boundaryCoverage([it], m.geo);
@@ -1789,7 +1798,7 @@
     return `<div class="map-panel-head mp-head"><h3 class="map-h3" tabindex="-1" data-code="${esc(it.code)}">${esc(it.name)}${region ? ` <small>${esc(region)}</small>` : ''}</h3><button type="button" class="map-close" data-close aria-label="${esc(it.name)} 카드 닫기">닫기</button></div>` +
       `<div class="mp-tabs" role="tablist" aria-label="${esc(it.name)} 보기">${MP_TABS.map(([k, l]) => `<button type="button" role="tab" id="mp-tab-${k}" data-mp-tab="${k}" aria-controls="mp-pane-${k}" aria-selected="${k === tab}" tabindex="${k === tab ? 0 : -1}">${l}</button>`).join('')}</div>` +
       '<div class="mp-body">' +
-      pane('sum', req + '<p class="map-copy"><button type="button" class="btn ghost" data-copy-map>이 지도 링크 복사</button><button type="button" class="btn ghost" data-candidate-save>보관함에 담기</button></p><p class="map-copy-msg" role="status" aria-live="polite" data-copy-map-msg></p><p data-candidate-status role="status"></p>' + info) +
+      pane('sum', req + `<p class="map-copy"><button type="button" class="btn ghost" data-copy-map>이 지도 링크 복사</button><button type="button" class="btn ghost" data-candidate-save aria-describedby="candidateStatus"${candidateNote ? ' disabled' : ''}>보관함에 담기</button>${failedCandidate.length ? '<button type="button" class="btn ghost" data-candidate-retry data-retry>보관 자료 다시 받기</button>' : ''}</p><p class="map-copy-msg" role="status" aria-live="polite" data-copy-map-msg></p><p id="candidateStatus" data-candidate-status role="status">${esc(candidateNote)}</p>` + info) +
       pane('all', forecastChart(ind, m.ext, v.gu || v.sigungu, dong) + scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist) +
       pane('biz', `<p class="map-guide">이 동의 값에 맞춘 재생 사업 요건은 문서 탭에서 봅니다.</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}이 동에 맞는 재생 사업 보기</a></p>` + hubHTML(v)) +
       // r23(13 M8): 글 링크 줄은 카드 몸 끝으로 옮겼다. 휴대폰에서 붙는 꼬리가 단추+링크 약 110px라 아래 탭(65px)과 함께 출처 줄을 가렸다
@@ -1798,6 +1807,15 @@
       `<div class="mp-foot">${goFrag('mp-go')}</div>`;
   }
   const MP_TABS = [['sum', '요약'], ['all', '지표 전체'], ['biz', '재생 사업']];   // r23(13 M1): 09 3절 '사업 요건 대조' 대신
+  const CANDIDATE_SOURCES = ['living', 'designations', 'migration', 'realestate'];
+  function candidateLoading(code5) {
+    return CANDIDATE_SOURCES.some(k => state[k] === undefined) || livingOf(code5) === undefined;
+  }
+  function candidateFailures(code5) {
+    const failed = CANDIDATE_SOURCES.filter(k => state.failed.has(k)).map(k => AUX[k][2]);
+    if (state.living && (invalidLiving.has(code5) || fetchFailed(livingPath(code5)))) failed.push('시·군·구 생활 지표');
+    return failed;
+  }
   const rowsFor = (v, m, it) => dongRows(inds(), m.json.dongs.find(d => codeOf(d) === it.code), livingMap(m.living).get(it.code), m.selYear, m.ext);
   // 2026-11-19: 넓은 화면 왼쪽 패널의 주 목록 = 지금 단계의 아래 지역(전국 → 시·도, 시·도·시 → 시·군·구·일반구, 시·군·구 → 읍·면·동).
   // 시·도·시·군·구 고르기 칸(select)과 접힌 '읍·면·동 목록'을 대신한다. 줄마다 지도와 같은 색 견본·값(출처 값 그대로). 순서는 자료 순서(값 순 아님, D13)
@@ -3095,12 +3113,16 @@
     else if (b.dataset.dong) go({ ...state.route, dong: b.dataset.dong }, `[data-dong="${b.dataset.dong}"]`);
     else if (b.hasAttribute('data-candidate-save')) {
       const c = currentDong(), msg = panel.querySelector('[data-candidate-status]'); if (!c || !msg) return;
-      const rows = rowsFor(c.v, c.m, c.it), snapshot = snapshotOf(c.it, rows, new Date()), route = toHash(state.route);
+      if (candidateLoading(c.v.emdCode) || candidateFailures(c.v.emdCode).length) return;
       b.disabled = true;
       try {
         if (!window.RenewCandidates) await import('./candidates.js?v=20261127-r61-candidate-context');
-        const saved = window.RenewCandidates.save(localStorage, snapshot, route, rows, c.m.selYear);
-        msg.textContent = saved ? '보관함에 담았습니다. 이 기기에만 저장됩니다.' : '이미 보관함에 있습니다.';
+        const now = currentDong();
+        if (!now || now.it.code !== c.it.code || now.m.selYear !== c.m.selYear ||
+          candidateLoading(now.v.emdCode) || candidateFailures(now.v.emdCode).length) return;
+        const rows = rowsFor(now.v, now.m, now.it), snapshot = snapshotOf(now.it, rows, new Date());
+        const saved = window.RenewCandidates.save(localStorage, snapshot, toHash(state.route), rows, now.m.selYear);
+        panel.querySelector('[data-candidate-status]').textContent = saved ? '보관함에 담았습니다. 이 기기에만 저장됩니다.' : '이미 보관함에 있습니다.';
       } catch (err) { msg.textContent = '저장하지 못했습니다. ' + err.message; }
       finally { b.disabled = false; }
     }
@@ -3230,7 +3252,7 @@
   };
   const loadAux = k => { extraAsked.add(k); return fetchJson(AUX[k][0], true).then(j => {
     state[k] = j && AUX[k][1](j) ? j : null;
-    if (fetchFailed(AUX[k][0])) state.failed.add(k); else state.failed.delete(k);
+    if (fetchFailed(AUX[k][0]) || (j !== null && state[k] === null)) state.failed.add(k); else state.failed.delete(k);
   }); };
   // R3 13: 순이동(migration.json 717KB)·부동산(realestate.json 1.96MB)은 첫 화면에 안 쓴다 → 그 지표 칩을 고르거나, 동을 골라 카드·문서가 쓸 때 받는다.
   // 받기 전에는 state가 undefined라 칩은 '수집 중'이고 문서는 '불러오는 중'으로 기다린다(filesLoading)
@@ -3244,12 +3266,14 @@
   function retryAux(k) { state[k] = undefined; state.failed.delete(k); extraAsked.delete(k); wantExtra(k); }
   // 보조 자료 네 개는 다 받은 뒤 한 번만 다시 그린다(하나 올 때마다 지도·문서를 새로 그리면 휴대폰에서 1초 넘게 멈췄다, 2026-11-07 라이트하우스)
   // 2026-11-08: dashboard.json(2.5MB, 정밀 사례 칸 전용)은 여기서 빼고 읍·면·동 단계에서 받는다(hubHTML의 loadDash)
+  const candidateIndexes = Promise.all([loadAux('living'), loadAux('designations')]);
+  candidateIndexes.then(() => {
+    if (state.index && state.route.dong && [state.templates, state.livingSummary, state.forecastIdx].includes(undefined)) render();
+  });
   Promise.all([
+    candidateIndexes,
     loadAux('templates').then(() => { if (DG && state.templates) DG.setTemplates(state.templates); }),
-    loadAux('living'),
     fetchJson('data/national/living/summary.json', true).then(j => { state.livingSummary = j; mergeLivingSummary(state.index, j); coverMemo.clear(); }),
-    // 다른 직원이 만드는 중인 파일. 없으면(404) null → 해당 칩은 '수집 중'
-    loadAux('designations'),
     loadAux('forecastIdx'),
   ]).then(() => { if (state.index) render(); });
   // 보충 목록(경계 없는 동 9곳)은 받지 못해도 본 색인으로 찾는다(home.js getIndex와 같다)
