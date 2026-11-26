@@ -41,11 +41,11 @@ def verify_reusable_evidence(page, output, width):
         page.evaluate(r"""() => {
           const C=RenewCandidates;
           localStorage.setItem(C.KEY,'[]');
-          for(const [code,name,value] of [['21090700','합성 후보 A',0],['21090701','합성 후보 B',-2.81]]) {
+          for(const [code,name,value,year] of [['21090700','합성 후보 A',0],['21090701','합성 후보 B',-2.81,2024]]) {
             const basis={source_url:'https://example.org/a',area_code:code,formula_id:'synthetic',formula_text:'합성 산식',rule_version:'synthetic',spatial_unit:'행정동'};
             const item={c:'POP',l:'합성 비율',u:'%',v:value,t:value+'%',s:'미확인',d:'2025-12-31',basis};
             C.save(localStorage,{code,name,saved_at:'2026-11-17T01:00:00.000Z',items:[item,{c:'MISSING',l:'미수집 항목',u:'%',v:null,t:'확인 필요',s:'추가확인',d:null,basis:null}]},'#map/21/21090/'+code,
-              [{ind:{code:'POP'},cell:{source_name:'합성기관',retrieved_at:'2026-11-17T00:00:00Z',license_type:'합성',cell_id:'synthetic-'+code,snapshot_id:'synthetic'}}]);
+              [{ind:{code:'POP'},cell:{source_name:'합성기관',retrieved_at:'2026-11-17T00:00:00Z',license_type:'합성',cell_id:'synthetic-'+code,snapshot_id:'synthetic'}}],year);
           }
           C.update(localStorage,'21090700','hold','=1+2\n원천 자료 추가확인');
         }""")
@@ -66,7 +66,10 @@ def verify_reusable_evidence(page, output, width):
             review = ET.fromstring(archive.read('xl/worksheets/sheet3.xml'))
             records = [[''.join(c.itertext()) for c in row] for row in review.findall('s:sheetData/s:row',ns)]
             a = next(r for r in records if r and r[0]=='21090700')
-            assert a == ['21090700','합성 후보 A','보류','','2026-11-17T01:00:00.000Z']
+            assert records[0] == ['지역 코드','후보 동','검토 단계','검토 메모','저장 시각','지도 선택 연도']
+            assert a == ['21090700','합성 후보 A','보류','','2026-11-17T01:00:00.000Z','미기록']
+            b = next(r for r in records if r and r[0]=='21090701')
+            assert b[-1] == '2024년'
             comparison = ET.fromstring(archive.read('xl/worksheets/sheet1.xml'))
             values = [float(v.text) for v in comparison.findall('.//s:v',ns)]
             assert 0 in values and -2.81 in values
