@@ -72,7 +72,7 @@
       else e.removeAttribute("aria-current");
     });
   }
-  async function action(fn) {
+  async function action(fn, { readOnly = false } = {}) {
     if (busy) return;
     busy = true;
     const controls = [
@@ -87,7 +87,7 @@
     const pending = "처리 중입니다.";
     say(pending);
     try {
-      const run = async () => {
+      const run = readOnly ? fn : async () => {
         const before = new Set((await F.docs()).map(d => d.id));
         try { await fn(); }
         catch (error) {
@@ -206,13 +206,18 @@
     code.textContent = sha || "";
     $("checkHash").replaceChildren(...(sha ? ["근거 파일 확인값(SHA-256): ", code] : ["근거 파일을 고르면 파일 확인값(SHA-256)을 남깁니다."]));
   }
-  function render() {
-    $("handoverStatus").textContent = current
-      ? `선택한 v${current.revision}의 이력과 연결 파일을 검사한 뒤 요약을 확인하세요.`
-      : "저장한 과업을 선택하면 인수인계 요약을 확인할 수 있습니다.";
+  function clearHandover(message) {
+    $("handoverStatus").textContent = message;
     $("handoverAttention").replaceChildren();
+    $("handoverComparisonStatus").textContent = "";
+    $("handoverChanges").replaceChildren();
     $("handoverPreview").hidden = true;
     $("downloadHandover").hidden = true;
+  }
+  function render() {
+    clearHandover(current
+      ? `선택한 v${current.revision}의 이력과 연결 파일을 검사한 뒤 요약을 확인하세요.`
+      : "저장한 과업을 선택하면 인수인계 요약을 확인할 수 있습니다.");
     $("taskState").textContent = current
       ? `${current.spec.title} · v${current.revision} · ${labels[current.state]} · 대조 ${current.attempts}/3회`
       : "새 과업을 설정하세요.";
@@ -440,31 +445,34 @@
       say("보고서 묶음을 불러왔습니다. 과업 계획을 저장한 뒤 연결해 주세요.");
     }
   }
+  async function requireCurrentExport(id, hash) {
+    const stored = await S.headHash(id);
+    if (stored === hash && current?.id === id && current.hash === hash) return;
+    const message = "과업판이 바뀌었습니다. 과업을 다시 열어 최신 판을 확인해 주세요.";
+    clearHandover(message);
+    throw Object.assign(new Error(message), { code: "TASK_EXPORT_STALE" });
+  }
   async function backup() {
     if (!current) throw new Error("보관할 과업을 선택해 주세요.");
     const base = current, versions = history.slice();
+    await requireCurrentExport(base.id, base.hash);
     const entries = (await F.docs()).filter(
       (d) => d.kind === "task-file" && d.task_id === base.id,
     );
     const saved = await B.make(versions, entries);
-    if (current?.hash !== base.hash)
-      throw new Error("검사 중 선택한 과업판이 바뀌었습니다. 다시 확인해 주세요.");
+    await requireCurrentExport(base.id, base.hash);
     return saved;
   }
   async function handover() {
-    $("handoverPreview").hidden = true;
-    $("downloadHandover").hidden = true;
-    $("handoverAttention").replaceChildren();
-    $("handoverStatus").textContent = "이력과 연결 파일을 검사하고 있습니다.";
+    clearHandover("이력과 연결 파일을 검사하고 있습니다.");
     try {
       const saved = await backup();
       const guide = await B.handover(saved.manifest, D.localDate());
-      if (current?.hash !== saved.manifest.head_hash)
-        throw new Error("요약 준비 중 선택한 과업판이 바뀌었습니다. 다시 확인해 주세요.");
+      await requireCurrentExport(saved.manifest.id, saved.manifest.head_hash);
       showHandover(guide);
       return { saved, guide };
     } catch (error) {
-      $("handoverStatus").textContent = "요약을 만들지 못했습니다. 안내된 파일이나 이력을 확인해 주세요.";
+      if (error.code !== "TASK_EXPORT_STALE") clearHandover("요약을 만들지 못했습니다. 안내된 파일이나 이력을 확인해 주세요.");
       throw error;
     }
   }
@@ -629,59 +637,63 @@
   });
   $("backupTask").addEventListener("click", () =>
     action(async () => {
-      const b = await backup();
+      const b = await backup(), data = JSON.stringify(b);
+      await requireCurrentExport(b.manifest.id, b.manifest.head_hash);
       D.saveBytes(
-        `renewmap-task-${b.manifest.id}-v${b.manifest.revision}.json`,
-        JSON.stringify(b),
+        `renewmap-internal-backup-${b.manifest.id}-v${b.manifest.revision}.json`,
+        data,
         "application/json",
       );
       say(
         "이력과 연결 파일을 포함한 백업을 받았습니다. 안전한 별도 위치에 보관해 주세요.",
       );
-    }),
+    }, { readOnly: true }),
   );
   $("noticeBackup").addEventListener("click", () => $("backupTask").click());   // 첫 줄 안내의 '백업 받기'는 3단계 단추와 같은 일
   $("handoverTask").addEventListener("click", () =>
     action(async () => {
       await handover();
       say("선택한 과업판의 인수인계 요약을 확인했습니다. 과업 이력은 바뀌지 않았습니다.");
-    }),
+    }, { readOnly: true }),
   );
   $("downloadHandover").addEventListener("click", () =>
     action(async () => {
       const { saved, guide } = await handover();
-      D.saveBytes(`renewmap-handover-${saved.manifest.id}-v${saved.manifest.revision}.txt`, guide.text, "text/plain;charset=utf-8");
+      D.saveBytes(`renewmap-internal-handover-${saved.manifest.id}-v${saved.manifest.revision}.txt`, guide.text, "text/plain;charset=utf-8");
       say("인수인계 요약을 받았습니다. 복원용 JSON 백업도 별도로 보관해 주세요.");
-    }),
+    }, { readOnly: true }),
   );
   $("selectedDelivery").addEventListener("click", () =>
     action(async () => {
       const base = current, names = [...deliveryPicks], versions = history.slice();
       if (!base || deliveryHead !== base.hash || !names.length)
         throw new Error("현재 판에서 전달할 파일을 선택해 주세요.");
+      await requireCurrentExport(base.id, base.hash);
       const hashes = new Set(base.artifacts.filter(file => deliveryPicks.has(file.name)).map(file => file.sha256));
       const entries = await Promise.all([...hashes].map(sha => F.doc(`task-file:${base.id}:${sha}`)));
       const selected = await B.selectedZip(versions, names, entries);
-      if (current?.hash !== base.hash || (await S.history(base.id)).at(-1)?.hash !== base.hash)
-        throw new Error("과업판이 바뀌었습니다. 과업을 다시 열고 전달할 파일을 선택해 주세요.");
+      const data = D.zipStore(selected.entries, D.localDate());
+      await requireCurrentExport(base.id, base.hash);
       D.saveBytes(
         `renewmap-selected-v${selected.receipt.revision}.zip`,
-        D.zipStore(selected.entries, D.localDate()),
+        data,
         "application/zip",
       );
       say("선택한 파일 " + selected.receipt.selected_count + "개의 전달 묶음을 받았습니다.");
-    }),
+    }, { readOnly: true }),
   );
   $("zipTask").addEventListener("click", () =>
     action(async () => {
       const { saved: b, guide } = await handover();
+      const data = D.zipStore(B.zipEntries(b, guide.text), D.localDate());
+      await requireCurrentExport(b.manifest.id, b.manifest.head_hash);
       D.saveBytes(
-        `renewmap-delivery-${b.manifest.id}-v${b.manifest.revision}.zip`,
-        D.zipStore(B.zipEntries(b, guide.text), D.localDate()),
+        `renewmap-internal-history-${b.manifest.id}-v${b.manifest.revision}.zip`,
+        data,
         "application/zip",
       );
       say("과거 판과 검토 기록이 담긴 내부 보관용 전체 이력 ZIP을 받았습니다.");
-    }),
+    }, { readOnly: true }),
   );
   $("restoreTask").addEventListener("click", () =>
     action(async () => {

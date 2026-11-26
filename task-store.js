@@ -90,6 +90,7 @@
   const api={
     list:async()=> (await read('heads',s=>s.getAll())).sort((a,b)=>b.at.localeCompare(a.at)).map(freeze),
     history,
+    headHash:async id=>(await read('heads',s=>s.get(id)))?.hash ?? null,
     append:async(record,expectedPreviousHash)=>{
       if(expectedPreviousHash!==null && (typeof expectedPreviousHash!=='string' || !/^[a-f0-9]{64}$/.test(expectedPreviousHash))) throw new Error('이전 버전 지문을 명시해 주세요.');
       const candidate=snapshot(record), h=await history(candidate.id);
