@@ -244,17 +244,13 @@ body.field .card > details.rm-disclosure:last-child[open] { padding-bottom: 0; }
   body.fr-record #main .fr-form { margin-top: 0; }
 }
 
-/* 구역 계산(redev.html): 1024px 이상은 입력 | 오른쪽 칸(.fr-side: 계산 전 견본, 계산 뒤 결과·경계안 비교) 두 칸.
-   rm6.css의 같은 무게 규칙(body.redev-v4 #main)보다 뒤에 와도 이기게 body.field.fr-redev로 쓴다 */
+/* 1024px 이상은 입력과 결과를 두 칸으로 두고, 입력의 고정 범위는 계산 영역 안으로 한정한다. */
 @media (min-width: 1024px) {
-  body.field.fr-redev #main { display: grid; grid-template-columns: minmax(0, 7fr) minmax(360px, 5fr); column-gap: 32px; align-items: start; max-width: var(--rm-max); padding: 12px 20px 32px; }
-  body.field.fr-redev #main > * { grid-column: 1; }
-  body.field.fr-redev #main > :is(.breadcrumb, h1, h1 + .sub) { grid-column: 1 / -1; }
-  body.field.fr-redev #main > .fr-side { grid-column: 2; grid-row: 4; align-self: stretch; min-width: 0; }
-  body.field.fr-redev #main > .fr-main { min-width: 0; }
-  body.field.fr-redev #main > #plans { grid-column: 1 / -1; min-width: 0; }
-  /* 결과(.fr-side)가 입력보다 몇 배 길어 왼쪽이 텅 비었다 → 결과가 있으면 입력 칸이 화면에 붙고, 넘치면 이 칸 안에서만 내린다 */
-  body.field.fr-redev #main:has(#out:not([hidden])) > .fr-main { position: sticky; top: 88px; max-height: calc(100vh - 104px); overflow-y: auto; overscroll-behavior: contain; }
+  body.field.fr-redev #main { display: block; max-width: var(--rm-max); padding: 12px 20px 32px; }
+  body.field.fr-redev .fr-workspace { display: grid; grid-template-columns: minmax(0, 7fr) minmax(360px, 5fr); column-gap: 32px; align-items: start; }
+  body.field.fr-redev .fr-side { align-self: stretch; min-width: 0; }
+  body.field.fr-redev .fr-main { min-width: 0; }
+  body.field.fr-redev .fr-workspace:has(#out:not([hidden])) > .fr-main { position: sticky; top: 88px; max-height: calc(100vh - 104px); overflow-y: auto; overscroll-behavior: contain; }
   body.field.fr-redev #f.card { max-width: none; }
   body.field.fr-redev .fr-side > .card:first-of-type { margin-top: 0; }
   /* 견본은 칸 안에서 화면에 붙고, 그림 전체(가로에 맞춘 원래 비율)가 첫 화면 안에 들어온다 */
