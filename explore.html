@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9nxwWoDSGzwKbzP3upjVaroFxmP3c1Fxn9CdhIDqvCg=' 'sha256-ks1WdDiI+6LpYrymeDD3jm1JVRsZGpD+khGiTjnZEhI=' https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/ oapi.map.naver.com nrbe.map.naver.net nrbe.pstatic.net; style-src 'self' https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/ 'unsafe-hashes' 'sha256-H7dQF5ax9lLTUTM/FW7YC+KypydYJF03Qhs1DNfoWeQ='; img-src 'self' data: https://tile.openstreetmap.org https://api.vworld.kr map.pstatic.net nrbe.map.naver.net nrbe.pstatic.net static.naver.net ssl.pstatic.net oapi.map.naver.com; font-src 'self' data:; connect-src 'self' oapi.map.naver.com nrbe.map.naver.net nrbe.pstatic.net map.pstatic.net kr-col-ext.nelo.navercorp.com; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-RrS/8wQsNa3dKknLqh4Dwxo7Tg35z/IFydN/RWStabE=' 'sha256-ks1WdDiI+6LpYrymeDD3jm1JVRsZGpD+khGiTjnZEhI=' https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/ oapi.map.naver.com nrbe.map.naver.net nrbe.pstatic.net; style-src 'self' https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/ 'unsafe-hashes' 'sha256-H7dQF5ax9lLTUTM/FW7YC+KypydYJF03Qhs1DNfoWeQ='; img-src 'self' data: https://tile.openstreetmap.org https://api.vworld.kr map.pstatic.net nrbe.map.naver.net nrbe.pstatic.net static.naver.net ssl.pstatic.net oapi.map.naver.com; font-src 'self' data:; connect-src 'self' oapi.map.naver.com nrbe.map.naver.net nrbe.pstatic.net map.pstatic.net kr-col-ext.nelo.navercorp.com; form-action 'self' mailto:; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
 <script data-source="frame-guard.js">
 // 다른 사이트가 이 화면을 iframe으로 감싸면(클릭재킹) 최상위 창으로 연다.
 // GitHub Pages는 X-Frame-Options·CSP frame-ancestors 응답 헤더를 넣을 수 없고, meta CSP의 frame-ancestors는 무시된다(감사 2026-10-29 H4).
@@ -43,16 +43,14 @@ document.documentElement.classList.add('js');
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="manifest" href="site.webmanifest">
 <link rel="preload" as="fetch" href="data/national/index_map.json" crossorigin="anonymous">
-<link rel="preload" as="script" href="field/naver-map-key.js" fetchpriority="high">
 <link rel="preload" as="font" href="fonts/pretendard-map.woff2" type="font/woff2" crossorigin>
-<link rel="preconnect" href="https://oapi.map.naver.com">
-<link rel="preconnect" href="https://nrbe.pstatic.net">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <script data-source="map-start.js">
-/* 지도 SDK는 화면·통계 스크립트가 끝나기를 기다리지 않고 받는다. */
+/* 외부 배경지도를 켰을 때만 네이버 지도 SDK를 요청한다. */
 (function () {
   'use strict';
-  window.renewNaverReady = new Promise(resolve => {
+  let ready;
+  window.renewLoadNaver = () => ready || (ready = new Promise(resolve => {
     let ended = false;
     const done = ok => { ended = true; clearTimeout(timer); resolve(ok); };
     const timer = setTimeout(() => done(false), 5000);
@@ -77,7 +75,7 @@ document.documentElement.classList.add('js');
       document.head.appendChild(sdk);
     };
     document.head.appendChild(config);
-  });
+  }));
 })();
 </script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" crossorigin="anonymous" integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="></script>
@@ -89,7 +87,7 @@ document.documentElement.classList.add('js');
 <link rel="stylesheet" href="hero.css?v=20261122-r23">
 <!-- 2026-11-12: 동 이름표 스타일 추가에 맞춰 버전을 붙인다(옛 map.css 캐시가 이름표를 잘못 그리지 않게) -->
 <!-- 2026-11-13: 동 요약 신청요건 한 줄(.sr-req)·시작 묶음 단추(.map-bundles) 스타일로 버전을 올림 -->
-<link rel="stylesheet" href="map.css?v=20261123-r36">
+<link rel="stylesheet" href="map.css?v=20261126-boundary-first">
 <link rel="stylesheet" href="programs.css?v=20261121-r16">
 <link rel="stylesheet" href="overlay.css?v=20261119-r3">
 <link rel="stylesheet" href="v4.css?v=20261120-r11"><!-- 2026-11-12: 768~1099px 지도 정리 규칙을 더해 캐시 버전을 붙임 -->
@@ -110,7 +108,7 @@ document.documentElement.classList.add('js');
 <!-- 2026-11-13: 신청요건 한 줄(reqLineHTML)·도넛 접기·시작 묶음(BUNDLES)으로 버전을 올림 -->
 <!-- 2026-11-13: 최저기준 묶음에 보건소·어린이집 거리 칩을 더해 버전을 올림 -->
 <script src="decline-req.js?v=20261122-r21" defer></script>
-<script src="map.js?v=20261126-candidate-entry" defer></script>
+<script src="map.js?v=20261126-boundary-first" defer></script>
 <!-- 2026-11-22: 안전·재난·기후 층(?layer=safety). map.js가 지도를 만들면 층 단추를, 동 카드를 그리면 동 묶음을 붙인다 -->
 <script src="safety-layer.js?v=20261123-r36" defer></script>
 <script src="explore-layout.js?v=20261123-r36" defer></script>

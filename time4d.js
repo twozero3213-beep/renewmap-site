@@ -140,10 +140,9 @@
   function paint() {
     $('t4YearOut').textContent = `${year}년`;
     $('t4TagL').textContent = `${year}년`;
-    const sn = stats(blds, NOW);
-    $('t4CmpNote').textContent = s0Line(year, sn);
+    const s = stats(blds, year), sn = year === NOW ? s : stats(blds, NOW);
+    $('t4CmpNote').textContent = s.pct20 === null || sn.pct20 === null ? '' : `20년 이상: ${year}년 ${s.pct20}% → 올해 ${sn.pct20}%`;
     slider.setAttribute('aria-valuetext', `${year}년`);
-    const s = stats(blds, year);
     $('t4Built').textContent = fmt(s.built);
     $('t4P20').textContent = s.pct20 === null ? '-' : `${s.pct20}%`;
     $('t4P30').textContent = s.pct30 === null ? '-' : `${s.pct30}%`;
@@ -158,11 +157,6 @@
       map.setPaintProperty('b3d', 'fill-extrusion-color', colorExpr(year));
       map.setFilter('b3d', filterExpr(year));
     }
-  }
-  // 나란히 볼 때 왼쪽 패널에 두 해의 20년 이상 비율 변화를 한 줄로(v7 7회차: 고른 해 숫자만 있어 변화량이 없었다)
-  function s0Line(y, sn) {
-    const s = stats(blds, y);
-    return s.pct20 === null || sn.pct20 === null ? '' : `20년 이상: ${y}년 ${s.pct20}% → 올해 ${sn.pct20}%`;
   }
   function marks() {
     const y50 = sinceYear(blds, 50, YEAR_FROM, NOW, TO), y67 = sinceYear(blds, 66.7, YEAR_FROM, NOW, TO);
@@ -182,33 +176,32 @@
     const epoch = ++loadEpoch;
     stop();
     $('t4Csv').disabled = true;
+    $('t4OpenMap').disabled = true;
+    if (map) {
+      lastGj = { type: 'FeatureCollection', features: [] };
+      map.getSource('b').setData(lastGj);
+      if (map2) map2.getSource('b').setData(lastGj);
+    }
     $('t4Status').textContent = '건물을 불러오는 중입니다.';
     try {
-      const [outline, bf] = await Promise.all([getJson(`bldg_outline/${code}.json`), getJson(`buildings/${code}.json`)]);
-      if (epoch !== loadEpoch) return false;
-      await ready();
+      const bf = await getJson(`buildings/${code}.json`);
       if (epoch !== loadEpoch) return false;
       blds = bf.buildings || [];
-      fileMeta = { outline, bf };
+      fileMeta = { code, bf };
+      $('t4OpenMap').disabled = false;
       const ref = Number(String(bf.age_reference_date || bf.hub_reference_date || '').slice(0, 4));
       if (ref >= 2000 && ref !== NOW) {
         const atNow = year === NOW; NOW = ref; TO = NOW + 20; slider.max = String(TO);
         $('t4Ends').textContent = `${YEAR_FROM}년 ~ ${TO}년 · 올해 뒤는 지금 건물 그대로일 때`;
         if (atNow || year > TO) { year = Math.min(atNow ? NOW : year, TO); slider.value = String(year); }
       }
-      const gj = features(outline, bf);
-      const bbox = bboxOf(gj);
-      map.getSource('b').setData(gj);
-      lastGj = gj;
-      if (map2) map2.getSource('b').setData(gj);
-      map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 0, pitch: 55, bearing: -20, duration: 0 });
-      map.setZoom(map.getZoom() + 0.6);   // 기울여 보면 화면 아래쪽이 비어 한 단계 당겨 본다
-      $('t4Status').textContent = `${bf.name} 건물을 세웠습니다. 부속 건물까지 모두 세우고, 숫자는 날짜 있는 주건축물로 셉니다.`;
+      $('t4Status').textContent = `${bf.name} 건물 통계를 불러왔습니다.`;
       $('t4Name').textContent = bf.name;
-      $('t4Src').innerHTML = `외곽선·높이: ${esc(outline.name)}(기준일 ${esc(outline.base_date)}, ${esc(outline.license_type)}) · 완공된 날(사용승인일): ${esc(bf.source)}(기준일 ${esc(bf.hub_reference_date)})`;
+      $('t4Src').textContent = `완공된 날(사용승인일): ${bf.source || ''}(기준일 ${bf.hub_reference_date || ''})`;
       marks(); paint();
       $('t4Csv').disabled = !blds.length;
-      return true;
+      if (mapRequested) await showBuildings(epoch);
+      return epoch === loadEpoch;
     } catch (e) {
       if (epoch === loadEpoch) $('t4Status').textContent = '이 동의 건물 자료를 불러오지 못했습니다. 다른 동을 골라 보세요.';
       return false;
@@ -227,7 +220,7 @@
 
   // 지도 하나를 세운다. yearOf: 이 지도가 보여 줄 해(본 지도 = 막대의 해, 비교 지도 = 올해)
   function buildMap(container, yearOf, nav) {
-    return new Promise((ok) => {
+    return new Promise((ok, reject) => {
       // v7(2026-11-13): 빈 바탕 대신 OpenFreeMap 배경 지도(키·사용량 제한 없음, 상용 가능)에 한국어 이름을 먼저 싣고(vendor/openfreemap/positron.json),
       // Mapterhorn 지형으로 산자락 음영을 깐다. 부산은 산이 많아 음영이 없으면 건물이 어디에 붙어 있는지 읽히지 않았다.
       // 한글은 배경 지도 글꼴 파일에 없어 화면 글꼴(Pretendard)로 그린다(localIdeographFontFamily)
@@ -241,7 +234,9 @@
       if (nav) map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
       map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: '국토교통부 GIS건물통합정보 · 건축물대장' }));
       // 'load'는 배경 타일·지형까지 다 받은 뒤라 첫 화면이 7초 넘게 비었다. 모양(style)만 오면 건물을 바로 세운다
+      const timeout = setTimeout(() => { map.remove(); reject(new Error('map style')); }, 15000);
       map.once('style.load', () => {
+        clearTimeout(timeout);
         const firstLabel = map.getStyle().layers.find((l) => l.type === 'symbol').id;
         map.addSource('dem', { type: 'raster-dem', tiles: ['https://tiles.mapterhorn.com/{z}/{x}/{y}.webp'], encoding: 'terrarium', tileSize: 512, maxzoom: 12,
           attribution: '<a href="https://mapterhorn.com/attribution">© Mapterhorn</a>' });
@@ -271,14 +266,61 @@
       map.on('error', () => {});
     });
   }
-  let readyP = null;
+  let readyP = null, mapRequested = wideHow.matches;
   function ready() {
     if (readyP) return readyP;
-    if (!window.maplibregl) return Promise.reject(new Error('maplibre'));
-    maplibregl.setWorkerUrl('vendor/maplibre/maplibre-gl-csp-worker.js');
-    readyP = buildMap('t4Map', () => year, true).then((m) => { map = m; });
+    readyP = new Promise((resolve, reject) => {
+      if (window.maplibregl) { resolve(); return; }
+      const script = document.createElement('script');
+      script.src = 'vendor/maplibre/maplibre-gl-csp.js';
+      script.onload = resolve;
+      script.onerror = () => { script.remove(); reject(new Error('maplibre')); };
+      document.head.appendChild(script);
+    }).then(() => {
+      maplibregl.setWorkerUrl('vendor/maplibre/maplibre-gl-csp-worker.js');
+      return buildMap('t4Map', () => year, true);
+    }).then(m => { map = m; }).catch(err => { readyP = null; throw err; });
     return readyP;
   }
+
+  async function showBuildings(epoch, focus = false) {
+    const { code, bf } = fileMeta;
+    const button = $('t4OpenMap'), prompt = $('t4MapPrompt'), region = $('t4Map');
+    button.disabled = true;
+    button.textContent = '입체 지도 불러오는 중';
+    region.hidden = false;
+    try {
+      const [outline] = await Promise.all([getJson(`bldg_outline/${code}.json`), ready()]);
+      if (epoch !== loadEpoch) return;
+      const gj = features(outline, bf), bbox = bboxOf(gj);
+      lastGj = gj;
+      map.getSource('b').setData(gj);
+      if (map2) map2.getSource('b').setData(gj);
+      map.resize();
+      map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 0, pitch: 55, bearing: -20, duration: 0 });
+      map.setZoom(map.getZoom() + 0.6);
+      paint();
+      $('t4Status').textContent = `${bf.name} 건물을 세웠습니다. 부속 건물까지 모두 세우고, 숫자는 날짜 있는 주건축물로 셉니다.`;
+      $('t4Src').innerHTML = `외곽선·높이: ${esc(outline.name)}(기준일 ${esc(outline.base_date)}, ${esc(outline.license_type)}) · 완공된 날(사용승인일): ${esc(bf.source)}(기준일 ${esc(bf.hub_reference_date)})`;
+      $('t4Cmp').disabled = false;
+      prompt.hidden = true;
+      if (focus) region.focus({ preventScroll: true });
+    } catch {
+      if (epoch !== loadEpoch) return;
+      region.hidden = !map;
+      $('t4Cmp').disabled = true;
+      prompt.hidden = false;
+      button.disabled = false;
+      button.textContent = '입체 지도 다시 불러오기';
+      $('t4Status').textContent = '입체 지도를 불러오지 못했습니다. 건물 통계와 CSV는 이용할 수 있습니다.';
+    }
+  }
+  $('t4OpenMap').disabled = true;
+  $('t4OpenMap').addEventListener('click', () => {
+    if (!fileMeta) return;
+    mapRequested = true;
+    showBuildings(loadEpoch, true);
+  });
   // 올해와 비교(v7, S-Map 연도 비교처럼): 오른쪽에 올해 모형을 하나 더 세우고 두 지도의 시점을 같이 움직인다. 왼쪽은 막대의 해
   let map2 = null, map2P = null, lastGj = null, syncing = false;
   const camOf = (m) => ({ center: m.getCenter(), zoom: m.getZoom(), bearing: m.getBearing(), pitch: m.getPitch() });
@@ -287,14 +329,22 @@
     const on = $('t4Cmp').getAttribute('aria-pressed') !== 'true';
     $('t4Cmp').setAttribute('aria-pressed', String(on));
     $('t4App').classList.toggle('is-compare', on);
-    await ready();
     map.resize();
     if (!on) return;
-    if (!map2P) map2P = buildMap('t4Map2', () => NOW, false).then((m) => { map2 = m; sync(map, m); sync(m, map); });
-    await map2P;
-    map2.resize();
-    if (lastGj) map2.getSource('b').setData(lastGj);
-    map2.jumpTo(camOf(map));
+    try {
+      if (!map2P) map2P = buildMap('t4Map2', () => NOW, false).then((m) => { map2 = m; sync(map, m); sync(m, map); });
+      await map2P;
+      if ($('t4Cmp').getAttribute('aria-pressed') !== 'true') return;
+      map2.resize();
+      if (lastGj) map2.getSource('b').setData(lastGj);
+      map2.jumpTo(camOf(map));
+    } catch {
+      map2P = null;
+      $('t4Cmp').setAttribute('aria-pressed', 'false');
+      $('t4App').classList.remove('is-compare');
+      map.resize();
+      $('t4Status').textContent = '비교 지도를 불러오지 못했습니다. 다시 시도해 주세요.';
+    }
   });
 
   function stop() { if (timer) { clearInterval(timer); timer = null; } $('t4Play').setAttribute('aria-pressed', 'false'); $('t4Play').textContent = '연도 돌려 보기'; }

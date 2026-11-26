@@ -26,12 +26,11 @@
 <link rel="stylesheet" href="styles.css?v=20261122-r19">
 <link rel="stylesheet" href="site-v4.css?v=20261120-r11">
 <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
-<link rel="stylesheet" href="time4d.css?v=20261122-r23">
+<link rel="stylesheet" href="time4d.css?v=20261126-mobile-first">
 <script src="site.js?v=20261122-r24" defer></script>
-<script src="vendor/maplibre/maplibre-gl-csp.js" defer></script>
 <script src="util.js?v=20261122-r19" defer></script>
 <script src="save-file.js?v=20261119-w2" defer></script>
-<script src="time4d.js?v=20261122-r23" defer></script>
+<script src="time4d.js?v=20261126-mobile-first" defer></script>
 <link rel="stylesheet" href="rm6.css?v=20261122-r24">
 </head>
 <body>
@@ -77,7 +76,8 @@
       </div>
     </aside>
     <div class="t4-stage">
-      <div id="t4Map" class="t4-map" role="region" aria-label="법정동 건물 입체 모형. 왼쪽 숫자판과 아래 연도가 같은 내용을 글로 알려 줍니다."></div>
+      <div id="t4MapPrompt"><button type="button" class="btn ghost" id="t4OpenMap" aria-controls="t4Map">입체 지도 켜기</button></div>
+      <div id="t4Map" class="t4-map" hidden tabindex="-1" role="region" aria-label="법정동 건물 입체 모형. 왼쪽 숫자판과 아래 연도가 같은 내용을 글로 알려 줍니다."></div>
       <div id="t4Map2" class="t4-map t4-map2" role="region" aria-label="올해 건물 입체 모형(비교)"></div>
       <p class="t4-future-tag" aria-hidden="true">가정: 지금 건물이 그대로 있을 때</p>
       <span class="t4-tag t4-tag-l" id="t4TagL" aria-hidden="true"></span><span class="t4-tag t4-tag-r" aria-hidden="true">올해</span>
@@ -86,7 +86,7 @@
         <label class="t4-slider"><span class="sr-only">연도</span><input type="range" id="t4Year" step="1"><small id="t4Ends" class="t4-ends"></small></label>
         <output id="t4YearOut" for="t4Year" aria-live="polite"></output>
         <button type="button" id="t4Now" class="btn ghost">올해로</button>
-        <button type="button" id="t4Cmp" class="btn ghost" aria-pressed="false">올해와 나란히</button>
+        <button type="button" id="t4Cmp" class="btn ghost" aria-pressed="false" disabled>올해와 나란히</button>
       </div>
     </div>
   </div>

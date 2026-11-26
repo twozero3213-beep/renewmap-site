@@ -1,7 +1,8 @@
-/* 지도 SDK는 화면·통계 스크립트가 끝나기를 기다리지 않고 받는다. */
+/* 외부 배경지도를 켰을 때만 네이버 지도 SDK를 요청한다. */
 (function () {
   'use strict';
-  window.renewNaverReady = new Promise(resolve => {
+  let ready;
+  window.renewLoadNaver = () => ready || (ready = new Promise(resolve => {
     let ended = false;
     const done = ok => { ended = true; clearTimeout(timer); resolve(ok); };
     const timer = setTimeout(() => done(false), 5000);
@@ -26,5 +27,5 @@
       document.head.appendChild(sdk);
     };
     document.head.appendChild(config);
-  });
+  }));
 })();

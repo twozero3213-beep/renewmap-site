@@ -64,6 +64,8 @@
 #map .leaflet-bottom .leaflet-control-attribution { margin-bottom: 4px; }   /* 같은 모서리의 축척 막대와 1px 겹쳤다 */
 /* 3D 건물 버튼: 확대·축소 아래, 글자 버튼(Leaflet 기본 30px 정사각형보다 넓게, 누르기 영역 44px) */
 #map a.map-3d { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; background: var(--card, #fff); color: var(--ink); font-size: 15px; font-weight: 700; text-decoration: none; }
+#map .map-basemap { min-height: 44px; padding: 0 10px; font: inherit; font-size: 13px; font-weight: 700; background: var(--card, #fff); color: var(--ink); cursor: pointer; }
+#map .map-basemap:disabled { cursor: default; }
 #map a.map-3d:hover, #map a.map-3d:focus-visible { background: var(--ink); color: #fff; }
 .map-hint { font-size: 15px; color: var(--dim); margin: 6px 0 8px; }
 .map-provenance summary { min-height: 44px; padding: 10px 0; cursor: pointer; color: var(--ink); }

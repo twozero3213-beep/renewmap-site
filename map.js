@@ -1470,7 +1470,7 @@
     return new Set(kept.map(b => b.id));
   }
   const snapGet = code => { try { return JSON.parse(localStorage.getItem(SNAP_KEY + code) || 'null'); } catch (e) { return null; } };
-  // 배경 타일까지 보인 뒤 보조 자료를 받는다. 외부 지도가 막혀도 문서·조건 검색은 8초 뒤 계속한다. 타이머를 받아 시험이 시간을 대신한다
+  // 첫 경계를 그린 뒤 보조 자료를 받는다. 지도 초기화가 실패해도 문서·조건 검색은 8초 뒤 계속한다.
   function makeFirstMapGate(timers) {
     const { setTimeout, clearTimeout } = timers;   // 꺼내서 부른다: window 함수를 다른 객체의 메서드로 부르면 브라우저가 오류를 낸다
     let mapPainted;
@@ -1480,13 +1480,13 @@
     });
     return { firstMap, mapPainted };
   }
-  // 상세 시군구 경계는 한 번만 받는다(받는 중이면 같은 약속을 돌려준다). 첫 지도(배경 타일) 뒤에 낮은 우선순위로 받는다.
+  // 상세 시군구 경계는 한 번만 받는다. 첫 화면에 필요한 경우는 보조 자료를 기다리지 않는다.
   // 실패하면 개요 경계를 그대로 두고, 다음 호출에서 다시 받는다(2026-11-20 FE-R2-04: 한 번 끊기면 새로 고칠 때까지 각진 개요 경계가 남았다)
   function makeSgDetailLoader(deps) {
     let sgDetailWait = null;
-    return function loadSgDetail() {
+    return function loadSgDetail(low = true) {
       if (deps.state.sgGeoDetailed) return Promise.resolve(true);
-      return sgDetailWait || (sgDetailWait = deps.fetchJson('data/national/sigungu.geojson', true).then(geo => {
+      return sgDetailWait || (sgDetailWait = deps.fetchJson('data/national/sigungu.geojson', low).then(geo => {
         if (!geo || !Array.isArray(geo.features)) { sgDetailWait = null; return false; }
         deps.state.sgGeo = geo; deps.state.sgGeoDetailed = true;
         deps.render();
@@ -2458,23 +2458,16 @@
   // Leaflet 지도는 한 번 만들어 무대(stage)에 두고, render()는 색·선택만 바꾼다
   let M = null, to3dEl = null;   // to3dEl: '연도별 건물 나이(부산)' 단추(지도를 만들 때 한 번)
   api.getMap = () => M && M.map;
-  // 네이버 지도(배경만). 키(field/naver-map-key.js)는 사이트 저장소에만 있고 등록 주소에서만 동작. 실패·5초 초과면 브이월드로
-  // SDK가 NAVER 로고 img에 style 속성을 넣는다. explore.html CSP style-src에 그 문자열 해시만 허용했다('unsafe-hashes', 2026-11-07). SDK가 문구를 바꾸면 콘솔 오류로 다시 드러난다
-  // SDK는 map-start.js가 화면 스크립트보다 먼저 받기 시작한다(#mapApp은 explore.html에만 있고 그 화면이 map-start.js를 싣는다).
-  // v9: 여기에 같은 SDK 로더가 한 벌 더 있었는데 renewNaverReady가 늘 먼저 있어 한 번도 돌지 않았다 → 지웠다
   function loadNaver() {
     if (window.renewNaverAuthFailed) return Promise.resolve(false);
-    return window.renewNaverReady || Promise.resolve(false);
+    return window.renewLoadNaver?.() || Promise.resolve(false);
   }
-  // 지도를 처음 만들기 전 준비: 경계 자료·Leaflet·네이버 SDK를 차례로 기다린다. 기다리는 동안 false, 지도를 만들면 true
+  // 경계·지표 지도는 배경지도 공급자와 별도로 연다.
   function mapReady(slot) {
     const wait = msg => { if (slot) { slot.className = 'map-canvas is-wait'; slot.textContent = msg; } };
-    // 경계가 아직 오는 중(undefined)이면 배경 지도부터 만들고 경계는 온 뒤에 얹는다(첫 화면 배경 타일이 경계를 기다리지 않게)
     if (state.sgGeo === null) { if (slot) slot.outerHTML = emptyHTML('경계 자료 준비 중', ['시군구 경계가 아직 없습니다.', '아래 목록으로 숫자는 볼 수 있습니다.']); return false; }
     const D = window.RenewDashboard;
     if (!window.L) { wait('지도를 불러오는 중입니다.'); (D ? D.loadLeaflet() : Promise.reject()).then(render, () => { state.mapErr = true; render(); }); return false; }
-    if (state.naver === undefined) { state.naver = null; wait('지도를 불러오는 중입니다.'); loadNaver().then(ok => { state.naver = ok && !window.renewNaverAuthFailed; render(); }); return false; }
-    if (state.naver === null) return false;
     createMap(slot);
     return true;
   }
@@ -2494,17 +2487,11 @@
     el.insertAdjacentHTML('beforeend', '<svg class="map-defs" width="0" height="0" aria-hidden="true"><defs><pattern id="rmHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" fill="#eceeec"/><line x1="0" y1="0" x2="0" y2="6" stroke="#a9b3af" stroke-width="1.5"/></pattern></defs></svg>');
     slot.replaceWith(el);
     ybar = document.createElement('div'); ybar.className = 'map-yearbar'; ybar.hidden = true; ybar.setAttribute('aria-hidden', 'true'); el.appendChild(ybar);
-    // 네이버 배경: Leaflet(경계·누르기·확대) 아래에 움직이지 않는 네이버 지도를 깔고 같은 중심·확대로 맞춘다. 네이버는 정수 확대라 Leaflet도 정수로
-    // 네이버 지도는 6보다 작게 축소되지 않는다(실측 getMinZoom 6). Leaflet이 그 아래로 내려가면 배경은 멈추고 경계만 작아져 둘이 어긋났다(2026-11-07 대표 지적)
-    const NAVER_MIN_ZOOM = 6;
-    const nv = state.naver ? document.createElement('div') : null;
-    // aria-hidden을 두지 않는다: 안의 법적 고지 링크가 키보드 초점을 받으므로 숨기면 이름 없는 초점이 된다(2026-10-30 배포 화면 확인)
-    if (nv) { nv.className = 'map-naver'; el.appendChild(nv); el.classList.add('has-naver'); }
     const hatch = boundaryHatch();
     // 동네 진단 넓은 화면은 지도가 화면 남은 높이 전체라(explore-layout.js) 페이지 스크롤과 다투지 않으므로 휠 확대를 처음부터 켠다(2026-11-13 v7)
     const wideApp = document.body.classList.contains('explore-page') && window.matchMedia('(min-width: 1024px)').matches;
     // maxBoundsViscosity 1: 네이버 배경이 범위 끝에서 멈출 때 경계층도 그 밖으로 끌려 나가지 않게 한다(범위는 followWithNaver가 SDK에서 읽어 건다)
-    const map = L.map(el, { dragging: !coarse, scrollWheelZoom: wideApp, minZoom: nv ? NAVER_MIN_ZOOM : 0, maxZoom: 17, zoomSnap: nv ? 1 : 0.25, zoomAnimation: !nv, attributionControl: false, zoomControl: false, maxBoundsViscosity: nv ? 1 : 0,
+    const map = L.map(el, { dragging: !coarse, scrollWheelZoom: wideApp, minZoom: 0, maxZoom: 17, zoomSnap: 0.25, attributionControl: false, zoomControl: false,
       // 2026-11-13 우지예: 휠로 확대·축소할 때 조금씩 끊긴다 → 휠 눈금 여러 개를 한 번에 모아(60ms) 덜 자주, 한 번에 조금 더 크게 움직인다.
       //     왜: 기본값(40ms·60px)에서는 휠 한 번에 0.25단계씩 여러 번 확대되며, 그때마다 전국 시군구 경계·동 경계·동 이름을 다시 그렸다
       wheelDebounceTime: 60, wheelPxPerZoomLevel: 100 });
@@ -2516,18 +2503,14 @@
     map.on('zoomend', () => { if (M && !M.fitting) { M.previewZoom = map.getZoom() >= 12; if (map.getZoom() > 8) loadSgDetail(); } });
     L.control.scale({ position: 'bottomleft', imperial: false, maxWidth: 120 }).addTo(map);   // v7.9: 축척 막대(8회차 GIS 평가)
     const attr = L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
-    // 2026-11-20 A11Y-03(기본값, NAVER 약관 확인 전): SDK 법적 고지 링크는 Leaflet 캔버스 아래 바탕 층이라 눌리지 않는다 → 저작권 칸에 같은 링크를 한 번 더 둔다.
-    //   대가로 키보드 사용자는 같은 링크를 두 번 만난다
-    if (nv) attr.addAttribution('<a href="https://ssl.pstatic.net/static/maps/mantle/notice/legal.html" target="_blank" rel="noopener">NAVER 지도 법적 고지(새 창)</a>');
+    addBasemapControl(map, el, attr);
     add3dControl(map);
     // 2026-11-23: 범례·연도 막대는 지도 위 카드가 아니라 왼쪽 숫자판(explore-layout.js .mv-dash)·휴대폰 지도 아래에 있다. 지도 칸 설명 = 그 요약 문장
     el.setAttribute('aria-describedby', 'mapSummary');
-    if (nv) followWithNaver(map, el, nv, tileNotice(map));
     // 칸 크기가 바뀌면(업무 패널 열기·휴대폰 순서) 경계층도 다시 재야 바탕과 어긋나지 않는다. 네이버 동기화는 resize 이벤트로 따라간다
     // r16: 숨었다(문서·조건 탭, 0×0) 다시 보일 때는 가운데를 지킨다(pan). 왼쪽 위를 지키면 4-1 표를 보고 돌아왔을 때 고른 동이 화면 밖이었다
     let hidden = false;
     if ('ResizeObserver' in window) new ResizeObserver(() => { if (!el.clientWidth || !el.clientHeight) { hidden = true; return; } map.invalidateSize({ pan: hidden }); hidden = false; }).observe(el);
-    if (!nv) addBaseTiles(map, tileNotice(map));
     const src = () => state.index.source && state.index.source.name;
     map.createPane('water').style.zIndex = 450; // 수질 점은 경계층(overlayPane 400) 위. 동 층을 다시 만들어도 덮이지 않는다
     map.createPane('sg').style.zIndex = 395; // 시군구·시도 경계는 동 층(overlayPane 400) 아래. 경계가 동 층보다 늦게 와도 동을 덮지 않는다
@@ -2540,6 +2523,38 @@
     M = { el, map, hatch, sgRenderer: typeof hatch === 'string' ? null : L.canvas({ pane: 'sg' }), sg: null, sido: null, emd: null, emdCode: null, outlines: new Map(), water: null, sgItems: new Map(), emdItems: new Map(), fitKey: null, src, ready: false };
     document.dispatchEvent(new Event('renew-map'));   // safety-layer.js가 이 지도에 안전·재난·기후 층 단추를 붙인다
     setTimeout(startAuto, 1500);
+  }
+  function addBasemapControl(map, el, attr) {
+    const control = window.L.control({ position: 'topleft' });
+    control.onAdd = () => {
+      const button = window.L.DomUtil.create('button', 'leaflet-bar map-basemap');
+      button.type = 'button';
+      button.textContent = '배경지도 켜기';
+      window.L.DomEvent.disableClickPropagation(button);
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        button.textContent = '배경지도 불러오는 중';
+        const naver = await loadNaver();
+        if (naver && !window.renewNaverAuthFailed) {
+          const nv = document.createElement('div');
+          nv.className = 'map-naver';
+          el.prepend(nv);
+          el.classList.add('has-naver');
+          state.naver = true;
+          map.options.zoomSnap = 1;
+          map.options.maxBoundsViscosity = 1;
+          map.setMinZoom(6);
+          map.setZoom(Math.round(map.getZoom()), { animate: false });
+          attr.addAttribution('<a href="https://ssl.pstatic.net/static/maps/mantle/notice/legal.html" target="_blank" rel="noopener">NAVER 지도 법적 고지(새 창)</a>');
+          followWithNaver(map, el, nv, tileNotice(map));
+        } else {
+          addBaseTiles(map, tileNotice(map));
+        }
+        button.textContent = '배경지도 요청됨';
+      }, { once: true });
+      return button;
+    };
+    control.addTo(map);
   }
   // 지금 보는 곳의 건물을 연도별 건물 나이(time4d.html, 연도별 입체)로 연다. 주소에는 지도 중심 좌표만 싣고, 4D 화면이 그 자리의 법정동을 고른다.
   // v7(2026-11-13): 예전에는 브이월드 3D(새 창)였는데, 우리 자료(사용승인일·높이)로 세운 4D가 근거 문서와 같은 숫자를 보여 준다. 브이월드는 4D 화면에서 잇는다
@@ -2603,7 +2618,7 @@
       if (stopped) return;
       dispose(); state.naver = false;
       nv.remove(); el.classList.remove('has-naver');
-      map.options.zoomSnap = 0.25; map.setMinZoom(0); map.setMaxBounds(null);   // 네이버 범위 제한은 대체 배경(브이월드·OSM)에 쓰지 않는다
+      map.options.zoomSnap = 0.25; map.options.maxBoundsViscosity = 0; map.setMinZoom(0); map.setMaxBounds(null);   // 네이버 범위 제한은 대체 배경(브이월드·OSM)에 쓰지 않는다
       addBaseTiles(map, onTileFail);
     };
     const sync = e => {
@@ -2838,6 +2853,7 @@
     syncWater();
     fitView(v, m, active);
     syncEmdOutlines();
+    if (M.sg && !M.firstBoundary) { M.firstBoundary = true; requestAnimationFrame(mapPainted); }
     // 전국 화면만 개요 경계. R4 9는 시·도 단계도 개요로 충분하다고 봤지만, 첫 화면이 부산(#map/21)으로 바뀐 뒤 꼭짓점 4~5개짜리 구 경계가 네이버 바탕 해안선과 어긋나 보였다(2026-11-19 대표 지적)
     // 시·도 이하로 열었으면 첫 경계가 이미 받는 중이라 같은 약속을 돌려받는다(요청 한 번). 전국에서 시·도로 들어갈 때 여기서 받는다
     if (v.level !== 'nation') loadSgDetail();
@@ -3044,17 +3060,11 @@
     q.addEventListener('change', () => { if (entries.some(e => e.label === q.value.trim())) pick(); });
   }
 
-  // 지도 라이브러리(리플렛·네이버 배경)는 경계 자료를 기다리지 않고 지금 받기 시작한다. 전에는 목록→경계→리플렛→네이버→타일이 한 줄로 이어져 휴대폰 첫 지도가 11초 걸렸다
-  if (stage.querySelector('[data-map-slot]')) {
-    if (window.RenewDashboard) window.RenewDashboard.loadLeaflet().catch(() => {});
-    state.naver = null; loadNaver().then(ok => { state.naver = ok && !window.renewNaverAuthFailed; render(); });
-  }
-  // 큰 경계 파일이 타일 다운로드·첫 표시를 막지 않게, 목록의 bbox로 배경부터 맞춘 뒤 경계를 받는다.
-  // 전국으로 열면 개요, 시·도 이하로 열면 상세 하나(firstGeoKind). 대체 파일은 낮은 우선순위로 받지 않는다: 그때 renewAfter가 geoP를 기다려 서로 멈춘다
+  // 첫 경계는 보조 자료와 별도로 요청한다. 상세가 없으면 화면을 비우지 않고 개요를 쓴다.
   window.renewAfter = firstMap;
   const geoP = firstGeoKind(state.route) === 'detail'
-    ? loadSgDetail().then(ok => (ok ? { geo: state.sgGeo, detailed: true } : fetchJson('data/national/sigungu-overview.geojson').then(geo => ({ geo, detailed: false }))))
-    : fetchJson('data/national/sigungu-overview.geojson', true).then(geo => geo && Array.isArray(geo.features)
+    ? loadSgDetail(false).then(ok => (ok ? { geo: state.sgGeo, detailed: true } : fetchJson('data/national/sigungu-overview.geojson').then(geo => ({ geo, detailed: false }))))
+    : fetchJson('data/national/sigungu-overview.geojson').then(geo => geo && Array.isArray(geo.features)
       ? { geo, detailed: false } : fetchJson('data/national/sigungu.geojson').then(geo => ({ geo, detailed: true })));
   // 첫 지도는 기본 쇠퇴 지표·지역 메타만 담은 index_map.json을 기다린다. 없으면 전체 index.json
   const indexP = fetchJson('data/national/index_map.json').then(c => (c && Array.isArray(c.sigungu) ? c : fetchJson('data/national/index.json')));
