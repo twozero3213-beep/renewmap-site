@@ -166,19 +166,22 @@
     [/계좌|account.?(no|num)/i, '계좌번호'],
   ];
   const rrnOk = v => { const m = /(?<!\d)(\d{2})(\d{2})(\d{2})-?([1-8])\d{6}(?!\d)/.exec(v); return !!m && +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 31; };
-  const PHONE_RE = /(?<![\d.])0(?:1[016-9]|2|[3-6][1-5]|70)-?\d{3,4}-?\d{4}(?!\d)/, MAIL_RE = /[^\s@]+@[^\s@]+\.[a-z]{2,}/i;
+  const PHONE_RE = /(?<![\d.])0(?:1[016-9]|2|[3-6][1-5]|70)-?\d{3,4}-?\d{4}(?!\d)/, MAIL_RE = /[^\s@]{1,64}@[^\s@]{1,253}\.[a-z]{2,63}/i;
   const sample = (rows, c, max = 3000) => { const out = []; for (let i = 0; i < rows.length && out.length < max; i++) { const v = rows[i][c]; if (v !== '') out.push(v); } return out; };
-  // 제목 또는 값 모양으로 개인정보 가능 열을 찾는다. 값 검사는 주민번호 1건, 전화·이메일 10% 이상
+  // 전체 시트에서 식별자 형태의 값이 있으면 표시 대상 열에서 제외한다.
   function findPII(table) {
     const found = [];
     table.headers.forEach((h, c) => {
       if (table.excluded.has(c)) return;
       let why = (PII_HEAD.find(([re]) => re.test(h)) || [])[1];
       if (!why) {
-        const vals = sample(table.rows, c, 2000);
-        if (vals.some(rrnOk)) why = '주민등록번호 모양';
-        else if (vals.length && vals.filter(v => PHONE_RE.test(v)).length / vals.length >= 0.1) why = '전화번호 모양';
-        else if (vals.length && vals.filter(v => MAIL_RE.test(v)).length / vals.length >= 0.1) why = '이메일 모양';
+        for (const row of table.rows) {
+          const value = row[c];
+          if (!value) continue;
+          if (rrnOk(value)) { why = '주민등록번호 모양'; break; }
+          if (!why && PHONE_RE.test(value)) why = '전화번호 모양';
+          else if (!why && value.includes('@') && MAIL_RE.test(value)) why = '이메일 모양';
+        }
       }
       if (why) found.push({ c, header: h, reason: why });
     });
@@ -295,33 +298,54 @@
       return { code: String(pr.code == null ? '' : pr.code), name: String(pr.name == null ? '' : pr.name), polys, bb, center };
     }).sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
   }
-  function inRing(x, y, ring) {
+  function ringPosition(x, y, ring) {
     let ins = false;
     for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
       const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
-      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) ins = !ins;
+      const dx = xj - xi, dy = yj - yi, scale = Math.max(Math.abs(dx), Math.abs(dy));
+      const epsilon = 1e-10; // 경계 좌표의 부동소수점 오차만 흡수한다.
+      if (scale && x >= Math.min(xi, xj) - epsilon && x <= Math.max(xi, xj) + epsilon &&
+        y >= Math.min(yi, yj) - epsilon && y <= Math.max(yi, yj) + epsilon &&
+        Math.abs(dx * (y - yi) - dy * (x - xi)) <= epsilon * scale) return 'boundary';
+      if ((yi > y) !== (yj > y) && x < dx * (y - yi) / dy + xi) ins = !ins;
     }
-    return ins;
+    return ins ? 'inside' : 'outside';
   }
-  function featureAt(feats, lat, lon) {
+  function classifyPoint(feats, lat, lon) {
+    let feature = null;
     for (const f of feats) {
       if (lon < f.bb[0] || lon > f.bb[2] || lat < f.bb[1] || lat > f.bb[3]) continue;
-      if (f.polys.some(poly => inRing(lon, lat, poly[0]) && !poly.slice(1).some(h => inRing(lon, lat, h)))) return f;
+      for (const [outer, ...holes] of f.polys) {
+        const position = ringPosition(lon, lat, outer);
+        if (position === 'outside') continue;
+        const inner = holes.map(hole => ringPosition(lon, lat, hole));
+        if (position === 'boundary' || inner.includes('boundary')) return { feature: null, ambiguous: true };
+        if (inner.includes('inside')) continue;
+        if (feature && feature.code !== f.code) return { feature: null, ambiguous: true };
+        feature = f;
+      }
     }
-    return null;
+    return { feature, ambiguous: false };
   }
   // items: [{ code(동 코드 또는 null), v(숫자 또는 NaN) }] → 코드 순 표. 경계가 80개를 넘으면 점이 있는 곳만 보인다
   function aggregate(feats, items) {
     const byCode = new Map(feats.map(f => [f.code, { code: f.code, name: f.name, count: 0, sum: 0, valued: 0 }]));
-    let outside = 0;
-    items.forEach(it => { const g = byCode.get(it.code); if (!g) { outside++; return; } g.count++; if (Number.isFinite(it.v)) { g.sum += it.v; g.valued++; } });
+    let outside = 0, ambiguous = 0;
+    for (const it of items) {
+      if (it.ambiguous) { ambiguous++; continue; }
+      const g = byCode.get(it.code);
+      if (!g) { outside++; continue; }
+      g.count++;
+      if (Number.isFinite(it.v)) { g.sum += it.v; g.valued++; }
+    }
     const all = [...byCode.values()].sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0)).map(g => ({ ...g, sum: Number(g.sum.toFixed(6)) }));
-    return { rows: feats.length > 80 ? all.filter(g => g.count > 0) : all, outside };
+    return { rows: feats.length > 80 ? all.filter(g => g.count > 0) : all, outside, ambiguous };
   }
   const csvCell = v => { const s = String(v == null ? '' : v); const t = typeof v === 'number' || /^-?\d+(\.\d+)?$/.test(s.trim()) ? s : s.replace(/^[\s\uFEFF]*[=+@\t\r-]/, "'$&"); return /[",\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  const validSum = g => g.valued > 0 && Number.isFinite(g.sum);
   function toCsv(rows, valueLabel) {
-    const head = ['코드', '이름', '점 개수'].concat(valueLabel ? [`${valueLabel} 합계`] : []);
-    return [head].concat(rows.map(g => [g.code, g.name, g.count].concat(valueLabel ? [g.sum] : []))).map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+    const head = ['코드', '이름', '점 개수'].concat(valueLabel ? [`${valueLabel} 합계`, '합계에 포함한 행'] : []);
+    return [head].concat(rows.map(g => [g.code, g.name, g.count].concat(valueLabel ? [validSum(g) ? g.sum : '', g.valued] : []))).map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
 
@@ -393,7 +417,7 @@
   const visibleCols = table => table.headers.map((_, c) => c).filter(c => !table.excluded.has(c));
   const optionsHtml = (headers, cols, sel, blank) => (blank ? '<option value="-1">선택 안 함</option>' : '') + cols.map(c => `<option value="${c}"${c === sel ? ' selected' : ''}>${esc(headers[c])}</option>`).join('');
   const fileInfo = (fileName, table, encoding) => `${fileName} · ${table.rows.length.toLocaleString('ko-KR')}행 · ${table.headers.length}열 · ${encoding === 'XLSX' ? '엑셀 통합 문서' : '글자 ' + encoding}`;
-  const piiHtml = pii => (pii.length ? `<p><strong>개인정보일 수 있는 열을 제외했습니다.</strong></p><ul>${pii.map(f => `<li>‘${esc(f.header)}’ — ${esc(f.reason)}</li>`).join('')}</ul><p>이 열은 미리보기·지도·집계·내려받기에서 제외했습니다.</p><p>시설 이름 열이라면 제목을 ‘시설명’처럼 바꿔 다시 올려 주세요.</p>` : '');
+  const piiHtml = pii => (pii.length ? `<p><strong>개인정보일 수 있는 열을 제외했습니다.</strong></p><ul>${pii.map(f => `<li>‘${esc(f.header)}’ — ${esc(f.reason)}</li>`).join('')}</ul><p>이 열은 미리보기·지도·집계·내려받기에서 제외했습니다.</p><p>자동으로 걸러지지 않는 개인정보도 있으니 파일을 고르기 전에 확인하세요.</p><p>시설 이름 열이라면 제목을 ‘시설명’처럼 바꿔 다시 올려 주세요.</p>` : '');
   function locFormHtml(headers, cols, d) {
     const opts = sel => optionsHtml(headers, cols, sel, true);
     const radio = (v, t, note) => `<label class="ov-radio"><input type="radio" name="ovMethod" value="${v}"${d.method === v ? ' checked' : ''}> <span><b>${t}</b><small>${note}</small></span></label>`;
@@ -456,7 +480,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       if (loc.empty) lines.push(`<li>좌표가 비어 있거나 숫자가 아닌 행 ${loc.empty.toLocaleString('ko-KR')}건은 뺐습니다.</li>`);
       if (loc.outside) lines.push(`<li class="is-warn">변환한 위치가 한국 범위 밖인 행 ${loc.outside.toLocaleString('ko-KR')}건은 뺐습니다. 좌표계를 확인하세요.</li>`);
       if (loc.swapHint) lines.push('<li class="is-warn">X와 Y를 바꾸면 더 많은 행이 한국 범위에 들어옵니다. ‘X와 Y 열 바꿔 읽기’를 확인하세요.</li>');
-    } else if (codes) lines.push(`<li>코드가 있는 행 ${codes.length.toLocaleString('ko-KR')}건을 모아 중심에 표시했습니다.</li>`);
+    } else if (codes) lines.push(`<li>코드가 있는 행 ${codes.length.toLocaleString('ko-KR')}건을 읽었습니다.</li>`);
     if (drawn) {
       if (drawn.over) lines.push(`<li class="is-warn">점이 많아 처음 ${MAX_DRAW.toLocaleString('ko-KR')}개만 그렸습니다. 아래 집계는 전체 행 기준입니다.</li>`);
       if (drawn.labelsCut) lines.push(`<li>라벨은 처음 ${MAX_LABELS}개만 항상 보입니다. 나머지는 점에 올리면 보입니다.</li>`);
@@ -465,18 +489,20 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
     return lines;
   }
   // 집계에 넣을 항목: 좌표 방식은 점이 든 경계의 코드, 코드 방식은 읽은 코드 그대로
-  const aggItems = (s, feats, numCol) => (isCoord(s.method) ? (s.pts || []).map(p => { const f = featureAt(feats, p.lat, p.lon); return { code: f ? f.code : null, v: cellNum(s.table.rows, p.i, numCol) }; })
+  const aggItems = (s, feats, numCol) => (isCoord(s.method) ? (s.pts || []).map(p => { const { feature, ambiguous } = classifyPoint(feats, p.lat, p.lon);
+      return { code: feature?.code ?? null, v: cellNum(s.table.rows, p.i, numCol), ...(ambiguous ? { ambiguous } : {}) }; })
     : (s.codes || []).map(c => ({ code: c.code, v: cellNum(s.table.rows, c.i, numCol) })));
   function aggTableHtml(a, len, valueLabel, showSum) {
     const sumF = n => n.toLocaleString('ko-KR', { maximumFractionDigits: 3 });
-    return `<h3 class="ov-h">${len === 8 ? '동별' : '시군구별'} 집계</h3><div class="ov-scroll" tabindex="0" role="region" aria-label="집계 표"><table class="ov-table"><caption>코드 순 · 순위 아님</caption><thead><tr><th scope="col">코드</th><th scope="col">이름</th><th scope="col" class="num">점 개수</th>${showSum ? `<th scope="col" class="num">${esc(valueLabel)} 합계</th>` : ''}</tr></thead><tbody>${a.rows.map(g => `<tr><td>${esc(g.code)}</td><td>${esc(g.name)}</td><td class="num">${g.count.toLocaleString('ko-KR')}</td>${showSum ? `<td class="num">${sumF(g.sum)}</td>` : ''}</tr>`).join('')}</tbody></table></div>`
+    return `<h3 class="ov-h">${len === 8 ? '동별' : '시군구별'} 집계</h3><div class="ov-scroll" tabindex="0" role="region" aria-label="집계 표"><table class="ov-table"><caption>코드 순 · 순위 아님</caption><thead><tr><th scope="col">코드</th><th scope="col">이름</th><th scope="col" class="num">점 개수</th>${showSum ? `<th scope="col" class="num">${esc(valueLabel)} 합계</th><th scope="col" class="num">합계에 포함한 행</th>` : ''}</tr></thead><tbody>${a.rows.map(g => `<tr><td>${esc(g.code)}</td><td>${esc(g.name)}</td><td class="num">${g.count.toLocaleString('ko-KR')}</td>${showSum ? `<td class="num">${validSum(g) ? sumF(g.sum) : g.valued ? '계산 불가' : '값 없음'}</td><td class="num">${g.valued.toLocaleString('ko-KR')}</td>` : ''}</tr>`).join('')}</tbody></table></div>`
+      + (a.ambiguous ? `<p class="ov-hint">${a.ambiguous.toLocaleString('ko-KR')}건은 경계선 또는 겹친 경계에 있어 집계를 보류했습니다.</p>` : '')
       + (a.outside ? `<p class="ov-hint">${a.outside.toLocaleString('ko-KR')}건은 지금 보이는 지역 밖이라 표에 넣지 않았습니다.</p>` : '')
       + `<button type="button" class="btn" data-ov-csv>집계 CSV 내려받기</button>`;
   }
   const NO_MAP_HTML = '<p class="ov-hint">지도가 아직 준비되지 않았습니다. 지도가 나타난 뒤 다시 눌러 주세요.</p>';
   const NO_DONG_HTML = `<p class="ov-hint"><strong>동별 집계를 하려면 시군구를 먼저 고르세요.</strong><br>지도에서 시군구를 누르면 그 지역의 읍·면·동 경계가 나타나고, 표가 만들어집니다.</p>`;
 
-  const api = { CRS, MAX_DRAW, MAX_LABELS, decodeText, parseCSV, toTable, parseXlsx, readFileBytes, toNum, findPII, excludeColumns, detectColumns, tmInverse, toWgs84, inKorea, locate, compileFeatures, featureAt, aggregate, toCsv, reconcileKeys, reconcileCsv,
+  const api = { CRS, MAX_DRAW, MAX_LABELS, decodeText, parseCSV, toTable, parseXlsx, readFileBytes, toNum, findPII, excludeColumns, detectColumns, tmInverse, toWgs84, inKorea, locate, compileFeatures, classifyPoint, aggregate, toCsv, reconcileKeys, reconcileCsv,
     optionsHtml, fileInfo, piiHtml, locFormHtml, styleFormHtml, previewHtml, pickStyle, readCodes, toDots, planDots, tipText, noteLines, aggItems, aggTableHtml, csvCell };
   if (typeof document === 'undefined') return api;
 
@@ -512,6 +538,12 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
     // (v9: 얹을 때마다 화면 크기 캔버스가 쌓여, '지우기' 뒤에도 동을 누를 수 없었다)
     let renderer = null;
     const clearLayer = () => { if (group) { group.remove(); group = null; } if (renderer) { renderer.remove(); renderer = null; } };
+    function clearPlacement() {
+      clearTimeout(timer);
+      clearLayer();
+      Object.assign(S, { pts: null, codes: null, loc: null, agg: null, drawn: null, valueLabel: '' });
+      $('[data-ov-result]').replaceChildren();
+    }
     const syncMethod = () => { const m = pickedMethod(); app.querySelectorAll('[data-ov-m]').forEach(el => { el.hidden = el.dataset.ovM !== m; }); };
     const clearKeys = () => { keyResult = null; $('[data-ov-key-result]').replaceChildren(); $('[data-ov-keys-csv]').disabled = true; };
     const keyStatus = text => { $('[data-ov-ref-status]').textContent = text; };
@@ -553,8 +585,9 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
     }
     function reset() {
       fileEpoch++; refEpoch++; S.ref = null; keyForms(); keyStatus(''); $('#ovRefFile').value = ''; $('[data-ov-ref-sheet]').hidden = true; $('[data-ov-ref-pii]').hidden = true;
-      clearLayer(); Object.assign(S, { sheets: null, table: null, pii: [], det: null, pts: null, codes: null, loc: null, agg: null, valueLabel: '' });
-      $('[data-ov-after]').hidden = true; $('[data-ov-result]').innerHTML = ''; status('');
+      clearPlacement();
+      Object.assign(S, { sheets: null, table: null, pii: [], det: null });
+      $('[data-ov-after]').hidden = true; status('');
     }
     function buildForms() {
       const T = S.table, cols = visibleCols(T), pii = $('[data-ov-pii]');
@@ -579,7 +612,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       } catch (e) { if (epoch === fileEpoch) { reset(); status(e.message || '파일을 읽지 못했습니다.', true); } }
     }
     function useSheet(i) {
-      clearLayer(); S.pts = S.codes = S.agg = null; $('[data-ov-result]').innerHTML = '';
+      clearPlacement();
       S.table = null; keyForms(); $('[data-ov-prev]').innerHTML = ''; $('[data-ov-info]').textContent = '';
       S.table = toTable(S.sheets[i].rows); S.sheetName = S.sheets[i].name;
       S.pii = findPII(S.table); excludeColumns(S.table, S.pii);
@@ -606,6 +639,7 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       const st = styleOf(), len = S.method === 'bjd10' ? 5 : 8, feats = visibleFeatures(liveMap(), len); S.valueLabel = labelOf(st);
       const lines = noteLines(S.loc, S.codes, S.drawn, S.valueLabel);
       let table;
+      S.agg = null;
       if (!liveMap()) table = NO_MAP_HTML;
       else if (!feats.length) table = NO_DONG_HTML;
       else { S.agg = aggregate(feats, aggItems(S, feats, st.num)); table = aggTableHtml(S.agg, len, S.valueLabel, st.num >= 0); }
@@ -613,14 +647,17 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
     }
     function place() {
       const T = S.table; if (!T) return;
-      S.method = pickedMethod(); S.pts = S.codes = S.loc = S.agg = null;
-      if (S.method === 'addr') { status('좌표 없음: 지오코딩은 외부 전송이라 하지 않음. 위도·경도, X·Y, 행정동 코드 중 하나를 쓰세요.', true); $('[data-ov-result]').innerHTML = ''; clearLayer(); return; }
+      clearPlacement();
+      S.method = pickedMethod();
+      if (S.method === 'addr') { status('좌표 없음: 지오코딩은 외부 전송이라 하지 않음. 위도·경도, X·Y, 행정동 코드 중 하나를 쓰세요.', true); return; }
       const st = styleOf();
       if (isCoord(S.method)) {
         const o = S.method === 'latlon' ? { method: 'latlon', lat: +val('ovLat'), lon: +val('ovLon') } : { method: 'xy', x: +val('ovX'), y: +val('ovY'), crs: +val('ovCrs'), swap: app.querySelector('[name="ovSwap"]').checked };
-        if ((S.method === 'latlon' ? [o.lat, o.lon] : [o.x, o.y]).some(c => !(c >= 0))) { status('위치 열을 두 개 모두 골라 주세요.', true); return; }
+        const cols = S.method === 'latlon' ? [o.lat, o.lon] : [o.x, o.y];
+        if (cols.some(c => !(c >= 0))) { status('위치 열을 두 개 모두 골라 주세요.', true); return; }
+        if (cols[0] === cols[1]) { status('서로 다른 위치 열 두 개를 골라 주세요.', true); return; }
         S.loc = locate(T, o); S.pts = S.loc.pts;
-        if (!S.pts.length) { status('지도에 얹을 수 있는 점이 없습니다. 열과 좌표계를 확인하세요.', true); $('[data-ov-result]').innerHTML = ''; result(); clearLayer(); return; }
+        if (!S.pts.length) { status('지도에 얹을 수 있는 점이 없습니다. 열과 좌표계를 확인하세요.', true); result(); return; }
       } else {
         const c = +val(S.method === 'adm8' ? 'ovAdm' : 'ovBjd');
         if (!(c >= 0)) { status('코드 열을 골라 주세요.', true); return; }
@@ -639,7 +676,13 @@ ${radio('addr', '지번 주소', '좌표가 없는 파일')}
       else if (t.id === 'ovRefSheet') { try { refSheet(+t.value); } catch (e) { S.ref = null; keyForms(); keyStatus(e.message); } }
       else if (/^ovKey[AB]$/.test(t.name || '')) { clearKeys(); keyStatus('키 열을 바꿨습니다. 다시 대조하세요.'); }
       else if (t.id === 'ovSheet') { try { useSheet(+t.value); } catch (e) { status(e.message, true); } }
-      else if (t.name === 'ovMethod') syncMethod();
+      else if (/^ov(Method|Lat|Lon|X|Y|Crs|Swap|Adm|Bjd)$/.test(t.name || '')) {
+        syncMethod();
+        if (S.pts || S.codes) {
+          clearPlacement();
+          status('위치 설정을 바꿨습니다. 다시 지도에 얹으세요.');
+        }
+      }
       else if (S.table && /^ov(Color|Size|Num|Label)$/.test(t.name || '') && (S.pts || S.codes)) { S.valueLabel = labelOf(styleOf()); drawLayer(false); result(); }
     });
     app.addEventListener('click', ev => {
