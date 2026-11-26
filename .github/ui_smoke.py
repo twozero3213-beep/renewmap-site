@@ -285,7 +285,7 @@ def verify_map_key(page, base):
         page.goto(base+'explore.html#map/21', wait_until='networkidle')
         page.wait_for_selector('#mapApp .mx-side .mv-dash .map-legend-line', state='visible')
         files = page.evaluate("() => performance.getEntriesByType('resource').map(e => e.name.split('?')[0].split('/').pop()).filter(n => n.endsWith('.geojson'))")
-        assert 'sigungu.geojson' in files and 'sigungu-overview.geojson' not in files, ('시·도 첫 화면 경계 파일', width, files)
+        assert [name for name in files if name.startswith('sigungu')] == ['sigungu-busan-overview.geojson'], ('부산 첫 화면 경계 파일', width, files)
         page.goto(base+'explore.html#map/21/21030', wait_until='networkidle')
         page.wait_for_function("() => [...document.querySelectorAll('#mapApp .map-dong-label')].some(e => e.textContent === '초량2동')")
         page.wait_for_timeout(1000)
