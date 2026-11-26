@@ -403,6 +403,14 @@
     say(skipped.length ? `제외: ${skipped.join(" · ")}` : "");
     $("outLead").innerHTML = R.leadHTML(res, m, file, { bad: p.bad });   // 값은 모두 이스케이프한 글(redev.js escH)
     renderTable(R.buildingRows(res, file));
+    $("consultRows").replaceChildren(...R.consultRows(res, m, file).slice(1).map(([question, basis, limit]) => {
+      const item = document.createElement("li"), title = document.createElement("b"), source = document.createElement("small"), note = document.createElement("small");
+      title.textContent = question;
+      source.textContent = `근거 · ${basis}`;
+      note.textContent = `한계 · ${limit}`;
+      item.append(title, source, note);
+      return item;
+    }));
     // 요건 한 줄에 이름·값·상태 칩(rm6.css .sr-req-rows: 홈·지도 카드와 같은 모양). 상태는 칩 글자가 전하고 색은 보조다
     $("outAnswer").replaceChildren(...R.answerRows(res).map((r) => {
       const li = document.createElement("li"), k = document.createElement("span"), v = document.createElement("b"), t = document.createElement("em");
