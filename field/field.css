@@ -252,6 +252,7 @@ body.field .card > details.rm-disclosure:last-child[open] { padding-bottom: 0; }
   body.field.fr-redev #main > :is(.breadcrumb, h1, h1 + .sub) { grid-column: 1 / -1; }
   body.field.fr-redev #main > .fr-side { grid-column: 2; grid-row: 4; align-self: stretch; min-width: 0; }
   body.field.fr-redev #main > .fr-main { min-width: 0; }
+  body.field.fr-redev #main > #plans { grid-column: 1 / -1; min-width: 0; }
   /* 결과(.fr-side)가 입력보다 몇 배 길어 왼쪽이 텅 비었다 → 결과가 있으면 입력 칸이 화면에 붙고, 넘치면 이 칸 안에서만 내린다 */
   body.field.fr-redev #main:has(#out:not([hidden])) > .fr-main { position: sticky; top: 88px; max-height: calc(100vh - 104px); overflow-y: auto; overscroll-behavior: contain; }
   body.field.fr-redev #f.card { max-width: none; }
@@ -329,3 +330,6 @@ body.field details.fr-fold > summary { min-height: 44px; }
 .field #outLead .rd-opts b, .field #outLead .rd-opt1 b { font-size: 20px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .field #reqBox { margin: 16px 0; }
 .field #out > #csv { margin: 0 0 12px; }
+
+#planTable .plan-cmp { table-layout: fixed; }
+#planTable .plan-cmp :is(th, td) { overflow-wrap: anywhere; }

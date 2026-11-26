@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="../styles.css">
 <link rel="stylesheet" href="../site-v4.css">
 <link rel="stylesheet" href="../v4.css">
-<link rel="stylesheet" href="field.css?v=20261122-r23">
+<link rel="stylesheet" href="field.css?v=20261126-compare">
 <link rel="stylesheet" href="../rm6.css">
 </head>
 <body class="field redev-v4 fr-redev">
@@ -178,14 +178,15 @@
     <p class="hint">행정동 값으로 쇠퇴 요건이 안 맞으면 <a href="oa.html">집계구(국가데이터처가 동보다 잘게 나눈 통계 구역) 단위 쇠퇴 요건</a>으로 따로 볼 수 있습니다.</p>
   </section>
 
+  </div>
+
   <section id="plans" class="card" aria-labelledby="plansTitle" hidden>
     <h2 id="plansTitle">저장한 구역 비교</h2>
-    <p class="hint">구역은 3개까지 이 기기에만 저장합니다.<br>같은 기준으로 다시 세어 나란히 보여 줍니다.</p>
+    <p class="hint">구역은 3개까지 이 기기에만 저장합니다.<br>각 안을 다시 계산하고 첫 안과 다른 조건을 보여 줍니다.</p>
     <div id="planTable" class="plan-wrap" aria-live="polite"></div>
     <ul id="planList" class="plan-list"></ul>
     <p id="planMsg" class="msg" role="status" aria-live="polite"></p>
   </section>
-  </div>
 </main>
 <dialog id="sampleDlg" class="fr-dlg" aria-labelledby="sampleDlgTitle">
   <h2 id="sampleDlgTitle">계산 결과 견본(반여동 주소 60개)</h2>
@@ -201,8 +202,8 @@
 <script src="../cellpack.js"></script>
 <script src="store.js"></script>
 <script src="parcel-ref.js"></script>
-<script src="redev.js"></script>
+<script src="redev.js?v=20261126-compare"></script>
 <script src="vworld-key.js"></script>
-<script src="redev-app.js"></script>
+<script src="redev-app.js?v=20261126-compare"></script>
 </body>
 </html>

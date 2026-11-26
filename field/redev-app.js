@@ -522,7 +522,7 @@
     try {
       const plans = await Promise.all(ps.map(async (p) => {
         const items = R.parseList(p.list).items, file = await loadFor(items, p.dong), m = R.match(items, file);
-        return { name: p.name, res: R.review(m.buildings, { ref: p.ref && p.ref > file.age_reference_date ? p.ref : file.age_reference_date, district: p.district }), keys: R.planKeys(m.buildings), dongName: file.name };
+        return { name: p.name, res: R.review(m.buildings, { ref: p.ref && p.ref > file.age_reference_date ? p.ref : file.age_reference_date, district: p.district }), keys: R.planKeys(m.buildings), dongName: file.name, hubDates: file.hub_reference_dates || [file.hub_reference_date] };
       }));
       if (request !== plansRevision) return;
       $("planTable").innerHTML = R.compareHTML(R.comparePlans(plans));

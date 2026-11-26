@@ -276,7 +276,7 @@
     if (files.some((x) => x.age_reference_date !== f.age_reference_date)) throw new Error("경과 기준일이 다른 법정동 파일");
     const first = (k) => files.map((x) => x[k]).sort()[0];
     return { ...f, name: files.map((x) => x.name).join("·"), dongs: files.map((x) => ({ code: x.bjd10, name: x.name })),
-      hub_reference_date: first("hub_reference_date"), retrieved_at: first("retrieved_at"),
+      hub_reference_date: first("hub_reference_date"), hub_reference_dates: files.map((x) => x.hub_reference_date), retrieved_at: first("retrieved_at"),
       count: files.reduce((s, x) => s + x.buildings.length, 0), buildings: files.flatMap((x) => x.buildings) };
   }
 
@@ -671,27 +671,45 @@
     return { items, withRecord: items.filter((i) => i.records.length).length };
   }
 
-  // 경계안 비교(최대 3개). plans: [{name, res, keys}] — res는 review 결과, keys는 planKeys(건물). 첫 안을 기준으로 빠진·더한 건물을 센다.
+  // 경계안 비교(최대 3개). 첫 안을 기준으로 실제 계산에 쓰인 날짜와 더한·빠진 건물 목록을 비교한다.
   // 판정을 합치지 않는다. 안마다 요건별 상태를 나란히 둘 뿐이다
   const PLAN_MAX = 3;
-  const planKeys = (blds) => new Set(blds.map(bKey));
+  const planKeys = (blds) => new Set(blds.map((b) => {
+    const id = b.mgm_bld_pk;
+    return (typeof id === "string" && id.trim()) || Number.isSafeInteger(id) ? `id:${id}` : bKey(b);
+  }));
+  const planDate = (date) => typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "";
   function comparePlans(plans) {
     const base = plans[0].keys;
-    return plans.map((p, i) => ({ name: p.name, n: p.res.n, lowrise: p.res.newVillage.lowrise, urban: p.res.urban, decline: p.res.newVillage.decline,
+    const rows = plans.map((p, i) => ({ name: p.name, n: p.res.n, lowrise: p.res.newVillage.lowrise, urban: p.res.urban, decline: p.res.newVillage.decline,
       old: p.res.lines.find((l) => l.label === "노후·불량 건축물 수"),
+      hubDates: [...new Set((p.hubDates || [null]).map(planDate))].sort(), ref: planDate(p.res.ref),
       added: i ? [...p.keys].filter((k) => !base.has(k)).length : 0, removed: i ? [...base].filter((k) => !p.keys.has(k)).length : 0 }));
+    return rows.map((row, i) => {
+      if (!i) return { ...row, changes: "비교 기준" };
+      const first = rows[0], changes = [];
+      if (row.hubDates.includes("") || first.hubDates.includes("")) changes.push("대장 기준일 미확인");
+      else if (row.hubDates.join() !== first.hubDates.join()) changes.push("대장 기준일 다름");
+      if (!row.ref || !first.ref) changes.push("경과 기준일 미확인");
+      else if (row.ref !== first.ref) changes.push("경과 기준일 다름");
+      if (row.added || row.removed || row.n !== first.n) changes.push("건물 목록 다름");
+      return { ...row, changes: changes.join(" · ") || "기준일·건물 목록 같음" };
+    });
   }
   function compareHTML(rows) {
     const cell = (v, st) => `<td><b>${escH(v)}</b>${st ? `<br><span class="nv-st">${escH(st)}</span>` : ""}</td>`;
     const tr = (k, f) => `<tr><th scope="row">${escH(k)}</th>${rows.map(f).join("")}</tr>`;
-    return `<table class="plan-cmp"><thead><tr><th scope="col">요건</th>${rows.map((r) => `<th scope="col">${escH(r.name)}</th>`).join("")}</tr></thead><tbody>` +
+    return `<table class="plan-cmp"><thead><tr><th scope="col">비교 항목</th>${rows.map((r) => `<th scope="col">${escH(r.name)}</th>`).join("")}</tr></thead><tbody>` +
+      tr("대장 기준일", (r) => cell(r.hubDates.map((d) => D.govDate(d) || "미확인").join(" · ") || "미확인")) +
+      tr("경과 기준일", (r) => cell(D.govDate(r.ref) || "미확인")) +
       tr("건물 수", (r) => cell(`${r.n.toLocaleString("ko-KR")}동`)) +
+      tr("첫 안과 다른 조건", (r) => cell(r.changes)) +
+      tr("첫 구역과 다른 건물", (r, i) => cell(i ? `더함 ${n0(r.added)}동 · 빠짐 ${n0(r.removed)}동` : "기준")) +
       tr("도시재생활성화지역 안", () => cell("고시로 확인", AREA_SHOWN)) +
       tr("저층 주거 비율(3분의 2)", (r) => cell(r.lowrise.value.split(" (")[0], r.lowrise.status)) +
       tr("20년 이상 건축물(2분의 1)", (r) => cell(r.urban.value, r.urban.status)) +
       tr("쇠퇴요건 2개 이상", (r) => cell(r.decline.status === NOT_MET ? "③ 해당 안 함" : "①·② 확인", r.decline.shown || r.decline.status)) +
       tr("노후·불량 건축물 수(주택정비형 재개발)", (r) => cell(r.old.value.split(" (")[0], r.old.status)) +
-      tr("첫 구역과 다른 건물", (r, i) => cell(i ? `더함 ${r.added.toLocaleString("ko-KR")}동 · 빠짐 ${r.removed.toLocaleString("ko-KR")}동` : "기준")) +
       `</tbody></table>`;
   }
 
