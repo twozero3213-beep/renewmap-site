@@ -43,7 +43,6 @@ document.documentElement.classList.add('js');
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="manifest" href="site.webmanifest">
 <link rel="preload" as="fetch" href="data/national/index_map.json" crossorigin="anonymous">
-<link rel="preload" as="font" href="fonts/pretendard-map.woff2" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <script data-source="map-start.js">
 /* 외부 배경지도를 켰을 때만 네이버 지도 SDK를 요청한다. */
@@ -80,7 +79,7 @@ document.documentElement.classList.add('js');
 </script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" crossorigin="anonymous" integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" crossorigin="anonymous" integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==">
-<link rel="stylesheet" href="pretendard-map.css">
+<link rel="stylesheet" href="pretendard-map.css?v=20261126-busan-boundary">
 <link rel="stylesheet" href="styles.css?v=20261122-r19">
 <link rel="stylesheet" href="site-v4.css?v=20261120-r11">
 <link rel="stylesheet" href="dashboard.css?v=20261120-w3">
@@ -108,7 +107,7 @@ document.documentElement.classList.add('js');
 <!-- 2026-11-13: 신청요건 한 줄(reqLineHTML)·도넛 접기·시작 묶음(BUNDLES)으로 버전을 올림 -->
 <!-- 2026-11-13: 최저기준 묶음에 보건소·어린이집 거리 칩을 더해 버전을 올림 -->
 <script src="decline-req.js?v=20261122-r21" defer></script>
-<script src="map.js?v=20261126-boundary-first" defer></script>
+<script src="map.js?v=20261126-busan-boundary" defer></script>
 <!-- 2026-11-22: 안전·재난·기후 층(?layer=safety). map.js가 지도를 만들면 층 단추를, 동 카드를 그리면 동 묶음을 붙인다 -->
 <script src="safety-layer.js?v=20261123-r36" defer></script>
 <script src="explore-layout.js?v=20261123-r36" defer></script>

@@ -1488,15 +1488,14 @@
       if (deps.state.sgGeoDetailed) return Promise.resolve(true);
       return sgDetailWait || (sgDetailWait = deps.fetchJson('data/national/sigungu.geojson', low).then(geo => {
         if (!geo || !Array.isArray(geo.features)) { sgDetailWait = null; return false; }
-        deps.state.sgGeo = geo; deps.state.sgGeoDetailed = true;
+        deps.state.sgGeo = geo; deps.state.sgGeoDetailed = true; deps.state.sgGeoScope = null;
         deps.render();
         return true;
       }));
     };
   }
-  // 첫 경계 파일: 전국으로 열면 개요(sigungu-overview), 시·도·구·동으로 열면 상세(sigungu) 하나만 받는다.
-  // 2026-11-20 GIS2-02·FE-R2-03: 시·도로 열어도 개요부터 그려 느린 망에서 각진 경계가 잠깐 보였고, 곧 버릴 개요까지 받았다
-  const firstGeoKind = route => (route && route.sido ? 'detail' : 'overview');
+  // 기본 부산은 정확한 부산 경계와 다른 지역 개요를 한 파일로 받는다.
+  const firstGeoKind = route => route?.sido === '21' ? 'busan' : route?.sido ? 'detail' : 'overview';
   const api = { makeFirstMapGate, makeSgDetailLoader, firstGeoKind,indexSummaryPending, mergeIndexSeries, rentSub, geojsonOf, labelPoint, pickLabels, mergeLivingSummary, outerLines, forecastSVG, snapshotOf, diffSnap, snapHTML, snapDoc, icon, INDICATORS, GROUPS, MODES, NULL_COLOR, BELOW, ABOVE, MIG, DESIG, DESIG_NONE, MIG_CODE, DESIG_CODE, SOURCE_DEFAULT, SUM, LIVING_EXPECTED, FORE_NOTE, FORE_FIXED, SAFE_NOTE, SAFE_FIXED, AI_HEAD, AI_FOOT, REPORT_FOOT,
     ESTATE_NOTE, ESTATE_PROV, indOf, keyOf, binIndex, edgeLabels, scaleFor, colorOf, legendItems, legendLineHTML, distHTML, itemText, CHECK_NOTE, trendText, crossed, isPending, extraIndicators, sgExtra, fcOf,
     seriesJump, livingIndicators, allIndicators, wantedInd, isAvailable, provenanceHTML, parseHash, toHash, routeHash, childrenOf, leavesOf, leafRoute, resolve, searchEntries, findEntry, searchPick, candMsg, candHTML, suggestEntries, summaryOf, rowOf, tally, sigunguModel, seriesOf, valueAt,
@@ -1528,7 +1527,8 @@
   const deepLink = !!parseHash(location.hash);
   const BASE_TITLE = document.title;   // 경로를 들고 왔을 때만 휴대폰에서 지도로 내린다
   const state = { route: parseHash(location.hash) || parseHash(DEFAULT_ROUTE_HASH), ind: INDICATORS[0].code, bundle: BUNDLES[0].key, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, dash: undefined, mapErr: false, touched: false,
-    migration: undefined, designations: undefined, forecastIdx: undefined, realestate: undefined, templates: undefined, sgGeoDetailed: false, failed: new Set() };
+    migration: undefined, designations: undefined, forecastIdx: undefined, realestate: undefined, templates: undefined, sgGeoDetailed: false, sgGeoScope: null, failed: new Set() };
+  const localBoundary = () => state.sgGeoScope === '21' && state.route.sido === '21';
   const inds = () => allIndicators(state.living, { migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate, failed: state.failed });
   const curInd = () => indOf(state.ind, inds());
   let wantInd = new URLSearchParams(location.search).get('ind');   // 한 번만 쓴다: 그 뒤 사용자가 고른 칩을 덮지 않는다
@@ -2500,7 +2500,7 @@
     map.on('click', () => map.scrollWheelZoom.enable()); map.on('mouseout', () => { if (!wideApp) map.scrollWheelZoom.disable(); });
     // R4 9: 자동 맞춤(fitBounds)이 만든 줌으로는 상세 경계(sigungu.geojson 약 288KB gz)를 받지 않는다(맞춤 중에는 M.fitting이 켜져 있다).
     //   전국 화면에서 사용자가 줌 9 이상으로 확대하면 받는다. 시·도 이하 단계는 첫 경계(firstGeoKind)와 drawMap이 이미 상세를 받는다(2026-11-19 뒤)
-    map.on('zoomend', () => { if (M && !M.fitting) { M.previewZoom = map.getZoom() >= 12; if (map.getZoom() > 8) loadSgDetail(); } });
+    map.on('zoomend', () => { if (M && !M.fitting) { M.previewZoom = map.getZoom() >= 12; if (map.getZoom() > 8 && !localBoundary()) loadSgDetail(); } });
     L.control.scale({ position: 'bottomleft', imperial: false, maxWidth: 120 }).addTo(map);   // v7.9: 축척 막대(8회차 GIS 평가)
     const attr = L.control.attribution({ position: 'bottomleft' }).addTo(map); // 오른쪽은 척도표 서랍이 덮으므로 저작권 표시는 왼쪽 아래
     addBasemapControl(map, el, attr);
@@ -2856,7 +2856,7 @@
     if (M.sg && !M.firstBoundary) { M.firstBoundary = true; requestAnimationFrame(mapPainted); }
     // 전국 화면만 개요 경계. R4 9는 시·도 단계도 개요로 충분하다고 봤지만, 첫 화면이 부산(#map/21)으로 바뀐 뒤 꼭짓점 4~5개짜리 구 경계가 네이버 바탕 해안선과 어긋나 보였다(2026-11-19 대표 지적)
     // 시·도 이하로 열었으면 첫 경계가 이미 받는 중이라 같은 약속을 돌려받는다(요청 한 번). 전국에서 시·도로 들어갈 때 여기서 받는다
-    if (v.level !== 'nation') loadSgDetail();
+    if (v.level !== 'nation' && !localBoundary()) loadSgDetail();
   }
   function go(route, focusSel) {
     stopPlay(); stopAuto(true);
@@ -3062,10 +3062,19 @@
 
   // 첫 경계는 보조 자료와 별도로 요청한다. 상세가 없으면 화면을 비우지 않고 개요를 쓴다.
   window.renewAfter = firstMap;
-  const geoP = firstGeoKind(state.route) === 'detail'
-    ? loadSgDetail(false).then(ok => (ok ? { geo: state.sgGeo, detailed: true } : fetchJson('data/national/sigungu-overview.geojson').then(geo => ({ geo, detailed: false }))))
-    : fetchJson('data/national/sigungu-overview.geojson').then(geo => geo && Array.isArray(geo.features)
-      ? { geo, detailed: false } : fetchJson('data/national/sigungu.geojson').then(geo => ({ geo, detailed: true })));
+  const firstKind = firstGeoKind(state.route);
+  const overview = () => fetchJson('data/national/sigungu-overview.geojson').then(geo => ({ geo, detailed: false }));
+  const detail = () => loadSgDetail(false).then(ok => ok ? { geo: state.sgGeo, detailed: true } : overview());
+  state.sgGeoScope = firstKind === 'busan' ? '21' : null;
+  const geoP = firstKind === 'busan'
+    ? fetchJson('data/national/sigungu-busan-overview.geojson').then(geo => {
+      if (geo?.detail_sido === '21' && Array.isArray(geo.features)) return { geo, detailed: false };
+      state.sgGeoScope = null;
+      return detail();
+    })
+    : firstKind === 'detail' ? detail()
+    : overview().then(entry => entry.geo && Array.isArray(entry.geo.features)
+      ? entry : fetchJson('data/national/sigungu.geojson').then(geo => ({ geo, detailed: true })));
   // 첫 지도는 기본 쇠퇴 지표·지역 메타만 담은 index_map.json을 기다린다. 없으면 전체 index.json
   const indexP = fetchJson('data/national/index_map.json').then(c => (c && Array.isArray(c.sigungu) ? c : fetchJson('data/national/index.json')));
   window.renewAfter = Promise.all([indexP, geoP, firstMap]).then(() => {}, () => {});
