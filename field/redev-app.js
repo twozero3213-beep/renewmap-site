@@ -368,20 +368,22 @@
     if (document.documentElement.dataset.fieldStale === 'true') return say("새 판으로 연 뒤 다시 계산해 주세요.", true);
     const request = ++calculation;
     last = null; $("out").hidden = true;
+    const list = $("list").value;
     saveDraft();
-    const p = R.parseList($("list").value);
+    const p = R.parseList(list);
         if (!p.items.length) return say("주소(번지)를 한 줄에 하나씩 넣어 주세요.", true);
         if (p.items.some((it) => it.dong)) {   // 동 이름을 앞에 적었으면 구·동부터 맞춘다. 여러 구에 같은 이름이 있으면 묻고 멈춘다
           if (!(await pickDong(p.items))) return;
           if (request !== calculation) return;
           syncWhere();
         }
+    const planInput = { list, dong: $("dong").value, ref: $("ref").value, district: $("district").checked };
     const areaRaw = $("area").value.trim(), areaM2 = areaRaw === "" ? null : Number(areaRaw);
     if (areaM2 !== null && !(areaM2 >= 0)) return say("구역 면적은 숫자로 넣어 주세요.", true);
-    const refIn = $("ref").value;
+    const refIn = planInput.ref;
     say("건축물대장 자료를 여는 중입니다.");
     let file;
-    try { file = await loadFor(p.items, $("dong").value); } catch (err) {
+    try { file = await loadFor(p.items, planInput.dong); } catch (err) {
       if (request !== calculation) return;
       return say(err.message === R.REGION_ERROR ? R.REGION_ERROR : "건축물대장 자료를 열지 못했습니다.\n인터넷 연결을 확인해 주세요.", true);
     }
@@ -393,8 +395,8 @@
     // 나·다·라목 참고 범위(1365 트윈의 호수밀도·접도율·과소필지 흡수). 토지특성 파일이 없거나 못 받으면 예전처럼 '현장 확인'만 쓴다
     const parcel = await parcelText(p.items, m.buildings, areaM2);
     if (request !== calculation) return;
-    const res = R.review(m.buildings, { ref: refIn || file.age_reference_date, district: $("district").checked, areaM2, areaDrawn: $("area").dataset.src === "drawn", parcel });
-    last = { res, m, file, bad: p.bad, unresolved: [] };
+    const res = R.review(m.buildings, { ref: refIn || file.age_reference_date, district: planInput.district, areaM2, areaDrawn: $("area").dataset.src === "drawn", parcel });
+    last = { res, m, file, planInput, bad: p.bad, unresolved: [] };
     const skipped = [...(p.bad.length ? [`주소로 읽지 못한 칸 ${n0(p.bad.length)}개`] : []), ...(m.missing.length ? [`대장에 없는 주소 ${n0(m.missing.length)}개(${m.missing.slice(0, 5).join(", ")}${m.missing.length > 5 ? " 등" : ""})`] : []),
       ...(m.otherDong.length ? [`계산에 넣지 못한 다른 동 주소 ${n0(m.otherDong.length)}개(같은 구·군 법정동 이름이 아니거나 ${R.MERGE_MAX}개 동을 넘음: ${m.otherDong.slice(0, 3).join(", ")}${m.otherDong.length > 3 ? " 등" : ""})`] : [])];
     say(skipped.length ? `제외: ${skipped.join(" · ")}` : "");
@@ -533,10 +535,17 @@
     }
   }
   $("savePlan").addEventListener("click", () => {
+    if (!last) return;
+    const { list, dong, ref, district } = last.planInput;
+    if (list !== $("list").value || dong !== $("dong").value || ref !== $("ref").value || district !== $("district").checked) {
+      say("주소 목록이나 계산 조건이 바뀌었습니다.\n다시 계산한 뒤 저장해 주세요.", true);
+      $("msg").scrollIntoView({ block: "center" });
+      return;
+    }
     const ps = loadPlans();
     if (ps.length >= R.PLAN_MAX) return planSay(`구역은 ${R.PLAN_MAX}개까지 비교해요. 하나를 지우고 넣어 주세요.`, true);
     const name = `구역 ${["A", "B", "C"].find((x) => !ps.some((p) => p.name === `구역 ${x}`))}`;
-    if (!savePlans([...ps, { name, dong: last.file.bjd10, list: $("list").value, district: $("district").checked, ref: last.res.ref }])) return planSay("이 브라우저는 저장을 막아 두었습니다.", true);
+    if (!savePlans([...ps, { name, dong: last.file.bjd10, list, district, ref: last.res.ref }])) return planSay("이 브라우저는 저장을 막아 두었습니다.", true);
     planSay(`${name}으로 저장했어요.`);
     renderPlans().then(() => $("plans").scrollIntoView({ block: "start" }));
   });
