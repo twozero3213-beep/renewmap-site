@@ -129,14 +129,14 @@
   const oldestDate = (rows) => (rows || []).map((r) => String(r.reference_date || "")).filter(Boolean).sort()[0] || null;
 
   // 1쪽 머리 요약 3줄(A1). 기록 값만 기계적으로 옮긴다. 지어낸 문장·판정어·순위·점수는 넣지 않는다
-  function summaryRows(rec, rows, src) {
-    const d = rec.dong, pics = (rec.photos || []).length;
+  function summaryRows(rec, rows, src, included, missing) {
+    const d = rec.dong;
     const where = rec.lat === null || rec.lat === undefined
       ? ["위치 없음", rec.jibun || (rec.pnu ? `필지 번호 ${rec.pnu}` : R.NO_PARCEL)]
       : [d ? `${[d.sido, d.sgName].filter(Boolean).join(" ")} ${d.name}`.trim() : "행정동 미확인", rec.accuracy_m === null ? "오차 자료 없음" : `오차 약 ±${Math.round(rec.accuracy_m)}m`,
         ...(rec.corrected ? ["보정됨"] : []), ...(d && d.nearby.length ? [`경계 근처: ${d.nearby.join("·")}`] : [])];
     const seen = [rec.target, ...(rec.memo ? [rec.memo] : []), rec.status === "추가확인" ? "자료와 비교 모름" : `${R.STATUS_LABEL[rec.status]}${rec.item ? `(${rec.item})` : ""}`,
-      pics ? `사진 ${pics}장` : "사진 없음", `${localTime(rec.recorded_at)} 촬영`];
+      included ? `수록 사진 ${included}장` : "수록 사진 없음", ...(missing ? [`미수록 사진 ${missing}장`] : []), `기록 시각 ${localTime(rec.recorded_at)}`];
     const nums = rows.slice(0, 2).map((r) => `${r.label} ${r.value} (${shortSrc(r.src.source_name)}, ${D.govDate(r.reference_date)})${src.ref(r.src)}`);
     return [["위치", where.join(" · ")], ["관찰", seen.join(" · ")], ["공식 숫자", nums.length ? nums.join(" · ") : "선택한 공식 숫자 없음"]];
   }
@@ -233,7 +233,8 @@
     return `${localDay(prev.recorded_at)} 기록 대비: 공통 지표 ${cmp.compared}개 · 표시값 차이 ${cmp.changed.length}개 · 기준 표기 차이 ${n("basis")}개${reasons.length ? "(" + reasons.join("·") + ")" : ""} · 기준 미기록 ${n("missing")}개 · 한쪽만 수록 ${n("only")}개 · 중복·코드 누락 ${n("duplicate")}개${cmp.scope ? " · " + cmp.scope : ""}. 저장된 기록만 대조하며 현장 변화·자료 정확성·사업 효과 판정이 아닙니다.`;
   };
 
-  // rec: makeRecord 결과. images: [{bytes, w, h, src}] (가린 사진. 이 기록 사진 다음에 고른 이전 기록 사진 {prev: 날짜 ISO}).
+  const PHOTO_CHECK = "공유 전 얼굴·번호판 가림을 확인하세요.";
+  // images: [{id, bytes, w, h, src}] (이 기록 사진 다음에 고른 이전 기록 사진 {prev: 날짜 ISO}).
   // before: 같은 자리 바로 전 기록(prevAtSite, 없으면 생략). 반환: docgen의 hwpxBytes·docHTML이 받는 doc
   function buildFieldDoc(rec, images, before) {
     const d = rec.dong, pics = images || [], when = localTime(rec.recorded_at);
@@ -241,7 +242,12 @@
     // 위치 한 줄: 좌표·정확도(±m)·보정 여부. 1쪽에 들어가도록 칸을 묶는다
     const loc = rec.lat === null ? "위치 없음" : `위도 ${rec.lat.toFixed(6)}, 경도 ${rec.lng.toFixed(6)}(WGS84) · 정확도 ${rec.accuracy_m === null ? "자료 없음" : `±${Math.round(rec.accuracy_m)}m`} · ${rec.corrected ? "보정됨(작성자가 옮김)" : "보정 안 함"}`;
     const prevDays = (rec.site_prev || []).map(localDay), bd = rec.building, checks = rec.checks || [], cmp = compareRows(rec, before);
-    const picNo = (id) => { const i = (rec.photos || []).indexOf(id); return i < 0 ? "" : `(사진 ${i + 1})`; };
+    const missing = Math.max(0, (rec.photos || []).length + (rec.prev_photos || []).length - pics.length);
+    const picNo = (id) => {
+      if (!id) return "";
+      const i = pics.findIndex((p) => !p.prev && p.id === id);
+      return i < 0 ? "(연결 사진 미수록)" : `(사진 ${i + 1})`;
+    };
     // 현장 확인 결과(판정 아님): 본 항목만 '항목: 메모(사진 n)'. memos=false면 메모를 빼고 항목 이름·사진 번호만(1쪽이 넘칠 때)
     const checkText = (memos) => [...checks.map((c) => `${R.CHECKS.find((x) => x.id === c.id).label}${memos && c.memo ? `: ${c.memo}` : ""}${picNo(c.photo)}`),
       ...(checks.length < R.CHECKS.length ? [`확인 안 함: ${R.CHECKS.filter((x) => !checks.some((c) => c.id === x.id)).map((x) => x.label).join(", ")}`] : []),
@@ -260,19 +266,19 @@
     // 사진은 한 줄에 3장(4장이면 4장), 설명은 한 줄로 묶는다. 사진 설명(alt)은 장마다 둔다
     const own = pics.filter((p) => !p.prev).length, prev = pics.filter((p) => p.prev);
     const range = (a, b) => (a === b ? `사진 ${a}` : `사진 ${a}~${b}`);
-    const picText = [own ? `${range(1, own)}. ${rec.target} · ${when} 촬영` : "", prev.length ? `${range(own + 1, pics.length)}. 같은 자리 이전 기록(${[...new Set(prev.map((p) => localDay(p.prev)))].join(", ")})` : ""].filter(Boolean).join(" / ");
+    const picText = [own ? `${range(1, own)}. ${rec.target}` : "", prev.length ? `${range(own + 1, pics.length)}. 같은 자리 이전 기록(${[...new Set(prev.map((p) => localDay(p.prev)))].join(", ")})` : ""].filter(Boolean).join(" / ");
     const ind = rec.indicators || [], b = d && d.boundary;
     const make = (nRows, memos, oneRow) => {
       const src = new D.Sources(), rows = ind.slice(0, nRows), oldest = oldestDate(rows), snap = rec.data_snapshot;
       // 요약 상자가 먼저 출처 번호를 받는다. 앞 1~2행이라 표의 번호와 같다
-      const blocks = [block("title", title), block("box", "", { rows: summaryRows(rec, rows, src).map((r) => r.map(D.clean)), widths: [16, 84], refs: true }),
+      const blocks = [block("title", title), block("box", "", { rows: summaryRows(rec, rows, src, pics.length, missing).map((r) => r.map(D.clean)), widths: [16, 84], refs: true }),
         block("para", ["판정 아님", ...(oldest ? [`가장 오래된 자료 기준일 ${D.govDate(oldest)}`] : []), ...(snap && snap.generated_at ? [`자료 묶음 ${D.govDate(snap.generated_at.slice(0, 10))}`] : [])].join(" · "), { small: true }),
         block("box", "", { rows: [...box,
           // 작성자가 고른 건물(N1): 건축물대장 표제부 값과 기준일·출처 번호. 법정동은 행정동에서 근사했다
           ...(bd ? [["건물(자동 채움)", `${bldLine(bd)} · 건축물대장 기준일 ${D.govDate(bd.reference_date)}${src.ref(bd.src)} · 작성자가 고름(법정동 ${bd.bjd_name}은 행정동에서 근사)`]] : []),
           ...(checks.length || R.CHECK_TARGETS.includes(rec.target) ? [["현장 확인 결과(판정 아님)", checks.length ? checkText(memos) : "확인한 항목 없음"]] : []),
         ].map((r) => r.map(D.clean)), widths: [22, 78], refs: true })];
-      if (pics.length) blocks.push(block("images", `${picText} · 얼굴·번호판 가림 확인`, { perRow: oneRow ? pics.length : pics.length > 3 ? 4 : 3, images: pics.map((p, i) => ({ ...p, caption: `사진 ${i + 1}` })) }));
+      if (pics.length) blocks.push(block("images", `${picText} · ${PHOTO_CHECK}`, { perRow: oneRow ? pics.length : pics.length > 3 ? 4 : 3, images: pics.map((p, i) => ({ ...p, caption: `사진 ${i + 1}` })) }));
       blocks.push(block("h1", "이 동의 공식 현황"));
       if (rows.length) blocks.push(block("table", "", { rows: [["지표", "값", "기준일", "출처(종류)"], ...rows.map((r) => [r.label, r.value, D.govDate(r.reference_date), `${srcKind(r.src.source_name)}${src.ref(r.src)}`].map(D.clean))], widths: [40, 18, 20, 22], caption: `표 1. ${d ? d.name : ""} 현황` }));
       else blocks.push(block("para", "이 위치의 행정동 자료를 찾지 못해 현황 숫자를 싣지 않았다."));
@@ -320,10 +326,10 @@
       .filter((x) => x.dist <= radius)
       .sort((a, b) => a.dist - b.dist || String(b.rec.recorded_at).localeCompare(String(a.rec.recorded_at)));
   }
-  // 사진대지(공무달인·ReportShot 같은 사진대지 앱을 대신): 고른 기록들의 가린 사진을 한 줄 2장으로 싣고, 사진마다 대상·위치·촬영 시각 표를 붙인다.
-  // items: [{rec, images}] (images는 그 기록 자신의 가린 사진만). 쪽 수는 사진 수만큼 늘어난다
+  // 사진대지에는 기록의 사진을 한 줄 2장으로 싣고 대상·위치·기록 시각 표를 붙인다.
+  // items: [{rec, images}] (images는 그 기록의 사진만).
   function buildPhotoSheet(items, now) {
-    const pics = [], rows = [["사진", "대상·메모", "위치", "촬영"]];
+    const pics = [], rows = [["사진", "대상·메모", "위치", "기록 시각"]];
     for (const { rec, images } of items || []) for (const img of images || []) {
       const n = pics.length + 1, d = rec.dong;
       pics.push({ ...img, caption: `사진 ${n}` });
@@ -332,9 +338,11 @@
         localTime(rec.recorded_at)].map(D.clean));
     }
     const recs = (items || []).filter((x) => (x.images || []).length).length, day = D.localDate(now);
-    const blocks = [block("title", "현장 사진대지"), block("para", `판정 아님 · 기록 ${recs}건 · 사진 ${pics.length}장 · 얼굴·번호판 가림 확인 · ${D.govDate(day)} 작성`, { small: true })];
+    const missingPhotos = (items || []).reduce((sum, { rec, images }) => sum + Math.max(0, (rec.photos || []).length - (images || []).length), 0);
+    const caption = [`판정 아님 · 기록 ${recs}건 · 수록 사진 ${pics.length}장`, ...(missingPhotos ? [`미수록 사진 ${missingPhotos}장`] : []), `${D.govDate(day)} 작성`, PHOTO_CHECK].join(" · ");
+    const blocks = [block("title", "현장 사진대지"), block("para", caption, { small: true })];
     if (pics.length) blocks.push(block("images", "", { perRow: 2, images: pics }), block("table", "", { rows, widths: [12, 38, 32, 18], caption: "표 1. 사진 설명" }));
-    return { kind: "field", title: "현장 사진대지", blocks, sources: [], writtenOn: day, footer: "리뉴맵 사진대지 · ", photos: pics.length };
+    return { kind: "field", title: "현장 사진대지", blocks, sources: [], writtenOn: day, footer: "리뉴맵 사진대지 · ", photos: pics.length, missingPhotos };
   }
 
   // ── 해명서 부록(외부 제안 #5, D19): "이 숫자 어디서 왔나, 기준을 바꾸면 결과가 바뀌나"에 답하는 부록. 순위·점수·추천·지정 판단 없음

@@ -796,7 +796,7 @@
       if (prev === undefined) continue;
       const blob = await S.photo(id); if (!blob) continue;
       const bmp = await createImageBitmap(blob);
-      images.push({ bytes: new Uint8Array(await blob.arrayBuffer()), w: bmp.width, h: bmp.height, src: URL.createObjectURL(blob), ...(prev ? { prev } : {}) });
+      images.push({ id, bytes: new Uint8Array(await blob.arrayBuffer()), w: bmp.width, h: bmp.height, src: URL.createObjectURL(blob), ...(prev ? { prev } : {}) });
       bmp.close();
     }
     return images;
@@ -962,7 +962,7 @@
       for (const rec of rows) items.push({ rec, images: await loadImages((rec.photos || []).map((id) => [id, null])) });
       const doc = E.buildPhotoSheet(items, new Date());
       items.forEach((x) => x.images.forEach((i) => URL.revokeObjectURL(i.src)));
-      if (!doc.photos) { toast("사진이 있는 기록이 없습니다."); return; }
+      if (!doc.photos) { toast(doc.missingPhotos ? "기록에 연결된 사진 파일을 찾지 못했습니다." : "사진이 있는 기록이 없습니다."); return; }
       const name = `현장사진대지_${stamp()}.hwpx`, bytes = D.hwpxBytes(doc);
       D.saveBytes(name, bytes, "application/hwp+zip");
       await S.addDoc({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), name, kind: "hwpx", created_at: new Date().toISOString(), blocks: R.blockSnapshot(doc), blob: new Blob([bytes], { type: "application/hwp+zip" }) });
