@@ -29,7 +29,7 @@
     const title = row => kind()==='issue'?row.comment:row.title;
     const text = (tag,value) => { const e=document.createElement(tag);e.textContent=value;return e; };
     const message = value => { $('workMsg').textContent=value;notify(value); };
-    const perform = fn => run(async()=>{try{await fn();}catch(error){$('workMsg').textContent=error.message;throw error;}});
+    const perform = (fn,options) => run(async()=>{try{await fn();}catch(error){$('workMsg').textContent=error.message;throw error;}},options);
     function fieldGroup(name,visible) {
       for(const node of panel.querySelectorAll('[data-work-fields="'+name+'"]')) node.hidden=!visible;
     }
@@ -61,7 +61,7 @@
         $('workHistory').append(text('li',`v${record.revision} · ${actions[record.action.type]}\n${record.actor} · ${record.at}${p.note?'\n'+p.note:''}${p.due_on?'\n기한 '+p.due_on:''}${p.assignee?' · 담당 '+p.assignee:''}`));
       }
     }
-    function evidenceButton(label,entry) {
+    function evidenceButton(label,entry,target=$('workEvidenceLinks')) {
       if(!entry)return;
       const button=text('button',label+' · '+entry.name);button.type='button';
       button.addEventListener('click',()=>perform(async()=>{
@@ -70,8 +70,8 @@
           throw new Error('증빙 파일이 없거나 저장된 지문·크기가 다릅니다.');
         root.RenewDocgen.saveBytes(entry.name,file.blob,file.blob.type||'application/octet-stream');
         message('저장된 지문을 확인한 증빙 파일을 받았습니다.');
-      }));
-      $('workEvidenceLinks').append(button);
+      },{readOnly:true}));
+      target.append(button);
     }
     function renderDetail() {
       const row=item();$('workDetail').replaceChildren();$('workNotes').replaceChildren();$('workEvidenceLinks').replaceChildren();
@@ -88,7 +88,21 @@
         evidenceButton('검토 원본',row.source.artifact);
       } else if(row.issue_id) {
         const issue=work().issues.find(r=>r.id===row.issue_id);
-        $('workDetail').append(text('p','연결 검토 의견 '+(issue?.comment||row.issue_id)));
+        if(issue){
+          const details=text('details','');
+          const source=issue.source;
+          const reviewOrigin=versions().find(v=>v.revision===source.revision);
+          const originalRequirement=reviewOrigin?.spec.requirements.find(r=>r.id===issue.requirement_id);
+          details.append(text('summary','연결된 검토 의견과 원본 파일'),
+            text('p','현재 검토 의견 상태 · '+labels[issue.status]),
+            text('p',issue.comment),
+            text('p','검토 원본판 v'+source.revision+' · 당시 요구 항목 '+(originalRequirement?.title||'확인 불가')),
+            text('p','원본 위치 · '+source.location+(source.row_id?' · 조사 행 '+source.row_id:'')));
+          evidenceButton('검토 원본 받기',source.artifact,details);
+          evidenceButton('검토 보완 답변 파일',issue.reply?.evidence,details);
+          evidenceButton('검토 해소 확인 파일',issue.resolution?.evidence,details);
+          $('workDetail').append(details);
+        }
       }
       for(const [key,label]of [['reply','보완 답변'],['resolution','해소 확인'],['submission','점검 결과'],['verification','점검 확인'],['schedule','기한·담당 변경'],['reopened','다시 연 사유']]) {
         if(row[key]){
