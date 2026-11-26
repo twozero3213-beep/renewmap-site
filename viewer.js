@@ -1,6 +1,6 @@
 /* 문서 열기(docs.html): 한글(hwp·hwpx)·워드·엑셀·파워포인트·PDF·그림·글을 이 기기 안에서 열어 보여 준다. 서버로 보내지 않는다.
    열기 도구는 vendor/에 같이 둔 오픈소스(rhwp MIT, pdf.js·SheetJS·docx-preview Apache-2.0, JSZip MIT)이고, 필요한 형식을 열 때만 불러온다.
-   위쪽(kindOf·xmlTexts·slideOrder)은 노드 시험용 순수 함수다. */
+   문서에 지정된 순서와 표시 상태를 미리보기와 내려받는 글에 함께 적용한다. */
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -23,8 +23,42 @@
     let m; while ((m = re.exec(xml))) out.push(m[1].replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&'));
     return out;
   }
-  // ppt/slides/slide2.xml, slide10.xml → 숫자 순서
-  const slideOrder = names => names.filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n)).sort((a, b) => parseInt(a.match(/(\d+)\.xml$/)[1], 10) - parseInt(b.match(/(\d+)\.xml$/)[1], 10));
+  const visibleSheets = (wb) => wb.SheetNames.filter((_, i) => !wb.Workbook?.Sheets?.[i]?.Hidden);
+
+  async function presentationText(zip, parser) {
+    const read = async (path) => {
+      const entry = zip.file(path);
+      if (!entry) throw new Error('슬라이드 목록이나 원본 슬라이드를 찾지 못했습니다.');
+      const xml = parser.parseFromString(await entry.async('string'), 'application/xml');
+      if (xml.getElementsByTagNameNS('*', 'parsererror').length) throw new Error('슬라이드 자료를 읽지 못했습니다.');
+      return xml.documentElement;
+    };
+    const relationships = ['http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'http://purl.oclc.org/ooxml/officeDocument/relationships'];
+    const drawing = ['http://schemas.openxmlformats.org/drawingml/2006/main', 'http://purl.oclc.org/ooxml/drawingml/main'];
+    const presentation = await read('ppt/presentation.xml');
+    const list = [...presentation.children].find((e) => e.localName === 'sldIdLst' && e.namespaceURI === presentation.namespaceURI);
+    const ids = [...(list?.children || [])].filter((e) => e.localName === 'sldId' && e.namespaceURI === presentation.namespaceURI);
+    if (!ids.length) return [];
+    const rels = await read('ppt/_rels/presentation.xml.rels');
+    const byId = new Map(Array.from(rels.children, (e) => [e.getAttribute('Id'), e]));
+    const base = new URL('https://package.invalid/ppt/presentation.xml');
+    const slides = [];
+    for (const [i, slideId] of ids.entries()) {
+      const id = relationships.map((ns) => slideId.getAttributeNS(ns, 'id')).find(Boolean);
+      const rel = byId.get(id), target = rel?.getAttribute('Target');
+      if (!target || rel.getAttribute('TargetMode') === 'External' || !relationships.some((ns) => rel.getAttribute('Type') === `${ns}/slide`)) {
+        throw new Error('문서에 적힌 슬라이드 연결을 확인하지 못했습니다.');
+      }
+      const path = new URL(target, base);
+      if (path.origin !== base.origin || path.search || path.hash) throw new Error('문서 안의 슬라이드 경로를 확인하지 못했습니다.');
+      const slide = await read(decodeURIComponent(path.pathname.slice(1)));
+      if (slide.localName !== 'sld' || slide.namespaceURI !== presentation.namespaceURI) throw new Error('슬라이드 자료를 읽지 못했습니다.');
+      const hidden = ['0', 'false'].includes(slide.getAttribute('show'));
+      const lines = hidden ? [] : [...slide.getElementsByTagNameNS('*', 't')].filter((e) => drawing.includes(e.namespaceURI)).map((e) => e.textContent);
+      slides.push({ number: i + 1, hidden, lines });
+    }
+    return slides;
+  }
 
   function init(win) {
     const doc = win.document, $ = id => doc.getElementById(id);
@@ -72,6 +106,7 @@
       async sheet(bytes, file, stage) {
         await loadScript('vendor/office/xlsx.mini.min.js');
         const wb = /\.csv$/i.test(file.name) ? win.XLSX.read(decodeText(bytes), { type: 'string' }) : win.XLSX.read(bytes, { type: 'array', cellDates: true }), tabs = el('div', 'doc-tabs'), body = el('div', 'doc-sheet');
+        const names = visibleSheets(wb);
         const show = name => {
           body.textContent = ''; const rows = win.XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '', raw: false }), t = el('table');
           for (const r of rows.slice(0, ROW_CAP)) { const tr = el('tr'); for (const c of r) tr.append(el('td', '', c)); t.append(tr); }
@@ -79,17 +114,28 @@
           if (rows.length > ROW_CAP) body.append(el('p', 'doc-note', `처음 ${ROW_CAP}줄만 보입니다(전체 ${rows.length}줄). 전체는 원본을 받아 엑셀이나 이음오피스에서 여세요.`));
           for (const b of tabs.children) b.setAttribute('aria-pressed', String(b.dataset.s === name));
         };
-        for (const name of wb.SheetNames) { const b = el('button', 'doc-tab', name); b.type = 'button'; b.dataset.s = name; b.addEventListener('click', () => show(name)); tabs.append(b); }
-        stage.append(tabs, body); show(wb.SheetNames[0]);
-        return { pages: wb.SheetNames.length, canPrint: () => wb.SheetNames.length === 1 && win.XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 }).length <= ROW_CAP, text: async () => wb.SheetNames.map(n => `# ${n}\n${win.XLSX.utils.sheet_to_csv(wb.Sheets[n])}`).join('\n') };
+        const hidden = wb.SheetNames.length - names.length;
+        if (hidden) stage.append(el('p', 'doc-note', `숨긴 시트 ${hidden}개는 미리보기와 글자 파일에서 제외했습니다. 원본 파일에서 확인할 수 있습니다.`));
+        for (const name of names) { const b = el('button', 'doc-tab', name); b.type = 'button'; b.dataset.s = name; b.addEventListener('click', () => show(name)); tabs.append(b); }
+        if (!names.length) { stage.append(el('p', 'doc-note', '표시할 시트가 없습니다.')); return { canPrint: () => false, text: null }; }
+        stage.append(tabs, body); show(names[0]);
+        return { pages: names.length, canPrint: () => names.length === 1 && win.XLSX.utils.sheet_to_json(wb.Sheets[names[0]], { header: 1 }).length <= ROW_CAP,
+          text: async () => names.map(n => `# ${n}\n${win.XLSX.utils.sheet_to_csv(wb.Sheets[n])}`).join('\n') };
       },
       async pptx(bytes, file, stage) {
         await loadScript('vendor/office/jszip.min.js');
-        const zip = await win.JSZip.loadAsync(bytes), names = slideOrder(Object.keys(zip.files)), texts = [];
-        for (const n of names) texts.push(xmlTexts(await zip.files[n].async('string'), 't'));
+        const zip = await win.JSZip.loadAsync(bytes), slides = await presentationText(zip, new win.DOMParser());
+        const visible = slides.filter((slide) => !slide.hidden);
         stage.append(el('p', 'doc-note', '파워포인트는 슬라이드별 글자만 보여 줍니다. 배치와 그림까지 보려면 원본을 받아 파워포인트나 이음오피스에서 여세요.'));
-        texts.forEach((t, i) => { const c = el('section', 'doc-slide'); c.append(el('h3', '', `슬라이드 ${i + 1}`)); for (const line of t.filter(Boolean)) c.append(el('p', '', line)); stage.append(c); });
-        return { pages: names.length, canPrint: () => false, text: async () => texts.map((t, i) => `[슬라이드 ${i + 1}]\n${t.join('\n')}`).join('\n\n') };
+        if (visible.length < slides.length) stage.append(el('p', 'doc-note', `숨긴 슬라이드 ${slides.length - visible.length}장은 미리보기와 글자 파일에서 제외했습니다.`));
+        if (!visible.length) stage.append(el('p', 'doc-note', '표시할 슬라이드가 없습니다.'));
+        for (const { number, lines } of visible) {
+          const card = el('section', 'doc-slide'); card.append(el('h3', '', `슬라이드 ${number}`));
+          for (const line of lines.filter(Boolean)) card.append(el('p', '', line));
+          stage.append(card);
+        }
+        return { pages: visible.length, canPrint: () => false,
+          text: visible.length ? async () => visible.map(({ number, lines }) => `[슬라이드 ${number}]\n${lines.join('\n')}`).join('\n\n') : null };
       },
       async pdf(bytes, file, stage) {
         await loadScript('vendor/pdfjs/pdf.min.js'); // isEvalSupported:false: pdf.js 3.x 글꼴 처리의 코드 실행 취약점(CVE-2024-4367) 완화. 이 페이지 CSP도 unsafe-eval을 허용하지 않는다
@@ -137,5 +183,5 @@
     $('docPrint').addEventListener('click', () => { syncPrint(); if (!$('docPrint').disabled) win.print(); });
     syncPrint();
   }
-  return { kindOf, xmlTexts, slideOrder, decodeText, init };
+  return { kindOf, xmlTexts, visibleSheets, decodeText, init };
 });

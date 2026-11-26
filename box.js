@@ -107,7 +107,7 @@
       const where = r.dong ? `${r.dong.sgName} ${r.dong.name}` : r.jibun || r.pnu || R.NO_PARCEL;
       ru.append(row(`${where} · ${r.target || r.item || "기록"}`, `${day(r.recorded_at)}${r.photos && r.photos.length ? ` · 사진 ${r.photos.length}장` : ""}${r.corrected ? " · 위치 보정됨" : ""}`, [
         ["원본 ZIP 받기", async () => D.saveBytes(`renewmap-field-${D.localDate(r.recorded_at)}-${r.id.slice(0, 8)}.zip`, await recordZip(r), MIME.zip), "", `${where} 기록 원본 받기`],
-        ["지우기", async () => { if (!confirm("이 현장 기록과 사진을 지울까요?\n지운 기록은 되살릴 수 없습니다.")) return; await S.deleteRecord(r); say("기록을 지웠습니다."); refresh(); }, "del", `${where} 기록 지우기`],
+        ["지우기", async () => { if (!confirm("이 현장 기록을 지울까요?\n다른 기록에서 쓰지 않는 사진도 지웁니다. 따로 받은 문서는 보관함에 남습니다.\n지운 기록은 되살릴 수 없습니다.")) return; await S.deleteRecord(r); say("기록을 지웠습니다."); refresh(); }, "del", `${where} 기록 지우기`],
       ]));
     }
   }

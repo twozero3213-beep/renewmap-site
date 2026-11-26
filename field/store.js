@@ -34,6 +34,7 @@
     });
   }
   const newest = (key) => (a, b) => String(b[key]).localeCompare(String(a[key]));
+  const photoRefs = (rec) => [...(rec.photos || []), ...(rec.prev_photos || [])];
   const api = {
     tx,
     records: () => tx(["records"], "readonly", (s) => s.getAll()).then((a) => a.sort(newest("recorded_at"))),
@@ -50,9 +51,11 @@
     deleteRecord: (rec) => tx(["records", "photos"], "readwrite", (rs, ps) => {
       const q = rs.getAll();
       q.onsuccess = () => {
-        const used = new Set(q.result.filter((r) => r.id !== rec.id).flatMap((r) => [...(r.photos || []), ...(r.prev_photos || [])]));
-        for (const p of rec.photos || []) if (!used.has(p)) ps.delete(p);
-        rs.delete(rec.id);
+        const current = q.result.find((r) => r.id === rec.id);
+        if (!current) return;
+        const used = new Set(q.result.filter((r) => r.id !== current.id).flatMap(photoRefs));
+        for (const id of new Set(photoRefs(current))) if (!used.has(id)) ps.delete(id);
+        rs.delete(current.id);
       };
       return q;
     }),
