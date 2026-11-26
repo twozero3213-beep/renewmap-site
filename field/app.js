@@ -882,16 +882,21 @@
   }
   // 배포 직후 예전 HTML 캐시에 페이지 스크립트가 없어도 기록·내보내기를 유지한다.
   const recordPages = window.RenewListPages?.create($("list"), "현장 사진 기록", () => render().catch(() => say("기록을 다시 불러오지 못했습니다. 새로고침해 주세요.", true))) || { reset() {}, slice: rows => rows };
-  // 2026-11-14 우지예: 백업(ZIP 내보내기·공유)한 때를 이 기기에 적어 두고, 그 뒤에 저장한 기록 수를 목록 위에 알린다(index.html backupNag 주석).
-  //     localStorage가 막힌 브라우저에서는 백업 때를 모르므로 기록이 있으면 늘 알린다(사라질 위험을 숨기지 않는다)
+  // 가져온 기록의 관찰 시각은 과거일 수 있어 ZIP에 담은 기록으로 확인한다.
   const BACKUP_KEY = "renewmap-field-last-backup";
-  const markBackup = () => { store(BACKUP_KEY, new Date().toISOString()); render().catch(() => {}); };
+  const backupRef = (r) => `${r.id}:${r.imported_at || r.recorded_at}`;
+  const markBackup = (refs) => {
+    storeJson(BACKUP_KEY, { at: new Date().toISOString(), refs });
+    render().catch(() => {});
+  };
   function drawBackup(rows) {
-    const last = store(BACKUP_KEY) || "", n = rows.filter((r) => String(r.recorded_at || "") > last).length;
+    const last = storeJson(BACKUP_KEY), refs = new Set(Array.isArray(last?.refs) ? last.refs : []);
+    const n = rows.filter((r) => !refs.has(backupRef(r))).length;
     $("backupNag").hidden = n === 0;
-    $("backupText").textContent = `백업하지 않은 기록이 ${n}건 있습니다.
-기록은 이 기기의 이 브라우저에만 저장됩니다. 사이트 데이터를 지우거나 다른 기기·브라우저에서 열면 보이지 않습니다.${last ? `
-마지막 백업 ${E.localTime(last)}` : ""}`;
+    const message = last?.at ? `마지막 전체 ZIP에 포함되지 않은 기록이 ${n}건 있습니다.` : `ZIP에 포함했는지 확인할 기록이 ${n}건 있습니다.`;
+    $("backupText").textContent = `${message}
+기록은 이 기기의 이 브라우저에만 저장됩니다. 사이트 데이터를 지우거나 다른 기기·브라우저에서 열면 보이지 않습니다.${last?.at ? `
+마지막 전체 ZIP 내보내기 ${E.localTime(last.at)}` : ""}`;
   }
   async function render() {
     let rows = await S.records();
@@ -972,27 +977,35 @@
 
   // ── 내보내기: records.json + photos/<id>.jpg 를 ZIP 하나로. 공유는 같은 ZIP을 기기의 공유 창으로 넘긴다
   async function buildZip() {
-    const rows = await S.records(), entries = [{ name: "records.json", data: JSON.stringify(R.exportDoc(rows, new Date()), null, 2) }];
-    const sent = new Set();
+    const tooLarge = () => Object.assign(new Error("전체 기록이 ZIP 복원 한도를 넘었습니다.\n보관함에서 기록별 ‘원본 ZIP 받기’로 나눠 보관하세요."), { code: "FIELD_ZIP_LIMIT" });
+    const rows = await S.records();
+    const json = new TextEncoder().encode(JSON.stringify(R.exportDoc(rows, new Date()), null, 2));
+    if (json.length > R.LIMITS.json || json.length > R.LIMITS.zip) throw tooLarge();
+    const entries = [{ name: "records.json", data: json }], sent = new Set();
+    let size = json.length;
     for (const r of rows) for (const id of new Set([...(r.photos || []), ...(r.prev_photos || [])])) {
-      const b = await S.photo(id), data = b ? new Uint8Array(await b.arrayBuffer()) : null;
+      if (!sent.has(id) && entries.length >= R.LIMITS.entries) throw tooLarge();
+      const b = await S.photo(id);
+      if (!sent.has(id) && b && size + b.size > R.LIMITS.zip) throw tooLarge();
+      const data = b ? new Uint8Array(await b.arrayBuffer()) : null;
       // 빠진·바뀐 사진을 성공한 백업으로 표시하면 복원할 때 기록이 사라진다. 하나라도 실패하면 ZIP 전체를 중단한다.
       R.checkPhoto(data, r.photo_sha256 && r.photo_sha256[id]);
-      if (!sent.has(id)) { sent.add(id); entries.push({ name: `photos/${id}.jpg`, data }); }
+      if (!sent.has(id)) { sent.add(id); size += data.length; entries.push({ name: `photos/${id}.jpg`, data }); }
     }
-    const day = D.localDate();
-    return { name: `renewmap-field-${day}.zip`, bytes: D.zipStore(entries, day) };
+    const day = D.localDate(), bytes = D.zipStore(entries, day);
+    if (bytes.length > R.LIMITS.zip) throw tooLarge();
+    return { name: `renewmap-field-${day}.zip`, bytes, refs: rows.map(backupRef) };
   }
   $("exp").addEventListener("click", async () => {
-    try { const z = await buildZip(); D.saveBytes(z.name, z.bytes, "application/zip"); markBackup(); } catch (e) { toast(e.code === "FIELD_PHOTO" ? e.message : "ZIP을 만들지 못했습니다.\n잠시 뒤 다시 해 보세요."); }
+    try { const z = await buildZip(); D.saveBytes(z.name, z.bytes, "application/zip"); markBackup(z.refs); } catch (e) { toast(e.code === "FIELD_PHOTO" || e.code === "FIELD_ZIP_LIMIT" ? e.message : "ZIP을 만들지 못했습니다.\n잠시 뒤 다시 해 보세요."); }
   });
   $("backupNow").addEventListener("click", () => $("exp").click());
   $("share").addEventListener("click", async () => {
     try {
       const z = await buildZip(), file = new File([z.bytes], z.name, { type: "application/zip" });
       await navigator.share({ files: [file], title: "리뉴맵 현장 사진 기록" });
-      markBackup();   // 공유로 넘긴 ZIP도 백업으로 친다
-    } catch (e) { if (e.name !== "AbortError") toast(e.code === "FIELD_PHOTO" ? e.message : "공유하지 못했습니다.\n모두 내보내기(ZIP)를 쓰세요."); }
+      markBackup(z.refs);
+    } catch (e) { if (e.name !== "AbortError") toast(e.code === "FIELD_PHOTO" || e.code === "FIELD_ZIP_LIMIT" ? e.message : "공유하지 못했습니다.\n모두 내보내기(ZIP)를 쓰세요."); }
   });
   if (navigator.canShare && navigator.canShare({ files: [new File([""], "a.zip", { type: "application/zip" })] })) $("share").hidden = false;
 
