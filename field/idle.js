@@ -30,6 +30,12 @@
     const body = res.rows.map((r) => [r.jibun, r.pnu, r.main_use, r.structure, r.use_apr_day || (r.use_apr_span || []).join("~"), r.floors, r.tot_area, r.age_years ?? "", LABEL[r.group]]);
     return "﻿" + [note, head, ...body].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
   }
-  const api = { KINDS, OLD, LABEL, isIdleUse, ageGroup, jibunKey, list, toCSV, csvCell: cell };
+  // 공개 빈집 파일에 기준일 칸이 없으면 지어내지 않고, 파일 이름 끝 날짜(…_20241201)를 그 이름으로만 밝힌다
+  function vacantBase(g) {
+    if (g && g.base_date) return String(g.base_date);
+    const day = /_(\d{4})(\d{2})(\d{2})$/.exec(String((g && g.title) || ""));
+    return day ? `추가확인(원자료에 기준일 없음 · 파일 이름 날짜 ${day[1]}-${day[2]}-${day[3]})` : "추가확인(원자료에 기준일 없음)";
+  }
+  const api = { KINDS, OLD, LABEL, isIdleUse, ageGroup, jibunKey, list, toCSV, csvCell: cell, vacantBase };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.RenewIdle = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -31,8 +31,13 @@
 
   const orgs = list => (list || []).map(x => esc(x.org)).filter((x, i, a) => x && a.indexOf(x) === i).join(' · ');
 
+  // 원자료에 기준일이 없으면 파일 날짜·받은 날을 그 이름으로 적는다(기준일이라 부르지 않는다). 날짜가 아예 없으면 추가확인
+  const dateText = s => !s.base_date ? '기준일 추가확인'
+    : !s.base_kind || s.base_kind === '기준일' ? `기준일 ${esc(s.base_date)}`
+    : `${esc(s.base_kind)} ${esc(s.base_date)}(원자료에 기준일 없음)`;
+
   function srcLine(s) {
-    const base = s.base_date ? ` · 기준일 ${esc(s.base_date)}` : ' · 기준일 준비 중';
+    const base = ` · ${dateText(s)}`;
     const notes = (s.notes || []).map(t => `<br>${esc(t)}`).join('');
     return `<p class="hd-src">출처: ${orgs(s.sources)}${base}${notes}</p>`;
   }
@@ -44,7 +49,8 @@
     const hs = heights(vals), last = vals.length - 1, many = vals.length > 6;   // 7개부터는 숫자가 겹쳐 비교하는 해·가장 큰 해만
     const peak = vals.indexOf(Math.max(...vals));
     const md = (s.base_date || '').slice(5).split('-').map(Number);   // '2025-09-25' → 9월 25일
-    const partial = s.partial_last && md.length === 2 && md.every(Boolean) ? `(${esc(s.years[last])}년은 ${md[0]}월 ${md[1]}일까지)` : '';
+    const upTo = s.base_kind === '받은 날' ? '일에 받은 것까지' : '일까지';
+    const partial = s.partial_last && md.length === 2 && md.every(Boolean) ? `(${esc(s.years[last])}년은 ${md[0]}월 ${md[1]}${upTo})` : '';
     const first = 0, lastFull = s.partial_last && last > 0 ? last - 1 : last;
     const at = i => `${esc(s.years[i])}년 ${n(vals[i])}${esc(s.unit)}`;
     const delta = `${at(first)} → ${at(lastFull)}`;
@@ -80,9 +86,14 @@
       if (v === null || v === undefined) return `<li>${svg(ICON[k.id] || ICON.weak)}<span class="hd-k">${esc(k.label)}</span><b class="hd-n hd-none">준비 중</b><span class="hd-s">이 지역 자료를 구하는 중</span></li>`;
       if (!isNum(v)) return '';
       // 고른 곳을 다루는 자료의 기관만(부산 전체에 양산시 기관이 뜨지 않게). codes가 없는 옛 파일은 모두 적는다
-      const who = orgs((k.sources || []).filter(x => !Array.isArray(x.codes) || x.codes.includes(code)));
+      const here = (k.sources || []).filter(x => !Array.isArray(x.codes) || x.codes.includes(code));
+      const who = orgs(here);
+      // 날짜는 고른 곳을 다루는 자료에서: 가장 늦은 날짜를 적고, 그중 하나라도 2년 넘은 자료면 알린다. 자료마다 날짜가 없는 옛 파일은 칸 전체 값
+      const dated = here.filter(x => x.base_date).sort((a, b) => (a.base_date < b.base_date ? 1 : -1));
+      const d = dated.length ? dated[0] : k, old = dated.length ? dated.some(x => x.stale) : k.stale;
+      const oldText = old ? (dated.length > 1 ? ' · 2년 넘게 지난 자료가 섞여 있음' : ' · 2년 넘게 지난 자료') : '';
       return `<li>${svg(ICON[k.id] || ICON.weak)}<span class="hd-k">${esc(k.label)}</span><b class="hd-n">${n(v)}<small>${esc(k.unit)}</small></b>`
-        + `<span class="hd-s">${who}${k.base_date ? ` · <span class="hd-d">${esc(k.base_date)}</span>` : ' · 기준일 준비 중'}</span></li>`;
+        + `<span class="hd-s">${who} · <span class="hd-d">${dateText(d)}</span>${oldText}</span></li>`;
     }).join('');
     // 부산 전체: 주소로 구·군을 정하지 못한 시설도 부산 안이라 더한다(구·군 합보다 조금 클 수 있다)
     const why = code === '26' ? '<p class="hd-src">부산 전체에는 구·군을 정하지 못한 주소의 시설도 들어 있어 구·군 합보다 조금 클 수 있습니다.</p>' : '';

@@ -136,7 +136,8 @@
       const fields = Object.fromEntries(Object.entries(controls).map(([key, id]) => [key, el(id).value.trim()]));
       fields.submit_text ||= model.labels[fields.change] + ' · ' + fields.after + ' · ' + fields.reason;
       const used = new Map(references.map(photo => [photo.sha256,photo]));
-      for (const file of el('changePhotos').files) {
+      for (const picked of el('changePhotos').files) {
+        const file = await root.RenewRevisitPhotos.clean(picked);
         const info = await reference(file, file.name);
         used.set(info.sha256,info);
         images.set(info.sha256,file);

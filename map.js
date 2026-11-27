@@ -466,8 +466,9 @@
   function sgExtra(ind, sg, ext) {
     const e = ext || {};
     if (ind.src === 'migration') {
-      const row = sgMatch(e.migration && e.migration.sigungu, sg), s = row ? seriesOf(row, MIG_CODE) : [], y = latestYear(s), v = y === null ? null : valueAt(s, y);
-      return { value: v, year: y, text: fmt(v, ind.unit) || '자료 없음', color: colorOf(v, scaleFor(ind, 'now')), abs: y === null ? null : valueAt(seriesOf(row, 'YOUTH_NET_MIGRATION'), y), cell: row ? ((row.cells || []).find(c => c.indicator_code === MIG_CODE) || null) : null };
+      // 일반구는 KOSIS가 시 단위까지만 내므로(migration.json unmatched) 상위 시 값(mois_code5)을 구에 칠하지 않는다
+      const own = sg.kind === '일반구', row = sgMatch(e.migration && e.migration.sigungu, own ? { code5: sg.code5 } : sg), s = row ? seriesOf(row, MIG_CODE) : [], y = latestYear(s), v = y === null ? null : valueAt(s, y);
+      return { value: v, year: y, text: fmt(v, ind.unit) || (own && !row ? '시 단위만 공표' : '자료 없음'), color: colorOf(v, scaleFor(ind, 'now')), abs: y === null ? null : valueAt(seriesOf(row, 'YOUTH_NET_MIGRATION'), y), cell: row ? ((row.cells || []).find(c => c.indicator_code === MIG_CODE) || null) : null };
     }
     if (ind.src === 'designations') {
       const items = e.designations && Array.isArray(e.designations.items) ? e.designations.items : null, row = sgMatch(items, sg);

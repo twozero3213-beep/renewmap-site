@@ -38,7 +38,7 @@
     }));
     $("vacantTitle").textContent = `${g.gu_name} 공개 빈집 수 ${n(g.total)}${house}`;
     const basis = $("vacantBase");
-    basis.replaceChildren(g.title, ` · 기준일 ${g.base_date} · ${src.license_type}`);
+    basis.replaceChildren(g.title, ` · 기준일 ${I.vacantBase(g)} · ${src.license_type}`);
     if (typeof g.url === "string" && /^https:\/\//.test(g.url)) {
       const link = document.createElement("a");
       link.href = g.url;

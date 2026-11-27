@@ -416,7 +416,8 @@
       if (uploaded.length) {
         photos = [];
         afterField = "";
-        for (const file of uploaded) {
+        for (const picked of uploaded) {
+          const file = await root.RenewRevisitPhotos.clean(picked);
           const ref = await meta(file, file.name);
           photos.push(ref);
           newBlobs.set(ref.sha256, file);

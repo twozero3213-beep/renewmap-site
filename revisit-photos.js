@@ -12,19 +12,19 @@
   const mime =
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-  async function thumbnail(blob) {
+  async function thumbnail(blob, maxW = 220, maxH = 140, quality = 0.82) {
     if (!(blob instanceof Blob) || !blob.size || blob.size > maxBytes)
-      throw new Error("전후 사진 파일의 크기를 확인해 주세요.");
+      throw new Error("사진 파일의 크기를 확인해 주세요. 각 파일은 20MB 이하여야 합니다.");
     let bitmap;
     try {
-      bitmap = await createImageBitmap(blob);
+      bitmap = await createImageBitmap(blob, { imageOrientation: "from-image" });
     } catch {
       throw new Error(
-        "전후 사진을 열지 못했습니다. 유효한 JPEG·PNG·WebP 사진을 선택해 주세요.",
+        "사진을 열지 못했습니다. 유효한 JPEG·PNG·WebP 사진을 선택해 주세요.",
       );
     }
     try {
-      const scale = Math.min(220 / bitmap.width, 140 / bitmap.height, 1);
+      const scale = Math.min(maxW / bitmap.width, maxH / bitmap.height, 1);
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round(bitmap.width * scale));
       canvas.height = Math.max(1, Math.round(bitmap.height * scale));
@@ -33,7 +33,7 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
       const jpg = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", 0.82),
+        canvas.toBlob(resolve, "image/jpeg", quality),
       );
       if (!jpg) throw new Error("보고서용 사진을 만들지 못했습니다.");
       return {
@@ -172,5 +172,21 @@
       throw new Error("사진을 포함한 실적보고서가 20MB를 넘습니다.");
     return result;
   }
-  window.RenewRevisitPhotos = Object.freeze({ embed });
+  // 직접 고른 사진은 캔버스로 다시 만들어 EXIF(GPS·기기 정보)를 지운다(privacy.html 약속과 같게).
+  // 현장 앱이 이미 만든 JPEG처럼 메타데이터가 없는 JPEG는 바이트를 그대로 둬 현장 기록 지문(photo_sha256)과 맞게 한다.
+  async function clean(file) {
+    const R = window.FieldRecord;
+    if (R && file instanceof Blob && /^image\/jpeg$/i.test(file.type || "")) {
+      try {
+        R.checkPhoto(new Uint8Array(await file.arrayBuffer()));
+        return file;
+      } catch {
+        // 메타데이터가 있거나 손상된 JPEG → 아래에서 다시 만든다(못 열면 thumbnail이 알린다)
+      }
+    }
+    const image = await thumbnail(file, 2560, 2560, 0.9);
+    const name = String(file.name || "사진").replace(/\.[^.]*$/, "") + ".jpg";
+    return new File([image.bytes], name, { type: "image/jpeg" });
+  }
+  window.RenewRevisitPhotos = Object.freeze({ embed, clean });
 })();
