@@ -9,7 +9,7 @@
     fund: { name: '행정안전부 지방소멸대응기금 평가·배분체계 개편(2026.4.)', url: 'https://www.korea.kr/news/policyNewsView.do?newsId=148962676' },
     mss: { name: '중소벤처기업부 공고 제2026-199호 지역상권육성 사업', url: 'https://www.mss.go.kr/site/smba/ex/bbs/View.do?bcIdx=1066882&cbIdx=310&parentSeq=1066882' },
     industrial: { name: '국토교통부 2026년 노후 산업단지 재생사업 공모 보도자료(2026.10.27.)', url: 'https://www.korea.kr/briefing/pressReleaseView.do?newsId=156786578' },
-    rural: { name: '농림축산식품부 농촌공간계획 활성화 방안(2025.2.)', url: 'https://www.mafra.go.kr/home/5109/subview.do' },
+    rural: { name: '농림축산식품부 농촌공간계획 활성화 방안(2025.2.)', url: 'https://www.mafra.go.kr/bbs/home/792/573221/artclView.do' },
   };
   // [단계, 글, 끝나는 날(한국 시각, 이 날이 지나면 '지남'), 시작일(D-day를 세는 단계만)]. 날짜는 글과 같은 사실을 기계가 읽게 적은 것이다
   const SCHEDULE = [['1차 사전컨설팅', '2026년 11월까지', '2026-11-30'], ['2차 사전컨설팅', '접수 전까지', '2026-12-27'], ['신청서 접수', '2026. 12. 28.~12. 30.(3일간)', '2026-12-30', '2026-12-28'], ['사업 평가', '2027년 1~3월', '2027-03-31'], ['결과 발표', '2027년 4월 이후', null]];
@@ -171,13 +171,33 @@
     const h = root.location && root.location.hash, code = dong ? String(dong.code7 ?? dong.code ?? '') : '';
     return BRIEF41 + (/^#map(\/\d+)+$/.test(h || '') ? h : /^\d{8,10}$/.test(code) ? `#map/${code.slice(0, 2)}/${code.slice(0, 5)}/${code}` : '');
   }
-  function dongHTML(name, rows, dong) {
+  function reviewText(id, name, rows, dong, selectedYear) {
+    const program = PROGRAMS.find(p => p.id === id);
+    if (!program) return '';
+    const result = checkProgram(program, settledFacts(rows, dong)), source = SOURCES[program.src];
+    const section = state => {
+      const items = result.needs.filter(n => n.state === state);
+      return [`${STATE[state]} ${items.length}개`, ...items.map(n => `- ${n.t}${n.note ? ` — ${n.note.replace(/\s+/g, ' ')}` : ''}`)];
+    };
+    return [
+      '리뉴맵 재생 사업 확인 메모',
+      `대상 행정동 · ${name.replace(/\s+/g, ' ')}`,
+      `사업 · ${program.name}`,
+      `조회 범위 · ${num(selectedYear) ? `지도에서 선택한 ${selectedYear}년` : '지도 기본값(지표별 공개 최신 자료)'}`,
+      '', '행정동 자료를 맞춰 본 참고 메모입니다. 지표마다 자료 기준일이 다를 수 있습니다.',
+      '신청 전에는 적용되는 공고와 실제 사업 구역의 자료를 확인하세요. 공식 판정은 담당 기관이 합니다.',
+      '', ...section('check'), '', ...section('no'), '',
+      `요건 출처 · ${source.name}${program.page ? ` p.${program.page}` : ''}`, source.url, '',
+    ].join('\n');
+  }
+  function dongHTML(name, rows, dong, reviewBlocked = '') {
     const f = settledFacts(rows, dong), list = checkAll(f), vs = list.map(verdictOf), nOk = vs.filter(v => v.cls === 'ok').length, nNo = vs.filter(v => v.cls === 'no').length;
     // 도시재생 공모 4종 카드 첫 줄: 신청서 4-1 칸의 결론과 그 표로 가는 길(나머지 사업은 4-1 양식을 쓰지 않는다)
     const head41 = `<p class="pg-41">${esc(declineHead(f))} → <a href="${esc(briefHref(dong))}">동네 현황표 보기</a></p>`;
     return `<section class="pg-dong"><h3>${esc(name)}에 맞는 재생 사업</h3>` +
       `<p class="pg-sum">신청 검토 후보 <b>${nOk}개</b> · 확인할 요건이 남은 사업 ${list.length - nOk - nNo}개 · 자료상 안 맞는 요건이 있는 사업 ${nNo}개<br><small>확인할 문서: 전략계획 고시 · 2027 공모 공고문. 행정동 자료로 맞춰 본 참고 계산(판정 아님)이라 실제 요건은 사업 구역 기준으로 다시 확인합니다.</small></p>` +
-      list.map((c, i) => `<div class="pg-card"><h4><a href="programs.html#${esc(c.program.id)}">${esc(c.program.name)}</a><small>${esc(c.program.money)}</small></h4>${CORE.includes(c.program.id) ? head41 : ''}<p class="pg-verdict is-${vs[i].cls}">${esc(vs[i].text)}</p><ul>${c.needs.map(n => `<li class="is-${n.state}"><b>${STATE[n.state]}</b><span>${esc(n.t)}${n.note ? `<small>${esc(n.note)}${n.tool ? ` <a href="${esc(n.tool[0])}">${esc(n.tool[1])}</a>` : ''}</small>` : ''}</span></li>`).join('')}</ul></div>`).join('') + `</section>`;
+      (reviewBlocked ? `<p class="pg-foot" role="status">${esc(reviewBlocked)}</p>` : '') +
+      list.map((c, i) => `<div class="pg-card"><h4><a href="programs.html#${esc(c.program.id)}">${esc(c.program.name)}</a><small>${esc(c.program.money)}</small></h4>${CORE.includes(c.program.id) ? head41 : ''}<p class="pg-verdict is-${vs[i].cls}">${esc(vs[i].text)}</p><ul>${c.needs.map(n => `<li class="is-${n.state}"><b>${STATE[n.state]}</b><span>${esc(n.t)}${n.note ? `<small>${esc(n.note)}${n.tool ? ` <a href="${esc(n.tool[0])}">${esc(n.tool[1])}</a>` : ''}</small>` : ''}</span></li>`).join('')}</ul><p class="pg-foot pg-req-source">요건 출처 · ${srcLine(c.program)}</p><p class="pg-foot"><button type="button" class="btn ghost" data-program-review="${esc(c.program.id)}" aria-label="${esc(c.program.name)} 확인 메모 받기(TXT)"${reviewBlocked ? ' disabled' : ''}>확인 메모 받기(TXT)</button></p></div>`).join('') + `</section>`;
   }
   // 2027 가이드라인 기반·편의시설 현황표. value는 map.js가 지표 단위에 맞춰 만든 글자
   function socRows(rows, format) {
@@ -301,7 +321,7 @@
       return [c[0], ...cols.flatMap(([v, j], i) => [v, j, stat(r, i)]), num(r.shortfall) ? r.shortfall : '', c[8], c[9], uniq(cs.map(x => x.reference_date)), from, uniq(cs.map(x => x.cell_id))].map(q).join(',');
     })].join('\r\n');
   }
-  const api = { districtRows, districtHTML, districtCSV, PROGRAMS, SOURCES, SCHEDULE, SOC, factsOf, checkNeed, checkProgram, checkAll, scheduleHTML, listHTML, dongHTML, socRows, socHTML, socCSV };
+  const api = { districtRows, districtHTML, districtCSV, PROGRAMS, SOURCES, SCHEDULE, SOC, factsOf, checkNeed, checkProgram, checkAll, scheduleHTML, listHTML, dongHTML, reviewText, socRows, socHTML, socCSV };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   root.RenewPrograms = api;

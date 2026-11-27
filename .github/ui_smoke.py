@@ -446,6 +446,15 @@ def main():
                                 # #267: 문서 종류 단추(.rp-mode)는 '받을 문서' 카드가 대신하고 숨는다(report-visual.css)
                                 page.locator('#report .dc-card[data-set-mode="programs"]').click()
                                 expect_doc.get_by_role('heading',name='반여1동에 맞는 재생 사업',exact=True).wait_for(state='visible')
+                                card = expect_doc.locator('.pg-card').filter(has_text='노후주거지정비 일반정비형')
+                                assert 'p.36' in card.locator('.pg-req-source').inner_text()
+                                with page.expect_download() as file_info:
+                                    card.locator('[data-program-review="oldres"]').click()
+                                receipt = file_info.value.path().read_text(encoding='utf-8')
+                                assert '대상 행정동 · 반여1동' in receipt and '구역 건축물대장으로 계산' in receipt
+                                assert '공식 판정은 담당 기관이 합니다.' in receipt
+                                assert card.locator('.pg-req-source a').get_attribute('href') in receipt
+                                check(route,width,'program_review_download')
                                 check(route,width,'document_mode_copy')
                             page.goto(base+route,wait_until='networkidle')
                         if route=='explore.html' and not args.base:

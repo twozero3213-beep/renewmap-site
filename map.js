@@ -1936,11 +1936,20 @@
       `<p class="rp-intro rp-src-line">${esc(srcHead('출처표'))}</p><p class="rp-intro">카드의 숫자와 문장은 출처 기록의 값과 출처만 옮긴 것입니다.<br>평가나 판정은 하지 않습니다.</p>${typeof localStorage !== 'undefined' ? snapHTML(snapGet(it.code), snapshotOf(it, rows, new Date())) : ''}${byG}${src}${ai}<p class="rp-foot">${esc(REPORT_FOOT)}</p>`;
   }
   const socText = r => fmt(r.value, r.ind.unit);
+  function programReviewBlocked(code) {
+    if (!window.RenewSave) return '확인 메모 도구를 받지 못했습니다. 페이지를 다시 열어 주세요.';
+    if (state.failed.has('designations') || state.failed.has('living') || fetchFailed(livingPath(code)) || invalidLiving.has(code)) {
+      return '요건에 쓸 자료를 받지 못했습니다. 지도에서 해당 자료를 다시 받아 주세요.';
+    }
+    return state.designations === undefined || state.living === undefined || livingOf(code) === undefined
+      ? '자료가 준비되면 사업별 확인 메모를 받을 수 있습니다.' : '';
+  }
   function renderReport(v, m, it) {
     if (!report) return;
+    const reviewBlocked = it && reportMode === 'programs' ? programReviewBlocked(v.emdCode) : '';
     // 생활·전망 파일이 늦게 도착하면 키가 바뀌어 다시 그린다
     const key = it ? `${reportMode}:${it.code}:${m.selYear}:${horizon()}:${m.living ? 'L' : ''}${m.ext && m.ext.forecast ? 'F' : ''}${state.migration ? 'M' : ''}${state.designations ? 'D' : ''}${state.living ? 'I' : ''}${state.forecastIdx ? 'X' : ''}${state.realestate ? 'R' : ''}` : `empty:${reportMode}:${toHash(state.route)}`;   // 빈 안내의 '지도' 링크가 지역을 따라가게(v9: 시·도를 바꿔도 첫 시·도를 가리켰다)
-    const inputs = [state.index, m.json, m.living, state.living, m.ext && m.ext.forecast, state.forecastIdx, state.designations, state.migration, state.realestate, m.geo, state.templates];
+    const inputs = [state.index, m.json, m.living, state.living, m.ext && m.ext.forecast, state.forecastIdx, state.designations, state.migration, state.realestate, m.geo, state.templates, reviewBlocked];
     if (key === reportKey && inputs.every((x, i) => x === reportInputs[i])) return;
     // 입력 SHA·보조 자료가 늦게 와도 같은 문서의 파일 메뉴와 키보드 초점을 유지한다.
     const filesView = it ? `${reportMode}:${it.code}` : '';
@@ -1979,7 +1988,15 @@
       report.innerHTML = reportModeHTML(reportMode) + (built.loading ? '<div class="rp-empty" role="status" aria-busy="true"><h3>한 장 요약을 만드는 중입니다.</h3></div>'
         : built.error ? `<div class="rp-empty" role="alert"><h3>한 장 요약을 만들 자료를 받지 못했습니다.</h3><p>${esc(built.error)}</p><p><button type="button" class="btn" data-retry>다시 시도</button></p></div>` : onepageHTML(v, it, built.one));
     } else if (reportMode === 'programs' && window.RenewPrograms) {
-      report.innerHTML = reportModeHTML(reportMode) + window.RenewPrograms.dongHTML(it.name, rows, (m.json && m.json.dongs || []).find(d => codeOf(d) === it.code)) + window.RenewPrograms.socHTML(rows, socText);
+      const programs = window.RenewPrograms, save = window.RenewSave;
+      const dong = m.json.dongs.find(d => codeOf(d) === it.code);
+      report.innerHTML = reportModeHTML(reportMode) + programs.dongHTML(it.name, rows, dong, reviewBlocked) + programs.socHTML(rows, socText);
+      if (!reviewBlocked) report.querySelectorAll('[data-program-review]').forEach(button => {
+        button.addEventListener('click', () => {
+          const id = button.dataset.programReview, text = programs.reviewText(id, it.name, rows, dong, m.selYear);
+          if (text) save.saveFile(`재생사업_확인메모_${id}.txt`, [text], 'text/plain;charset=utf-8');
+        });
+      });
       report.querySelector('[data-soc-csv]').addEventListener('click', () => { if (DG) DG.saveBytes(`기반편의시설현황_${DG.safeName(it.name)}.csv`, new TextEncoder().encode(window.RenewPrograms.socCSV(it.name, rows, socText)), 'text/csv;charset=utf-8'); });
     } else if (reportMode === 'brief') {
       const built = docFor(v, m, it);
