@@ -32,14 +32,21 @@
     const profit = after - cost;                                  // 종전자산에 돌아갈 몫
     const before = beforeValue === null ? null : beforeValue * 10000;   // 억원 → 만원
     const ratio = before && before > 0 ? (profit / before) * 100 : null;
-    const sens = [-10, 0, 10].map(p => {
+    const changes = [-10, 0, 10];
+    const sens = changes.map(p => {
       const a = net * n('price') * (1 + p / 100);
       return { pct: p, ratio: before && before > 0 ? ((a - cost) / before) * 100 : null, profit: a - cost };
     });
     if ([above, total, net, after, build, other, cost, profit, before, ratio, ...sens.flatMap(s => [s.profit, s.ratio])].some(v => v !== null && !Number.isFinite(v))) {
       return { error: '계산 범위를 넘었습니다. 입력값의 단위와 자릿수를 확인해 주세요.' };
     }
-    return { above, total, net, after, build, other, cost, profit, before, ratio, sens };
+    const costSens = ratio === null ? [] : changes.map(p => {
+      const totalCost = cost * (1 + p / 100);
+      const revisedRatio = (after - totalCost) / before * 100;
+      const valid = Number.isFinite(totalCost) && Number.isFinite(revisedRatio);
+      return { pct: p, cost: valid ? totalCost : null, ratio: valid ? revisedRatio : null };
+    });
+    return { above, total, net, after, build, other, cost, profit, before, ratio, sens, costSens };
   }
 
   // 반올림해 0이 되는 음수는 0으로 쓴다(-0·-0.0이 보였다). `|| 0`이 -0을 0으로 바꾼다
@@ -50,44 +57,79 @@
   const dl = (rows, cls) => `<dl class="${cls}">${rows.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('')}</dl>`;
   // 2026-11-19 결과 카드: 큰 비례율 하나 → 핵심 세 줄 → 분양가 ±10% 세 칸 → 열 줄 계산 내역은 접이 안(표 대신 줄 목록이라 휴대폰에서 옆으로 넘치지 않는다).
   // open: 다시 그릴 때 사용자가 펼쳐 둔 계산 내역을 닫지 않는다
-  function resultHTML(r, open) {
+  const shiftLabel = value => `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(value)}%`;
+  function resultHTML(r, open, costOpen) {
     if (r.error) return `<p class="warn">${r.error}</p>`;
     // 면적·용적률이 0이면 모든 값이 0이라 비례율 0%가 답처럼 보였다(r16) → 계산할 수 없음
     if (!(r.above > 0)) return '<p class="warn"><b>계산할 수 없음</b><br>구역 면적과 계획 용적률을 0보다 크게 넣어 주세요.</p>';
     const rows = [['지상 연면적', m2(r.above)], ['공사 연면적(지하 포함)', m2(r.total)], ['분양 전용면적 합', m2(r.net)],
       ['종후자산(분양 총액)', won(r.after)], ['공사비', won(r.build)], ['기타 사업비', won(r.other)], ['총사업비', won(r.cost)]];
-    const detail = more => `<details class="rm-disclosure bz-detail"${open ? ' open' : ''}><summary>계산 내역 보기</summary>${dl([...rows, ...more], 'bz-rows')}</details>`;
+    const detail = more => `<details class="rm-disclosure bz-detail bz-calc"${open ? ' open' : ''}><summary>계산 내역 보기</summary>${dl([...rows, ...more], 'bz-rows')}</details>`;
     // 종전자산을 넣기 전에는 몫·분양가 민감도를 숨긴다(r16: 예시값만으로 '몫 -126억원'이 첫 화면에 떠 계산기가 고장 난 것처럼 읽혔다)
     if (r.ratio === null) return '<p class="bz-wait">종전자산을 넣으면 계산됩니다.</p><button type="button" class="btn ghost bz-go" data-biz-focus>종전자산 넣기</button>'
       + dl([['종후자산(분양 총액)', won(r.after)], ['총사업비', won(r.cost)]], 'bz-key') + detail([]);
-    const sens = r.sens.map(s => `<li><b>분양가 ${s.pct > 0 ? '+' : s.pct < 0 ? '−' : ''}${Math.abs(s.pct)}%</b><span>몫 ${won(s.profit)}</span><span>비례율 ${s.ratio === null ? '–' : pct(s.ratio)}</span></li>`).join('');
+    const sens = r.sens.map(s => `<li><b>분양가 ${shiftLabel(s.pct)}</b><span>몫 ${won(s.profit)}</span><span>비례율 ${pct(s.ratio)}</span></li>`).join('');
+    const costSens = r.costSens.map(s => `<li><b>${s.pct ? `단가 ${shiftLabel(s.pct)}` : '입력 단가'}</b>${
+      s.cost === null ? '<span>계산 범위 초과</span>' : `<span>총사업비 ${won(s.cost)}</span><span>비례율 ${pct(s.ratio)}</span>`
+    }</li>`).join('');
     return `<p class="bz-big">${pct(r.ratio)}</p>` + dl([['종후자산(분양 총액)', won(r.after)], ['총사업비', won(r.cost)], ['종전자산에 돌아갈 몫', won(r.profit)]], 'bz-key')
       + `<h3 class="bz-h">분양가가 달라지면</h3><ul class="bz-sens">${sens}</ul>`
+      + `<details class="rm-disclosure bz-detail bz-cost-sens"${costOpen ? ' open' : ''}><summary>공사비가 달라지면</summary>
+      <p class="bz-hint">공사비 단가만 ±10% 바꿉니다. 기타 사업비는 입력한 공사비 대비 비율에 따라 함께 바뀝니다.</p>
+      <ul class="bz-sens">${costSens}</ul></details>`
       + detail([['종전자산에 돌아갈 몫(종후 − 사업비)', won(r.profit)], ['종전자산 총액', won(r.before)], ['추정 비례율', pct(r.ratio)]]);
   }
 
   function init() {
     const form = document.getElementById('bizForm'), out = document.getElementById('bizOut'), note = document.getElementById('bizPriceNote');
     const read = () => Object.fromEntries(Object.keys(DEFAULTS).map(k => [k, form.elements[k].value]));
-    let priceEdited = false;
-    const keptPrice = () => priceEdited ? '직접 입력한 분양가를 유지합니다.' : '가정값을 그대로 둡니다.';
-    const draw = () => { out.innerHTML = resultHTML(feasibility(read()), !!(out.querySelector && out.querySelector('details[open]'))); };
+    let priceEdited = false, priceReference = null, priceStatus = '';
+    function showPriceNote() {
+      const value = form.elements.price.value;
+      const input = value === '' ? '분양가를 입력해 주세요.'
+        : priceEdited ? '직접 입력한 분양가를 계산에 사용합니다.'
+        : priceReference ? `지금 계산에 쓰는 분양가 가정은 중위가를 반올림한 ${Number(value).toLocaleString('ko-KR')}만원/㎡입니다.`
+        : `지금 계산에 쓰는 분양가는 예시값 ${DEFAULTS.price}만원/㎡입니다.`;
+      note.textContent = [input, priceReference || priceStatus].filter(Boolean).join(' ');
+    }
+    const draw = () => {
+      out.innerHTML = resultHTML(feasibility(read()), !!out.querySelector?.('.bz-calc[open]'), !!out.querySelector?.('.bz-cost-sens[open]'));
+    };
     for (const [k, v] of Object.entries(DEFAULTS)) form.elements[k].value = v;
-    form.addEventListener('input', e => { if (e.target === form.elements.price) priceEdited = true; draw(); });
+    form.addEventListener('input', e => {
+      if (e.target === form.elements.price) {
+        priceEdited = true;
+        showPriceNote();
+      }
+      draw();
+    });
     // 결과 카드의 '종전자산 넣기' → 그 칸으로(결과 카드는 양식 안에 있다)
     form.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-biz-focus]')) form.elements.before.focus(); });
     form.addEventListener('submit', e => { e.preventDefault(); draw(); });
+    showPriceNote();
     draw();
     const code7 = new URLSearchParams(location.search).get('dong');
     if (!code7 || !/^\d{8}$/.test(code7)) return;
-    fetch('data/national/scores.json').then(r => r.json()).then(s => {
-      const d = s.dongs[code7], p = d && d.price;
-      if (!p || p.apt_m2_median === null || p.apt_m2_median === undefined) { note.textContent = `${d ? d.name : code7}: 시·군·구 아파트 실거래 ㎡당 중위가가 없어 ${keptPrice()}`; return; }
-      if (priceEdited) { note.textContent = `${d.name}이 속한 시·군·구 아파트 실거래 ㎡당 중위가는 참고 자료입니다. ${keptPrice()}`; return; }
-      form.elements.price.value = Math.round(p.apt_m2_median);
-      note.textContent = `${d.name}이 속한 시·군·구 아파트 매매 실거래 ㎡당 중위가 ${p.apt_m2_median.toLocaleString('ko-KR')}만원(${p.apt_ref}, 전용면적 기준${p.apt_pooled ? ', 시 전체' : ''})을 분양가 기본값으로 넣었습니다. 새 아파트 분양가는 보통 이보다 높거나 낮을 수 있습니다.`;
-      draw();
-    }).catch(() => { note.textContent = `실거래 자료를 불러오지 못해 ${keptPrice()}`; });
+    fetch('data/national/scores.json').then(r => {
+      if (!r.ok) throw new Error('실거래 자료 요청 실패');
+      return r.json();
+    }).then(s => {
+      const d = s.dongs?.[code7], p = d?.price;
+      if (Number.isFinite(p?.apt_m2_median) && p.apt_m2_median > 0) {
+        const scope = p.apt_pooled ? '시 전체' : '시·군·구';
+        priceReference = `참고 자료는 ${d.name}이 속한 ${scope}의 기존 아파트 매매 실거래 중위가 ${p.apt_m2_median.toLocaleString('ko-KR')}만원/㎡입니다. 전용면적 기준 ${p.apt_ref || '기준일 미기록'}.`;
+        if (!priceEdited) {
+          form.elements.price.value = Math.round(p.apt_m2_median);
+          draw();
+        }
+      } else {
+        priceStatus = '기존 아파트 매매 실거래 중위가 자료가 없습니다.';
+      }
+      showPriceNote();
+    }).catch(() => {
+      priceStatus = '실거래 참고 자료를 불러오지 못했습니다.';
+      showPriceNote();
+    });
   }
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
