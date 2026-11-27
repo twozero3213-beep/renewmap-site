@@ -21,6 +21,31 @@
     packets = [],
     busy = false,
     cloud = null;
+  const receiptFields = [$("receivedList"), $("receivedFiles"), $("receivedCheck")];
+  function clearReceipt() {
+    $("receivedStatus").textContent = "";
+    $("receivedIssues").replaceChildren();
+  }
+  for (const input of receiptFields.slice(0, 2)) input.addEventListener("change", clearReceipt);
+  if (location.hash === "#receivedDelivery") $("receivedDelivery").open = true;
+  $("receivedCheck").addEventListener("click", async () => {
+    const [list, files] = receiptFields;
+    receiptFields.forEach(control => { control.disabled = true; });
+    clearReceipt();
+    $("receivedStatus").textContent = "받은 목록과 파일을 대조하고 있습니다.";
+    try {
+      const result = await B.verifyDelivery(list.files[0], [...files.files]);
+      const basis = "목록 v" + result.revision + " · 이름 " + result.selected + "개 · 파일 " + result.count + "개";
+      $("receivedStatus").textContent = result.issues.length
+        ? basis + " 중 " + result.matched + "개 일치 · 확인 필요 " + result.issues.length + "건"
+        : basis + "가 모두 일치합니다.";
+      $("receivedIssues").replaceChildren(...result.issues.map(li));
+    } catch (error) {
+      $("receivedStatus").textContent = error.message || "받은 파일을 대조하지 못했습니다.";
+    } finally {
+      receiptFields.forEach(control => { control.disabled = false; });
+    }
+  });
   const deliveryPicks = new Set();
   let deliveryHead = null;
   const say = (text) => {

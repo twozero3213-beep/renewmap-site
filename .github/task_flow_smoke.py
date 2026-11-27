@@ -237,6 +237,33 @@ def main():
                 assert original['size'] == len(chosen.read(original['path']))
                 assert original['sha256'] == hashlib.sha256(chosen.read(original['path'])).hexdigest()
                 assert 'delivery.txt' not in chosen.read('사용범위.txt').decode('utf-8')
+                receipt_payload = chosen.read('전달_파일_목록.json')
+                file_payload = chosen.read(original['path'])
+            receiver = browser.new_context(service_workers='block')
+            try:
+                recipient = receiver.new_page()
+                recipient.goto(base + 'tasks.html#receivedDelivery', wait_until='networkidle')
+                expect(recipient.locator('#newTask')).to_be_enabled()
+                requests = []
+                receiver.on('request', lambda req: requests.append(req.method))
+                recipient.locator('#receivedList').set_input_files({
+                    'name': '전달_파일_목록.json', 'mimeType': 'application/json', 'buffer': receipt_payload,
+                })
+                expected_basename = original['path'].split('/')[-1]
+                picker = recipient.locator('#receivedFiles')
+                picker.set_input_files({'name': expected_basename, 'mimeType': 'application/octet-stream', 'buffer': file_payload})
+                recipient.locator('#receivedCheck').click()
+                expect(recipient.locator('#receivedStatus')).to_contain_text('모두 일치')
+                picker.set_input_files({'name': 'renamed-delivery.txt', 'mimeType': 'application/octet-stream', 'buffer': file_payload})
+                expect(recipient.locator('#receivedStatus')).to_have_text('')
+                recipient.locator('#receivedCheck').click()
+                expect(recipient.locator('#receivedIssues')).to_contain_text('누락')
+                expect(recipient.locator('#receivedIssues')).to_contain_text('목록 밖')
+                assert recipient.evaluate('async()=>[(await TaskStore.list()).length,(await FieldStore.docs()).length]') == [0,0]
+                assert not requests
+            finally:
+                receiver.close()
+            result['checks'].append('recipient_checks_downloaded_file_without_task_or_transfer')
             page.get_by_role('button', name='delivery.txt 선택 해제', exact=True).click()
             expect(selected).not_to_be_checked()
             expect(page.locator('#selectedDelivery')).to_be_disabled()

@@ -36,7 +36,7 @@
     <script src="task-store.js?v=20261127-current-export" defer></script>
     <script src="field/store.js" defer></script>
     <script src="docgen.js?v=20261122-r23" defer></script>
-    <script src="tasks-files.js?v=20261127-r67-selected-index" defer></script>
+    <script src="tasks-files.js?v=20261127-r68-recipient-details" defer></script>
     <script src="task-cloud-config.js?v=20261119-r3" defer></script>
     <script src="task-cloud.js?v=20261120-r11" defer></script>
     <script src="task-cloud-ui.js?v=20261119-w2" defer></script>
@@ -49,7 +49,7 @@
     <script src="revisit-photos.js?v=20261119-r3" defer></script>
     <script src="revisit-report-ui.js?v=20261119-r3" defer></script>
     <script src="task-followup-ui.js?v=20261127-r55" defer></script>
-    <script src="tasks-app.js?v=20261127-r67-selected-index" defer></script>
+    <script src="tasks-app.js?v=20261127-r68-recipient-details" defer></script>
   <link rel="stylesheet" href="rm6.css?v=20261122-r24">
 </head>
   <body>
@@ -67,6 +67,15 @@
 지침과 요구 항목을 정하고, 근거 대조부터 납품 파일·검토 이력까지 한곳에 남깁니다.
       </p>
       <!-- 2026-11-19: 넓은 화면은 왼쪽(단계·본문) 7 : 오른쪽(안내·과업 고르기·작성자·계획 저장) 5. 오른쪽은 따라 내려온다 -->
+      <details id="receivedDelivery">
+        <summary>받은 전달 파일 대조</summary>
+        <p class="task-help">선택 전달 ZIP을 먼저 풀고, files 폴더 안의 파일 이름을 그대로 두세요.<br>파일은 브라우저에서만 읽습니다.<br>결과는 받은 목록과 파일의 일치 여부입니다. 기관 승인과 자료의 정확성은 별도 증빙으로 확인하세요.</p>
+        <label>전달 파일 목록(JSON)<input type="file" id="receivedList" accept=".json,application/json"></label>
+        <label>압축을 푼 files 폴더 안의 파일<input type="file" id="receivedFiles" multiple></label>
+        <button type="button" id="receivedCheck">받은 파일 대조하기</button>
+        <p id="receivedStatus" role="status"></p>
+        <ul id="receivedIssues" class="task-hash" aria-label="파일 대조에서 확인이 필요한 항목"></ul>
+      </details>
       <div class="task-layout">
       <aside class="task-aside" aria-label="과업 고르기와 작성자">
       <!-- r16: 첫 화면 안내는 한 줄. 저장 위치·서버·인증 한계는 모두 '자세히' 안에 그대로 둔다(휴대폰 첫 화면을 안내문이 다 차지했다) -->

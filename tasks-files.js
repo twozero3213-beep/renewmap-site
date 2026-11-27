@@ -98,6 +98,7 @@
         '과업 판 v'+receipt.revision+' · 선택 목록 '+files.length+'개 · files 폴더에 든 파일 '+contents.size+'개',
         '원래 파일 이름과 ZIP 안의 경로는 전달_파일_목록.txt와 전달_파일_목록.json에서 확인하세요.',
         'SHA256SUMS.txt의 SHA-256은 압축을 푼 파일이 목록과 일치하는지 확인할 때 씁니다.',
+        'ZIP을 푼 뒤 files 안의 이름을 유지하세요. 리뉴맵 과업·납품의 받은 전달 파일 대조에서 목록 JSON과 원본 파일을 고를 수 있습니다.',
         '자료 출처와 내용의 사실 여부, 기관 승인은 별도 증빙으로 확인하세요.',
         '보내기 전에 파일 이름과 내용의 개인정보를 확인하세요.',
       ].join('\n')+'\n'},
@@ -106,6 +107,69 @@
       {name:'SHA256SUMS.txt',data:[...contents].map(([path,f])=>f.sha256+'  '+path+'\n').join('')},
       ...[...contents].map(([name,f])=>({name,data:f.bytes}))
     ]};
+  }
+  const MAX_DELIVERY_LIST=2*1024*1024;
+  async function readDeliveryList(file) {
+    if(!(file instanceof Blob)||!file.size||file.size>MAX_DELIVERY_LIST)
+      throw new Error('압축을 푼 2MB 이하의 전달_파일_목록.json을 골라 주세요.');
+    const bad=()=>new Error('리뉴맵 선택 전달 파일 목록의 형식을 확인해 주세요.');
+    const bytes=await file.arrayBuffer();
+    let receipt;
+    try { receipt=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)); }
+    catch (_) { throw bad(); }
+    if(!fields(receipt,['schema','revision','head_sha256','source_state','selected_count','current_count','files'])||
+       receipt.schema!=='renewmap-selected-delivery-v1'||!Number.isSafeInteger(receipt.revision)||receipt.revision<1||
+       typeof receipt.head_sha256!=='string'||!HEX.test(receipt.head_sha256)||typeof receipt.source_state!=='string'||!Object.hasOwn(states,receipt.source_state)||
+       !Array.isArray(receipt.files)||receipt.files.length<1||receipt.files.length>MAX_FILES||
+       receipt.selected_count!==receipt.files.length||!Number.isSafeInteger(receipt.current_count)||
+       receipt.current_count<receipt.selected_count)throw bad();
+    const paths=new Map(), names=new Set(), sizes=new Map();
+    let total=0;
+    for(const row of receipt.files) {
+      if(!fields(row,['name','path','sha256','size'])||typeof row.name!=='string'||!row.name.trim()||row.name.length>240||
+         names.has(row.name)||typeof row.sha256!=='string'||!HEX.test(row.sha256)||
+         row.path!==T.zipPath(row.sha256,row.name)||!Number.isSafeInteger(row.size)||row.size<1||row.size>MAX)throw bad();
+      names.add(row.name);
+      if(sizes.has(row.sha256)&&sizes.get(row.sha256)!==row.size)throw bad();
+      sizes.set(row.sha256,row.size);
+      const basename=row.path.slice('files/'.length), previous=paths.get(basename);
+      if(previous)previous.names.push(row.name);
+      else {
+        paths.set(basename,{sha256:row.sha256,size:row.size,names:[row.name]});
+        total+=row.size;
+        if(total>MAX)throw bad();
+      }
+    }
+    return {receipt,paths};
+  }
+  async function verifyDelivery(list,files) {
+    const {receipt,paths}=await readDeliveryList(list);
+    if(!Array.isArray(files)||files.length>MAX_FILES*2)
+      throw new Error('한 번에 파일을 1,000개 이하로 골라 주세요.');
+    const picked=new Map();
+    for(const file of files) {
+      if(!(file instanceof Blob)||typeof file.name!=='string'||!file.name||file.name.length>255)
+        throw new Error('파일 선택창에서 압축을 푼 파일을 다시 골라 주세요.');
+      if(!picked.has(file.name))picked.set(file.name,[]);
+      picked.get(file.name).push(file);
+    }
+    const issues=[];
+    let matched=0;
+    for(const [name,row] of paths) {
+      const group=picked.get(name)||[];
+      const label=row.names.map(quoteText).join(', ')+' / files/'+name;
+      if(!group.length)issues.push('누락 · '+label);
+      else if(group.length>1)issues.push('중복 · '+label+' / '+group.length+'개 선택');
+      else {
+        const file=group[0];
+        if(file.size!==row.size||await T.hash(await file.arrayBuffer())!==row.sha256)
+          issues.push('불일치 · '+label+' / 크기 또는 SHA-256이 다릅니다.');
+        else matched++;
+      }
+    }
+    for(const name of picked.keys())if(!paths.has(name))
+      issues.push('목록 밖 · '+quoteText(name));
+    return {revision:receipt.revision,selected:receipt.selected_count,count:paths.size,matched,issues};
   }
   async function read(text){
     textSize(text);const b=JSON.parse(text);
@@ -350,5 +414,5 @@
       '파일 확인값(SHA-256)은 파일이 바뀌었는지만 알려 줍니다. 작성자 신원·현장 촬영 사실·얼굴 가림·기관 승인과 내용이 사실인지는 증명하지 않습니다.');
     return {text:lines.join('\n')+'\n',summary,attention,comparison,recovery};
   }
-  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,read,from64,handover,inspectRecovery,matchRecoveryFile};
+  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,verifyDelivery,read,from64,handover,inspectRecovery,matchRecoveryFile};
 });
