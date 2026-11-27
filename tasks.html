@@ -36,7 +36,7 @@
     <script src="task-store.js?v=20261127-current-export" defer></script>
     <script src="field/store.js" defer></script>
     <script src="docgen.js?v=20261122-r23" defer></script>
-    <script src="tasks-files.js?v=20261127-r65-handover-recovery" defer></script>
+    <script src="tasks-files.js?v=20261127-r66-repair-source" defer></script>
     <script src="task-cloud-config.js?v=20261119-r3" defer></script>
     <script src="task-cloud.js?v=20261120-r11" defer></script>
     <script src="task-cloud-ui.js?v=20261119-w2" defer></script>
@@ -49,7 +49,7 @@
     <script src="revisit-photos.js?v=20261119-r3" defer></script>
     <script src="revisit-report-ui.js?v=20261119-r3" defer></script>
     <script src="task-followup-ui.js?v=20261127-r55" defer></script>
-    <script src="tasks-app.js?v=20261127-r65-handover-recovery" defer></script>
+    <script src="tasks-app.js?v=20261127-r66-repair-source" defer></script>
   <link rel="stylesheet" href="rm6.css?v=20261122-r24">
 </head>
   <body>
@@ -358,6 +358,9 @@
               <h4>복구할 연결 파일</h4>
               <p class="task-help">복구할 파일의 이름과 사용 판을 확인하세요. 전체 이력 ZIP과 복원용 JSON은 연결 파일 검사를 통과해야 받을 수 있습니다. 현재판의 선택 파일 전달 ZIP은 고른 파일만 따로 검사합니다.</p>
               <ul id="handoverRecoveryFiles" class="task-hash"></ul>
+              <label>되찾은 원본 파일<input type="file" id="reconnectFile" aria-describedby="reconnectHelp"></label>
+              <p id="reconnectHelp" class="task-help">이름이 달라도 기록된 확인값과 내용이 일치하면 이 기기에 원본을 복구합니다.<br>선택한 파일은 서버로 보내지 않습니다. 과업판과 승인 기록은 그대로입니다.</p>
+              <button id="reconnectTaskFile" type="button">원본 확인하고 복구</button>
             </div>
             <ul id="handoverAttention"></ul>
             <details>

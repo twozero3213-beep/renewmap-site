@@ -77,7 +77,7 @@
     busy = true;
     const controls = [
       ...document.querySelectorAll(
-        "form button,form input,form select,form textarea,#planSave,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#selectedDelivery,#artifactList input,#handoverTask,#downloadHandover,#downloadRecoveryHandover,#restoreTask,#restoreFile,#taskWork button,#taskWork input,#taskWork select,#taskWork textarea",
+        "form button,form input,form select,form textarea,#planSave,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#selectedDelivery,#artifactList input,#handoverTask,#downloadHandover,#downloadRecoveryHandover,#reconnectFile,#reconnectTaskFile,#restoreTask,#restoreFile,#taskWork button,#taskWork input,#taskWork select,#taskWork textarea",
       ),
     ];
     const prev = controls.map((b) => b.disabled);   // 끝나면 원래 상태로 되돌린다(처리 전부터 꺼 둔 단추를 켜지 않는다)
@@ -216,6 +216,7 @@
     $("downloadRecoveryHandover").hidden = true;
     $("handoverRecovery").hidden = true;
     $("handoverRecoveryFiles").replaceChildren();
+    $("reconnectFile").value = "";
   }
   function render() {
     clearHandover(current
@@ -766,6 +767,40 @@
       say("과거 판과 검토 기록이 담긴 내부 보관용 전체 이력 ZIP을 받았습니다.");
     }, { readOnly: true }),
   );
+  $("reconnectTaskFile").addEventListener("click", () => {
+    const file = $("reconnectFile").files[0], selected = current;
+    action(async () => {
+      if (!selected || $("handoverRecovery").hidden)
+        throw new Error("복구할 과업을 선택하고 인수인계 요약을 먼저 열어 주세요.");
+      const { base, entries } = await exportInputs();
+      await requireCurrentExport(selected.id, selected.hash);
+      const check = await B.inspectRecovery(await S.history(base.id), entries);
+      if (!check.issues.length) {
+        await handover();
+        say("연결 파일이 이미 확인됐습니다. 일반 요약과 전체 백업을 받을 수 있습니다.");
+        requestAnimationFrame(() => $("downloadHandover").focus());
+        return;
+      }
+      const matched = await B.matchRecoveryFile(check, file);
+      const id = ["task-file", base.id, matched.sha256].join(":");
+      const prior = await F.doc(id);
+      const saved = entries.find(row => row.sha256 === matched.sha256);
+      if ((prior && (prior.kind !== "task-file" || prior.task_id !== base.id || prior.sha256 !== matched.sha256)) || prior?.id !== saved?.id)
+        throw new Error("보관 파일의 연결 정보를 확인할 수 없습니다. 과업을 다시 열어 주세요.");
+      const others = entries.filter(row => row.id !== id);
+      if (others.length >= 500 || others.reduce((n, row) => n + (row.blob?.size ?? 0), matched.size) > B.MAX)
+        throw new Error("과업의 전체 보관 파일은 500개·20MB 이하여야 합니다.");
+      await requireCurrentExport(base.id, base.hash);
+      // 원장과 일치하는 바이트만 해당 과업의 같은 저장 위치에 한 번 쓴다.
+      await F.addDoc({ ...matched, id, kind: "task-file", task_id: base.id, created_at: prior?.created_at ?? new Date().toISOString() });
+      const { guide } = await handover();
+      const left = guide.recovery.length;
+      say(left
+        ? "원본 파일을 복구했습니다. 연결 파일 " + left + "개 확인이 남았습니다."
+        : "원본 파일을 복구했습니다. 일반 요약과 전체 백업을 다시 받을 수 있습니다.");
+      requestAnimationFrame(() => $(left ? "reconnectFile" : "downloadHandover").focus());
+    });
+  });
   $("restoreTask").addEventListener("click", () =>
     action(async () => {
       const f = $("restoreFile").files[0];

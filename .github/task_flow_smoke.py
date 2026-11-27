@@ -1,5 +1,6 @@
 """합성 과업의 오류·보류·대조·파일·검토·백업 복원을 실제 브라우저에서 검사한다."""
 import argparse
+import base64
 import functools
 import hashlib
 import json
@@ -270,6 +271,36 @@ def main():
                 assert downloads == [recovery.suggested_filename], downloads
             assert page.evaluate('async()=> (await TaskStore.history(document.querySelector("#taskPick").value)).at(-1).hash') == manifest['head_hash']
             result['checks'].append('missing_file_allows_recovery_txt_but_blocks_full_backup')
+            original = next(f for f in json.loads(backup.read_text(encoding='utf-8'))['files']
+                            if f['sha256']==recorded_file['sha256'])
+            content = base64.b64decode(original['base64'])
+            def choose(name, data):
+                page.locator('#reconnectFile').set_input_files({
+                    'name': name, 'mimeType': 'application/octet-stream', 'buffer': data,
+                })
+                page.locator('#reconnectTaskFile').click()
+                expect(page.locator('#handoverTask')).to_be_enabled()
+
+            choose(recorded_file['name'], bytes((b ^ 1 for b in content)))
+            expect(page.locator('#taskMsg')).to_contain_text('확인값과 일치하지 않습니다')
+            assert page.evaluate("""async sha=>{
+              const id=document.querySelector('#taskPick').value;
+              return !(await FieldStore.doc('task-file:'+id+':'+sha));
+            }""", recorded_file['sha256'])
+            choose('renamed-synthetic-source.bin', content)
+            expect(page.locator('#taskMsg')).to_contain_text('원본 파일을 복구했습니다')
+            expect(page.locator('#downloadHandover')).to_be_focused()
+            expect(page.locator('#handoverRecovery')).to_be_hidden()
+            expect(page.locator('#taskState')).to_contain_text('최종 승인 기록됨')
+            with page.expect_download() as downloaded:
+                page.locator('#zipTask').click()
+            reconnected_zip = args.output / 'synthetic-reconnected.zip'
+            downloaded.value.save_as(reconnected_zip)
+            with zipfile.ZipFile(reconnected_zip) as z:
+                assert json.loads(z.read('manifest.json')) == manifest
+                member, = (n for n in z.namelist() if n.startswith('files/'+recorded_file['sha256']))
+                assert z.read(member) == content
+            result['checks'].append('reconnect_original_bytes_keeps_revision_and_approval')
             restored = browser.new_context(accept_downloads=True, service_workers='block')
             q = restored.new_page()
             q.on('pageerror', lambda e: result['errors'].append(str(e)))

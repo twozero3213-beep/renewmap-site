@@ -145,6 +145,20 @@
     }
     return {manifest,issues};
   }
+  async function matchRecoveryFile({manifest,issues},file) {
+    if(!(file instanceof Blob)||!file.size||file.size>MAX)
+      throw new Error('비어 있지 않은 20MB 이하 원본 파일을 선택해 주세요.');
+    const bytes=await file.arrayBuffer(), sha=await T.hash(bytes);
+    const issue=issues.find(item=>item.sha===sha&&Object.hasOwn(FILE_ISSUE_LABELS,item.code));
+    const size=declaredSizes(manifest.history).get(sha);
+    if(!issue||(size!==undefined&&size!==file.size))
+      throw new Error('선택한 파일이 복구 목록의 확인값과 일치하지 않습니다. 목록에 있는 원본을 다시 골라 주세요.');
+    const named=manifest.history.flatMap(record=>[
+      ...record.artifacts,...T.workEvidence(record),...(record.decision?[record.decision.evidence]:[]),
+    ]).find(record=>record.sha256===sha);
+    const name=named?fileName(named.name):sha;
+    return { sha256:sha, name, size:file.size, blob:new Blob([bytes],{type:'application/octet-stream'}) };
+  }
   async function handover(manifest,today,issues=[]) {
     T.isOverdue({status:'verified',due_on:today},today);
     if(!Array.isArray(issues)||issues.length>MAX_FILES)throw new Error('연결 파일 확인 결과가 올바르지 않습니다.');
@@ -323,5 +337,5 @@
       '파일 확인값(SHA-256)은 파일이 바뀌었는지만 알려 줍니다. 작성자 신원·현장 촬영 사실·얼굴 가림·기관 승인과 내용이 사실인지는 증명하지 않습니다.');
     return {text:lines.join('\n')+'\n',summary,attention,comparison,recovery};
   }
-  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,read,from64,handover,inspectRecovery};
+  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,read,from64,handover,inspectRecovery,matchRecoveryFile};
 });
