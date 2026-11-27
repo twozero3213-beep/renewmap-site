@@ -140,6 +140,23 @@ def verify_document_actions(page, output, width, kind):
         target = output / f'synthetic-docx-text-{width}.txt'
         downloaded.value.save_as(target)
         assert [line for line in target.read_text(encoding='utf-8-sig').splitlines() if line.strip()] == ['합성 첫 문단','합성 둘째 문단'], 'DOCX 글자 내보내기에 스타일 또는 불필요한 글자가 포함됐습니다.'
+        from hashlib import sha256
+        identity = page.locator('#docIdentity')
+        identity.locator('summary').click()
+        page.locator('#docHashButton').click()
+        expected = sha256(content.getvalue()).hexdigest()
+        page.wait_for_function('(value) => document.getElementById("docHashValue").textContent === value', arg=expected)
+        field = page.locator('#docExpectedHash')
+        field.fill(expected.upper())
+        page.locator('#docCompareButton').click()
+        assert '현재 파일의 확인값과 같습니다' in page.locator('#docCompareStatus').inner_text()
+        field.fill('0'*64)
+        page.locator('#docCompareButton').click()
+        assert '일치하지 않습니다' in page.locator('#docCompareStatus').inner_text()
+        page.locator('#docFile').set_input_files({'name':'synthetic-second.txt','mimeType':'text/plain','buffer':b'second synthetic'})
+        page.wait_for_function('() => document.getElementById("docStatus").textContent.includes("synthetic-second.txt ·")')
+        assert page.locator('#docHashValue').text_content() == '' and field.input_value() == ''
+        assert identity.is_visible() and identity.get_attribute('open') is None
 
 
 def verify_key_reconciliation(page, output, width):

@@ -63,6 +63,8 @@
   function init(win) {
     const doc = win.document, $ = id => doc.getElementById(id);
     const input = $('docFile'), stage = $('docStage'), bar = $('docBar'), status = $('docStatus'), drop = $('docDrop');
+    const identity = $('docIdentity'), hashButton = $('docHashButton'), hashStatus = $('docHashStatus'), hashValue = $('docHashValue');
+    const hashCompare = $('docHashCompare'), expectedHash = $('docExpectedHash'), compareStatus = $('docCompareStatus');
     const loaded = {};
     const loadScript = src => loaded[src] || (loaded[src] = new Promise((ok, no) => { const s = doc.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error(src + ' 불러오기 실패')); doc.head.append(s); }));
     let cur = null, epoch = 0; // {file, text: () => Promise<string>, canPrint}
@@ -161,6 +163,12 @@
     async function open(file) {
       const token = ++epoch, kind = kindOf(file.name), content = el('div', 'doc-content');
       stage.replaceChildren(content); bar.hidden = true; cur = null; syncPrint();
+      identity.hidden = true;
+      identity.open = false;
+      hashButton.disabled = false;
+      hashStatus.textContent = hashValue.textContent = '';
+      hashCompare.hidden = true;
+      expectedHash.value = compareStatus.textContent = '';
       if (!kind) { say(`${file.name}: 이 형식은 아직 열지 못합니다. 한글·워드·엑셀·파워포인트·PDF·그림·글 파일을 고르세요.`, true); return; }
       if (file.size > 60 * 1024 * 1024) { say('60MB가 넘는 파일은 열지 않습니다. 이음오피스 앱에서 여세요.', true); return; }
       say(`${file.name} 여는 중…`);
@@ -172,12 +180,49 @@
         cur = { file, text: res.text, canPrint: res.canPrint, stage: content }; syncPrint();
         say(`${file.name} · ${(file.size / 1024).toFixed(0)}KB${res.pages ? ` · ${res.pages}${kind === 'sheet' ? '시트' : kind === 'pptx' ? '장' : '쪽'}` : ''}`);
         bar.hidden = false; $('docText').hidden = !res.text;
+        identity.hidden = false;
       } catch (err) { if (token !== epoch) return; stage.textContent = ''; say(`${file.name}: 열지 못했습니다(${err && err.message ? err.message : '파일이 손상됐거나 암호가 걸려 있습니다'}). 암호가 있으면 풀어서 다시 고르세요.`, true); }
     }
     input.addEventListener('change', () => { if (input.files[0]) open(input.files[0]); });
     drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('is-over'); });
     drop.addEventListener('dragleave', () => drop.classList.remove('is-over'));
     drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('is-over'); if (e.dataTransfer.files[0]) open(e.dataTransfer.files[0]); });
+    hashButton.addEventListener('click', async () => {
+      const selected = cur;
+      if (!selected || hashButton.disabled) return;
+      if (!win.crypto?.subtle) {
+        hashStatus.textContent = '이 환경에서는 확인값을 계산할 수 없습니다. HTTPS 주소를 확인해 주세요.';
+        return;
+      }
+      hashButton.disabled = true;
+      hashStatus.textContent = '확인값을 계산하고 있습니다.';
+      try {
+        const bytes = await selected.file.arrayBuffer();
+        if (selected !== cur) return;
+        const digest = await win.crypto.subtle.digest('SHA-256', bytes);
+        if (selected !== cur) return;
+        selected.hash = Array.from(new Uint8Array(digest), value => value.toString(16).padStart(2, '0')).join('');
+        hashValue.textContent = selected.hash;
+        hashStatus.textContent = '원본 SHA-256을 계산했습니다.';
+        hashCompare.hidden = false;
+      } catch {
+        if (selected !== cur) return;
+        hashButton.disabled = false;
+        hashStatus.textContent = '확인값을 계산하지 못했습니다. 다시 시도해 주세요.';
+      }
+    });
+    expectedHash.addEventListener('input', () => { compareStatus.textContent = ''; });
+    $('docCompareButton').addEventListener('click', () => {
+      if (!cur?.hash) return;
+      const received = expectedHash.value.trim().toLowerCase();
+      if (!/^[0-9a-f]{64}$/.test(received)) {
+        compareStatus.textContent = 'SHA-256 확인값은 64자리의 숫자(0~9)와 영문(a~f)입니다.';
+        return;
+      }
+      compareStatus.textContent = received === cur.hash
+        ? '입력한 확인값이 현재 파일의 확인값과 같습니다.'
+        : '일치하지 않습니다. 현재 파일과 받은 확인값을 다시 확인하세요.';
+    });
     $('docOrig').addEventListener('click', () => cur && save(cur.file.name, cur.file, cur.file.type || 'application/octet-stream'));
     $('docText').addEventListener('click', async () => { const selected = cur; if (!selected?.text) return; save(selected.file.name.replace(/\.[^.]+$/, '') + '.txt', '﻿' + (await selected.text()), 'text/plain;charset=utf-8'); });
     $('docPrint').addEventListener('click', () => { syncPrint(); if (!$('docPrint').disabled) win.print(); });

@@ -24,6 +24,12 @@
 .doc-status.err { color: var(--doc-err); }
 .doc-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 .doc-bar .btn { min-height: 44px; padding: 10px 14px; cursor: pointer; }
+#docIdentity[hidden] { display: none; }
+#docHashStatus { margin: 8px 0 0; }
+#docHashValue { display: block; overflow-wrap: anywhere; }
+#docHashCompare { margin-top: 12px; }
+#docExpectedHash { display: block; width: 100%; max-width: 40rem; margin: 4px 0 8px; font-family: monospace; }
+#docCompareStatus { margin: 8px 0 0; }
 .doc-stage, .doc-content { display: grid; gap: 12px; }
 .doc-stage { margin-top: 8px; }
 .doc-page { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: var(--card); }
@@ -44,4 +50,4 @@
   .doc-print-incomplete::before { content: "문서 전체가 표시되지 않아 인쇄를 막았습니다. 모든 쪽을 펼치거나 원본을 받아 문서 편집기에서 인쇄하세요."; }
   .doc-text, .doc-scroll, .doc-docx { max-height: none; overflow: visible; }
 }
-@media print { header.top, .tabbar, .docs-card:first-of-type, .doc-drop, .doc-bar, .docs-formats, footer, .home-note { display: none !important; } .doc-page { border: 0; break-inside: avoid; } }
+@media print { header.top, .tabbar, .docs-card:first-of-type, .doc-drop, .doc-bar, #docIdentity, .docs-formats, footer, .home-note { display: none !important; } .doc-page { border: 0; break-inside: avoid; } }
