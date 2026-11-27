@@ -85,14 +85,31 @@
     return tableHTML(list, 'renewal', r => `${r.sgg} ${r.d.name}`, list.length, undefined, '21').replace(/<td class="num">없음<\/td>/g, '<td class="num">…</td>');
   }
 
-  // '우리 동네 몇 위?'(2026-11-13 v8): 줄 세운 목록에서 이름으로 찾는다. 띄어쓰기 무시, 이름이 꼭 같은 동을 먼저, 없으면 이름에 든 첫 동. 없으면 -1
+  // 정확히 맞는 이름이 여러 지역을 가리키면 점수 순서로 하나를 정하지 않는다.
   // region(r): 그 동의 시·군·구 이름들. 법정동 이름('우동')·구를 붙인 말('해운대 우동')도 util.js dongHit로 찾는다(v9 페르소나)
-  function findRank(list, names, q, region = () => []) {
+  function findRanks(list, names, q, region = () => []) {
     const norm = s => String(s || '').replace(/\s+/g, '');
-    const k = norm(q);
-    if (!k) return -1;
-    const exact = list.findIndex(r => dongHit(q, r.d.name, region(r)) || norm(names(r)) === k);
-    return exact >= 0 ? exact : list.findIndex(r => norm(names(r)).includes(k));
+    const key = norm(q), exact = [], alias = [], partial = [];
+    if (!key) return [];
+    list.forEach((row, index) => {
+      const name = norm(names(row));
+      if (name === key || norm(row.d.name) === key) exact.push(index);
+      else if (dongHit(q, row.d.name, region(row))) alias.push(index);
+      else if (name.includes(key)) partial.push(index);
+    });
+    return exact.length ? exact : alias.length ? alias : partial;
+  }
+
+  function rankLinkHref(url, { kind, sido, sg, order, dong }) {
+    const href = new URL(url);
+    href.search = '';
+    href.hash = '';
+    href.searchParams.set('kind', kind);
+    href.searchParams.set('sido', sido);
+    if (sg) href.searchParams.set('sg', sg);
+    if (order) href.searchParams.set('ord', order);
+    href.searchParams.set('dong', dong);
+    return href.href;
   }
 
   function init() {
@@ -107,6 +124,9 @@
     // 전국을 볼 때는 시·도를 앞에 붙인다(같은 '동구'·'서구'가 여러 시·도에 있다)
     const sidoOf = code7 => sidoShort((idx.sido.find(x => x.code2 === String(code7).slice(0, 2)) || {}).name);
     const names = r => `${sidoSel.value ? '' : sidoOf(r.code7) + ' '}${sgName(r.d.code5)} ${r.d.name}`;
+    const scopeOf = () => sgSel.value || sidoSel.value || 'all';
+    const direction = () => ascBox && ascBox.checked ? 'asc' : kindSel.value === 'housing' ? 'desc' : '';
+    const currentOrder = () => ordered(rows(scores, kindSel.value, scopeOf()));
     function draw() {
       const safety = kindSel.value === 'safety';
       if (ascBox) {
@@ -116,8 +136,7 @@
       const safetyNote = $('rankSafetyNote'), unitNote = $('rankUnit');
       if (safetyNote) safetyNote.hidden = !safety;
       if (unitNote) unitNote.hidden = kindSel.value !== 'renewal';   // 세부 열이 백분위인 표는 재생 필요 점수뿐
-      const scope = sgSel.value || sidoSel.value || 'all';
-      const { list, rankAt } = ordered(rows(scores, kindSel.value, scope));
+      const scope = scopeOf(), { list, rankAt } = currentOrder();
       const page = pager.slice(list), offset = page.length ? list.indexOf(page[0]) : 0, rk = j => (rankAt ? rankAt(j) : j + 1).toLocaleString('ko-KR');
       msg.textContent = page.length ? `점수가 있는 ${list.length.toLocaleString('ko-KR')}개 동 중 ${rk(offset)}~${rk(offset + page.length - 1)}위를 ${rankAt ? '낮은 점수부터 ' : ''}보입니다.` : '선택한 범위에 점수가 있는 동이 없습니다.';
       out.innerHTML = tableHTML(page, kindSel.value, names, page.length, range, scope, offset, found, rankAt);
@@ -127,7 +146,10 @@
       // 고른 조건·쪽을 주소에 적는다. 동을 눌렀다 뒤로 오거나 새로 고쳐도 그대로(v9: 늘 '재생 필요·부산·1쪽'으로 돌아갔다)
       if (typeof history !== 'undefined' && history.replaceState && location.href) {   // 시험용 가짜 화면에는 주소가 없다
         const u = new URL(location.href), set = (k, v) => (v ? u.searchParams.set(k, v) : u.searchParams.delete(k));
-        u.searchParams.set('kind', kindSel.value); u.searchParams.set('sido', sidoSel.value); set('sg', sgSel.value); set('ord', ascBox ? (ascBox.checked ? 'asc' : kindSel.value === 'housing' ? 'desc' : '') : ''); set('page', pager.page > 1 ? pager.page : '');
+        u.searchParams.set('kind', kindSel.value); u.searchParams.set('sido', sidoSel.value);
+        set('sg', sgSel.value); set('ord', direction()); set('page', pager.page > 1 ? pager.page : '');
+        set('dong', page.some(row => row.code7 === found) ? found : '');
+        u.searchParams.delete('q');
         if (u.href !== location.href) history.replaceState(null, '', u);
       }
       const sm = range && range.sensitivity && range.sensitivity.summary && range.sensitivity.summary[kindSel.value];
@@ -145,7 +167,7 @@
     const loadRange = () => fetch('data/national/scores_range.json').then(r => (r.ok ? r.json() : null)).catch(() => null);
     // 느린 4G에서 표가 늘 마지막이었다(2.5MB scores.json) → 고른 조건이 없는 첫 화면(재생 필요·부산·1쪽)은 4KB rank_top.json 상위 10줄로 먼저 그린다.
     // 값·순서는 scores.json과 같다(상위 10곳이 같은 줄 세우기, export 시험이 대조). 나머지 열은 범위 열처럼 '…'. 전체 자료가 오면 같은 표를 20줄로 다시 그린다
-    if (!/[?&](kind|sido|sg|ord|page)=/.test(location.search || '')) {
+    if (!/[?&](kind|sido|sg|ord|page|dong)=/.test(location.search || '')) {
       fetch('data/national/rank_top.json').then(r => (r.ok ? r.json() : null)).then(top => { if (!scores && top) { const h = previewHTML(top); if (h) out.innerHTML = h; } }).catch(() => {});
     }
     Promise.all([fetch('data/national/scores.json').then(r => r.json()), fetch('data/national/index_core.json').then(r => r.json())])
@@ -172,31 +194,72 @@
           ascBox.checked = !ascBox.checked; reset();
           const b = out.querySelector('[data-rank-sort]'); if (b) b.focus();
         });
-        const findForm = $('rankFind'), foundMsg = $('rankFound');   // 찾기 칸이 없는 화면(시험용 가짜 화면 포함)에서도 표는 그린다
-        const reset = () => { pager.reset(); found = null; if (foundMsg) foundMsg.textContent = ''; draw(); };
+        const findForm = $('rankFind'), foundMsg = $('rankFound');
+        const choices = $('rankChoices'), match = $('rankMatch'), query = $('rankQ');
+        const share = $('rankShare'), link = $('rankLink');
+        const clearChoices = () => { if (choices) { choices.hidden = true; match.replaceChildren(); } };
+        const clearRank = () => {
+          found = null;
+          clearChoices();
+          if (share) { share.hidden = true; link.removeAttribute('href'); }
+          if (foundMsg) foundMsg.textContent = '';
+        };
+        const reset = () => { pager.reset(); clearRank(); draw(); };
         if (findForm) $('rankNames').innerHTML = Object.values(s.dongs).map(d => `<option value="${esc(d.name)}">`).filter((v, n, a) => a.indexOf(v) === n).join('');
+        function showRank(order, at, scroll = true) {
+          const { list, rankAt } = order, row = list[at];
+          clearChoices();
+          found = row.code7; pager.goTo(Math.floor(at / 20) + 1); draw();
+          const nm = names(row), b = document.createElement('b');
+          b.textContent = `${nm}${josa(nm)} ${list.length.toLocaleString('ko-KR')}개 동 중 ${(rankAt ? rankAt(at) : at + 1).toLocaleString('ko-KR')}위입니다(${KINDS[kindSel.value].label} ${fmt(row.score)}점).`;
+          foundMsg.replaceChildren(b, document.createElement('br'), '이 순위는 쇠퇴를 보는 세 가지 기준(인구·사업체·오래된 건물) 중 기준을 넘은 수와는 다릅니다. 세 가지 기준은 표에서 동 이름을 눌러 확인하세요.');
+          if (share) {
+            link.href = rankLinkHref(location.href, { kind: kindSel.value, sido: sidoSel.value, sg: sgSel.value, order: direction(), dong: row.code7 });
+            share.hidden = false;
+          }
+          if (scroll) foundMsg.scrollIntoView({ block: 'nearest' });
+        }
         const find = e => {
           if (e) e.preventDefault();
-          const { list, rankAt } = ordered(rows(scores, kindSel.value, sgSel.value || sidoSel.value || 'all')), q = $('rankQ').value, at = findRank(list, names, q, r => [sgName(r.d.code5), (idx.sido.find(x => x.code2 === String(r.code7).slice(0, 2)) || {}).name]);   // '부산 우동'처럼 시·도를 붙여 적어도(교차 검토)
-          // DESIGN.md 4.7 결과 없음 + rank 예외 한 문장(이미 전국이면 붙이지 않는다)
-          if (at < 0) { found = null; foundMsg.textContent = `찾지 못했습니다. 동 이름이나 구 이름으로 다시 찾아 보세요.${sidoSel.value ? ' 전국으로 바꾸면 더 찾을 수 있습니다.' : ''}`; draw(); return; }
-          found = list[at].code7; pager.goTo(Math.floor(at / 20) + 1); draw();
-          // 순위(여러 지표를 합친 점수)와 쇠퇴 3요건 해당 수는 다른 잣대다. 둘이 엇갈려 보여도 모순이 아니라고 같은 자리에서 밝힌다(v9: 홈 '2개 해당'과 '178위'가 모순으로 읽혔다)
-          // 2026-11-13 우지예: '점수는 여러 지표를 합친 비교값이라…' 문장이 무슨 뜻인지 어렵다는 지적 → 순위 한 문장, 왜 신청요건과 다른지 한 문장, 어디서 보는지 한 문장으로 풀어 씀
-          // 첫 문장만 굵게: CSS ::first-line은 화면의 첫 줄에만 걸려 휴대폰에서 문장 중간에 끊겼다(#87 검토) → <b>와 글 마디로 나눈다
-          const nm = names(list[at]), b = document.createElement('b');
-          b.textContent = `${nm}${josa(nm)} ${list.length.toLocaleString('ko-KR')}개 동 중 ${(rankAt ? rankAt(at) : at + 1).toLocaleString('ko-KR')}위입니다(${KINDS[kindSel.value].label} ${fmt(list[at].score)}점).`;
-          foundMsg.replaceChildren(b, document.createElement('br'), '이 순위는 여러 지표를 합친 점수로 줄 세운 것이라, 쇠퇴를 보는 세 가지 기준(인구·사업체·오래된 건물) 중 기준을 넘은 수와는 다릅니다. 세 가지 기준은 표에서 동 이름을 눌러 확인하세요.');
-          const tr = document.getElementById('rankFoundRow'); if (tr) tr.scrollIntoView({ block: 'center' });
+          const order = currentOrder(), { list } = order;
+          const hits = findRanks(list, names, query.value, r => [sgName(r.d.code5), (idx.sido.find(x => x.code2 === String(r.code7).slice(0, 2)) || {}).name]);
+          if (hits.length === 1) { showRank(order, hits[0]); return; }
+          clearRank();
+          if (!hits.length) {
+            foundMsg.textContent = `찾지 못했습니다. 동 이름이나 구 이름으로 다시 찾아 보세요.${sidoSel.value ? ' 전국으로 바꾸면 더 찾을 수 있습니다.' : ''}`;
+          } else if (choices) {
+            match.innerHTML = '<option value="">동을 선택하세요</option>' + hits.map(at => {
+              const row = list[at];
+              return `<option value="${esc(row.code7)}">${esc(names(row))}</option>`;
+            }).join('');
+            choices.hidden = false;
+            foundMsg.textContent = `검색에 맞는 동이 ${hits.length.toLocaleString('ko-KR')}곳입니다.`;
+            match.focus();
+          }
+          draw();
         };
-        if (findForm) findForm.addEventListener('submit', find);
+        if (choices) choices.addEventListener('submit', e => {
+          e.preventDefault();
+          const order = currentOrder(), at = order.list.findIndex(row => row.code7 === match.value);
+          if (at >= 0) { query.value = names(order.list[at]); query.focus(); showRank(order, at); }
+        });
+        if (findForm) {
+          findForm.addEventListener('submit', find);
+          query.addEventListener('input', () => {
+            if (found || (choices && !choices.hidden)) { clearRank(); draw(); }
+          });
+        }
         kindSel.onchange = () => { if (ascBox) ascBox.checked = kindSel.value === 'housing'; reset(); };
         sgSel.onchange = reset;
         if (ascBox) ascBox.onchange = reset;
         sidoSel.onchange = () => { fillSg(); reset(); };
         // M18: 스크립트가 늦게 실려 찾기 칸이 기본 폼 전송(?q=)으로 다시 열렸으면 그 검색을 이어 간다(입력이 비고 결과도 없었다)
-        const q0 = findForm && q.get('q');
-        if (q0) { $('rankQ').value = q0; find(); } else draw();
+        const q0 = findForm && q.get('q'), linkedDong = findForm && q.get('dong');
+        if (linkedDong) {
+          const order = currentOrder(), at = /^\d{8}$/.test(linkedDong) ? order.list.findIndex(r => r.code7 === linkedDong) : -1;
+          if (at >= 0) { query.value = names(order.list[at]); showRank(order, at, false); }
+          else { foundMsg.textContent = '이 동의 순위를 선택한 조건에서 찾지 못했습니다.'; draw(); }
+        } else if (q0) { query.value = q0; find(); } else draw();
         loadRange().then(g => { range = g; draw(); });
       })
       .catch(() => { msg.textContent = '점수 자료를 불러오지 못했습니다. 새로고침해 주세요.'; });
@@ -205,5 +268,5 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
     else init();
   }
-  return { KINDS, rows, tableHTML, previewHTML, rangeText, findRank };
+  return { KINDS, rows, tableHTML, previewHTML, rangeText, findRanks, rankLinkHref };
 });

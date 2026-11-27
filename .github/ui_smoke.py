@@ -567,6 +567,21 @@ def main():
                             assert 1<=page.locator('#rankOut tbody tr').count()<=20
                             assert page.locator('#rankOut tbody tr').last.locator('td').first.inner_text()==str(ranked)
                             check(route, width)
+                            page.locator('#rankQ').fill('중앙동')
+                            page.locator('#rankFind button').click()
+                            assert page.locator('#rankFoundRow').count() == 0
+                            choices = page.locator('#rankMatch')
+                            assert '서울 관악구' in choices.locator('option[value="11210610"]').inner_text()
+                            choices.select_option('21010510')
+                            page.locator('#rankChoices button').click()
+                            found = page.locator('#rankFoundRow')
+                            ordinal = found.locator('td').first.inner_text()
+                            target = page.locator('#rankLink').get_attribute('href')
+                            assert 'dong=21010510' in target and 'q=' not in target
+                            page.goto(target, wait_until='domcontentloaded')
+                            found.get_by_role('link', name='부산 중구 중앙동').wait_for(state='visible')
+                            assert found.locator('td').first.inner_text() == ordinal
+                            check(route, width, 'rank_same_name_link')
                         page.screenshot(path=str(args.output/f'{route.replace("/","_")}-{width}.png'))
                     except Exception as error:
                         failures.append({'route': route, 'width': width, 'error': str(error)})
