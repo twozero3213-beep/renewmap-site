@@ -1,0 +1,5 @@
+#sourceFinder { margin: 16px 0; }
+#sourceQuery { display: block; width: 100%; max-width: 32rem; }
+#sourceCount { margin: 6px 0 0; }
+#sourceCount:empty { display: none; }
+#sourceActions { margin: 8px 0 0; }

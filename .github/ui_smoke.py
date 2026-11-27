@@ -582,6 +582,21 @@ def main():
                             found.get_by_role('link', name='부산 중구 중앙동').wait_for(state='visible')
                             assert found.locator('td').first.inner_text() == ordinal
                             check(route, width, 'rank_same_name_link')
+                        if route == 'data.html':
+                            query = page.locator('#sourceQuery')
+                            query.fill('폐쇄말소대장 표제부')
+                            results = page.locator('[data-source-table] tbody tr:visible')
+                            assert results.count() == 1
+                            row = results.first
+                            condition = row.locator('td').nth(2).inner_text()
+                            with page.expect_download() as pending:
+                                page.locator('#sourceDownload').click()
+                            txt = pending.value.path().read_text(encoding='utf-8')
+                            assert '이용 조건 · ' + condition in txt
+                            assert row.get_by_role('link').get_attribute('href') in txt
+                            query.fill('')
+                            assert page.locator('#sourceDownload').is_hidden()
+                            check(route, width, 'source_catalog_download')
                         page.screenshot(path=str(args.output/f'{route.replace("/","_")}-{width}.png'))
                     except Exception as error:
                         failures.append({'route': route, 'width': width, 'error': str(error)})
