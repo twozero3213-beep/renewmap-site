@@ -1,6 +1,9 @@
 (function(root,factory){'use strict';const api=factory(typeof module==='object'&&module.exports?require('./tasks.js'):root.RenewTasks);if(typeof module==='object'&&module.exports)module.exports=api;else root.TaskFiles=api;})(typeof globalThis!=='undefined'?globalThis:this,function(T){
   'use strict';
   const MAX=20*1024*1024, MAX_FILES=500, MAX_JSON=40*1024*1024, HEX=/^[a-f0-9]{64}$/;
+  const states={planned:'계획 기록',invalid:'입력 다시 확인',hold:'근거 부족 보류',ready:'대조 완료·검토 대기',approved:'승인 기록',rejected:'반려 기록'};
+  // 파일명 안의 줄바꿈·방향 제어문자는 텍스트 문서의 구조를 바꾸지 못하게 표시한다.
+  const quoteText=value=>JSON.stringify(value===null||value===undefined?'':String(value)).replace(/[\u007f-\u009f\u00ad\u061c\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g,ch=>'\\u'+ch.charCodeAt(0).toString(16).padStart(4,'0'));
   const checkResultLabels={match:'대조 일치',pending:'추가확인',conflict:'근거 충돌',invalid:'입력 다시 확인'};
   function needed(history){const out=new Set();for(const r of history){for(const a of [...(r.artifacts||[]),...T.workEvidence(r)])out.add(a.sha256);for(const c of r.checks||[])if(HEX.test(c.evidence_sha256||''))out.add(c.evidence_sha256);if(r.decision)out.add(r.decision.evidence.sha256);}return out;}
   function to64(bytes){let s='';for(let i=0;i<bytes.length;i+=8192)s+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(s);}
@@ -77,15 +80,28 @@
     }
     const receipt={schema:'renewmap-selected-delivery-v1',revision:manifest.revision,head_sha256:manifest.head_hash,
       source_state:manifest.state,selected_count:files.length,current_count:manifest.artifacts.length,files};
+    const index=[
+      '선택 전달 파일 목록',
+      '과업판 v'+receipt.revision+' · 사용자 검토 기록 · '+states[receipt.source_state],
+      '선택 이름 '+files.length+'개 · files 폴더의 파일 '+contents.size+'개',
+      '같은 ZIP 경로로 표시한 이름은 압축 안의 파일 하나를 가리킵니다.',
+      '파일 확인값은 목록과 파일을 대조하는 데 사용합니다.',
+      '자료의 사실 여부와 기관 승인은 별도 증빙으로 확인하세요.',
+      '',
+      ...receipt.files.flatMap(file=>[
+        quoteText(file.name), '  ZIP 경로 '+file.path, '  '+file.size+'바이트',
+      ]),
+    ].join('\n')+'\n';
     return {receipt,entries:[
       {name:'사용범위.txt',data:[
         '선택 파일 전달 ZIP',
         '과업 판 v'+receipt.revision+' · 선택 목록 '+files.length+'개 · files 폴더에 든 파일 '+contents.size+'개',
-        '원래 파일 이름과 ZIP 안의 경로는 전달_파일_목록.json에서 확인하세요.',
+        '원래 파일 이름과 ZIP 안의 경로는 전달_파일_목록.txt와 전달_파일_목록.json에서 확인하세요.',
         'SHA256SUMS.txt의 SHA-256은 압축을 푼 파일이 목록과 일치하는지 확인할 때 씁니다.',
         '자료 출처와 내용의 사실 여부, 기관 승인은 별도 증빙으로 확인하세요.',
         '보내기 전에 파일 이름과 내용의 개인정보를 확인하세요.',
       ].join('\n')+'\n'},
+      {name:'전달_파일_목록.txt',data:index},
       {name:'전달_파일_목록.json',data:JSON.stringify(receipt,null,2)+'\n'},
       {name:'SHA256SUMS.txt',data:[...contents].map(([path,f])=>f.sha256+'  '+path+'\n').join('')},
       ...[...contents].map(([name,f])=>({name,data:f.bytes}))
@@ -172,8 +188,6 @@
     const checked=await T.manifest(JSON.parse(given).history);
     if(T.canonical(checked)!==given)throw new Error('인수인계의 납품 목록과 이력이 다릅니다.');
     const h=checked.history,c=h.at(-1),w=T.work(c),blockers=T.workBlockers(c),paths=filePaths(h);
-    // 입력의 줄바꿈·방향 제어문자가 요약의 새 제목이나 결정을 꾸미지 못하게 출력에서만 인용한다.
-    const q=value=>JSON.stringify(value===null||value===undefined?'':String(value)).replace(/[\u007f-\u009f\u00ad\u061c\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g,ch=>'\\u'+ch.charCodeAt(0).toString(16).padStart(4,'0'));
     const sizes=declaredSizes(h),catalog=new Map([...needed(h)].map(sha=>[sha,new Map()]));
     for(const record of h)for(const file of [...record.artifacts,...T.workEvidence(record),...(record.decision?[record.decision.evidence]:[])]) {
       const names=catalog.get(file.sha256);if(!names.has(file.name))names.set(file.name,new Set());names.get(file.name).add(record.revision);
@@ -184,11 +198,10 @@
       const names=catalog.get(sha);
       if(!names)throw new Error('연결 파일 확인 결과가 과업 이력과 다릅니다.');
       const revisions=affected.get(sha), scope=revisions.includes(c.revision)?'현재판에 연결':'이전 이력에만 연결';
-      const identity=names.size?[...names.keys()].map(q).join(', '):'파일명 미기록';
+      const identity=names.size?[...names.keys()].map(quoteText).join(', '):'파일명 미기록';
       const label=FILE_ISSUE_LABELS[code]+' · '+identity+' / '+scope+' / 사용 판: '+revisions.map(v=>'v'+v).join(', ');
       return {sha,code,label};
     });
-    const states={planned:'계획 기록',invalid:'입력 다시 확인',hold:'근거 부족 보류',ready:'대조 완료·검토 대기',approved:'승인 기록',rejected:'반려 기록'};
     const statuses={open:'처리 전',submitted:'확인 대기',resolved:'해소 확인',verified:'점검 확인 완료'};
     const pending=w.followups.filter(item=>item.status!=='verified'),overdue=pending.filter(item=>T.isOverdue(item,today));
     const approval=c.decision?(c.decision.kind==='approve'?'현재 승인 기록 있음':'현재 반려 기록 있음'):'현재 승인 기록 없음';
@@ -210,13 +223,13 @@
     if(baseline) {
       const changed=comparison.items;
       for(const [key,label] of [['title','과업명'],['program','사업'],['guideline','지침·판본'],['scope','대상 범위']])
-        if(baseline.spec[key]!==c.spec[key])changed.push('계획·요구 항목 변경: '+label+' / 이전 '+q(baseline.spec[key])+' / 현재 '+q(c.spec[key]));
+        if(baseline.spec[key]!==c.spec[key])changed.push('계획·요구 항목 변경: '+label+' / 이전 '+quoteText(baseline.spec[key])+' / 현재 '+quoteText(c.spec[key]));
       const oldRequirements=new Map(baseline.spec.requirements.map(row=>[row.id,row])),newRequirements=new Map(c.spec.requirements.map(row=>[row.id,row]));
       for(const id of new Set([...oldRequirements.keys(),...newRequirements.keys()])) {
         const before=oldRequirements.get(id),after=newRequirements.get(id);
         if(T.canonical(before||null)!==T.canonical(after||null)) {
-          const describe=row=>row?q(row.title)+' / 출처 '+q(row.source)+' / 단위 '+q(row.unit):'항목 없음';
-          changed.push('계획·요구 항목 변경: 항목 '+q(id)+' / 이전 '+describe(before)+' / 현재 '+describe(after));
+          const describe=row=>row?quoteText(row.title)+' / 출처 '+quoteText(row.source)+' / 단위 '+quoteText(row.unit):'항목 없음';
+          changed.push('계획·요구 항목 변경: 항목 '+quoteText(id)+' / 이전 '+describe(before)+' / 현재 '+describe(after));
         }
       }
       const oldChecks=new Map(baseline.checks.map(row=>[row.id,row])),newChecks=new Map(c.checks.map(row=>[row.id,row]));
@@ -224,7 +237,7 @@
         const before=oldChecks.get(id),after=newChecks.get(id);
         if(T.canonical(before||null)!==T.canonical(after||null)) {
           const fields=[['result','대조 결과'],['source','출처'],['page','쪽·셀'],['unit','단위'],['note','사유'],['evidence_sha256','근거 파일 지문']].filter(([key])=>before?.[key]!==after?.[key]).map(([,label])=>label);
-          changed.push('근거 대조 기록 변경: 항목 '+q(id)+' / 이전 '+(before?checkResultLabels[before.result]:'대조 기록 없음')+' / 현재 '+(after?checkResultLabels[after.result]:'대조 기록 없음')+' / 달라진 항목: '+fields.join(', '));
+          changed.push('근거 대조 기록 변경: 항목 '+quoteText(id)+' / 이전 '+(before?checkResultLabels[before.result]:'대조 기록 없음')+' / 현재 '+(after?checkResultLabels[after.result]:'대조 기록 없음')+' / 달라진 항목: '+fields.join(', '));
         }
       }
       const oldFiles=new Map(baseline.artifacts.map(file=>[file.name,file])),newFiles=new Map(c.artifacts.map(file=>[file.name,file]));
@@ -237,10 +250,10 @@
         if(!removed.length&&!added.length)continue;
         if(previous.length===1&&next.length===1&&removed.length&&added.length) {
           const fields=fileRecordChanges(previous[0],next[0]);
-          changed.push('파일 바이트 동일·이름 차이: '+q(previous[0].name)+' → '+q(next[0].name)+
+          changed.push('파일 바이트 동일·이름 차이: '+quoteText(previous[0].name)+' → '+quoteText(next[0].name)+
             (fields.length?' / 연결 기록 변경: '+fields.join(', '):''));
         } else {
-          const names=files=>files.map(file=>q(file.name)).join(', ');
+          const names=files=>files.map(file=>quoteText(file.name)).join(', ');
           changed.push('파일 바이트 동일·이름 목록 차이: 이전 '+names(previous)+' / 현재 '+names(next));
         }
         for(const file of [...removed,...added])grouped.add(file.name);
@@ -248,12 +261,12 @@
       for(const name of new Set([...oldFiles.keys(),...newFiles.keys()])) {
         if(grouped.has(name))continue;
         const before=oldFiles.get(name),after=newFiles.get(name);
-        if(!after)changed.push('이전 판에만 있는 파일: '+q(name)+' / '+paths.get(before.sha256));
-        else if(!before)changed.push('현재 판에만 있는 파일: '+q(name)+' / '+paths.get(after.sha256));
-        else if(before.sha256!==after.sha256)changed.push('파일 내용 변경: '+q(name)+' / 이전 '+paths.get(before.sha256)+' / 현재 '+paths.get(after.sha256));
+        if(!after)changed.push('이전 판에만 있는 파일: '+quoteText(name)+' / '+paths.get(before.sha256));
+        else if(!before)changed.push('현재 판에만 있는 파일: '+quoteText(name)+' / '+paths.get(after.sha256));
+        else if(before.sha256!==after.sha256)changed.push('파일 내용 변경: '+quoteText(name)+' / 이전 '+paths.get(before.sha256)+' / 현재 '+paths.get(after.sha256));
         else {
           const fields=fileRecordChanges(before,after);
-          if(fields.length)changed.push('파일 바이트 동일·기록 변경: '+q(name)+' / '+fields.join(', '));
+          if(fields.length)changed.push('파일 바이트 동일·기록 변경: '+quoteText(name)+' / '+fields.join(', '));
         }
       }
       if(T.canonical(T.work(baseline))!==T.canonical(w))changed.push('검토 의견·후속 점검 기록 변경: 아래 상세 기록에서 담당자·기한·증빙을 확인하세요.');
@@ -263,9 +276,9 @@
       '공유 전에 이름·연락처·사진 등 개인정보와 전달받을 사람을 확인하세요.',
       '이력과 납품 목록의 일치를 검사한 요약입니다. 실제 파일의 존재·바이트는 전체 이력 ZIP 생성과 백업 JSON 복원에서 별도로 확인합니다.',
       '입력값은 따옴표로 묶고 줄바꿈·제어문자를 표시합니다. 원본 기록은 바꾸지 않습니다.',
-      '', '1. 과업과 현재 판', '과업 ID: '+q(c.id),'과업명: '+q(c.spec.title),'사업: '+q(c.spec.program),
-      '지침·판본: '+q(c.spec.guideline),'대상 범위: '+q(c.spec.scope),'현재 판: v'+c.revision,'현재 이력 SHA-256: '+c.hash,
-      '현재 파일 세트 SHA-256: '+checked.artifact_set_hash,'기록자: '+q(c.actor),'기록 시각: '+q(c.at),
+      '', '1. 과업과 현재 판', '과업 ID: '+quoteText(c.id),'과업명: '+quoteText(c.spec.title),'사업: '+quoteText(c.spec.program),
+      '지침·판본: '+quoteText(c.spec.guideline),'대상 범위: '+quoteText(c.spec.scope),'현재 판: v'+c.revision,'현재 이력 SHA-256: '+c.hash,
+      '현재 파일 세트 SHA-256: '+checked.artifact_set_hash,'기록자: '+quoteText(c.actor),'기록 시각: '+quoteText(c.at),
       '', '2. 먼저 확인할 일',...(attention.length?attention.map((item,i)=>(i+1)+') '+item):['현재 기록에 표시할 남은 일이 없습니다. 업무 종결을 인증하는 뜻은 아닙니다.']),
       '', '3. 요구 항목별 근거 대조'];
     if(recovery.length)lines.splice(3,0,'확인하지 못한 연결 파일 '+recovery.length+'개가 있습니다. 이 요약은 복구 대상 확인용입니다. 전체 이력 ZIP과 복원용 JSON 백업은 만들 수 없습니다.',
@@ -276,47 +289,47 @@
       ...(comparison.items.length?comparison.items:[baseline?'비교한 계획·근거 대조·납품 파일·검토 의견·후속 점검 기록이 같습니다. 같은 기록도 현재 판의 승인을 대신하지 않습니다.':'현재 판의 근거와 파일을 아래 요약에서 확인하세요.']), '');
     for(const item of c.spec.requirements) {
       const row=c.checks.find(r=>r.id===item.id);
-      lines.push('항목 '+q(item.id)+': '+q(item.title),'요구 출처: '+q(item.source)+' / 요구 단위: '+q(item.unit),
+      lines.push('항목 '+quoteText(item.id)+': '+quoteText(item.title),'요구 출처: '+quoteText(item.source)+' / 요구 단위: '+quoteText(item.unit),
         '대조 결과: '+(row?checkResultLabels[row.result]:'대조 기록 없음'));
-      if(row)lines.push('실제 출처: '+q(row.source)+' / 원문 쪽·셀: '+q(row.page)+' / 실제 단위: '+q(row.unit),
-        '사유: '+q(row.note),'근거 파일: '+(HEX.test(row.evidence_sha256||'')?paths.get(row.evidence_sha256):'연결 지문 없음'));
+      if(row)lines.push('실제 출처: '+quoteText(row.source)+' / 원문 쪽·셀: '+quoteText(row.page)+' / 실제 단위: '+quoteText(row.unit),
+        '사유: '+quoteText(row.note),'근거 파일: '+(HEX.test(row.evidence_sha256||'')?paths.get(row.evidence_sha256):'연결 지문 없음'));
     }
     lines.push('', '4. 현재 결정과 이전 승인 기록');
     if(c.decision)lines.push('현재 결정: '+(c.decision.kind==='approve'?'승인 기록':'반려 기록'),
-      '검토자: '+q(c.decision.reviewer)+' / 역할: '+q(c.decision.role)+' / 실제 결정일: '+q(c.decision.decided_on),
-      '결정 사유: '+q(c.decision.note),'결정 대상 파일 세트: '+c.decision.artifact_set_hash,
-      '결정 증빙: '+q(c.decision.evidence.name)+' / '+paths.get(c.decision.evidence.sha256));
+      '검토자: '+quoteText(c.decision.reviewer)+' / 역할: '+quoteText(c.decision.role)+' / 실제 결정일: '+quoteText(c.decision.decided_on),
+      '결정 사유: '+quoteText(c.decision.note),'결정 대상 파일 세트: '+c.decision.artifact_set_hash,
+      '결정 증빙: '+quoteText(c.decision.evidence.name)+' / '+paths.get(c.decision.evidence.sha256));
     else lines.push('현재 승인·반려 결정 기록이 없습니다.');
     const last=[...h].reverse().find(row=>row.decision?.kind==='approve');
-    lines.push(last?'이력상 최근 승인 기록: v'+last.revision+' / 실제 결정일 '+q(last.decision.decided_on)+' / 파일 세트 '+last.decision.artifact_set_hash:'이력상 승인 기록이 없습니다.');
+    lines.push(last?'이력상 최근 승인 기록: v'+last.revision+' / 실제 결정일 '+quoteText(last.decision.decided_on)+' / 파일 세트 '+last.decision.artifact_set_hash:'이력상 승인 기록이 없습니다.');
     if(last&&last.revision!==c.revision)lines.push('이전 판의 승인은 현재 판의 승인으로 이어지지 않습니다.');
     lines.push('', '5. 현재 납품 파일');
     if(!c.artifacts.length)lines.push('연결된 납품 파일이 없습니다.');
-    for(const file of c.artifacts)lines.push('파일명: '+q(file.name)+' / 기록 크기 '+file.size+' bytes / '+paths.get(file.sha256),
-      '입력 지문: '+(file.input_hash||'연결 없음')+' / 비교 지문: '+(file.comparison_hash||'연결 없음')+' / 양식 판본: '+q(file.template_version),
-      '추가확인: '+(file.blockers.length?file.blockers.map(q).join('; '):'기록된 파일 보류 사유 없음'));
+    for(const file of c.artifacts)lines.push('파일명: '+quoteText(file.name)+' / 기록 크기 '+file.size+' bytes / '+paths.get(file.sha256),
+      '입력 지문: '+(file.input_hash||'연결 없음')+' / 비교 지문: '+(file.comparison_hash||'연결 없음')+' / 양식 판본: '+quoteText(file.template_version),
+      '추가확인: '+(file.blockers.length?file.blockers.map(quoteText).join('; '):'기록된 파일 보류 사유 없음'));
     lines.push('', '6. 검토 의견과 보완 근거');
     if(!w.issues.length)lines.push('검토 의견 기록이 없습니다.');
-    for(const reason of blockers)lines.push('현재 승인 보류 사유(검토 의견): '+q(reason));
+    for(const reason of blockers)lines.push('현재 승인 보류 사유(검토 의견): '+quoteText(reason));
     for(const item of w.issues) {
       const origin=h[item.source.revision-1],requirement=origin.spec.requirements.find(r=>r.id===item.requirement_id);
-      lines.push('의견 '+q(item.id)+': '+q(item.comment)+' / '+statuses[item.status]+' / 담당 '+q(item.assignee),
-        '원본 판: v'+item.source.revision+' / '+item.source.hash+' / 당시 요구 항목 '+q(requirement?.title||item.requirement_id),
-        '원본 파일: '+q(item.source.artifact.name)+' / '+paths.get(item.source.artifact.sha256),
-        '쪽·셀·문단: '+q(item.source.location)+' / 조사 행: '+q(item.source.row_id));
+      lines.push('의견 '+quoteText(item.id)+': '+quoteText(item.comment)+' / '+statuses[item.status]+' / 담당 '+quoteText(item.assignee),
+        '원본 판: v'+item.source.revision+' / '+item.source.hash+' / 당시 요구 항목 '+quoteText(requirement?.title||item.requirement_id),
+        '원본 파일: '+quoteText(item.source.artifact.name)+' / '+paths.get(item.source.artifact.sha256),
+        '쪽·셀·문단: '+quoteText(item.source.location)+' / 조사 행: '+quoteText(item.source.row_id));
       for(const [key,label] of [['reply','보완 답변'],['resolution','해소 확인'],['reopened','재개 사유']]) {
-        const event=item[key];if(event)lines.push(label+': '+q(event.note)+' / 기록자 '+q(event.actor)+' / '+q(event.at)+(event.evidence?' / '+q(event.evidence.name)+' / '+paths.get(event.evidence.sha256):''));
+        const event=item[key];if(event)lines.push(label+': '+quoteText(event.note)+' / 기록자 '+quoteText(event.actor)+' / '+quoteText(event.at)+(event.evidence?' / '+quoteText(event.evidence.name)+' / '+paths.get(event.evidence.sha256):''));
       }
     }
     lines.push('', '7. 후속 점검', '미래 점검과 현재 납품의 승인 보류 사유는 별개입니다. 점검 결과 제출과 완료 확인도 구분합니다.');
     if(!w.followups.length)lines.push('후속 점검 기록이 없습니다.');
     for(const item of w.followups) {
       const origin=h[item.source.revision-1],requirement=origin.spec.requirements.find(r=>r.id===item.requirement_id);
-      lines.push('점검 '+q(item.id)+': '+q(item.title)+' / '+statuses[item.status]+(T.isOverdue(item,today)?' / 기한 지남':''),
-        '담당: '+q(item.assignee)+' / 기한: '+item.due_on+' / 최초 연결 v'+item.source.revision+' / 당시 요구 항목 '+q(requirement?.title||item.requirement_id),
-        '연결 의견 ID: '+q(item.issue_id));
+      lines.push('점검 '+quoteText(item.id)+': '+quoteText(item.title)+' / '+statuses[item.status]+(T.isOverdue(item,today)?' / 기한 지남':''),
+        '담당: '+quoteText(item.assignee)+' / 기한: '+item.due_on+' / 최초 연결 v'+item.source.revision+' / 당시 요구 항목 '+quoteText(requirement?.title||item.requirement_id),
+        '연결 의견 ID: '+quoteText(item.issue_id));
       for(const [key,label] of [['schedule','기한·담당 변경 사유'],['submission','점검 결과'],['verification','완료 확인'],['reopened','재개 사유']]) {
-        const event=item[key];if(event)lines.push(label+': '+q(event.note)+' / 기록자 '+q(event.actor)+' / '+q(event.at)+(event.evidence?' / '+q(event.evidence.name)+' / '+paths.get(event.evidence.sha256):''));
+        const event=item[key];if(event)lines.push(label+': '+quoteText(event.note)+' / 기록자 '+quoteText(event.actor)+' / '+quoteText(event.at)+(event.evidence?' / '+quoteText(event.evidence.name)+' / '+paths.get(event.evidence.sha256):''));
       }
     }
     lines.push('', '8. 전체 이력의 파일 목차', '현재 납품 파일 외에 과거 대조·보완·검토 증빙도 포함합니다. 같은 바이트가 다른 이름으로 기록된 경우 판별 이름을 모두 적습니다.');
@@ -324,7 +337,7 @@
     for(const [sha,names] of catalog) {
       lines.push(paths.get(sha)+' / 기록 크기: '+(sizes.has(sha)?sizes.get(sha)+' bytes':'미기록'));
       if(!names.size)lines.push('파일명: 대조 지문만 기록되어 이름이 없습니다.');
-      for(const [name,revisions] of names)lines.push('파일명: '+q(name)+' / 사용 판: '+[...revisions].map(v=>'v'+v).join(', '));
+      for(const [name,revisions] of names)lines.push('파일명: '+quoteText(name)+' / 사용 판: '+[...revisions].map(v=>'v'+v).join(', '));
     }
     lines.push('', '9. 읽기와 복원',
       '이 TXT는 읽기용 요약입니다. ‘전체 이력 받기(ZIP · 내부 보관)’의 manifest.json에 전체 이력이 있고, files 폴더에 연결 파일이 <SHA-256>.<원래 확장자> 이름으로 들어 있습니다.',

@@ -217,6 +217,30 @@ def main():
                     if name.startswith('files/'):
                         assert hashlib.sha256(z.read(name)).hexdigest() == name.split('/')[1].split('.')[0]   # r12: files/<sha>.<확장자>
             result['checks'].append('backup_zip_actual_bytes')
+            selected = page.get_by_role('checkbox', name='delivery.txt 전달 선택', exact=True)
+            selected.check()
+            page.locator('#deliveryScope summary').click()
+            expect(page.locator('#deliveryScopeFiles')).to_contain_text('delivery.txt')
+            expect(page.locator('#deliverySelection')).to_contain_text('ZIP 파일 1개')
+            with page.expect_download() as downloaded:
+                page.locator('#selectedDelivery').click()
+            selected_path = args.output / 'synthetic-selected.zip'
+            downloaded.value.save_as(selected_path)
+            with zipfile.ZipFile(selected_path) as chosen:
+                receipt = json.loads(chosen.read('전달_파일_목록.json'))
+                original, = receipt['files']
+                assert original['name'] == 'delivery.txt'
+                assert receipt['head_sha256'] == manifest['head_hash']
+                index = chosen.read('전달_파일_목록.txt').decode('utf-8')
+                assert original['name'] in index and original['path'] in index
+                assert '승인 기록' in index
+                assert original['size'] == len(chosen.read(original['path']))
+                assert original['sha256'] == hashlib.sha256(chosen.read(original['path'])).hexdigest()
+                assert 'delivery.txt' not in chosen.read('사용범위.txt').decode('utf-8')
+            page.get_by_role('button', name='delivery.txt 선택 해제', exact=True).click()
+            expect(selected).not_to_be_checked()
+            expect(page.locator('#selectedDelivery')).to_be_disabled()
+            result['checks'].append('selected_scope_recipient_index_matches_zip_without_internal_files')
             assert page.evaluate('async()=> (await TaskStore.history(document.querySelector("#taskPick").value)).at(-1).hash') == manifest['head_hash']
             result['checks'].append('handover_matches_zip_and_preserves_history')
             for width, zoom in [(1280, 1), (360, 1), (390, 1), (768, 1), (1440, 1), (320, 1), (640, 2)]:

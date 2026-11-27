@@ -77,7 +77,7 @@
     busy = true;
     const controls = [
       ...document.querySelectorAll(
-        "form button,form input,form select,form textarea,#planSave,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#selectedDelivery,#artifactList input,#handoverTask,#downloadHandover,#downloadRecoveryHandover,#reconnectFile,#reconnectTaskFile,#restoreTask,#restoreFile,#taskWork button,#taskWork input,#taskWork select,#taskWork textarea",
+        "form button,form input,form select,form textarea,#planSave,#taskPick,#taskActor,#newTask,#backupTask,#zipTask,#selectedDelivery,#artifactList input,#deliveryScopeFiles button,.list-pages [aria-controls=artifactList],#handoverTask,#downloadHandover,#downloadRecoveryHandover,#reconnectFile,#reconnectTaskFile,#restoreTask,#restoreFile,#taskWork button,#taskWork input,#taskWork select,#taskWork textarea",
       ),
     ];
     const prev = controls.map((b) => b.disabled);   // 끝나면 원래 상태로 되돌린다(처리 전부터 꺼 둔 단추를 켜지 않는다)
@@ -279,8 +279,29 @@
       );
   }
   function syncDeliverySelection() {
-    const count = deliveryPicks.size;
-    $("deliverySelection").textContent = "전달할 파일 " + count + "개 선택";
+    const selected = (current?.artifacts || []).filter(file => deliveryPicks.has(file.name));
+    const count = selected.length;
+    const paths = new Set(selected.map(file => T.zipPath(file.sha256, file.name)));
+    $("deliverySelection").textContent = count
+      ? "전달 이름 " + count + "개 선택 · ZIP 파일 " + paths.size + "개"
+      : "전달할 파일 0개 선택";
+    $("deliveryScope").hidden = count === 0;
+    if (!count) $("deliveryScope").open = false;
+    $("deliveryScopeFiles").replaceChildren(...selected.map((file, index) => {
+      const item = li(file.name + " "), remove = document.createElement("button");
+      remove.type = "button";
+      remove.disabled = busy;
+      remove.textContent = "선택 해제";
+      remove.setAttribute("aria-label", file.name + " 선택 해제");
+      remove.addEventListener("click", () => {
+        deliveryPicks.delete(file.name);
+        renderArtifacts();
+        const remaining = $("deliveryScopeFiles").querySelectorAll("button");
+        (remaining[index] || remaining[index - 1] || $("artifactList").querySelector("input"))?.focus();
+      });
+      item.append(remove);
+      return item;
+    }));
     $("selectedDelivery").disabled = busy || count === 0;
   }
   function renderArtifacts() {
@@ -741,7 +762,8 @@
       if (!base || deliveryHead !== base.hash || !names.length)
         throw new Error("현재 판에서 전달할 파일을 선택해 주세요.");
       await requireCurrentExport(base.id, base.hash);
-      const hashes = new Set(base.artifacts.filter(file => deliveryPicks.has(file.name)).map(file => file.sha256));
+      const picked = new Set(names);
+      const hashes = new Set(base.artifacts.filter(file => picked.has(file.name)).map(file => file.sha256));
       const entries = await Promise.all([...hashes].map(sha => F.doc(`task-file:${base.id}:${sha}`)));
       const selected = await B.selectedZip(versions, names, entries);
       const data = D.zipStore(selected.entries, D.localDate());
