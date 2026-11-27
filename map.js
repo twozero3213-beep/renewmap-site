@@ -1577,6 +1577,18 @@
   const BASE_TITLE = document.title;   // 경로를 들고 왔을 때만 휴대폰에서 지도로 내린다
   const state = { route: parseHash(location.hash) || parseHash(DEFAULT_ROUTE_HASH), ind: INDICATORS[0].code, bundle: BUNDLES[0].key, mode: 'now', year: null, horizon: null, playing: false, index: undefined, living: undefined, dongIndex: undefined, sgGeo: undefined, dash: undefined, mapErr: false, touched: false,
     migration: undefined, designations: undefined, forecastIdx: undefined, realestate: undefined, templates: undefined, sgGeoDetailed: false, sgGeoScope: null, failed: new Set() };
+  const candidateParams = new URLSearchParams(location.search), candidateCode = candidateParams.get('candidate');
+  const candidateRev = Number(candidateParams.get('rev'));
+  const candidateRevision = /^\d{8}$/.test(candidateCode || '') && Number.isSafeInteger(candidateRev) && candidateRev > 0
+    ? { code: candidateCode, number: candidateRev } : null;
+  const loadCandidateModule = async () => {
+    if (!window.RenewCandidates) await import('./candidates.js?v=20261127-r63-candidate-revision');
+    return window.RenewCandidates;
+  };
+  let candidateModuleError = false, candidateRevisionSaved = '';
+  if (candidateRevision) {
+    loadCandidateModule().catch(() => { candidateModuleError = true; }).then(() => { if (state.index) render(); });
+  }
   const localBoundary = () => state.sgGeoScope === '21' && state.route.sido === '21';
   const inds = () => allIndicators(state.living, { migration: state.migration, designations: state.designations, forecastIdx: state.forecastIdx, realestate: state.realestate, failed: state.failed });
   const curInd = () => indOf(state.ind, inds());
@@ -1781,8 +1793,10 @@
     // 머리 = 이름·닫기, 탭 = 요약(쇠퇴 3요건 세 줄)·지표 전체(척도표)·재생 사업, 꼬리 = 주 단추 하나('근거 문서 열기' = 예전 근거 1쪽 단추).
     // 경로·연도·경계 안내 같은 보조 문구는 'ⓘ 자세히' 한 칸에 모은다(문구는 그대로)
     const failedCandidate = candidateFailures(v.emdCode), loadingCandidate = candidateLoading(v.emdCode);
+    const candidateRevisionView = candidateRevision && !failedCandidate.length && !loadingCandidate ? revisionView(it, m.selYear, rows) : null;
     const candidateNote = failedCandidate.length ? `${failedCandidate.join(', ')} 자료를 받지 못했습니다. 다시 받은 뒤 보관할 수 있습니다.`
-      : loadingCandidate ? '보관할 지표를 불러오는 중입니다.' : '';
+      : loadingCandidate ? '보관할 지표를 불러오는 중입니다.' : candidateRevisionView?.text || '';
+    const candidateDisabled = failedCandidate.length || loadingCandidate || candidateRevisionView?.blocked;
     const req = reqLineHTML(rows, dong, { go: false }); // 2026-11-13: 동 이름 바로 아래에 신청요건(첫 약속 D23의 답을 맨 먼저)
     const tab = MP_TABS.some(t => t[0] === state.mpTab) ? state.mpTab : 'sum';
     const { boundaryCount } = boundaryCoverage([it], m.geo);
@@ -1798,7 +1812,7 @@
     return `<div class="map-panel-head mp-head"><h3 class="map-h3" tabindex="-1" data-code="${esc(it.code)}">${esc(it.name)}${region ? ` <small>${esc(region)}</small>` : ''}</h3><button type="button" class="map-close" data-close aria-label="${esc(it.name)} 카드 닫기">닫기</button></div>` +
       `<div class="mp-tabs" role="tablist" aria-label="${esc(it.name)} 보기">${MP_TABS.map(([k, l]) => `<button type="button" role="tab" id="mp-tab-${k}" data-mp-tab="${k}" aria-controls="mp-pane-${k}" aria-selected="${k === tab}" tabindex="${k === tab ? 0 : -1}">${l}</button>`).join('')}</div>` +
       '<div class="mp-body">' +
-      pane('sum', req + `<p class="map-copy"><button type="button" class="btn ghost" data-copy-map>이 지도 링크 복사</button><button type="button" class="btn ghost" data-candidate-save aria-describedby="candidateStatus"${candidateNote ? ' disabled' : ''}>보관함에 담기</button>${failedCandidate.length ? '<button type="button" class="btn ghost" data-candidate-retry data-retry>보관 자료 다시 받기</button>' : ''}</p><p class="map-copy-msg" role="status" aria-live="polite" data-copy-map-msg></p><p id="candidateStatus" data-candidate-status role="status">${esc(candidateNote)}</p>` + info) +
+      pane('sum', req + `<p class="map-copy"><button type="button" class="btn ghost" data-copy-map>이 지도 링크 복사</button><button type="button" class="btn ghost" data-candidate-save aria-describedby="candidateStatus"${candidateDisabled ? ' disabled' : ''}>${candidateRevision ? '현재 자료로 새 기록 저장' : '보관함에 담기'}</button>${failedCandidate.length ? '<button type="button" class="btn ghost" data-candidate-retry data-retry>보관 자료 다시 받기</button>' : ''}</p><p class="map-copy-msg" role="status" aria-live="polite" data-copy-map-msg></p><p id="candidateStatus" data-candidate-status role="status">${esc(candidateNote)}</p>${candidateRevision ? '<p class="map-note">기존 기록은 보관함에 남습니다. <a href="box.html#candidatesTitle" data-candidate-return>보관함으로 돌아가기</a></p>' : ''}` + info) +
       pane('all', forecastChart(ind, m.ext, v.gu || v.sigungu, dong) + scaleTableHTML(rows, { cur: ind.code, detail: D ? D.detailRows : null }) + dist) +
       pane('biz', `<p class="map-guide">이 동의 값에 맞춘 재생 사업 요건은 문서 탭에서 봅니다.</p><p class="map-report-link"><a href="#report" data-set-mode="programs">${icon('flag')}이 동에 맞는 재생 사업 보기</a></p>` + hubHTML(v)) +
       // r23(13 M8): 글 링크 줄은 카드 몸 끝으로 옮겼다. 휴대폰에서 붙는 꼬리가 단추+링크 약 110px라 아래 탭(65px)과 함께 출처 줄을 가렸다
@@ -1817,6 +1831,26 @@
     return failed;
   }
   const rowsFor = (v, m, it) => dongRows(inds(), m.json.dongs.find(d => codeOf(d) === it.code), livingMap(m.living).get(it.code), m.selYear, m.ext);
+  function revisionView(it, year, rows) {
+    if (it.code !== candidateRevision.code) return { blocked: true, text: '보관함에서 선택한 동으로 돌아가 주세요.' };
+    if (candidateRevisionSaved) return { blocked: true, text: candidateRevisionSaved };
+    if (candidateModuleError) return { blocked: true, text: '보관 도구를 불러오지 못했습니다. 페이지를 다시 열어 주세요.' };
+    const C = window.RenewCandidates;
+    if (!C) return { blocked: true, text: '보관함의 기존 기록을 확인하는 중입니다.' };
+    try {
+      const before = C.load(localStorage).find(r => r.code === it.code);
+      if (!before || C.revisionOf(before) !== candidateRevision.number) return { blocked: true, text: '보관함의 기록이 바뀌었습니다. 보관함에서 다시 열어 주세요.' };
+      if (before.map_year != null && before.map_year !== year) return { blocked: true, text: `기존 기록의 지도 연도는 ${before.map_year}년입니다. 이 연도를 선택한 뒤 저장해 주세요.` };
+      const previousCodes = new Set(before.items.map(item => item.c));
+      const items = snapshotOf(it, rows, new Date()).items;
+      const added = items.filter(item => !previousCodes.has(item.c)).length;
+      const context = before.map_year === undefined ? '이전 기록의 지도 연도는 미기록입니다. 지금 지도 선택으로 새 기록을 남깁니다.'
+        : before.map_year === null ? '이전 기록의 지도 연도는 자동 선택입니다. 지금 지도 선택으로 새 기록을 남깁니다.' : `지도 선택 연도 ${year}년.`;
+      return { blocked: false, text: `이전 기록 ${before.items.length}개 · 현재 공개 자료 ${items.length}개 · 이전에 없던 항목 ${added}개. ${context}` };
+    } catch {
+      return { blocked: true, text: '보관함의 기존 기록을 확인할 수 없습니다. 보관함에서 다시 열어 주세요.' };
+    }
+  }
   // 2026-11-19: 넓은 화면 왼쪽 패널의 주 목록 = 지금 단계의 아래 지역(전국 → 시·도, 시·도·시 → 시·군·구·일반구, 시·군·구 → 읍·면·동).
   // 시·도·시·군·구 고르기 칸(select)과 접힌 '읍·면·동 목록'을 대신한다. 줄마다 지도와 같은 색 견본·값(출처 값 그대로). 순서는 자료 순서(값 순 아님, D13)
   // 시·도 줄마다 막대 하나: 기준선이 있는 연도 지표는 '값 있는 동 중 기준선 넘은 동 비율'(합계 그대로), 그 밖의 숫자 지표는 시·군·구 값의 중앙값(가장 큰 시·도 = 꽉 찬 막대)
@@ -2163,7 +2197,9 @@
   // (v9: 두 함수에 같은 코드가 한 벌씩 있었다)
   // R5 3: 지금 지도(동·지표 포함) 주소 복사. 클립보드가 막히면 주소를 글로 보여 주고 선택해 둔다(site.js 인용 복사와 같은 방식)
   function copyMapLink() {
-    const msg = panel.querySelector('[data-copy-map-msg]'), url = location.href;
+    const msg = panel.querySelector('[data-copy-map-msg]'), target = new URL(location.href);
+    if (candidateRevision) { target.searchParams.delete('candidate'); target.searchParams.delete('rev'); }
+    const url = target.href;
     if (!msg) return;
     const select = () => {
       msg.textContent = '복사하지 못해 주소를 선택해 두었습니다. Ctrl+C로 복사해 주세요. ';
@@ -3113,18 +3149,30 @@
     else if (b.dataset.dong) go({ ...state.route, dong: b.dataset.dong }, `[data-dong="${b.dataset.dong}"]`);
     else if (b.hasAttribute('data-candidate-save')) {
       const c = currentDong(), msg = panel.querySelector('[data-candidate-status]'); if (!c || !msg) return;
-      if (candidateLoading(c.v.emdCode) || candidateFailures(c.v.emdCode).length) return;
+      if (b.disabled || (candidateRevision && candidateRevision.code !== c.it.code) ||
+        candidateLoading(c.v.emdCode) || candidateFailures(c.v.emdCode).length) return;
       b.disabled = true;
       try {
-        if (!window.RenewCandidates) await import('./candidates.js?v=20261127-r61-candidate-context');
-        const now = currentDong();
-        if (!now || now.it.code !== c.it.code || now.m.selYear !== c.m.selYear ||
-          candidateLoading(now.v.emdCode) || candidateFailures(now.v.emdCode).length) return;
-        const rows = rowsFor(now.v, now.m, now.it), snapshot = snapshotOf(now.it, rows, new Date());
-        const saved = window.RenewCandidates.save(localStorage, snapshot, toHash(state.route), rows, now.m.selYear);
-        panel.querySelector('[data-candidate-status]').textContent = saved ? '보관함에 담았습니다. 이 기기에만 저장됩니다.' : '이미 보관함에 있습니다.';
-      } catch (err) { msg.textContent = '저장하지 못했습니다. ' + err.message; }
-      finally { b.disabled = false; }
+        const C = await loadCandidateModule();
+        await C.withCandidateWrite(() => {
+          const now = currentDong();
+          if (!now || now.it.code !== c.it.code || now.m.selYear !== c.m.selYear ||
+            candidateLoading(now.v.emdCode) || candidateFailures(now.v.emdCode).length) return;
+          const rows = rowsFor(now.v, now.m, now.it), snapshot = snapshotOf(now.it, rows, new Date());
+          const route = toHash(state.route), status = panel.querySelector('[data-candidate-status]') || msg;
+          if (candidateRevision) {
+            const saved = C.revise(localStorage, snapshot, route, rows, now.m.selYear, candidateRevision.number);
+            candidateRevisionSaved = `새 기록에 ${saved.items.length}개 항목을 보관했습니다. 이전 기록은 보관함에서 열 수 있습니다.`;
+            status.textContent = candidateRevisionSaved;
+            panel.querySelector('[data-candidate-save]').disabled = true;
+            panel.querySelector('[data-candidate-return]')?.focus({ preventScroll: true });
+          } else {
+            const saved = C.save(localStorage, snapshot, route, rows, now.m.selYear);
+            status.textContent = saved ? '보관함에 담았습니다. 이 기기에만 저장됩니다.' : '이미 보관함에 있습니다.';
+          }
+        });
+      } catch (err) { (panel.querySelector('[data-candidate-status]') || msg).textContent = '저장하지 못했습니다. ' + err.message; }
+      finally { b.disabled = !!candidateRevisionSaved; }
     }
     else if (b.hasAttribute('data-close')) closeDong();
     else if (b.dataset.emdRetry) { cache.delete('emd:' + b.dataset.emdRetry); render(); }

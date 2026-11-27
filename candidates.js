@@ -22,6 +22,12 @@
     if (new Set(row.items.map(x => x.c)).size !== row.items.length) {
       throw new Error('지표 코드가 중복되어 비교할 수 없습니다. 기존 기록은 그대로 보존했습니다.');
     }
+    if (row.history !== undefined) {
+      if (!Array.isArray(row.history) || row.history.some(prior => !prior || prior.code !== row.code || Object.hasOwn(prior, 'history'))) {
+        throw new Error('이전 후보 기록의 형식을 확인하지 못했습니다.');
+      }
+      row.history.forEach(validate);
+    }
     return row;
   }
   function load(storage) {
@@ -31,20 +37,44 @@
     if (!Array.isArray(rows) || new Set(rows.map(r => r?.code)).size !== rows.length) throw new Error('후보 목록 형식을 확인하지 못했습니다.');
     return rows.map(validate);
   }
-  function save(storage, snapshot, route, rows, mapYear) {
-    const list = load(storage);
-    if (list.some(r => r.code === snapshot.code)) return false;
+  function snapshotRecord(snapshot, route, rows, mapYear, stage, note) {
     const items = snapshot.items.map(x => {
       const c = rows.find(r => r.ind.code === x.c)?.cell;
       return { ...x, evidence: x.basis && c ? Object.fromEntries(['source_name', 'retrieved_at', 'license_type', 'cell_id', 'snapshot_id'].map(k => [k, c[k] ?? null])) : null };
     });
-    const row = validate({ code: snapshot.code, name: snapshot.name, saved_at: snapshot.saved_at, route, map_year: mapYear, stage: 'review', note: '', items });
+    return { code: snapshot.code, name: snapshot.name, saved_at: snapshot.saved_at, route, map_year: mapYear, stage, note, items };
+  }
+  function save(storage, snapshot, route, rows, mapYear) {
+    const list = load(storage);
+    if (list.some(r => r.code === snapshot.code)) return false;
+    const row = validate(snapshotRecord(snapshot, route, rows, mapYear, 'review', ''));
     storage.setItem(KEY, JSON.stringify([row, ...list]));
     return true;
   }
-  function update(storage, code, stage, note) {
+  const revisionOf = row => (row.history?.length ?? 0) + 1;
+  function revise(storage, snapshot, route, rows, mapYear, expectedRevision) {
+    const list = load(storage), index = list.findIndex(r => r.code === snapshot.code);
+    if (index < 0) throw new Error('후보를 찾지 못했습니다. 보관함을 다시 열어 주세요.');
+    const current = list[index];
+    if (revisionOf(current) !== expectedRevision) throw new Error('후보에 새 기록이 생겼습니다. 보관함에서 다시 열어 주세요.');
+    if (current.map_year != null && current.map_year !== mapYear) throw new Error('기존 기록의 지도 연도를 선택한 뒤 다시 저장해 주세요.');
+    const { history = [], ...prior } = current;
+    const next = validate({
+      ...snapshotRecord(snapshot, route, rows, mapYear, current.stage, current.note),
+      history: [...history, prior],
+    });
+    list[index] = next;
+    storage.setItem(KEY, JSON.stringify(list));
+    return next;
+  }
+  function withCandidateWrite(work) {
+    const locks = globalThis.navigator?.locks;
+    return locks ? locks.request(KEY, work) : Promise.resolve().then(work);
+  }
+  function update(storage, code, stage, note, expectedRevision) {
     const list = load(storage), index = list.findIndex(r => r.code === code);
     if (index < 0) throw new Error('후보를 찾지 못했습니다. 목록을 다시 열어 주세요.');
+    if (expectedRevision !== undefined && revisionOf(list[index]) !== expectedRevision) throw new Error('후보에 새 기록이 생겼습니다. 보관함에서 다시 열어 주세요.');
     list[index] = validate({ ...list[index], stage, note });
     storage.setItem(KEY, JSON.stringify(list));
   }
@@ -111,6 +141,16 @@
       [], [includeNotes ? '메모는 수정할 수 있는 사용자 기록이며 기관의 선정·승인 이력이 아닙니다.' : '선택 옵션에서 검토 메모를 포함할 수 있습니다.']];
     return [{ name: '비교', rows: cmp, widths: [28, ...rows.flatMap(() => [18, 18, 20]), 44] }, { name: '출처', rows: src, widths: [14, 28, 40, 50, 12, 18, 30, 16, 22, 16, 26, 20, 38, 19, 14, 16, 30] }, { name: '검토 기록', rows: review, widths: [16, 20, 18, 60, 28, 18] }];
   }
+  function historyHTML(row) {
+    const history = row.history || [];
+    if (!history.length) return '';
+    const versions = history.map((prior, index) => {
+      const stage = STAGES.find(([key]) => key === prior.stage)[1];
+      const items = prior.items.map(item => `<tr><th scope="row">${U.esc(item.l)}</th><td>${U.esc(valueText(item))}</td><td>${U.esc(item.d || '기준일 추가확인')}</td><td>${U.esc(item.s)}</td><td>${U.esc(item.evidence?.source_name || '출처 추가확인')}</td></tr>`).join('');
+      return `<details data-candidate-version="${index + 1}"><summary>${index + 1}번째 기록 · ${kstDay(prior.saved_at)} 저장 · ${prior.items.length}개 항목</summary><p class="meta">지도 연도 ${U.esc(yearText(prior))} · ${stage}</p><p>검토 메모</p><p style="white-space:pre-wrap">${U.esc(prior.note || '메모 없음')}</p><div class="table-wrap" tabindex="0" role="region" aria-label="이전 기록의 지표"><table class="rp-tbl"><thead><tr><th scope="col">항목</th><th scope="col">값</th><th scope="col">자료 기준일</th><th scope="col">상태</th><th scope="col">출처</th></tr></thead><tbody>${items}</tbody></table></div></details>`;
+    }).reverse().join('');
+    return `<details data-candidate-history><summary>이전 기록 ${history.length}개 보기</summary>${versions}</details>`;
+  }
   function init(root) {
     const host = root.document.querySelector('[data-candidates]');
     if (!host) return;
@@ -144,9 +184,10 @@
       try {
         const rows = load(root.localStorage);
         list.innerHTML = pager.slice(rows).map(r => `<li><label><input type="checkbox" data-candidate-select="${r.code}"${selected.has(r.code) ? ' checked' : ''}> ${U.esc(candidateName(r))} 비교 선택</label>`
-          + `<p class="meta">${U.esc(kstDay(r.saved_at))} 저장 · 지도 연도 ${U.esc(yearText(r))} · ${r.items.length}개 항목 · ${STAGES.find(([k]) => k === r.stage)[1]}</p><a href="explore.html${r.map_year == null ? '' : `?y=${r.map_year}`}${r.route}">지도에서 다시 보기</a>`
-          + `<details><summary>단계·메모 편집</summary><form data-candidate-edit="${r.code}"><label>검토 단계<select name="stage">${STAGES.map(([k, v]) => `<option value="${k}"${r.stage === k ? ' selected' : ''}>${v}</option>`).join('')}</select></label>`
-          + `<label>검토 메모<textarea name="note" maxlength="1000" rows="2">${U.esc(r.note)}</textarea></label><button type="submit">단계·메모 저장</button></form></details></li>`).join('')
+          + `<p class="meta">${r.history?.length ? `${revisionOf(r)}번째 기록 · ` : ''}${U.esc(kstDay(r.saved_at))} 저장 · 지도 연도 ${U.esc(yearText(r))} · ${r.items.length}개 항목 · ${STAGES.find(([k]) => k === r.stage)[1]}</p><a href="explore.html${r.map_year == null ? '' : `?y=${r.map_year}`}${r.route}">지도에서 다시 보기</a>`
+          + ` <a data-candidate-revise href="explore.html?candidate=${r.code}&amp;rev=${revisionOf(r)}${r.map_year == null ? '' : `&amp;y=${r.map_year}`}${r.route}">자료 다시 확인</a>`
+          + `<details><summary>단계·메모 편집</summary><form data-candidate-edit="${r.code}" data-candidate-revision="${revisionOf(r)}"><label>검토 단계<select name="stage">${STAGES.map(([k, v]) => `<option value="${k}"${r.stage === k ? ' selected' : ''}>${v}</option>`).join('')}</select></label>`
+          + `<label>검토 메모<textarea name="note" maxlength="1000" rows="2">${U.esc(r.note)}</textarea></label><button type="submit">단계·메모 저장</button></form></details>${historyHTML(r)}</li>`).join('')
           || '<li class="box-empty-card"><p><b>아직 담은 후보가 없습니다.</b><br>동네 현황에서 동을 골라 ‘보관함에 담기’를 누르세요.</p><a class="btn" href="explore.html#map">동네 현황 열기</a></li>';
         renderComparison(rows);
         csvButton.disabled = !rows.length;
@@ -169,12 +210,14 @@
       comparisonPager.reset();
       if (renderComparison()) say(selected.size >= 2 ? `${selected.size}곳 선택 · 아래 비교 표를 열었습니다` : `${selected.size}곳 선택`);
     });
-    list.addEventListener('submit', e => {
+    list.addEventListener('submit', async e => {
       const form = e.target.closest('[data-candidate-edit]'); if (!form) return;
       e.preventDefault();
       try {
-        const code = form.dataset.candidateEdit;
-        update(root.localStorage, code, form.elements.stage.value, form.elements.note.value); render();
+        const code = form.dataset.candidateEdit, version = Number(form.dataset.candidateRevision);
+        const { value: stage } = form.elements.stage, { value: note } = form.elements.note;
+        await withCandidateWrite(() => update(root.localStorage, code, stage, note, version));
+        render();
         list.querySelector(`[data-candidate-edit="${code}"]`).parentElement.querySelector('summary').focus({ preventScroll: true });
         say('검토 단계와 메모를 저장했습니다. 저장 당시 수치는 유지됩니다.');
       } catch (err) { say('저장하지 못했습니다. ' + err.message); }
@@ -197,5 +240,5 @@
     });
     render();
   }
-  return { KEY, STAGES, load, save, update, csv, csvCell: cell, comparisonHTML, compareSheets, init };
+  return { KEY, STAGES, load, save, revise, revisionOf, withCandidateWrite, update, csv, csvCell: cell, comparisonHTML, compareSheets, init };
 });
