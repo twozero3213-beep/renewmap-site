@@ -93,6 +93,38 @@
     const kept = receivedState.files.filter(file => !names.has(file.name));
     checkReceived(receivedState.list, [...kept, ...added], true);
   });
+  const sentList = $("sentList"), sentValue = $("sentValue"), sentCheck = $("sentCheck");
+  function clearSentDelivery() {
+    $("sentStatus").textContent = "";
+    $("sentFingerprint").hidden = true;
+    $("sentListSha").textContent = "";
+  }
+  sentList.addEventListener("change", clearSentDelivery);
+  sentValue.addEventListener("input", clearSentDelivery);
+  if (location.hash === "#sentDelivery") $("sentDelivery").open = true;
+  sentCheck.addEventListener("click", async () => {
+    if (sentCheck.disabled) return;
+    const controls = [sentList, sentValue, sentCheck];
+    controls.forEach(control => { control.disabled = true; });
+    clearSentDelivery();
+    $("sentStatus").textContent = "보관한 목록을 대조하고 있습니다.";
+    try {
+      const result = await B.compareSentDelivery(sentList.files[0], sentValue.value);
+      const statuses = {
+        "different-list": "보관한 목록의 원본 바이트가 받은 확인값과 다릅니다.",
+        "same-digest": "보관한 목록과 받은 확인값이 일치합니다.",
+        "same-report": "보관한 목록과 결과 TXT가 일치합니다. 확인값·판·이름 수·실제 파일 수를 대조했습니다.",
+        "different-report": "목록 확인값 일치 · 결과 TXT의 판 또는 파일 수가 보관한 목록과 다릅니다.",
+      };
+      $("sentStatus").textContent = statuses[result.state];
+      $("sentFingerprint").hidden = false;
+      $("sentListSha").textContent = result.localSha;
+    } catch (error) {
+      $("sentStatus").textContent = error.message || "보관한 목록을 대조하지 못했습니다.";
+    } finally {
+      controls.forEach(control => { control.disabled = false; });
+    }
+  });
   const deliveryPicks = new Set();
   let deliveryHead = null;
   const say = (text) => {

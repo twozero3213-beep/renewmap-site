@@ -142,6 +142,40 @@
     }
     return {receipt,paths,bytes};
   }
+  function deliveryConfirmation(receipt,count,listSha) {
+    return [
+      '리뉴맵 받은 전달 파일 대조 결과',
+      '받은 목록 v'+receipt.revision+' · 목록 이름 '+receipt.selected_count+'개',
+      '실제 파일 '+count+'개 모두 일치',
+      '원본 목록 파일 SHA-256 '+listSha,
+      '목록 파일의 원본 바이트를 기준으로 계산했습니다. 공백이나 줄바꿈이 달라져도 값은 바뀝니다.',
+      '선택한 파일의 이름·크기·SHA-256이 받은 전달 목록과 일치합니다.',
+      '발신자 신원·기관 승인·자료 내용의 사실 여부는 별도 증빙으로 확인하세요.',
+    ].join('\n')+'\n';
+  }
+  async function compareSentDelivery(list,value) {
+    const bad=()=>new Error('받은 확인값 64자리나 리뉴맵 대조 결과 TXT 전체의 형식을 확인해 주세요.');
+    if(typeof value!=='string'||value.length>4096)throw bad();
+    const text=value.trim().replace(/\r\n/g,'\n');
+    let expected=text.toLowerCase(), report=null;
+    if(!HEX.test(expected)) {
+      const lines=text.split('\n');
+      const meta=/^받은 목록 v([1-9]\d{0,15}) · 목록 이름 ([1-9]\d{0,2})개$/.exec(lines[1]||'');
+      const number=/^실제 파일 ([1-9]\d{0,2})개 모두 일치$/.exec(lines[2]||'');
+      const digest=/^원본 목록 파일 SHA-256 ([a-f0-9]{64})$/.exec(lines[3]||'');
+      if(!meta||!number||!digest)throw bad();
+      report={revision:Number(meta[1]),selected_count:Number(meta[2]),count:Number(number[1])};
+      expected=digest[1];
+      if(!Number.isSafeInteger(report.revision)||report.selected_count>MAX_FILES||report.count>report.selected_count||
+         deliveryConfirmation(report,report.count,expected).trimEnd()!==text)throw bad();
+    }
+    const {receipt,paths,bytes}=await readDeliveryList(list);
+    const localSha=await T.hash(bytes);
+    if(localSha!==expected)return {localSha,state:'different-list'};
+    if(!report)return {localSha,state:'same-digest'};
+    const matches=report.revision===receipt.revision&&report.selected_count===receipt.selected_count&&report.count===paths.size;
+    return {localSha,state:matches?'same-report':'different-report'};
+  }
   async function verifyDelivery(list,files) {
     const {receipt,paths,bytes}=await readDeliveryList(list);
     if(!Array.isArray(files)||files.length>MAX_FILES*2)
@@ -181,15 +215,7 @@
       ...resend.map(row=>row.reason+' / '+row.path+' / '+row.size+'바이트'),
     ].join('\n')+'\n':'';
     const listSha=!issues.length&&matched===paths.size?await T.hash(bytes):'';
-    const confirmation=listSha?[
-      '리뉴맵 받은 전달 파일 대조 결과',
-      '받은 목록 v'+receipt.revision+' · 목록 이름 '+receipt.selected_count+'개',
-      '실제 파일 '+paths.size+'개 모두 일치',
-      '원본 목록 파일 SHA-256 '+listSha,
-      '목록 파일의 원본 바이트를 기준으로 계산했습니다. 공백이나 줄바꿈이 달라져도 값은 바뀝니다.',
-      '선택한 파일의 이름·크기·SHA-256이 받은 전달 목록과 일치합니다.',
-      '발신자 신원·기관 승인·자료 내용의 사실 여부는 별도 증빙으로 확인하세요.',
-    ].join('\n')+'\n':'';
+    const confirmation=listSha?deliveryConfirmation(receipt,paths.size,listSha):'';
     return {revision:receipt.revision,selected:receipt.selected_count,count:paths.size,matched,issues,resend,request,listSha,confirmation};
   }
   async function read(text){
@@ -435,5 +461,5 @@
       '파일 확인값(SHA-256)은 파일이 바뀌었는지만 알려 줍니다. 작성자 신원·현장 촬영 사실·얼굴 가림·기관 승인과 내용이 사실인지는 증명하지 않습니다.');
     return {text:lines.join('\n')+'\n',summary,attention,comparison,recovery};
   }
-  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,verifyDelivery,read,from64,handover,inspectRecovery,matchRecoveryFile};
+  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,verifyDelivery,compareSentDelivery,read,from64,handover,inspectRecovery,matchRecoveryFile};
 });

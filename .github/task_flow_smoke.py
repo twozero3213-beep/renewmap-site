@@ -298,6 +298,22 @@ def main():
                 recipient.locator('#receivedCheck').click()
                 expect(recipient.locator('#receivedListSha')).to_have_text(hashlib.sha256(manifest_changed).hexdigest())
                 result['checks'].append('recipient_match_report_uses_exact_input_manifest_bytes')
+                recipient.locator('#sentDelivery summary').click()
+                sender_list = recipient.locator('#sentList')
+                response_text = recipient.locator('#sentValue')
+                sender_list.set_input_files({
+                    'name': '전달_파일_목록.json', 'mimeType': 'application/json', 'buffer': receipt_payload,
+                })
+                response_text.fill(text)
+                recipient.locator('#sentCheck').click()
+                expect(recipient.locator('#sentStatus')).to_contain_text('목록과 결과 TXT가 일치합니다')
+                expect(recipient.locator('#sentListSha')).to_have_text(digest)
+                response_text.fill(text.replace('실제 파일 1개','실제 파일 2개').replace('목록 이름 1개','목록 이름 2개'))
+                expect(recipient.locator('#sentListSha')).to_be_hidden()
+                recipient.locator('#sentCheck').click()
+                expect(recipient.locator('#sentStatus')).to_contain_text('확인값 일치')
+                expect(recipient.locator('#sentStatus')).to_contain_text('다릅니다')
+                result['checks'].append('sender_matches_real_recipient_report_without_accepting_changed_counts')
                 assert recipient.evaluate('async()=>[(await TaskStore.list()).length,(await FieldStore.docs()).length]') == [0,0]
                 assert not requests
             finally:
