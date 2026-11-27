@@ -45,14 +45,14 @@
   }
 
   function weightedScore(values, weights) {
-    let sum = 0, total = 0, missing = 0, used = 0;
+    let sum = 0, total = 0, missing = 0, used = 0, missingWeight = 0;
     weights.forEach((w, i) => {
       if (!Number.isInteger(w) || w < 0 || w > 5) throw new Error('중요도는 0~5 정수여야 합니다.');
       if (!w) return;
-      if (!isNum(values[i])) { missing++; return; }
+      if (!isNum(values[i])) { missing++; missingWeight += w; return; }
       sum += values[i] * w; total += w; used++;
     });
-    return { score: total ? sum / total : null, missing, used };
+    return { score: total ? sum / total : null, missing, used, usedWeight: total, missingWeight };
   }
 
   function officeDistances(doc, officeCode, dongs) {
@@ -279,18 +279,23 @@
     return `<p class="relocate-help">${esc(doc.caution)} (확인일 ${esc(doc.checked_at)})</p>
       <div class="relocate-support-scroll"><table class="relocate-support-table"><thead><tr><th scope="col">제도</th><th scope="col">누구</th><th scope="col">무엇</th><th scope="col">신청</th><th scope="col">지금 상태</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
+  const basisCounts = d => `${d.used}/${d.used + d.missing}개`;
+  const basisWeights = d => `${d.usedWeight}/${d.usedWeight + d.missingWeight}`;
+  const missingLabels = d => d.factors.filter(f => f.weight > 0 && !isNum(f.normalized)).map(f => esc(f.label));
   function card(d, index, range) {
     const { reasons, trade } = highlights(d);
     const flag = rentFlag(d);
+    const pending = missingLabels(d);
     // 처음에는 순위·점수·거리·항목 이름만 보이고, 값의 출처·기준일은 '근거 보기' 안에 모두 남긴다.
     return `<article class="relocate-card"><div class="relocate-card-head"><span class="relocate-rank">${index + 1}</span><h3>${esc(d.district)} ${esc(d.name)}</h3><strong class="relocate-score">${d.score.toFixed(0)}<span>점</span></strong></div>${flag ? `
       <p class="relocate-flag">${flag}</p>` : ''}
-      <p class="relocate-distance" data-cell-id="${esc(d.cells.OFFICE_KM?.cell_id || '')}">회사 동까지 직선거리 <b>${format(d.cells.OFFICE_KM?.value, 'km')}</b><span class="relocate-coverage">순위 범위 ${range[0]}~${range[1]}위</span>${d.missing ? `<span class="relocate-coverage">자료 누락 ${d.missing}개</span>` : ''}</p>${transitLine(d)}
+      <p class="relocate-distance" data-cell-id="${esc(d.cells.OFFICE_KM?.cell_id || '')}">회사 동까지 직선거리 <b>${format(d.cells.OFFICE_KM?.value, 'km')}</b><span class="relocate-coverage">순위 범위 ${range[0]}~${range[1]}위</span></p>${transitLine(d)}
+      <p class="relocate-help relocate-score-basis">점수 반영 ${basisCounts(d)} · 중요도 합 ${basisWeights(d)}</p>
       <p class="relocate-top"><b>점수에 기여한 항목</b> ${reasons.map(f => esc(f.label)).join(' · ')}</p>${trade ? `
       <p class="relocate-top"><b>함께 살필 점</b> ${esc(trade.label)}</p>` : ''}
       <details class="relocate-evidence rm-disclosure"><summary>근거 보기 · 전체 ${FACTORS.length}개 항목</summary>
       <p class="relocate-evidence-distance">회사 동까지 직선거리 ${format(d.cells.OFFICE_KM?.value, 'km')}${evidence(d.cells.OFFICE_KM)}</p>${transitEvidence(d)}
-      <p class="relocate-help">반영 ${d.used}개 · 자료 누락 ${d.missing}개</p>
+      ${pending.length ? `<h4>자료가 없어 점수에서 빠진 항목</h4><ul class="relocate-pending">${pending.map(label => `<li>${label}</li>`).join('')}</ul>` : ''}
       <p class="relocate-help relocate-rent-reasons">${esc(rentReasons(d))}</p>
       <h4>점수에 기여한 항목</h4><ul class="relocate-reasons">${reasons.map(f => `<li>${esc(valueText(f))}<small class="relocate-source">${comparisonText(f)}</small>${evidence(f.cell)}</li>`).join('')}</ul>
       <div class="relocate-trade"><b>함께 살필 점</b><p>${trade ? esc(valueText(trade)) : '비교할 다른 항목이 없습니다. 중요도를 더 켜서 함께 살펴보세요.'}</p>${trade ? evidence(trade.cell) : ''}</div>
@@ -308,12 +313,13 @@
       const { reasons, trade } = highlights(d);
       const rent = RENT_CODES.map((code, n) => `${n ? '월세' : '전세'} ${d.rent[code].cell ? HOUSING[d.rent[code].type] + (d.rent[code].reason.includes('대체') ? '*' : '') : '자료 없음'}`).join(' / ');
       const flag = rentFlag(d);
-      return `<tr><td>${i + 1}</td><th scope="row">${esc(d.district)} ${esc(d.name)}${flag ? `<br><small>${flag}</small>` : ''}</th><td>${d.score.toFixed(0)}</td><td>${ranges[i][0]}~${ranges[i][1]}위</td><td data-cell-id="${esc(d.cells.OFFICE_KM?.cell_id || '')}">${format(d.cells.OFFICE_KM?.value, 'km')}${ref(d.cells.OFFICE_KM)}</td><td>${reasons.map(f => `${esc(valueText(f))}${ref(f.cell)}`).join('<br>')}<br><small>${esc(rent)}</small></td><td>${trade ? `${esc(valueText(trade))}${ref(trade.cell)}` : '다른 활성 항목 없음'}</td><td>${d.missing}</td></tr>`;
+      const pending = missingLabels(d);
+      return `<tr><td>${i + 1}</td><th scope="row">${esc(d.district)} ${esc(d.name)}${flag ? `<br><small>${flag}</small>` : ''}</th><td>${d.score.toFixed(0)}</td><td>${ranges[i][0]}~${ranges[i][1]}위</td><td data-cell-id="${esc(d.cells.OFFICE_KM?.cell_id || '')}">${format(d.cells.OFFICE_KM?.value, 'km')}${ref(d.cells.OFFICE_KM)}</td><td>${reasons.map(f => `${esc(valueText(f))}${ref(f.cell)}`).join('<br>')}<br><small>${esc(rent)}</small></td><td>${trade ? `${esc(valueText(trade))}${ref(trade.cell)}` : '다른 활성 항목 없음'}${pending.length ? `<small class="relocate-print-pending">점수에서 빠진 항목: ${pending.join(' · ')}</small>` : ''}</td><td>${basisCounts(d)}<br>${basisWeights(d)}</td></tr>`;
     }).join('');
     $('printSheet').innerHTML = `<h1>부산 이전 직원 동네 비교</h1><h2>회사: ${esc(office.district)} ${esc(office.name)} · ${esc(stageLabel())}</h2><p>${esc(scope)} · 행정동 대표점 사이 직선거리(이동시간 아님)</p>
       <p class="relocate-print-rule">${RULE} · 반경 ${radiusKm() ? `${radiusKm()}km` : '부산 전체'} · ${esc(shareText())}</p>
-      <table><thead><tr><th>순위</th><th>행정동</th><th>점수</th><th>순위 범위</th><th>회사 동까지</th><th>점수에 기여한 항목</th><th>함께 살필 점</th><th>누락</th></tr></thead><tbody>${rows}</tbody></table>
-      <p>* 선택 유형의 표본 5건 미만 또는 자료 없음으로 대체. 오피스텔→연립다세대→전체, 아파트·연립다세대→전체 순. 전체도 부족하면 계산 제외.</p>
+      <table><thead><tr><th>순위</th><th>행정동</th><th>점수</th><th>순위 범위</th><th>회사 동까지</th><th>점수에 기여한 항목</th><th>함께 살필 점</th><th>반영 항목<br>중요도 합</th></tr></thead><tbody>${rows}</tbody></table>
+      <p>분모는 선택한 전체 항목 수와 중요도 합입니다. * 선택 유형의 표본 5건 미만 또는 자료 없음으로 대체. 오피스텔→연립다세대→전체, 아파트·연립다세대→전체 순. 전체도 부족하면 계산 제외.</p>
       <p class="relocate-print-weights">중요도(0~5): ${FACTORS.filter(f => !f.ref).map(f => `${esc(f.label)} ${weights[f.code]}`).join(' / ')}</p>
       <p>산식: Σ(부산 내 백분위 × 중요도) ÷ Σ(값이 있는 항목의 중요도). 동률은 평균 순위, 모두 같으면 50점. 결측·중요도 0 제외. 주거비 중요도가 켜져 있는데 주거비 값이 모두 없는 동은 자료 있는 동 뒤에 둠. 동점은 행정동 코드순. 순위 범위는 중요도를 ±50% 바꿔 다시 셈한 순위의 90% 구간(200회, 지금 순위 포함)이며 자료 오차는 반영하지 않음.</p>
       <ol class="relocate-print-sources">${sources.map(s => `<li>${sourceMarkup(s)}</li>`).join('')}</ol>
