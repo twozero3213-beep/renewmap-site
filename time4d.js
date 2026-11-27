@@ -106,7 +106,18 @@
     return '\ufeff' + [...meta, CSV_COLS.map(csvCell).join(','), ...rows].join('\r\n') + '\r\n';
   }
 
-  const api = { YEAR_FROM, BANDS, NO_DATE, aprYear, stats, crossYear, sinceYear, features, colorExpr, filterExpr, dongAt, csv, CSV_COLS, csvCell };
+  function comparisonCsv(bf, selected, reference) {
+    const head = ['법정동', '법정동 코드', '출처', '대장 기준일', '연수 기준일', '구분', '연도', '미래 가정',
+      '날짜 있는 주건축물 수', '20년 이상 수', '20년 이상 비율(%)', '30년 이상 수', '30년 이상 비율(%)',
+      '완공된 날 없는 수', '자료 범위'];
+    const row = (label, s) => [bf.name, bf.bjd10, bf.source, bf.hub_reference_date, bf.age_reference_date, label, s.year,
+      s.year > reference.year ? '지금 건물이 그대로일 때' : '', s.built, s.over20, s.pct20, s.over30, s.pct30, s.noDate,
+      '현재 대장 자료에 있는 건물'];
+    return '\ufeff' + [head, row('선택 연도', selected), row('자료 기준연도', reference)]
+      .map((fields) => fields.map(csvCell).join(',')).join('\r\n') + '\r\n';
+  }
+
+  const api = { comparisonCsv, YEAR_FROM, BANDS, NO_DATE, aprYear, stats, crossYear, sinceYear, features, colorExpr, filterExpr, dongAt, csv, CSV_COLS, csvCell };
   if (typeof module === 'object' && module.exports) { module.exports = api; return; }
   root.Time4D = api;
 
@@ -137,11 +148,35 @@
     i.style.background = c; li.append(i, t); return li;
   }));
 
+  function paintComparison(selected, reference) {
+    const panel = $('t4Comparison');
+    panel.hidden = !fileMeta?.referenceYear;
+    if (panel.hidden) return;
+    fileMeta.comparison = [selected, reference];
+    const { bf } = fileMeta;
+    $('t4ComparisonBasis').textContent = [
+      bf.source,
+      `대장 기준일 ${bf.hub_reference_date || '자료에 없음'}`,
+      `연수 기준일 ${bf.age_reference_date || '자료에 없음'}`,
+    ].filter(Boolean).join(' · ');
+    $('t4SelectedYear').textContent = `선택 ${selected.year}년${selected.year > reference.year ? ' (가정)' : ''}`;
+    $('t4ReferenceYear').textContent = `자료 기준 ${reference.year}년`;
+    $('t4ComparisonMissing').textContent = `완공된 날이 없는 ${fmt(reference.noDate)}동은 비율에서 뺍니다.`;
+    const cells = $('t4ComparisonBody').querySelectorAll('td');
+    const age = (count, pct) => pct === null ? '—' : `${fmt(count)}동 (${pct}%)`;
+    [selected, reference].forEach((s, column) => {
+      cells[column].textContent = `${fmt(s.built)}동`;
+      cells[2 + column].textContent = age(s.over20, s.pct20);
+      cells[4 + column].textContent = age(s.over30, s.pct30);
+    });
+  }
+
   function paint() {
     $('t4YearOut').textContent = `${year}년`;
     $('t4TagL').textContent = `${year}년`;
     const s = stats(blds, year), sn = year === NOW ? s : stats(blds, NOW);
-    $('t4CmpNote').textContent = s.pct20 === null || sn.pct20 === null ? '' : `20년 이상: ${year}년 ${s.pct20}% → 올해 ${sn.pct20}%`;
+    paintComparison(s, sn);
+    $('t4CmpNote').textContent = !fileMeta?.referenceYear || s.pct20 === null || sn.pct20 === null ? '' : `20년 이상: ${year}년 ${s.pct20}% → 자료 기준 ${sn.year}년 ${sn.pct20}%`;
     slider.setAttribute('aria-valuetext', `${year}년`);
     $('t4Built').textContent = fmt(s.built);
     $('t4P20').textContent = s.pct20 === null ? '-' : `${s.pct20}%`;
@@ -171,10 +206,18 @@
     if (!fileMeta) return;
     RenewSave.saveFile(`건물목록_${fileMeta.bf.name}_${fileMeta.bf.bjd10}.csv`, [csv(fileMeta.bf, blds)], 'text/csv;charset=utf-8');
   });
+  $('t4ComparisonCsv').addEventListener('click', () => {
+    if (!fileMeta?.comparison) return;
+    const { bf, comparison } = fileMeta;
+    RenewSave.saveFile(`연도비교_${bf.name}_${bf.bjd10}.csv`, [comparisonCsv(bf, ...comparison)], 'text/csv;charset=utf-8');
+  });
   let loadEpoch = 0;
   async function load(code) {
     const epoch = ++loadEpoch;
     stop();
+    fileMeta = null;
+    $('t4Comparison').hidden = true;
+    $('t4CmpNote').textContent = '';
     $('t4Csv').disabled = true;
     $('t4OpenMap').disabled = true;
     if (map) {
@@ -187,9 +230,9 @@
       const bf = await getJson(`buildings/${code}.json`);
       if (epoch !== loadEpoch) return false;
       blds = bf.buildings || [];
-      fileMeta = { code, bf };
-      $('t4OpenMap').disabled = false;
       const ref = Number(String(bf.age_reference_date || bf.hub_reference_date || '').slice(0, 4));
+      fileMeta = { code, bf, referenceYear: ref >= 2000 ? ref : null };
+      $('t4OpenMap').disabled = false;
       if (ref >= 2000 && ref !== NOW) {
         const atNow = year === NOW; NOW = ref; TO = NOW + 20; slider.max = String(TO);
         $('t4Ends').textContent = `${YEAR_FROM}년 ~ ${TO}년 · 올해 뒤는 지금 건물 그대로일 때`;

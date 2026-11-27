@@ -26,11 +26,11 @@
 <link rel="stylesheet" href="styles.css?v=20261122-r19">
 <link rel="stylesheet" href="site-v4.css?v=20261120-r11">
 <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
-<link rel="stylesheet" href="time4d.css?v=20261126-mobile-first">
+<link rel="stylesheet" href="time4d.css?v=20261127-basis-compare">
 <script src="site.js?v=20261122-r24" defer></script>
 <script src="util.js?v=20261122-r19" defer></script>
 <script src="save-file.js?v=20261119-w2" defer></script>
-<script src="time4d.js?v=20261126-mobile-first" defer></script>
+<script src="time4d.js?v=20261127-basis-compare-csv" defer></script>
 <link rel="stylesheet" href="rm6.css?v=20261122-r24">
 </head>
 <body>
@@ -61,6 +61,21 @@
       <p class="t4-lead">연도를 움직이면 건물이 완공된 순서대로 서고, 해가 갈수록 색이 짙어집니다.</p>
       <p class="t4-basis">법정동·건축물대장 기준입니다. 공모 신청서에 쓰는 노후 비율은 행정동 쇠퇴진단지표 값이라 다를 수 있습니다. <a href="explore.html">행정동 값은 동네 현황에서</a></p>
       <p class="t4-howlink"><a href="#t4How">셈하는 법 ↓</a></p>
+      <details id="t4Comparison" class="t4-comparison" hidden>
+        <summary>선택 연도와 자료 기준연도 비교</summary>
+        <p id="t4ComparisonBasis" class="t4-basis"></p>
+        <table>
+          <thead><tr><td></td><th scope="col" id="t4SelectedYear">선택 연도</th><th scope="col" id="t4ReferenceYear">자료 기준연도</th></tr></thead>
+          <tbody id="t4ComparisonBody">
+            <tr><th scope="row">그해까지 완공<br>날짜 있는 주건축물</th><td></td><td></td></tr>
+            <tr><th scope="row">20년 이상</th><td></td><td></td></tr>
+            <tr><th scope="row">30년 이상</th><td></td><td></td></tr>
+          </tbody>
+        </table>
+        <p id="t4ComparisonMissing" class="t4-basis"></p>
+        <p class="t4-basis" id="t4ComparisonScope">현재 대장 자료에 있는 건물만 셉니다. 자료 기준연도 이후는 지금 건물이 그대로 있다고 가정합니다.</p>
+        <button type="button" id="t4ComparisonCsv" class="btn ghost" aria-describedby="t4ComparisonScope">비교표 CSV 받기</button>
+      </details>
       <p id="t4CmpNote" class="t4-cmp-note" aria-live="polite"></p>
       <p id="t4Future" class="t4-future" hidden>올해 뒤는 지금 건물이 그대로 있다고 보고 셈한 달력 계산입니다.<br>철거나 새 건물은 넣지 않았습니다.</p>
       <h3>기준선에 닿는 해</h3>
