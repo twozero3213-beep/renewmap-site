@@ -585,9 +585,9 @@ def main():
                         if route == 'data.html':
                             query = page.locator('#sourceQuery')
                             query.fill('폐쇄말소대장 표제부')
-                            results = page.locator('[data-source-table] tbody tr:visible')
-                            assert results.count() == 1
-                            row = results.first
+                            source_rows = page.locator('[data-source-table] tbody tr:visible')
+                            assert source_rows.count() == 1
+                            row = source_rows.first
                             condition = row.locator('td').nth(2).inner_text()
                             with page.expect_download() as pending:
                                 page.locator('#sourceDownload').click()
