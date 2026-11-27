@@ -26,11 +26,17 @@
     return { width, height: Math.ceil(h * s), path: (polys) => polys.map((poly) => poly.map((ring) => "M" + ring.map(([x, y]) => `${((x - x0) * k * s).toFixed(1)},${((y1 - y) * s).toFixed(1)}`).join("L") + "Z").join("")).join("") };
   }
   const cell = (v) => { const s = v === null || v === undefined ? "" : String(v); const t = typeof v === "number" || /^-?\d+(\.\d+)?$/.test(s.trim()) ? s : s.replace(/^[\s\uFEFF]*[=+@\t\r-]/, "'$&"); return /[",\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
-  function toCSV(data, dong) {
+  function toCSV(data, dong, oa) {
     const y = data.years;
-    const note = [`${dong.sigungu} ${dong.name} 집계구 ${dong.oas.length}개 · ${data.source} · ${data.license_type} · 판정 규칙 ${data.rule}(승인 전) · ${data.note}`];
+    const rows = oa === undefined ? dong.oas : dong.oas.filter((o) => o.oa === oa);
+    if (oa !== undefined && !rows.length) throw new RangeError("현재 행정동에 없는 집계구");
+    const note = [`${dong.sigungu} ${dong.name} 집계구 ${rows.length}개 · ${data.source} · ${data.license_type} · 판정 규칙 ${data.rule}(승인 전) · ${data.note}`];
+    if (oa !== undefined) {
+      const [row] = rows;
+      note[0] += ` · 선택 집계구 ${oa} · 인구 사유 ${row.pop_req.basis || "기록 없음"} · 사업체 사유 ${row.biz_req.basis || "기록 없음"}`;
+    }
     const head = ["집계구", ...y.map((v) => `인구 ${v}`), ...y.map((v) => `사업체 ${v}`), "인구 5년 중 3년 연속 감소", "인구 요건", "사업체 10년 최대 대비 감소율(%)", "사업체 5년 중 3년 연속 감소", "사업체 요건", "기준 해당 수(인구·사업체 2개 중)"];
-    const body = dong.oas.map((o) => [o.oa, ...o.pop, ...o.biz, yn(o.pop_req.consecutive_3y_in_5y), verdict(o.pop_req), o.biz_req.peak_drop_pct_10y ?? "", yn(o.biz_req.consecutive_3y_in_5y), verdict(o.biz_req), o.met]);
+    const body = rows.map((o) => [o.oa, ...o.pop, ...o.biz, yn(o.pop_req.consecutive_3y_in_5y), verdict(o.pop_req), o.biz_req.peak_drop_pct_10y ?? "", yn(o.biz_req.consecutive_3y_in_5y), verdict(o.biz_req), o.met]);
     return "﻿" + [note, head, ...body].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
   }
   const api = { MET, NOT_MET, CHECK, FILL, LABEL, groupOf, summary, verdict, pct, yn, projector, toCSV, csvCell: cell };
