@@ -104,6 +104,19 @@
     }
     if(seen.size!==wanted.size)throw new Error('백업에 필요한 파일이 빠져 있습니다.');return{manifest,files};
   }
+  function groupByBytes(files) {
+    const groups=new Map();
+    for(const file of files) {
+      const key=file.sha256+':'+file.size;
+      if(!groups.has(key))groups.set(key,[]);
+      groups.get(key).push(file);
+    }
+    return groups;
+  }
+  function fileRecordChanges(before,after) {
+    return [['input_hash','입력 지문'],['comparison_hash','비교 지문'],['template_version','양식 판본'],['blockers','추가확인 사유']]
+      .filter(([key])=>T.canonical(before[key])!==T.canonical(after[key])).map(([,label])=>label);
+  }
   async function handover(manifest,today) {
     T.isOverdue({status:'verified',due_on:today},today);
     const given=T.canonical(manifest);textSize(given);
@@ -152,13 +165,31 @@
         }
       }
       const oldFiles=new Map(baseline.artifacts.map(file=>[file.name,file])),newFiles=new Map(c.artifacts.map(file=>[file.name,file]));
+      const oldByBytes=groupByBytes(baseline.artifacts),newByBytes=groupByBytes(c.artifacts);
+      const grouped=new Set();
+      for(const [key,previous] of oldByBytes) {
+        const next=newByBytes.get(key);
+        if(!next)continue;
+        const removed=previous.filter(file=>!newFiles.has(file.name)),added=next.filter(file=>!oldFiles.has(file.name));
+        if(!removed.length&&!added.length)continue;
+        if(previous.length===1&&next.length===1&&removed.length&&added.length) {
+          const fields=fileRecordChanges(previous[0],next[0]);
+          changed.push('파일 바이트 동일·이름 차이: '+q(previous[0].name)+' → '+q(next[0].name)+
+            (fields.length?' / 연결 기록 변경: '+fields.join(', '):''));
+        } else {
+          const names=files=>files.map(file=>q(file.name)).join(', ');
+          changed.push('파일 바이트 동일·이름 목록 차이: 이전 '+names(previous)+' / 현재 '+names(next));
+        }
+        for(const file of [...removed,...added])grouped.add(file.name);
+      }
       for(const name of new Set([...oldFiles.keys(),...newFiles.keys()])) {
+        if(grouped.has(name))continue;
         const before=oldFiles.get(name),after=newFiles.get(name);
         if(!after)changed.push('이전 판에만 있는 파일: '+q(name)+' / '+paths.get(before.sha256));
         else if(!before)changed.push('현재 판에만 있는 파일: '+q(name)+' / '+paths.get(after.sha256));
         else if(before.sha256!==after.sha256)changed.push('파일 내용 변경: '+q(name)+' / 이전 '+paths.get(before.sha256)+' / 현재 '+paths.get(after.sha256));
         else {
-          const fields=[['input_hash','입력 지문'],['comparison_hash','비교 지문'],['template_version','양식 판본'],['blockers','추가확인 사유']].filter(([key])=>T.canonical(before[key])!==T.canonical(after[key])).map(([,label])=>label);
+          const fields=fileRecordChanges(before,after);
           if(fields.length)changed.push('파일 바이트 동일·기록 변경: '+q(name)+' / '+fields.join(', '));
         }
       }
@@ -176,7 +207,7 @@
       '', '3. 요구 항목별 근거 대조'];
     lines.splice(lines.length-1,0,'이전 승인 기록과 달라진 점',comparison.summary,
       ...(baseline?['비교 기준 이력 SHA-256: '+baseline.hash]:[]),
-      '파일 이름을 기준으로 바이트 지문과 연결 기록을 비교합니다. 숫자의 의미·사실성이나 새 승인을 판정하지 않습니다.',
+      '같은 이름의 파일은 내용과 연결 기록을 비교합니다. 파일 확인값(SHA-256)과 크기가 같은 파일의 이름은 함께 보여 줍니다. 내용의 사실성이나 새 승인은 별도로 확인하세요.',
       ...(comparison.items.length?comparison.items:[baseline?'비교한 계획·근거 대조·납품 파일·검토 의견·후속 점검 기록이 같습니다. 같은 기록도 현재 판의 승인을 대신하지 않습니다.':'현재 판의 근거와 파일을 아래 요약에서 확인하세요.']), '');
     for(const item of c.spec.requirements) {
       const row=c.checks.find(r=>r.id===item.id);
