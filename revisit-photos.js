@@ -172,16 +172,44 @@
       throw new Error("사진을 포함한 실적보고서가 20MB를 넘습니다.");
     return result;
   }
-  // 직접 고른 사진은 캔버스로 다시 만들어 EXIF(GPS·기기 정보)를 지운다(privacy.html 약속과 같게).
-  // 현장 앱이 이미 만든 JPEG처럼 메타데이터가 없는 JPEG는 바이트를 그대로 둬 현장 기록 지문(photo_sha256)과 맞게 한다.
+  // PNG·WebP에 위치·설명이 들어갈 수 있는 덩어리가 있는가. 모양이 어긋나면 있다고 본다(다시 만든다)
+  function hasMeta(b) {
+    const tag = (p) => String.fromCharCode(b[p], b[p + 1], b[p + 2], b[p + 3]);
+    const be = (p) => ((b[p] << 24) | (b[p + 1] << 16) | (b[p + 2] << 8) | b[p + 3]) >>> 0;
+    const le = (p) => (b[p] | (b[p + 1] << 8) | (b[p + 2] << 16) | (b[p + 3] << 24)) >>> 0;
+    if (b.length > 8 && b[0] === 0x89 && tag(1) === "PNG\r") {
+      for (let p = 8; p + 8 <= b.length; p += 12 + be(p)) {
+        const t = tag(p + 4);
+        if (["eXIf", "tEXt", "zTXt", "iTXt"].includes(t)) return true;
+        if (t === "IEND") return false;
+      }
+      return true;
+    }
+    if (b.length > 12 && tag(0) === "RIFF" && tag(8) === "WEBP") {
+      for (let p = 12; p + 8 <= b.length; p += 8 + le(p + 4) + (le(p + 4) & 1)) {
+        if (["EXIF", "XMP "].includes(tag(p))) return true;
+      }
+      return false;
+    }
+    return true;
+  }
+
+  // 직접 고른 사진 중 메타데이터(GPS·기기 정보)가 있는 것만 캔버스로 다시 만들어 지운다(privacy.html 약속과 같게).
+  // 메타데이터가 없는 사진은 바이트를 그대로 둔다: 현장 기록 지문(photo_sha256)과 원본 파일 지문이 그대로여야 한다
+  // (2026-11-28 공개판 survey_change_smoke가 PNG까지 다시 만든 것을 잡았다). JPEG는 현장 기록과 같은 checkPhoto로, PNG·WebP는 덩어리 이름으로 본다.
   async function clean(file) {
     const R = window.FieldRecord;
-    if (R && file instanceof Blob && /^image\/jpeg$/i.test(file.type || "")) {
-      try {
-        R.checkPhoto(new Uint8Array(await file.arrayBuffer()));
+    if (file instanceof Blob && file.size) {
+      const type = file.type || "";
+      if (R && /^image\/jpeg$/i.test(type)) {
+        try {
+          R.checkPhoto(new Uint8Array(await file.arrayBuffer()));
+          return file;
+        } catch {
+          // 메타데이터가 있거나 손상된 JPEG → 아래에서 다시 만든다(못 열면 thumbnail이 알린다)
+        }
+      } else if (/^image\/(png|webp)$/i.test(type) && !hasMeta(new Uint8Array(await file.arrayBuffer()))) {
         return file;
-      } catch {
-        // 메타데이터가 있거나 손상된 JPEG → 아래에서 다시 만든다(못 열면 thumbnail이 알린다)
       }
     }
     const image = await thumbnail(file, 2560, 2560, 0.9);
