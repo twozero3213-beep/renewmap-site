@@ -36,7 +36,7 @@
     <script src="task-store.js?v=20261127-current-export" defer></script>
     <script src="field/store.js" defer></script>
     <script src="docgen.js?v=20261122-r23" defer></script>
-    <script src="tasks-files.js?v=20261127-r69-resupply" defer></script>
+    <script src="tasks-files.js?v=20261127-r70-list-fingerprint" defer></script>
     <script src="task-cloud-config.js?v=20261119-r3" defer></script>
     <script src="task-cloud.js?v=20261120-r11" defer></script>
     <script src="task-cloud-ui.js?v=20261119-w2" defer></script>
@@ -49,7 +49,7 @@
     <script src="revisit-photos.js?v=20261119-r3" defer></script>
     <script src="revisit-report-ui.js?v=20261119-r3" defer></script>
     <script src="task-followup-ui.js?v=20261127-r55" defer></script>
-    <script src="tasks-app.js?v=20261127-r69-resupply" defer></script>
+    <script src="tasks-app.js?v=20261127-r70-list-fingerprint" defer></script>
   <link rel="stylesheet" href="rm6.css?v=20261122-r24">
 </head>
   <body>
@@ -75,6 +75,8 @@
         <p id="receivedResetHelp" class="task-help">중복·목록 밖 파일을 빼려면 보탠 파일까지 포함해 여기에서 다시 골라 주세요.</p>
         <button type="button" id="receivedCheck">받은 파일 대조하기</button>
         <p id="receivedStatus" role="status" tabindex="-1"></p>
+        <p id="receivedFingerprint" class="task-hash" hidden>원본 목록 파일 SHA-256 <code id="receivedListSha"></code></p>
+        <button type="button" id="receivedConfirmation" hidden>대조 일치 결과 받기(TXT)</button>
         <ul id="receivedIssues" class="task-hash" aria-label="파일 대조에서 확인이 필요한 항목"></ul>
         <div id="receivedRequestSection" hidden>
           <p class="task-help">누락·불일치가 있는 파일의 ZIP 경로·크기·사유만 요청서에 담습니다.</p>

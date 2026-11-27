@@ -22,11 +22,14 @@
     busy = false,
     cloud = null;
   const receivedList = $("receivedList"), receivedFiles = $("receivedFiles"), receivedMore = $("receivedMore");
-  const receivedControls = [receivedList, receivedFiles, receivedMore, $("receivedCheck"), $("receivedRequest"), $("receivedAdd")];
+  const receivedControls = [receivedList, receivedFiles, receivedMore, $("receivedCheck"), $("receivedRequest"), $("receivedAdd"), $("receivedConfirmation")];
   let receivedState = null, receiving = false;
   function clearReceipt() {
     receivedState = null;
     $("receivedRequestSection").hidden = true;
+    $("receivedConfirmation").hidden = true;
+    $("receivedFingerprint").hidden = true;
+    $("receivedListSha").textContent = "";
     $("receivedStatus").textContent = "";
     $("receivedIssues").replaceChildren();
     $("receivedAddStatus").textContent = "";
@@ -50,6 +53,9 @@
         : basis + "가 모두 일치합니다.";
       $("receivedIssues").replaceChildren(...result.issues.map(li));
       $("receivedRequestSection").hidden = !result.request;
+      $("receivedConfirmation").hidden = !result.confirmation;
+      $("receivedFingerprint").hidden = !result.listSha;
+      $("receivedListSha").textContent = result.listSha;
       if (adding) {
         message.textContent = "보탠 파일과 앞서 고른 파일을 다시 대조했습니다.";
         if (!result.request) $("receivedStatus").focus();
@@ -67,6 +73,11 @@
     const result = receivedState?.result;
     if (receiving || !result?.request) return;
     D.saveBytes("renewmap-resend-v" + result.revision + ".txt", result.request, "text/plain;charset=utf-8");
+  });
+  $("receivedConfirmation").addEventListener("click", () => {
+    const result = receivedState?.result;
+    if (receiving || !result?.confirmation) return;
+    D.saveBytes("renewmap-delivery-match-v" + result.revision + "-" + result.listSha.slice(0, 12) + ".txt", result.confirmation, "text/plain;charset=utf-8");
   });
   $("receivedAdd").addEventListener("click", () => {
     if (receiving || !receivedState) return;

@@ -280,6 +280,24 @@ def main():
                 recipient.locator('#receivedCheck').click()
                 expect(recipient.locator('#receivedStatus')).to_contain_text('모두 일치')
                 result['checks'].append('recipient_downloads_minimal_resend_request_and_checks_replacement')
+                digest = hashlib.sha256(receipt_payload).hexdigest()
+                expect(recipient.locator('#receivedListSha')).to_have_text(digest)
+                with recipient.expect_download() as matched:
+                    recipient.locator('#receivedConfirmation').click()
+                confirmation = args.output / 'synthetic-received-match.txt'
+                matched.value.save_as(confirmation)
+                text = confirmation.read_text(encoding='utf-8')
+                assert digest in text and '실제 파일 1개 모두 일치' in text
+                assert original['name'] not in text and original['path'] not in text
+                manifest_changed = receipt_payload + b'\n'
+                recipient.locator('#receivedList').set_input_files({
+                    'name': '전달_파일_목록.json', 'mimeType': 'application/json', 'buffer': manifest_changed,
+                })
+                expect(recipient.locator('#receivedConfirmation')).to_be_hidden()
+                expect(recipient.locator('#receivedListSha')).to_be_hidden()
+                recipient.locator('#receivedCheck').click()
+                expect(recipient.locator('#receivedListSha')).to_have_text(hashlib.sha256(manifest_changed).hexdigest())
+                result['checks'].append('recipient_match_report_uses_exact_input_manifest_bytes')
                 assert recipient.evaluate('async()=>[(await TaskStore.list()).length,(await FieldStore.docs()).length]') == [0,0]
                 assert not requests
             finally:

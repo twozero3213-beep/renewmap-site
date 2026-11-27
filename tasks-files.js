@@ -140,10 +140,10 @@
         if(total>MAX)throw bad();
       }
     }
-    return {receipt,paths};
+    return {receipt,paths,bytes};
   }
   async function verifyDelivery(list,files) {
-    const {receipt,paths}=await readDeliveryList(list);
+    const {receipt,paths,bytes}=await readDeliveryList(list);
     if(!Array.isArray(files)||files.length>MAX_FILES*2)
       throw new Error('한 번에 파일을 1,000개 이하로 골라 주세요.');
     const picked=new Map();
@@ -180,7 +180,17 @@
       '',
       ...resend.map(row=>row.reason+' / '+row.path+' / '+row.size+'바이트'),
     ].join('\n')+'\n':'';
-    return {revision:receipt.revision,selected:receipt.selected_count,count:paths.size,matched,issues,resend,request};
+    const listSha=!issues.length&&matched===paths.size?await T.hash(bytes):'';
+    const confirmation=listSha?[
+      '리뉴맵 받은 전달 파일 대조 결과',
+      '받은 목록 v'+receipt.revision+' · 목록 이름 '+receipt.selected_count+'개',
+      '실제 파일 '+paths.size+'개 모두 일치',
+      '원본 목록 파일 SHA-256 '+listSha,
+      '목록 파일의 원본 바이트를 기준으로 계산했습니다. 공백이나 줄바꿈이 달라져도 값은 바뀝니다.',
+      '선택한 파일의 이름·크기·SHA-256이 받은 전달 목록과 일치합니다.',
+      '발신자 신원·기관 승인·자료 내용의 사실 여부는 별도 증빙으로 확인하세요.',
+    ].join('\n')+'\n':'';
+    return {revision:receipt.revision,selected:receipt.selected_count,count:paths.size,matched,issues,resend,request,listSha,confirmation};
   }
   async function read(text){
     textSize(text);const b=JSON.parse(text);
