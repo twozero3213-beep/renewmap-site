@@ -354,6 +354,34 @@ def main():
                 expect(recipient.locator('#sentDiffItems')).to_contain_text('synthetic-alias.txt')
                 expect(recipient.locator('#sentDiffNotes')).to_contain_text('같은 확인값·크기의 이름 목록 차이')
                 result['checks'].append('two_delivery_lists_distinguish_names_and_raw_json_bytes')
+                summary_button = recipient.locator('#sentDiffShare')
+                detail_button = recipient.locator('#sentDiffDownload')
+                with recipient.expect_download() as summary_download:
+                    summary_button.click()
+                summary_path = args.output / 'synthetic-list-diff-summary.txt'
+                summary_download.value.save_as(summary_path)
+                summary_text = summary_path.read_text(encoding='utf-8')
+                with recipient.expect_download() as detail_download:
+                    detail_button.click()
+                detail_path = args.output / 'synthetic-list-diff-detail.txt'
+                detail_download.value.save_as(detail_path)
+                detail_text = detail_path.read_text(encoding='utf-8')
+                for text in (summary_text,detail_text):
+                    assert digest in text
+                    assert hashlib.sha256(json.dumps(alias_list).encode('utf-8')).hexdigest() in text
+                assert 'synthetic-alias.txt' in detail_text
+                assert 'synthetic-alias.txt' not in summary_text and original['name'] not in summary_text
+                assert '추가 1건' in summary_text and '제외 1건' in summary_text
+                compare_other.set_input_files({
+                    'name':'잘못된 목록.json','mimeType':'application/json','buffer':b'{}',
+                })
+                expect(summary_button).to_be_hidden()
+                expect(detail_button).to_be_hidden()
+                compare_switch.click()
+                expect(recipient.locator('#sentDiffStatus')).to_contain_text('형식')
+                expect(summary_button).to_be_hidden()
+                expect(detail_button).to_be_hidden()
+                result['checks'].append('list_diff_exports_safe_scope_summary_and_clears_stale_downloads')
                 assert recipient.evaluate('async()=>[(await TaskStore.list()).length,(await FieldStore.docs()).length]') == [0,0]
                 assert not requests
             finally:

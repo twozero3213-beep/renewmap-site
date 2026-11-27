@@ -205,23 +205,27 @@
     const {receipt:after,bytes:afterBytes}=await readDeliveryList(afterFile);
     const oldFiles=new Map(before.files.map(file=>[file.name,file]));
     const newFiles=new Map(after.files.map(file=>[file.name,file]));
-    const changes=[];
+    const changes=[],counts=new Map([['추가',0],['제외',0],['확인값 변경',0],['기록된 크기 변경',0]]);
+    const addChange=(kind,name,detail='')=>{
+      counts.set(kind,counts.get(kind)+1);
+      changes.push(kind+' · '+quoteText(name)+detail);
+    };
     for(const [name,file] of oldFiles) {
       const next=newFiles.get(name);
-      if(!next)changes.push('제외 · '+quoteText(name));
-      else if(file.sha256!==next.sha256)changes.push('확인값 변경 · '+quoteText(name));
-      else if(file.size!==next.size)changes.push('기록된 크기 변경 · '+quoteText(name)+' / '+file.size+'바이트에서 '+next.size+'바이트');
+      if(!next)addChange('제외',name);
+      else if(file.sha256!==next.sha256)addChange('확인값 변경',name);
+      else if(file.size!==next.size)addChange('기록된 크기 변경',name,' / '+file.size+'바이트에서 '+next.size+'바이트');
     }
     for(const name of newFiles.keys())if(!oldFiles.has(name))
-      changes.push('추가 · '+quoteText(name));
-    const notes=[];
+      addChange('추가',name);
+    const notes=[],aliases=[];
     const oldGroups=groupByBytes(before.files),newGroups=groupByBytes(after.files);
     for(const [key,previous] of oldGroups) {
       const next=newGroups.get(key);
       if(!next)continue;
       const names=new Set(next.map(row=>row.name));
       if(previous.length!==next.length||previous.some(row=>!names.has(row.name)))
-        notes.push('같은 확인값·크기의 이름 목록 차이 · 보관 '+previous.map(row=>quoteText(row.name)).join(', ')+
+        aliases.push('같은 확인값·크기의 이름 목록 차이 · 보관 '+previous.map(row=>quoteText(row.name)).join(', ')+
           ' / 비교 '+next.map(row=>quoteText(row.name)).join(', '));
     }
     const fields=[
@@ -232,11 +236,25 @@
     if(changedFields.length)notes.push('목록 기록 정보 변경 · '+changedFields.join(', '));
     if(!changes.length&&before.files.some((row,index)=>row.name!==after.files[index].name))
       notes.push('선택 파일 항목 순서가 달라졌습니다.');
-    const rawSame=await T.hash(beforeBytes)===await T.hash(afterBytes);
+    const beforeSha=await T.hash(beforeBytes),afterSha=await T.hash(afterBytes);
+    const rawSame=beforeSha===afterSha;
     if(rawSame)notes.unshift('JSON 원본 바이트 일치');
     else if(!changes.length&&!notes.length)notes.push('목록의 기록 내용과 순서는 같습니다. JSON 원본 바이트가 다릅니다.');
     else notes.unshift('JSON 원본 바이트가 다릅니다.');
-    return {before:before.revision,after:after.revision,changes,notes};
+    const header=[
+      '리뉴맵 두 전달 목록 비교 기록',
+      '보관 목록 v'+before.revision+' · JSON SHA-256 '+beforeSha,
+      '비교 목록 v'+after.revision+' · JSON SHA-256 '+afterSha,
+      '선택 파일 항목 차이 '+changes.length+'건',
+      '이 기록은 두 JSON에 적힌 파일 항목과 목록 원본 바이트를 대조한 결과입니다.',
+    ];
+    const detailNotes=[...notes,...aliases];
+    const detail=[...header,'','항목별 차이',...changes,'','목록 비교 참고',...detailNotes].join('\n')+'\n';
+    const share=[...header,'','공유용 요약',
+      ...[...counts].map(([kind,count])=>kind+' '+count+'건'),
+      '같은 확인값·크기의 이름 묶음 차이 '+aliases.length+'건','',...notes,
+    ].join('\n')+'\n';
+    return {before:before.revision,after:after.revision,changes,notes:detailNotes,detail,share};
   }
   async function verifyDelivery(list,files) {
     const {receipt,paths,bytes}=await readDeliveryList(list);

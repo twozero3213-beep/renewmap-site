@@ -156,7 +156,12 @@
     }
   });
   const diffBase = $("sentDiffBase"), diffOther = $("sentDiffOther"), diffCheck = $("sentDiffCheck");
+  const diffDownload = $("sentDiffDownload"), diffShare = $("sentDiffShare");
+  let diffResult = null;
   function clearSentDiff() {
+    diffResult = null;
+    diffDownload.hidden = true;
+    diffShare.hidden = true;
     $("sentDiffStatus").textContent = "";
     $("sentDiffItems").replaceChildren();
     $("sentDiffNotes").replaceChildren();
@@ -169,7 +174,7 @@
   }
   diffCheck.addEventListener("click", async () => {
     if (diffCheck.disabled) return;
-    const controls = [diffBase, diffOther, diffCheck];
+    const controls = [diffBase, diffOther, diffCheck, diffDownload, diffShare];
     controls.forEach(control => { control.disabled = true; });
     clearSentDiff();
     $("sentDiffStatus").textContent = "두 목록을 대조하고 있습니다.";
@@ -181,11 +186,22 @@
         : source + " · 선택 파일 항목 일치";
       $("sentDiffItems").replaceChildren(...result.changes.map(li));
       $("sentDiffNotes").replaceChildren(...result.notes.map(li));
+      diffResult = result;
+      diffDownload.hidden = false;
+      diffShare.hidden = false;
     } catch (error) {
       $("sentDiffStatus").textContent = error.message || "두 목록을 대조하지 못했습니다.";
     } finally {
       controls.forEach(control => { control.disabled = false; });
     }
+  });
+  diffDownload.addEventListener("click", () => {
+    if (diffDownload.disabled || !diffResult) return;
+    D.saveBytes("renewmap-list-diff-detail.txt", diffResult.detail, "text/plain;charset=utf-8");
+  });
+  diffShare.addEventListener("click", () => {
+    if (diffShare.disabled || !diffResult) return;
+    D.saveBytes("renewmap-list-diff-summary.txt", diffResult.share, "text/plain;charset=utf-8");
   });
   const deliveryPicks = new Set();
   let deliveryHead = null;
