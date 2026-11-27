@@ -172,26 +172,34 @@
       throw new Error("사진을 포함한 실적보고서가 20MB를 넘습니다.");
     return result;
   }
-  // PNG·WebP에 위치·설명이 들어갈 수 있는 덩어리가 있는가. 모양이 어긋나면 있다고 본다(다시 만든다)
-  function hasMeta(b) {
+  // PNG·WebP를 그대로 둬도 되는가. 허용한 그림 덩어리만 있고 끝이 정확히 맞을 때만 true(그 밖은 다시 만든다: 실패하면 닫힌 쪽).
+  // 2026-11-28 보안 검토: IEND 뒤에 붙인 덩어리나 RIFF 크기와 어긋난 WebP로 메타데이터가 빠져나가지 않게 허용 목록·정확한 끝을 본다.
+  const PNG_OK = new Set(["IHDR", "PLTE", "IDAT", "IEND", "tRNS", "gAMA", "cHRM", "sRGB", "iCCP", "sBIT", "bKGD", "pHYs"]);
+  const WEBP_OK = new Set(["VP8 ", "VP8L", "VP8X", "ALPH"]);
+  function plain(b) {
     const tag = (p) => String.fromCharCode(b[p], b[p + 1], b[p + 2], b[p + 3]);
     const be = (p) => ((b[p] << 24) | (b[p + 1] << 16) | (b[p + 2] << 8) | b[p + 3]) >>> 0;
     const le = (p) => (b[p] | (b[p + 1] << 8) | (b[p + 2] << 16) | (b[p + 3] << 24)) >>> 0;
-    if (b.length > 8 && b[0] === 0x89 && tag(1) === "PNG\r") {
-      for (let p = 8; p + 8 <= b.length; p += 12 + be(p)) {
-        const t = tag(p + 4);
-        if (["eXIf", "tEXt", "zTXt", "iTXt"].includes(t)) return true;
-        if (t === "IEND") return false;
-      }
-      return true;
-    }
-    if (b.length > 12 && tag(0) === "RIFF" && tag(8) === "WEBP") {
-      for (let p = 12; p + 8 <= b.length; p += 8 + le(p + 4) + (le(p + 4) & 1)) {
-        if (["EXIF", "XMP "].includes(tag(p))) return true;
+    if (b.length > 8 && b[0] === 0x89 && tag(1) === "PNG\r" && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a) {
+      for (let p = 8; p + 12 <= b.length; ) {
+        const t = tag(p + 4), end = p + 12 + be(p);
+        if (!PNG_OK.has(t) || end > b.length) return false;
+        if (t === "IEND") return end === b.length;
+        p = end;
       }
       return false;
     }
-    return true;
+    if (b.length > 20 && tag(0) === "RIFF" && tag(8) === "WEBP" && le(4) + 8 === b.length) {
+      for (let p = 12; p < b.length; ) {
+        if (p + 8 > b.length) return false;
+        const t = tag(p), n = le(p + 4), end = p + 8 + n + (n & 1);
+        if (!WEBP_OK.has(t) || end > b.length) return false;
+        if (t === "VP8X" && (n < 1 || b[p + 8] & 0x0c)) return false;   // VP8X 플래그의 EXIF(0x08)·XMP(0x04)
+        p = end;
+      }
+      return true;
+    }
+    return false;
   }
 
   // 직접 고른 사진 중 메타데이터(GPS·기기 정보)가 있는 것만 캔버스로 다시 만들어 지운다(privacy.html 약속과 같게).
@@ -208,7 +216,7 @@
         } catch {
           // 메타데이터가 있거나 손상된 JPEG → 아래에서 다시 만든다(못 열면 thumbnail이 알린다)
         }
-      } else if (/^image\/(png|webp)$/i.test(type) && !hasMeta(new Uint8Array(await file.arrayBuffer()))) {
+      } else if (/^image\/(png|webp)$/i.test(type) && plain(new Uint8Array(await file.arrayBuffer()))) {
         return file;
       }
     }
