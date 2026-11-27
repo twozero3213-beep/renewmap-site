@@ -155,6 +155,38 @@
       controls.forEach(control => { control.disabled = false; });
     }
   });
+  const diffBase = $("sentDiffBase"), diffOther = $("sentDiffOther"), diffCheck = $("sentDiffCheck");
+  function clearSentDiff() {
+    $("sentDiffStatus").textContent = "";
+    $("sentDiffItems").replaceChildren();
+    $("sentDiffNotes").replaceChildren();
+  }
+  diffBase.addEventListener("change", clearSentDiff);
+  diffOther.addEventListener("change", clearSentDiff);
+  if (location.hash === "#sentDiff") {
+    $("sentDelivery").open = true;
+    $("sentDiff").open = true;
+  }
+  diffCheck.addEventListener("click", async () => {
+    if (diffCheck.disabled) return;
+    const controls = [diffBase, diffOther, diffCheck];
+    controls.forEach(control => { control.disabled = true; });
+    clearSentDiff();
+    $("sentDiffStatus").textContent = "두 목록을 대조하고 있습니다.";
+    try {
+      const result = await B.compareDeliveryLists(diffBase.files[0], diffOther.files[0]);
+      const source = "보관 v" + result.before + " · 비교 v" + result.after;
+      $("sentDiffStatus").textContent = result.changes.length
+        ? source + " · 선택 파일 항목 차이 " + result.changes.length + "건"
+        : source + " · 선택 파일 항목 일치";
+      $("sentDiffItems").replaceChildren(...result.changes.map(li));
+      $("sentDiffNotes").replaceChildren(...result.notes.map(li));
+    } catch (error) {
+      $("sentDiffStatus").textContent = error.message || "두 목록을 대조하지 못했습니다.";
+    } finally {
+      controls.forEach(control => { control.disabled = false; });
+    }
+  });
   const deliveryPicks = new Set();
   let deliveryHead = null;
   const say = (text) => {

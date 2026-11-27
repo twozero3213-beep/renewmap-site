@@ -36,7 +36,7 @@
     <script src="task-store.js?v=20261127-current-export" defer></script>
     <script src="field/store.js" defer></script>
     <script src="docgen.js?v=20261122-r23" defer></script>
-    <script src="tasks-files.js?v=20261127-r72-list-copies" defer></script>
+    <script src="tasks-files.js?v=20261127-r73-list-difference" defer></script>
     <script src="task-cloud-config.js?v=20261119-r3" defer></script>
     <script src="task-cloud.js?v=20261120-r11" defer></script>
     <script src="task-cloud-ui.js?v=20261119-w2" defer></script>
@@ -49,7 +49,7 @@
     <script src="revisit-photos.js?v=20261119-r3" defer></script>
     <script src="revisit-report-ui.js?v=20261119-r3" defer></script>
     <script src="task-followup-ui.js?v=20261127-r55" defer></script>
-    <script src="tasks-app.js?v=20261127-r72-list-copies" defer></script>
+    <script src="tasks-app.js?v=20261127-r73-list-difference" defer></script>
   <link rel="stylesheet" href="rm6.css?v=20261122-r24">
 </head>
   <body>
@@ -97,6 +97,16 @@
         <p id="sentCopies" class="task-help" hidden></p>
         <ul id="sentCandidates" class="task-hash" aria-label="후보 목록 대조 결과"></ul>
         <p id="sentFingerprint" class="task-hash" hidden>보관한 목록의 SHA-256 <code id="sentListSha"></code></p>
+        <details id="sentDiff">
+          <summary>두 전달 목록의 차이 보기</summary>
+          <p class="task-help">각 ZIP에서 푼 전달_파일_목록.json을 골라 주세요.<br>목록에 적힌 파일 이름·크기·확인값을 이 기기에서 대조합니다.</p>
+          <label>발신자가 보관한 목록(JSON)<input type="file" id="sentDiffBase" accept=".json,application/json"></label>
+          <label>수신자와 비교할 목록(JSON)<input type="file" id="sentDiffOther" accept=".json,application/json"></label>
+          <button type="button" id="sentDiffCheck">두 목록 대조하기</button>
+          <p id="sentDiffStatus" role="status"></p>
+          <ul id="sentDiffItems" class="task-hash" aria-label="파일 항목 차이"></ul>
+          <ul id="sentDiffNotes" class="task-hash" aria-label="목록 형식과 기록 정보 차이"></ul>
+        </details>
       </details>
       <div class="task-layout">
       <aside class="task-aside" aria-label="과업 고르기와 작성자">

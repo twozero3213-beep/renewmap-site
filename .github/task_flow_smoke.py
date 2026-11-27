@@ -298,7 +298,7 @@ def main():
                 recipient.locator('#receivedCheck').click()
                 expect(recipient.locator('#receivedListSha')).to_have_text(hashlib.sha256(manifest_changed).hexdigest())
                 result['checks'].append('recipient_match_report_uses_exact_input_manifest_bytes')
-                recipient.locator('#sentDelivery summary').click()
+                recipient.locator('#sentDelivery > summary').click()
                 sender_list = recipient.locator('#sentList')
                 response_text = recipient.locator('#sentValue')
                 sender_list.set_input_files({
@@ -331,6 +331,29 @@ def main():
                 expect(candidates.nth(2)).to_contain_text('같은 판')
                 expect(candidates.nth(3)).to_contain_text('대조 못함')
                 result['checks'].append('sender_finds_identical_copies_in_mixed_batch_without_hiding_errors')
+                recipient.locator('#sentDiff summary').click()
+                compare_base = recipient.locator('#sentDiffBase')
+                compare_other = recipient.locator('#sentDiffOther')
+                compare_switch = recipient.locator('#sentDiffCheck')
+                compare_base.set_input_files({
+                    'name':'보관 목록.json','mimeType':'application/json','buffer':receipt_payload,
+                })
+                compare_other.set_input_files({
+                    'name':'비교 목록.json','mimeType':'application/json','buffer':manifest_changed,
+                })
+                compare_switch.click()
+                expect(recipient.locator('#sentDiffStatus')).to_contain_text('선택 파일 항목 일치')
+                expect(recipient.locator('#sentDiffNotes')).to_contain_text('원본 바이트가 다릅니다')
+                alias_list = json.loads(receipt_payload)
+                alias_list['files'][0]['name'] = 'synthetic-alias.txt'
+                compare_other.set_input_files({
+                    'name':'이름 변경 목록.json','mimeType':'application/json','buffer':json.dumps(alias_list).encode('utf-8'),
+                })
+                expect(recipient.locator('#sentDiffNotes li')).to_have_count(0)
+                compare_switch.click()
+                expect(recipient.locator('#sentDiffItems')).to_contain_text('synthetic-alias.txt')
+                expect(recipient.locator('#sentDiffNotes')).to_contain_text('같은 확인값·크기의 이름 목록 차이')
+                result['checks'].append('two_delivery_lists_distinguish_names_and_raw_json_bytes')
                 assert recipient.evaluate('async()=>[(await TaskStore.list()).length,(await FieldStore.docs()).length]') == [0,0]
                 assert not requests
             finally:

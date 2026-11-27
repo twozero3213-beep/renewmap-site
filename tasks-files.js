@@ -200,6 +200,44 @@
     }
     return rows;
   }
+  async function compareDeliveryLists(beforeFile,afterFile) {
+    const {receipt:before,bytes:beforeBytes}=await readDeliveryList(beforeFile);
+    const {receipt:after,bytes:afterBytes}=await readDeliveryList(afterFile);
+    const oldFiles=new Map(before.files.map(file=>[file.name,file]));
+    const newFiles=new Map(after.files.map(file=>[file.name,file]));
+    const changes=[];
+    for(const [name,file] of oldFiles) {
+      const next=newFiles.get(name);
+      if(!next)changes.push('제외 · '+quoteText(name));
+      else if(file.sha256!==next.sha256)changes.push('확인값 변경 · '+quoteText(name));
+      else if(file.size!==next.size)changes.push('기록된 크기 변경 · '+quoteText(name)+' / '+file.size+'바이트에서 '+next.size+'바이트');
+    }
+    for(const name of newFiles.keys())if(!oldFiles.has(name))
+      changes.push('추가 · '+quoteText(name));
+    const notes=[];
+    const oldGroups=groupByBytes(before.files),newGroups=groupByBytes(after.files);
+    for(const [key,previous] of oldGroups) {
+      const next=newGroups.get(key);
+      if(!next)continue;
+      const names=new Set(next.map(row=>row.name));
+      if(previous.length!==next.length||previous.some(row=>!names.has(row.name)))
+        notes.push('같은 확인값·크기의 이름 목록 차이 · 보관 '+previous.map(row=>quoteText(row.name)).join(', ')+
+          ' / 비교 '+next.map(row=>quoteText(row.name)).join(', '));
+    }
+    const fields=[
+      ['revision','판 번호'],['source_state','과업 상태 기록'],
+      ['current_count','과업판 전체 파일 수'],['head_sha256','과업판 확인값'],
+    ];
+    const changedFields=fields.filter(([key])=>before[key]!==after[key]).map(([,label])=>label);
+    if(changedFields.length)notes.push('목록 기록 정보 변경 · '+changedFields.join(', '));
+    if(!changes.length&&before.files.some((row,index)=>row.name!==after.files[index].name))
+      notes.push('선택 파일 항목 순서가 달라졌습니다.');
+    const rawSame=await T.hash(beforeBytes)===await T.hash(afterBytes);
+    if(rawSame)notes.unshift('JSON 원본 바이트 일치');
+    else if(!changes.length&&!notes.length)notes.push('목록의 기록 내용과 순서는 같습니다. JSON 원본 바이트가 다릅니다.');
+    else notes.unshift('JSON 원본 바이트가 다릅니다.');
+    return {before:before.revision,after:after.revision,changes,notes};
+  }
   async function verifyDelivery(list,files) {
     const {receipt,paths,bytes}=await readDeliveryList(list);
     if(!Array.isArray(files)||files.length>MAX_FILES*2)
@@ -485,5 +523,5 @@
       '파일 확인값(SHA-256)은 파일이 바뀌었는지만 알려 줍니다. 작성자 신원·현장 촬영 사실·얼굴 가림·기관 승인과 내용이 사실인지는 증명하지 않습니다.');
     return {text:lines.join('\n')+'\n',summary,attention,comparison,recovery};
   }
-  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,verifyDelivery,compareSentDelivery,findSentDeliveries,read,from64,handover,inspectRecovery,matchRecoveryFile};
+  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,verifyDelivery,compareSentDelivery,findSentDeliveries,compareDeliveryLists,read,from64,handover,inspectRecovery,matchRecoveryFile};
 });
