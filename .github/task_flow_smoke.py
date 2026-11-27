@@ -314,6 +314,23 @@ def main():
                 expect(recipient.locator('#sentStatus')).to_contain_text('확인값 일치')
                 expect(recipient.locator('#sentStatus')).to_contain_text('다릅니다')
                 result['checks'].append('sender_matches_real_recipient_report_without_accepting_changed_counts')
+                sender_list.set_input_files([
+                    {'name':'changed.json','mimeType':'application/json','buffer':manifest_changed},
+                    {'name':'original.json','mimeType':'application/json','buffer':receipt_payload},
+                    {'name':'invalid.json','mimeType':'application/json','buffer':b'{}'},
+                    {'name':'copy.json','mimeType':'application/json','buffer':receipt_payload},
+                ])
+                response_text.fill(text)
+                recipient.locator('#sentCheck').click()
+                expect(recipient.locator('#sentStatus')).to_contain_text('일치 2개')
+                expect(recipient.locator('#sentStatus')).to_contain_text('대조 못함 1개')
+                expect(recipient.locator('#sentCopies')).to_contain_text('같은 원본의 사본 2개')
+                candidates = recipient.locator('#sentCandidates li')
+                expect(candidates.first).to_contain_text('original.json')
+                expect(candidates.nth(1)).to_contain_text('copy.json')
+                expect(candidates.nth(2)).to_contain_text('같은 판')
+                expect(candidates.nth(3)).to_contain_text('대조 못함')
+                result['checks'].append('sender_finds_identical_copies_in_mixed_batch_without_hiding_errors')
                 assert recipient.evaluate('async()=>[(await TaskStore.list()).length,(await FieldStore.docs()).length]') == [0,0]
                 assert not requests
             finally:

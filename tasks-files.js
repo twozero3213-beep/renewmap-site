@@ -111,9 +111,11 @@
   const MAX_DELIVERY_LIST=2*1024*1024;
   async function readDeliveryList(file) {
     if(!(file instanceof Blob)||!file.size||file.size>MAX_DELIVERY_LIST)
-      throw new Error('압축을 푼 2MB 이하의 전달_파일_목록.json을 골라 주세요.');
-    const bad=()=>new Error('리뉴맵 선택 전달 파일 목록의 형식을 확인해 주세요.');
-    const bytes=await file.arrayBuffer();
+      throw Object.assign(new Error('압축을 푼 2MB 이하의 전달_파일_목록.json을 골라 주세요.'),{code:'sent-list-size'});
+    const bad=()=>Object.assign(new Error('리뉴맵 선택 전달 파일 목록의 형식을 확인해 주세요.'),{code:'sent-list-format'});
+    let bytes;
+    try { bytes=await file.arrayBuffer(); }
+    catch (_) { throw Object.assign(new Error('선택한 목록 파일을 읽지 못했습니다.'),{code:'sent-list-read'}); }
     let receipt;
     try { receipt=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)); }
     catch (_) { throw bad(); }
@@ -153,7 +155,7 @@
       '발신자 신원·기관 승인·자료 내용의 사실 여부는 별도 증빙으로 확인하세요.',
     ].join('\n')+'\n';
   }
-  async function compareSentDelivery(list,value) {
+  function readSentClaim(value) {
     const bad=()=>new Error('받은 확인값 64자리나 리뉴맵 대조 결과 TXT 전체의 형식을 확인해 주세요.');
     if(typeof value!=='string'||value.length>4096)throw bad();
     const text=value.trim().replace(/\r\n/g,'\n');
@@ -169,12 +171,34 @@
       if(!Number.isSafeInteger(report.revision)||report.selected_count>MAX_FILES||report.count>report.selected_count||
          deliveryConfirmation(report,report.count,expected).trimEnd()!==text)throw bad();
     }
+    return {expected,report};
+  }
+  async function compareSentList(list,{expected,report}) {
     const {receipt,paths,bytes}=await readDeliveryList(list);
     const localSha=await T.hash(bytes);
-    if(localSha!==expected)return {localSha,state:'different-list'};
+    if(localSha!==expected)return {localSha,state:'different-list',sameRevision:report?.revision===receipt.revision};
     if(!report)return {localSha,state:'same-digest'};
     const matches=report.revision===receipt.revision&&report.selected_count===receipt.selected_count&&report.count===paths.size;
     return {localSha,state:matches?'same-report':'different-report'};
+  }
+  async function compareSentDelivery(list,value) {
+    const {localSha,state}=await compareSentList(list,readSentClaim(value));
+    return {localSha,state};
+  }
+  const sentListErrors=new Set(['sent-list-size','sent-list-format','sent-list-read']);
+  async function findSentDeliveries(lists,value) {
+    if(!Array.isArray(lists)||!lists.length||lists.length>12)
+      throw new Error('보관 목록을 한 번에 12개 이하로 골라 주세요.');
+    const claim=readSentClaim(value), rows=[];
+    for(const list of lists) {
+      const name=quoteText(list.name);
+      try { rows.push({name,...await compareSentList(list,claim)}); }
+      catch (error) {
+        if(!sentListErrors.has(error.code))throw error;
+        rows.push({name,state:error.code});
+      }
+    }
+    return rows;
   }
   async function verifyDelivery(list,files) {
     const {receipt,paths,bytes}=await readDeliveryList(list);
@@ -461,5 +485,5 @@
       '파일 확인값(SHA-256)은 파일이 바뀌었는지만 알려 줍니다. 작성자 신원·현장 촬영 사실·얼굴 가림·기관 승인과 내용이 사실인지는 증명하지 않습니다.');
     return {text:lines.join('\n')+'\n',summary,attention,comparison,recovery};
   }
-  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,verifyDelivery,compareSentDelivery,read,from64,handover,inspectRecovery,matchRecoveryFile};
+  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,verifyDelivery,compareSentDelivery,findSentDeliveries,read,from64,handover,inspectRecovery,matchRecoveryFile};
 });

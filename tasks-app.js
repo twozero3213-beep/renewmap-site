@@ -98,6 +98,9 @@
     $("sentStatus").textContent = "";
     $("sentFingerprint").hidden = true;
     $("sentListSha").textContent = "";
+    $("sentCandidates").replaceChildren();
+    $("sentCopies").hidden = true;
+    $("sentCopies").textContent = "";
   }
   sentList.addEventListener("change", clearSentDelivery);
   sentValue.addEventListener("input", clearSentDelivery);
@@ -109,13 +112,40 @@
     clearSentDelivery();
     $("sentStatus").textContent = "보관한 목록을 대조하고 있습니다.";
     try {
-      const result = await B.compareSentDelivery(sentList.files[0], sentValue.value);
       const statuses = {
         "different-list": "보관한 목록의 원본 바이트가 받은 확인값과 다릅니다.",
         "same-digest": "보관한 목록과 받은 확인값이 일치합니다.",
         "same-report": "보관한 목록과 결과 TXT가 일치합니다. 확인값·판·이름 수·실제 파일 수를 대조했습니다.",
         "different-report": "목록 확인값 일치 · 결과 TXT의 판 또는 파일 수가 보관한 목록과 다릅니다.",
+        "sent-list-size": "대조 못함 · 목록은 2MB 이하여야 합니다.",
+        "sent-list-format": "대조 못함 · 전달 파일 목록의 형식을 확인해 주세요.",
+        "sent-list-read": "대조 못함 · 파일을 읽지 못했습니다.",
       };
+      const lists = [...sentList.files];
+      if (lists.length > 1) {
+        const rows = await B.findSentDeliveries(lists, sentValue.value);
+        const matched = new Set(rows.filter(row => row.state === "same-digest" || row.state === "same-report"));
+        const unchecked = rows.filter(row => row.state.startsWith("sent-list-")).length;
+        $("sentStatus").textContent = "후보 " + rows.length + "개 · 일치 " + matched.size + "개"
+          + (unchecked ? " · 대조 못함 " + unchecked + "개" : "");
+        if (matched.size > 1) {
+          $("sentCopies").textContent = "같은 원본의 사본 " + matched.size + "개가 일치했습니다.";
+          $("sentCopies").hidden = false;
+        }
+        const ordered = [...matched, ...rows.filter(row => !matched.has(row))];
+        $("sentCandidates").replaceChildren(...ordered.map(row => {
+          const label = row.sameRevision ? "같은 판 · 목록 원본 바이트가 다릅니다." : statuses[row.state];
+          const item = li(row.name + " · " + label);
+          if (row.localSha) {
+            const code = document.createElement("code");
+            code.textContent = row.localSha.slice(0, 12);
+            item.append(" SHA-256 앞 12자리 ", code);
+          }
+          return item;
+        }));
+        return;
+      }
+      const result = await B.compareSentDelivery(lists[0], sentValue.value);
       $("sentStatus").textContent = statuses[result.state];
       $("sentFingerprint").hidden = false;
       $("sentListSha").textContent = result.localSha;
