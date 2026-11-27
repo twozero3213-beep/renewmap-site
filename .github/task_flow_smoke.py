@@ -259,6 +259,27 @@ def main():
                 recipient.locator('#receivedCheck').click()
                 expect(recipient.locator('#receivedIssues')).to_contain_text('누락')
                 expect(recipient.locator('#receivedIssues')).to_contain_text('목록 밖')
+                with recipient.expect_download() as requested:
+                    recipient.locator('#receivedRequest').click()
+                txt = args.output / 'synthetic-resend.txt'
+                requested.value.save_as(txt)
+                note = txt.read_text(encoding='utf-8')
+                assert original['path'] in note and '누락' in note
+                assert 'renamed-delivery.txt' not in note and original['name'] not in note
+                recipient.locator('#receivedMore').set_input_files({
+                    'name': expected_basename, 'mimeType': 'application/octet-stream', 'buffer': file_payload,
+                })
+                recipient.locator('#receivedAdd').click()
+                expect(recipient.locator('#receivedStatus')).to_contain_text('1개 일치')
+                expect(recipient.locator('#receivedIssues')).to_contain_text('목록 밖')
+                expect(recipient.locator('#receivedRequest')).to_be_hidden()
+                picker.set_input_files({
+                    'name': expected_basename, 'mimeType': 'application/octet-stream', 'buffer': file_payload,
+                })
+                expect(recipient.locator('#receivedStatus')).to_have_text('')
+                recipient.locator('#receivedCheck').click()
+                expect(recipient.locator('#receivedStatus')).to_contain_text('모두 일치')
+                result['checks'].append('recipient_downloads_minimal_resend_request_and_checks_replacement')
                 assert recipient.evaluate('async()=>[(await TaskStore.list()).length,(await FieldStore.docs()).length]') == [0,0]
                 assert not requests
             finally:

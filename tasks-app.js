@@ -21,30 +21,66 @@
     packets = [],
     busy = false,
     cloud = null;
-  const receiptFields = [$("receivedList"), $("receivedFiles"), $("receivedCheck")];
+  const receivedList = $("receivedList"), receivedFiles = $("receivedFiles"), receivedMore = $("receivedMore");
+  const receivedControls = [receivedList, receivedFiles, receivedMore, $("receivedCheck"), $("receivedRequest"), $("receivedAdd")];
+  let receivedState = null, receiving = false;
   function clearReceipt() {
+    receivedState = null;
+    $("receivedRequestSection").hidden = true;
     $("receivedStatus").textContent = "";
     $("receivedIssues").replaceChildren();
+    $("receivedAddStatus").textContent = "";
+    receivedMore.value = "";
   }
-  for (const input of receiptFields.slice(0, 2)) input.addEventListener("change", clearReceipt);
+  for (const input of [receivedList, receivedFiles]) input.addEventListener("change", clearReceipt);
   if (location.hash === "#receivedDelivery") $("receivedDelivery").open = true;
-  $("receivedCheck").addEventListener("click", async () => {
-    const [list, files] = receiptFields;
-    receiptFields.forEach(control => { control.disabled = true; });
-    clearReceipt();
-    $("receivedStatus").textContent = "받은 목록과 파일을 대조하고 있습니다.";
+  async function checkReceived(list, files, adding = false) {
+    if (receiving) return;
+    receiving = true;
+    receivedControls.forEach(control => { control.disabled = true; });
+    if (!adding) clearReceipt();
+    const message = $(adding ? "receivedAddStatus" : "receivedStatus");
+    message.textContent = "받은 목록과 파일을 대조하고 있습니다.";
     try {
-      const result = await B.verifyDelivery(list.files[0], [...files.files]);
+      const result = await B.verifyDelivery(list, files);
+      receivedState = {list, files, result};
       const basis = "목록 v" + result.revision + " · 이름 " + result.selected + "개 · 파일 " + result.count + "개";
       $("receivedStatus").textContent = result.issues.length
         ? basis + " 중 " + result.matched + "개 일치 · 확인 필요 " + result.issues.length + "건"
         : basis + "가 모두 일치합니다.";
       $("receivedIssues").replaceChildren(...result.issues.map(li));
+      $("receivedRequestSection").hidden = !result.request;
+      if (adding) {
+        message.textContent = "보탠 파일과 앞서 고른 파일을 다시 대조했습니다.";
+        if (!result.request) $("receivedStatus").focus();
+      }
     } catch (error) {
-      $("receivedStatus").textContent = error.message || "받은 파일을 대조하지 못했습니다.";
+      message.textContent = error.message || "받은 파일을 대조하지 못했습니다.";
     } finally {
-      receiptFields.forEach(control => { control.disabled = false; });
+      receiving = false;
+      receivedMore.value = "";
+      receivedControls.forEach(control => { control.disabled = false; });
     }
+  }
+  $("receivedCheck").addEventListener("click", () => checkReceived(receivedList.files[0], [...receivedFiles.files]));
+  $("receivedRequest").addEventListener("click", () => {
+    const result = receivedState?.result;
+    if (receiving || !result?.request) return;
+    D.saveBytes("renewmap-resend-v" + result.revision + ".txt", result.request, "text/plain;charset=utf-8");
+  });
+  $("receivedAdd").addEventListener("click", () => {
+    if (receiving || !receivedState) return;
+    const added = [...receivedMore.files], names = new Set(added.map(file => file.name));
+    const allowed = new Set(receivedState.result.resend.map(row => row.basename));
+    if (!added.length || names.size !== added.length || added.some(file => !allowed.has(file.name))) {
+      $("receivedAddStatus").textContent = names.size !== added.length
+        ? "같은 이름을 중복 선택했습니다. 다시 받은 파일을 이름별로 하나씩 골라 주세요."
+        : "재전달 요청에 있는 이름의 파일만 골라 주세요.";
+      receivedMore.value = "";
+      return;
+    }
+    const kept = receivedState.files.filter(file => !names.has(file.name));
+    checkReceived(receivedState.list, [...kept, ...added], true);
   });
   const deliveryPicks = new Set();
   let deliveryHead = null;

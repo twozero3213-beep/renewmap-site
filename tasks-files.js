@@ -153,23 +153,34 @@
       if(!picked.has(file.name))picked.set(file.name,[]);
       picked.get(file.name).push(file);
     }
-    const issues=[];
+    const issues=[], resend=[];
     let matched=0;
     for(const [name,row] of paths) {
-      const group=picked.get(name)||[];
-      const label=row.names.map(quoteText).join(', ')+' / files/'+name;
-      if(!group.length)issues.push('누락 · '+label);
-      else if(group.length>1)issues.push('중복 · '+label+' / '+group.length+'개 선택');
-      else {
-        const file=group[0];
-        if(file.size!==row.size||await T.hash(await file.arrayBuffer())!==row.sha256)
-          issues.push('불일치 · '+label+' / 크기 또는 SHA-256이 다릅니다.');
-        else matched++;
+      const group=picked.get(name)||[], path='files/'+name;
+      const label=row.names.map(quoteText).join(', ')+' / '+path;
+      if(group.length>1) {
+        issues.push('중복 · '+label+' / '+group.length+'개 선택');
+        continue;
       }
+      const file=group[0];
+      if(file&&file.size===row.size&&await T.hash(await file.arrayBuffer())===row.sha256) {
+        matched++;
+        continue;
+      }
+      const reason=file?'불일치':'누락';
+      issues.push(reason+' · '+label+(file?' / 크기 또는 SHA-256이 다릅니다.':''));
+      resend.push({basename:name,path,size:row.size,reason});
     }
     for(const name of picked.keys())if(!paths.has(name))
       issues.push('목록 밖 · '+quoteText(name));
-    return {revision:receipt.revision,selected:receipt.selected_count,count:paths.size,matched,issues};
+    const request=resend.length?[
+      '리뉴맵 선택 납품 파일 재전달 요청',
+      '받은 목록 v'+receipt.revision+' · 다시 받을 파일 '+resend.length+'개',
+      '아래 ZIP 경로에 있는 원본 파일을 압축 안의 이름 그대로 다시 보내 주세요.',
+      '',
+      ...resend.map(row=>row.reason+' / '+row.path+' / '+row.size+'바이트'),
+    ].join('\n')+'\n':'';
+    return {revision:receipt.revision,selected:receipt.selected_count,count:paths.size,matched,issues,resend,request};
   }
   async function read(text){
     textSize(text);const b=JSON.parse(text);

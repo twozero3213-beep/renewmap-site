@@ -36,7 +36,7 @@
     <script src="task-store.js?v=20261127-current-export" defer></script>
     <script src="field/store.js" defer></script>
     <script src="docgen.js?v=20261122-r23" defer></script>
-    <script src="tasks-files.js?v=20261127-r68-recipient-details" defer></script>
+    <script src="tasks-files.js?v=20261127-r69-resupply" defer></script>
     <script src="task-cloud-config.js?v=20261119-r3" defer></script>
     <script src="task-cloud.js?v=20261120-r11" defer></script>
     <script src="task-cloud-ui.js?v=20261119-w2" defer></script>
@@ -49,7 +49,7 @@
     <script src="revisit-photos.js?v=20261119-r3" defer></script>
     <script src="revisit-report-ui.js?v=20261119-r3" defer></script>
     <script src="task-followup-ui.js?v=20261127-r55" defer></script>
-    <script src="tasks-app.js?v=20261127-r68-recipient-details" defer></script>
+    <script src="tasks-app.js?v=20261127-r69-resupply" defer></script>
   <link rel="stylesheet" href="rm6.css?v=20261122-r24">
 </head>
   <body>
@@ -71,10 +71,19 @@
         <summary>받은 전달 파일 대조</summary>
         <p class="task-help">선택 전달 ZIP을 먼저 풀고, files 폴더 안의 파일 이름을 그대로 두세요.<br>파일은 브라우저에서만 읽습니다.<br>결과는 받은 목록과 파일의 일치 여부입니다. 기관 승인과 자료의 정확성은 별도 증빙으로 확인하세요.</p>
         <label>전달 파일 목록(JSON)<input type="file" id="receivedList" accept=".json,application/json"></label>
-        <label>압축을 푼 files 폴더 안의 파일<input type="file" id="receivedFiles" multiple></label>
+        <label>압축을 푼 files 폴더 안의 파일<input type="file" id="receivedFiles" multiple aria-describedby="receivedResetHelp"></label>
+        <p id="receivedResetHelp" class="task-help">중복·목록 밖 파일을 빼려면 보탠 파일까지 포함해 여기에서 다시 골라 주세요.</p>
         <button type="button" id="receivedCheck">받은 파일 대조하기</button>
-        <p id="receivedStatus" role="status"></p>
+        <p id="receivedStatus" role="status" tabindex="-1"></p>
         <ul id="receivedIssues" class="task-hash" aria-label="파일 대조에서 확인이 필요한 항목"></ul>
+        <div id="receivedRequestSection" hidden>
+          <p class="task-help">누락·불일치가 있는 파일의 ZIP 경로·크기·사유만 요청서에 담습니다.</p>
+          <button type="button" id="receivedRequest">재전달 요청서 받기(TXT)</button>
+          <p class="task-help">ZIP 안의 이름을 유지한 채 다시 받은 파일만 고르세요.<br>앞서 고른 파일과 함께 다시 대조합니다.</p>
+          <label>다시 받은 파일<input type="file" id="receivedMore" multiple></label>
+          <button type="button" id="receivedAdd">보태고 다시 대조하기</button>
+          <p id="receivedAddStatus" role="status"></p>
+        </div>
       </details>
       <div class="task-layout">
       <aside class="task-aside" aria-label="과업 고르기와 작성자">
