@@ -3,7 +3,18 @@
 (function (root) {
   "use strict";
   const KINDS = ["general", "rest"];
-  const typeText = (r, minN) => r.type || `유형 없음(운영·폐업 각 ${minN}곳 미만)`;
+  function sampleGap(r, minN) {
+    if (!r || r.type || !Number.isInteger(minN) || minN <= 0) return "";
+    return [["운영", r.n_open], ["폐업", r.n_closed]]
+      .filter(([, count]) => Number.isInteger(count) && count < minN)
+      .map(([label]) => label).join("·");
+  }
+  function typeText(r, minN) {
+    if (!r) return "자료 없음";
+    if (r.type) return r.type;
+    const gap = sampleGap(r, minN);
+    return gap ? `유형 없음(${gap} ${minN}곳 미만)` : "유형 기록 없음";
+  }
   // 고른 구·군의 동 목록: 두 업종을 동 이름으로 합친다
   function rowsFor(doc, gu) {
     const by = new Map();
@@ -31,13 +42,13 @@
     for (const k of KINDS) { const n = doc.kinds[k].name; head.push(`${n} 유형`, `${n} 운영 업소`, `${n} 운영 평균 영업개월`, `${n} 최근 ${doc.years}년 폐업 업소`, `${n} 폐업 평균 영업개월`); }
     const body = rows.map((o) => {
       const out = [dongText(o), o.bjd10 || ""];
-      for (const k of KINDS) { const r = o[k]; out.push(r ? typeText(r, doc.min_n) : "자료 없음", r ? r.n_open : "", r ? r.open_avg_m : "", r ? r.n_closed : "", r ? r.closed_avg_m : ""); }
+      for (const k of KINDS) { const r = o[k]; out.push(typeText(r, doc.min_n), r ? r.n_open : "", r ? r.open_avg_m : "", r ? r.n_closed : "", r ? r.closed_avg_m : ""); }
       return out;
     });
     const avg = KINDS.map((k) => `${doc.kinds[k].name} ${avgName(doc, gu)}: 운영 ${avgOf(doc, k, gu).open_avg_m}개월, 폐업 ${avgOf(doc, k, gu).closed_avg_m}개월`);
     return "﻿" + [note, head, ...body, [avg.join(" / ")]].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
   }
-  const api = { KINDS, typeText, rowsFor, gus, toCSV, avgOf, avgName, dongText, csvCell: cell };
+  const api = { KINDS, sampleGap, typeText, rowsFor, gus, toCSV, avgOf, avgName, dongText, csvCell: cell };
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.RenewShop = api;
 })(this);

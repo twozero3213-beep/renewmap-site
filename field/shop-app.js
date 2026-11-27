@@ -18,21 +18,34 @@
     last = { doc, gu, rows };
     $("outTitle").textContent = `${gu} ${gn ? "법정동·읍면" : "법정동"} ${n(rows.length)}곳`;
     const avg = S.avgName(doc, gu);
-    $("outBase").textContent = `인허가 기준일 ${doc.ref_date} · ${avg}(일반음식점) 운영 ${S.avgOf(doc, "general", gu).open_avg_m}개월, 폐업 ${S.avgOf(doc, "general", gu).closed_avg_m}개월 · ${avg}(휴게음식점) 운영 ${S.avgOf(doc, "rest", gu).open_avg_m}개월, 폐업 ${S.avgOf(doc, "rest", gu).closed_avg_m}개월`
+    $("outBase").textContent = `인허가 기준일 ${doc.ref_date} · 유형을 내는 표본 기준은 운영·폐업 각 ${doc.min_n}곳 이상 · ${avg}(일반음식점) 운영 ${S.avgOf(doc, "general", gu).open_avg_m}개월, 폐업 ${S.avgOf(doc, "general", gu).closed_avg_m}개월 · ${avg}(휴게음식점) 운영 ${S.avgOf(doc, "rest", gu).open_avg_m}개월, 폐업 ${S.avgOf(doc, "rest", gu).closed_avg_m}개월`
       + (gn ? " · 읍·면은 리를 나누지 않고 읍·면 전체를 한 줄로 셉니다" : "");
     $("dongHead").textContent = gn ? "법정동·읍면" : "법정동";
-    $("rows").replaceChildren(...rows.map((o) => {
+    $("src").textContent = `출처: ${doc.source} · ${doc.license} · 방법: ${doc.method}` + (doc.differs_from_busan ? ` · 부산과 다른 점: ${doc.differs_from_busan}` : "");
+    $("sampleView").value = "all";
+    drawRows();
+    $("out").hidden = false;
+    $("csv").disabled = false;
+    say("");
+  }
+
+  function drawRows() {
+    if (!last) return;
+    const { doc, rows } = last, scope = $("sampleView").value;
+    const visible = scope === "all" ? rows : rows.filter((o) => scope === "missing"
+      ? S.KINDS.some((k) => !o[k])
+      : S.sampleGap(o[scope], doc.min_n));
+    $("sampleCount").textContent = `전체 ${n(rows.length)}곳 중 ${n(visible.length)}곳 표시${visible.length ? "" : " · 선택한 조건에 해당하는 곳이 없습니다."}`;
+    $("rows").replaceChildren(...visible.map((o) => {
       const tr = document.createElement("tr");
       const td = (t) => { const c = document.createElement("td"); c.textContent = t ?? ""; return c; };
       tr.append(td(S.dongText(o)));
       for (const k of S.KINDS) {
         const r = o[k];
-        tr.append(td(r ? S.typeText(r, doc.min_n) : "자료 없음"), td(r ? `${n(r.n_open)}곳 · ${r.open_avg_m ?? "-"}개월` : ""), td(r ? `${n(r.n_closed)}곳 · ${r.closed_avg_m ?? "-"}개월` : ""));
+        tr.append(td(S.typeText(r, doc.min_n)), td(r ? `${n(r.n_open)}곳 · ${r.open_avg_m ?? "-"}개월` : ""), td(r ? `${n(r.n_closed)}곳 · ${r.closed_avg_m ?? "-"}개월` : ""));
       }
       return tr;
     }));
-    $("src").textContent = `출처: ${doc.source} · ${doc.license} · 방법: ${doc.method}` + (doc.differs_from_busan ? ` · 부산과 다른 점: ${doc.differs_from_busan}` : "");
-    $("out").hidden = false;
   }
 
   function group(label, key, doc, pick) {
@@ -52,6 +65,14 @@
   }).catch(() => say("상권 자료를 불러오지 못했습니다.\n인터넷 연결을 확인해 주세요.", true));
 
   $("f").addEventListener("submit", (e) => { e.preventDefault(); if (docs.busan) draw($("gu").value); });
+  $("gu").addEventListener("change", () => {
+    last = null;
+    $("out").hidden = true;
+    $("csv").disabled = true;
+    $("src").textContent = "출처와 방법은 표를 연 뒤 여기에 적습니다.";
+    say("선택한 지역의 자료를 보려면 표 보기를 눌러 주세요.");
+  });
+  $("sampleView").addEventListener("change", drawRows);
   $("csv").addEventListener("click", () => {
     if (!last) return;
     RenewSave.saveFile(`${last.gu}_음식점_상권변화유형_${last.doc.ref_date}.csv`, [S.toCSV(last.doc, last.gu, last.rows)], "text/csv;charset=utf-8");
