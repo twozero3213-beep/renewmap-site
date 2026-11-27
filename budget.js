@@ -94,13 +94,35 @@
   // 가로 막대(SVG 속성으로 길이: CSP 인라인 style 금지)
   const meter = (v, max) => `<svg class="bd-m" aria-hidden="true" viewBox="0 0 100 8" preserveAspectRatio="none"><rect class="bd-m-bg" width="100" height="8"/><rect class="bd-m-v" width="${max > 0 && v > 0 ? Math.max(3, Math.round(v / max * 100)) : 0}" height="8"/></svg>`;
 
-  // 신호 띠: 신호마다 이 시·군·구 읍·면·동 가운데 켜진 곳 수. 동네를 줄 세우지 않고 신호별로 세기만 한다
-  function strip(d, list, theme) {
-    const at = picks(d, theme);
-    return `<ul class="bd-strip" aria-label="신호별로 켜진 읍·면·동 수(전체 ${list.length}곳)">` + at.map((i, k) => {
-      const s = d.signals[i], on = list.filter(r => r.on[k] === 1).length;
-      return `<li>${svg(ICON[s.id], 'bd-ico')}<span class="bd-st-l">${esc(s.label)}</span><b class="bd-st-n">${on}<small>/${list.length}곳</small></b>${meter(on, list.length)}</li>`;
+  const isMissing = value => value !== 1 && value !== 0;
+  const dongHref = (code5, code7) => `explore.html#map/${code5.slice(0, 2)}/${code5}/${code7}`;
+
+  function signalGroups(d, list, theme) {
+    return picks(d, theme).map((i, k) => {
+      const missing = list.filter(r => isMissing(r.on[k]));
+      return { signal: d.signals[i], on: list.filter(r => r.on[k] === 1).length, known: list.length - missing.length, missing };
+    });
+  }
+
+  // 신호가 꺼진 0은 분모에 남겨 자료 없음과 구분한다.
+  function strip(groups, total) {
+    return '<p class="bd-strip-key">켜진 동 / 자료가 있는 동</p>' + `<ul class="bd-strip" aria-label="신호별 해당과 자료 없음(전체 ${total}곳)">` + groups.map(({signal, on, known, missing}) => {
+      const value = known ? `${on}<small>/${known}곳</small>` : '<small>자료 있는 동 없음</small>';
+      return `<li data-bd-signal="${esc(signal.id)}">${svg(ICON[signal.id], 'bd-ico')}<span class="bd-st-l">${esc(signal.label)}</span>`
+        + `<b class="bd-st-n">${value}</b>${known ? meter(on, known) : ''}<small class="bd-st-coverage">자료 없음 ${missing.length}곳</small></li>`;
     }).join('') + '</ul>';
+  }
+
+  function missingDongs(groups, rows, code5) {
+    const gaps = rows.map(row => ({
+      row,
+      labels: groups.filter((_, i) => isMissing(row.on[i])).map(group => group.signal.label),
+    })).filter(item => item.labels.length);
+    if (!gaps.length) return '';
+    return `<details class="bd-more bd-missing"><summary>자료 없는 동 ${gaps.length}곳 보기</summary><ul class="bd-missing-list">`
+      + gaps.map(({row, labels}) => `<li data-bd-missing-dong="${esc(row.code7)}"><a href="${esc(dongHref(code5, row.code7))}">${esc(row.name)}</a>`
+        + `<span>${labels.map(esc).join(' · ')}</span></li>`).join('')
+      + '</ul></details>';
   }
 
   // 먼저 볼 곳: 신호가 켜진 곳 앞 셋을 카드로(이름·켜진 수·신호 일곱 칸·주민 막대)
@@ -108,7 +130,7 @@
     const at = picks(d, theme), top = list.filter(r => r.count > 0).slice(0, 3);
     if (!top.length) return '';
     const maxPop = Math.max(1, ...list.map(r => r.pop).filter(isNum));
-    return '<ol class="bd-first" aria-label="먼저 볼 곳">' + top.map(r => `<li><a class="bd-f-a" href="explore.html#map/${esc(code5.slice(0, 2))}/${esc(code5)}/${esc(r.code7)}">${esc(r.name)}</a>`
+    return '<ol class="bd-first" aria-label="먼저 볼 곳">' + top.map(r => `<li><a class="bd-f-a" href="${esc(dongHref(code5, r.code7))}">${esc(r.name)}</a>`
       + `<b class="bd-f-c" role="img" aria-label="신호 ${at.length}개 중 ${r.count}개">${r.count}<small>/${at.length}</small></b>`
       + `<span class="bd-f-s">${r.on.map((v, k) => chip(v, d.signals[at[k]], true)).join('')}</span>`
       + `<span class="bd-f-p">${meter(r.pop, maxPop)}<span>주민 ${isNum(r.pop) ? `${n(r.pop)}명` : '자료 없음'}</span></span></li>`).join('') + '</ol>';
@@ -131,7 +153,7 @@
     const body = list.slice(from, to).map((r, k) => {
       const w = isNum(r.pop) ? Math.max(2, Math.round(r.pop / maxPop * 100)) : 0;
       const pop = isNum(r.pop) ? `${people(r.pop)}명` : '자료 없음';
-      return `<tr><th scope="row"><span class="bd-no">${from + k + 1}</span><a href="explore.html#map/${esc(code5.slice(0, 2))}/${esc(code5)}/${esc(r.code7)}">${esc(r.name)}</a>${narrow ? `<small class="bd-pop-s">${pop}</small>` : ''}</th>`
+      return `<tr><th scope="row"><span class="bd-no">${from + k + 1}</span><a href="${esc(dongHref(code5, r.code7))}">${esc(r.name)}</a>${narrow ? `<small class="bd-pop-s">${pop}</small>` : ''}</th>`
         + (narrow ? '' : `<td class="bd-pop"><span class="bd-bar" aria-hidden="true"><i data-w="${w}"></i></span>${pop}</td>`)
         + `<td class="bd-cnt">${r.count}</td>${r.on.map((v, j) => `<td>${chip(v, d.signals[at[j]])}</td>`).join('')}</tr>`;
     }).join('');
@@ -166,21 +188,21 @@
     if (!valid(d)) return '';
     const g = d.sgg.find(x => x.code5 === code5);
     if (!g) return '';
-    const list = rows(d, code5, theme), maxSig = picks(d, theme).length;
+    const list = rows(d, code5, theme), groups = signalGroups(d, list, theme);
     const sido = (d.sido.find(s => s.code2 === g.sido) || {}).name || '';
     const first = firsts(d, list, code5, theme);
     // 먼저 볼 곳 이름은 제목 대신 카드로 보인다(글 줄이기)
     return `<h2 class="bd-h">${esc(sido)} ${esc(g.name)}</h2>`
       + context(d, code5)
-      + strip(d, list, theme) + srcLine(d)
+      + strip(groups, list.length) + srcLine(d) + missingDongs(groups, list, code5)
       + (first ? `<h3 class="bd-sub">먼저 볼 곳</h3>${first}` : '')
-      + `<figure class="bd-fig">${scatter(list, maxSig, w)}<figcaption>점 하나 = 읍·면·동 · 빈 점 = 신호 없음</figcaption></figure>`
+      + `<figure class="bd-fig">${scatter(list, groups.length, w)}<figcaption>점 하나 = 읍·면·동 · 빈 점 = 켜진 신호 0개</figcaption></figure>`
       + `<div class="bd-wrap">${table(d, list, code5, theme, 0, 10, w < 480)}</div>`
       + (list.length > 10 ? `<details class="bd-more"><summary>나머지 ${list.length - 10}곳 보기</summary><div class="bd-wrap">${table(d, list, code5, theme, 10, list.length, w < 480)}</div></details>` : '')
       + `<details class="bd-rules"><summary>신호 기준과 출처</summary>${legend(d, theme)}<ul class="bd-src">${(d.sources || []).map(s => `<li>${esc(s.for)}: ${esc(s.name)} · ${esc(s.base)}</li>`).join('')}</ul></details>`;
   }
 
-  const api = { THEMES, valid, picks, rows, scatter, table, context, strip, firsts, render };
+  const api = { THEMES, valid, picks, rows, scatter, table, context, signalGroups, strip, firsts, render };
   if (typeof module === 'object' && module.exports) module.exports = api;
 
   // 브라우저 연결부

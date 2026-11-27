@@ -614,6 +614,18 @@ def main():
                             query.fill('')
                             assert page.locator('#sourceDownload').is_hidden()
                             check(route, width, 'source_catalog_download')
+                        if route == 'budget.html':
+                            page.locator('#bdSgg').select_option('21120')
+                            building = page.locator('.bd-strip [data-bd-signal="old"]')
+                            assert building.locator('.bd-st-n').inner_text().replace('\n', '') == '5/9곳'
+                            assert '자료 없음 1곳' in building.locator('.bd-st-coverage').inner_text()
+                            gap_panel = page.locator('.bd-missing')
+                            gap_panel.locator('summary').click()
+                            gaps = gap_panel.locator('[data-bd-missing-dong]')
+                            assert gaps.count() == 2
+                            assert '건물 노후' in gaps.filter(has_text='녹산동').inner_text()
+                            assert gaps.filter(has_text='신호동').get_by_role('link').get_attribute('href').endswith('/21120562')
+                            check(route, width, 'budget_data_coverage')
                         page.screenshot(path=str(args.output/f'{route.replace("/","_")}-{width}.png'))
                     except Exception as error:
                         failures.append({'route': route, 'width': width, 'error': str(error)})
