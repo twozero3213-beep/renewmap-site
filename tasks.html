@@ -36,7 +36,7 @@
     <script src="task-store.js?v=20261127-current-export" defer></script>
     <script src="field/store.js" defer></script>
     <script src="docgen.js?v=20261122-r23" defer></script>
-    <script src="tasks-files.js?v=20261127-r64-file-identity" defer></script>
+    <script src="tasks-files.js?v=20261127-r65-handover-recovery" defer></script>
     <script src="task-cloud-config.js?v=20261119-r3" defer></script>
     <script src="task-cloud.js?v=20261120-r11" defer></script>
     <script src="task-cloud-ui.js?v=20261119-w2" defer></script>
@@ -49,7 +49,7 @@
     <script src="revisit-photos.js?v=20261119-r3" defer></script>
     <script src="revisit-report-ui.js?v=20261119-r3" defer></script>
     <script src="task-followup-ui.js?v=20261127-r55" defer></script>
-    <script src="tasks-app.js?v=20261127-r57-approval" defer></script>
+    <script src="tasks-app.js?v=20261127-r65-handover-recovery" defer></script>
   <link rel="stylesheet" href="rm6.css?v=20261122-r24">
 </head>
   <body>
@@ -350,10 +350,15 @@
         <h2 id="deliveryTitle">납품 파일과 최종 검토</h2>
         <section id="handoverSummary" class="task-handover" aria-labelledby="handoverHeading">
           <h3 id="handoverHeading" tabindex="-1">다음 담당자에게 넘길 요약</h3>
-          <p class="task-help">이미 기록한 근거와 검토 결과에서 남은 일을 정리합니다.<br>같은 요약과 파일 목차가 내부 보관용 전체 이력 ZIP에도 들어갑니다.</p>
+          <p class="task-help">이미 기록한 근거와 검토 결과에서 남은 일을 정리합니다.<br>연결 파일이 확인되면 같은 요약과 파일 목차가 내부 보관용 전체 이력 ZIP에도 들어갑니다.</p>
           <button id="handoverTask" type="button">인수인계 요약 만들기</button>
           <p id="handoverStatus" role="status">저장한 과업을 선택하면 인수인계 요약을 확인할 수 있습니다.</p>
           <div id="handoverPreview" hidden>
+            <div id="handoverRecovery" hidden>
+              <h4>복구할 연결 파일</h4>
+              <p class="task-help">복구할 파일의 이름과 사용 판을 확인하세요. 전체 이력 ZIP과 복원용 JSON은 연결 파일 검사를 통과해야 받을 수 있습니다. 현재판의 선택 파일 전달 ZIP은 고른 파일만 따로 검사합니다.</p>
+              <ul id="handoverRecoveryFiles" class="task-hash"></ul>
+            </div>
             <ul id="handoverAttention"></ul>
             <details>
               <summary>이전 승인 기록과 달라진 점</summary>
@@ -362,6 +367,7 @@
               <p class="task-help">같은 이름의 파일은 내용과 연결 기록을 비교합니다.<br>파일 확인값(SHA-256)과 크기가 같은 파일은 이름을 함께 보여 줍니다. 확인값은 인수인계 요약에서 확인하세요.<br>같은 파일이어도 현재 버전의 승인을 대신하지 않습니다.</p>
             </details>
             <button id="downloadHandover" type="button" hidden>인수인계 요약 받기(TXT)</button>
+            <button id="downloadRecoveryHandover" type="button" hidden>복구용 요약 받기(TXT)</button>
             <p class="task-help">현재 이 기기에서 선택한 과업 버전의 요약입니다.<br>요약 파일은 복원용 백업이 아닙니다. 공유 전에 작성자·의견에 개인정보가 있는지 확인해 주세요.</p>
           </div>
         </section>

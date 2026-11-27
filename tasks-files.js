@@ -31,11 +31,11 @@
     return Uint8Array.from(atob(s),c=>c.charCodeAt(0));
   }
   async function checkedBytes(entry,sha,size) {
-    if(!entry?.blob)throw new Error('연결된 파일이 없습니다. 원본 파일을 보관함에서 확인해 주세요.');
+    if(!entry?.blob)throw Object.assign(new Error('연결된 파일이 없습니다. 원본 파일을 보관함에서 확인해 주세요.'), {code:'TASK_FILE_MISSING',sha});
     if(entry.blob.size>MAX)throw new Error('파일 크기는 20MB 이하여야 합니다.');
     const bytes=new Uint8Array(await entry.blob.arrayBuffer());
     if((size!==undefined&&size!==bytes.length)||await T.hash(bytes)!==sha)
-      throw new Error('보관 파일의 해시 또는 크기가 기록과 다릅니다.');
+      throw Object.assign(new Error('보관 파일의 해시 또는 크기가 기록과 다릅니다.'), {code:'TASK_FILE_MISMATCH',sha});
     return bytes;
   }
   async function make(history,entries){
@@ -117,14 +117,63 @@
     return [['input_hash','입력 지문'],['comparison_hash','비교 지문'],['template_version','양식 판본'],['blockers','추가확인 사유']]
       .filter(([key])=>T.canonical(before[key])!==T.canonical(after[key])).map(([,label])=>label);
   }
-  async function handover(manifest,today) {
+  const FILE_ISSUE_LABELS={TASK_FILE_MISSING:'이 기기에 연결 파일 없음',TASK_FILE_MISMATCH:'파일 확인값 또는 크기 불일치'};
+  async function inspectRecovery(history,entries) {
+    const manifest=await T.manifest(history),wanted=needed(manifest.history),sizes=declaredSizes(manifest.history);
+    textSize(T.canonical(manifest));
+    if(wanted.size>MAX_FILES)throw new Error('백업 파일은 500개 이하여야 합니다.');
+    const stored=new Map();
+    for(const entry of entries)if(!stored.has(entry.sha256))stored.set(entry.sha256,entry);
+    // 해시에 실패할 파일도 읽기 전에 합산해야 복구 진단이 백업의 읽기 범위를 넘지 않는다.
+    let total=0;
+    for(const sha of wanted) {
+      const entry=stored.get(sha);
+      if(!entry?.blob)continue;
+      if(!(entry.blob instanceof Blob))throw new Error('보관 파일 형식을 확인하지 못했습니다.');
+      if(entry.blob.size>MAX)throw new Error('파일 크기는 20MB 이하여야 합니다.');
+      total+=entry.blob.size;
+      if(total>MAX)throw new Error('묶음의 파일 합계는 20MB 이하여야 합니다.');
+      fileName(entry.name);
+    }
+    const issues=[];
+    for(const sha of wanted) {
+      try { await checkedBytes(stored.get(sha),sha,sizes.get(sha)); }
+      catch(error) {
+        if(!Object.hasOwn(FILE_ISSUE_LABELS,error.code))throw error;
+        issues.push({code:error.code,sha});
+      }
+    }
+    return {manifest,issues};
+  }
+  async function handover(manifest,today,issues=[]) {
     T.isOverdue({status:'verified',due_on:today},today);
+    if(!Array.isArray(issues)||issues.length>MAX_FILES)throw new Error('연결 파일 확인 결과가 올바르지 않습니다.');
+    const seen=new Set(),failures=issues.map(issue=>{
+      if(!fields(issue,['code','sha'])||typeof issue.code!=='string'||!Object.hasOwn(FILE_ISSUE_LABELS,issue.code)||
+        typeof issue.sha!=='string'||!HEX.test(issue.sha)||seen.has(issue.sha))throw new Error('연결 파일 확인 결과가 올바르지 않습니다.');
+      seen.add(issue.sha);
+      return {code:issue.code,sha:issue.sha};
+    });
     const given=T.canonical(manifest);textSize(given);
     const checked=await T.manifest(JSON.parse(given).history);
     if(T.canonical(checked)!==given)throw new Error('인수인계의 납품 목록과 이력이 다릅니다.');
     const h=checked.history,c=h.at(-1),w=T.work(c),blockers=T.workBlockers(c),paths=filePaths(h);
     // 입력의 줄바꿈·방향 제어문자가 요약의 새 제목이나 결정을 꾸미지 못하게 출력에서만 인용한다.
     const q=value=>JSON.stringify(value===null||value===undefined?'':String(value)).replace(/[\u007f-\u009f\u00ad\u061c\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g,ch=>'\\u'+ch.charCodeAt(0).toString(16).padStart(4,'0'));
+    const sizes=declaredSizes(h),catalog=new Map([...needed(h)].map(sha=>[sha,new Map()]));
+    for(const record of h)for(const file of [...record.artifacts,...T.workEvidence(record),...(record.decision?[record.decision.evidence]:[])]) {
+      const names=catalog.get(file.sha256);if(!names.has(file.name))names.set(file.name,new Set());names.get(file.name).add(record.revision);
+    }
+    const affected=new Map(failures.map(({sha})=>[sha,[]]));
+    if(affected.size)for(const record of h)for(const sha of needed([record]))affected.get(sha)?.push(record.revision);
+    const recovery=failures.map(({sha,code})=>{
+      const names=catalog.get(sha);
+      if(!names)throw new Error('연결 파일 확인 결과가 과업 이력과 다릅니다.');
+      const revisions=affected.get(sha), scope=revisions.includes(c.revision)?'현재판에 연결':'이전 이력에만 연결';
+      const identity=names.size?[...names.keys()].map(q).join(', '):'파일명 미기록';
+      const label=FILE_ISSUE_LABELS[code]+' · '+identity+' / '+scope+' / 사용 판: '+revisions.map(v=>'v'+v).join(', ');
+      return {sha,code,label};
+    });
     const states={planned:'계획 기록',invalid:'입력 다시 확인',hold:'근거 부족 보류',ready:'대조 완료·검토 대기',approved:'승인 기록',rejected:'반려 기록'};
     const statuses={open:'처리 전',submitted:'확인 대기',resolved:'해소 확인',verified:'점검 확인 완료'};
     const pending=w.followups.filter(item=>item.status!=='verified'),overdue=pending.filter(item=>T.isOverdue(item,today));
@@ -195,7 +244,7 @@
       }
       if(T.canonical(T.work(baseline))!==T.canonical(w))changed.push('검토 의견·후속 점검 기록 변경: 아래 상세 기록에서 담당자·기한·증빙을 확인하세요.');
     }
-    const lines=['리뉴맵 내부 보관용 인수인계','조회 기준일: '+today+' (Asia/Seoul)',summary,
+    const lines=[recovery.length?'리뉴맵 복구용 인수인계 요약':'리뉴맵 내부 보관용 인수인계','조회 기준일: '+today+' (Asia/Seoul)',summary,
       '사용자가 기록한 업무 내용입니다. 신원·전자서명·기관 승인이나 자료의 사실성을 인증하지 않습니다.',
       '공유 전에 이름·연락처·사진 등 개인정보와 전달받을 사람을 확인하세요.',
       '이력과 납품 목록의 일치를 검사한 요약입니다. 실제 파일의 존재·바이트는 전체 이력 ZIP 생성과 백업 JSON 복원에서 별도로 확인합니다.',
@@ -205,6 +254,8 @@
       '현재 파일 세트 SHA-256: '+checked.artifact_set_hash,'기록자: '+q(c.actor),'기록 시각: '+q(c.at),
       '', '2. 먼저 확인할 일',...(attention.length?attention.map((item,i)=>(i+1)+') '+item):['현재 기록에 표시할 남은 일이 없습니다. 업무 종결을 인증하는 뜻은 아닙니다.']),
       '', '3. 요구 항목별 근거 대조'];
+    if(recovery.length)lines.splice(3,0,'확인하지 못한 연결 파일 '+recovery.length+'개가 있습니다. 이 요약은 복구 대상 확인용입니다. 전체 이력 ZIP과 복원용 JSON 백업은 만들 수 없습니다.',
+      ...recovery.map(file=>file.label+' / 확인값(SHA-256): '+file.sha),'');
     lines.splice(lines.length-1,0,'이전 승인 기록과 달라진 점',comparison.summary,
       ...(baseline?['비교 기준 이력 SHA-256: '+baseline.hash]:[]),
       '같은 이름의 파일은 내용과 연결 기록을 비교합니다. 파일 확인값(SHA-256)과 크기가 같은 파일의 이름은 함께 보여 줍니다. 내용의 사실성이나 새 승인은 별도로 확인하세요.',
@@ -254,10 +305,6 @@
         const event=item[key];if(event)lines.push(label+': '+q(event.note)+' / 기록자 '+q(event.actor)+' / '+q(event.at)+(event.evidence?' / '+q(event.evidence.name)+' / '+paths.get(event.evidence.sha256):''));
       }
     }
-    const sizes=declaredSizes(h),catalog=new Map([...needed(h)].map(sha=>[sha,new Map()]));
-    for(const record of h)for(const file of [...record.artifacts,...T.workEvidence(record),...(record.decision?[record.decision.evidence]:[])]) {
-      const names=catalog.get(file.sha256);if(!names.has(file.name))names.set(file.name,new Set());names.get(file.name).add(record.revision);
-    }
     lines.push('', '8. 전체 이력의 파일 목차', '현재 납품 파일 외에 과거 대조·보완·검토 증빙도 포함합니다. 같은 바이트가 다른 이름으로 기록된 경우 판별 이름을 모두 적습니다.');
     if(!catalog.size)lines.push('연결 파일 기록이 없습니다.');
     for(const [sha,names] of catalog) {
@@ -274,7 +321,7 @@
       "Get-ChildItem files | % { if((Get-FileHash $_.FullName).Hash -ne $_.BaseName){'불일치 '+$_.Name} }",
       '과업 버전 확인값: manifest.json history에 적힌 각 hash는 그 버전에서 hash 칸을 뺀 정규 JSON(키 정렬, 공백 없음, UTF-8)의 SHA-256입니다.',
       '파일 확인값(SHA-256)은 파일이 바뀌었는지만 알려 줍니다. 작성자 신원·현장 촬영 사실·얼굴 가림·기관 승인과 내용이 사실인지는 증명하지 않습니다.');
-    return {text:lines.join('\n')+'\n',summary,attention,comparison};
+    return {text:lines.join('\n')+'\n',summary,attention,comparison,recovery};
   }
-  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,read,from64,handover};
+  return{MAX,checkResultLabels,needed,filePaths,zipEntries,make,selectedZip,read,from64,handover,inspectRecovery};
 });

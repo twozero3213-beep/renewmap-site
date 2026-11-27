@@ -230,22 +230,46 @@ def main():
             result['checks'].append('layout_320_360_390_768_1280_1440_zoom200')
             downloads = []
             page.on('download', lambda d: downloads.append(d.suggested_filename))
-            page.evaluate('''async()=>{
+            recorded_file = next(f for f in manifest['history'][-1]['artifacts'] if f['name']=='delivery.txt')
+            first_used = next(r['revision'] for r in manifest['history']
+                              if any(f['sha256']==recorded_file['sha256'] for f in r['artifacts']))
+            page.evaluate('''async (sha)=>{
               const id=document.querySelector('#taskPick').value;
-              const file=(await FieldStore.docs()).find(x=>x.kind==='task-file' && x.task_id===id);
-              if(!file)throw Error('시험 파일 없음');
-              await FieldStore.deleteDoc(file.id);
-            }''')
+              const fileId='task-file:'+id+':'+sha;
+              if(!await FieldStore.doc(fileId))throw Error('시험 파일 없음');
+              await FieldStore.deleteDoc(fileId);
+            }''', recorded_file['sha256'])
             page.locator('#downloadHandover').click()
-            expect(page.locator('#handoverStatus')).to_contain_text('요약을 만들지 못했습니다')
-            expect(page.locator('#handoverPreview')).to_be_hidden()
-            expect(page.locator('#zipTask')).to_be_enabled()
-            page.locator('#zipTask').click()
-            expect(page.locator('#taskMsg')).to_contain_text('연결된 파일이 없습니다')
-            expect(page.locator('#zipTask')).to_be_enabled()
+            expect(page.locator('#handoverStatus')).to_contain_text('복구용 인수인계 요약')
+            expect(page.locator('#handoverPreview')).to_be_visible()
+            expect(page.locator('#handoverRecovery')).to_be_visible()
+            expect(page.locator('#downloadHandover')).to_be_hidden()
+            expect(page.locator('#downloadRecoveryHandover')).to_be_visible()
+            expect(page.locator('#downloadRecoveryHandover')).to_be_enabled()
+            issues = page.locator('#handoverRecoveryFiles')
+            expect(issues).to_contain_text('delivery.txt')
+            expect(issues).to_contain_text('연결 파일 없음')
+            expect(issues).to_contain_text('현재판에 연결')
+            expect(issues).to_contain_text(f'사용 판: v{first_used}')
+            expect(issues).to_contain_text(f"v{manifest['history'][-1]['revision']}")
             assert not downloads, downloads
+            with page.expect_download() as downloaded:
+                page.locator('#downloadRecoveryHandover').click()
+            recovery = downloaded.value
+            assert recovery.suggested_filename.startswith('renewmap-recovery-handover-')
+            recovery_path = args.output / 'synthetic-handover-recovery.txt'
+            recovery.save_as(recovery_path)
+            recovery_text = recovery_path.read_text(encoding='utf-8')
+            assert recovery_text.startswith('리뉴맵 복구용 인수인계 요약')
+            assert recorded_file['sha256'] in recovery_text and manifest['head_hash'] in recovery_text
+            for button in ('#zipTask', '#backupTask'):
+                expect(page.locator(button)).to_be_enabled()
+                page.locator(button).click()
+                expect(page.locator('#taskMsg')).to_contain_text('연결된 파일이 없습니다')
+                expect(page.locator(button)).to_be_enabled()
+                assert downloads == [recovery.suggested_filename], downloads
             assert page.evaluate('async()=> (await TaskStore.history(document.querySelector("#taskPick").value)).at(-1).hash') == manifest['head_hash']
-            result['checks'].append('missing_file_blocks_txt_zip_and_stale_preview')
+            result['checks'].append('missing_file_allows_recovery_txt_but_blocks_full_backup')
             restored = browser.new_context(accept_downloads=True, service_workers='block')
             q = restored.new_page()
             q.on('pageerror', lambda e: result['errors'].append(str(e)))
