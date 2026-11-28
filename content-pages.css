@@ -53,3 +53,4 @@
 .ps-more { margin: 12px 0 16px; }
 @media (min-width: 900px) { .ps-top { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media print { .ps-top { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6pt; } .ps-key { padding: 6pt; } .ps-key h2 { font-size: 13pt; } .ps-key p { font-size: 10pt; } }
+tr[data-correction]:target > :is(th, td), li[data-correction-tech]:target { background: var(--soft); }
