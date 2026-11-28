@@ -2001,7 +2001,7 @@
           if (text) save.saveFile(`재생사업_확인메모_${id}.txt`, [text], 'text/plain;charset=utf-8');
         });
       });
-      report.querySelector('[data-soc-csv]').addEventListener('click', () => { if (DG) DG.saveBytes(`기반편의시설현황_${DG.safeName(it.name)}.csv`, new TextEncoder().encode(window.RenewPrograms.socCSV(it.name, rows, socText)), 'text/csv;charset=utf-8'); });
+      report.querySelector('[data-soc-csv]').addEventListener('click', () => { if (DG) DG.saveBytes(`기반편의시설현황_${DG.safeName(it.name)}_${DG.safeName(String(it.code))}.csv`, new TextEncoder().encode(window.RenewPrograms.socCSV(it.name, rows, socText, it.code)), 'text/csv;charset=utf-8'); });
     } else if (reportMode === 'brief') {
       const built = docFor(v, m, it);
       report.innerHTML = reportModeHTML(reportMode) + briefHTML(v, it, rows, fragChoice, built.error ? null : built.brief);

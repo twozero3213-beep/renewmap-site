@@ -21,11 +21,11 @@
     const rows = file.buildings.filter((b) => isIdleUse(b.main_use)).map((b) => ({ ...b, group: ageGroup(b) })).sort(cmp);
     const count = { old: 0, unknown: 0, young: 0 };
     for (const r of rows) count[r.group]++;
-    return { name: file.name, total: file.buildings.length, rows, count, hub: file.hub_reference_date, ref: file.age_reference_date };
+    return { name: file.name, total: file.buildings.length, rows, count, hub: file.hub_reference_date, ref: file.age_reference_date, source: file.source, license: file.license };
   }
   const cell = (v) => { const s = v === null || v === undefined ? "" : String(v); const t = typeof v === "number" || /^-?\d+(\.\d+)?$/.test(s.trim()) ? s : s.replace(/^[\s\uFEFF]*[=+@\t\r-]/, "'$&"); return /[",\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   function toCSV(res) {
-    const note = [`${res.name} 주용도 창고·공장 ${res.rows.length}동 / 전체 ${res.total}동 · 건축물대장 기준일 ${res.hub} · 경과 기준일 ${res.ref} · 비어 있는지는 대장에 없어 현장 추가확인 · 추천·순위 아님`];
+    const note = [[`${res.name} 주용도 창고·공장 ${res.rows.length}동 / 전체 ${res.total}동 · 건축물대장 기준일 ${res.hub} · 경과 기준일 ${res.ref} · 비어 있는지는 대장에 없어 현장 추가확인 · 추천·순위 아님`, res.source, res.license].filter(Boolean).join(" · ")];
     const head = ["지번", "PNU", "주용도", "구조", "사용승인일", "층수", "연면적(㎡)", "경과 연수", "구분"];
     const body = res.rows.map((r) => [r.jibun, r.pnu, r.main_use, r.structure, r.use_apr_day || (r.use_apr_span || []).join("~"), r.floors, r.tot_area, r.age_years ?? "", LABEL[r.group]]);
     return "﻿" + [note, head, ...body].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";

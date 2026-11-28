@@ -332,7 +332,9 @@
     throw bad();
   }
   // 기록마다 makeRecord로 다시 검사한다(개인정보 꼴·형식이 틀리면 그 기록만 건너뛴다). 가져온 기록에는 '가져옴' 표시를 붙인다
-  function parseImport(bytes, now) {
+  // checked(선택): 부른 쪽이 이미 checkPhoto로 검사한 사진 {id → 기록의 해시 또는 null}. 백업 직후 되돌려 보기(app.js buildZip)가 사진을 두 번 해시하지 않게 한다
+  function parseImport(bytes, now, checked) {
+    const seen = (id) => !!checked && checked.has(id);
     const files = readZip(bytes), j = files.get("records.json");
     if (!j) throw new Error(NOT_OURS);
     let doc;
@@ -345,17 +347,17 @@
         if (!r || !ID_RE.test(String(r.id)) || !isDay(String(r.recorded_at))) throw new Error("형식");
         const own = Array.isArray(r.photos) ? r.photos.map(String) : [], previous = Array.isArray(r.prev_photos) ? r.prev_photos.map(String) : [];
         const got = (id) => files.get(`photos/${id}.jpg`);
-        for (const id of new Set([...own, ...previous])) checkPhoto(got(id));
+        for (const id of new Set([...own, ...previous])) if (!seen(id)) checkPhoto(got(id));
         // 사진 무결성(FR-45, 2026-11-01): 기록에 촬영 시 해시가 있으면 ZIP 안 사진을 다시 해시해 대조하고, 다르면 그 기록을 받지 않는다
         // (사진이 바뀌었거나 다른 사진으로 바꿔치기됨). 해시가 없는 이전 기록은 받되 '가져올 때 계산'으로 표시한다
         const shaIn = r.photo_sha256 && typeof r.photo_sha256 === "object" ? r.photo_sha256 : {}, sha = {};
         for (const id of own) {
-          const h = sha256Hex(got(id)), rec0 = String(shaIn[id] || "");
+          const h = seen(id) && checked.get(id) ? checked.get(id) : sha256Hex(got(id)), rec0 = String(shaIn[id] || "");
           if (rec0 && rec0 !== h) throw new Error("사진 해시 다름");
           sha[id] = h;
         }
         // 이전 사진의 기존 해시도 대조한다. 없던 해시는 지금 만들어 촬영 당시 값처럼 저장하지 않는다.
-        for (const id of previous) if (shaIn[id]) { checkPhoto(got(id), String(shaIn[id])); sha[id] = String(shaIn[id]); }
+        for (const id of previous) if (shaIn[id]) { if (!(seen(id) && checked.get(id) === String(shaIn[id]))) checkPhoto(got(id), String(shaIn[id])); sha[id] = String(shaIn[id]); }
         const referenced = [...new Set([...own, ...previous])];
         const shaSource = referenced.length && referenced.every((id) => SHA_RE.test(String(shaIn[id] || ""))) && r.photo_sha256_source !== "가져올 때 계산" ? "촬영 시" : "가져올 때 계산";
         const g = r.gps_original || {};

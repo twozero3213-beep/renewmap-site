@@ -191,8 +191,13 @@
   const NEAR_M = 500;
   // 지역 SOC 현황표(경쟁·흡수 보고서 6번). soc: data/soc_busan.json, pts: 그린 꼭짓점. 원자료 행을 그대로 센다(값을 고치지 않는다)
   function socCount(soc, pts) {
-    const inside = soc.points.filter(([, , , la, ln]) => inPolygon(la, ln, pts));
-    const near = soc.points.filter(([, , , la, ln]) => nearPolygon(la, ln, pts, NEAR_M));
+    // 다각형 범위에서 500m 넘게 벗어난 점은 nearPolygon을 부르지 않는다. nearPolygon과 같은 평면 좌표(toM)라 결과는 같다
+    // (4차 점검: 부산 구역에서도 경남 2.4만 점을 하나씩 다각형과 견줘 저사양 폰에서 누를 때마다 멈췄다)
+    const f = toM(pts), m = pts.map(f), xs = m.map((p) => p[0]), ys = m.map((p) => p[1]);
+    const x0 = Math.min(...xs) - NEAR_M, x1 = Math.max(...xs) + NEAR_M, y0 = Math.min(...ys) - NEAR_M, y1 = Math.max(...ys) + NEAR_M;
+    const box = (la, ln) => { const [x, y] = f([la, ln]); return x >= x0 && x <= x1 && y >= y0 && y <= y1; };
+    const near = soc.points.filter(([, , , la, ln]) => box(la, ln) && nearPolygon(la, ln, pts, NEAR_M));
+    const inside = near.filter(([, , , la, ln]) => inPolygon(la, ln, pts));   // 안에 있으면 nearPolygon도 참이라 near 안에서만 찾는다
     const rows = soc.sources.map((s, i) => {
       const mine = inside.filter((p) => p[0] === i), types = {};
       for (const p of mine) types[p[2] || "구분 없음"] = (types[p[2] || "구분 없음"] || 0) + 1;
@@ -281,6 +286,8 @@
   }
 
   const fmt = (x) => (Math.round(x * 10) / 10).toLocaleString("ko-KR", { maximumFractionDigits: 1 });
+  // CSV 머리 줄 끝에 건물 파일의 원천·이용조건을 붙인다(없으면 붙이지 않음, 지어내지 않는다)
+  const withSrc = (text, file) => [text, file.source, file.license].filter(Boolean).join(" · ");
   const n0 = (x) => Number(x).toLocaleString("ko-KR");   // 동수·개수는 늘 천 단위 쉼표(11-13: 화면에 3053동과 3,053동이 섞임)
   // "91.4~91.4동/ha" → "91.4동/ha". 나·다·라목 참고 글(parcel-ref.js texts)은 늘 하한~상한으로 낸다.
   // ponytail: 만든 글을 고친다. parcel-ref.js texts()에서 lo === hi일 때 한 값으로 내면 이 함수는 지운다
@@ -299,7 +306,9 @@
   // yes·no: 조사까지 붙인 말("노후·불량으로", "노후·불량이 아닌 것으로")
   const settleText = (s, yes, no) => (s ? `몇 동 더 확인하면 계산 결과가 갈리나: 정하지 못한 ${n0(s.unk)}동 가운데 ${n0(s.toMet)}동이 더 ${yes} 확인되면 '기준 해당'으로 계산됩니다. ${n0(s.toNotMet)}동이 ${no} 확인되면 '해당 안 함'으로 계산됩니다. 대장 열람이나 현장에서 구조·완공된 날·용도를 확인하세요.` : "");
   const SETTLE_OLD = ["노후·불량으로", "노후·불량이 아닌 것으로"], SETTLE_URBAN = ["준공 20년 이상으로", "20년 미만으로"], SETTLE_LOW = ["저층 주거로", "저층 주거가 아닌 것으로"];
-  const range = (lo, hi) => (fmt(lo) === fmt(hi) ? `${fmt(lo)}%` : `${fmt(lo)}~${fmt(hi)}%`);   // 반올림해 같으면 한 값(못 정한 동수는 값 옆에 따로 적는다)
+  // 기준 바로 아래 값(49.95%)을 반올림해 기준(50.0%)으로 보이며 '해당 안 함'이 붙지 않게, 기준 미만이면 내려서 보인다(4차 점검). 판정은 그대로
+  const under = (x, thr) => (thr !== undefined && x < thr - 1e-9 && Math.round(x * 10) / 10 >= thr - 1e-9 ? Math.floor(x * 10) / 10 : x);
+  const range = (lo, hi, thr) => { const a = fmt(under(lo, thr)), b = fmt(under(hi, thr)); return a === b ? `${a}%` : `${a}~${b}%`; };   // 반올림해 같으면 한 값(못 정한 동수는 값 옆에 따로 적는다)
 
   // 사용승인일 + n년이 되는 날. ageYears와 같이 기념일 당일부터 '지난' 것으로 보고, 2월 29일은 평년이면 3월 1일
   const addYears = (day, n) => {
@@ -313,7 +322,8 @@
     if (!tot) return null;
     const ev = rows.map((r) => [from(r), weight(r)]).filter(([d]) => d !== null).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
     let acc = 0;
-    for (const [d, w] of ev) { acc += w; if ((acc / tot) * 100 >= thr) return d < ref ? ref : d; }
+    // 판정 줄(cnt)과 같은 오차 보정: 경북 기준 200/3은 정확히 3분의 2인 (2/3)*100보다 아주 조금 커 '이미 해당'인데 도달일이 미래로 나왔다(4차 점검)
+    for (const [d, w] of ev) { acc += w; if ((acc / tot) * 100 >= thr - 1e-9) return d < ref ? ref : d; }
     return null;
   }
   // 빠른 쪽: 못 정한 건물을 노후로 일찍 셈(날짜 없음은 처음부터, 연한이 갈리면 짧은 연한). 늦은 쪽: 날짜 없으면 세지 않고 긴 연한
@@ -361,9 +371,9 @@
     const lines = [
       { label: "구역 면적", rule: "1만㎡ 이상", value: areaM2 === null ? "입력 안 함" : `${n0(Math.round(areaM2))}㎡(${areaDrawn ? "그린 구역에서 계산" : "입력값"})`,
         status: areaM2 === null ? CHECK : areaM2 >= 10000 ? MET : NOT_MET, basis: art("제5조②2") },
-      { label: "노후·불량 건축물 수", rule: `전체의 ${thr}% 이상`, value: `${range(cLo, cHi)} (${n0(nOld)}/${n0(n)}동${nUnk ? `, ${CHECK} ${n0(nUnk)}동` : ""})`,
+      { label: "노후·불량 건축물 수", rule: `전체의 ${thr}% 이상`, value: `${range(cLo, cHi, thr)} (${n0(nOld)}/${n0(n)}동${nUnk ? `, ${CHECK} ${n0(nUnk)}동` : ""})`,
         status: status(cLo, cHi, thr), basis: `${art("제5조②2")}·제3조②`, settle: settle(nOld, nUnk, (k) => (k / n) * 100 >= thr) },
-      { label: "가목 노후·불량 연면적", rule: `전체의 ${thr}% 이상`, value: area ? range(fLo, fHi) : "연면적 자료 없음", status: ga, basis: art("제5조②2가") },
+      { label: "가목 노후·불량 연면적", rule: `전체의 ${thr}% 이상`, value: area ? range(fLo, fHi, thr) : "연면적 자료 없음", status: ga, basis: art("제5조②2가") },
       { label: "나목 호수밀도", rule: "1ha당 50동 이상", value: parcel ? `참고 ${oneRange(parcel.density)}` : "대장 표제부로 셀 수 없음(공동주택 세대층 기준)", status: CHECK, basis: `${art("제5조②2나")}·제2조8호` },
       { label: "다목 도로", rule: "폭 4m 미만 30% 이상 또는 접도율 40% 이하", value: parcel ? `참고 접도율 ${oneRange(parcel.road)}` : "현장·도면 확인", status: CHECK, basis: art("제5조②2다"), field: "road" },   // field: 현장 앱 R.CHECKS id(접도 상태)
       { label: "라목 필지", rule: "과소·부정형·세장형 40% 이상", value: parcel ? `참고 ${oneRange(parcel.lots)}` : "지적도 확인", status: CHECK, basis: art("제5조②2라") },
@@ -378,7 +388,7 @@
     // 사용승인일 없는 건물을 분모에서 뺀 값도 함께 둔다. 부산 원도심은 날짜 없는 건물이 많아(중구 47%) 분모 선택만으로 판정이 뒤집힌다(2026-10-30 전수검사)
     const known = uUnk && n > uUnk ? (uOld / (n - uUnk)) * 100 : null;
     const noDate = rows.filter((r) => !aprSpan(r.b)), unkMasonry = noDate.filter((r) => MASONRY.test(r.b.structure || "")).length;
-    const urban = { label: "도시재생 쇠퇴 진단 노후 요건", rule: `준공 ${URBAN.years}년 이상 건축물 수 ${URBAN.thr}% 이상`, value: range(uLo, uHi), lo: uLo, hi: uHi, old: uOld, known, unk: uUnk, noDate: noDate.length, unkMasonry,
+    const urban = { label: "도시재생 쇠퇴 진단 노후 요건", rule: `준공 ${URBAN.years}년 이상 건축물 수 ${URBAN.thr}% 이상`, value: range(uLo, uHi, URBAN.thr), lo: uLo, hi: uHi, old: uOld, known, unk: uUnk, noDate: noDate.length, unkMasonry,
       status: status(uLo, uHi, URBAN.thr), basis: "도시재생법 시행령 제17조", settle: settle(uOld, uUnk, (k) => (k / n) * 100 >= URBAN.thr) };
     const one = (w) => [reachDate(rows, w, thr, ref, fromEarly), reachDate(rows, w, thr, ref, fromLate)];
     const reach = { count: one(() => 1), area: one((r) => Number(r.b.tot_area) || 0) };
@@ -434,7 +444,7 @@
     const mixed = why.get("주택 겸용") || 0;
     const unkText = unk ? `, ${CHECK} ${["층수 없는 주택", "주택 겸용", "5층 이상 단독·다세대·연립", "4층 이하 아파트·기숙사 등"].filter((k) => why.has(k)).map((k) => `${k} ${n0(why.get(k))}동`).join("·")}` : "";
     const lo = (yes / n) * 100, hi = ((yes + unk) / n) * 100;
-    const lowrise = { label: "저층 주거 비율", rule: LOWRISE.rule, value: `${range(lo, hi)} (${n0(yes)}/${n0(n)}동${unkText})`, mixed, unk, unkWhy: Object.fromEntries(why),
+    const lowrise = { label: "저층 주거 비율", rule: LOWRISE.rule, value: `${range(lo, hi, 200 / 3)} (${n0(yes)}/${n0(n)}동${unkText})`, mixed, unk, unkWhy: Object.fromEntries(why),
       status: yes * 3 >= 2 * n ? MET : (yes + unk) * 3 < 2 * n ? NOT_MET : CHECK, settle: settle(yes, unk, (k) => k * 3 >= 2 * n), unit: "신청 구역(이 목록)", define: "단독·다가구·연립·다세대 등(유형과 지상 4층 이하 기준이 갈리는 건물, 주택 겸용 근린생활시설 등은 추가확인)", basis: NV_BASIS };
     // ③(20년 경과)이 안 되면 나머지와 관계없이 불충족. ①②는 행정동 공식 쇠퇴진단 값이라 이 목록으로는 정하지 못한다
     const decline = { label: "쇠퇴요건 2개 이상(20년 경과 포함)", rule: "①인구 감소 ②사업체 감소 ③20년 이상 건축물 2분의 1 중 ③ 포함 2개 이상",
@@ -473,7 +483,7 @@
       const rate = cell(q.rate), run = q.run ? cell(q.run) : null, r = num(rate), s = num(run);
       // 셀은 있는데 값이 비고 가린 이유도 없으면 시계열이 모자라 계산하지 않은 것이다(2026-11-06 조사: 대부분 지금 행정동 코드가 1995년 이후 생김)
       const short = r === null && rate && !rate.value_hidden_reason && q.rate === "DECLINE_POP_DROP30Y_PCT";
-      const parts = [`${q.rateName} ${short ? "계산 안 함(1996~2025년 인구 기록이 다 있지 않음)" : r === null ? "자료 없음" : `${r.toFixed(1)}%`}`];
+      const parts = [`${q.rateName} ${short ? "계산 안 함(1996~2025년 인구 기록이 다 있지 않음)" : r === null ? "자료 없음" : `${under(r, q.thr).toFixed(1)}%`}`];
       if (q.run) parts.push(`3년 연속 감소 ${s === null ? "자료 없음" : s === 1 ? "있음" : "없음"}`);
       const c = rate || run || {};
       // 두 길(시행령 제17조 가목·나목) 중 하나라도 기준에 닿으면 그 요건은 기준 해당 값이 있다. 30년 값이 없어도 5년 길로 본다(2026-11-07).
@@ -502,9 +512,9 @@
   }
   function stackHTML(label, old, unk, tot, thr) {
     if (!tot) return `<div class="rv-stack is-empty"><div class="rv-h"><b>${escH(label)}</b><span>자료 없음</span></div></div>`;
-    const a = (old / tot) * 100, b = (unk / tot) * 100, c = Math.max(0, 100 - a - b), r = range(a, a + b);
+    const a = (old / tot) * 100, b = (unk / tot) * 100, c = Math.max(0, 100 - a - b), r = range(a, a + b, thr);
     return `<div class="rv-stack"><div class="rv-h"><b>${escH(label)}</b><span>${r} · 기준 ${thr}%</span></div>` +
-      `<svg viewBox="0 0 100 16" preserveAspectRatio="none" role="img" aria-label="${escH(label)} 노후·불량 ${fmt(a)}%, 추가확인 ${fmt(b)}%, 노후·불량 아님 ${fmt(c)}%, 기준선 ${thr}%">` +
+      `<svg viewBox="0 0 100 16" preserveAspectRatio="none" role="img" aria-label="${escH(label)} 노후·불량 ${fmt(under(a, thr))}%, 추가확인 ${fmt(b)}%, 노후·불량 아님 ${fmt(c)}%, 기준선 ${thr}%">` +
       `<rect class="rv-old" width="${a.toFixed(2)}" height="16"/><rect class="rv-unk" x="${a.toFixed(2)}" width="${b.toFixed(2)}" height="16"/><rect class="rv-no" x="${(a + b).toFixed(2)}" width="${c.toFixed(2)}" height="16"/>` +
       `<line class="rv-thr" x1="${thr}" x2="${thr}" y1="0" y2="16" vector-effect="non-scaling-stroke"/></svg></div>`;
   }
@@ -523,7 +533,7 @@
       `${res.thr}% 도달일(지금 건물 기준): 건물 수 ${c[2]}, 연면적 ${a[2]} 적용 판본은 구역 이력마다 다를 수 있다.`;
   };
   const refRows = (res) => [
-    [`참고: ${res.urban.label}`, res.urban.rule, `${res.urban.value}${res.urban.known === null ? "" : `(날짜 있는 건물만 ${fmt(res.urban.known)}%)`}, ${res.urban.status}`, res.urban.basis],
+    [`참고: ${res.urban.label}`, res.urban.rule, `${res.urban.value}${res.urban.known === null ? "" : `(날짜 있는 건물만 ${fmt(under(res.urban.known, URBAN.thr))}%)`}, ${res.urban.status}`, res.urban.basis],
     ["건물 수 기준 도달 날짜", `전체의 ${res.thr}%`, reachText(res.reach.count, res.ref), "사용승인일 + 조례 연한"],
     ["연면적 기준 도달 날짜", `전체의 ${res.thr}%`, res.area ? reachText(res.reach.area, res.ref) : "연면적 자료 없음", "사용승인일 + 조례 연한"],
   ];
@@ -586,18 +596,18 @@
   // 20년 넘은 건물 비율 세 줄(08c 쟁점 1 '대상지 근거표'): 두 값을 같은 크기로, 동수, 분모. 값은 review의 urban 그대로
   function agingLines(res, file) {
     const u = res.urban, straddle = u.unk - u.noDate, young = res.n - u.old - u.unk;
-    const only = u.known !== null ? ` (완공된 날이 있는 건물만 ${fmt(u.known)}%)` : u.unk ? " (완공된 날이 있는 건물 없음)" : "";
-    return [`20년 이상 ${range(u.lo, u.hi)}${only}`,
+    const only = u.known !== null ? ` (완공된 날이 있는 건물만 ${fmt(under(u.known, URBAN.thr))}%)` : u.unk ? " (완공된 날이 있는 건물 없음)" : "";
+    return [`20년 이상 ${range(u.lo, u.hi, URBAN.thr)}${only}`,
       `전체 ${n0(res.n)}동 · 20년 이상 ${n0(u.old)}동 · 20년 미만 ${n0(young)}동 · 완공된 날 없음 ${n0(u.noDate)}동(${pct(u.noDate, res.n)}%)${straddle ? ` · 연·월만 있어 정하지 못함 ${n0(straddle)}동` : ""}`,
       `분모: 건축물대장 표제부 주건축물(부속 제외) · ${file.hub_reference_date} 기준${res.ref === file.hub_reference_date ? "" : ` · 20년은 ${res.ref}에 지났는지로 셈`}`];
   }
   // r23(13 M3·3절 결론): 범위 '76.1~80.4% (…79.5%)' 대신 이름 붙인 선택지 세 줄을 같은 크기로(00b 결정 1: 산정 기준별 값을 주고 용역사가 고른다).
   // 정하지 못한 건물이 없으면 세 값이 같아 한 줄. 홈 근거표 조각은 agingLines 첫 줄을 그대로 쓴다
   function agingOptsHTML(u) {
-    if (!u.unk) return `<p class="rd-opt1">20년 이상 <b>${fmt(u.lo)}%</b></p>`;
+    if (!u.unk) return `<p class="rd-opt1">20년 이상 <b>${fmt(under(u.lo, URBAN.thr))}%</b></p>`;
     const opts = [["20년 미만으로 치면", u.lo], ["20년 이상으로 치면", u.hi], ["빼고 세면", u.known]];
     return `<p>완공된 날을 정하지 못한 건물 ${n0(u.unk)}동을</p><ul class="rd-opts">` +
-      opts.map(([k, v]) => `<li><span>${k}</span> <b>${v === null ? "값 없음(완공된 날이 있는 건물 없음)" : `${fmt(v)}%`}</b></li>`).join("") +
+      opts.map(([k, v]) => `<li><span>${k}</span> <b>${v === null ? "값 없음(완공된 날이 있는 건물 없음)" : `${fmt(under(v, URBAN.thr))}%`}</b></li>`).join("") +
       `</ul><p class="hint">셋 중 어느 값을 쓸지는 용역사가 고릅니다.</p>`;
   }
   // 꼬리표 옆 쉬운 문장(09 1절: 꼬리표만 두지 않는다). 추가확인은 몇 동 더 확인하면 갈리는지(settleText) 그대로
@@ -647,7 +657,7 @@
   // 건물별 표 CSV(r23 뒤): 화면 표와 같은 칸·같은 글에 PNU(지도 파일과 잇는 열쇠)를 더하고, 못 찾은 주소도 까닭과 함께 같은 표 아래에 싣는다.
   // 13 재점검: 채운 단추 '건물별 표 받기(CSV)'가 재개발 노후·불량 판단 CSV(toCSV)를 내려 화면의 '20년 넘음'과 칸·기준이 달랐다
   function btableCSV(res, file, m, { bad = [], unresolved = [], secret = false } = {}) {
-    const note = [mark(secret, `건물별 표 · 20년 넘음은 완공된 날(사용승인일)부터 ${res.ref}까지로 셈 · 건축물대장 기준일 ${file.hub_reference_date} · 참고용 계산입니다. 판단은 구청·담당 기관이 합니다`)];
+    const note = [mark(secret, withSrc(`건물별 표 · 20년 넘음은 완공된 날(사용승인일)부터 ${res.ref}까지로 셈 · 건축물대장 기준일 ${file.hub_reference_date} · 참고용 계산입니다. 판단은 구청·담당 기관이 합니다`, file))];
     const found = buildingRows(res, file).map((r, i) => [...r, res.perBuilding[i].b.pnu || ""]);
     const missed = missGroups(m, bad, unresolved).flatMap(([l, why]) => l.map((a) => [a, "못 찾음", "", "", "", "", why === MISS_WHY.missing ? `${why} → 다음에 볼 자료: ${MISS_NEXT}` : why, ""]));
     return "\ufeff" + [note, [...BTABLE_COLS, "PNU"], ...found, ...missed].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
@@ -730,7 +740,7 @@
   function toCSV(res, file, { secret = false } = {}) {
     const head = ["지번", "PNU", "주용도", "구조", "사용승인일", "연면적(㎡)", "적용 연한", "경과 연수", "노후·불량", "사유"];
     const body = res.perBuilding.map((r) => [r.b.jibun, r.b.pnu, r.b.main_use, r.b.structure, r.b.use_apr_day || (r.b.use_apr_span || []).join("~"), r.b.tot_area, r.years || "", r.age ?? "", r.mark, r.why || ""]);
-    const note = [mark(secret, `${NOT_APPROVED} · ${RULES.map((x) => x.id).join("·")} 초안 · 경과 기준일 ${res.ref} · 건축물대장 기준일 ${file.hub_reference_date}`)];
+    const note = [mark(secret, withSrc(`${NOT_APPROVED} · ${RULES.map((x) => x.id).join("·")} 초안 · 경과 기준일 ${res.ref} · 건축물대장 기준일 ${file.hub_reference_date}`, file))];
     return "﻿" + [note, head, ...body].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   }
 
@@ -747,7 +757,7 @@
   }
   function sampleCSV(res, file, { n = 60, secret = false } = {}) {
     const s = sample(res, n), k = s.picked.length;
-    const note = [mark(secret, `수기 대조 표본 ${k}동 / 전체 ${n0(res.n)}동 · 같은 목록이면 같은 표본(시드 ${s.seed}) · 불일치 0건이면 오류율 95% 상한 ${fmt(s.upper)}% · ${NOT_APPROVED} · 건축물대장 기준일 ${file.hub_reference_date}`)];
+    const note = [mark(secret, withSrc(`수기 대조 표본 ${k}동 / 전체 ${n0(res.n)}동 · 같은 목록이면 같은 표본(시드 ${s.seed}) · 불일치 0건이면 오류율 95% 상한 ${fmt(s.upper)}% · ${NOT_APPROVED} · 건축물대장 기준일 ${file.hub_reference_date}`, file))];
     const head = ["표본 번호", "지번", "PNU", "주용도", "구조", "사용승인일", "연면적(㎡)", "리뉴맵 판단", "열람 주용도", "열람 구조", "열람 사용승인일", "열람 연면적(㎡)", "일치(O/X)", "메모"];
     const body = s.picked.map((r, i) => [i + 1, r.b.jibun, r.b.pnu, r.b.main_use, r.b.structure, r.b.use_apr_day || (r.b.use_apr_span || []).join("~"), r.b.tot_area, r.mark, "", "", "", "", "", ""]);
     return "﻿" + [note, head, ...body].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";

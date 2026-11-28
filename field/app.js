@@ -551,13 +551,17 @@
         const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
         // FR-45: 가림을 마친 이 JPEG 바이트(저장·내보내기되는 그대로)의 SHA-256을 붙이는 순간 계산한다(2026-11-01).
         // 나중에 ZIP 가져오기·원장 확인 이력에서 사진이 바뀌지 않았는지 대조하는 근거가 된다
-        const sha256 = R.sha256Hex(new Uint8Array(await blob.arrayBuffer()));
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        // 내보내기·백업은 이 검사(허용한 색상 프로파일만)를 통과한 사진만 담는다. 브라우저가 다른 메타데이터를 넣으면 나중에 백업 전체가 막히니 붙일 때 바로 알린다(4차 점검)
+        let warn = "";
+        try { R.checkPhoto(bytes); } catch (e) { warn = "이 사진은 백업 형식 검사(허용한 색상 프로파일)에 맞지 않아 ZIP 백업·공유가 막힐 수 있습니다.\n기록은 이 기기에 저장되지만, 백업이 필요하면 Chrome에서 기록해 주세요."; }
+        const sha256 = R.sha256Hex(bytes);
         if (edit !== cur || cur.revision !== revision || !$("safe").checked) return;
         pending.push({ id, blob, url: URL.createObjectURL(blob), sha256 });
         // 붙인 사진은 저장 전까지 이 기기 임시 칸에도 둔다(탭이 닫히거나 카메라 앱에서 돌아오며 다시 열려도 잃지 않게, M21)
         S.putDraft({ id, blob, sha256, created_at: new Date().toISOString() }).catch(() => say("사진을 기기 임시 칸에 두지 못했습니다(저장 공간 등). 다른 앱으로 가기 전에 먼저 저장해 주세요.", true));
         linkNext = null;
-        closeEdit(); drawThumbs(); say("");
+        closeEdit(); drawThumbs(); say(warn, !!warn);
         $("thumbs").scrollIntoView?.({ block: "center" });   // 방금 붙인 사진이 화면 위로 사라졌다(M22)
         if (link) { $(`ck-${link}`).checked = true; $(`ck-${link}`).dispatchEvent(new Event("change")); $(`ckp-${link}`).value = id; }
     } catch (e) { if (edit === cur) say("사진을 붙이지 못했습니다.\n다시 눌러 보세요.", true); }
@@ -983,7 +987,7 @@
     const rows = await S.records();
     const json = new TextEncoder().encode(JSON.stringify(R.exportDoc(rows, new Date()), null, 2));
     if (json.length > R.LIMITS.json || json.length > R.LIMITS.zip) throw tooLarge();
-    const entries = [{ name: "records.json", data: json }], sent = new Set();
+    const entries = [{ name: "records.json", data: json }], sent = new Set(), checked = new Map();
     let size = json.length;
     for (const r of rows) for (const id of new Set([...(r.photos || []), ...(r.prev_photos || [])])) {
       if (!sent.has(id) && entries.length >= R.LIMITS.entries) throw tooLarge();
@@ -991,22 +995,28 @@
       if (!sent.has(id) && b && size + b.size > R.LIMITS.zip) throw tooLarge();
       const data = b ? new Uint8Array(await b.arrayBuffer()) : null;
       // 빠진·바뀐 사진을 성공한 백업으로 표시하면 복원할 때 기록이 사라진다. 하나라도 실패하면 ZIP 전체를 중단한다.
-      R.checkPhoto(data, r.photo_sha256 && r.photo_sha256[id]);
+      const want = r.photo_sha256 && r.photo_sha256[id];
+      R.checkPhoto(data, want);
+      if (want || !checked.has(id)) checked.set(id, want || null);   // 아래 되돌려 보기에서 같은 사진을 다시 해시하지 않게
       if (!sent.has(id)) { sent.add(id); size += data.length; entries.push({ name: `photos/${id}.jpg`, data }); }
     }
     const day = D.localDate(), bytes = D.zipStore(entries, day);
     if (bytes.length > R.LIMITS.zip) throw tooLarge();
-    return { name: `renewmap-field-${day}.zip`, bytes, refs: rows.map(backupRef) };
+    // 가져오기는 기록마다 지금 규칙(makeRecord)으로 다시 검사해 맞지 않는 기록을 건너뛴다. 규칙이 바뀌기 전 기록은 ZIP에 들어가도 되살아나지 않으니
+    // 같은 검사로 되돌려 보고, 되살아나는 기록만 '백업함'으로 표시한다(2026-11-28 4차 점검: 백업 완료로 보였는데 복원하면 빠졌다)
+    const back = new Set(R.parseImport(bytes, new Date(), checked).records.map((r) => r.id)), ok = rows.filter((r) => back.has(r.id));
+    return { name: `renewmap-field-${day}.zip`, bytes, refs: ok.map(backupRef), lost: rows.length - ok.length };
   }
+  const warnLost = (z) => { if (z.lost) toast(`ZIP은 만들었지만 ${z.lost}건은 지금 형식 검사에 맞지 않아 이 ZIP으로 되살릴 수 없습니다.\n그 기록은 ‘백업하지 않은 기록’으로 남겨 두니 이 기기 기록을 지우지 마세요.`); };
   $("exp").addEventListener("click", async () => {
-    try { const z = await buildZip(); D.saveBytes(z.name, z.bytes, "application/zip"); markBackup(z.refs); } catch (e) { toast(e.code === "FIELD_PHOTO" || e.code === "FIELD_ZIP_LIMIT" ? e.message : "ZIP을 만들지 못했습니다.\n잠시 뒤 다시 해 보세요."); }
+    try { const z = await buildZip(); D.saveBytes(z.name, z.bytes, "application/zip"); markBackup(z.refs); warnLost(z); } catch (e) { toast(e.code === "FIELD_PHOTO" || e.code === "FIELD_ZIP_LIMIT" ? e.message : "ZIP을 만들지 못했습니다.\n잠시 뒤 다시 해 보세요."); }
   });
   $("backupNow").addEventListener("click", () => $("exp").click());
   $("share").addEventListener("click", async () => {
     try {
       const z = await buildZip(), file = new File([z.bytes], z.name, { type: "application/zip" });
       await navigator.share({ files: [file], title: "리뉴맵 현장 사진 기록" });
-      markBackup(z.refs);
+      markBackup(z.refs); warnLost(z);
     } catch (e) { if (e.name !== "AbortError") toast(e.code === "FIELD_PHOTO" || e.code === "FIELD_ZIP_LIMIT" ? e.message : "공유하지 못했습니다.\n모두 내보내기(ZIP)를 쓰세요."); }
   });
   if (navigator.canShare && navigator.canShare({ files: [new File([""], "a.zip", { type: "application/zip" })] })) $("share").hidden = false;

@@ -30,7 +30,7 @@
     const y = data.years;
     const rows = oa === undefined ? dong.oas : dong.oas.filter((o) => o.oa === oa);
     if (oa !== undefined && !rows.length) throw new RangeError("현재 행정동에 없는 집계구");
-    const note = [`${dong.sigungu} ${dong.name} 집계구 ${rows.length}개 · ${data.source} · ${data.license_type} · 판정 규칙 ${data.rule}(승인 전) · ${data.note}`];
+    const note = [`${dong.sigungu_name || dong.sigungu} ${dong.name} 집계구 ${rows.length}개 · ${data.source} · ${data.license_type} · 판정 규칙 ${data.rule}(승인 전) · ${data.note}`];
     if (oa !== undefined) {
       const [row] = rows;
       note[0] += ` · 선택 집계구 ${oa} · 인구 사유 ${row.pop_req.basis || "기록 없음"} · 사업체 사유 ${row.biz_req.basis || "기록 없음"}`;

@@ -1,8 +1,8 @@
 {
   "source": "twozero3213-beep/renewmap",
-  "source_commit": "f194402e6f626c910e9aee118f973d54b7e14235",
+  "source_commit": "b5c94db427a2a62046183c257e283847257c2e3e",
   "ref": "main",
-  "synced_at": "2026-11-28T02:42:56.000Z",
+  "synced_at": "2026-11-28T04:25:55.000Z",
   "source_snapshot_complete": false,
   "source_baseline_commit": "51fb2648d8b67c6ecccb287c9966103a0aef7998",
   "applied_patch_commits": [
@@ -303,7 +303,9 @@
     "b114017be8e64a64f4652e3e880c332b045e4e05",
     "4727db1e4004e8e53c18d754a03d2f1d5d7820ef",
     "923baa87cf2cb5d88beb608a758ef4da59629a35",
-    "b5849a955c29c22454fd5243cefbe3460e6c0f11"
+    "b5849a955c29c22454fd5243cefbe3460e6c0f11",
+    "c57f9f1d5e52499abbca9ae71ad85a6732166b53",
+    "aa2fa50ebed624e635d04338ecb24daec183597d"
   ],
   "deferred_source_commits": [
     "522aaf785",

@@ -203,7 +203,7 @@
   function socRows(rows, format) {
     return SOC.map(([item, scope, code]) => {
       const r = code ? rows.find(x => x.ind.code === code) : null, has = r && r.value !== null && r.value !== undefined;
-      return { item, scope, label: r ? r.ind.label : '', value: has ? format(r) : '', source: has ? r.ind.source || '' : '', status: !code ? '자료 없음, 현장·대장 조사' : has ? '행정동 값, 구역 기준 재조사' : '값 없음' };
+      return { item, scope, label: r ? r.ind.label : '', value: has ? format(r) : '', source: has ? r.ind.source || '' : '', ref: has && r.cell && r.cell.reference_date ? String(r.cell.reference_date).slice(0, 10) : '', license: has ? (r.cell && r.cell.license_type) || '' : '', status: !code ? '자료 없음, 현장·대장 조사' : has ? '행정동 값, 구역 기준 재조사' : '값 없음' };
     });
   }
   function socHTML(rows, format) {
@@ -212,9 +212,10 @@
       `<p class="pg-acts"><button type="button" class="btn ghost" data-soc-csv>CSV 받기</button><a class="btn ghost" href="field/redev.html">구역을 그려 시설 세기(부산)</a></p><div class="table-wrap" tabindex="0" role="region" aria-label="기반·편의시설 현황"><table><thead><tr><th scope="col">시설</th><th scope="col">조사 범위</th><th scope="col">행정동 값</th><th scope="col">상태</th></tr></thead><tbody>` +
       list.map(r => `<tr><th scope="row">${esc(r.item)}</th><td class="nw">${esc(r.scope)}</td><td>${r.value ? `${esc(r.label)} ${esc(r.value)}` : '–'}</td><td>${esc(r.status)}</td></tr>`).join('') + `</tbody></table></div></section>`;
   }
-  function socCSV(name, rows, format) {
+  // 4차 점검: 다른 CSV처럼 값마다 기준일·이용조건을 싣고, 같은 이름 동(신사동 등)이 섞이지 않게 행정동 코드를 둔다
+  function socCSV(name, rows, format, code = '') {
     const q = csvCell;   // 행정동·출처·시설 칸은 외부 공공데이터에서 온다: '='로 시작하면 엑셀이 식으로 읽는다(CQ-07)
-    return '﻿' + [['행정동', '시설', '조사 범위', '지표', '행정동 값', '출처', '상태'].map(q).join(','), ...socRows(rows, format).map(r => [name, r.item, r.scope, r.label, r.value, r.source, r.status].map(q).join(','))].join('\r\n');
+    return '﻿' + [['행정동', '행정동 코드', '시설', '조사 범위', '지표', '행정동 값', '기준일', '출처', '이용조건', '상태'].map(q).join(','), ...socRows(rows, format).map(r => [name, code, r.item, r.scope, r.label, r.value, r.ref, r.source, r.license, r.status].map(q).join(','))].join('\r\n') + '\r\n';
   }
 
   // 시·군·구 안 동을 나란히(코드 순, 순위·배분 아님). 자료로 갈리는 요건만 칸으로 둔다

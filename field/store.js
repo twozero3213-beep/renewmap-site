@@ -26,7 +26,8 @@
   async function tx(stores, mode, fn) {
     const d = await db();
     return new Promise((resolve, reject) => {
-      const t = d.transaction(stores, mode);
+      // 쓰기는 디스크에 확정된 뒤 완료로 본다(기본 relaxed면 '저장했습니다' 직후 전원이 꺼질 때 마지막 기록을 잃을 수 있다. 4차 점검)
+      const t = mode === "readwrite" ? d.transaction(stores, mode, { durability: "strict" }) : d.transaction(stores, mode);
       const r = fn(...stores.map((s) => t.objectStore(s)));
       t.oncomplete = () => { if (mode === "readwrite") keep(); resolve(r && r.result); };
       t.onerror = () => reject(t.error);
