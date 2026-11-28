@@ -160,7 +160,7 @@
     syncStates();
     function show(name, focusTab) {
       active = normalizePanel(name);
-      if (active === 'filters' && !window.RenewFind) import('./find.js?v=20261122-r31').catch(() => {
+      if (active === 'filters' && !window.RenewFind) import('./find.js?v=20261128-r95-2').catch(() => {
         const slot = document.getElementById('findApp'); slot.setAttribute('role', 'alert');
         slot.textContent = '조건 도구를 불러오지 못했습니다. 새로고침한 뒤 다시 열어 주세요.';
       });
