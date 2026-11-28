@@ -30,7 +30,8 @@
 <script src="site.js?v=20261122-r24" defer></script>
 <script src="cellpack.js" defer></script>
 <script src="util.js?v=20261122-r19" defer></script>
-<script src="relocate.js?v=20261127-score-basis-print" defer></script>
+<script src="save-file.js?v=20261119-w2" defer></script>
+<script src="relocate.js?v=20261128-conditions" defer></script>
 </head>
 <body class="relocate-page">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -70,6 +71,14 @@
       </section>
       <button id="compareButton" class="btn relocate-primary" type="submit" disabled>이 조건으로 동네 비교</button>
       <p id="dataStatus" class="relocate-help" role="status">부산 행정동 자료를 불러오고 있습니다.</p>
+      <details class="relocate-weights">
+        <summary>비교 조건 파일</summary>
+        <p id="conditionHelp" class="relocate-help">회사 동 코드, 비교 조건, 거리 자료와 계산 규칙을 파일에 담습니다. 파일을 열면 현재 공개 자료로 다시 비교할 수 있습니다.</p>
+        <button type="button" class="btn ghost" id="saveConditions" disabled>비교 조건 저장</button>
+        <label for="conditionFile">저장한 조건 파일 열기</label>
+        <input type="file" id="conditionFile" accept=".json,application/json" aria-describedby="conditionHelp" disabled>
+        <p id="conditionStatus" class="relocate-help" role="status"></p>
+      </details>
     </form>
     <section class="relocate-results" aria-labelledby="resultsTitle">
       <div class="relocate-result-heading"><div><h2 id="resultsTitle">생활 조건에 따른 비교 결과</h2></div><button id="printButton" type="button" class="btn ghost" disabled>인쇄·PDF</button></div>

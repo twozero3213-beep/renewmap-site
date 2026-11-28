@@ -33,6 +33,32 @@
     { label: '의료와 생활·여가', housing: 'APT', groups: [1, 1, 1, 0, 5, 4], note: '회사 동 반경 안에서 의료와 생활·여가 시설을 중심으로 비교합니다.' }
   ].map(p => ({ ...p, weights: Object.fromEntries(FACTORS.map(f => [f.code, f.ref ? 0 : p.groups[f.group]])) }));
 
+  const CONDITION_FORMAT = 'renewmap-relocate-conditions-v1';
+  const CONDITION_FACTORS = FACTORS.filter(f => !f.ref);
+  function readConditions(data) {
+    if (data?.format !== CONDITION_FORMAT || typeof data.office !== 'string' || !/^21\d{6}$/.test(data.office) ||
+        !Number.isInteger(data.preset) || !PRESETS[data.preset] || typeof data.housing !== 'string' || !Object.hasOwn(HOUSING, data.housing) ||
+        !['5', '10', '15', 'all'].includes(data.radius) || !data.weights || Array.isArray(data.weights) ||
+        Object.keys(data.weights).length !== CONDITION_FACTORS.length ||
+        CONDITION_FACTORS.some(f => !Object.hasOwn(data.weights, f.code) || !Number.isInteger(data.weights[f.code]) || data.weights[f.code] < 0 || data.weights[f.code] > 5) ||
+        !CONDITION_FACTORS.some(f => data.weights[f.code] > 0)) return null;
+    const inputBasis = data.basis;
+    if (inputBasis !== undefined && (!inputBasis || typeof inputBasis.rule !== 'string' ||
+        !/^RELOC-RANK-\d{4}\.\d{2}-v\d+$/.test(inputBasis.rule) || typeof inputBasis.distance !== 'string' ||
+        !/^reloc-office:[a-f0-9]{64}$/.test(inputBasis.distance))) return null;
+    const weights = Object.fromEntries(FACTORS.map(f => [f.code, f.ref ? 0 : data.weights[f.code]]));
+    const basis = inputBasis ? { rule: inputBasis.rule, distance: inputBasis.distance } : null;
+    return { office: data.office, preset: data.preset, housing: data.housing, radius: data.radius, weights, basis };
+  }
+
+  function conditionBasisNote(basis, distance) {
+    if (!basis) return '저장 당시의 거리 자료·계산 규칙 기록이 없습니다.';
+    const changed = [];
+    if (basis.distance !== distance) changed.push('거리 자료');
+    if (basis.rule !== RULE) changed.push('계산 규칙');
+    return changed.length ? `저장 당시와 다른 항목은 ${changed.join('·')}입니다.` : '저장 당시와 거리 자료·계산 규칙이 일치합니다.';
+  }
+
   function normalize(values, lower) {
     const sorted = values.filter(isNum).sort((a, b) => a - b);
     return values.map(v => {
@@ -208,7 +234,7 @@
     });
   }
 
-  const api = { FACTORS, PRESETS, normalize, weightedScore, rankDongs, gateByRadius, groupShares, rankRanges, officeDistances, makeDongs, rentChoice, monthSpan, rentPeriod, transitTimes, supportStatus };   // 2026-11-21 transitTimes: 시험용
+  const api = { FACTORS, PRESETS, normalize, weightedScore, rankDongs, gateByRadius, groupShares, rankRanges, officeDistances, makeDongs, rentChoice, monthSpan, rentPeriod, transitTimes, supportStatus, readConditions, conditionBasisNote };   // 2026-11-21 transitTimes: 시험용
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (!root.document) return;
   root.RenewRelocate = api;
@@ -216,6 +242,7 @@
   let dongs = [], presetIndex = 0, weights = { ...PRESETS[0].weights }, compared = false, adjusted = false;
   // 2026-11-21: transit = 회사 동까지 대중교통 대략 시간(reloc/transit, export_transit_busan.py). 없거나 못 받으면 null — 점수·순위에는 쓰지 않고 카드에 참고로만 보인다
   let distances = null, transit = null, requestId = 0, rentText = '', rentMonths = {};
+  let conditionReadId = 0, distanceSnapshot = null;
   const emptyResults = $('results').innerHTML; // 결과를 비울 때 450px 빈자리 대신 처음 안내 상자를 되살린다.
   const stageLabel = () => `${PRESETS[presetIndex].label} · 주거 ${HOUSING[$('housingType').value]}` + (adjusted ? ' · 중요도 직접 조정' : '');
   const radiusKm = () => +$('radiusKm').value || null; // '전체'(all)·빈 값은 null
@@ -328,7 +355,7 @@
   }
   function clearResults(message) {
     compared = false;
-    $('results').innerHTML = emptyResults; $('printSheet').replaceChildren(); $('printButton').disabled = true;
+    $('results').innerHTML = emptyResults; $('printSheet').replaceChildren(); $('printButton').disabled = true; $('saveConditions').disabled = true;
     $('resultStatus').textContent = message; $('resultShares').textContent = '';
   }
   function render() {
@@ -347,18 +374,21 @@
     $('resultStatus').textContent = `${office.district} ${office.name} 출근 · ${stageLabel()} · ${scope}.${WIDE_DONGS.includes(office.code) ? ' 큰 행정동이라 대표점 거리 오차가 큽니다.' : ''}${ranked.length < dongs.length ? ` 계산할 자료가 없는 ${dongs.length - ranked.length}개 동은 제외했습니다.` : ''}`;
     $('resultShares').textContent = shareText();
     $('results').innerHTML = top.map((d, i) => card(d, i, ranges[i])).join('');
-    printSheet(top, office, ranges, scope + (WIDE_DONGS.includes(office.code) ? ' · 큰 행정동이라 대표점 거리 오차가 큼' : '')); $('printButton').disabled = false;
+    printSheet(top, office, ranges, scope + (WIDE_DONGS.includes(office.code) ? ' · 큰 행정동이라 대표점 거리 오차가 큼' : '')); $('printButton').disabled = false; $('saveConditions').disabled = false;
   }
   $('lifeStages').innerHTML = PRESETS.map((p, i) => `<button type="button" data-preset="${i}" aria-pressed="${i === 0}">${esc(p.label)}</button>`).join('');
   $('stageHelp').textContent = PRESETS[0].note;
   $('housingType').value = PRESETS[0].housing;
   $('weightSliders').innerHTML = GROUPS.map((g, n) => `<fieldset><legend>${g}</legend>${FACTORS.filter(f => f.group === n && !f.ref).map(f => `<label class="relocate-slider" for="weight-${f.code}"><span>${esc(f.label)}</span><output id="out-${f.code}" for="weight-${f.code}">${weights[f.code]}</output><input type="range" id="weight-${f.code}" data-factor="${f.code}" min="0" max="5" step="1" value="${weights[f.code]}"></label>`).join('')}</fieldset>`).join('');
+  function showConditionWeights() {
+    for (const b of $('lifeStages').children) b.setAttribute('aria-pressed', String(+b.dataset.preset === presetIndex));
+    for (const f of CONDITION_FACTORS) { $(`weight-${f.code}`).value = weights[f.code]; $(`out-${f.code}`).value = weights[f.code]; }
+    $('stageHelp').textContent = PRESETS[presetIndex].note;
+  }
   $('lifeStages').addEventListener('click', e => {
     const button = e.target.closest('[data-preset]'); if (!button) return;
     presetIndex = +button.dataset.preset; weights = { ...PRESETS[presetIndex].weights }; adjusted = false;
-    for (const b of $('lifeStages').children) b.setAttribute('aria-pressed', String(b === button));
-    for (const f of FACTORS.filter(f => !f.ref)) { $(`weight-${f.code}`).value = weights[f.code]; $(`out-${f.code}`).value = weights[f.code]; }
-    $('stageHelp').textContent = PRESETS[presetIndex].note;
+    showConditionWeights();
     $('housingType').value = PRESETS[presetIndex].housing;
     if (compared) render();
   });
@@ -379,9 +409,11 @@
     $('dataStatus').textContent = `부산 ${dongs.length}개 행정동 · 검색 결과 ${filtered.length}개`;
   }
   $('officeQuery').addEventListener('input', officeOptions);
-  async function loadOfficeDistances() {
+  async function loadOfficeDistances(savedBasis) {
     const id = ++requestId, code = $('officeDong').value;
+    if (savedBasis === undefined) $('conditionStatus').textContent = '';
     distances = null;
+    distanceSnapshot = null;
     transit = null;
     $('compareButton').disabled = true;
     clearResults(code ? '회사 동의 거리 자료를 불러오는 중입니다.' : '회사가 있는 행정동을 선택해 주세요.');
@@ -392,13 +424,19 @@
       distances = officeDistances(doc, code, dongs);
       transit = transitTimes(await util.fetchJson(`data/national/reloc/transit/${code}.json`, true), code);   // 참고 자료라 못 받아도 비교는 막지 않는다
       if (id !== requestId || code !== $('officeDong').value) return;
+      distanceSnapshot = doc.snapshot_id;
       $('compareButton').disabled = false;
       $('resultStatus').textContent = '생활 조건을 고른 뒤 동네 비교를 눌러 주세요.';
+      if (savedBasis !== undefined) {
+        $('conditionStatus').textContent = `조건을 불러왔습니다. ${conditionBasisNote(savedBasis, distanceSnapshot)} 현재 공개 자료로 다시 비교해 주세요.`;
+      }
     } catch (e) {
-      if (id === requestId) clearResults(e.message + ' 새로고침해 다시 시도해 주세요.');
+      if (id !== requestId) return;
+      clearResults(e.message + ' 새로고침해 다시 시도해 주세요.');
+      if (savedBasis !== undefined) $('conditionStatus').textContent = '조건을 불러왔습니다. 거리 자료를 대조하지 못했습니다.';
     }
   }
-  $('officeDong').addEventListener('change', loadOfficeDistances);
+  $('officeDong').addEventListener('change', () => loadOfficeDistances());
   // 주거 지원 제도 표: 비교와 따로 바로 그린다. 오늘 날짜는 한국 시간 기준(접수 상태 계산용)
   util.fetchJson('data/housing_support.json', true).then(doc => {
     $('housingSupport').innerHTML = supportTable(doc, new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10));
@@ -408,6 +446,43 @@
     if (compared) $('resultsTitle').scrollIntoView({ block: 'start', behavior: 'instant' });
   });
   $('printButton').addEventListener('click', () => root.print());
+  $('saveConditions').addEventListener('click', () => {
+    if (!compared) return;
+    const data = {
+      format: CONDITION_FORMAT, office: $('officeDong').value, preset: presetIndex,
+      housing: $('housingType').value, radius: $('radiusKm').value,
+      weights: Object.fromEntries(CONDITION_FACTORS.map(f => [f.code, weights[f.code]])),
+      basis: { rule: RULE, distance: distanceSnapshot },
+    };
+    root.RenewSave.saveFile('리뉴맵_정착비교_조건.json', [JSON.stringify(data, null, 2) + '\n'], 'application/json;charset=utf-8');
+    $('conditionStatus').textContent = '비교 조건 파일 다운로드를 시작했습니다.';
+  });
+  $('conditionFile').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    const id = ++conditionReadId;
+    let condition;
+    try {
+      if (file.size <= 16384) condition = readConditions(JSON.parse(await file.text()));
+    } catch { /* 검증을 통과한 조건만 아래에서 적용한다. */ }
+    if (id !== conditionReadId) return;
+    if (!condition || !dongs.some(d => d.code === condition.office)) {
+      $('conditionStatus').textContent = '조건 파일을 열지 못했습니다. 리뉴맵에서 저장한 정착비교 조건 JSON을 골라 주세요.';
+      return;
+    }
+    presetIndex = condition.preset;
+    weights = condition.weights;
+    adjusted = CONDITION_FACTORS.some(f => weights[f.code] !== PRESETS[presetIndex].weights[f.code]);
+    showConditionWeights();
+    $('housingType').value = condition.housing;
+    $('radiusKm').value = condition.radius;
+    $('officeQuery').value = '';
+    officeOptions();
+    $('officeDong').value = condition.office;
+    loadOfficeDistances(condition.basis);
+    $('conditionStatus').textContent = '조건을 불러왔습니다. 거리 자료를 대조하는 중입니다.';
+  });
   async function load() {
     try {
       const [index, definitions, reloc] = await Promise.all([util.fetchJson('data/national/dong_index.json'), util.fetchJson('data/national/living/index.json'), util.fetchJson('data/national/reloc/busan.json')]);
@@ -429,7 +504,7 @@
       $('rentMethod').textContent = rentText;
       dongs = makeDongs(busan, [...documents, reloc]);
       officeOptions();
-      for (const id of ['officeQuery', 'officeDong']) $(id).disabled = false;
+      for (const id of ['officeQuery', 'officeDong', 'conditionFile']) $(id).disabled = false;
     } catch (e) {
       $('dataStatus').textContent = `${e.message} 새로고침해 다시 시도해 주세요.`;
       $('resultStatus').textContent = '자료를 모두 불러온 뒤 비교할 수 있습니다.';
