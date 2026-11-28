@@ -171,7 +171,10 @@
     const h = root.location && root.location.hash, code = dong ? String(dong.code7 ?? dong.code ?? '') : '';
     return BRIEF41 + (/^#map(\/\d+)+$/.test(h || '') ? h : /^\d{8,10}$/.test(code) ? `#map/${code.slice(0, 2)}/${code.slice(0, 5)}/${code}` : '');
   }
+  const reviewRange = selectedYear => num(selectedYear) ? `지도에서 선택한 ${selectedYear}년` : '지도 기본값(지표별 공개 최신 자료)';
+
   function reviewText(id, name, rows, dong, selectedYear) {
+    if (id === 'shared') return sharedReviewText(name, checkAll(settledFacts(rows, dong)), selectedYear);
     const program = PROGRAMS.find(p => p.id === id);
     if (!program) return '';
     const result = checkProgram(program, settledFacts(rows, dong)), source = SOURCES[program.src];
@@ -183,20 +186,65 @@
       '리뉴맵 재생 사업 확인 메모',
       `대상 행정동 · ${name.replace(/\s+/g, ' ')}`,
       `사업 · ${program.name}`,
-      `조회 범위 · ${num(selectedYear) ? `지도에서 선택한 ${selectedYear}년` : '지도 기본값(지표별 공개 최신 자료)'}`,
+      `조회 범위 · ${reviewRange(selectedYear)}`,
       '', '행정동 자료를 맞춰 본 참고 메모입니다. 지표마다 자료 기준일이 다를 수 있습니다.',
       '신청 전에는 적용되는 공고와 실제 사업 구역의 자료를 확인하세요. 공식 판정은 담당 기관이 합니다.',
       '', ...section('check'), '', ...section('no'), '',
       `요건 출처 · ${source.name}${program.page ? ` p.${program.page}` : ''}`, source.url, '',
     ].join('\n');
   }
+  function sharedChecks(list) {
+    const byNeed = new Map();
+    for (const { program, needs } of list) {
+      if (!CORE.includes(program.id) || program.src !== 'g2027') continue;
+      needs.forEach((n, i) => {
+        if (n.state !== 'check') return;
+        // 같은 지침에서 공용으로 정의한 항목만 묶고, 비슷한 문구는 각각 남긴다.
+        const key = program.needs[i];
+        if (!byNeed.has(key)) byNeed.set(key, { key, need: n, programs: [] });
+        byNeed.get(key).programs.push(program);
+      });
+    }
+    return [...byNeed.values()].filter(item => item.programs.length > 1);
+  }
+
+  function sharedReviewText(name, list, selectedYear) {
+    const common = sharedChecks(list);
+    if (!common.length) return '';
+    const keys = new Set(common.map(item => item.key));
+    const itemLine = n => `- ${n.t}${n.note ? ` — ${n.note.replace(/\s+/g, ' ')}` : ''}`;
+    const source = SOURCES.g2027;
+    const separate = list.filter(({ program }) => CORE.includes(program.id) && program.src === 'g2027').flatMap(({ program, needs }) => {
+      const own = needs.filter((n, i) => n.state === 'check' && !keys.has(program.needs[i]));
+      return own.length ? [`${program.name} · p.${program.page}`, ...own.map(itemLine), ''] : [];
+    });
+    return [
+      '리뉴맵 재생 사업 공통 확인 메모',
+      `대상 행정동 · ${name.replace(/\s+/g, ' ')}`,
+      `조회 범위 · ${reviewRange(selectedYear)}`, '',
+      '행정동 참고 자료입니다. 신청 전에는 적용되는 공고와 실제 사업 구역 자료를 확인하세요.',
+      '', '여러 사업에서 함께 확인할 항목', ...common.flatMap(({ need, programs }) => [
+        itemLine(need), `  해당 사업: ${programs.map(p => `${p.name} p.${p.page}`).join(' · ')}`,
+      ]),
+      '', '사업별로 따로 확인할 항목', ...separate,
+      `요건 출처 · ${source.name}`, source.url, '',
+    ].join('\n');
+  }
+
+  function sharedChecksHTML(items) {
+    if (!items.length) return '';
+    return `<details class="pg-foot" data-shared-checks><summary>여러 사업에서 함께 확인할 항목 ${items.length}개</summary>`
+      + `<ul>${items.map(({ need, programs }) => `<li><strong>${esc(need.t)}</strong>${need.note ? `<br>${esc(need.note)}` : ''}<br>${programs.map(p => esc(p.name)).join(' · ')}</li>`).join('')}</ul>`
+      + '<button type="button" class="btn ghost" data-program-review="shared">공통 확인 메모 받기(TXT)</button></details>';
+  }
+
   function dongHTML(name, rows, dong, reviewBlocked = '') {
     const f = settledFacts(rows, dong), list = checkAll(f), vs = list.map(verdictOf), nOk = vs.filter(v => v.cls === 'ok').length, nNo = vs.filter(v => v.cls === 'no').length;
     // 도시재생 공모 4종 카드 첫 줄: 신청서 4-1 칸의 결론과 그 표로 가는 길(나머지 사업은 4-1 양식을 쓰지 않는다)
     const head41 = `<p class="pg-41">${esc(declineHead(f))} → <a href="${esc(briefHref(dong))}">동네 현황표 보기</a></p>`;
     return `<section class="pg-dong"><h3>${esc(name)}에 맞는 재생 사업</h3>` +
       `<p class="pg-sum">신청 검토 후보 <b>${nOk}개</b> · 확인할 요건이 남은 사업 ${list.length - nOk - nNo}개 · 자료상 안 맞는 요건이 있는 사업 ${nNo}개<br><small>확인할 문서: 전략계획 고시 · 2027 공모 공고문. 행정동 자료로 맞춰 본 참고 계산(판정 아님)이라 실제 요건은 사업 구역 기준으로 다시 확인합니다.</small></p>` +
-      (reviewBlocked ? `<p class="pg-foot" role="status">${esc(reviewBlocked)}</p>` : '') +
+      (reviewBlocked ? `<p class="pg-foot" role="status">${esc(reviewBlocked)}</p>` : sharedChecksHTML(sharedChecks(list))) +
       list.map((c, i) => `<div class="pg-card"><h4><a href="programs.html#${esc(c.program.id)}">${esc(c.program.name)}</a><small>${esc(c.program.money)}</small></h4>${CORE.includes(c.program.id) ? head41 : ''}<p class="pg-verdict is-${vs[i].cls}">${esc(vs[i].text)}</p><ul>${c.needs.map(n => `<li class="is-${n.state}"><b>${STATE[n.state]}</b><span>${esc(n.t)}${n.note ? `<small>${esc(n.note)}${n.tool ? ` <a href="${esc(n.tool[0])}">${esc(n.tool[1])}</a>` : ''}</small>` : ''}</span></li>`).join('')}</ul><p class="pg-foot pg-req-source">요건 출처 · ${srcLine(c.program)}</p><p class="pg-foot"><button type="button" class="btn ghost" data-program-review="${esc(c.program.id)}" aria-label="${esc(c.program.name)} 확인 메모 받기(TXT)"${reviewBlocked ? ' disabled' : ''}>확인 메모 받기(TXT)</button></p></div>`).join('') + `</section>`;
   }
   // 2027 가이드라인 기반·편의시설 현황표. value는 map.js가 지표 단위에 맞춰 만든 글자
