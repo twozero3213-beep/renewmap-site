@@ -10,6 +10,9 @@
 .bd-body { margin-top: 20px; }
 html.js .bd:not(.is-ready) .bd-body { min-height: 900px; }
 .bd-wait { margin: 0; font-size: var(--t-sub); color: var(--dim); }
+.bd-link-state { margin: 4px 0 12px; font-size: var(--t-sub); color: var(--dim); }
+.bd-link-state a { margin-inline-start: .5em; }
+.bd-dong-note { display: block; font-size: var(--t-cap); color: var(--dim); font-weight: 400; }
 .bd-h { margin: 0 0 12px; font-size: var(--t-h2); line-height: 1.4; }
 .bd-ctx { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; padding: 0; list-style: none; }
 .bd-ctx li { display: grid; gap: 2px; min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
@@ -67,7 +70,7 @@ html.js .bd:not(.is-ready) .bd-body { min-height: 900px; }
 .bd-missing-list { margin: 0; padding: 0 0 6px; list-style: none; }
 .bd-missing-list li { display: grid; gap: 3px; padding: 6px 10px; word-break: keep-all; }
 .bd-missing-list a { width: fit-content; min-height: 44px; display: inline-flex; align-items: center; font-weight: 700; }
-.bd-missing-list span { font-size: var(--t-cap); color: var(--dim); }
+.bd-missing-list li > span:not([data-bd-dong]) { font-size: var(--t-cap); color: var(--dim); }
 .bd-src-l { margin: 0 0 16px; font-size: var(--t-cap); color: var(--dim); }
 /* 먼저 볼 곳 카드 */
 .bd-sub { margin: 0 0 8px; font-size: var(--t-body); }
@@ -75,8 +78,9 @@ html.js .bd:not(.is-ready) .bd-body { min-height: 900px; }
 .bd-first li { counter-increment: bdf; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 8px; padding: 14px 16px; border: 2px solid var(--green); border-radius: 14px; background: #fff; }
 .bd-f-a { font-size: 18px; font-weight: 700; color: var(--ink); text-decoration: none; }
 .bd-f-a::before { content: counter(bdf); display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 8px; border-radius: 50%; background: var(--green); color: #fff; font-size: 13px; vertical-align: 2px; }
-.bd-f-a:hover, .bd-f-a:focus-visible { text-decoration: underline; }
-.bd-f-a:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; border-radius: 4px; }
+.bd-f-a a { color: inherit; text-decoration: none; }
+.bd-f-a a:hover, .bd-f-a a:focus-visible { text-decoration: underline; }
+.bd-f-a a:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; border-radius: 4px; }
 .bd-f-c { font-size: 26px; line-height: 1; color: var(--green); font-variant-numeric: tabular-nums; }
 .bd-f-s { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
 .bd-f-p { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: var(--t-cap); color: var(--dim); font-variant-numeric: tabular-nums; }

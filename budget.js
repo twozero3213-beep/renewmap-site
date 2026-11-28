@@ -109,7 +109,56 @@
     const note = gap ? `<small class="bd-count-missing">${gap}</small>` : '';
     return { known, missing, label: [label, gap].filter(Boolean).join(', '), note };
   }
-  const dongHref = (code5, code7) => `explore.html#map/${code5.slice(0, 2)}/${code5}/${code7}`;
+  const dongName = (row, card = false) => `<span${card ? ' class="bd-f-a"' : ''} data-bd-dong="${esc(row.code7)}">${esc(row.name)}</span>`;
+
+  function dongLocations(boundaries, extras) {
+    const targets = new Map();
+    for (const [index, kind] of [[extras, 'brief'], [boundaries, 'map']]) {
+      if (!Array.isArray(index)) continue;
+      for (const row of index) {
+        if (!Array.isArray(row)) continue;
+        const [code, , area] = row;
+        if (typeof code !== 'string' || typeof area !== 'string' || !/^\d{5}$/.test(area) || !/^\d{7,10}$/.test(code) || !code.startsWith(area)) continue;
+        const href = kind === 'map' ? `explore.html#map/${area.slice(0, 2)}/${area}/${code}` : `dong/${code}.html`;
+        targets.set(`${area}/${code}`, { kind, href });
+      }
+    }
+    return targets;
+  }
+
+  function connectDongs(body, area, { targets, complete }, summary) {
+    const doc = body.ownerDocument, briefs = new Set(), missing = new Set();
+    let areaMap = false;
+    for (const node of body.querySelectorAll('[data-bd-dong]')) {
+      const code = node.dataset.bdDong, target = targets.get(`${area}/${code}`);
+      if (target) {
+        const link = doc.createElement('a');
+        link.href = target.href;
+        link.textContent = node.textContent;
+        node.replaceChildren(link);
+        if (target.kind === 'map') { areaMap = true; continue; }
+        briefs.add(code);
+      } else {
+        missing.add(code);
+      }
+      const note = doc.createElement('small');
+      note.className = 'bd-dong-note';
+      const reason = target ? '동 자료 페이지' : complete ? '동 연결 없음' : '동 연결 확인 못함';
+      note.textContent = `${reason} · ${code}`;
+      node.append(note);
+    }
+    const info = [];
+    if (briefs.size) info.push(`동 자료 페이지 ${briefs.size}곳`);
+    if (missing.size) info.push(`동 연결 ${complete ? '없음' : '확인 못함'} ${missing.size}곳`);
+    summary.hidden = !info.length;
+    summary.textContent = info.join(' · ');
+    if (missing.size && areaMap) {
+      const link = doc.createElement('a');
+      link.href = `explore.html#map/${area.slice(0, 2)}/${area}`;
+      link.textContent = '시·군·구 지도 열기';
+      summary.append(' ', link);
+    }
+  }
 
   function signalGroups(d, list, theme) {
     return picks(d, theme).map((i, k) => {
@@ -127,26 +176,26 @@
     }).join('') + '</ul>';
   }
 
-  function missingDongs(groups, rows, code5) {
+  function missingDongs(groups, rows) {
     const gaps = rows.map(row => ({
       row,
       labels: groups.filter((_, i) => isMissing(row.on[i])).map(group => group.signal.label),
     })).filter(item => item.labels.length);
     if (!gaps.length) return '';
     return `<details class="bd-more bd-missing"><summary>자료 없는 동 ${gaps.length}곳 보기</summary><ul class="bd-missing-list">`
-      + gaps.map(({row, labels}) => `<li data-bd-missing-dong="${esc(row.code7)}"><a href="${esc(dongHref(code5, row.code7))}">${esc(row.name)}</a>`
+      + gaps.map(({row, labels}) => `<li data-bd-missing-dong="${esc(row.code7)}">${dongName(row)}`
         + `<span>${labels.map(esc).join(' · ')}</span></li>`).join('')
       + '</ul></details>';
   }
 
   // 먼저 볼 곳: 신호가 켜진 곳 앞 셋을 카드로(이름·켜진 수·신호 일곱 칸·주민 막대)
-  function firsts(d, list, code5, theme) {
+  function firsts(d, list, theme) {
     const at = picks(d, theme), top = list.filter(r => r.count > 0).slice(0, 3);
     if (!top.length) return '';
     const maxPop = Math.max(1, ...list.map(r => r.pop).filter(isNum));
     return '<ol class="bd-first" aria-label="먼저 볼 곳">' + top.map(r => {
       const count = signalCount(r);
-      return `<li><a class="bd-f-a" href="${esc(dongHref(code5, r.code7))}">${esc(r.name)}</a>`
+      return `<li>${dongName(r, true)}`
         + `<b class="bd-f-c" role="img" aria-label="${count.label}">${r.count}<small>/${count.known}</small>${count.note}</b>`
         + `<span class="bd-f-s">${r.on.map((v, k) => chip(v, d.signals[at[k]], true)).join('')}</span>`
         + `<span class="bd-f-p">${meter(r.pop, maxPop)}<span>주민 ${isNum(r.pop) ? `${n(r.pop)}명` : '자료 없음'}</span></span></li>`;
@@ -161,7 +210,7 @@
 
   // 신호 표: 동 × 신호 칸(그림·빈 고리·점선) + 주민 수 막대 + 그 동 지도 링크
   // narrow: 휴대폰 너비면 주민 수를 만 단위로 줄여 신호 열이 한 화면에 들게
-  function table(d, list, code5, theme, from, to, narrow) {
+  function table(d, list, theme, from, to, narrow) {
     const people = p => (narrow && p >= 10000 ? `${(Math.round(p / 1000) / 10).toLocaleString('ko-KR')}만` : n(p));
     const at = picks(d, theme), maxPop = Math.max(1, ...list.map(r => r.pop).filter(isNum));
     // 휴대폰에서는 신호 이름을 그림만 남기고 글은 화면낭독기용으로 둔다(열 일곱이 한 화면에 들게)
@@ -172,7 +221,7 @@
       const pop = isNum(r.pop) ? `${people(r.pop)}명` : '자료 없음';
       const count = signalCount(r);
       const number = count.known ? (count.missing ? `${r.count}/${count.known}` : r.count) : '';
-      return `<tr><th scope="row"><span class="bd-no">${from + k + 1}</span><a href="${esc(dongHref(code5, r.code7))}">${esc(r.name)}</a>${narrow ? `<small class="bd-pop-s">${pop}</small>` : ''}</th>`
+      return `<tr><th scope="row"><span class="bd-no">${from + k + 1}</span>${dongName(r)}${narrow ? `<small class="bd-pop-s">${pop}</small>` : ''}</th>`
         + (narrow ? '' : `<td class="bd-pop"><span class="bd-bar" aria-hidden="true"><i data-w="${w}"></i></span>${pop}</td>`)
         + `<td class="bd-cnt" aria-label="${count.label}">${number}${count.note}</td>${r.on.map((v, j) => `<td>${chip(v, d.signals[at[j]])}</td>`).join('')}</tr>`;
     }).join('');
@@ -209,19 +258,19 @@
     if (!g) return '';
     const list = rows(d, code5, theme), groups = signalGroups(d, list, theme);
     const sido = (d.sido.find(s => s.code2 === g.sido) || {}).name || '';
-    const first = firsts(d, list, code5, theme);
+    const first = firsts(d, list, theme);
     // 먼저 볼 곳 이름은 제목 대신 카드로 보인다(글 줄이기)
     return `<h2 class="bd-h">${esc(sido)} ${esc(g.name)}</h2>`
       + context(d, code5)
-      + strip(groups, list.length) + srcLine(d) + missingDongs(groups, list, code5)
+      + strip(groups, list.length) + srcLine(d) + missingDongs(groups, list)
       + (first ? `<h3 class="bd-sub">먼저 볼 곳</h3>${first}` : '')
       + `<figure class="bd-fig">${scatter(list, groups.length, w)}<figcaption>표시 하나는 읍·면·동 한 곳입니다. 빈 원은 자료가 모두 있고 켜진 신호가 0개인 동, 마름모는 자료가 없는 신호가 있는 동입니다. 주민 수 자료가 없는 동은 아래 표에 있습니다. 카드와 표의 분수는 켜진 신호 수 / 자료가 있는 신호 수입니다.</figcaption></figure>`
-      + `<div class="bd-wrap">${table(d, list, code5, theme, 0, 10, w < 480)}</div>`
-      + (list.length > 10 ? `<details class="bd-more"><summary>나머지 ${list.length - 10}곳 보기</summary><div class="bd-wrap">${table(d, list, code5, theme, 10, list.length, w < 480)}</div></details>` : '')
+      + `<div class="bd-wrap">${table(d, list, theme, 0, 10, w < 480)}</div>`
+      + (list.length > 10 ? `<details class="bd-more"><summary>나머지 ${list.length - 10}곳 보기</summary><div class="bd-wrap">${table(d, list, theme, 10, list.length, w < 480)}</div></details>` : '')
       + `<details class="bd-rules"><summary>신호 기준과 출처</summary>${legend(d, theme)}<ul class="bd-src">${(d.sources || []).map(s => `<li>${esc(s.for)}: ${esc(s.name)} · ${esc(s.base)}</li>`).join('')}</ul></details>`;
   }
 
-  const api = { THEMES, valid, picks, rows, scatter, table, context, signalGroups, strip, firsts, render };
+  const api = { THEMES, valid, picks, rows, scatter, table, context, signalGroups, strip, firsts, render, dongLocations };
   if (typeof module === 'object' && module.exports) module.exports = api;
 
   // 브라우저 연결부
@@ -231,9 +280,16 @@
     const box = doc.querySelector('[data-budget]');
     if (!box) return;
     const body = box.querySelector('#bdBody'), sido = box.querySelector('#bdSido'), sgg = box.querySelector('#bdSgg'), theme = box.querySelector('#bdTheme');
-    const say = box.querySelector('#bdSay'), print = box.querySelector('#bdPrint');
+    const say = box.querySelector('#bdSay'), print = box.querySelector('#bdPrint'), linkStatus = box.querySelector('#bdLinks');
     const fail = () => { body.innerHTML = '<p class="bd-wait">자료를 불러오지 못했습니다. 같은 지표는 우리 동네 지도에서 봅니다.</p>'; };
-    root.RenewUtil.fetchJson('data/national/budget.json').then(d => {
+    const fetch = root.RenewUtil.fetchJson;
+    let directory;
+    Promise.all([fetch('data/national/dong_index.json', true), fetch('data/national/dong_extra.json', true)])
+      .then(([boundaries, extras]) => {
+        directory = { targets: dongLocations(boundaries, extras), complete: Array.isArray(boundaries) && Array.isArray(extras) };
+        if (box.classList.contains('is-ready')) connectDongs(body, sgg.value, directory, linkStatus);
+      });
+    fetch('data/national/budget.json').then(d => {
       if (!valid(d)) return fail();
       const q = new URLSearchParams(root.location.search);
       const opt = (el, list) => { el.textContent = ''; for (const [v, t] of list) { const o = doc.createElement('option'); o.value = v; o.textContent = t; el.appendChild(o); } };
@@ -252,6 +308,11 @@
         const h = render(d, sgg.value, theme.value, body.clientWidth - 26);   // 그림 칸 안쪽 여백(12px×2+테두리)
         if (!h) return fail();
         body.innerHTML = h;
+        if (directory) connectDongs(body, sgg.value, directory, linkStatus);
+        else {
+          linkStatus.hidden = false;
+          linkStatus.textContent = '동 지도와 자료 페이지 연결 확인 중입니다.';
+        }
         for (const i of body.querySelectorAll('.bd-bar i[data-w]')) i.style.width = i.getAttribute('data-w') + '%';
         box.classList.add('is-ready');
         try { root.history.replaceState(null, '', `?sgg=${sgg.value}&theme=${theme.value}`); } catch (e) { /* 파일로 열면 주소를 못 바꾼다 */ }
