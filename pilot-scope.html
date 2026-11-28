@@ -21,19 +21,21 @@
 <link rel="stylesheet" href="site-v4.css?v=20261120-r11">
 <script src="site.js?v=20261122-r24" defer></script>
 <script src="print-page.js?v=20261122-r23" defer></script>
-<link rel="stylesheet" href="content-pages.css?v=20261122-r23">
+<link rel="stylesheet" href="content-pages.css?v=20261128-pilot">
 <link rel="stylesheet" href="rm6.css?v=20261122-r24">
 </head>
-<body>
+<body class="pilot-print">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="top"><div class="wrap"><a class="logo" aria-label="리뉴맵 RENEWMAP 홈" href="index.html">리뉴맵 <small lang="en">RENEWMAP</small></a><nav class="site-nav" aria-label="주요 메뉴"><a href="explore.html#map">우리 동네</a><a href="explore.html?panel=filters">동네 골라보기</a><a href="field/redev.html">대상지 계산</a><a href="about.html#contact">상담하기</a></nav></div></header>
 
-<main class="wrap page" id="main">
-<p class="print-head" aria-hidden="true"><b>리뉴맵 · 맡기면 받는 것</b> <span>2026-11-22 기준 · 참고용 계산</span></p>
+<main class="wrap page pilot-page" id="main">
+<p class="print-head" aria-hidden="true"><b>리뉴맵 · 시범 과업</b> <span>2026-11-22 기준 · 참고용 계산</span></p>
 <h1>맡기면 받는 것</h1>
 <p class="sub">결재 문서에 붙여 쓰는 1쪽 요약입니다. 견적서가 아닙니다.</p>
 <p class="print-row"><button type="button" class="link-btn" data-print hidden>이 쪽 인쇄하기</button> · <a href="about.html#scope">서비스 소개의 비용과 범위</a></p>
 <!-- r23(13 M7): 20줄이 같은 크기로 이어져 받는 것·첫 장·검수 기준이 한눈에 갈리지 않았다 → 셋을 위 칸으로, 계약·정산·웹 도구는 접는다(인쇄에는 펼쳐 싣는다) -->
+<p class="ps-review"><b>공개 도구</b>는 동네 현황표 자동 초안을 제공합니다. <a href="explore.html?report=brief&amp;frag=MLIT-DECLINE#map/21/21090/21090700">반여1동 공개 자동 초안 보기</a><br>
+<b>시범 과업</b>에서는 추가확인 칸과 못 찾은 주소를 사람이 건축물대장 원문과 대조합니다.</p>
 <div class="ps-top">
 <section class="ps-key" aria-labelledby="psGet"><h2 id="psGet">받는 것</h2><p>대상지 근거표를 파일로 드립니다. 주소마다 건축물대장에서 찾은 건물, 주용도, 구조, 완공된 날(사용승인일), 20년 넘음, 까닭을 적습니다. 못 찾은 주소는 까닭과 함께 따로 적습니다. 20년 넘은 건물 비율은 완공된 날이 없는 건물을 넣은 값과 뺀 값을 같은 크기로 적고, 동수 기준과 연면적 기준을 함께 적습니다. 근거 조문(도시재생법 시행령 제17조, 부산 정비 조례)을 붙입니다. 신청서용 동네 현황표의 행정동 값은 참고 칸으로 붙입니다.</p><p class="ps-file"><b>파일</b> 한글(HWPX) 1쪽, 건물별 근거 CSV, 구역 경계(SHP)입니다. 한글은 한/글에서 열리는지 확인한 뒤 드립니다.</p></section>
 <section class="ps-key" aria-labelledby="psFirst"><h2 id="psFirst">첫 장</h2><p>'구청이 확인할 칸 n칸 / 전체 m칸'과 칸마다 까닭을 적습니다. m은 찾은 건물마다 주용도·구조·완공된 날·20년 넘음 4칸입니다. 못 찾은 주소는 칸에 넣지 않고 따로 적습니다.</p></section>

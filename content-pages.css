@@ -54,3 +54,24 @@
 @media (min-width: 900px) { .ps-top { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media print { .ps-top { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6pt; } .ps-key { padding: 6pt; } .ps-key h2 { font-size: 13pt; } .ps-key p { font-size: 10pt; } }
 tr[data-correction]:target > :is(th, td), li[data-correction-tech]:target { background: var(--soft); }
+
+@media print {
+  @page pilot-summary {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+  body.pilot-print { page: pilot-summary; }
+  .pilot-page.wrap { padding: 0; word-break: keep-all; }
+  .pilot-page > .sub { margin-bottom: 6pt; font-size: 11pt; }
+  .pilot-page .ps-review { margin: 6pt 0; font-size: 11pt; line-height: 1.4; }
+  .pilot-page .ps-top { margin: 8pt 0; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+  .pilot-page .ps-key:first-child { grid-row: span 2; }
+  .pilot-page .ps-key p, .pilot-page .pilot-scope { font-size: 10.5pt; line-height: 1.35; }
+  .pilot-page > .pilot-scope { columns: 2; column-gap: 16pt; margin: 8pt 0; }
+  .pilot-page .pilot-scope { padding-inline-start: 12pt; }
+  .pilot-page .pilot-scope li { margin-bottom: 4pt; break-inside: avoid; }
+  .pilot-page .ps-more { margin: 6pt 0 0; padding: 6pt; font-size: 11pt; }
+  main.pilot-page details.ps-more > summary { min-height: 0; padding: 0; font-size: inherit; line-height: 1.4; }
+  main.pilot-page details.ps-more > summary::before { content: none; }
+  .pilot-page .ps-more > ul { margin-block: 4pt 0; }
+}
