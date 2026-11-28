@@ -7,12 +7,13 @@
   const getJson = (p) => fetch(DATA + p).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); });
   const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "msg err" : "msg"; };
   const n = (x) => Number(x).toLocaleString("ko-KR");
-  let last = null, requestId = 0;
+  let last = null, requestId = 0, xlsxLoader;
   function clearBuildingResult(message) {
     requestId++;
     last = null;
     $("out").hidden = true;
     $("csv").disabled = true;
+    $("xlsx").disabled = true;
     say(message);
   }
   const selectBuilding = () => clearBuildingResult("선택한 법정동의 창고·공장을 보려면 목록 보기를 눌러 주세요.");
@@ -106,6 +107,7 @@
     $("outSource").textContent = `출처: ${file.source} · ${file.license}`;
     $("out").hidden = false;
     $("csv").disabled = false;
+    $("xlsx").disabled = false;
   }
 
   $("f").addEventListener("submit", async (e) => {
@@ -126,9 +128,45 @@
     }
   });
 
+  const exportDay = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
+
+  function loadDocgen() {
+    if (!xlsxLoader) {
+      xlsxLoader = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "../docgen.js?v=20261122-r23";
+        script.onload = () => window.RenewDocgen?.xlsxBytes ? resolve(window.RenewDocgen) : reject(new Error("문서 생성기 없음"));
+        script.onerror = () => { script.remove(); reject(new Error("문서 생성기 요청 실패")); };
+        document.head.append(script);
+      }).catch((error) => {
+        xlsxLoader = null;
+        throw error;
+      });
+    }
+    return xlsxLoader;
+  }
+
+  $("xlsx").addEventListener("click", async () => {
+    const snapshot = last;
+    if (!snapshot) return;
+    $("xlsx").disabled = true;
+    say("엑셀 파일을 만드는 중입니다.");
+    try {
+      const docgen = await loadDocgen();
+      if (last !== snapshot) return;
+      const day = exportDay();
+      const bytes = docgen.xlsxBytes(I.workbookSheets(snapshot), day);
+      RenewSave.saveFile(`${docgen.safeName(snapshot.name)}_창고공장_목록_${day}.xlsx`, [bytes], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      say("엑셀 파일 다운로드를 시작했습니다.");
+    } catch {
+      if (last === snapshot) say("엑셀 파일을 만들지 못했습니다. 다시 눌러 주세요.", true);
+    } finally {
+      if (last === snapshot) $("xlsx").disabled = false;
+    }
+  });
+
   $("csv").addEventListener("click", () => {
     if (!last) return;
-    // 서울 날짜(sv-SE = YYYY-MM-DD). toISOString은 UTC라 한국 0~9시에 전날이 된다. 이 쪽은 docgen.js(localDate)를 싣지 않는다
-    RenewSave.saveFile(`${last.name}_창고공장_목록_${new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" })}.csv`, [I.toCSV(last)], "text/csv;charset=utf-8");
+    RenewSave.saveFile(`${last.name}_창고공장_목록_${exportDay()}.csv`, [I.toCSV(last)], "text/csv;charset=utf-8");
   });
 })();
