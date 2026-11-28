@@ -32,9 +32,14 @@
   // 무게를 바꿔 다시 계산한 순위의 5~95% 구간(scores_range.json, export_scores.py 민감도). scope는 rows와 같다
   const scopeKey = scope => (scope === 'all' ? 'nat' : scope.length === 2 ? 'sido' : 'sg');
   // range가 undefined면 아직 받는 중('…'), null이면 자료 없음('–'). 받는 중을 '없음'처럼 보이지 않게 나눈다(2026-11-08)
+  function rangeOf(range, code7, kind, scope) {
+    const r = range?.dongs?.[code7]?.[kind]?.[scopeKey(scope)];
+    return Array.isArray(r) && r.length === 2 && r.every(n => Number.isInteger(n) && n > 0) && r[0] <= r[1] ? r : null;
+  }
+
   function rangeText(range, code7, kind, scope) {
     if (range === undefined) return '…';
-    const r = range && range.dongs && range.dongs[code7] && range.dongs[code7][kind] && range.dongs[code7][kind][scopeKey(scope)];
+    const r = rangeOf(range, code7, kind, scope);
     return r ? `${r[0].toLocaleString('ko-KR')}~${r[1].toLocaleString('ko-KR')}` : '–';
   }
 
@@ -51,7 +56,7 @@
   // 링크가 블록(rank.css flex)이라 <br> 없이 다음 줄에 붙는다
   const popMark = (r, kind) => (r.d.pop_note && (kind === 'total' || kind === 'vitality') ? `<small class="rank-popnote">※ ${esc(r.d.pop_note)}</small>` : '');
   // rankAt(i): 화면 i번째 줄의 실제 순위(낮은 점수부터 볼 때). 없으면 offset + i + 1
-  function tableHTML(list, kind, names, limit, range, scope, offset = 0, found = null, rankAt = null) {
+  function tableHTML(list, kind, names, limit, range, scope, offset = 0, found = null, rankAt = null, picked = null) {
     const renew = kind === 'renewal' && list.some(r => r.d.renewal_parts);
     // R1 8: 표 머리는 두 줄 이하. 단위·읽는 법은 열 제목마다 적지 않고 표 제목(caption)에 한 번
     // R3 7: 고른 점수 종류가 세부 열과 같으면(주거 노후도·생활 편의 등) 그 열은 뺀다. 같은 숫자가 한 줄에 두 번 나왔다
@@ -65,9 +70,10 @@
     const sort = kind === 'safety' ? '<th scope="col" class="rank-score" aria-sort="descending">범죄 통계·안전시설 점수</th>' : `<th scope="col" class="rank-score" aria-sort="${rankAt ? 'ascending' : 'descending'}"><button type="button" class="rank-sort" data-rank-sort>${esc(KINDS[kind].label.replace(/\(.*\)$/, ''))}<span aria-hidden="true"> ${rankAt ? '↑' : '↓'}</span><span class="sr-only">, ${rankAt ? '낮은' : '높은'} 점수부터. 눌러서 순서 바꾸기</span></button></th>`;
     // 순위 범위 ⓘ: 마우스 없이도 누르면 접힌 '읽는 법'(#rankMethods)이 열린다(init의 클릭 처리)
     const head = `<thead><tr><th scope="col">순위</th><th scope="col">행정동</th>${sort}<th scope="col">순위 범위<a class="rank-tip" href="#rankMethods" title="${RANGE_TIP}"><span aria-hidden="true"> ⓘ</span><span class="sr-only">순위 범위 읽는 법: ${RANGE_TIP}</span></a></th>${cols}</tr></thead>`;
+    const pickBox = r => picked ? `<label class="rank-pick"><input type="checkbox" data-rank-pick="${esc(r.code7)}" aria-label="${esc(names(r))} 비교"${picked.has(r.code7) ? ' checked' : picked.size >= 2 ? ' disabled' : ''}> 비교</label>` : '';
     const body = list.slice(0, limit).map((r, i) => {
       const s = r.d.sub, sp = r.d.safety_parts || {}, rp = r.d.renewal_parts || {};
-      return `<tr${r.code7 === found ? ' class="is-found" id="rankFoundRow"' : ''}><td class="num">${rankAt ? rankAt(offset + i) : offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a>${popMark(r, kind)}</td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
+      return `<tr${r.code7 === found ? ' class="is-found" id="rankFoundRow"' : ''}><td class="num">${rankAt ? rankAt(offset + i) : offset + i + 1}</td><td><a href="dong/${esc(r.code7)}.html">${esc(names(r))}</a>${popMark(r, kind)}${pickBox(r)}</td><td class="num"><b>${fmt(r.score)}</b></td><td class="num nw">${esc(rangeText(range, r.code7, kind, scope || 'all'))}</td>`
         + (renew ? RENEWAL_COLS.map(([c]) => `<td class="num">${fmt(rp[c])}</td>`).join('')
           : SUB.map(([k]) => `<td class="num">${fmt(s[k])}</td>`).join('')
           + `<td class="num">${sp.crime_rate_per_1k === null || sp.crime_rate_per_1k === undefined ? '없음' : esc(sp.crime_rate_per_1k)}</td>`) + '</tr>';
@@ -112,11 +118,34 @@
     return href.href;
   }
 
+  function sameRangeBuild(scores, range) {
+    return Boolean(scores.rule_version && scores.generated_at && scores.rule_version === range.rule_version && scores.generated_at === range.generated_at);
+  }
+
+  function pairNote(items, kind, scope, range, mismatch) {
+    if (kind === 'housing') return '주거 노후도는 지표 하나로 계산합니다.';
+    if (range === undefined) return '순위 범위를 불러오는 중입니다.';
+    if (mismatch) return '점수와 순위 범위의 자료 판이 달라 범위 대조를 보류했습니다.';
+    const intervals = items.map(({ row }) => rangeOf(range, row.code7, kind, scope));
+    if (intervals.some(r => !r)) return '선택한 동 중 순위 범위 자료가 없는 곳이 있습니다.';
+    if (intervals.length !== 2) return '';
+    const [a, b] = intervals, lo = Math.max(a[0], b[0]), hi = Math.min(a[1], b[1]);
+    return lo <= hi ? `두 범위의 겹치는 부분은 ${lo.toLocaleString('ko-KR')}~${hi.toLocaleString('ko-KR')}위입니다.`
+      : '두 순위 범위가 서로 떨어져 있습니다.';
+  }
+
+  function pairHTML(items, kind, names, scopeName, scope, range) {
+    const interval = row => kind === 'housing' ? '' : `<span>순위 범위 ${esc(rangeText(range, row.code7, kind, scope))}</span>`;
+    return `<p>${esc(scopeName)} · ${esc(KINDS[kind].label)}</p><ul class="rank-pair-items">`
+      + items.map(({ row, rank }) => `<li><b>${esc(names(row))}</b><span>${fmt(row.score)}점 · ${rank.toLocaleString('ko-KR')}위</span>${interval(row)}</li>`).join('')
+      + '</ul>' + (range && items.length === 2 && kind !== 'housing' ? `<p>${esc(RANGE_TIP)} 두 범위의 겹침만으로 두 동의 순서가 바뀌는지는 알 수 없습니다.</p>` : '');
+  }
+
   function init() {
     const $ = id => document.getElementById(id);
     const kindSel = $('rankKind'), sidoSel = $('rankSido'), sgSel = $('rankSg'), out = $('rankOut'), msg = $('rankMsg'), sens = $('rankSens');
-    const ascBox = $('rankAsc');
-    let scores = null, idx = null, range, pager, found = null;
+    const ascBox = $('rankAsc'), compare = $('rankCompare'), picked = new Set();
+    let scores = null, idx = null, range, rangeMismatch = false, pager, found = null;
     // 낮은 점수부터 보기(2026-11-14 페르소나: '주거 노후도'는 점수가 낮을수록 낡았는데 1위가 가장 덜 낡은 동이라 위 3곳만 고르면 거꾸로 됐다).
     // 줄 순서만 뒤집고 순위 번호·순위 범위는 높은 점수 기준 그대로 둔다
     const ordered = full => (ascBox && ascBox.checked ? { list: [...full].reverse(), rankAt: j => full.length - j } : { list: full, rankAt: null });   // range: undefined=받는 중, null=없음. found: 찾은 동 코드
@@ -137,9 +166,25 @@
       if (safetyNote) safetyNote.hidden = !safety;
       if (unitNote) unitNote.hidden = kindSel.value !== 'renewal';   // 세부 열이 백분위인 표는 재생 필요 점수뿐
       const scope = scopeOf(), { list, rankAt } = currentOrder();
+      const items = [...picked].flatMap(code => {
+        const at = list.findIndex(r => r.code7 === code);
+        if (at < 0) { picked.delete(code); return []; }
+        return [{ row: list[at], rank: rankAt ? rankAt(at) : at + 1 }];
+      });
+      if (compare) {
+        compare.hidden = !items.length;
+        const province = (idx.sido.find(x => x.code2 === sidoSel.value) || {}).name || '';
+        const scopeName = sgSel.value ? [province, sgName(sgSel.value)].filter(Boolean).join(' ') : province || '전국';
+        $('rankCompareContent').innerHTML = items.length ? pairHTML(items, kindSel.value, names, scopeName, scope, range) : '';
+        const status = items.length === 1 ? '한 곳을 더 고르면 함께 볼 수 있습니다.' : items.length === 2 ? '두 곳을 골랐습니다.' : '';
+        const note = items.length ? pairNote(items, kindSel.value, scope, range, rangeMismatch) : '';
+        $('rankCompareStatus').textContent = [status, note].filter(Boolean).join(' ');
+      }
+      const activePick = document.activeElement?.dataset?.rankPick;
       const page = pager.slice(list), offset = page.length ? list.indexOf(page[0]) : 0, rk = j => (rankAt ? rankAt(j) : j + 1).toLocaleString('ko-KR');
       msg.textContent = page.length ? `점수가 있는 ${list.length.toLocaleString('ko-KR')}개 동 중 ${rk(offset)}~${rk(offset + page.length - 1)}위를 ${rankAt ? '낮은 점수부터 ' : ''}보입니다.` : '선택한 범위에 점수가 있는 동이 없습니다.';
-      out.innerHTML = tableHTML(page, kindSel.value, names, page.length, range, scope, offset, found, rankAt);
+      out.innerHTML = tableHTML(page, kindSel.value, names, page.length, range, scope, offset, found, rankAt, compare ? picked : null);
+      if (activePick && /^\d{8}$/.test(activePick)) out.querySelector(`[data-rank-pick="${activePick}"]`)?.focus({ preventScroll: true });
       // R8 5: 재생 필요 점수만 재료(세부 지표 백분위) 열이 있다. 다른 점수는 오른쪽 열이 '다른 점수'라 '고른 점수의 재료'라 쓰지 않는다
       const help = $('rankScrollHelp');
       if (help) help.innerHTML = (kindSel.value === 'renewal' && page.some(r => r.d.renewal_parts) ? '세부 점수(고른 점수의 재료)는 표 오른쪽에 있습니다.' : '표 오른쪽 열은 고른 점수가 아닌 다른 점수와 범죄 발생률입니다.<br>고른 점수의 재료는 동 이름을 눌러 동 페이지에서 볼 수 있습니다.') + '<br>휴대폰에서는 동 이름을 누르면 동 페이지에서 봅니다.';
@@ -153,7 +198,7 @@
         if (u.href !== location.href) history.replaceState(null, '', u);
       }
       const sm = range && range.sensitivity && range.sensitivity.summary && range.sensitivity.summary[kindSel.value];
-      sens.textContent = sm ? `${KINDS[kindSel.value].label} 전국 순위는 무게만 바꿔도 범위 폭이 중앙값 ${sm.median_width_nat.toLocaleString('ko-KR')}위입니다(정규화·합산 방식은 고정, 실제 폭은 더 넓을 수 있음). 기준 상위 10곳 중 무게를 바꿔도 95% 이상 상위 10 안에 남는 곳은 ${sm.top10_stay}곳입니다.` : kindSel.value === 'housing' ? '주거 노후도는 지표가 하나라 바꿀 무게가 없습니다.' : '';
+      sens.textContent = sm ? `${KINDS[kindSel.value].label} 전국 순위는 무게만 바꿔도 범위 폭이 중앙값 ${sm.median_width_nat.toLocaleString('ko-KR')}위입니다(정규화·합산 방식은 고정, 실제 폭은 더 넓을 수 있음). 기준 상위 10곳 중 무게를 바꿔도 95% 이상 상위 10 안에 남는 곳은 ${sm.top10_stay}곳입니다.` : kindSel.value === 'housing' ? '주거 노후도는 지표가 하나라 바꿀 무게가 없습니다.' : rangeMismatch ? '점수와 순위 범위의 자료 판이 달라 범위 표시를 보류했습니다.' : '';
     }
     function fillSg() {
       const s2 = sidoSel.value;
@@ -194,6 +239,20 @@
           ascBox.checked = !ascBox.checked; reset();
           const b = out.querySelector('[data-rank-sort]'); if (b) b.focus();
         });
+        if (compare) {
+          out.addEventListener('change', e => {
+            const box = e.target, code = box.dataset.rankPick;
+            if (!code || !/^\d{8}$/.test(code)) return;
+            if (!box.checked) picked.delete(code);
+            else if (picked.size < 2) picked.add(code);
+            draw();
+          });
+          $('rankCompareClear').addEventListener('click', () => {
+            picked.clear();
+            draw();
+            out.querySelector('[data-rank-pick]')?.focus({ preventScroll: true });
+          });
+        }
         const findForm = $('rankFind'), foundMsg = $('rankFound');
         const choices = $('rankChoices'), match = $('rankMatch'), query = $('rankQ');
         const share = $('rankShare'), link = $('rankLink');
@@ -260,7 +319,11 @@
           if (at >= 0) { query.value = names(order.list[at]); showRank(order, at, false); }
           else { foundMsg.textContent = '이 동의 순위를 선택한 조건에서 찾지 못했습니다.'; draw(); }
         } else if (q0) { query.value = q0; find(); } else draw();
-        loadRange().then(g => { range = g; draw(); });
+        loadRange().then(g => {
+          rangeMismatch = Boolean(g && !sameRangeBuild(scores, g));
+          range = rangeMismatch ? null : g;
+          draw();
+        });
       })
       .catch(() => { msg.textContent = '점수 자료를 불러오지 못했습니다. 새로고침해 주세요.'; });
   }

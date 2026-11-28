@@ -93,3 +93,11 @@
 
 /* R3 1: 표는 점수 파일을 받은 뒤 그려서 아래 설명·꼬리글이 통째로 밀렸다(CLS 0.18~0.3). 첫 줄이 오기 전 높이를 먼저 잡는다 */
 #rankOut { min-height: 640px; }
+
+.rank-page .rank-compare { margin: 12px 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
+.rank-page .rank-compare h2 { font-size: 18px; margin: 0 0 4px; }
+.rank-page .rank-compare p { margin: 4px 0 8px; }
+.rank-page .rank-pair-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 8px; list-style: none; padding: 0; }
+.rank-page .rank-pair-items li { border: 1px solid var(--line); padding: 8px; }
+.rank-page .rank-pair-items span { display: block; }
+.rank-page .rank-pick { display: inline-flex; align-items: center; min-height: 38px; gap: 6px; font-size: 14px; }
