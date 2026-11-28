@@ -9,35 +9,46 @@
 // 2026-11-17: #152(경상 구역 계산)와 main(초기 지도·현장 자동 로딩 개선 90186f154)을 합친 뒤 테스트가 알려 준 지문으로 맞춘다
 // 2026-11-18: 신청요건 현장 확인 줄에 '몇 동 더 확인하면 정해지나'(redev.js·redev-app.js)를 더해 테스트가 알려 준 지문으로 맞춘다
 // 2026-11-18: 사용자 편의 검토(현장 기록 찍기 단추 위로·저장 단추 고정·구역 계산 선택 입력 접기 등)를 반영해 테스트가 알려 준 지문으로 맞춘다
-const CACHE = "renewmap-field-11fab6197e";
-const SHELL = ["./", "index.html", "field.css?v=20261122-r23", "record.js?v=20261121-r16", "store.js", "evidence.js?v=20261126-photo-evidence", "app.js?v=20261127-field-backup", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js?v=20261122-r24", "../site-motion.js", "../frame-guard.js", "../docgen.js?v=20261122-r23", "../cellpack.js", "../list-pages.js", "../list-pages.css", "../rm6.css",
+// 2026-11-28: 3차 점검(가림 도구 캐시 분리·약한 신호 4초 대체·임시 사진 저장 실패 알림) 부분 배포
+const CACHE = "renewmap-field-e22e98692c";
+const SHELL = ["./", "index.html", "field.css?v=20261122-r23", "record.js?v=20261121-r16", "store.js", "evidence.js?v=20261126-photo-evidence", "app.js?v=20261128-audit3", "manifest.webmanifest", "../pretendard.css", "../fonts/pretendard-variable.woff2", "../styles.css", "../v4.css", "../site-v4.css", "../site.js?v=20261122-r24", "../site-motion.js", "../frame-guard.js", "../docgen.js?v=20261122-r23", "../cellpack.js", "../list-pages.js", "../list-pages.css", "../rm6.css",
   "../data/report_templates.json", "upload.js", "upload-config.js", "detect.js", "redev.html", "field.css?v=20261126-compare-scroll", "redev.js?v=20261127-r56-consult-bounds", "redev-app.js?v=20261127-r56-consult", "parcel-ref.js", "twin.html", "twin.css", "twin.js", "twin-app.js", "../favicon.svg", "../icon-192.png"];
 // 설치 때는 브라우저 HTTP 캐시(Pages max-age=600)를 건너뛴다. 안 그러면 갱신 직전에 열어 둔 옛 파일이 새 캐시에 들어간다
 // 새 판은 기다리지 않고 바로 자리를 잡는다(skipWaiting·claim). 안 그러면 탭을 모두 닫기 전까지 옛 계산 파일이 나간다(2026-10-30 배포 직후 실측). 화면은 controllerchange로 새로고침을 안내한다
 self.addEventListener("install", (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting())));
-self.addEventListener("activate", (e) => e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith("renewmap-field-") && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())));
 // 처음 쓸 때 받아 두었다가 오프라인 현장에서도 쓰는 것: 자동 가림 도구(vendor/vision, 약 20MB), 행정동 경계·현황(data/national), 건물 자료(data/buildings, N1)
 const KEEP = /\/vendor\/vision\/|\/data\/buildings\/\d{10}\.json|\/data\/national\/(?:sigungu\.geojson|index\.json|ref_lines\.json|emd\/|living\/)/;
-// 온라인 탐색은 새 HTML을 받고, 통신 실패일 때만 현재 셸로 연다. 404는 옛 화면으로 덮지 않는다.
+// 2026-11-28: KEEP은 셸과 다른 캐시에 둔다. 셸 지문은 배포마다 바뀌어, 같은 캐시에 두면 미리 받은 가림 도구·건물 자료가 배포 때마다 지워졌다
+// (전날 받아 두고 다음 날 음영 지역에서 자동 가림이 안 됨). 이름 = vendor/vision 파일 지문이라 가림 도구가 바뀔 때만 새로 받는다(field/evidence.test.cjs가 맞춘다)
+const KEEP_CACHE = "renewmap-field-keep-a254e2b525";
+self.addEventListener("activate", (e) => e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith("renewmap-field-") && k !== CACHE && k !== KEEP_CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())));
+// 신호는 잡히는데 전송이 안 되는 곳(지하·음영)에서 브라우저 기본 대기(수십 초)까지 빈 화면이 되지 않게, 화면(navigate)은 저장본이 있으면 4초 뒤 저장본으로 연다.
+// 저장본이 없으면 계속 네트워크를 기다린다. 늦게 온 새 응답은 그대로 저장한다(save)
+const WAIT = 4000;
+const race = (net, look) => new Promise((ok, no) => {
+  let done = false;
+  const stored = () => look().catch(() => undefined);   // 저장본 조회가 실패해도 응답이 끝나지 않고 매달리지 않게(교차 검토 2026-11-28)
+  const t = setTimeout(async () => { const hit = await stored(); if (hit && !done) { done = true; ok(hit); } }, WAIT);
+  net.then((res) => { clearTimeout(t); if (!done) { done = true; ok(res); } },
+    async (error) => { clearTimeout(t); if (done) return; done = true; const hit = await stored(); if (hit) ok(hit); else no(error); });
+});
+// 온라인 탐색은 새 HTML을 받고, 통신 실패이거나 4초 안에 응답이 없을 때만 현재 셸로 연다. 404는 옛 화면으로 덮지 않는다.
 // 첫 자료 수신도 HTTP 캐시를 재검증해 공개에서 뺀 자료·이름이 새 오프라인 캐시에 되살아나지 않게 한다.
 self.addEventListener("fetch", (e) => {
   if (e.request.cache === "no-cache" && e.request.mode !== "navigate") return;
   if (e.request.mode === "navigate") {
-    e.respondWith(fetch(e.request, { cache: "no-cache" }).catch(async (error) => {
-      const hit = await caches.match(e.request, { cacheName: CACHE, ignoreSearch: true });
-      if (hit) return hit;
-      throw error;
-    }));
+    e.respondWith(race(fetch(e.request, { cache: "no-cache" }), () => caches.match(e.request, { cacheName: CACHE, ignoreSearch: true })));
     return;
   }
   const keep = KEEP.test(e.request.url);
-  const save = (res) => { if (res.ok && keep) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); } return res; };
+  const save = (res) => { if (res.ok && keep) { const copy = res.clone(); caches.open(KEEP_CACHE).then((c) => c.put(e.request, copy)); } return res; };
   // 자료(data/)는 온라인이면 늘 출처에 다시 묻고(no-cache: 안 바뀌었으면 304) 저장본을 바꾼다. 캐시 이름 지문은 셸 파일만 세어,
   // 자료만 바뀐 배포 뒤에도 저장본(옛 쇠퇴 값)으로 계산·1쪽을 만들던 것을 막는다(r14 tech_quality 1). 저장본은 통신이 안 될 때(오프라인 현장)만 쓴다
   if (keep && /\/data\//.test(e.request.url)) {
-    e.respondWith(fetch(e.request, { cache: "no-cache" }).then(save, async (error) => (await caches.match(e.request, { cacheName: CACHE })) || Promise.reject(error)));
+    // 자료는 4초 대체를 쓰지 않는다: 온라인인데 느릴 뿐이면 옛 값으로 계산·1쪽을 만들게 된다(총괄 검토 2026-11-28, r14 원칙)
+    e.respondWith(fetch(e.request, { cache: "no-cache" }).then(save, async (error) => (await caches.match(e.request, { cacheName: KEEP_CACHE })) || Promise.reject(error)));
     return;
   }
   // 셸(지문으로 판이 갈림)과 자동 가림 도구(vendor/vision, 약 20MB)는 저장본 먼저
-  e.respondWith(caches.match(e.request, { cacheName: CACHE }).then((hit) => hit || fetch(e.request, keep ? { cache: "no-cache" } : undefined).then(save)));
+  e.respondWith(caches.match(e.request, { cacheName: keep ? KEEP_CACHE : CACHE }).then((hit) => hit || fetch(e.request, keep ? { cache: "no-cache" } : undefined).then(save)));
 });

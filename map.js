@@ -462,7 +462,10 @@
     }
   }
   // 시군구 단위 추가 자료(청년 순이동·인구감소지역 지정). 코드는 index.json code5 또는 행안부 code5(mois_code5) 어느 쪽이든 맞춘다
-  const sgMatch = (list, sg) => (Array.isArray(list) ? list : []).find(x => x && (String(x.code5) === String(sg.code5) || (sg.mois_code5 && String(x.code5) === String(sg.mois_code5)))) || null;
+  // 2026-11-28 점검: 한 곳의 행안부 코드가 다른 곳의 SGIS 코드와 같은 경우가 21개다(종로구 행안부 11110 = 노원구 SGIS 11110). 같은 코드부터 찾아야
+  // 목록 순서에 따라 남의 값이 칠해지지 않는다
+  const sgMatch = (list, sg) => { const l = Array.isArray(list) ? list : [], at = (c) => l.find(x => x && String(x.code5) === String(c));
+    return at(sg.code5) || (sg.mois_code5 && at(sg.mois_code5)) || null; };
   function sgExtra(ind, sg, ext) {
     const e = ext || {};
     if (ind.src === 'migration') {

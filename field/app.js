@@ -29,7 +29,9 @@
     if (err) { $("toast").hidden = true; clearTimeout(toastTimer); $("msg").scrollIntoView({ block: "nearest" }); }
   }
   // 칸 오류는 위 알림에 칸 수만 쓰고 문장은 칸 아래에만 둔다(한 칸일 때 같은 문장이 알림·aria-describedby로 두 번 읽혔다, 3차 UX2-05)
-  const errText = (err) => (err.fields && err.fields.length ? `${err.fields.length}개 칸을 고쳐 주세요.` : err.message);
+  // 저장 공간 부족(DOMException)은 영어 원문 대신 할 일을 알린다. 저장은 취소되어 붙인 사진은 그대로 남는다(2026-11-28 점검)
+  const errText = (err) => (err.fields && err.fields.length ? `${err.fields.length}개 칸을 고쳐 주세요.`
+    : err.name === "QuotaExceededError" ? "기기 저장 공간이 부족해 저장하지 못했습니다. 보관함에서 ZIP으로 백업한 뒤 지난 기록을 지워 주세요." : err.message);
   // 검증 오류가 칸을 알려 주면 그 칸을 열고 오류 문구와 이어 준 뒤 초점을 준다
   function focusFields(fields) {
     const el = fields && fields[0] && $(fields[0].id);
@@ -553,7 +555,7 @@
         if (edit !== cur || cur.revision !== revision || !$("safe").checked) return;
         pending.push({ id, blob, url: URL.createObjectURL(blob), sha256 });
         // 붙인 사진은 저장 전까지 이 기기 임시 칸에도 둔다(탭이 닫히거나 카메라 앱에서 돌아오며 다시 열려도 잃지 않게, M21)
-        S.putDraft({ id, blob, sha256, created_at: new Date().toISOString() }).catch(() => {});
+        S.putDraft({ id, blob, sha256, created_at: new Date().toISOString() }).catch(() => say("사진을 기기 임시 칸에 두지 못했습니다(저장 공간 등). 다른 앱으로 가기 전에 먼저 저장해 주세요.", true));
         linkNext = null;
         closeEdit(); drawThumbs(); say("");
         $("thumbs").scrollIntoView?.({ block: "center" });   // 방금 붙인 사진이 화면 위로 사라졌다(M22)
