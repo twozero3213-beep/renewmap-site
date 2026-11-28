@@ -20,10 +20,13 @@
   const isPoint = s => s.fields.includes('lat') && s.fields.includes('lng');
   const at = (s, f) => s.fields.indexOf(f);
   // 지도에 찍을 수 있는 줄(국가안전대진단은 좌표 없는 줄이 섞여 있다)
-  const mapped = s => s.rows.filter(r => Number.isFinite(r[at(s, 'lat')]) && Number.isFinite(r[at(s, 'lng')]));
+  const hasCoords = (s, r) => Number.isFinite(r[at(s, 'lat')]) && Number.isFinite(r[at(s, 'lng')]);
+  const mapped = s => s.rows.filter(r => hasCoords(s, r));
+  const withoutCoords = s => s.rows.filter(r => !hasCoords(s, r));
   const num = n => Number(n).toLocaleString('ko-KR');
   // 오픈API로 받은 자료는 기준일·파일 일자가 없어 받은 날을 적는다
   const dateText = src => (src.base_date ? `기준일 ${src.base_date}` : src.file_date ? `파일 일자 ${src.file_date}` : `받은 날 ${String(src.retrieved_at || '').slice(0, 10)}`);
+  const pointCount = (s, n) => num(n) + (s.src.id === '15074682' ? '건' : '곳');
   // 이름 맞춤의 뿌리: 행정동 '동대신1동', 법정동 '동대신동2가', 산불 자료의 '서대신'·'하청'(하청면)을 같은 뿌리로 본다
   const core = n => U.dongStem(String(n || '').trim().replace(/\d+가$/, '')).replace(/(동|읍|면|리|가)$/, '');
   const dongKeys = name => new Set([name, ...U.members(name)].map(core).filter(Boolean));
@@ -71,7 +74,7 @@
 
   // 이 동 안의 점 시설 수. 그 자료가 덮는 시·도의 동에만 줄을 둔다(부산 자료를 양산 동에 '0곳'으로 적지 않는다)
   function pointCounts(data, code) {
-    return sets(data).filter(isPoint).map(s => { const i = at(s, 'dong'); return { s, n: s.rows.filter(r => r[i] === code).length, here: s.rows.some(r => String(r[i] || '').slice(0, 2) === code.slice(0, 2)) }; })
+    return sets(data).filter(isPoint).map(s => { const i = at(s, 'dong'); return { s, n: s.rows.filter(r => r[i] === code && hasCoords(s, r)).length, here: s.rows.some(r => String(r[i] || '').slice(0, 2) === code.slice(0, 2)) }; })
       .filter(x => x.here);
   }
   // 좌표 없는 목록에서 이 동의 줄. 행정동 코드 칸(dong)이 차 있으면 코드로, 아니면 같은 구·군 안의 읍·면·동·리 이름으로 맞춘다(byName).
@@ -131,8 +134,8 @@
   function cardHTML(data, laws, code, name, names) {
     const li = (head, s) => `<li>${head}${srcLine(s, laws)}</li>`;
     const pts = pointCounts(data, code), hits = dongMatches(data, code, name, names), up = sgItems(data, code.slice(0, 5));
-    const ptHTML = pts.length ? `<h4 class="sl-h">이 동 안 시설 <small>지도 점과 같은 자료</small></h4><ul class="sl-list">${pts.map(x => li(`<b>${esc(x.s.src.kind)} ${num(x.n)}곳</b>`, x.s)).join('')}</ul>` +
-      '<p class="sl-none">행정동 경계 부근 시설은 이웃 동으로 셀 수 있습니다.</p>' : '';
+    const ptHTML = pts.length ? `<h4 class="sl-h">이 동에 분류된 지도 자료</h4><ul class="sl-list">${pts.map(x => li(`<b>${esc(x.s.src.kind)} ${pointCount(x.s, x.n)}</b>`, x.s)).join('')}</ul>` +
+      '<p class="sl-none">행정동 경계 부근의 점은 이웃 동에 집계될 수 있습니다.</p>' : '<p class="sl-none">현재 자료에서 이 동에 분류한 지도 점이 없습니다.</p>';
     const hitHTML = `<h4 class="sl-h">이 동 코드·이름으로 찾은 목록</h4>` + (hits.length
       ? `<ul class="sl-list">${hits.map(x => li(isYearly(x.s) ? `${yearHTML(x)}${x.byName ? ' <small>이름으로 맞춤</small>' : ''}`
         : `<details><summary><b>${esc(x.s.src.kind)} ${num(x.rows.length)}${unitWord(x.s)}</b>${x.byName ? ' <small>이름으로 맞춤</small>' : ''}</summary>${rowsHTML(x.s, x.rows)}</details>`, x.s)).join('')}</ul>` +
@@ -143,8 +146,13 @@
       : x.rows.length <= 3 ? `<b>${esc(x.s.src.kind)}</b>${rowsHTML(x.s, x.rows)}`
       : `<details data-sl-more="${esc(x.s.src.id)}"><summary><b>${esc(x.s.src.kind)} ${num(x.rows.length)}${unitWord(x.s)}</b> <small>펼치면 목록</small></summary></details>`, x.s);
     const upHTML = (level, head, small) => { const xs = up.filter(x => x.level === level); return xs.length ? `<h4 class="sl-h">${head} <small>${small}</small></h4><ul class="sl-list">${xs.map(upLi).join('')}</ul>` : ''; };
-    const { sg, sido } = placeOf(data, code.slice(0, 5));
-    return `<p class="sl-note">${esc(NOTE)}</p>${ptHTML}${hitHTML}` + upHTML('sg', `${esc(sg || '구·군')} 전체 자료`, '구·군 단위 자료와 구·군 안 모든 줄') +
+    const code5 = code.slice(0, 5), { sg, sido } = placeOf(data, code5);
+    const unmapped = sets(data).filter(s => isPoint(s) && at(s, 'sgg') >= 0).map(s => {
+      const n = withoutCoords(s).filter(r => r[at(s, 'sgg')] === code5).length;
+      return n ? li(`<b>${esc(s.src.kind)} ${pointCount(s, n)}</b>`, s) : '';
+    }).join('');
+    const unmappedHTML = unmapped ? `<h4 class="sl-h">${esc(sg || '이 구·군')}의 좌표 없는 기록</h4><ul class="sl-list">${unmapped}</ul><p class="sl-none">구·군 코드로 묶은 수입니다. 지도 점과 동별 집계에는 포함되지 않습니다.</p>` : '';
+    return `<p class="sl-note">${esc(NOTE)}</p>${ptHTML}${hitHTML}` + unmappedHTML + upHTML('sg', `${esc(sg || '구·군')} 전체 자료`, '구·군 단위 자료와 구·군 안 모든 줄') +
       upHTML('sido', `${esc(sido || '시·도')} 전체 자료`, '구·군으로 나누지 않은 자료');
   }
   const colorOf = (data, id) => COLORS[sets(data).filter(isPoint).findIndex(s => s.src.id === id) % COLORS.length];
@@ -158,12 +166,16 @@
   // 지도 위 층 단추 안쪽: 주제(topics) 묶음마다 점 자료 하나에 확인란 하나
   function controlHTML(data, on) {
     const pts = sets(data).filter(isPoint);
-    const count = s => { const m = mapped(s).length, off = s.rows.length - m; return `${num(m)}곳${off ? `(좌표 없는 ${num(off)}곳은 지도에 없음)` : ''}`; };
+    const count = s => {
+      const off = withoutCoords(s), isg = at(s, 'sgg');
+      const unknown = isg >= 0 ? off.filter(r => !r[isg]).length : 0;
+      return `지도 표시 ${pointCount(s, s.rows.length - off.length)}${off.length ? ` · 좌표 없음 ${pointCount(s, off.length)}` : ''}${unknown ? ` (구·군 미분류 ${pointCount(s, unknown)})` : ''}`;
+    };
     const cardOnly = data.topics.filter(t => !pts.some(s => s.src.topic === t.id)).map(t => t.label);
     return `<p class="sl-note">${esc(NOTE)}</p>` + data.topics.map(t => [t, pts.filter(s => s.src.topic === t.id)]).filter(g => g[1].length).map(([t, list]) =>
       `<fieldset class="sl-topic"><legend>${esc(t.label)}</legend>${list.map(s => `<label class="sl-opt"><input type="checkbox" data-sl-id="${esc(s.src.id)}"${on.has(s.src.id) ? ' checked' : ''}>` +
         `<i class="sl-sw" data-bg="${colorOf(data, s.src.id)}" aria-hidden="true"></i><span>${esc(s.src.kind)} <small>${count(s)} · ${esc(s.src.org)} · ${esc(dateText(s.src))}</small></span></label>`).join('')}</fieldset>`).join('') +
-      `<p class="sl-none">점을 누르면 이름과 출처·일자가 보입니다. 동을 고르면 동 카드 끝에 그 동의 안전·재난·기후 자료가 붙습니다.${cardOnly.length ? ` 좌표가 없는 자료(${esc(cardOnly.join(', '))})는 동 카드에만 있습니다.` : ''}</p>` + pendingHTML(data);
+      `<p class="sl-none">점을 누르면 이름과 출처·일자가 보입니다. 동 카드에서 동별 자료와 구·군 코드로 묶은 좌표 없는 기록을 볼 수 있습니다.${cardOnly.length ? ` 좌표가 없는 자료(${esc(cardOnly.join(', '))})는 동 카드에만 있습니다.` : ''}</p>` + pendingHTML(data);
   }
   function tipHTML(s, row) {
     const v = f => row[at(s, f)], label = s.src.detail_label;
@@ -224,7 +236,7 @@
     map.createPane('safety').style.zIndex = 455;   // 수질 점(450) 위, 동 이름(460) 아래. 동 층을 다시 그려도 덮이지 않는다
     c.onAdd = () => {
       box = L.DomUtil.create('details', 'sl-ctl leaflet-bar');
-      box.innerHTML = '<summary>안전·재난·기후 시설</summary><div class="sl-in"></div>';
+      box.innerHTML = '<summary>안전·재난·기후 지도 자료</summary><div class="sl-in"></div>';
       L.DomEvent.disableClickPropagation(box); L.DomEvent.disableScrollPropagation(box);
       // 펼친 칸은 지도 높이 안에서 스크롤한다(휴대폰 지도는 약 350px이라 넘치면 아래가 잘렸다)
       box.addEventListener('toggle', () => { if (!box.open) return; box.querySelector('.sl-in').style.maxHeight = Math.max(100, map.getSize().y - box.offsetTop - box.firstElementChild.offsetHeight - 40) + 'px'; load(); });
