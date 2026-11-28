@@ -109,19 +109,74 @@
         await loadScript('vendor/office/xlsx.mini.min.js');
         const wb = /\.csv$/i.test(file.name) ? win.XLSX.read(decodeText(bytes), { type: 'string' }) : win.XLSX.read(bytes, { type: 'array', cellDates: true }), tabs = el('div', 'doc-tabs'), body = el('div', 'doc-sheet');
         const names = visibleSheets(wb);
-        const show = name => {
-          body.textContent = ''; const rows = win.XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '', raw: false }), t = el('table');
-          for (const r of rows.slice(0, ROW_CAP)) { const tr = el('tr'); for (const c of r) tr.append(el('td', '', c)); t.append(tr); }
-          body.append(el('div', 'doc-scroll')); body.firstChild.append(t);
-          if (rows.length > ROW_CAP) body.append(el('p', 'doc-note', `처음 ${ROW_CAP}줄만 보입니다(전체 ${rows.length}줄). 전체는 원본을 받아 엑셀이나 이음오피스에서 여세요.`));
-          for (const b of tabs.children) b.setAttribute('aria-pressed', String(b.dataset.s === name));
+        const utils = win.XLSX.utils, rangeOf = sheet => sheet['!ref'] ? utils.decode_range(sheet['!ref']) : null;
+        const toolbar = el('div', 'doc-sheet-nav'), rangeStatus = el('span', 'doc-note');
+        rangeStatus.setAttribute('role', 'status');
+        const prev = el('button', 'doc-tab', '이전 행 묶음'), next = el('button', 'doc-tab', '다음 행 묶음');
+        prev.type = next.type = 'button';
+        const jump = el('form', 'doc-sheet-jump'), label = el('label', '', '행 번호');
+        const rowInput = el('input'), go = el('button', 'doc-tab', '행으로 이동');
+        rowInput.id = 'docSheetRow'; rowInput.type = 'number'; rowInput.inputMode = 'numeric'; rowInput.step = '1';
+        label.htmlFor = rowInput.id; go.type = 'submit'; jump.noValidate = true;
+        jump.append(label, rowInput, go);
+        const pages = el('div', 'doc-sheet-pages');
+        pages.append(prev, next);
+        toolbar.append(rangeStatus, pages, jump);
+        let sheet, bounds, first;
+        const draw = (target = null) => {
+          rowInput.removeAttribute('aria-invalid');
+          body.textContent = '';
+          toolbar.hidden = !bounds;
+          if (!bounds) { body.append(el('p', 'doc-note', '이 시트에 표시할 행이 없습니다.')); return; }
+          pages.hidden = bounds.e.r - bounds.s.r < ROW_CAP;
+          rowInput.min = String(bounds.s.r + 1); rowInput.max = String(bounds.e.r + 1);
+          const last = Math.min(first + ROW_CAP - 1, bounds.e.r);
+          const range = utils.encode_range({ s: { ...bounds.s, r: first }, e: { ...bounds.e, r: last } });
+          const rows = utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false, range }), t = el('table');
+          let focusRow = null;
+          rows.forEach((values, i) => {
+            const row = first + i + 1, tr = el('tr'), heading = el('th', '', String(row));
+            heading.scope = 'row';
+            tr.append(heading, ...values.map(value => el('td', '', value)));
+            if (row === target) { tr.tabIndex = -1; focusRow = tr; }
+            t.append(tr);
+          });
+          const scroll = el('div', 'doc-scroll'); scroll.append(t); body.append(scroll);
+          prev.disabled = first <= bounds.s.r; next.disabled = last >= bounds.e.r;
+          rangeStatus.textContent = `엑셀 ${first + 1}~${last + 1}행 · 시트 범위 ${bounds.s.r + 1}~${bounds.e.r + 1}행`;
+          if (focusRow) {
+            rangeStatus.textContent += ` · ${target}행으로 이동했습니다.`;
+            focusRow.focus({ preventScroll: true }); focusRow.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+          }
         };
+        const show = name => {
+          sheet = wb.Sheets[name]; bounds = rangeOf(sheet); first = bounds?.s.r ?? 0;
+          rowInput.value = '';
+          rowInput.removeAttribute('aria-invalid');
+          for (const b of tabs.children) b.setAttribute('aria-pressed', String(b.dataset.s === name));
+          draw();
+        };
+        jump.addEventListener('submit', event => {
+          event.preventDefault();
+          const row = rowInput.valueAsNumber;
+          if (!bounds || !Number.isInteger(row) || row <= bounds.s.r || row > bounds.e.r + 1) {
+            rowInput.setAttribute('aria-invalid', 'true');
+            if (bounds) rangeStatus.textContent = `행 번호를 ${bounds.s.r + 1}~${bounds.e.r + 1} 사이의 정수로 입력해 주세요.`;
+            rowInput.focus();
+            return;
+          }
+          rowInput.removeAttribute('aria-invalid');
+          first = bounds.s.r + Math.floor((row - 1 - bounds.s.r) / ROW_CAP) * ROW_CAP;
+          draw(row);
+        });
+        prev.addEventListener('click', () => { first -= ROW_CAP; draw(); });
+        next.addEventListener('click', () => { first += ROW_CAP; draw(); });
         const hidden = wb.SheetNames.length - names.length;
         if (hidden) stage.append(el('p', 'doc-note', `숨긴 시트 ${hidden}개는 미리보기와 글자 파일에서 제외했습니다. 원본 파일에서 확인할 수 있습니다.`));
         for (const name of names) { const b = el('button', 'doc-tab', name); b.type = 'button'; b.dataset.s = name; b.addEventListener('click', () => show(name)); tabs.append(b); }
         if (!names.length) { stage.append(el('p', 'doc-note', '표시할 시트가 없습니다.')); return { canPrint: () => false, text: null }; }
-        stage.append(tabs, body); show(names[0]);
-        return { pages: names.length, canPrint: () => names.length === 1 && win.XLSX.utils.sheet_to_json(wb.Sheets[names[0]], { header: 1 }).length <= ROW_CAP,
+        stage.append(tabs, toolbar, body); show(names[0]);
+        return { pages: names.length, canPrint: () => names.length === 1 && (!bounds || bounds.e.r - bounds.s.r < ROW_CAP),
           text: async () => names.map(n => `# ${n}\n${win.XLSX.utils.sheet_to_csv(wb.Sheets[n])}`).join('\n') };
       },
       async pptx(bytes, file, stage) {
