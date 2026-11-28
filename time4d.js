@@ -106,18 +106,28 @@
     return '\ufeff' + [...meta, CSV_COLS.map(csvCell).join(','), ...rows].join('\r\n') + '\r\n';
   }
 
-  function comparisonCsv(bf, selected, reference) {
+  function comparisonPath(code, year) {
+    if (!/^\d{10}$/.test(code) || !Number.isInteger(year) || year < YEAR_FROM || year > 9999) return '';
+    return `time4d.html?bjd=${code}&y=${year}#t4Comparison`;
+  }
+
+  function comparisonCsv(bf, selected, reference, pageURL) {
     const head = ['법정동', '법정동 코드', '출처', '대장 기준일', '연수 기준일', '구분', '연도', '미래 가정',
       '날짜 있는 주건축물 수', '20년 이상 수', '20년 이상 비율(%)', '30년 이상 수', '30년 이상 비율(%)',
-      '완공된 날 없는 수', '자료 범위'];
+      '완공된 날 없는 수', '자료 범위', '비교 화면', '공개 대장 자료'];
+    const source = pageURL && /^\d{10}$/.test(bf.bjd10) ? new URL(`data/buildings/${bf.bjd10}.json`, pageURL).href : '';
+    const view = s => {
+      const path = comparisonPath(bf.bjd10, s.year);
+      return pageURL && path ? new URL(path, pageURL).href : '';
+    };
     const row = (label, s) => [bf.name, bf.bjd10, bf.source, bf.hub_reference_date, bf.age_reference_date, label, s.year,
       s.year > reference.year ? '지금 건물이 그대로일 때' : '', s.built, s.over20, s.pct20, s.over30, s.pct30, s.noDate,
-      '현재 대장 자료에 있는 건물'];
+      '현재 대장 자료에 있는 건물', view(s), source];
     return '\ufeff' + [head, row('선택 연도', selected), row('자료 기준연도', reference)]
       .map((fields) => fields.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
-  const api = { comparisonCsv, YEAR_FROM, BANDS, NO_DATE, aprYear, stats, crossYear, sinceYear, features, colorExpr, filterExpr, dongAt, csv, CSV_COLS, csvCell };
+  const api = { comparisonPath, comparisonCsv, YEAR_FROM, BANDS, NO_DATE, aprYear, stats, crossYear, sinceYear, features, colorExpr, filterExpr, dongAt, csv, CSV_COLS, csvCell };
   if (typeof module === 'object' && module.exports) { module.exports = api; return; }
   root.Time4D = api;
 
@@ -128,9 +138,7 @@
   // (v9: 달력 연도를 쓰면 해가 바뀐 뒤 자료를 다시 받기 전까지 홈 목록(export_crossing_soon.py, 자료 기준연도)과 한 해씩 어긋난다)
   let NOW = new Date().getFullYear(), TO = NOW + 20;
   const getJson = (p) => fetch(`data/${p}`).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
-  // ?y=: 홈 '곧 노후 요건에 닿는 동네'에서 오면 그 해부터 연다(범위 밖이면 올해)
-  const y0 = Number(new URLSearchParams(location.search).get('y'));
-  let map = null, blds = [], fileMeta = null, year = y0 >= YEAR_FROM && y0 <= TO ? y0 : NOW, timer = null;
+  let map = null, blds = [], fileMeta = null, year = NOW, timer = null;
   const fmt = (n) => (n === null ? '-' : n.toLocaleString('ko-KR'));
 
   // 2026-11-19: 휴대폰은 '셈하는 법' 네 항목을 접어 둔다(쪽 3,300px). 넓은 화면은 펼친 채, '셈하는 법 ↓'로 오면 연다
@@ -153,6 +161,8 @@
     panel.hidden = !fileMeta?.referenceYear;
     if (panel.hidden) return;
     fileMeta.comparison = [selected, reference];
+    $('t4ShareStatus').textContent = '';
+    $('t4ShareUrl').hidden = true;
     const { bf } = fileMeta;
     $('t4ComparisonBasis').textContent = [
       bf.source,
@@ -209,15 +219,37 @@
   $('t4ComparisonCsv').addEventListener('click', () => {
     if (!fileMeta?.comparison) return;
     const { bf, comparison } = fileMeta;
-    RenewSave.saveFile(`연도비교_${bf.name}_${bf.bjd10}.csv`, [comparisonCsv(bf, ...comparison)], 'text/csv;charset=utf-8');
+    const pageURL = document.querySelector('link[rel="canonical"]').href;
+    RenewSave.saveFile(`연도비교_${bf.name}_${bf.bjd10}.csv`, [comparisonCsv(bf, ...comparison, pageURL)], 'text/csv;charset=utf-8');
+  });
+  $('t4Share').addEventListener('click', async () => {
+    const { code, comparison } = fileMeta || {};
+    if (!comparison) return;
+    const selected = comparison[0].year;
+    const path = comparisonPath(code, selected);
+    if (!path) return;
+    const url = new URL(path, location.href).href;
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      copied = true;
+    } catch {
+      // 클립보드 권한이 없어도 현재 비교 주소를 직접 복사할 수 있다.
+    }
+    if (fileMeta?.code !== code || year !== selected) return;
+    const input = $('t4ShareUrl');
+    input.hidden = copied;
+    if (!copied) { input.value = url; input.focus(); input.select(); }
+    $('t4ShareStatus').textContent = copied ? '현재 동과 연도의 비교 주소를 복사했습니다.' : '비교 주소를 선택했습니다. 직접 복사해 주세요.';
   });
   let loadEpoch = 0;
-  async function load(code) {
+  async function load(code, requestedYear = null) {
     const epoch = ++loadEpoch;
     stop();
     fileMeta = null;
     $('t4Comparison').hidden = true;
     $('t4CmpNote').textContent = '';
+    $('t4YearNotice').textContent = '';
     $('t4Csv').disabled = true;
     $('t4OpenMap').disabled = true;
     if (map) {
@@ -238,10 +270,18 @@
         $('t4Ends').textContent = `${YEAR_FROM}년 ~ ${TO}년 · 올해 뒤는 지금 건물 그대로일 때`;
         if (atNow || year > TO) { year = Math.min(atNow ? NOW : year, TO); slider.value = String(year); }
       }
+      if (requestedYear !== null) {
+        const value = Number(requestedYear);
+        const allowed = /^\d{4}$/.test(requestedYear) && value >= YEAR_FROM && value <= TO;
+        year = allowed ? value : NOW;
+        slider.value = String(year);
+        if (!allowed) $('t4YearNotice').textContent = `주소의 연도를 사용할 수 없어 자료 기준 ${NOW}년을 표시합니다.`;
+      }
       $('t4Status').textContent = `${bf.name} 건물 통계를 불러왔습니다.`;
       $('t4Name').textContent = bf.name;
       $('t4Src').textContent = `완공된 날(사용승인일): ${bf.source || ''}(기준일 ${bf.hub_reference_date || ''})`;
       marks(); paint();
+      if (location.hash === '#t4Comparison' && !$('t4Comparison').hidden) $('t4Comparison').open = true;
       $('t4Csv').disabled = !blds.length;
       if (mapRequested) await showBuildings(epoch);
       return epoch === loadEpoch;
@@ -427,7 +467,7 @@
     syncLinks();
     // 주소의 동 코드가 부산 목록에 없으면 다른 동을 말없이 보여 주지 않고 알린다(v9 QA: ?bjd=0000000000·울산 코드가 중구 영주동으로 열렸다)
     const asked = q.get('bjd'), missing = q.has('bjd') && !gus.some((s) => s.dongs.some((d) => d.code === asked));
-    load($('t4Dong').value).then((loaded) => {
+    load($('t4Dong').value, q.get('y')).then((loaded) => {
       if (!loaded) return;
       const shown = $('t4Dong').selectedOptions[0]?.textContent || '첫 동';
       // 불러온 뒤에 쓴다(전에는 '불러오는 중' 안내에 덮여, 대구에서 4D를 열면 말없이 부산이 나왔다)
