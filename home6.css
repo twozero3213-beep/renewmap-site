@@ -151,6 +151,12 @@ html.js .h9-dash:not(.is-ready) .hd-body { min-height: 760px; }
 .hd-held { gap: 8px; background: var(--bg); }
 .hd-held-t { font-size: var(--t-h3); line-height: 1.4; }
 .hd-held p { margin: 0; font-size: var(--t-sub); line-height: 1.6; color: var(--dim); }
+.hd-table { margin-top: 8px; font-size: var(--t-cap); }
+.hd-table summary { cursor: pointer; padding: 8px 0; }
+.hd-table table { width: 100%; border-collapse: collapse; }
+.hd-table caption { text-align: left; margin: 4px 0; }
+.hd-table th, .hd-table td { text-align: left; padding: 4px; border-bottom: 1px solid var(--line); }
+.hd-table tbody td:first-of-type { font-variant-numeric: tabular-nums; }
 .hd-src { margin: auto 0 0; padding-top: 8px; font-size: var(--t-cap); line-height: 1.5; color: var(--dim); }
 .h9-dash-go { margin: 16px 0 0; font-size: var(--t-sub); }
 .h9-scope { padding-top: 28px; }
@@ -188,7 +194,7 @@ html.js .h9-dash:not(.is-ready) .hd-body { min-height: 760px; }
 }
 /* 인쇄·PDF로 저장(home-dash.js가 html.print-dash를 붙인다): 대시보드만, 막대 색·출처·기준일 그대로 */
 @media print {
-  html.print-dash body > :not(main), html.print-dash main > :not(#dash), html.print-dash .h9-dash-do, html.print-dash .h9-dash-go { display: none; }
+  html.print-dash body > :not(main), html.print-dash main > :not(#dash), html.print-dash .h9-dash-do, html.print-dash .h9-dash-go, html.print-dash .hd-table { display: none; }
   html.print-dash .h9-dash { margin: 0; padding: 0; border: 0; }
   html.print-dash .hd-kpis li, html.print-dash .hd-chart { break-inside: avoid; }
   html.print-dash .hd-bars i { -webkit-print-color-adjust: exact; print-color-adjust: exact; }

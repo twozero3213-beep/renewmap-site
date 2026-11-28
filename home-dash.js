@@ -4,7 +4,7 @@
    util.js 다음에 싣는다. 외부 요청 없음. */
 (function (root) {
   'use strict';
-  const { esc, isNum } = (typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil) || {};
+  const { esc, isNum, csvCell } = (typeof module === 'object' && module.exports ? require('./util.js') : root.RenewUtil) || {};
   const n = v => Number(v).toLocaleString('ko-KR');
   const svg = d => `<svg class="hd-ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
   // 시설 수 칸의 그림(선 그림, 일러스트 아님): 무더위는 해, 한파는 눈 결정
@@ -42,17 +42,23 @@
     return `<p class="hd-src">출처: ${orgs(s.sources)}${base}${notes}</p>`;
   }
 
+  const seriesValues = (s, code) => {
+    const vals = s.values[code];
+    return Array.isArray(vals) && vals.length === s.years.length ? vals : null;
+  };
+  const periodOf = (s, i) => s.partial_last && i === s.years.length - 1 ? '부분 집계' : '연도 자료';
+
   // area: 화면 이름(캡처·인쇄해도 어느 곳 자료인지 보이게 제목 앞에 붙인다)
   function chart(s, code, area) {
-    const vals = s.values[code];
-    if (!Array.isArray(vals) || vals.length !== s.years.length) return '';
+    const vals = seriesValues(s, code);
+    if (!vals) return '';
     const hs = heights(vals), last = vals.length - 1, many = vals.length > 6;   // 7개부터는 숫자가 겹쳐 비교하는 해·가장 큰 해만
-    const peak = vals.indexOf(Math.max(...vals));
+    const peak = vals.indexOf(Math.max(...vals.filter(isNum)));
     const md = (s.base_date || '').slice(5).split('-').map(Number);   // '2025-09-25' → 9월 25일
     const upTo = s.base_kind === '받은 날' ? '일에 받은 것까지' : '일까지';
     const partial = s.partial_last && md.length === 2 && md.every(Boolean) ? `(${esc(s.years[last])}년은 ${md[0]}월 ${md[1]}${upTo})` : '';
     const first = 0, lastFull = s.partial_last && last > 0 ? last - 1 : last;
-    const at = i => `${esc(s.years[i])}년 ${n(vals[i])}${esc(s.unit)}`;
+    const at = i => `${esc(s.years[i])}년 ${isNum(vals[i]) ? n(vals[i]) + esc(s.unit) : '자료 없음'}`;
     const delta = `${at(first)} → ${at(lastFull)}`;
     // 첫 해와 마지막 해만 보면 가운데 큰 해를 놓친다(예: 재선충 2018년). 가장 큰 해가 비교하는 두 해·맨 끝 해(숫자가 이미 보인다)가 아니면 한 줄 더 적는다
     const peakLine = vals[peak] > 0 && ![first, lastFull, last].includes(peak) ? `가장 많은 해 ${at(peak)}` : '';
@@ -63,12 +69,13 @@
       const showV = !many || key;
       // 연도 글자는 하나 걸러. 단 보이는 해(key) 바로 옆이면 숨긴다('23'24'25가 붙어 한 덩어리로 읽혔다)
       const showY = !many || key || (i % 2 === 0 && !isKey(i - 1) && !isKey(i + 1));
-      return `<li${i === last && s.partial_last ? ' class="is-partial"' : ''}><span class="hd-v${showV ? '' : ' is-quiet'}">${n(v)}</span>`
+      return `<li${i === last && s.partial_last ? ' class="is-partial"' : ''}><span class="hd-v${showV ? '' : ' is-quiet'}">${isNum(v) ? n(v) : '—'}</span>`
         + `<span class="hd-col"><i data-h="${hs[i]}"></i></span><span class="hd-y${showY ? '' : ' is-quiet'}">’${esc(s.years[i].slice(2))}</span></li>`;
     }).join('');
     const name = `${area ? `${esc(area)} · ` : ''}${esc(s.label)}`;
-    const table = `<div class="sr-only"><table><caption>${name}(${esc(s.unit)})</caption><tr><th scope="row">연도</th>${s.years.map(y => `<td>${esc(y)}</td>`).join('')}</tr>`
-      + `<tr><th scope="row">값</th>${vals.map(v => `<td>${n(v)}</td>`).join('')}</tr></table></div>`;
+    const rows = s.years.map((y, i) => `<tr><th scope="row">${esc(y)}</th><td>${isNum(vals[i]) ? n(vals[i]) : '자료 없음'}</td><td>${periodOf(s, i)}</td></tr>`).join('');
+    const table = `<details class="hd-table"><summary>연도별 수치표<span class="sr-only"> · ${name}</span></summary><table><caption>${name} (${esc(s.unit)})</caption>`
+      + `<thead><tr><th scope="col">연도</th><th scope="col">값</th><th scope="col">집계 범위</th></tr></thead><tbody>${rows}</tbody></table></details>`;
     return `<figure class="hd-chart"><figcaption><b>${name}</b><span class="hd-delta">${delta}</span>${notes.map(t => `<span class="hd-note">${t}</span>`).join('')}</figcaption>`
       + `<ol class="hd-bars" aria-hidden="true">${bars}</ol>${table}${srcLine(s)}</figure>`;
   }
@@ -119,7 +126,26 @@
     return out;
   }
 
-  const api = { valid, heights, chart, kpiList, heldList, render, groups };
+  function seriesCSV(d, code) {
+    const area = valid(d) && d.areas.find(a => a.code === code);
+    if (!area) return '';
+    const rows = d.series.flatMap(s => {
+      const vals = seriesValues(s, code);
+      if (!vals) return [];
+      const sources = s.sources || [];
+      const names = sources.map(x => x.name || x.org).filter(Boolean).join(' | ');
+      const links = sources.map(x => x.url).filter(Boolean).join(' | ');
+      const dateKind = s.base_date ? s.base_kind || '기준일' : '추가확인';
+      return s.years.map((year, i) => [area.name, area.code, s.id, s.label, year,
+        isNum(vals[i]) ? vals[i] : '', s.unit, isNum(vals[i]) ? '값 있음' : '자료 없음',
+        periodOf(s, i), dateKind, s.base_date || '', names, links, (s.notes || []).join(' | ')]);
+    });
+    if (!rows.length) return '';
+    const head = ['지역', '지역 코드', '지표 코드', '지표', '연도', '값', '단위', '값 상태', '집계 범위', '자료 날짜 종류', '자료 날짜', '출처', '원문 주소', '자료 설명'];
+    return '﻿' + [head, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+  }
+
+  const api = { valid, seriesCSV, heights, chart, kpiList, heldList, render, groups };
   if (typeof module === 'object' && module.exports) module.exports = api;
 
   // 브라우저 연결부: 자리([data-dash])가 있고 util.js가 있을 때만
@@ -132,7 +158,7 @@
     const box = doc.querySelector('[data-dash="safety"]');
     if (!box) return;
     const body = box.querySelector('#dashBody'), pick = box.querySelector('#dashArea');
-    const say = box.querySelector('#dashSay'), print = box.querySelector('#dashPrint');
+    const say = box.querySelector('#dashSay'), print = box.querySelector('#dashPrint'), csv = box.querySelector('#dashCsv');
     if (!body || !pick) return;
     const fail = () => { body.innerHTML = '<p class="hd-wait">대시보드 자료를 불러오지 못했습니다. 같은 자료는 아래 안전·재난 지도와 데이터 출처 화면에서 봅니다.</p>'; };
     root.RenewUtil.fetchJson('data/home_dashboard.json').then(d => {
@@ -152,6 +178,7 @@
         const h = render(d, pick.value);
         if (!h) return;
         body.innerHTML = h; grow(body); box.classList.add('is-ready');
+        if (csv) csv.hidden = !root.RenewSave || !d.series.some(s => seriesValues(s, pick.value));
         // 화면낭독기에는 바뀐 지역만 한 줄로 알린다(카드·표 전체를 다시 읽지 않게)
         if (announce && say) say.textContent = `${pick.options[pick.selectedIndex].textContent} 자료로 바꿨습니다`;
       };
@@ -159,6 +186,12 @@
       pick.disabled = false;
       pick.addEventListener('change', () => draw(true));
       draw(false);
+      if (csv && root.RenewSave) csv.addEventListener('click', () => {
+        const report = seriesCSV(d, pick.value);
+        if (!report) return;
+        const area = pick.options[pick.selectedIndex].textContent;
+        root.RenewSave.saveFile(`리뉴맵_연도별지표_${area}.csv`, [report], 'text/csv;charset=utf-8');
+      });
       if (print) {
         print.hidden = false;
         // 인쇄는 대시보드만(home6.css @media print의 html.print-dash). 출처·기준일이 그대로 따라간다
