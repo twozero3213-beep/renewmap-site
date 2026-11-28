@@ -52,14 +52,20 @@
   // w: 그림이 들어갈 실제 너비(px). viewBox를 그 너비로 잡아 휴대폰에서도 글자가 12px로 보이게 한다
   function scatter(list, maxSig, w) {
     const W = Math.max(300, Math.min(1000, Math.round(w || 640))), H = W < 480 ? 260 : 300, L = 36, R = 12, T = 30, B = 40;
-    const pops = list.map(r => r.pop).filter(isNum);
+    const plotted = list.filter(r => isNum(r.pop));
+    const pops = plotted.map(r => r.pop);
     const maxPop = Math.max(1, ...pops);
     const x = p => L + (W - L - R) * (p / maxPop);
     const y = c => T + (H - T - B) * (1 - c / Math.max(1, maxSig));
     const midX = x(maxPop / 2), midY = y(maxSig / 2);
-    const dots = list.filter(r => isNum(r.pop)).map((r, i) => {
-      const jy = ((i % 5) - 2) * 3;
-      return `<circle class="bd-dot${r.count === 0 ? ' is-none' : ''}" cx="${x(r.pop).toFixed(1)}" cy="${(y(r.count) + jy).toFixed(1)}" r="6"><title>${esc(r.name)} · 주민 ${n(r.pop)}명 · 신호 ${r.count}개</title></circle>`;
+    const dots = plotted.map((r, i) => {
+      const cx = x(r.pop).toFixed(1), cy = (y(r.count) + ((i % 5) - 2) * 3).toFixed(1);
+      const missing = missingCount(r);
+      const title = `<title>${esc(r.name)} · 주민 ${n(r.pop)}명 · 켜진 신호 ${r.count}개${missing ? ` · 자료 없음 ${missing}개` : ''}</title>`;
+      if (missing) {
+        return `<polygon class="bd-dot is-missing" points="0,-7 7,0 0,7 -7,0" transform="translate(${cx} ${cy})">${title}</polygon>`;
+      }
+      return `<circle class="bd-dot${r.count === 0 ? ' is-none' : ''}" cx="${cx}" cy="${cy}" r="6">${title}</circle>`;
     }).join('');
     // 이름표는 먼저 볼 곳 셋까지. 앞 이름표와 겹치면 건너뛴다(휴대폰에서 '재송2동우2동'처럼 붙었다)
     const boxes = [];
@@ -72,7 +78,7 @@
     }).join('');
     const ticksY = Array.from({ length: maxSig + 1 }, (_, c) => `<text class="bd-ax" x="${L - 8}" y="${(y(c) + 4).toFixed(1)}" text-anchor="end">${c}</text>`
       + `<line class="bd-grid" x1="${L}" x2="${W - R}" y1="${y(c).toFixed(1)}" y2="${y(c).toFixed(1)}"/>`).join('');
-    return `<svg class="bd-scatter" viewBox="0 0 ${W} ${H}" role="img" aria-label="읍·면·동 ${list.length}곳을 주민 수와 켜진 신호 수로 놓은 그림. 오른쪽 위일수록 주민이 많고 신호가 많습니다. 아래 목록과 같은 내용입니다.">`
+    return `<svg class="bd-scatter" viewBox="0 0 ${W} ${H}" role="img" aria-label="읍·면·동 ${plotted.length}곳의 주민 수와 켜진 신호 수. 마름모는 자료 없는 신호가 있는 동입니다. 그림에 없는 동도 아래 표에서 확인합니다.">`
       + `<rect class="bd-hot" x="${midX.toFixed(1)}" y="${T}" width="${(W - R - midX).toFixed(1)}" height="${(midY - T).toFixed(1)}"/>`
       + `<text class="bd-hot-t" x="${(W - R - 6).toFixed(1)}" y="${T + 16}" text-anchor="end">${W < 480 ? '먼저 볼 곳' : '먼저 볼 곳 · 주민 많고 신호 많음'}</text>`
       + ticksY
@@ -95,6 +101,14 @@
   const meter = (v, max) => `<svg class="bd-m" aria-hidden="true" viewBox="0 0 100 8" preserveAspectRatio="none"><rect class="bd-m-bg" width="100" height="8"/><rect class="bd-m-v" width="${max > 0 && v > 0 ? Math.max(3, Math.round(v / max * 100)) : 0}" height="8"/></svg>`;
 
   const isMissing = value => value !== 1 && value !== 0;
+  const missingCount = row => row.on.filter(isMissing).length;
+  function signalCount(row) {
+    const missing = missingCount(row), known = row.on.length - missing;
+    const gap = missing ? `자료 없음 ${missing}개` : '';
+    const label = known ? `자료가 있는 신호 ${known}개 중 ${row.count}개 켜짐` : '';
+    const note = gap ? `<small class="bd-count-missing">${gap}</small>` : '';
+    return { known, missing, label: [label, gap].filter(Boolean).join(', '), note };
+  }
   const dongHref = (code5, code7) => `explore.html#map/${code5.slice(0, 2)}/${code5}/${code7}`;
 
   function signalGroups(d, list, theme) {
@@ -130,10 +144,13 @@
     const at = picks(d, theme), top = list.filter(r => r.count > 0).slice(0, 3);
     if (!top.length) return '';
     const maxPop = Math.max(1, ...list.map(r => r.pop).filter(isNum));
-    return '<ol class="bd-first" aria-label="먼저 볼 곳">' + top.map(r => `<li><a class="bd-f-a" href="${esc(dongHref(code5, r.code7))}">${esc(r.name)}</a>`
-      + `<b class="bd-f-c" role="img" aria-label="신호 ${at.length}개 중 ${r.count}개">${r.count}<small>/${at.length}</small></b>`
-      + `<span class="bd-f-s">${r.on.map((v, k) => chip(v, d.signals[at[k]], true)).join('')}</span>`
-      + `<span class="bd-f-p">${meter(r.pop, maxPop)}<span>주민 ${isNum(r.pop) ? `${n(r.pop)}명` : '자료 없음'}</span></span></li>`).join('') + '</ol>';
+    return '<ol class="bd-first" aria-label="먼저 볼 곳">' + top.map(r => {
+      const count = signalCount(r);
+      return `<li><a class="bd-f-a" href="${esc(dongHref(code5, r.code7))}">${esc(r.name)}</a>`
+        + `<b class="bd-f-c" role="img" aria-label="${count.label}">${r.count}<small>/${count.known}</small>${count.note}</b>`
+        + `<span class="bd-f-s">${r.on.map((v, k) => chip(v, d.signals[at[k]], true)).join('')}</span>`
+        + `<span class="bd-f-p">${meter(r.pop, maxPop)}<span>주민 ${isNum(r.pop) ? `${n(r.pop)}명` : '자료 없음'}</span></span></li>`;
+    }).join('') + '</ol>';
   }
 
   // 출처·기준일 한 줄(숫자 곁에 늘 둔다)
@@ -153,9 +170,11 @@
     const body = list.slice(from, to).map((r, k) => {
       const w = isNum(r.pop) ? Math.max(2, Math.round(r.pop / maxPop * 100)) : 0;
       const pop = isNum(r.pop) ? `${people(r.pop)}명` : '자료 없음';
+      const count = signalCount(r);
+      const number = count.known ? (count.missing ? `${r.count}/${count.known}` : r.count) : '';
       return `<tr><th scope="row"><span class="bd-no">${from + k + 1}</span><a href="${esc(dongHref(code5, r.code7))}">${esc(r.name)}</a>${narrow ? `<small class="bd-pop-s">${pop}</small>` : ''}</th>`
         + (narrow ? '' : `<td class="bd-pop"><span class="bd-bar" aria-hidden="true"><i data-w="${w}"></i></span>${pop}</td>`)
-        + `<td class="bd-cnt">${r.count}</td>${r.on.map((v, j) => `<td>${chip(v, d.signals[at[j]])}</td>`).join('')}</tr>`;
+        + `<td class="bd-cnt" aria-label="${count.label}">${number}${count.note}</td>${r.on.map((v, j) => `<td>${chip(v, d.signals[at[j]])}</td>`).join('')}</tr>`;
     }).join('');
     return `<table class="bd-table" aria-label="읍·면·동별 켜진 신호와 주민 수"><thead><tr><th scope="col">${narrow ? '읍·면·동 · 주민' : '읍·면·동'}</th>${headPop}<th scope="col">${narrow ? '신호' : '신호 수'}</th>${head}</tr></thead><tbody>${body}</tbody></table>`;
   }
@@ -196,7 +215,7 @@
       + context(d, code5)
       + strip(groups, list.length) + srcLine(d) + missingDongs(groups, list, code5)
       + (first ? `<h3 class="bd-sub">먼저 볼 곳</h3>${first}` : '')
-      + `<figure class="bd-fig">${scatter(list, groups.length, w)}<figcaption>점 하나 = 읍·면·동 · 빈 점 = 켜진 신호 0개</figcaption></figure>`
+      + `<figure class="bd-fig">${scatter(list, groups.length, w)}<figcaption>표시 하나는 읍·면·동 한 곳입니다. 빈 원은 자료가 모두 있고 켜진 신호가 0개인 동, 마름모는 자료가 없는 신호가 있는 동입니다. 주민 수 자료가 없는 동은 아래 표에 있습니다. 카드와 표의 분수는 켜진 신호 수 / 자료가 있는 신호 수입니다.</figcaption></figure>`
       + `<div class="bd-wrap">${table(d, list, code5, theme, 0, 10, w < 480)}</div>`
       + (list.length > 10 ? `<details class="bd-more"><summary>나머지 ${list.length - 10}곳 보기</summary><div class="bd-wrap">${table(d, list, code5, theme, 10, list.length, w < 480)}</div></details>` : '')
       + `<details class="bd-rules"><summary>신호 기준과 출처</summary>${legend(d, theme)}<ul class="bd-src">${(d.sources || []).map(s => `<li>${esc(s.for)}: ${esc(s.name)} · ${esc(s.base)}</li>`).join('')}</ul></details>`;

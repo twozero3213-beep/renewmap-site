@@ -26,6 +26,7 @@ html.js .bd:not(.is-ready) .bd-body { min-height: 900px; }
 .bd-ax, .bd-ax-t { fill: var(--dim); font-size: 12px; }
 .bd-dot { fill: var(--green); fill-opacity: .75; stroke: #fff; stroke-width: 1.5; }
 .bd-dot.is-none { fill: #fff; stroke: var(--dim); }
+.bd-dot.is-missing { fill: #fff; stroke: var(--ink); }
 .bd-lab { fill: var(--ink); font-size: 12px; font-weight: 700; paint-order: stroke; stroke: #fff; stroke-width: 3px; }
 .bd-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 .bd-table { width: 100%; border-collapse: collapse; font-size: var(--t-sub); }
@@ -40,6 +41,7 @@ html.js .bd:not(.is-ready) .bd-body { min-height: 900px; }
 .bd-bar { display: inline-block; width: 64px; height: 8px; margin-right: 8px; border-radius: 4px; background: var(--bg); vertical-align: middle; overflow: hidden; }
 .bd-bar i { display: block; width: 0; height: 100%; background: var(--dim); }
 .bd-cnt { font-weight: 700; font-variant-numeric: tabular-nums; }
+.bd-count-missing { display: block; margin-top: 4px; font-size: var(--t-cap); font-weight: 600; color: var(--dim); }
 .bd-pop-s { display: block; margin-left: 1.4em; font-size: var(--t-cap); font-weight: 400; color: var(--dim); }
 /* 신호 칸: 켜짐 = 채운 칸 + 흰 그림, 꺼짐 = 작은 빈 고리, 자료 없음 = 점선 칸(모양으로 갈림) */
 .bd-c { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; vertical-align: middle; }
